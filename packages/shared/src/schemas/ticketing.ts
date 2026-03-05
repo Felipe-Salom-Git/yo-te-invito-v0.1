@@ -1,22 +1,18 @@
 import { z } from 'zod';
 
-export const TicketTypeStatus = { ACTIVE: 'ACTIVE', PAUSED: 'PAUSED' } as const;
-export type TicketTypeStatus = (typeof TicketTypeStatus)[keyof typeof TicketTypeStatus];
-
-export const OrderStatus = {
+// Prisma-compatible enums (uppercase) - internal to schemas, not re-exported to avoid conflict with ./enums
+const TicketTypeStatus = { ACTIVE: 'ACTIVE', PAUSED: 'PAUSED' } as const;
+const OrderStatusApi = {
   PENDING: 'PENDING',
   PAID: 'PAID',
   CANCELLED: 'CANCELLED',
   REFUNDED: 'REFUNDED',
 } as const;
-export type OrderStatus = (typeof OrderStatus)[keyof typeof OrderStatus];
-
-export const TicketStatus = {
+const TicketStatusApi = {
   VALID: 'VALID',
   USED: 'USED',
   REVOKED: 'REVOKED',
 } as const;
-export type TicketStatus = (typeof TicketStatus)[keyof typeof TicketStatus];
 
 export const ticketTypesQuerySchema = z.object({
   tenantId: z.string().min(1, 'tenantId is required'),
@@ -68,7 +64,7 @@ export const ticketResponseSchema = z.object({
   ticketTypeId: z.string(),
   ticketTypeName: z.string(),
   qrPayload: z.string(),
-  status: z.nativeEnum(TicketStatus),
+  status: z.nativeEnum(TicketStatusApi),
 });
 export type TicketResponse = z.infer<typeof ticketResponseSchema>;
 
@@ -86,7 +82,7 @@ export type OrderItemResponse = z.infer<typeof orderItemResponseSchema>;
 export const orderResponseSchema = z.object({
   id: z.string(),
   tenantId: z.string(),
-  status: z.nativeEnum(OrderStatus),
+  status: z.nativeEnum(OrderStatusApi),
   buyerEmail: z.string(),
   buyerFirstName: z.string(),
   buyerLastName: z.string(),

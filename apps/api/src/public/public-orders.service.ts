@@ -97,7 +97,7 @@ export class PublicOrdersService {
         }
       }
 
-      const order = await tx.order.create({
+      const createdOrder = await tx.order.create({
         data: {
           tenantId,
           status: 'PAID',
@@ -107,24 +107,32 @@ export class PublicOrdersService {
           buyerDocument: dto.buyer.document ?? null,
           totalAmount,
           currency: 'ARS',
-          orderItems: {
-            create: orderItemsData.map((item) => {
-              const tickets = Array.from({ length: item.quantity }, () => ({
+        },
+      });
+
+      for (const item of orderItemsData) {
+        await tx.orderItem.create({
+          data: {
+            orderId: createdOrder.id,
+            ticketTypeId: item.ticketTypeId,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            subtotal: item.subtotal,
+            tickets: {
+              create: Array.from({ length: item.quantity }, () => ({
+                orderId: createdOrder.id,
                 eventId: dto.eventId,
                 ticketTypeId: item.ticketTypeId,
                 qrPayload: generateQrPayload(),
                 status: 'VALID' as const,
-              }));
-              return {
-                ticketTypeId: item.ticketTypeId,
-                quantity: item.quantity,
-                unitPrice: item.unitPrice,
-                subtotal: item.subtotal,
-                tickets: { create: tickets },
-              };
-            }),
+              })),
+            },
           },
-        },
+        });
+      }
+
+      const order = await tx.order.findUniqueOrThrow({
+        where: { id: createdOrder.id },
         include: {
           orderItems: {
             include: {

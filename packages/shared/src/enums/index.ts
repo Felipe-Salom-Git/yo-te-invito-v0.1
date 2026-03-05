@@ -18,6 +18,13 @@ export const EventStatus = {
 
 export type EventStatus = (typeof EventStatus)[keyof typeof EventStatus];
 
+export const EventMediaType = {
+  IMAGE: 'IMAGE',
+  VIDEO: 'VIDEO',
+} as const;
+
+export type EventMediaType = (typeof EventMediaType)[keyof typeof EventMediaType];
+
 export const TicketStatus = {
   VALID: 'valid',
   USED: 'used',

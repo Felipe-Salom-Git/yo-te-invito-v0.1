@@ -1,14 +1,23 @@
-import { Body, Controller, Post } from '@nestjs/common';
-import { scanRequestSchema, ScanResult } from '@yo-te-invito/shared';
+import { Body, Controller, Post, Query } from '@nestjs/common';
+import {
+  validateTicketQuerySchema,
+  validateTicketBodySchema,
+  type ValidateTicketQuery,
+  type ValidateTicketBody,
+} from '@yo-te-invito/shared';
+import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { ScannerService } from './scanner.service';
 
 @Controller('scanner')
 export class ScannerController {
   constructor(private readonly service: ScannerService) {}
 
-  @Post('scan')
-  async scan(@Body() body: unknown) {
-    const parsed = scanRequestSchema.parse(body);
-    return this.service.scan(parsed);
+  @Post('validate')
+  async validate(
+    @Query(new ZodValidationPipe(validateTicketQuerySchema))
+    query: ValidateTicketQuery,
+    @Body(new ZodValidationPipe(validateTicketBodySchema)) body: ValidateTicketBody,
+  ) {
+    return this.service.validate(query, body);
   }
 }

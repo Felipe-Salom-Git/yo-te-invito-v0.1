@@ -35,9 +35,10 @@ model Tenant {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  users  User[]
-  events Event[]
-  orders Order[]
+  users       User[]
+  events      Event[]
+  orders      Order[]
+  ticketScans TicketScan[]
 }
 
 model User {
@@ -101,6 +102,7 @@ model Event {
   media       EventMedia[]
   ticketTypes TicketType[]
   tickets     Ticket[]
+  ticketScans TicketScan[]
 
   @@index([tenantId])
   @@index([tenantId, status])
@@ -196,13 +198,34 @@ model Ticket {
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 
-  order      Order      @relation(fields: [orderId], references: [id])
-  orderItem  OrderItem  @relation(fields: [orderItemId], references: [id])
-  ticketType TicketType @relation(fields: [ticketTypeId], references: [id])
-  event      Event      @relation(fields: [eventId], references: [id])
+  order       Order       @relation(fields: [orderId], references: [id])
+  orderItem   OrderItem   @relation(fields: [orderItemId], references: [id])
+  ticketType  TicketType  @relation(fields: [ticketTypeId], references: [id])
+  event       Event       @relation(fields: [eventId], references: [id])
+  ticketScans TicketScan[]
 
   @@index([eventId, status])
   @@index([orderId])
+}
+
+model TicketScan {
+  id        String   @id @default(cuid())
+  tenantId  String
+  eventId   String
+  ticketId  String?
+  qrPayload String
+  deviceId  String?
+  isValid   Boolean
+  reason    String
+  createdAt DateTime @default(now())
+
+  tenant Tenant  @relation(fields: [tenantId], references: [id])
+  event  Event   @relation(fields: [eventId], references: [id])
+  ticket Ticket? @relation(fields: [ticketId], references: [id])
+
+  @@index([tenantId])
+  @@index([eventId])
+  @@index([ticketId])
 }
 
 model EventMedia {

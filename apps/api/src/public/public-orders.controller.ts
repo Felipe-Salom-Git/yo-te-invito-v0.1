@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Query,
+} from '@nestjs/common';
 import {
   createOrderDtoSchema,
   orderDetailsQuerySchema,
@@ -15,6 +24,7 @@ export class PublicOrdersController {
   constructor(private readonly service: PublicOrdersService) {}
 
   @Post()
+  @HttpCode(HttpStatus.CREATED)
   async create(
     @Query(new ZodValidationPipe(ticketTypesQuerySchema)) query: TicketTypesQuery,
     @Body(new ZodValidationPipe(createOrderDtoSchema)) body: CreateOrderDto,

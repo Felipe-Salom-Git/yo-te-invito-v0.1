@@ -1,7 +1,5 @@
 import { z } from 'zod';
-
-export const EventMediaType = { IMAGE: 'IMAGE', VIDEO: 'VIDEO' } as const;
-export type EventMediaType = (typeof EventMediaType)[keyof typeof EventMediaType];
+import { EventMediaType } from '../enums';
 
 /**
  * Query params for paginated events list
