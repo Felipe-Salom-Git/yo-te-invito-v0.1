@@ -3,9 +3,10 @@ import { z } from 'zod';
 // Prisma-compatible enums (uppercase) - internal to schemas, not re-exported to avoid conflict with ./enums
 const TicketTypeStatus = { ACTIVE: 'ACTIVE', PAUSED: 'PAUSED' } as const;
 const OrderStatusApi = {
-  PENDING: 'PENDING',
+  PENDING_PAYMENT: 'PENDING_PAYMENT',
   PAID: 'PAID',
   CANCELLED: 'CANCELLED',
+  EXPIRED: 'EXPIRED',
   REFUNDED: 'REFUNDED',
 } as const;
 const TicketStatusApi = {
@@ -40,6 +41,7 @@ export const createOrderDtoSchema = z.object({
   eventId: z.string().min(1),
   buyer: createOrderBuyerSchema,
   items: z.array(createOrderItemSchema).min(1),
+  referralCode: z.string().optional(),
 });
 export type CreateOrderDto = z.infer<typeof createOrderDtoSchema>;
 
@@ -61,8 +63,8 @@ export type TicketTypeResponse = z.infer<typeof ticketTypeResponseSchema>;
 
 export const ticketResponseSchema = z.object({
   id: z.string(),
-  ticketTypeId: z.string(),
-  ticketTypeName: z.string(),
+  ticketTypeId: z.string().nullable(),
+  ticketTypeName: z.string().nullable(),
   qrPayload: z.string(),
   status: z.nativeEnum(TicketStatusApi),
 });

@@ -44,7 +44,7 @@ curl -s -X POST "http://localhost:3001/public/orders?tenantId=TENANT_ID" \
   }'
 ```
 
-Expected: 201, order with `status: "PAID"`, tickets with `status: "VALID"` and `qrPayload`.
+Expected: 201, order with `status: "PENDING_PAYMENT"`, `tickets: []`, `orderItems[].tickets: []`. Save `ORDER_ID` for payment flow (Slice 08).
 
 ---
 
