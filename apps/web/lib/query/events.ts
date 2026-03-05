@@ -5,13 +5,13 @@ import { fetchEvents } from '../api/events';
 
 const eventsKeys = {
   all: ['events'] as const,
-  list: (page: number, limit: number) =>
-    [...eventsKeys.all, 'list', page, limit] as const,
+  list: (tenantId: string, page: number, limit: number) =>
+    [...eventsKeys.all, 'list', tenantId, page, limit] as const,
 };
 
-export function useEventsList(page = 1, limit = 10) {
+export function useEventsList(tenantId: string, page = 1, limit = 20) {
   return useQuery({
-    queryKey: eventsKeys.list(page, limit),
-    queryFn: () => fetchEvents({ page, limit }),
+    queryKey: eventsKeys.list(tenantId, page, limit),
+    queryFn: () => fetchEvents({ tenantId, page, limit }),
   });
 }

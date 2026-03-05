@@ -1,45 +1,73 @@
 import { z } from 'zod';
-import { EventStatus } from '../enums';
+
+export const EventMediaType = { IMAGE: 'IMAGE', VIDEO: 'VIDEO' } as const;
+export type EventMediaType = (typeof EventMediaType)[keyof typeof EventMediaType];
 
 /**
  * Query params for paginated events list
- * Parámetros de consulta para listado paginado de eventos
+ * tenantId required (multi-tenant)
  */
-export const eventsListQuerySchema = z.object({
-  page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).max(50).default(10),
-  city: z.string().optional(),
-  status: z.nativeEnum(EventStatus).optional(),
-});
+export const eventsListQuerySchema = z
+  .object({
+    tenantId: z.string().min(1, 'tenantId is required'),
+    page: z.coerce.number().int().min(1).default(1),
+    limit: z.coerce.number().int().min(1).max(100).default(20),
+    city: z.string().optional(),
+    dateFrom: z.string().datetime().optional(),
+    dateTo: z.string().datetime().optional(),
+  })
+  .refine(
+    (data) => {
+      if (!data.dateFrom || !data.dateTo) return true;
+      return new Date(data.dateFrom) <= new Date(data.dateTo);
+    },
+    { message: 'dateFrom must not be greater than dateTo', path: ['dateFrom'] },
+  );
 
 export type EventsListQuery = z.infer<typeof eventsListQuerySchema>;
 
-/**
- * Event shape for public API response
- * Forma del evento para respuesta de API pública
- */
-export const eventPublicSchema = z.object({
-  id: z.string(),
-  title: z.string(),
-  description: z.string().nullable(),
-  startAt: z.string().datetime(),
-  endAt: z.string().datetime(),
-  city: z.string().nullable(),
-  venueName: z.string().nullable(),
-  venueAddress: z.string().nullable(),
-  status: z.nativeEnum(EventStatus),
-  coverImageUrl: z.string().nullable(),
-  isTicketingEnabled: z.boolean(),
+export const eventDetailQuerySchema = z.object({
+  tenantId: z.string().min(1, 'tenantId is required'),
 });
 
-export type EventPublic = z.infer<typeof eventPublicSchema>;
+export type EventDetailQuery = z.infer<typeof eventDetailQuerySchema>;
 
-/**
- * Paginated events response
- * Respuesta paginada de eventos
- */
+export const eventMediaSchema = z.object({
+  id: z.string(),
+  type: z.nativeEnum(EventMediaType),
+  url: z.string(),
+  sortOrder: z.number(),
+});
+
+export type EventMedia = z.infer<typeof eventMediaSchema>;
+
+export const eventSummarySchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  startAt: z.string().datetime(),
+  city: z.string().nullable(),
+  venueName: z.string().nullable(),
+  coverImageUrl: z.string().nullable(),
+});
+
+export type EventSummary = z.infer<typeof eventSummarySchema>;
+
+export const eventDetailSchema = eventSummarySchema.extend({
+  description: z.string().nullable(),
+  endAt: z.string().datetime().nullable(),
+  venueAddress: z.string().nullable(),
+  geoLat: z.number().nullable(),
+  geoLng: z.number().nullable(),
+  capacityTotal: z.number().nullable(),
+  isTicketingEnabled: z.boolean(),
+  status: z.string(),
+  media: z.array(eventMediaSchema),
+});
+
+export type EventDetail = z.infer<typeof eventDetailSchema>;
+
 export const eventsPaginatedResponseSchema = z.object({
-  data: z.array(eventPublicSchema),
+  data: z.array(eventSummarySchema),
   meta: z.object({
     page: z.number(),
     limit: z.number(),

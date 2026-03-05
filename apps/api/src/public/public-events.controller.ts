@@ -1,5 +1,11 @@
-import { Controller, Get, Query } from '@nestjs/common';
-import { eventsListQuerySchema, EventStatus } from '@yo-te-invito/shared';
+import { Controller, Get, Query, Param } from '@nestjs/common';
+import {
+  eventsListQuerySchema,
+  eventDetailQuerySchema,
+  type EventsListQuery,
+  type EventDetailQuery,
+} from '@yo-te-invito/shared';
+import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { PublicEventsService } from './public-events.service';
 
 @Controller('public/events')
@@ -8,17 +14,16 @@ export class PublicEventsController {
 
   @Get()
   async list(
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
-    @Query('city') city?: string,
-    @Query('status') status?: string,
+    @Query(new ZodValidationPipe(eventsListQuerySchema)) query: EventsListQuery,
   ) {
-    const parsed = eventsListQuerySchema.parse({
-      page: page ?? '1',
-      limit: limit ?? '10',
-      city,
-      status,
-    });
-    return this.service.list(parsed);
+    return this.service.list(query);
+  }
+
+  @Get(':id')
+  async detail(
+    @Param('id') id: string,
+    @Query(new ZodValidationPipe(eventDetailQuerySchema)) query: EventDetailQuery,
+  ) {
+    return this.service.detail(id, query.tenantId);
   }
 }

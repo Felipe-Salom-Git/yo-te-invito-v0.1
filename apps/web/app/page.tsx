@@ -2,8 +2,10 @@
 
 import { useEventsList } from '@/lib/query/events';
 
+const DEFAULT_TENANT_ID = 'default-tenant';
+
 export default function HomePage() {
-  const { data, isLoading, error } = useEventsList(1, 10);
+  const { data, isLoading, error } = useEventsList(DEFAULT_TENANT_ID, 1, 20);
 
   if (isLoading) {
     return (
@@ -35,9 +37,6 @@ export default function HomePage() {
             className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
           >
             <h2 className="font-semibold text-slate-900">{ev.title}</h2>
-            {ev.description && (
-              <p className="mt-1 text-sm text-slate-600">{ev.description}</p>
-            )}
             <div className="mt-2 flex gap-4 text-sm text-slate-500">
               {ev.venueName && <span>{ev.venueName}</span>}
               {ev.city && <span>{ev.city}</span>}
