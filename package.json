@@ -1,0 +1,25 @@
+{
+  "name": "yo-te-invito",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@9.14.2",
+  "scripts": {
+    "dev": "nx run-many -t dev -p web scanner api",
+    "dev:web": "nx run web:dev",
+    "dev:scanner": "nx run scanner:dev",
+    "dev:api": "nx run api:serve",
+    "build": "nx run-many -t build -p shared api web scanner",
+    "lint": "nx run-many -t lint -p shared api web scanner",
+    "test": "nx run-many -t test -p shared api web scanner",
+    "db:generate": "nx run api:prisma-generate",
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose down",
+    "db:migrate": "nx run api:prisma-migrate",
+    "db:seed": "nx run api:prisma-seed",
+    "db:reset": "nx run api:prisma-reset",
+    "db:studio": "nx run api:prisma-studio"
+  },
+  "devDependencies": {
+    "nx": "^20.0.0"
+  }
+}

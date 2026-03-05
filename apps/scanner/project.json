@@ -1,0 +1,38 @@
+{
+  "name": "scanner",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/scanner",
+  "projectType": "application",
+  "tags": ["scope:scanner"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "outputs": ["{projectRoot}/.next"],
+      "options": {
+        "command": "next build",
+        "cwd": "apps/scanner"
+      }
+    },
+    "dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "next dev -p 3002",
+        "cwd": "apps/scanner"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit",
+        "cwd": "apps/scanner"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node -e \"process.exit(0)\"",
+        "cwd": "apps/scanner"
+      }
+    }
+  }
+}

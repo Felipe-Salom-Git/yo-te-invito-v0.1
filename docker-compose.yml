@@ -1,0 +1,30 @@
+# Yo Te Invito — local dev
+# Postgres for Prisma
+# Redis (V2) commented until needed
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: yo-te-invito-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: yo_te_invito
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+
+  # Uncomment for V2 (BullMQ, cache, rate limiting)
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: yo-te-invito-redis
+  #   ports:
+  #     - "6379:6379"
+
+volumes:
+  postgres_data:
