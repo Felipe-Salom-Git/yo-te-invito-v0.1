@@ -4,12 +4,15 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { randomBytes } from 'crypto';
 import type { CreateOrderDto, OrderResponse } from '@yo-te-invito/shared';
 import { ErrorCode } from '@yo-te-invito/shared';
 
-function generateQrPayload(): string {
-  return randomBytes(24).toString('hex');
+const ORDER_EXPIRY_MINUTES = 15;
+
+function getExpiresAt(): Date {
+  const d = new Date();
+  d.setMinutes(d.getMinutes() + ORDER_EXPIRY_MINUTES);
+  return d;
 }
 
 @Injectable()
@@ -97,18 +100,42 @@ export class PublicOrdersService {
         }
       }
 
+      let referralLinkId: string | null = null;
+      if (dto.referralCode?.trim()) {
+        const link = await tx.referralLink.findUnique({
+          where: { code: dto.referralCode.trim() },
+        });
+        if (link && link.eventId === dto.eventId && link.tenantId === tenantId) {
+          referralLinkId = link.id;
+        }
+      }
+
       const createdOrder = await tx.order.create({
         data: {
           tenantId,
-          status: 'PAID',
+          eventId: dto.eventId,
+          status: 'PENDING_PAYMENT',
           buyerEmail: dto.buyer.email,
           buyerFirstName: dto.buyer.firstName,
           buyerLastName: dto.buyer.lastName,
           buyerDocument: dto.buyer.document ?? null,
           totalAmount,
           currency: 'ARS',
+          expiresAt: getExpiresAt(),
+          referralLinkId,
         },
       });
+
+      if (referralLinkId) {
+        await tx.referralAttribution.create({
+          data: {
+            tenantId,
+            eventId: dto.eventId,
+            referralLinkId,
+            orderId: createdOrder.id,
+          },
+        });
+      }
 
       for (const item of orderItemsData) {
         await tx.orderItem.create({
@@ -118,15 +145,6 @@ export class PublicOrdersService {
             quantity: item.quantity,
             unitPrice: item.unitPrice,
             subtotal: item.subtotal,
-            tickets: {
-              create: Array.from({ length: item.quantity }, () => ({
-                orderId: createdOrder.id,
-                eventId: dto.eventId,
-                ticketTypeId: item.ticketTypeId,
-                qrPayload: generateQrPayload(),
-                status: 'VALID' as const,
-              })),
-            },
           },
         });
       }
@@ -144,45 +162,7 @@ export class PublicOrdersService {
         },
       });
 
-      const orderItems = order.orderItems.map((oi) => ({
-        id: oi.id,
-        ticketTypeId: oi.ticketTypeId,
-        ticketTypeName: oi.ticketType.name,
-        quantity: oi.quantity,
-        unitPrice: oi.unitPrice.toString(),
-        subtotal: oi.subtotal.toString(),
-        tickets: oi.tickets.map((t) => ({
-          id: t.id,
-          ticketTypeId: t.ticketTypeId,
-          ticketTypeName: oi.ticketType.name,
-          qrPayload: t.qrPayload,
-          status: t.status,
-        })),
-      }));
-
-      return {
-        id: order.id,
-        tenantId: order.tenantId,
-        status: order.status,
-        buyerEmail: order.buyerEmail,
-        buyerFirstName: order.buyerFirstName,
-        buyerLastName: order.buyerLastName,
-        buyerDocument: order.buyerDocument,
-        totalAmount: order.totalAmount.toString(),
-        currency: order.currency,
-        orderItems,
-        tickets: order.tickets.map((t) => {
-          const oi = order.orderItems.find((o) => o.id === t.orderItemId);
-          return {
-            id: t.id,
-            ticketTypeId: t.ticketTypeId,
-            ticketTypeName: oi?.ticketType.name ?? '',
-            qrPayload: t.qrPayload,
-            status: t.status,
-          };
-        }),
-        createdAt: order.createdAt.toISOString(),
-      };
+      return this.mapOrderToResponse(order);
     });
   }
 
@@ -202,41 +182,83 @@ export class PublicOrdersService {
       });
     }
 
+    return this.mapOrderToResponse(order);
+  }
+
+  private mapOrderToResponse(order: {
+    id: string;
+    tenantId: string;
+    status: string;
+    buyerEmail: string;
+    buyerFirstName: string;
+    buyerLastName: string;
+    buyerDocument: string | null;
+    totalAmount: { toString: () => string };
+    currency: string;
+    createdAt: Date;
+    orderItems: Array<{
+      id: string;
+      ticketTypeId: string;
+      ticketType: { name: string };
+      quantity: number;
+      unitPrice: { toString: () => string };
+      subtotal: { toString: () => string };
+      tickets: Array<{
+        id: string;
+        ticketTypeId: string | null;
+        qrPayload: string;
+        status: string;
+      }>;
+    }>;
+    tickets: Array<{
+      id: string;
+      ticketTypeId: string | null;
+      orderItemId: string | null;
+      qrPayload: string;
+      status: string;
+    }>;
+  }): OrderResponse {
+    const orderItems = order.orderItems.map((oi) => ({
+      id: oi.id,
+      ticketTypeId: oi.ticketTypeId,
+      ticketTypeName: oi.ticketType.name,
+      quantity: oi.quantity,
+      unitPrice: oi.unitPrice.toString(),
+      subtotal: oi.subtotal.toString(),
+      tickets: oi.tickets.map((t) => ({
+        id: t.id,
+        ticketTypeId: t.ticketTypeId ?? oi.ticketTypeId,
+        ticketTypeName: oi.ticketType.name,
+        qrPayload: t.qrPayload,
+        status: t.status as 'VALID' | 'USED' | 'REVOKED',
+      })),
+    }));
+
+    const tickets = order.tickets
+      .filter((t) => t.orderItemId)
+      .map((t) => {
+        const oi = order.orderItems.find((o) => o.id === t.orderItemId!);
+        return {
+          id: t.id,
+          ticketTypeId: t.ticketTypeId ?? oi?.ticketTypeId ?? null,
+          ticketTypeName: oi?.ticketType.name ?? null,
+          qrPayload: t.qrPayload,
+          status: t.status as 'VALID' | 'USED' | 'REVOKED',
+        };
+      });
+
     return {
       id: order.id,
       tenantId: order.tenantId,
-      status: order.status,
+      status: order.status as OrderResponse['status'],
       buyerEmail: order.buyerEmail,
       buyerFirstName: order.buyerFirstName,
       buyerLastName: order.buyerLastName,
       buyerDocument: order.buyerDocument,
       totalAmount: order.totalAmount.toString(),
       currency: order.currency,
-      orderItems: order.orderItems.map((oi) => ({
-        id: oi.id,
-        ticketTypeId: oi.ticketTypeId,
-        ticketTypeName: oi.ticketType.name,
-        quantity: oi.quantity,
-        unitPrice: oi.unitPrice.toString(),
-        subtotal: oi.subtotal.toString(),
-        tickets: oi.tickets.map((t) => ({
-          id: t.id,
-          ticketTypeId: t.ticketTypeId,
-          ticketTypeName: oi.ticketType.name,
-          qrPayload: t.qrPayload,
-          status: t.status,
-        })),
-      })),
-      tickets: order.tickets.map((t) => {
-        const oi = order.orderItems.find((o) => o.id === t.orderItemId);
-        return {
-          id: t.id,
-          ticketTypeId: t.ticketTypeId,
-          ticketTypeName: oi?.ticketType.name ?? '',
-          qrPayload: t.qrPayload,
-          status: t.status,
-        };
-      }),
+      orderItems,
+      tickets,
       createdAt: order.createdAt.toISOString(),
     };
   }

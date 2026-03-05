@@ -6,6 +6,8 @@ import type {
   EventsPaginatedResponse,
   EventSummary,
   EventDetail,
+  EventsSearchQuery,
+  EventsTrendingQuery,
 } from '@yo-te-invito/shared';
 import { ErrorCode } from '@yo-te-invito/shared';
 
@@ -72,6 +74,106 @@ export class PublicEventsService {
     };
   }
 
+  async search(query: EventsSearchQuery): Promise<EventsPaginatedResponse> {
+    const where: Prisma.EventWhereInput = {
+      tenantId: query.tenantId,
+      status: 'APPROVED',
+      deletedAt: null,
+    };
+
+    if (query.q?.trim()) {
+      where.title = { contains: query.q.trim(), mode: 'insensitive' };
+    }
+
+    if (query.city?.trim()) {
+      where.city = query.city.trim();
+    }
+
+    if (query.dateFrom || query.dateTo) {
+      where.startAt = {};
+      if (query.dateFrom) {
+        where.startAt.gte = new Date(query.dateFrom);
+      }
+      if (query.dateTo) {
+        where.startAt.lte = new Date(query.dateTo);
+      }
+    }
+
+    if (query.minRating != null && query.minRating > 0) {
+      where.ratingAvg = { gte: query.minRating };
+    }
+
+    const [data, total] = await Promise.all([
+      this.prisma.event.findMany({
+        where,
+        select: {
+          id: true,
+          title: true,
+          startAt: true,
+          city: true,
+          venueName: true,
+          coverImageUrl: true,
+          ratingAvg: true,
+          ratingCount: true,
+        },
+        orderBy: { startAt: 'asc' },
+        skip: (query.page - 1) * query.limit,
+        take: query.limit,
+      }),
+      this.prisma.event.count({ where }),
+    ]);
+
+    const items: EventSummary[] = data.map((e) => ({
+      id: e.id,
+      title: e.title,
+      startAt: e.startAt.toISOString(),
+      city: e.city,
+      venueName: e.venueName,
+      coverImageUrl: e.coverImageUrl,
+    }));
+
+    return {
+      data: items,
+      meta: {
+        page: query.page,
+        limit: query.limit,
+        total,
+        totalPages: Math.ceil(total / query.limit) || 1,
+      },
+    };
+  }
+
+  async trending(query: EventsTrendingQuery): Promise<EventSummary[]> {
+    const data = await this.prisma.event.findMany({
+      where: {
+        tenantId: query.tenantId,
+        status: 'APPROVED',
+        deletedAt: null,
+        ratingCount: { gt: 0 },
+        ratingAvg: { not: null },
+      },
+      select: {
+        id: true,
+        title: true,
+        startAt: true,
+        city: true,
+        venueName: true,
+        coverImageUrl: true,
+      },
+      orderBy: [{ ratingAvg: 'desc' }, { ratingCount: 'desc' }],
+      take: query.limit,
+    });
+
+    return data.map((e) => ({
+      id: e.id,
+      title: e.title,
+      startAt: e.startAt.toISOString(),
+      city: e.city,
+      venueName: e.venueName,
+      coverImageUrl: e.coverImageUrl,
+    }));
+  }
+
   async detail(id: string, tenantId: string): Promise<EventDetail> {
     const event = await this.prisma.event.findFirst({
       where: {
@@ -110,6 +212,8 @@ export class PublicEventsService {
       capacityTotal: event.capacityTotal,
       isTicketingEnabled: event.isTicketingEnabled,
       status: event.status,
+      ratingAvg: event.ratingAvg,
+      ratingCount: event.ratingCount,
       media: event.media.map((m) => ({
         id: m.id,
         type: m.type,

@@ -1,8 +1,12 @@
 import { Controller, Get, Query, Param } from '@nestjs/common';
 import {
   eventsListQuerySchema,
+  eventsSearchQuerySchema,
+  eventsTrendingQuerySchema,
   eventDetailQuerySchema,
   type EventsListQuery,
+  type EventsSearchQuery,
+  type EventsTrendingQuery,
   type EventDetailQuery,
 } from '@yo-te-invito/shared';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
@@ -17,6 +21,20 @@ export class PublicEventsController {
     @Query(new ZodValidationPipe(eventsListQuerySchema)) query: EventsListQuery,
   ) {
     return this.service.list(query);
+  }
+
+  @Get('search')
+  async search(
+    @Query(new ZodValidationPipe(eventsSearchQuerySchema)) query: EventsSearchQuery,
+  ) {
+    return this.service.search(query);
+  }
+
+  @Get('trending')
+  async trending(
+    @Query(new ZodValidationPipe(eventsTrendingQuerySchema)) query: EventsTrendingQuery,
+  ) {
+    return this.service.trending(query);
   }
 
   @Get(':id')

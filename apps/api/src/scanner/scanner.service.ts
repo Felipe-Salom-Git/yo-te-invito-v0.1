@@ -9,12 +9,153 @@ import type {
   ValidateTicketBody,
   ValidateTicketQuery,
   ValidateTicketResponse,
+  ScanBody,
+  ScanResponse,
+  EventTicketsResponse,
 } from '@yo-te-invito/shared';
 import { ErrorCode } from '@yo-te-invito/shared';
 
 @Injectable()
 export class ScannerService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async getEventTickets(
+    tenantId: string,
+    eventId: string,
+  ): Promise<EventTicketsResponse> {
+    const event = await this.prisma.event.findFirst({
+      where: {
+        id: eventId,
+        tenantId,
+        deletedAt: null,
+      },
+    });
+
+    if (!event) {
+      return { tickets: [] };
+    }
+
+    const tickets = await this.prisma.ticket.findMany({
+      where: {
+        eventId,
+        status: 'VALID',
+      },
+      select: {
+        id: true,
+        qrPayload: true,
+        status: true,
+      },
+    });
+
+    return {
+      tickets: tickets.map((t) => ({
+        ticketId: t.id,
+        qrPayload: t.qrPayload,
+        status: t.status,
+      })),
+    };
+  }
+
+  async scan(
+    tenantId: string,
+    scannerId: string,
+    body: ScanBody,
+  ): Promise<ScanResponse> {
+    const { eventId, qrPayload, deviceId } = body;
+
+    const ticket = await this.prisma.ticket.findFirst({
+      where: {
+        qrPayload,
+        eventId,
+        event: { tenantId },
+      },
+      include: { ticketType: true },
+    });
+
+    if (!ticket) {
+      await this.prisma.ticketScanLog.create({
+        data: {
+          tenantId,
+          eventId,
+          qrPayload,
+          deviceId: deviceId ?? null,
+          scannerId,
+          ticketId: null,
+          result: 'INVALID',
+        },
+      });
+      return { result: 'INVALID' };
+    }
+
+    if (ticket.status === 'USED') {
+      await this.prisma.ticketScanLog.create({
+        data: {
+          tenantId,
+          eventId,
+          qrPayload,
+          deviceId: deviceId ?? null,
+          scannerId,
+          ticketId: ticket.id,
+          result: 'ALREADY_USED',
+        },
+      });
+      return { result: 'ALREADY_USED', ticketId: ticket.id, ticketTypeName: ticket.ticketType?.name };
+    }
+
+    if (ticket.status === 'REVOKED') {
+      await this.prisma.ticketScanLog.create({
+        data: {
+          tenantId,
+          eventId,
+          qrPayload,
+          deviceId: deviceId ?? null,
+          scannerId,
+          ticketId: ticket.id,
+          result: 'REVOKED',
+        },
+      });
+      return { result: 'REVOKED', ticketId: ticket.id, ticketTypeName: ticket.ticketType?.name };
+    }
+
+    const now = new Date();
+    const { count } = await this.prisma.ticket.updateMany({
+      where: { id: ticket.id, status: 'VALID' },
+      data: { status: 'USED', usedAt: now },
+    });
+
+    if (count === 0) {
+      await this.prisma.ticketScanLog.create({
+        data: {
+          tenantId,
+          eventId,
+          qrPayload,
+          deviceId: deviceId ?? null,
+          scannerId,
+          ticketId: ticket.id,
+          result: 'ALREADY_USED',
+        },
+      });
+      return { result: 'ALREADY_USED', ticketId: ticket.id, ticketTypeName: ticket.ticketType?.name };
+    }
+
+    await this.prisma.ticketScanLog.create({
+      data: {
+        tenantId,
+        eventId,
+        qrPayload,
+        deviceId: deviceId ?? null,
+        scannerId,
+        ticketId: ticket.id,
+        result: 'OK',
+      },
+    });
+
+    return {
+      result: 'OK',
+      ticketId: ticket.id,
+      ticketTypeName: ticket.ticketType?.name ?? undefined,
+    };
+  }
 
   async validate(
     query: ValidateTicketQuery,
