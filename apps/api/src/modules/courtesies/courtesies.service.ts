@@ -4,6 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { EventCapacityGuardService } from '../../common/event-capacity-guard.service';
 import { randomBytes } from 'crypto';
 import type {
   CreateCourtesyBody,
@@ -19,7 +20,10 @@ function generateQrPayload(): string {
 
 @Injectable()
 export class CourtesiesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly capacityGuard: EventCapacityGuardService,
+  ) {}
 
   async create(
     tenantId: string,
@@ -65,27 +69,15 @@ export class CourtesiesService {
           message: `Quantity exceeds batch capacity (${tt.capacityAvailable} available)`,
         });
       }
-    } else {
-      if (!event.capacityTotal) {
-        throw new BadRequestException({
-          code: ErrorCode.VALIDATION_FAILED,
-          message: 'Event has no capacity set',
-        });
-      }
-
-      const ticketCount = await this.prisma.ticket.count({
-        where: { eventId },
-      });
-      const remaining = event.capacityTotal - ticketCount;
-      if (quantity > remaining) {
-        throw new BadRequestException({
-          code: ErrorCode.VALIDATION_FAILED,
-          message: `Quantity exceeds event capacity (${remaining} remaining)`,
-        });
-      }
     }
 
     const result = await this.prisma.$transaction(async (tx) => {
+      await this.capacityGuard.assertEventCapacityAvailable(
+        tx,
+        tenantId,
+        eventId,
+        quantity,
+      );
       const grant = await tx.courtesyGrant.create({
         data: {
           tenantId,

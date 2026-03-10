@@ -1,10 +1,14 @@
 import type { Metadata } from 'next';
-import './globals.css';
+import '@/styles/globals.css';
 import { Providers } from './providers';
+import { Navbar, Footer } from '@/components';
 
 export const metadata: Metadata = {
-  title: 'Yo Te Invito',
-  description: 'Event ticketing platform',
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'),
+  title: { default: 'Yo Te Invito', template: '%s | Yo Te Invito' },
+  description: 'Plataforma de ticketera y venta de entradas para eventos',
+  openGraph: { type: 'website', locale: 'es_AR' },
+  manifest: '/manifest.json',
 };
 
 export default function RootLayout({
@@ -14,8 +18,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <body>
-        <Providers>{children}</Providers>
+      <body className="flex min-h-screen flex-col bg-bg text-text">
+        <Providers>
+          <Navbar />
+          <main className="flex-1">{children}</main>
+          <Footer />
+        </Providers>
       </body>
     </html>
   );

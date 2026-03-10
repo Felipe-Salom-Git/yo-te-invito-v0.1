@@ -3,13 +3,66 @@ import {
   NotFoundException,
   ConflictException,
 } from '@nestjs/common';
+import { EventStatus, Prisma, AuditAction } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
-import { Prisma, AuditAction } from '@prisma/client';
 import { ErrorCode } from '@yo-te-invito/shared';
+import type { EventsPaginatedResponse, EventSummary } from '@yo-te-invito/shared';
 
 @Injectable()
 export class AdminEventsService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async list(
+    tenantId: string,
+    page = 1,
+    limit = 50,
+    status?: string,
+  ): Promise<EventsPaginatedResponse> {
+    const where: { tenantId: string; deletedAt: null; status?: EventStatus } = {
+      tenantId,
+      deletedAt: null,
+    };
+    const validStatuses: EventStatus[] = ['DRAFT', 'PENDING', 'APPROVED', 'PAUSED', 'CANCELLED'];
+    if (status && validStatuses.includes(status.toUpperCase() as EventStatus)) {
+      where.status = status.toUpperCase() as EventStatus;
+    }
+    const [data, total] = await Promise.all([
+      this.prisma.event.findMany({
+        where,
+        select: {
+          id: true,
+          title: true,
+          startAt: true,
+          city: true,
+          venueName: true,
+          coverImageUrl: true,
+          status: true,
+        },
+        orderBy: { startAt: 'asc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      this.prisma.event.count({ where }),
+    ]);
+    const items = data.map((e) => ({
+      id: e.id,
+      title: e.title,
+      startAt: e.startAt.toISOString(),
+      city: e.city,
+      venueName: e.venueName,
+      coverImageUrl: e.coverImageUrl,
+      status: e.status.toLowerCase(),
+    }));
+    return {
+      data: items as EventSummary[],
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit) || 1,
+      },
+    };
+  }
 
   async approveEvent(
     tenantId: string,

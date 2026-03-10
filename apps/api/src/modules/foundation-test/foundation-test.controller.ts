@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { testValidationBodySchema } from '@yo-te-invito/shared';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
-import { DevAuthGuard } from '../../common/guards/dev-auth.guard';
+import { JwtOrDevAuthGuard } from '../../auth/jwt-or-dev-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { RequireRole } from '../../common/decorators/require-role.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -23,7 +23,7 @@ export class FoundationTestController {
   }
 
   @Get('auth')
-  @UseGuards(DevAuthGuard, RolesGuard)
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
   @RequireRole(Role.ADMIN)
   auth(@CurrentUser() user: { id: string; tenantId: string; role: string }) {
     return { userId: user.id, tenantId: user.tenantId, role: user.role };

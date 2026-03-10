@@ -1,0 +1,10 @@
+{
+  "name": "Yo Te Invito",
+  "short_name": "Yo Te Invito",
+  "description": "Plataforma de ticketera y venta de entradas",
+  "start_url": "/home",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "lang": "es-AR"
+}

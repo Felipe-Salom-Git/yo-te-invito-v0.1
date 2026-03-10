@@ -11,6 +11,7 @@ export const eventsListQuerySchema = z
     page: z.coerce.number().int().min(1).default(1),
     limit: z.coerce.number().int().min(1).max(100).default(20),
     city: z.string().optional(),
+    category: z.string().optional(),
     dateFrom: z.string().datetime().optional(),
     dateTo: z.string().datetime().optional(),
   })
@@ -46,6 +47,10 @@ export const eventSummarySchema = z.object({
   city: z.string().nullable(),
   venueName: z.string().nullable(),
   coverImageUrl: z.string().nullable(),
+  category: z.string().nullable().optional(),
+  description: z.string().nullable().optional(),
+  ratingAvg: z.number().nullable().optional(),
+  ratingCount: z.number().optional(),
 });
 
 export type EventSummary = z.infer<typeof eventSummarySchema>;
@@ -66,6 +71,111 @@ export const eventDetailSchema = eventSummarySchema.extend({
 
 export type EventDetail = z.infer<typeof eventDetailSchema>;
 
+/** Event create/update: capacityTotal (int >= 0, nullable) */
+export const eventCapacityTotalSchema = z.number().int().min(0).nullable();
+
+export const eventCreateDtoSchema = z.object({
+  title: z.string().min(1),
+  description: z.string().nullish(),
+  startAt: z.string().datetime(),
+  endAt: z.string().datetime().nullish(),
+  city: z.string().nullish(),
+  venueName: z.string().nullish(),
+  venueAddress: z.string().nullish(),
+  capacityTotal: eventCapacityTotalSchema.optional(),
+  coverImageUrl: z.string().nullish(),
+  geoLat: z.number().nullish(),
+  geoLng: z.number().nullish(),
+});
+export type EventCreateDto = z.infer<typeof eventCreateDtoSchema>;
+
+/** Params for GET /producer/events/:eventId/metrics */
+export const producerEventMetricsParamsSchema = z.object({
+  eventId: z.string().min(1, 'eventId is required'),
+});
+export type ProducerEventMetricsParams = z.infer<typeof producerEventMetricsParamsSchema>;
+
+/** Response for GET /producer/events/:eventId/metrics */
+export const producerEventMetricsResponseSchema = z.object({
+  ticketsSold: z.number().int().min(0),
+  courtesyCount: z.number().int().min(0),
+  revenue: z.string(),
+  currency: z.string(),
+  scanCount: z.number().int().min(0),
+});
+export type ProducerEventMetricsResponse = z.infer<typeof producerEventMetricsResponseSchema>;
+
+/** Response for GET /admin/platform/metrics */
+export const platformMetricsResponseSchema = z.object({
+  totalEvents: z.number().int().min(0),
+  activeEvents: z.number().int().min(0),
+  ticketsSold: z.number().int().min(0),
+  totalReviews: z.number().int().min(0),
+  totalScans: z.number().int().min(0),
+  /** Tickets already scanned at door (validated entries) */
+  ticketsValidated: z.number().int().min(0).optional(),
+  /** Usage rate: validated / sold * 100 */
+  usageRatePercent: z.number().min(0).max(100).optional(),
+});
+export type PlatformMetricsResponse = z.infer<typeof platformMetricsResponseSchema>;
+
+/** Params for GET /admin/events/:eventId/fraud-signals */
+export const fraudSignalsParamsSchema = z.object({
+  eventId: z.string().min(1, 'eventId is required'),
+});
+export type FraudSignalsParams = z.infer<typeof fraudSignalsParamsSchema>;
+
+/** Query for GET /admin/events/:eventId/fraud-signals */
+export const fraudSignalsQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  from: z.string().datetime().optional(),
+  to: z.string().datetime().optional(),
+});
+export type FraudSignalsQuery = z.infer<typeof fraudSignalsQuerySchema>;
+
+/** Fraud signal item (IP/UA redacted for non-admin; admin sees all) */
+export const fraudSignalItemSchema = z.object({
+  id: z.string(),
+  eventId: z.string(),
+  signalType: z.string(),
+  deviceId: z.string().nullable(),
+  ipAddress: z.string().nullable(),
+  scanCount: z.number(),
+  windowStart: z.string().datetime(),
+  windowEnd: z.string().datetime(),
+  metadata: z.unknown().nullable(),
+  createdAt: z.string().datetime(),
+});
+export type FraudSignalItem = z.infer<typeof fraudSignalItemSchema>;
+
+export const fraudSignalsResponseSchema = z.object({
+  data: z.array(fraudSignalItemSchema),
+  meta: z.object({
+    page: z.number(),
+    limit: z.number(),
+    total: z.number(),
+    totalPages: z.number(),
+  }),
+});
+export type FraudSignalsResponse = z.infer<typeof fraudSignalsResponseSchema>;
+
+export const eventUpdateDtoSchema = z.object({
+  title: z.string().min(1).optional(),
+  description: z.string().nullable().optional(),
+  startAt: z.string().datetime().optional(),
+  endAt: z.string().datetime().nullable().optional(),
+  city: z.string().nullable().optional(),
+  venueName: z.string().nullable().optional(),
+  venueAddress: z.string().nullable().optional(),
+  capacityTotal: eventCapacityTotalSchema.optional(),
+  coverImageUrl: z.string().optional().nullable(),
+  geoLat: z.number().optional().nullable(),
+  geoLng: z.number().optional().nullable(),
+  status: z.enum(['DRAFT', 'PENDING', 'APPROVED', 'PAUSED', 'CANCELLED']).optional(),
+});
+export type EventUpdateDto = z.infer<typeof eventUpdateDtoSchema>;
+
 export const eventsPaginatedResponseSchema = z.object({
   data: z.array(eventSummarySchema),
   meta: z.object({
@@ -84,6 +194,7 @@ export const eventsSearchQuerySchema = z
     tenantId: z.string().min(1, 'tenantId is required'),
     q: z.string().optional(),
     city: z.string().optional(),
+    category: z.string().optional(),
     dateFrom: z.string().datetime().optional(),
     dateTo: z.string().datetime().optional(),
     minRating: z.coerce.number().min(0).max(5).optional(),
@@ -172,8 +283,36 @@ export const referralLinkSummarySchema = z.object({
   label: z.string().nullable(),
   attributedOrdersCount: z.number(),
   createdAt: z.string().datetime(),
+  eventId: z.string().optional(),
+  referrerId: z.string().nullable().optional(),
 });
 export type ReferralLinkSummary = z.infer<typeof referralLinkSummarySchema>;
+
+/** Body for PUT /events/:eventId/referrals (assign referrers to event) */
+export const assignReferralsBodySchema = z.object({
+  referrerIds: z.array(z.string().min(1)).max(100),
+});
+export type AssignReferralsBody = z.infer<typeof assignReferralsBodySchema>;
+
+/** Referral commission item */
+export const referralCommissionSchema = z.object({
+  id: z.string(),
+  referrerId: z.string(),
+  referralLinkId: z.string(),
+  eventId: z.string(),
+  amountCents: z.number(),
+  status: z.enum(['PENDING', 'REQUESTED', 'PAID', 'REJECTED']),
+  requestedAt: z.string().datetime().nullable(),
+  paidAt: z.string().datetime().nullable(),
+  confirmedByUserId: z.string().nullable(),
+});
+export type ReferralCommission = z.infer<typeof referralCommissionSchema>;
+
+/** Body for POST /me/commissions/request */
+export const requestCommissionBodySchema = z.object({
+  referralLinkId: z.string().min(1),
+});
+export type RequestCommissionBody = z.infer<typeof requestCommissionBodySchema>;
 
 /** Params for POST /events/:eventId/reviews */
 export const createReviewParamsSchema = z.object({

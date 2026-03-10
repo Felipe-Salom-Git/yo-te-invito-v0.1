@@ -26,6 +26,10 @@ export class PublicEventsService {
       where.city = query.city;
     }
 
+    if (query.category?.trim()) {
+      where.category = query.category.trim();
+    }
+
     if (query.dateFrom || query.dateTo) {
       where.startAt = {};
       if (query.dateFrom) {
@@ -46,6 +50,10 @@ export class PublicEventsService {
           city: true,
           venueName: true,
           coverImageUrl: true,
+          category: true,
+          description: true,
+          ratingAvg: true,
+          ratingCount: true,
         },
         orderBy: { startAt: 'asc' },
         skip: (query.page - 1) * query.limit,
@@ -61,6 +69,10 @@ export class PublicEventsService {
       city: e.city,
       venueName: e.venueName,
       coverImageUrl: e.coverImageUrl,
+      category: e.category ?? undefined,
+      description: e.description ?? undefined,
+      ratingAvg: e.ratingAvg ?? undefined,
+      ratingCount: e.ratingCount ?? undefined,
     }));
 
     return {
@@ -89,6 +101,10 @@ export class PublicEventsService {
       where.city = query.city.trim();
     }
 
+    if (query.category?.trim()) {
+      where.category = query.category.trim();
+    }
+
     if (query.dateFrom || query.dateTo) {
       where.startAt = {};
       if (query.dateFrom) {
@@ -113,6 +129,8 @@ export class PublicEventsService {
           city: true,
           venueName: true,
           coverImageUrl: true,
+          category: true,
+          description: true,
           ratingAvg: true,
           ratingCount: true,
         },
@@ -130,6 +148,10 @@ export class PublicEventsService {
       city: e.city,
       venueName: e.venueName,
       coverImageUrl: e.coverImageUrl,
+      category: e.category ?? undefined,
+      description: e.description ?? undefined,
+      ratingAvg: e.ratingAvg ?? undefined,
+      ratingCount: e.ratingCount ?? undefined,
     }));
 
     return {
@@ -159,6 +181,10 @@ export class PublicEventsService {
         city: true,
         venueName: true,
         coverImageUrl: true,
+        category: true,
+        description: true,
+        ratingAvg: true,
+        ratingCount: true,
       },
       orderBy: [{ ratingAvg: 'desc' }, { ratingCount: 'desc' }],
       take: query.limit,
@@ -171,6 +197,10 @@ export class PublicEventsService {
       city: e.city,
       venueName: e.venueName,
       coverImageUrl: e.coverImageUrl,
+      category: e.category ?? undefined,
+      description: e.description ?? undefined,
+      ratingAvg: e.ratingAvg ?? undefined,
+      ratingCount: e.ratingCount ?? undefined,
     }));
   }
 
@@ -204,6 +234,7 @@ export class PublicEventsService {
       city: event.city,
       venueName: event.venueName,
       coverImageUrl: event.coverImageUrl,
+      category: event.category ?? undefined,
       description: event.description,
       endAt: event.endAt?.toISOString() ?? null,
       venueAddress: event.venueAddress,

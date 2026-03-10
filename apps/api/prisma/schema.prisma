@@ -43,8 +43,63 @@ model Tenant {
   courtesyGrants    CourtesyGrant[]
   referralLinks     ReferralLink[]
   referralAttributions ReferralAttribution[]
+  referralCommissions ReferralCommission[]
   reviews             Review[]
   auditLogs           AuditLog[]
+  fraudSignals        FraudSignal[]
+  payouts             Payout[]
+  platformConfig      PlatformConfig?
+  roleApplications    RoleApplication[]
+}
+
+enum ApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model RoleApplication {
+  id                String            @id @default(cuid())
+  tenantId          String
+  email             String
+  passwordHash      String
+  firstName         String
+  lastName          String
+  phone             String?
+  businessName      String?
+  role              Role              // PRODUCER_OWNER | GASTRO_OWNER
+  status            ApplicationStatus @default(PENDING)
+  createdAt         DateTime          @default(now())
+  reviewedAt        DateTime?
+  reviewedByUserId  String?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([token])
+  @@index([expiresAt])
+}
+
+model PlatformConfig {
+  id              String   @id @default(cuid())
+  tenantId        String   @unique
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contactEmail    String?
+  contactPhone    String?
+  contactAddress  String?
+  categories      Json?    // [{id: string, label: string}, ...]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 model User {
@@ -57,15 +112,20 @@ model User {
   phone        String?
   role         Role
   status       UserStatus
+  preferences  Json?
   emailVerified DateTime?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   deletedAt    DateTime?
 
-  tenant         Tenant          @relation(fields: [tenantId], references: [id])
-  courtesyGrants CourtesyGrant[]
-  referralLinks  ReferralLink[]
-  reviews       Review[]
+  tenant            Tenant          @relation(fields: [tenantId], references: [id])
+  courtesyGrants    CourtesyGrant[]
+  referralLinks     ReferralLink[]
+  referralCommissions ReferralCommission[]
+  reviews           Review[]
+  ownedTickets       Ticket[]         @relation("TicketOwner")
+  transfersFrom      TicketTransfer[] @relation("TransferFromUser")
+  transfersTo        TicketTransfer[] @relation("TransferToUser")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -89,6 +149,7 @@ model Event {
   id                String       @id @default(cuid())
   tenantId          String
   producerId        String
+  category          String?      // event | gastro | excursion | rental — for catalog display
   title             String
   description       String?
   startAt           DateTime
@@ -119,7 +180,10 @@ model Event {
   courtesyGrants      CourtesyGrant[]
   referralLinks       ReferralLink[]
   referralAttributions ReferralAttribution[]
+  referralCommissions  ReferralCommission[]
   reviews             Review[]
+  fraudSignals        FraudSignal[]
+  payouts             Payout[]
 
   @@index([tenantId])
   @@index([tenantId, status])
@@ -197,6 +261,7 @@ model Order {
   totalAmount     Decimal     @db.Decimal(12, 2)
   currency        String      @default("ARS")
   expiresAt       DateTime?
+  expiredAt       DateTime?
   paidAt          DateTime?
   cancelledAt     DateTime?
   createdAt       DateTime    @default(now())
@@ -270,27 +335,51 @@ model CourtesyGrant {
 }
 
 model Ticket {
-  id           String       @id @default(cuid())
-  orderId      String?
-  orderItemId  String?
-  ticketTypeId String?
-  eventId      String
-  qrPayload    String       @unique
-  status       TicketStatus @default(VALID)
-  source       TicketSource @default(ORDER)
-  usedAt       DateTime?
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  id               String       @id @default(cuid())
+  orderId          String?
+  orderItemId      String?
+  ticketTypeId     String?
+  eventId          String
+  qrPayload        String       @unique
+  status           TicketStatus @default(VALID)
+  source           TicketSource @default(ORDER)
+  ownerUserId      String?
+  usedAt           DateTime?
+  revokedAt        DateTime?
+  revokedByUserId  String?
+  revokedReason    String?
+  revokedNote      String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
 
-  order       Order?      @relation(fields: [orderId], references: [id])
-  orderItem   OrderItem?  @relation(fields: [orderItemId], references: [id])
-  ticketType  TicketType? @relation(fields: [ticketTypeId], references: [id])
-  event       Event       @relation(fields: [eventId], references: [id])
+  order          Order?           @relation(fields: [orderId], references: [id])
+  orderItem      OrderItem?       @relation(fields: [orderItemId], references: [id])
+  ticketType     TicketType?      @relation(fields: [ticketTypeId], references: [id])
+  event          Event            @relation(fields: [eventId], references: [id])
+  ownerUser      User?            @relation("TicketOwner", fields: [ownerUserId], references: [id])
   ticketScans    TicketScan[]
   ticketScanLogs TicketScanLog[]
+  transfers      TicketTransfer[]
 
   @@index([eventId, status])
   @@index([orderId])
+  @@index([ownerUserId])
+}
+
+model TicketTransfer {
+  id             String   @id @default(cuid())
+  ticketId       String
+  fromUserId     String
+  toUserId       String
+  idempotencyKey String?
+  createdAt      DateTime @default(now())
+
+  ticket    Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  fromUser  User   @relation("TransferFromUser", fields: [fromUserId], references: [id])
+  toUser    User   @relation("TransferToUser", fields: [toUserId], references: [id])
+
+  @@index([ticketId])
+  @@index([ticketId, idempotencyKey])
 }
 
 model TicketScan {
@@ -300,6 +389,8 @@ model TicketScan {
   ticketId  String?
   qrPayload String
   deviceId  String?
+  ipAddress String?
+  userAgent String?
   isValid   Boolean
   reason    String
   createdAt DateTime @default(now())
@@ -311,6 +402,30 @@ model TicketScan {
   @@index([tenantId])
   @@index([eventId])
   @@index([ticketId])
+  @@index([tenantId, createdAt])
+  @@index([eventId, createdAt])
+}
+
+model FraudSignal {
+  id          String   @id @default(cuid())
+  tenantId    String
+  eventId     String
+  signalType  String
+  deviceId    String?
+  ipAddress   String?
+  scanCount   Int
+  windowStart DateTime
+  windowEnd   DateTime
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  event  Event  @relation(fields: [eventId], references: [id])
+
+  @@index([tenantId])
+  @@index([eventId])
+  @@index([eventId, createdAt])
+  @@index([eventId, signalType])
 }
 
 model TicketScanLog {
@@ -331,6 +446,34 @@ model TicketScanLog {
   @@index([tenantId])
   @@index([eventId])
   @@index([ticketId])
+}
+
+enum PayoutStatus {
+  REQUESTED
+  PENDING
+  PROCESSING
+  SENT
+  REJECTED
+}
+
+model Payout {
+  id               String      @id @default(cuid())
+  tenantId         String
+  eventId          String
+  producerId       String
+  status           PayoutStatus @default(REQUESTED)
+  amountCents      Int
+  bankInfo         Json?
+  requestedByUserId String
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  event  Event  @relation(fields: [eventId], references: [id])
+
+  @@index([tenantId])
+  @@index([eventId])
+  @@index([producerId])
 }
 
 model Payment {
@@ -369,6 +512,35 @@ model EventMedia {
   @@index([eventId])
 }
 
+enum ReferralCommissionStatus {
+  PENDING
+  REQUESTED
+  PAID
+  REJECTED
+}
+
+model ReferralCommission {
+  id                String                   @id @default(cuid())
+  tenantId          String
+  referrerId        String
+  referralLinkId    String
+  eventId           String
+  amountCents       Int
+  status            ReferralCommissionStatus @default(PENDING)
+  requestedAt       DateTime?
+  paidAt            DateTime?
+  confirmedByUserId String?
+
+  tenant       Tenant       @relation(fields: [tenantId], references: [id])
+  referrer     User         @relation(fields: [referrerId], references: [id])
+  referralLink ReferralLink @relation(fields: [referralLinkId], references: [id])
+  event        Event        @relation(fields: [eventId], references: [id])
+
+  @@index([tenantId])
+  @@index([referrerId])
+  @@index([eventId])
+}
+
 model ReferralLink {
   id        String   @id @default(cuid())
   tenantId  String
@@ -378,14 +550,16 @@ model ReferralLink {
   label     String?
   createdAt DateTime @default(now())
 
-  tenant    Tenant    @relation(fields: [tenantId], references: [id])
-  event     Event     @relation(fields: [eventId], references: [id])
-  referrer  User?     @relation(fields: [referrerId], references: [id])
-  orders    Order[]
+  tenant       Tenant              @relation(fields: [tenantId], references: [id])
+  event        Event               @relation(fields: [eventId], references: [id])
+  referrer     User?               @relation(fields: [referrerId], references: [id])
+  orders       Order[]
   attributions ReferralAttribution[]
+  commissions  ReferralCommission[]
 
   @@index([tenantId])
   @@index([eventId])
+  @@index([referrerId])
 }
 
 model ReferralAttribution {
@@ -408,6 +582,8 @@ model ReferralAttribution {
 enum AuditAction {
   EVENT_APPROVED
   TICKET_REVOKED
+  ORDER_EXPIRED
+  TICKET_TRANSFERRED
   PAYOUT_STATUS_CHANGED
 }
 

@@ -12,15 +12,24 @@
     "prisma-generate": "prisma generate",
     "prisma-migrate": "prisma migrate dev",
     "prisma-studio": "prisma studio",
-    "prisma-seed": "prisma db seed"
+    "prisma-seed": "prisma db seed",
+    "test:door-scan": "tsx scripts/test-door-scan.ts",
+    "demo:seed": "tsx scripts/demo-seed.ts",
+    "demo:seed-curated": "tsx scripts/demo-seed-curated.ts",
+    "smoke": "tsx scripts/smoke-api.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",
     "@nestjs/core": "^10.0.0",
+    "@nestjs/jwt": "^11.0.2",
     "@nestjs/platform-express": "^10.0.0",
+    "@nestjs/schedule": "^6.1.1",
     "@prisma/client": "^5.22.0",
     "@yo-te-invito/shared": "workspace:*",
+    "bullmq": "^5.70.4",
+    "ioredis": "^5.10.0",
     "reflect-metadata": "^0.2.2",
+    "resend": "^6.9.3",
     "rxjs": "^7.8.0",
     "zod": "^3.23.0"
   },
@@ -29,6 +38,7 @@
     "@nestjs/schematics": "^10.0.0",
     "@types/node": "^22.0.0",
     "prisma": "^5.22.0",
+    "tsx": "^4.8.0",
     "typescript": "^5.6.0"
   }
 }

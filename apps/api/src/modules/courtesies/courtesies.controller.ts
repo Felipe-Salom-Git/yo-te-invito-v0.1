@@ -15,7 +15,7 @@ import {
   type CourtesyGrantSummary,
 } from '@yo-te-invito/shared';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
-import { DevAuthGuard } from '../../common/guards/dev-auth.guard';
+import { JwtOrDevAuthGuard } from '../../auth/jwt-or-dev-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { RequireRole } from '../../common/decorators/require-role.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -27,7 +27,7 @@ export class CourtesiesController {
   constructor(private readonly service: CourtesiesService) {}
 
   @Post(':eventId/courtesies')
-  @UseGuards(DevAuthGuard, RolesGuard)
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
   @RequireRole(Role.ADMIN, Role.PRODUCER_OWNER, Role.PRODUCER_STAFF)
   async create(
     @CurrentUser() user: { id: string; tenantId: string },
@@ -38,7 +38,7 @@ export class CourtesiesController {
   }
 
   @Get(':eventId/ticket-types')
-  @UseGuards(DevAuthGuard, RolesGuard)
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
   @RequireRole(Role.ADMIN, Role.PRODUCER_OWNER, Role.PRODUCER_STAFF)
   async getTicketTypes(
     @CurrentUser() user: { tenantId: string },
@@ -48,7 +48,7 @@ export class CourtesiesController {
   }
 
   @Get(':eventId/courtesies')
-  @UseGuards(DevAuthGuard, RolesGuard)
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
   @RequireRole(Role.ADMIN, Role.PRODUCER_OWNER, Role.PRODUCER_STAFF)
   async list(
     @CurrentUser() user: { tenantId: string },

@@ -4,6 +4,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { EventCapacityGuardService } from '../common/event-capacity-guard.service';
 import type { CreateOrderDto, OrderResponse } from '@yo-te-invito/shared';
 import { ErrorCode } from '@yo-te-invito/shared';
 
@@ -17,7 +18,10 @@ function getExpiresAt(): Date {
 
 @Injectable()
 export class PublicOrdersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly capacityGuard: EventCapacityGuardService,
+  ) {}
 
   async create(tenantId: string, dto: CreateOrderDto): Promise<OrderResponse> {
     return this.prisma.$transaction(async (tx) => {
@@ -82,6 +86,14 @@ export class PublicOrdersService {
           subtotal,
         });
       }
+
+      const totalSeats = orderItemsData.reduce((s, i) => s + i.quantity, 0);
+      await this.capacityGuard.assertEventCapacityAvailable(
+        tx,
+        tenantId,
+        dto.eventId,
+        totalSeats,
+      );
 
       for (const item of orderItemsData) {
         const tt = typeMap.get(item.ticketTypeId)!;

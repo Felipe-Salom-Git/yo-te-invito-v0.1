@@ -91,3 +91,20 @@ export const scanRequestSchema = z.object({
 });
 
 export type ScanRequest = z.infer<typeof scanRequestSchema>;
+
+/** Query for GET /scanner/events/:eventId/logs */
+export const scannerLogsQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(200).default(50),
+});
+export type ScannerLogsQuery = z.infer<typeof scannerLogsQuerySchema>;
+
+/** Scan log item */
+export const ticketScanLogItemSchema = z.object({
+  id: z.string(),
+  ticketId: z.string().nullable(),
+  eventId: z.string(),
+  qrPayload: z.string(),
+  result: z.enum(['OK', 'ALREADY_USED', 'INVALID', 'REVOKED']),
+  scannedAt: z.string().datetime(),
+});
+export type TicketScanLogItem = z.infer<typeof ticketScanLogItemSchema>;

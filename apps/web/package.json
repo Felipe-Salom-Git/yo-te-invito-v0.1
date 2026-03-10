@@ -10,10 +10,12 @@
   "dependencies": {
     "@tanstack/react-query": "^5.59.0",
     "@yo-te-invito/shared": "workspace:*",
+    "framer-motion": "^12.35.0",
     "next": "^15.0.0",
     "next-auth": "^4.24.0",
     "react": "^18.3.0",
-    "react-dom": "^18.3.0"
+    "react-dom": "^18.3.0",
+    "zod": "^3.23.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

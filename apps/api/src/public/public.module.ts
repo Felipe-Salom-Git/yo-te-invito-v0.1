@@ -5,6 +5,8 @@ import { PublicTicketTypesController } from './public-ticket-types.controller';
 import { PublicTicketTypesService } from './public-ticket-types.service';
 import { PublicOrdersController } from './public-orders.controller';
 import { PublicOrdersService } from './public-orders.service';
+import { PublicProducersController } from './public-producers.controller';
+import { PublicProducersService } from './public-producers.service';
 import { PublicReferralController } from './public-referral.controller';
 import { PublicReviewsController } from './public-reviews.controller';
 import { ReferralsModule } from '../modules/referrals/referrals.module';
@@ -16,9 +18,15 @@ import { ReviewsModule } from '../modules/reviews/reviews.module';
     PublicEventsController,
     PublicTicketTypesController,
     PublicOrdersController,
+    PublicProducersController,
     PublicReferralController,
     PublicReviewsController,
   ],
-  providers: [PublicEventsService, PublicTicketTypesService, PublicOrdersService],
+  providers: [
+    PublicEventsService,
+    PublicTicketTypesService,
+    PublicOrdersService,
+    PublicProducersService,
+  ],
 })
 export class PublicModule {}

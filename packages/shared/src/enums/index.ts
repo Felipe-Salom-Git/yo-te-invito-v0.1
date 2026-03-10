@@ -34,6 +34,17 @@ export const TicketStatus = {
 
 export type TicketStatus = (typeof TicketStatus)[keyof typeof TicketStatus];
 
+export const TicketRevocationReason = {
+  REFUND: 'REFUND',
+  FRAUD: 'FRAUD',
+  CUSTOMER_REQUEST: 'CUSTOMER_REQUEST',
+  DUPLICATE: 'DUPLICATE',
+  OTHER: 'OTHER',
+} as const;
+
+export type TicketRevocationReason =
+  (typeof TicketRevocationReason)[keyof typeof TicketRevocationReason];
+
 export const OrderStatus = {
   DRAFT: 'draft',
   PAID: 'paid',

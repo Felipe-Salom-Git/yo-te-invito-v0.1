@@ -5,6 +5,9 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { EmailQueueService } from '../../email/email-queue.service';
+import { renderOrderConfirmationEmail } from '../../email/email-templates';
+import { EventCapacityGuardService } from '../../common/event-capacity-guard.service';
 import { randomBytes } from 'crypto';
 import type { OrderResponse } from '@yo-te-invito/shared';
 import { ErrorCode } from '@yo-te-invito/shared';
@@ -22,7 +25,11 @@ export interface CreatePaymentResult {
 
 @Injectable()
 export class PublicPaymentsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly capacityGuard: EventCapacityGuardService,
+    private readonly emailQueue: EmailQueueService,
+  ) {}
 
   async createPayment(
     orderId: string,
@@ -57,23 +64,29 @@ export class PublicPaymentsService {
     const now = new Date();
     if (order.expiresAt && order.expiresAt < now) {
       await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-        const fullOrder = await tx.order.findUniqueOrThrow({
-          where: { id: orderId },
-          include: { orderItems: true },
+        const updateResult = await tx.order.updateMany({
+          where: {
+            id: orderId,
+            status: 'PENDING_PAYMENT',
+            expiresAt: { lt: now },
+          },
+          data: { status: 'EXPIRED', expiredAt: now },
         });
-        await tx.order.update({
-          where: { id: orderId },
-          data: { status: 'EXPIRED' },
-        });
-        for (const oi of fullOrder.orderItems) {
-          await tx.ticketType.updateMany({
-            where: { id: oi.ticketTypeId },
-            data: { capacityAvailable: { increment: oi.quantity } },
+        if (updateResult.count > 0) {
+          const fullOrder = await tx.order.findUniqueOrThrow({
+            where: { id: orderId },
+            include: { orderItems: true },
           });
+          for (const oi of fullOrder.orderItems) {
+            await tx.ticketType.updateMany({
+              where: { id: oi.ticketTypeId },
+              data: { capacityAvailable: { increment: oi.quantity } },
+            });
+          }
         }
       });
       throw new ConflictException({
-        code: ErrorCode.CONFLICT,
+        code: ErrorCode.ORDER_EXPIRED,
         message: 'Order expired',
       });
     }
@@ -133,21 +146,74 @@ export class PublicPaymentsService {
 
     if (payment.order.status !== 'PENDING_PAYMENT') {
       throw new ConflictException({
-        code: ErrorCode.CONFLICT,
-        message: `Order cannot be paid (status: ${payment.order.status})`,
+        code:
+          payment.order.status === 'EXPIRED'
+            ? ErrorCode.ORDER_EXPIRED
+            : ErrorCode.CONFLICT,
+        message:
+          payment.order.status === 'EXPIRED'
+            ? 'Order expired'
+            : `Order cannot be paid (status: ${payment.order.status})`,
       });
     }
 
     const now = new Date();
+    if (
+      payment.order.expiresAt &&
+      payment.order.expiresAt < now
+    ) {
+      throw new ConflictException({
+        code: ErrorCode.ORDER_EXPIRED,
+        message: 'Order expired',
+      });
+    }
+
+    const totalTickets = payment.order.orderItems.reduce(
+      (s, oi) => s + oi.quantity,
+      0,
+    );
+
     return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const orderUpdate = await tx.order.updateMany({
+        where: {
+          id: payment.orderId,
+          status: 'PENDING_PAYMENT',
+          OR: [
+            { expiresAt: null },
+            { expiresAt: { gte: now } },
+          ],
+        },
+        data: { status: 'PAID', paidAt: now },
+      });
+      if (orderUpdate.count === 0) {
+        throw new ConflictException({
+          code: ErrorCode.ORDER_EXPIRED,
+          message: 'Order expired',
+        });
+      }
+
+      await this.capacityGuard.assertEventCapacityAvailable(
+        tx,
+        tenantId,
+        payment.order.eventId,
+        totalTickets,
+      );
+
       await tx.payment.update({
         where: { id: paymentId },
         data: { status: 'APPROVED' },
       });
-      await tx.order.update({
-        where: { id: payment.orderId },
-        data: { status: 'PAID', paidAt: now },
+
+      // Demo: assign tickets to user by buyerEmail so GET /me/tickets returns them
+      const ownerUser = await tx.user.findFirst({
+        where: {
+          tenantId: payment.order.tenantId,
+          email: payment.order.buyerEmail,
+          deletedAt: null,
+        },
+        select: { id: true },
       });
+      const ownerUserId = ownerUser?.id ?? null;
 
       const seenPayloads = new Set<string>();
       for (const oi of payment.order.orderItems) {
@@ -166,6 +232,7 @@ export class PublicPaymentsService {
               eventId: payment.order.eventId,
               qrPayload,
               status: 'VALID',
+              ownerUserId,
             },
           });
         }
@@ -174,6 +241,7 @@ export class PublicPaymentsService {
       const updatedOrder = await tx.order.findUniqueOrThrow({
         where: { id: payment.orderId },
         include: {
+          event: { select: { title: true } },
           orderItems: {
             include: {
               ticketType: true,
@@ -184,7 +252,21 @@ export class PublicPaymentsService {
         },
       });
 
-      return this.mapOrderToResponse(updatedOrder);
+      const result = this.mapOrderToResponse(updatedOrder);
+      const eventTitle = (updatedOrder as { event?: { title: string } }).event?.title ?? 'Evento';
+      const { html, text } = renderOrderConfirmationEmail(
+        updatedOrder.buyerFirstName,
+        updatedOrder.id,
+        eventTitle,
+      );
+      this.emailQueue.enqueue({
+        to: updatedOrder.buyerEmail,
+        subject: 'Tu compra fue confirmada',
+        html,
+        text,
+      });
+
+      return result;
     });
   }
 

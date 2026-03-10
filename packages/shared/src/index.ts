@@ -14,3 +14,4 @@ export * from './types';
 export * from './contracts';
 export * from './contracts/error';
 export * from './schemas/audit';
+export * from './schemas/platform-config.schema';

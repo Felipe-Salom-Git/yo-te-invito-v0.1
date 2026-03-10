@@ -1,6 +1,55 @@
 import { z } from 'zod';
 import { Role, UserStatus } from '../enums';
 
+/** Response for GET /me */
+export const meResponseSchema = z.object({
+  id: z.string(),
+  tenantId: z.string(),
+  email: z.string(),
+  role: z.nativeEnum(Role),
+  status: z.string(),
+  firstName: z.string(),
+  lastName: z.string(),
+});
+export type MeResponse = z.infer<typeof meResponseSchema>;
+
+/** Query for GET /me/tickets (optional pagination later) */
+export const meTicketsQuerySchema = z.object({});
+export type MeTicketsQuery = z.infer<typeof meTicketsQuerySchema>;
+
+/** Single ticket item for GET /me/tickets */
+export const meTicketItemSchema = z.object({
+  ticketId: z.string(),
+  status: z.string(),
+  qrPayload: z.string(),
+  usedAt: z.string().datetime().nullable(),
+  revokedAt: z.string().datetime().nullable(),
+  event: z.object({
+    id: z.string(),
+    title: z.string(),
+    startAt: z.string().datetime(),
+    venueName: z.string().nullable(),
+  }),
+  ticketType: z.object({
+    id: z.string(),
+    name: z.string(),
+  }),
+});
+export type MeTicketItem = z.infer<typeof meTicketItemSchema>;
+
+/** Response for GET /me/tickets */
+export const meTicketsResponseSchema = z.object({
+  tickets: z.array(meTicketItemSchema),
+});
+export type MeTicketsResponse = z.infer<typeof meTicketsResponseSchema>;
+
+/** Query for GET /me/orders (optional pagination) */
+export const meOrdersQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+});
+export type MeOrdersQuery = z.infer<typeof meOrdersQuerySchema>;
+
 /**
  * Create user request schema
  */
@@ -14,3 +63,115 @@ export const createUserSchema = z.object({
 });
 
 export type CreateUserInput = z.infer<typeof createUserSchema>;
+
+/** Request body for POST /auth/login */
+export const authLoginRequestSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(1),
+  tenantId: z.string().optional(),
+});
+export type AuthLoginRequest = z.infer<typeof authLoginRequestSchema>;
+
+/** User payload in login response (same shape as GET /me) */
+export const authLoginUserSchema = meResponseSchema;
+export type AuthLoginUser = z.infer<typeof authLoginUserSchema>;
+
+/** Response for POST /auth/login */
+export const authLoginResponseSchema = z.object({
+  token: z.string(),
+  user: authLoginUserSchema,
+});
+export type AuthLoginResponse = z.infer<typeof authLoginResponseSchema>;
+
+/** Request body for POST /auth/register */
+export const authRegisterRequestSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
+  firstName: z.string().min(1, 'Nombre requerido'),
+  lastName: z.string().min(1, 'Apellido requerido'),
+  tenantId: z.string().optional(),
+});
+export type AuthRegisterRequest = z.infer<typeof authRegisterRequestSchema>;
+
+/** Response for POST /auth/register (same shape as login) */
+export const authRegisterResponseSchema = authLoginResponseSchema;
+export type AuthRegisterResponse = z.infer<typeof authRegisterResponseSchema>;
+
+/** Order summary for GET /me/orders (minimal for list) */
+export const meOrderItemSchema = z.object({
+  id: z.string(),
+  eventId: z.string(),
+  status: z.string(),
+  buyerEmail: z.string(),
+  totalAmount: z.string(),
+  currency: z.string(),
+  createdAt: z.string().datetime(),
+});
+export type MeOrderItem = z.infer<typeof meOrderItemSchema>;
+
+/** Response for GET /me/orders */
+export const meOrdersResponseSchema = z.object({
+  orders: z.array(meOrderItemSchema),
+});
+export type MeOrdersResponse = z.infer<typeof meOrdersResponseSchema>;
+
+/** User preferences (GET /me/preferences, PATCH /me/preferences) */
+export const userPreferencesSchema = z.object({
+  userId: z.string(),
+  preferredCity: z.string().nullable(),
+  notifyNewEvents: z.boolean(),
+  notifyReminders: z.boolean(),
+});
+export type UserPreferences = z.infer<typeof userPreferencesSchema>;
+
+export const userPreferencesPatchSchema = z.object({
+  preferredCity: z.string().nullable().optional(),
+  notifyNewEvents: z.boolean().optional(),
+  notifyReminders: z.boolean().optional(),
+});
+export type UserPreferencesPatch = z.infer<typeof userPreferencesPatchSchema>;
+
+/** Admin: list users query */
+export const adminUsersListQuerySchema = z.object({
+  tenantId: z.string().optional(),
+  role: z.string().optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+});
+export type AdminUsersListQuery = z.infer<typeof adminUsersListQuerySchema>;
+
+/** Admin: create referrer body */
+export const adminCreateReferrerBodySchema = z.object({
+  email: z.string().email(),
+  firstName: z.string().min(1),
+  lastName: z.string().min(1),
+  password: z.string().min(6).optional(),
+});
+export type AdminCreateReferrerBody = z.infer<typeof adminCreateReferrerBodySchema>;
+
+/** Admin: update role body */
+export const adminUpdateRoleBodySchema = z.object({
+  role: z.string().min(1),
+});
+export type AdminUpdateRoleBody = z.infer<typeof adminUpdateRoleBodySchema>;
+
+/** Request body for POST /auth/google (create/find user from OAuth) */
+export const authGoogleRequestSchema = z.object({
+  email: z.string().email(),
+  name: z.string().optional(),
+  image: z.string().optional(),
+});
+export type AuthGoogleRequest = z.infer<typeof authGoogleRequestSchema>;
+
+/** Request body for POST /auth/apply-role */
+export const authApplyRoleRequestSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
+  firstName: z.string().min(1, 'Nombre requerido'),
+  lastName: z.string().min(1, 'Apellido requerido'),
+  phone: z.string().optional(),
+  businessName: z.string().optional(),
+  role: z.enum(['PRODUCER_OWNER', 'GASTRO_OWNER']),
+  tenantId: z.string().optional(),
+});
+export type AuthApplyRoleRequest = z.infer<typeof authApplyRoleRequestSchema>;

@@ -2,7 +2,6 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
-  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import type {
@@ -12,6 +11,7 @@ import type {
   ScanBody,
   ScanResponse,
   EventTicketsResponse,
+  TicketScanLogItem,
 } from '@yo-te-invito/shared';
 import { ErrorCode } from '@yo-te-invito/shared';
 
@@ -160,9 +160,14 @@ export class ScannerService {
   async validate(
     query: ValidateTicketQuery,
     body: ValidateTicketBody,
+    ctx?: { ipAddress?: string; userAgent?: string },
   ): Promise<ValidateTicketResponse> {
     const { tenantId } = query;
     const { eventId, qrPayload, deviceId } = body;
+    const scanMeta = {
+      ipAddress: ctx?.ipAddress ?? null,
+      userAgent: ctx?.userAgent ?? null,
+    };
 
     // 1) Validate Event exists for tenant
     const event = await this.prisma.event.findFirst({
@@ -180,6 +185,7 @@ export class ScannerService {
           eventId,
           qrPayload,
           deviceId: deviceId ?? null,
+          ...scanMeta,
           ticketId: null,
           isValid: false,
           reason: 'EVENT_NOT_FOUND',
@@ -204,6 +210,7 @@ export class ScannerService {
           eventId,
           qrPayload,
           deviceId: deviceId ?? null,
+          ...scanMeta,
           ticketId: null,
           isValid: false,
           reason: 'TICKET_NOT_FOUND',
@@ -215,7 +222,7 @@ export class ScannerService {
       });
     }
 
-    // 3) Status handling: REVOKED
+    // 3) Status handling: REVOKED — return 200 with isValid: false (spec)
     if (ticket.status === 'REVOKED') {
       await this.prisma.ticketScan.create({
         data: {
@@ -223,15 +230,18 @@ export class ScannerService {
           eventId,
           qrPayload,
           deviceId: deviceId ?? null,
+          ...scanMeta,
           ticketId: ticket.id,
           isValid: false,
           reason: 'REVOKED',
         },
       });
-      throw new BadRequestException({
-        code: ErrorCode.VALIDATION_FAILED,
-        message: 'Ticket is revoked',
-      });
+      return {
+        isValid: false,
+        ticketId: ticket.id,
+        ticketTypeName: ticket.ticketType?.name ?? undefined,
+        message: 'revoked',
+      };
     }
 
     // 3) Status handling: USED (already used)
@@ -242,6 +252,7 @@ export class ScannerService {
           eventId,
           qrPayload,
           deviceId: deviceId ?? null,
+          ...scanMeta,
           ticketId: ticket.id,
           isValid: false,
           reason: 'ALREADY_USED',
@@ -266,6 +277,7 @@ export class ScannerService {
           eventId,
           qrPayload,
           deviceId: deviceId ?? null,
+          ...scanMeta,
           ticketId: ticket.id,
           isValid: false,
           reason: 'ALREADY_USED',
@@ -284,6 +296,7 @@ export class ScannerService {
         eventId,
         qrPayload,
         deviceId: deviceId ?? null,
+        ...scanMeta,
         ticketId: ticket.id,
         isValid: true,
         reason: 'SUCCESS',
@@ -296,5 +309,25 @@ export class ScannerService {
       ticketTypeName: ticket.ticketType?.name ?? undefined,
       message: 'VALID',
     };
+  }
+
+  async listScanLogs(
+    tenantId: string,
+    eventId: string,
+    limit: number,
+  ): Promise<TicketScanLogItem[]> {
+    const logs = await this.prisma.ticketScanLog.findMany({
+      where: { tenantId, eventId },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    });
+    return logs.map((l) => ({
+      id: l.id,
+      ticketId: l.ticketId,
+      eventId: l.eventId,
+      qrPayload: l.qrPayload,
+      result: l.result,
+      scannedAt: l.createdAt.toISOString(),
+    }));
   }
 }

@@ -1,0 +1,62 @@
+'use client';
+
+import { useQuery } from '@tanstack/react-query';
+import { useRepositories } from '@/repositories/context';
+import { useTenant } from '@/hooks/useTenant';
+import type { EventSummary } from '@/repositories/interfaces';
+import { homeKeys } from './keys';
+
+const TENANT_ID = 'tenant-demo';
+
+export function useHomeCarousels() {
+  const repos = useRepositories();
+  const { tenantId } = useTenant();
+  const t = tenantId || TENANT_ID;
+
+  const trending = useQuery({
+    queryKey: homeKeys.trending(t),
+    queryFn: () => repos.events.trending(t, 8),
+    enabled: !!t,
+  });
+
+  const nearYou = useQuery({
+    queryKey: homeKeys.nearYou(t, 'Buenos Aires'),
+    queryFn: () => repos.events.list({ tenantId: t, city: 'Buenos Aires', limit: 8 }),
+    enabled: !!t,
+  });
+
+  const now = new Date().toISOString().slice(0, 10);
+  const newEvents = useQuery({
+    queryKey: homeKeys.new(t, now),
+    queryFn: () => repos.events.list({ tenantId: t, dateFrom: now, limit: 8 }),
+    enabled: !!t,
+  });
+
+  const gastro = useQuery({
+    queryKey: homeKeys.category(t, 'gastro'),
+    queryFn: () => repos.events.list({ tenantId: t, category: 'gastro', limit: 8 }),
+    enabled: !!t,
+  });
+
+  const excursion = useQuery({
+    queryKey: homeKeys.category(t, 'excursion'),
+    queryFn: () => repos.events.list({ tenantId: t, category: 'excursion', limit: 8 }),
+    enabled: !!t,
+  });
+
+  const rental = useQuery({
+    queryKey: homeKeys.category(t, 'rental'),
+    queryFn: () => repos.events.list({ tenantId: t, category: 'rental', limit: 8 }),
+    enabled: !!t,
+  });
+
+  return {
+    trending: trending.data ?? [],
+    nearYou: nearYou.data?.data ?? [],
+    newEvents: newEvents.data?.data ?? [],
+    gastro: gastro.data?.data ?? [],
+    excursion: excursion.data?.data ?? [],
+    rental: rental.data?.data ?? [],
+    isLoading: trending.isLoading || nearYou.isLoading,
+  };
+}
