@@ -54,6 +54,8 @@ export function ContentCard({ item }: ContentCardProps) {
     producerName: item.producerName,
     venueName: item.venueName,
     city: item.city,
+    detailHref: getDetailHref(item),
+    category: item.category,
   };
 
   return (

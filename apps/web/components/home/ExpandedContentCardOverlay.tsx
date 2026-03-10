@@ -14,6 +14,8 @@ export interface ContentCardMetadata {
   producerName?: string | null;
   venueName?: string | null;
   city?: string | null;
+  detailHref: string;
+  category?: string;
 }
 
 export interface ExpandedContentCardOverlayProps {
@@ -21,16 +23,30 @@ export interface ExpandedContentCardOverlayProps {
   isVisible: boolean;
 }
 
+function getQuickCtaLabel(category?: string): string {
+  switch (category) {
+    case 'gastro':
+      return 'Ver detalle';
+    case 'excursion':
+      return 'Explorar';
+    case 'rental':
+      return 'Reservar';
+    default:
+      return 'Comprar';
+  }
+}
+
 export function ExpandedContentCardOverlay({
   metadata,
   isVisible,
 }: ExpandedContentCardOverlayProps) {
-  const { title, description, ratingAvg, ratingCount, fromPrice, producerName, venueName, city } =
+  const { title, description, ratingAvg, ratingCount, fromPrice, producerName, venueName, city, category } =
     metadata;
+  const ctaLabel = getQuickCtaLabel(category);
 
   return (
     <motion.div
-      className="absolute inset-0 flex flex-col justify-end rounded-lg bg-gradient-to-t from-black/95 via-black/70 to-transparent p-4"
+      className="absolute inset-0 flex flex-col justify-end rounded-lg bg-gradient-to-t from-black/95 via-black/75 to-transparent p-4"
       initial={false}
       animate={{
         opacity: isVisible ? 1 : 0,
@@ -38,7 +54,7 @@ export function ExpandedContentCardOverlay({
       transition={{ duration: 0.22, ease: [0.25, 0.46, 0.45, 0.94] }}
       aria-hidden={!isVisible}
     >
-      {/* Metadata badges — rating, price */}
+      {/* Metadata row — rating, price */}
       <div className="mb-2 flex flex-wrap items-center gap-2">
         <RatingBadge ratingAvg={ratingAvg} ratingCount={ratingCount} />
         <PriceBadge fromPrice={fromPrice} />
@@ -58,7 +74,7 @@ export function ExpandedContentCardOverlay({
         />
       </div>
 
-      {/* Short description — 1–2 lines */}
+      {/* Short description — max 2 lines */}
       {description && (
         <motion.p
           className="mt-2 line-clamp-2 text-xs text-white/80"
@@ -69,6 +85,11 @@ export function ExpandedContentCardOverlay({
           {description}
         </motion.p>
       )}
+
+      {/* Quick CTA — visual emphasis, card is already a link */}
+      <span className="mt-3 inline-block w-fit rounded-md bg-accent/90 px-3 py-1.5 text-xs font-medium text-bg">
+        {ctaLabel}
+      </span>
     </motion.div>
   );
 }
