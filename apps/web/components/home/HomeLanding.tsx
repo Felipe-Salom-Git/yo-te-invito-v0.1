@@ -29,44 +29,45 @@ export function HomeLanding() {
 
   return (
     <div className="min-h-screen bg-black">
-      {/* Hero — banner with fade to content */}
-      <section className="relative h-[70vh] min-h-[480px] overflow-hidden bg-black">
+      {/* Hero — large editorial background, dark overlay, clear CTAs */}
+      <section className="relative h-[72vh] min-h-[520px] overflow-hidden bg-black md:min-h-[560px]">
         {hero && (
           <div className="absolute inset-0">
             {hero.coverImageUrl ? (
               <img
                 src={hero.coverImageUrl}
-                alt={hero.title}
-                className="h-full w-full object-cover"
+                alt=""
+                className="h-full w-full object-cover object-center"
               />
             ) : (
-              <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-emerald-900/50 via-black to-black">
-                <span className="text-6xl opacity-70" aria-hidden>🎟️</span>
+              <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-emerald-900/40 via-black to-black">
+                <span className="text-6xl opacity-60" aria-hidden>🎟️</span>
               </div>
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-transparent to-transparent" />
+            {/* Dark overlay for readability */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-black/30" />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/40 to-transparent" />
           </div>
         )}
 
-        <div className="relative flex h-full items-end pb-24 px-6 md:px-10 lg:px-16">
-          <div className="max-w-3xl">
-            <h1 className="text-3xl font-bold text-white md:text-4xl lg:text-5xl">
+        <div className="relative flex h-full items-end px-4 pb-20 sm:px-6 md:px-10 md:pb-24 lg:px-16">
+          <div className="max-w-2xl">
+            <h1 className="text-3xl font-bold leading-tight text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] sm:text-4xl md:text-5xl lg:text-6xl">
               Descubrí eventos cerca tuyo
             </h1>
-            <p className="mt-4 max-w-xl text-lg text-white/80">
+            <p className="mt-4 max-w-lg text-base text-white/90 sm:text-lg md:text-xl">
               Gastronomía, excursiones, alquileres y más en un solo lugar.
             </p>
-            <div className="mt-8 flex flex-wrap gap-4">
+            <div className="mt-8 flex flex-wrap gap-3 sm:gap-4">
               <Link
                 href="/explore"
-                className="rounded-lg bg-accent px-6 py-3 font-medium text-bg shadow-lg shadow-accent/20 transition-all hover:bg-accent-hover hover:shadow-accent/30"
+                className="rounded-lg bg-accent px-5 py-2.5 font-semibold text-bg shadow-lg shadow-accent/25 transition-all hover:bg-accent-hover hover:shadow-accent/40 sm:px-6 sm:py-3"
               >
                 Explorar
               </Link>
               <Link
                 href="/login"
-                className="rounded-lg border border-white/30 bg-white/10 px-6 py-3 font-medium text-white backdrop-blur-sm transition-colors hover:bg-white/20"
+                className="rounded-lg border border-white/40 bg-white/5 px-5 py-2.5 font-medium text-white backdrop-blur-sm transition-colors hover:bg-white/15 sm:px-6 sm:py-3"
               >
                 Iniciar sesión
               </Link>
@@ -74,7 +75,7 @@ export function HomeLanding() {
           </div>
         </div>
 
-        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-bg to-transparent" />
+        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-36 bg-gradient-to-t from-bg to-transparent" />
       </section>
 
       {/* Content rails — Netflix-inspired shelves */}

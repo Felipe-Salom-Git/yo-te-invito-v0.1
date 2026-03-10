@@ -30,24 +30,26 @@ export function ExpandedContentCardOverlay({
 
   return (
     <motion.div
-      className="absolute inset-0 flex flex-col justify-end rounded-lg bg-gradient-to-t from-black via-black/80 to-transparent p-4"
+      className="absolute inset-0 flex flex-col justify-end rounded-lg bg-gradient-to-t from-black/95 via-black/70 to-transparent p-4"
       initial={false}
       animate={{
         opacity: isVisible ? 1 : 0,
       }}
-      transition={{ duration: 0.2, ease: 'easeOut' }}
+      transition={{ duration: 0.22, ease: [0.25, 0.46, 0.45, 0.94] }}
       aria-hidden={!isVisible}
     >
-      {/* Metadata badges row */}
+      {/* Metadata badges — rating, price */}
       <div className="mb-2 flex flex-wrap items-center gap-2">
         <RatingBadge ratingAvg={ratingAvg} ratingCount={ratingCount} />
         <PriceBadge fromPrice={fromPrice} />
       </div>
 
       {/* Title */}
-      <h3 className="line-clamp-2 text-sm font-semibold text-white">{title}</h3>
+      <h3 className="line-clamp-2 text-sm font-semibold text-white drop-shadow-sm">
+        {title}
+      </h3>
 
-      {/* Producer/Venue */}
+      {/* Producer / venue / commerce */}
       <div className="mt-1">
         <ProducerMeta
           producerName={producerName}
@@ -56,13 +58,13 @@ export function ExpandedContentCardOverlay({
         />
       </div>
 
-      {/* Short description */}
+      {/* Short description — 1–2 lines */}
       {description && (
         <motion.p
-          className="mt-2 line-clamp-3 text-xs text-white/75"
+          className="mt-2 line-clamp-2 text-xs text-white/80"
           initial={false}
           animate={{ opacity: isVisible ? 1 : 0 }}
-          transition={{ delay: 0.05, duration: 0.15 }}
+          transition={{ delay: 0.04, duration: 0.18 }}
         >
           {description}
         </motion.p>
