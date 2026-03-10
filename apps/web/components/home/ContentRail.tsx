@@ -65,24 +65,29 @@ export function ContentRail({
         <h2 className="text-xl font-semibold tracking-tight text-white md:text-2xl">
           {title}
         </h2>
+        {/* Green accent bar — 48px × 3px */}
+        <div
+          className="mt-2 h-[3px] w-12 rounded-full bg-accent"
+          aria-hidden
+        />
         {subtitle && (
-          <p className="mt-0.5 text-sm text-text-muted">{subtitle}</p>
+          <p className="mt-2 text-sm text-text-muted">{subtitle}</p>
         )}
       </div>
 
-      {/* Scroll container with fade edges */}
+      {/* Scroll container with edge fades */}
       <div className="relative">
-        {/* Left fade */}
+        {/* Left edge fade — black → transparent, no pointer block */}
         <div
-          className={`pointer-events-none absolute left-0 top-0 z-20 h-full w-24 bg-gradient-to-r from-bg to-transparent transition-opacity duration-300 ${
+          className={`pointer-events-none absolute left-0 top-0 z-20 h-full w-20 bg-gradient-to-r from-bg via-bg/60 to-transparent transition-opacity duration-300 ${
             canScrollLeft ? 'opacity-100' : 'opacity-0'
           }`}
           aria-hidden
         />
-        {/* Right fade */}
+        {/* Right edge fade — cinematic catalog feel */}
         <div
-          className={`pointer-events-none absolute right-0 top-0 z-20 h-full w-24 bg-gradient-to-l from-bg to-transparent transition-opacity duration-300 ${
-            canScrollRight ? 'opacity-100' : 'opacity-0'
+          className={`pointer-events-none absolute right-0 top-0 z-20 h-full w-20 bg-gradient-to-l from-bg via-bg/60 to-transparent transition-opacity duration-300 ${
+            canScrollRight || items.length > 0 ? 'opacity-100' : 'opacity-0'
           }`}
           aria-hidden
         />
