@@ -262,6 +262,7 @@ export type CreateReferralLinkParams = z.infer<typeof createReferralLinkParamsSc
 export const createReferralLinkBodySchema = z.object({
   code: z.string().min(1, 'code is required').regex(/^[a-zA-Z0-9_-]+$/, 'code must be alphanumeric'),
   referrerId: z.string().optional(),
+  referrerProfileId: z.string().optional(),
   label: z.string().optional(),
 });
 export type CreateReferralLinkBody = z.infer<typeof createReferralLinkBodySchema>;

@@ -4,11 +4,9 @@ import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRole } from '@/hooks/useRole';
 import { useCart } from '@/context/CartContext';
-import { getDashboardForRole } from '@/lib/roleRedirect';
-import { Badge } from '@/components';
 
 export function NavbarUserMenu() {
-  const { session, role, status, isAuthenticated } = useRole();
+  const { session, status, isAuthenticated } = useRole();
   const { totalItems } = useCart();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -26,8 +24,6 @@ export function NavbarUserMenu() {
   }
 
   const email = session?.user?.email ?? 'User';
-  const displayRole = role ?? 'USER';
-  const accountHref = getDashboardForRole(role);
 
   return (
     <div className="flex items-center gap-3">
@@ -66,7 +62,6 @@ export function NavbarUserMenu() {
             aria-expanded={open}
             aria-haspopup="true"
           >
-            <Badge variant="muted">{displayRole}</Badge>
             <span className="max-w-[120px] truncate text-text-muted">{email}</span>
           </button>
           {open && (
@@ -75,11 +70,18 @@ export function NavbarUserMenu() {
                 {email}
               </div>
               <Link
-                href={accountHref}
+                href="/profiles"
                 className="block px-3 py-2 text-sm text-text hover:bg-bg-muted"
                 onClick={() => setOpen(false)}
               >
-                Cuenta
+                Cambiar perfil
+              </Link>
+              <Link
+                href="/cuenta"
+                className="block px-3 py-2 text-sm text-text hover:bg-bg-muted"
+                onClick={() => setOpen(false)}
+              >
+                Mi cuenta
               </Link>
               <Link
                 href="/me/tickets"

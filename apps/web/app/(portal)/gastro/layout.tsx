@@ -1,6 +1,6 @@
 'use client';
 
-import { ProtectedLayout } from '@/components/auth/ProtectedLayout';
+import { ProfileProtectedLayout } from '@/components/auth/ProfileProtectedLayout';
 import { PortalSidebar } from '@/components/layout/PortalSidebar';
 import { Role } from '@yo-te-invito/shared';
 
@@ -14,10 +14,10 @@ const NAV = [
 
 export default function GastroLayout({ children }: { children: React.ReactNode }) {
   return (
-    <ProtectedLayout allowedRoles={[Role.GASTRO_OWNER]}>
+    <ProfileProtectedLayout allowedRoles={[Role.ADMIN, Role.GASTRO_OWNER]} requiredProfile="gastro">
       <div className="mx-auto max-w-5xl">
         <PortalSidebar items={NAV}>{children}</PortalSidebar>
       </div>
-    </ProtectedLayout>
+    </ProfileProtectedLayout>
   );
 }

@@ -51,3 +51,31 @@ export const confirmDemoPaymentBodySchema = z.object({}).strict();
 export type ConfirmDemoPaymentBody = z.infer<
   typeof confirmDemoPaymentBodySchema
 >;
+
+export const refreshPaymentStatusParamsSchema = z.object({
+  paymentId: z.string().min(1, 'paymentId is required'),
+});
+export type RefreshPaymentStatusParams = z.infer<
+  typeof refreshPaymentStatusParamsSchema
+>;
+
+export const refreshPaymentStatusQuerySchema = z.object({
+  tenantId: z.string().min(1, 'tenantId is required'),
+});
+export type RefreshPaymentStatusQuery = z.infer<
+  typeof refreshPaymentStatusQuerySchema
+>;
+
+export const orderPaymentStatusParamsSchema = z.object({
+  orderId: z.string().min(1, 'orderId is required'),
+});
+export type OrderPaymentStatusParams = z.infer<
+  typeof orderPaymentStatusParamsSchema
+>;
+
+export const orderPaymentStatusQuerySchema = z.object({
+  tenantId: z.string().min(1, 'tenantId is required'),
+});
+export type OrderPaymentStatusQuery = z.infer<
+  typeof orderPaymentStatusQuerySchema
+>;

@@ -9,7 +9,7 @@ import {
 } from '@yo-te-invito/shared';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { JwtOrDevAuthGuard } from '../../auth/jwt-or-dev-auth.guard';
-import { RolesGuard } from '../../common/guards/roles.guard';
+import { ProducerRolesGuard } from '../../common/guards/producer-roles.guard';
 import { RequireRole } from '../../common/decorators/require-role.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Role } from '@yo-te-invito/shared';
@@ -19,7 +19,7 @@ import { ProducerTicketTypesService } from './producer-ticket-types.service';
 import { ReferralsService } from '../referrals/referrals.service';
 
 @Controller('producer/events')
-@UseGuards(JwtOrDevAuthGuard, RolesGuard)
+@UseGuards(JwtOrDevAuthGuard, ProducerRolesGuard)
 @RequireRole(Role.ADMIN, Role.PRODUCER_OWNER, Role.PRODUCER_STAFF)
 export class ProducerEventsController {
   constructor(
@@ -38,6 +38,7 @@ export class ProducerEventsController {
   ) {
     return this.crud.list(
       user.tenantId,
+      user.id,
       user.id,
       user.role,
       page ? parseInt(page, 10) || 1 : 1,

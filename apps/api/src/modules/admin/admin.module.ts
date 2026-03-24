@@ -10,12 +10,14 @@ import { PlatformMetricsService } from './platform-metrics.service';
 import { AdminUsersService } from './admin-users.service';
 import { AdminConfigService } from './admin-config.service';
 import { AdminApplicationsService } from './admin-applications.service';
+import { AdminProfilesService } from './admin-profiles.service';
 
 @Module({
   imports: [AuthModule, ReferralsModule],
   controllers: [AdminController],
   providers: [
     AdminEventsService,
+    AdminProfilesService,
     AdminAuditService,
     AdminTicketsService,
     AdminFraudService,

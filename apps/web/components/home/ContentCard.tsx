@@ -4,21 +4,8 @@ import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import type { EventSummary } from '@/repositories/interfaces';
+import { getContentDetailHref } from '@/lib/home/contentRoutes';
 import { ExpandedContentCardOverlay, type ContentCardMetadata } from './ExpandedContentCardOverlay';
-
-const TENANT_ID = 'tenant-demo';
-
-function getDetailHref(event: EventSummary): string {
-  const base =
-    event.category === 'gastro'
-      ? '/restaurants'
-      : event.category === 'excursion'
-        ? '/excursiones'
-        : event.category === 'rental'
-          ? '/rentals'
-          : '/events';
-  return `${base}/${event.id}?tenantId=${TENANT_ID}`;
-}
 
 export interface ContentCardItem extends EventSummary {
   description?: string | null;
@@ -30,9 +17,13 @@ export interface ContentCardItem extends EventSummary {
 
 export interface ContentCardProps {
   item: ContentCardItem;
+  /** When provided, card opens preview on click instead of navigating (homepage mode) */
+  onClick?: (e: React.MouseEvent) => void;
+  /** Optional tenant for detail links; uses default when omitted */
+  tenantId?: string;
 }
 
-export function ContentCard({ item }: ContentCardProps) {
+export function ContentCard({ item, onClick, tenantId }: ContentCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const expanded = isHovered || isFocused;
@@ -45,6 +36,7 @@ export function ContentCard({ item }: ContentCardProps) {
     : '';
   const locationLabel = item.city ?? item.venueName ?? '—';
 
+  const detailHref = getContentDetailHref(item, tenantId);
   const metadata: ContentCardMetadata = {
     title: item.title,
     description: item.description,
@@ -54,19 +46,37 @@ export function ContentCard({ item }: ContentCardProps) {
     producerName: item.producerName,
     venueName: item.venueName,
     city: item.city,
-    detailHref: getDetailHref(item),
+    detailHref,
     category: item.category,
   };
 
-  return (
-    <Link
-      href={getDetailHref(item)}
-      className="group/card block flex-shrink-0 outline-none"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      onFocus={handleFocus}
-      onBlur={handleBlur}
-    >
+  const commonProps = {
+    className: 'group/card block flex-shrink-0 outline-none',
+    onMouseEnter: () => setIsHovered(true),
+    onMouseLeave: () => setIsHovered(false),
+    onFocus: handleFocus,
+    onBlur: handleBlur,
+  };
+
+  const handleCardClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      onClick?.(e);
+    },
+    [onClick]
+  );
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (onClick && (e.key === 'Enter' || e.key === ' ')) {
+        e.preventDefault();
+        onClick(e as unknown as React.MouseEvent);
+      }
+    },
+    [onClick]
+  );
+
+  const cardContent = (
       <motion.article
         className="relative h-[180px] w-[280px] overflow-hidden rounded-lg border border-border/80 bg-bg-muted shadow-lg sm:h-[200px] sm:w-[320px] md:h-[220px] md:w-[360px]"
         initial={false}
@@ -137,6 +147,21 @@ export function ContentCard({ item }: ContentCardProps) {
           <ExpandedContentCardOverlay metadata={metadata} isVisible={expanded} />
         </div>
       </motion.article>
-    </Link>
   );
+
+  if (onClick) {
+    return (
+      <div
+        role="button"
+        tabIndex={0}
+        {...commonProps}
+        onClick={handleCardClick}
+        onKeyDown={handleKeyDown}
+      >
+        {cardContent}
+      </div>
+    );
+  }
+
+  return <Link href={detailHref} {...commonProps}>{cardContent}</Link>;
 }

@@ -11,3 +11,4 @@ export { Skeleton, EventCardSkeleton, TicketCardSkeleton, OrderCardSkeleton } fr
 export { EmptyState } from './EmptyState';
 export { Breadcrumbs } from './Breadcrumbs';
 export type { BreadcrumbItem } from './Breadcrumbs';
+export { SideSheet } from './SideSheet';

@@ -19,7 +19,7 @@ import {
 } from '@yo-te-invito/shared';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { JwtOrDevAuthGuard } from '../../auth/jwt-or-dev-auth.guard';
-import { RolesGuard } from '../../common/guards/roles.guard';
+import { ProducerRolesGuard } from '../../common/guards/producer-roles.guard';
 import { RequireRole } from '../../common/decorators/require-role.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Role } from '@yo-te-invito/shared';
@@ -30,7 +30,7 @@ export class ReferralsController {
   constructor(private readonly service: ReferralsService) {}
 
   @Post('events/:eventId/referral-links')
-  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @UseGuards(JwtOrDevAuthGuard, ProducerRolesGuard)
   @RequireRole(Role.ADMIN, Role.PRODUCER_OWNER, Role.PRODUCER_STAFF)
   async create(
     @CurrentUser() user: { tenantId: string },
@@ -41,7 +41,7 @@ export class ReferralsController {
   }
 
   @Get('events/:eventId/referral-links')
-  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @UseGuards(JwtOrDevAuthGuard, ProducerRolesGuard)
   @RequireRole(Role.ADMIN, Role.PRODUCER_OWNER, Role.PRODUCER_STAFF)
   async list(
     @CurrentUser() user: { tenantId: string },
@@ -51,7 +51,7 @@ export class ReferralsController {
   }
 
   @Put('events/:eventId/referrals')
-  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @UseGuards(JwtOrDevAuthGuard, ProducerRolesGuard)
   @RequireRole(Role.ADMIN, Role.PRODUCER_OWNER, Role.PRODUCER_STAFF)
   async assignReferrers(
     @CurrentUser() user: { tenantId: string },

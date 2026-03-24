@@ -15,3 +15,5 @@ export * from './contracts';
 export * from './contracts/error';
 export * from './schemas/audit';
 export * from './schemas/platform-config.schema';
+export * from './schemas/producer.schema';
+export * from './schemas/referrer.schema';

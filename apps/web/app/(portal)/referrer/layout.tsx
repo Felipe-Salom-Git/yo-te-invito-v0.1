@@ -1,6 +1,6 @@
 'use client';
 
-import { ProtectedLayout } from '@/components/auth/ProtectedLayout';
+import { ProfileProtectedLayout } from '@/components/auth/ProfileProtectedLayout';
 import { PortalSidebar } from '@/components/layout/PortalSidebar';
 import { Role } from '@yo-te-invito/shared';
 
@@ -12,10 +12,10 @@ const NAV = [
 
 export default function ReferrerLayout({ children }: { children: React.ReactNode }) {
   return (
-    <ProtectedLayout allowedRoles={[Role.REFERRER]}>
+    <ProfileProtectedLayout allowedRoles={[Role.ADMIN, Role.REFERRER]} requiredProfile="referrer">
       <div className="mx-auto max-w-5xl">
         <PortalSidebar items={NAV}>{children}</PortalSidebar>
       </div>
-    </ProtectedLayout>
+    </ProfileProtectedLayout>
   );
 }

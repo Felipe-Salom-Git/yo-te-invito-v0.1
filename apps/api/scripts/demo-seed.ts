@@ -1,8 +1,8 @@
 /**
- * Demo seed — tenant, users, event, ticket types for end-to-end testing.
+ * Demo seed — tenant + admin only.
+ * Elimina todos los usuarios excepto admin y los datos asociados.
  * Run: pnpm run demo:seed
- * Prerequisites: db migrated.
- * Password for all users: "demo"
+ * Password: "demo"
  */
 
 import * as crypto from 'crypto';
@@ -10,6 +10,9 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 const DEMO_PASSWORD = 'demo';
+const TENANT_ID = 'tenant-demo';
+const ADMIN_EMAIL = 'admin@demo.local';
+const CARGA_EMAIL = 'cuenta_cargas@demo.com';
 
 function hashPassword(password: string): string {
   const salt = crypto.randomBytes(16);
@@ -17,26 +20,75 @@ function hashPassword(password: string): string {
   return `${salt.toString('hex')}:${hash}`;
 }
 
+async function cleanupNonAdmin(tenantId: string, adminId: string, preserveCargaId: string | null) {
+  const excludeIds = [adminId, preserveCargaId].filter(Boolean) as string[];
+  const nonAdminIds = (
+    await prisma.user.findMany({
+      where: { tenantId, id: { notIn: excludeIds } },
+      select: { id: true },
+    })
+  ).map((u) => u.id);
+
+  if (nonAdminIds.length === 0) return;
+
+  await prisma.$transaction([
+    prisma.ticketTransfer.deleteMany({ where: { OR: [{ fromUserId: { in: nonAdminIds } }, { toUserId: { in: nonAdminIds } }] } }),
+    prisma.review.deleteMany({ where: { userId: { in: nonAdminIds } } }),
+    prisma.referralCommission.deleteMany({ where: { referrerId: { in: nonAdminIds } } }),
+    prisma.referralLink.updateMany({ where: { referrerId: { in: nonAdminIds } }, data: { referrerId: null } }),
+    prisma.courtesyGrant.deleteMany({ where: { createdById: { in: nonAdminIds } } }),
+    prisma.ticket.updateMany({ where: { ownerUserId: { in: nonAdminIds } }, data: { ownerUserId: null } }),
+  ]);
+
+  const events = await prisma.event.findMany({ where: { tenantId }, select: { id: true } });
+  const eventIds = events.map((e) => e.id);
+  if (eventIds.length > 0) {
+    await prisma.$transaction(async (tx) => {
+      await tx.payment.deleteMany({ where: { order: { eventId: { in: eventIds } } } });
+      await tx.ticket.deleteMany({ where: { eventId: { in: eventIds } } });
+      await tx.orderItem.deleteMany({ where: { order: { eventId: { in: eventIds } } } });
+      await tx.order.deleteMany({ where: { eventId: { in: eventIds } } });
+      await tx.ticketType.deleteMany({ where: { eventId: { in: eventIds } } });
+      await tx.payout.deleteMany({ where: { eventId: { in: eventIds } } });
+      await tx.referralCommission.deleteMany({ where: { eventId: { in: eventIds } } });
+      await tx.referralAttribution.deleteMany({ where: { eventId: { in: eventIds } } });
+      await tx.referralLink.deleteMany({ where: { eventId: { in: eventIds } } });
+      await tx.review.deleteMany({ where: { eventId: { in: eventIds } } });
+      await tx.courtesyGrant.deleteMany({ where: { eventId: { in: eventIds } } });
+      await tx.fraudSignal.deleteMany({ where: { eventId: { in: eventIds } } });
+      await tx.ticketScanLog.deleteMany({ where: { eventId: { in: eventIds } } });
+      await tx.ticketScan.deleteMany({ where: { eventId: { in: eventIds } } });
+      await tx.eventMedia.deleteMany({ where: { eventId: { in: eventIds } } });
+      await tx.event.deleteMany({ where: { id: { in: eventIds } } });
+    });
+  }
+
+  await prisma.userProducerMembership.deleteMany({ where: { userId: { in: nonAdminIds } } });
+  await prisma.userGastroMembership.deleteMany({ where: { userId: { in: nonAdminIds } } });
+  await prisma.userReferrerMembership.deleteMany({ where: { userId: { in: nonAdminIds } } });
+  await prisma.producerProfile.deleteMany({ where: { tenantId } });
+  await prisma.gastroProfile.deleteMany({ where: { tenantId } });
+  await prisma.referrerProfile.deleteMany({ where: { tenantId } });
+  await prisma.roleApplication.deleteMany({ where: { tenantId } });
+  await prisma.user.deleteMany({ where: { tenantId, id: { in: nonAdminIds } } });
+}
+
 async function main() {
   const tenant = await prisma.tenant.upsert({
-    where: { id: 'tenant-demo' },
+    where: { id: TENANT_ID },
     update: {},
-    create: {
-      id: 'tenant-demo',
-      name: 'Demo Tenant',
-      isActive: true,
-    },
+    create: { id: TENANT_ID, name: 'Demo Tenant', isActive: true },
   });
 
   const passwordHash = hashPassword(DEMO_PASSWORD);
 
   const adminUser = await prisma.user.upsert({
-    where: { tenantId_email: { tenantId: tenant.id, email: 'admin@demo.local' } },
+    where: { tenantId_email: { tenantId: tenant.id, email: ADMIN_EMAIL } },
     update: { passwordHash },
     create: {
       id: 'user-admin',
       tenantId: tenant.id,
-      email: 'admin@demo.local',
+      email: ADMIN_EMAIL,
       passwordHash,
       firstName: 'Admin',
       lastName: 'User',
@@ -45,156 +97,16 @@ async function main() {
     },
   });
 
-  const producerUser = await prisma.user.upsert({
-    where: { tenantId_email: { tenantId: tenant.id, email: 'producer@demo.local' } },
-    update: { passwordHash },
-    create: {
-      id: 'user-producer',
-      tenantId: tenant.id,
-      email: 'producer@demo.local',
-      passwordHash,
-      firstName: 'Producer',
-      lastName: 'User',
-      role: 'PRODUCER_OWNER',
-      status: 'ACTIVE',
-    },
+  const cargaUser = await prisma.user.findFirst({
+    where: { tenantId: tenant.id, email: CARGA_EMAIL, deletedAt: null },
   });
+  await cleanupNonAdmin(tenant.id, adminUser.id, cargaUser?.id ?? null);
 
-  const gastroUser = await prisma.user.upsert({
-    where: { tenantId_email: { tenantId: tenant.id, email: 'gastro@demo.local' } },
-    update: { passwordHash },
-    create: {
-      id: 'user-gastro',
-      tenantId: tenant.id,
-      email: 'gastro@demo.local',
-      passwordHash,
-      firstName: 'Gastro',
-      lastName: 'User',
-      role: 'GASTRO_OWNER',
-      status: 'ACTIVE',
-    },
-  });
-
-  const referrerUser = await prisma.user.upsert({
-    where: { tenantId_email: { tenantId: tenant.id, email: 'referrer@demo.local' } },
-    update: { passwordHash },
-    create: {
-      id: 'user-referrer',
-      tenantId: tenant.id,
-      email: 'referrer@demo.local',
-      passwordHash,
-      firstName: 'Referrer',
-      lastName: 'User',
-      role: 'REFERRER',
-      status: 'ACTIVE',
-    },
-  });
-
-  const scannerUser = await prisma.user.upsert({
-    where: { tenantId_email: { tenantId: tenant.id, email: 'scanner@demo.local' } },
-    update: { passwordHash },
-    create: {
-      id: 'user-scanner',
-      tenantId: tenant.id,
-      email: 'scanner@demo.local',
-      passwordHash,
-      firstName: 'Scanner',
-      lastName: 'Operator',
-      role: 'SCANNER',
-      status: 'ACTIVE',
-    },
-  });
-
-  const buyerUser = await prisma.user.upsert({
-    where: { tenantId_email: { tenantId: tenant.id, email: 'user@demo.local' } },
-    update: { passwordHash },
-    create: {
-      id: 'user-buyer',
-      tenantId: tenant.id,
-      email: 'user@demo.local',
-      passwordHash,
-      firstName: 'Buyer',
-      lastName: 'User',
-      role: 'USER',
-      status: 'ACTIVE',
-    },
-  });
-
-  const startAt = new Date();
-  startAt.setDate(startAt.getDate() + 1);
-  startAt.setHours(20, 0, 0, 0);
-  const endAt = new Date(startAt.getTime() + 3 * 60 * 60 * 1000);
-
-  const event = await prisma.event.upsert({
-    where: { id: 'demo-event' },
-    update: { status: 'APPROVED' },
-    create: {
-      id: 'demo-event',
-      tenantId: tenant.id,
-      producerId: producerUser.id,
-      title: 'Demo Concert',
-      description: 'Demo event for testing',
-      startAt,
-      endAt,
-      city: 'Buenos Aires',
-      venueName: 'Demo Venue',
-      venueAddress: 'Av. Demo 123',
-      status: 'APPROVED',
-      isTicketingEnabled: true,
-      capacityTotal: 100,
-    },
-  });
-
-  const [ttGeneral, ttVip] = await Promise.all([
-    prisma.ticketType.upsert({
-      where: { id: 'demo-tt-general' },
-      update: {},
-      create: {
-        id: 'demo-tt-general',
-        eventId: event.id,
-        name: 'General',
-        description: 'General admission',
-        price: 5000,
-        currency: 'ARS',
-        capacityTotal: 80,
-        capacityAvailable: 80,
-        maxPerOrder: 10,
-        status: 'ACTIVE',
-      },
-    }),
-    prisma.ticketType.upsert({
-      where: { id: 'demo-tt-vip' },
-      update: {},
-      create: {
-        id: 'demo-tt-vip',
-        eventId: event.id,
-        name: 'VIP',
-        description: 'VIP access',
-        price: 500,
-        currency: 'ARS',
-        capacityTotal: 20,
-        capacityAvailable: 20,
-        maxPerOrder: 4,
-        status: 'ACTIVE',
-      },
-    }),
-  ]);
-
-  console.log('=== Demo seed complete ===\n');
+  console.log('=== Demo seed complete (admin only) ===\n');
   console.log('TENANT_ID:', tenant.id);
-  console.log('EVENT_ID:', event.id);
-  console.log('');
-  console.log('Users (use X-Dev-User-Id for requests):');
-  console.log('  ADMIN:         ', adminUser.id, '  admin@demo.local');
-  console.log('  PRODUCER_OWNER:', producerUser.id, '  producer@demo.local');
-  console.log('  SCANNER:       ', scannerUser.id, '  scanner@demo.local');
-  console.log('  USER (buyer):  ', buyerUser.id, '  user@demo.local');
-  console.log('');
-  console.log('Ticket types:');
-  console.log('  General:', ttGeneral.id, '- 5000 ARS');
-  console.log('  VIP:    ', ttVip.id, '- 500 ARS');
-  console.log('');
-  console.log('For order creation use user@demo.local as buyerEmail to link tickets to user.');
+  console.log('Admin:    ', adminUser.id, '  admin@demo.local');
+  console.log('Password: demo');
+  console.log('\nOtros usuarios se crean via registro y aplicaciones de perfil.');
 }
 
 main()

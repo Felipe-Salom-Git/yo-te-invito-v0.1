@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { EventStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { ProfilesAuthorizationService } from '../../common/profiles-authorization.service';
 import type {
   EventCreateDto,
   EventUpdateDto,
@@ -16,7 +17,10 @@ import { ErrorCode } from '@yo-te-invito/shared';
 
 @Injectable()
 export class ProducerEventsCrudService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly profilesAuth: ProfilesAuthorizationService,
+  ) {}
 
   private async assertEventOwnedByUser(
     eventId: string,
@@ -26,7 +30,7 @@ export class ProducerEventsCrudService {
   ) {
     const event = await this.prisma.event.findFirst({
       where: { id: eventId, tenantId, deletedAt: null },
-      select: { id: true, producerId: true },
+      select: { id: true, producerId: true, producerProfileId: true },
     });
     if (!event) {
       throw new NotFoundException({
@@ -35,8 +39,10 @@ export class ProducerEventsCrudService {
       });
     }
     const isAdmin = userRole === 'ADMIN';
-    const isOwner = event.producerId === userId;
-    if (!isAdmin && !isOwner) {
+    const canManage =
+      isAdmin ||
+      (await this.profilesAuth.canManageEvent(tenantId, userId, event));
+    if (!canManage) {
       throw new ForbiddenException({
         code: 'FORBIDDEN',
         message: 'Not allowed to modify this event',
@@ -118,6 +124,7 @@ export class ProducerEventsCrudService {
   async list(
     tenantId: string,
     producerId: string,
+    userId: string,
     userRole: string,
     page = 1,
     limit = 50,
@@ -127,13 +134,26 @@ export class ProducerEventsCrudService {
       tenantId: string;
       deletedAt: null;
       producerId?: string;
+      producerProfileId?: { in: string[] };
+      OR?: Array<{ producerId: string } | { producerProfileId: { in: string[] } }>;
       status?: EventStatus;
     } = {
       tenantId,
       deletedAt: null,
     };
     if (userRole !== 'ADMIN') {
-      where.producerId = producerId;
+      const profileId = await this.profilesAuth.getDefaultProducerProfileId(
+        tenantId,
+        userId,
+      );
+      if (profileId) {
+        where.OR = [
+          { producerId },
+          { producerProfileId: { in: [profileId] } },
+        ];
+      } else {
+        where.producerId = producerId;
+      }
     }
     const validStatuses: EventStatus[] = ['DRAFT', 'PENDING', 'APPROVED', 'PAUSED', 'CANCELLED'];
     if (status && validStatuses.includes(status.toUpperCase() as EventStatus)) {
@@ -180,10 +200,15 @@ export class ProducerEventsCrudService {
     producerId: string,
     body: EventCreateDto,
   ): Promise<EventDetail> {
+    const producerProfileId = await this.profilesAuth.getDefaultProducerProfileId(
+      tenantId,
+      producerId,
+    );
     const event = await this.prisma.event.create({
       data: {
         tenantId,
         producerId,
+        producerProfileId: producerProfileId ?? undefined,
         title: body.title,
         description: body.description ?? null,
         startAt: new Date(body.startAt),

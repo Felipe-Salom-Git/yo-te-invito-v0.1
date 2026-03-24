@@ -51,10 +51,27 @@ export interface EventSummary {
 export interface ProducerSummary {
   id: string;
   tenantId: string;
+  slug: string | null;
   displayName: string;
-  slug: string;
-  ratingAvg?: number | null;
-  ratingCount?: number;
+  shortDescription: string | null;
+  logoUrl: string | null;
+  coverImageUrl: string | null;
+  city: string | null;
+  country: string | null;
+  ratingAvg: number | null;
+  ratingCount: number;
+}
+
+export interface ProducerDetail extends ProducerSummary {
+  longDescription: string | null;
+  legalName: string | null;
+  primaryPhone: string | null;
+  secondaryPhone: string | null;
+  primaryEmail: string | null;
+  secondaryEmail: string | null;
+  whatsapp: string | null;
+  socialLinks: any;
+  events: EventSummary[];
 }
 
 export interface EventDetail extends EventSummary {
@@ -91,6 +108,19 @@ export interface Order {
   [k: string]: unknown;
 }
 
+export interface MeProfileSummary {
+  id: string;
+  displayName: string;
+  status: string;
+  membershipRole?: string;
+}
+
+export interface MeAvailableProfiles {
+  producer?: { hasAccess: boolean; profiles: MeProfileSummary[] };
+  gastro?: { hasAccess: boolean; profiles: MeProfileSummary[] };
+  referrer?: { hasAccess: boolean; profiles: MeProfileSummary[] };
+}
+
 export interface User {
   id: string;
   tenantId: string;
@@ -98,6 +128,7 @@ export interface User {
   role: string;
   firstName: string;
   lastName: string;
+  availableProfiles?: MeAvailableProfiles;
   [k: string]: unknown;
 }
 
@@ -131,6 +162,26 @@ export interface ReferrerListItem {
   email: string;
   firstName: string;
   lastName: string;
+}
+
+export interface ReferrerProfileSummary {
+  id: string;
+  tenantId: string;
+  displayName: string;
+  publicHandle: string | null;
+  bio: string | null;
+  salesScore: number;
+  completedSales: number;
+}
+
+export interface ProducerReferrerRelationship {
+  id: string;
+  producerProfileId: string;
+  referrerProfileId: string;
+  status: string;
+  origin: string;
+  notes: string | null;
+  referrerProfile: ReferrerProfileSummary;
 }
 
 export type ReferralCommissionStatus = 'PENDING' | 'REQUESTED' | 'PAID' | 'REJECTED';
@@ -255,6 +306,21 @@ export interface TicketsRepo {
   delete(id: string): Promise<boolean>;
 }
 
+export interface CreatePaymentResult {
+  paymentId: string;
+  paymentUrl: string;
+  status: string;
+  checkoutUrl?: string;
+  provider?: string;
+}
+
+export interface PaymentStatusResult {
+  paymentId: string;
+  orderId: string;
+  status: string;
+  orderStatus: string;
+}
+
 export interface OrdersRepo {
   get(orderId: string, tenantId: string): Promise<Order | null>;
   listByBuyer(userId: string, tenantId?: string): Promise<Order[]>;
@@ -267,7 +333,14 @@ export interface OrdersRepo {
     items: Array<{ ticketTypeId: string; quantity: number; unitPrice: number }>;
     referralCode?: string | null;
   }): Promise<Order>;
+  createPayment(
+    orderId: string,
+    tenantId: string,
+    provider: 'DEMO' | 'GETNET'
+  ): Promise<CreatePaymentResult>;
   confirmDemoPayment(orderId: string, tenantId: string, userId: string): Promise<Order>;
+  refreshPaymentStatus(paymentId: string, tenantId: string): Promise<PaymentStatusResult>;
+  getOrderPaymentStatus(orderId: string, tenantId: string): Promise<PaymentStatusResult>;
 }
 
 export interface CreateReferrerInput {
@@ -300,6 +373,25 @@ export interface ApplicationsRepo {
   reject(tenantId: string, applicationId: string): Promise<void>;
 }
 
+export interface PendingProducerProfile {
+  id: string;
+  displayName: string;
+  createdByUserId: string;
+  createdAt: string;
+}
+
+export interface ProfilesRepo {
+  applyProducer(body: { displayName: string; legalName?: string; description?: string; city?: string; country?: string }): Promise<{ id: string; displayName: string; status: string; message: string }>;
+  applyGastro(body: { displayName: string; legalName?: string; description?: string; address?: string; city?: string; contactPhone?: string }): Promise<{ id: string; displayName: string; status: string; message: string }>;
+  applyReferrer(body: { displayName: string; publicHandle?: string; bio?: string }): Promise<{ id: string; displayName: string; status: string; message: string }>;
+  listPendingProducerProfiles(): Promise<{ profiles: PendingProducerProfile[] }>;
+  approveProducerProfile(profileId: string): Promise<{ id: string; status: string; message: string }>;
+  listPendingGastroProfiles(): Promise<{ profiles: PendingProducerProfile[] }>;
+  approveGastroProfile(profileId: string): Promise<{ id: string; status: string; message: string }>;
+  listPendingReferrerProfiles(): Promise<{ profiles: PendingProducerProfile[] }>;
+  approveReferrerProfile(profileId: string): Promise<{ id: string; status: string; message: string }>;
+}
+
 export interface UsersRepo {
   getMe(userId: string): Promise<User | null>;
   getMyTickets(userId: string): Promise<Ticket[]>;
@@ -322,8 +414,12 @@ export interface ReferralsRepo {
   createLink(eventId: string, body: { code: string; label?: string; referrerUserId?: string }, userId: string): Promise<{ id: string; code: string; url: string; label: string | null }>;
   /** List referrers (users with REFERRER role) for producer context */
   listReferrers(): Promise<ReferrerListItem[]>;
-  /** Assign referrers to event (demo-style: replaces current assignment) */
-  assignReferrersToEvent(eventId: string, referrerIds: string[]): Promise<{ links: ReferralLinkSummary[] }>;
+  getAssociatedReferrers(): Promise<ProducerReferrerRelationship[]>;
+  getFreelanceReferrers(): Promise<ReferrerProfileSummary[]>;
+  setAssociationStatus(referrerProfileId: string, status: string, notes?: string): Promise<ProducerReferrerRelationship>;
+  assignReferrerToEvent(eventId: string, referrerProfileId: string, courtesyQuota: number): Promise<any>;
+  // Legacy
+  assignReferrersToEventLegacy(eventId: string, referrerIds: string[]): Promise<{ links: ReferralLinkSummary[] }>;
   listCommissionsByUser(referrerId: string): Promise<ReferralCommission[]>;
   requestCommission(referrerId: string, referralLinkId: string): Promise<ReferralCommission>;
   listCommissionRequestsForEvent(eventId: string): Promise<ReferralCommission[]>;
@@ -342,7 +438,10 @@ export interface MetricsRepo {
 }
 
 export interface ProducersRepo {
-  get(id: string): Promise<ProducerSummary | null>;
+  get(id: string): Promise<ProducerDetail | null>;
+  list(query: { page?: number; limit?: number; city?: string }): Promise<{ producers: ProducerSummary[]; total: number }>;
+  getMyProfile(): Promise<ProducerDetail | null>;
+  updateMyProfile(data: any): Promise<ProducerDetail>;
 }
 
 export type ScanResult = 'OK' | 'ALREADY_USED' | 'REVOKED' | 'INVALID';
@@ -442,6 +541,7 @@ export interface ResaleRepo {
 export interface Repositories {
   events: EventsRepo;
   applications: ApplicationsRepo;
+  profiles: ProfilesRepo;
   gastro: GastroRepo;
   ticketTypes: TicketTypesRepo;
   tickets: TicketsRepo;

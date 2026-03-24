@@ -1,10 +1,11 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import Link from 'next/link';
 import { useExploreEvents } from '@/lib/query/explore';
 import { usePlatformConfig } from '@/hooks/usePlatformConfig';
-import { PageContainer, SectionTitle, EventCardSkeleton, EmptyState } from '@/components';
+import { ContentCard, type ContentCardItem } from '@/components/home/ContentCard';
+import { ContentCardSkeleton } from '@/components/home/ContentCardSkeleton';
+import { PageContainer, SectionTitle, EmptyState } from '@/components';
 
 const TENANT_ID = 'tenant-demo';
 
@@ -111,22 +112,18 @@ export default function ExplorePage() {
         </div>
       </form>
 
-      <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="mt-8 flex flex-wrap gap-5 sm:gap-6">
         {isLoading ? (
-          Array.from({ length: 6 }).map((_, i) => <EventCardSkeleton key={i} />)
+          Array.from({ length: 6 }).map((_, i) => <ContentCardSkeleton key={i} />)
         ) : (
-        events.map((ev) => (
-          <Link
-            key={ev.id}
-            href={`/events/${ev.id}?tenantId=${TENANT_ID}`}
-            className="rounded-lg border border-border bg-bg-muted p-4 transition-all duration-200 hover:border-accent hover:shadow-lg hover:-translate-y-0.5"
-          >
-            <h3 className="font-semibold text-text">{ev.title}</h3>
-            <p className="mt-1 text-sm text-text-muted">
-              {ev.city ?? ev.venueName ?? '—'} · {new Date(ev.startAt).toLocaleDateString('es-AR')}
-            </p>
-          </Link>
-        )))}
+          events.map((ev) => (
+            <ContentCard
+              key={ev.id}
+              item={ev as ContentCardItem}
+              tenantId={TENANT_ID}
+            />
+          ))
+        )}
       </div>
 
       {events.length === 0 && !isLoading && (

@@ -22,6 +22,7 @@ export {
   OrderCardSkeleton,
   EmptyState,
   Breadcrumbs,
+  SideSheet,
 } from './ui';
 
 

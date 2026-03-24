@@ -1,9 +1,13 @@
 import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { JwtOrDevAuthGuard } from '../../auth/jwt-or-dev-auth.guard';
+import { GastroRolesGuard } from '../../common/guards/gastro-roles.guard';
+import { RequireRole } from '../../common/decorators/require-role.decorator';
+import { Role } from '@yo-te-invito/shared';
 import { GastroService } from './gastro.service';
 
 @Controller('gastro')
-@UseGuards(JwtOrDevAuthGuard)
+@UseGuards(JwtOrDevAuthGuard, GastroRolesGuard)
+@RequireRole(Role.ADMIN, Role.GASTRO_OWNER)
 export class GastroController {
   constructor(private readonly service: GastroService) {}
 

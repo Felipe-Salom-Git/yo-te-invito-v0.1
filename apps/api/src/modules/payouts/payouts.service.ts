@@ -35,11 +35,19 @@ export class PayoutsService {
     };
   }
 
-  async listByProducer(producerId: string, tenantId?: string): Promise<PayoutRequest[]> {
-    const where: { producerId: string; tenantId?: string } = { producerId };
-    if (tenantId) where.tenantId = tenantId;
+  async listByProducer(userId: string, tenantId?: string): Promise<PayoutRequest[]> {
+    const profileIds = tenantId
+      ? (await this.prisma.userProducerMembership.findMany({
+          where: { tenantId, userId, status: 'ACTIVE', profile: { status: 'ACTIVE' } },
+          select: { profileId: true },
+        })).map((m) => m.profileId)
+      : [];
+    const orClause =
+      profileIds.length > 0
+        ? [{ producerId: userId }, { producerProfileId: { in: profileIds } }]
+        : [{ producerId: userId }];
     const items = await this.prisma.payout.findMany({
-      where,
+      where: { ...(tenantId && { tenantId }), OR: orClause },
       orderBy: { createdAt: 'desc' },
     });
     return items.map((p) => this.toPayoutRequest(p));
@@ -87,12 +95,14 @@ export class PayoutsService {
     amountCents: number,
     requestedByUserId: string,
     bankInfo?: { titular?: string; banco?: string; cbu?: string },
+    producerProfileId?: string | null,
   ): Promise<PayoutRequest> {
     const created = await this.prisma.payout.create({
       data: {
         tenantId,
         eventId,
         producerId,
+        producerProfileId: producerProfileId ?? undefined,
         amountCents,
         requestedByUserId,
         bankInfo: bankInfo ?? undefined,

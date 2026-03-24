@@ -1,4 +1,7 @@
 import { Body, Controller, Get, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { ReferrerRolesGuard } from '../../common/guards/referrer-roles.guard';
+import { RequireRole } from '../../common/decorators/require-role.decorator';
+import { Role } from '@yo-te-invito/shared';
 import {
   meTicketsQuerySchema,
   meOrdersQuerySchema,
@@ -62,6 +65,8 @@ export class MeController {
   }
 
   @Get('referral-links')
+  @UseGuards(ReferrerRolesGuard)
+  @RequireRole(Role.ADMIN, Role.REFERRER)
   async getMyReferralLinks(
     @CurrentUser() user: { id: string; tenantId: string },
   ) {
@@ -69,6 +74,8 @@ export class MeController {
   }
 
   @Get('commissions')
+  @UseGuards(ReferrerRolesGuard)
+  @RequireRole(Role.ADMIN, Role.REFERRER)
   async getMyCommissions(
     @CurrentUser() user: { id: string },
   ) {
@@ -76,6 +83,8 @@ export class MeController {
   }
 
   @Post('commissions/request')
+  @UseGuards(ReferrerRolesGuard)
+  @RequireRole(Role.ADMIN, Role.REFERRER)
   async requestCommission(
     @CurrentUser() user: { id: string; tenantId: string },
     @Body(new ZodValidationPipe(requestCommissionBodySchema)) body: RequestCommissionBody,

@@ -1,6 +1,42 @@
 import { z } from 'zod';
 import { Role, UserStatus } from '../enums';
 
+/** Profile summary for availableProfiles in GET /me */
+export const meProfileSummarySchema = z.object({
+  id: z.string(),
+  displayName: z.string(),
+  status: z.string(),
+  membershipRole: z.string().optional(),
+});
+export type MeProfileSummary = z.infer<typeof meProfileSummarySchema>;
+
+/** Operational profiles available to the user */
+export const meAvailableProfilesSchema = z.object({
+  tickets: z.literal(true),
+  producer: z
+    .object({
+      hasAccess: z.boolean(),
+      profiles: z.array(meProfileSummarySchema).default([]),
+    })
+    .optional()
+    .default({ hasAccess: false, profiles: [] }),
+  gastro: z
+    .object({
+      hasAccess: z.boolean(),
+      profiles: z.array(meProfileSummarySchema).default([]),
+    })
+    .optional()
+    .default({ hasAccess: false, profiles: [] }),
+  referrer: z
+    .object({
+      hasAccess: z.boolean(),
+      profiles: z.array(meProfileSummarySchema).default([]),
+    })
+    .optional()
+    .default({ hasAccess: false, profiles: [] }),
+});
+export type MeAvailableProfiles = z.infer<typeof meAvailableProfilesSchema>;
+
 /** Response for GET /me */
 export const meResponseSchema = z.object({
   id: z.string(),
@@ -10,6 +46,7 @@ export const meResponseSchema = z.object({
   status: z.string(),
   firstName: z.string(),
   lastName: z.string(),
+  availableProfiles: meAvailableProfilesSchema.optional(),
 });
 export type MeResponse = z.infer<typeof meResponseSchema>;
 
@@ -162,6 +199,40 @@ export const authGoogleRequestSchema = z.object({
   image: z.string().optional(),
 });
 export type AuthGoogleRequest = z.infer<typeof authGoogleRequestSchema>;
+
+/** Request body for POST /profiles/producer/apply */
+export const profileProducerApplySchema = z.object({
+  displayName: z.string().min(1, 'displayName requerido'),
+  legalName: z.string().optional(),
+  slug: z.string().optional(),
+  shortDescription: z.string().optional(),
+  description: z.string().optional(), // kept for legacy
+  longDescription: z.string().optional(),
+  primaryPhone: z.string().optional(),
+  primaryEmail: z.string().email().optional(),
+  city: z.string().optional(),
+  country: z.string().optional(),
+});
+export type ProfileProducerApplyInput = z.infer<typeof profileProducerApplySchema>;
+
+/** Request body for POST /profiles/gastro/apply */
+export const profileGastroApplySchema = z.object({
+  displayName: z.string().min(1, 'displayName requerido'),
+  legalName: z.string().optional(),
+  description: z.string().optional(),
+  address: z.string().optional(),
+  city: z.string().optional(),
+  contactPhone: z.string().optional(),
+});
+export type ProfileGastroApplyInput = z.infer<typeof profileGastroApplySchema>;
+
+/** Request body for POST /profiles/referrer/apply */
+export const profileReferrerApplySchema = z.object({
+  displayName: z.string().min(1, 'displayName requerido'),
+  publicHandle: z.string().optional(),
+  bio: z.string().optional(),
+});
+export type ProfileReferrerApplyInput = z.infer<typeof profileReferrerApplySchema>;
 
 /** Request body for POST /auth/apply-role */
 export const authApplyRoleRequestSchema = z.object({

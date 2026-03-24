@@ -27,6 +27,27 @@ enum UserStatus {
   DELETED
 }
 
+// ─── Operational profiles (single user + profiles model) ─────────────────────
+enum ProfileStatus {
+  DRAFT
+  PENDING
+  ACTIVE
+  REJECTED
+  SUSPENDED
+}
+
+enum MembershipRole {
+  OWNER
+  ADMIN
+  STAFF
+}
+
+enum MembershipStatus {
+  ACTIVE
+  PENDING
+  DISABLED
+}
+
 model Tenant {
   id        String    @id @default(cuid())
   name      String
@@ -50,6 +71,217 @@ model Tenant {
   payouts             Payout[]
   platformConfig      PlatformConfig?
   roleApplications    RoleApplication[]
+  producerProfiles    ProducerProfile[]
+  gastroProfiles      GastroProfile[]
+  referrerProfiles    ReferrerProfile[]
+  userProducerMemberships UserProducerMembership[]
+  userGastroMemberships   UserGastroMembership[]
+  userReferrerMemberships UserReferrerMembership[]
+}
+
+model ProducerProfile {
+  id               String        @id @default(cuid())
+  tenantId         String
+  slug             String?       @unique
+  displayName      String
+  legalName        String?
+  shortDescription String?
+  longDescription  String?
+  logoUrl          String?
+  coverImageUrl    String?
+  primaryPhone     String?
+  secondaryPhone   String?
+  primaryEmail     String?
+  secondaryEmail   String?
+  whatsapp         String?
+  city             String?
+  country          String?
+  socialLinks      Json?
+  ratingAvg        Float?
+  ratingCount      Int           @default(0)
+  createdByUserId  String?
+  status           ProfileStatus @default(DRAFT)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  tenant     Tenant                    @relation(fields: [tenantId], references: [id])
+  memberships UserProducerMembership[]
+  events     Event[]
+  referrerRelationships ProducerReferrerRelationship[]
+  eventReferrerAssignments EventReferrerAssignment[]
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+}
+
+model GastroProfile {
+  id              String        @id @default(cuid())
+  tenantId        String
+  displayName     String
+  legalName       String?
+  description     String?
+  logoUrl         String?
+  bannerUrl       String?
+  address         String?
+  city            String?
+  contactPhone    String?
+  ratingAvg       Float?
+  ratingCount     Int           @default(0)
+  createdByUserId String?
+  status          ProfileStatus @default(DRAFT)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  tenant     Tenant                  @relation(fields: [tenantId], references: [id])
+  memberships UserGastroMembership[]
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+}
+
+model ReferrerProfile {
+  id              String        @id @default(cuid())
+  tenantId        String
+  displayName     String
+  publicHandle    String?
+  bio             String?
+  avatarUrl       String?
+  salesScore      Float?
+  completedSales  Int           @default(0)
+  createdByUserId String?
+  status          ProfileStatus @default(DRAFT)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  tenant     Tenant                     @relation(fields: [tenantId], references: [id])
+  memberships UserReferrerMembership[]
+  referralLinks ReferralLink[]
+  producerRelationships ProducerReferrerRelationship[]
+  eventAssignments EventReferrerAssignment[]
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+}
+
+enum RelationshipStatus {
+  PENDING
+  ACTIVE
+  REJECTED
+  BLOCKED
+}
+
+enum RelationshipOrigin {
+  REQUESTED_BY_REFERRER
+  INVITED_BY_PRODUCER
+  FREELANCE_CONTACT
+}
+
+model ProducerReferrerRelationship {
+  id                String             @id @default(cuid())
+  producerProfileId String
+  referrerProfileId String
+  status            RelationshipStatus @default(PENDING)
+  origin            RelationshipOrigin @default(REQUESTED_BY_REFERRER)
+  notes             String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  producerProfile ProducerProfile @relation(fields: [producerProfileId], references: [id], onDelete: Cascade)
+  referrerProfile ReferrerProfile @relation(fields: [referrerProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([producerProfileId, referrerProfileId])
+  @@index([producerProfileId])
+  @@index([referrerProfileId])
+}
+
+enum EventAssignmentStatus {
+  ACTIVE
+  PAUSED
+  CANCELED
+}
+
+model EventReferrerAssignment {
+  id                 String                @id @default(cuid())
+  eventId            String
+  producerProfileId  String
+  referrerProfileId  String
+  referralLinkId     String?               @unique
+  courtesyQuota      Int                   @default(0)
+  courtesyUsedCount  Int                   @default(0)
+  salesScoreSnapshot Float?
+  status             EventAssignmentStatus @default(ACTIVE)
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+
+  event           Event           @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  producerProfile ProducerProfile @relation(fields: [producerProfileId], references: [id], onDelete: Cascade)
+  referrerProfile ReferrerProfile @relation(fields: [referrerProfileId], references: [id], onDelete: Cascade)
+  referralLink    ReferralLink?   @relation(fields: [referralLinkId], references: [id])
+
+  @@unique([eventId, producerProfileId, referrerProfileId])
+  @@index([eventId])
+  @@index([producerProfileId])
+  @@index([referrerProfileId])
+}
+
+model UserProducerMembership {
+  id           String           @id @default(cuid())
+  tenantId     String
+  userId       String
+  profileId    String
+  membershipRole MembershipRole @default(OWNER)
+  status       MembershipStatus @default(ACTIVE)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  tenant Tenant          @relation(fields: [tenantId], references: [id])
+  user   User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  profile ProducerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, profileId])
+  @@index([tenantId])
+  @@index([userId])
+  @@index([profileId])
+}
+
+model UserGastroMembership {
+  id             String           @id @default(cuid())
+  tenantId       String
+  userId         String
+  profileId      String
+  membershipRole MembershipRole   @default(OWNER)
+  status         MembershipStatus @default(ACTIVE)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  tenant  Tenant        @relation(fields: [tenantId], references: [id])
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  profile GastroProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, profileId])
+  @@index([tenantId])
+  @@index([userId])
+  @@index([profileId])
+}
+
+model UserReferrerMembership {
+  id             String           @id @default(cuid())
+  tenantId       String
+  userId         String
+  profileId      String
+  membershipRole MembershipRole   @default(OWNER)
+  status         MembershipStatus @default(ACTIVE)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  tenant  Tenant          @relation(fields: [tenantId], references: [id])
+  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  profile ReferrerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, profileId])
+  @@index([tenantId])
+  @@index([userId])
+  @@index([profileId])
 }
 
 enum ApplicationStatus {
@@ -126,6 +358,9 @@ model User {
   ownedTickets       Ticket[]         @relation("TicketOwner")
   transfersFrom      TicketTransfer[] @relation("TransferFromUser")
   transfersTo        TicketTransfer[] @relation("TransferToUser")
+  producerMemberships UserProducerMembership[]
+  gastroMemberships   UserGastroMembership[]
+  referrerMemberships UserReferrerMembership[]
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -148,7 +383,8 @@ enum EventMediaType {
 model Event {
   id                String       @id @default(cuid())
   tenantId          String
-  producerId        String
+  producerId        String       // LEGACY: kept for compatibility; prefer producerProfileId
+  producerProfileId String?      // ownership via ProducerProfile
   category          String?      // event | gastro | excursion | rental — for catalog display
   title             String
   description       String?
@@ -171,6 +407,7 @@ model Event {
   deletedAt         DateTime?
 
   tenant      Tenant       @relation(fields: [tenantId], references: [id])
+  producerProfile ProducerProfile? @relation(fields: [producerProfileId], references: [id], onDelete: SetNull)
   media       EventMedia[]
   ticketTypes     TicketType[]
   tickets         Ticket[]
@@ -181,6 +418,7 @@ model Event {
   referralLinks       ReferralLink[]
   referralAttributions ReferralAttribution[]
   referralCommissions  ReferralCommission[]
+  referrerAssignments  EventReferrerAssignment[]
   reviews             Review[]
   fraudSignals        FraudSignal[]
   payouts             Payout[]
@@ -189,6 +427,7 @@ model Event {
   @@index([tenantId, status])
   @@index([tenantId, status, deletedAt, startAt])
   @@index([tenantId, city])
+  @@index([producerProfileId])
 }
 
 enum TicketTypeStatus {
@@ -460,7 +699,8 @@ model Payout {
   id               String      @id @default(cuid())
   tenantId         String
   eventId          String
-  producerId       String
+  producerId       String      // LEGACY: User.id; prefer producerProfileId
+  producerProfileId String?    // ownership via ProducerProfile
   status           PayoutStatus @default(REQUESTED)
   amountCents      Int
   bankInfo         Json?
@@ -546,20 +786,24 @@ model ReferralLink {
   tenantId  String
   eventId   String
   code      String   @unique
-  referrerId  String?
+  referrerId  String?       // LEGACY: User.id; prefer referrerProfileId
+  referrerProfileId String? // ownership via ReferrerProfile
   label     String?
   createdAt DateTime @default(now())
 
   tenant       Tenant              @relation(fields: [tenantId], references: [id])
   event        Event               @relation(fields: [eventId], references: [id])
   referrer     User?               @relation(fields: [referrerId], references: [id])
+  referrerProfile ReferrerProfile? @relation(fields: [referrerProfileId], references: [id], onDelete: SetNull)
   orders       Order[]
   attributions ReferralAttribution[]
   commissions  ReferralCommission[]
+  eventAssignment EventReferrerAssignment?
 
   @@index([tenantId])
   @@index([eventId])
   @@index([referrerId])
+  @@index([referrerProfileId])
 }
 
 model ReferralAttribution {

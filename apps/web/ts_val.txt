@@ -1,0 +1,1 @@
+app/(portal)/producer/events/[eventId]/edit/page.tsx(51,17): error TS2322: Type 'string' is not assignable to type '"draft" | "pending" | "approved"'.

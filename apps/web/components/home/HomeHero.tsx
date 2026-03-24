@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { HeroViewModel } from '@/lib/home/heroModel';
@@ -21,9 +21,18 @@ type FeaturedItem = {
   producerName?: string | null;
 };
 
+export interface FeaturedTabConfig {
+  id: string;
+  label: string;
+}
+
 export interface HomeHeroProps {
   /** Featured items for hero — from highlights/trending */
   featuredItems: FeaturedItem[];
+  /** Category tabs for discovery path; when present, hero items are filtered by selected tab */
+  featuredTabs?: FeaturedTabConfig[];
+  /** Hero items by tab id; used when featuredTabs is provided */
+  heroItemsByCategory?: Record<string, FeaturedItem[]>;
   isLoading?: boolean;
 }
 
@@ -109,17 +118,47 @@ function HeroCTAGroup({
 
 export function HomeHero({
   featuredItems,
+  featuredTabs = [],
+  heroItemsByCategory = {},
   isLoading = false,
 }: HomeHeroProps) {
-  const [index, setIndex] = useState(0);
-  const candidates = useMemo(
-    () => featuredItems.slice(0, 6).map(mapFeaturedItemToHeroModel),
-    [featuredItems]
+  const [selectedTabId, setSelectedTabId] = useState<string | null>(
+    featuredTabs.length > 0 ? featuredTabs[0].id : null
   );
-  const model = candidates[index] ?? null;
+  const [index, setIndex] = useState(0);
 
+  const sourceItems = useMemo(() => {
+    if (featuredTabs.length > 0 && selectedTabId) {
+      const byCategory = heroItemsByCategory[selectedTabId];
+      if (byCategory && byCategory.length > 0) return byCategory;
+      const fallback = featuredTabs[0] ? heroItemsByCategory[featuredTabs[0].id] : [];
+      if (fallback?.length) return fallback;
+    }
+    return featuredItems;
+  }, [featuredTabs, selectedTabId, heroItemsByCategory, featuredItems]);
+
+  const candidates = useMemo(
+    () => sourceItems.slice(0, 6).map(mapFeaturedItemToHeroModel),
+    [sourceItems]
+  );
+
+  const model = candidates[index] ?? null;
   const canPrev = index > 0;
   const canNext = index < candidates.length - 1;
+
+  const handleTabChange = (tabId: string) => {
+    setSelectedTabId(tabId);
+    setIndex(0);
+  };
+
+  useEffect(() => {
+    if (featuredTabs.length > 0) {
+      const valid = featuredTabs.some((t) => t.id === selectedTabId);
+      if (!selectedTabId || !valid) setSelectedTabId(featuredTabs[0].id);
+    } else {
+      setSelectedTabId(null);
+    }
+  }, [featuredTabs, selectedTabId]);
 
   if (isLoading || candidates.length === 0) {
     return (
@@ -156,7 +195,38 @@ export function HomeHero({
         </motion.div>
       </AnimatePresence>
 
-      <div className="relative flex h-full items-end px-4 pb-20 sm:px-6 md:px-10 md:pb-24 lg:px-16">
+      {featuredTabs.length > 0 && (
+        <div className="absolute left-0 right-0 top-6 z-10 px-4 sm:px-6 md:px-10 lg:px-16">
+          <div
+            className="flex flex-wrap gap-1 rounded-lg bg-black/40 p-1 backdrop-blur-sm"
+            role="tablist"
+            aria-label="Categorías destacadas"
+          >
+            {featuredTabs.map((tab) => {
+              const isSelected = selectedTabId === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={isSelected}
+                  aria-controls="hero-content"
+                  onClick={() => handleTabChange(tab.id)}
+                  className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                    isSelected
+                      ? 'bg-accent text-bg'
+                      : 'text-white/90 hover:bg-white/15 hover:text-white'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      <div className="relative flex h-full items-end px-4 pb-20 sm:px-6 md:px-10 md:pb-24 lg:px-16" id="hero-content">
         <AnimatePresence mode="wait">
           <motion.div
             key={model.id}

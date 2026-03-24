@@ -6,6 +6,8 @@ import { ApiClient } from '@/lib/api/client';
 import type {
   Repositories,
   ApplicationsRepo,
+  ProfilesRepo,
+  PendingProducerProfile,
   RoleApplication,
   EventsRepo,
   TicketsRepo,
@@ -30,6 +32,8 @@ import type {
   ReviewsResponse,
   ReferralLinkSummary,
   ReferrerListItem,
+  ReferrerProfileSummary,
+  ProducerReferrerRelationship,
   ReferralCommission,
   CourtesyGrantSummary,
   TicketTypeResponse,
@@ -38,6 +42,7 @@ import type {
   PlatformMetrics,
   ProducersRepo,
   ProducerSummary,
+  ProducerDetail,
   ScannerRepo,
   ScanResult,
   TicketScanLogItem,
@@ -50,6 +55,8 @@ import type {
   CreateReferrerInput,
   PlatformConfig,
   PlatformConfigRepo,
+  CreatePaymentResult,
+  PaymentStatusResult,
 } from './interfaces';
 
 function mapOrderResponse(raw: {
@@ -214,6 +221,30 @@ export class ApiRepository implements Repositories {
     },
   };
 
+  profiles: ProfilesRepo = {
+    applyProducer: async (body) => this.client.post('/profiles/producer/apply', body),
+    applyGastro: async (body) => this.client.post('/profiles/gastro/apply', body),
+    applyReferrer: async (body) => this.client.post('/profiles/referrer/apply', body),
+    listPendingProducerProfiles: async () =>
+      this.client.get<{ profiles: PendingProducerProfile[] }>('/admin/profiles/producer/pending'),
+    approveProducerProfile: async (profileId: string) =>
+      this.client.post<{ id: string; status: string; message: string }>(
+        `/admin/profiles/producer/${encodeURIComponent(profileId)}/approve`
+      ),
+    listPendingGastroProfiles: async () =>
+      this.client.get<{ profiles: PendingProducerProfile[] }>('/admin/profiles/gastro/pending'),
+    approveGastroProfile: async (profileId: string) =>
+      this.client.post<{ id: string; status: string; message: string }>(
+        `/admin/profiles/gastro/${encodeURIComponent(profileId)}/approve`
+      ),
+    listPendingReferrerProfiles: async () =>
+      this.client.get<{ profiles: PendingProducerProfile[] }>('/admin/profiles/referrer/pending'),
+    approveReferrerProfile: async (profileId: string) =>
+      this.client.post<{ id: string; status: string; message: string }>(
+        `/admin/profiles/referrer/${encodeURIComponent(profileId)}/approve`
+      ),
+  };
+
   ticketTypes: TicketTypesRepo = {
     create: async (eventId: string, input) => {
       const body = {
@@ -328,6 +359,18 @@ export class ApiRepository implements Repositories {
       });
       return mapOrderResponse(raw as Parameters<typeof mapOrderResponse>[0]);
     },
+    createPayment: async (
+      orderId: string,
+      tenantId: string,
+      provider: 'DEMO' | 'GETNET'
+    ) => {
+      const t = tenantId ?? this.defaultTenantId;
+      return this.client.post<CreatePaymentResult>(
+        `/public/orders/${encodeURIComponent(orderId)}/payments`,
+        { provider },
+        { tenantId: t }
+      );
+    },
     confirmDemoPayment: async (orderId: string, tenantId: string) => {
       const t = tenantId ?? this.defaultTenantId;
       const createPayment = await this.client.post<{ paymentId: string }>(
@@ -341,6 +384,20 @@ export class ApiRepository implements Repositories {
         { tenantId: t }
       );
       return mapOrderResponse(raw as Parameters<typeof mapOrderResponse>[0]);
+    },
+    refreshPaymentStatus: async (paymentId: string, tenantId: string) => {
+      const t = tenantId ?? this.defaultTenantId;
+      return this.client.get<PaymentStatusResult>(
+        `/public/payments/${encodeURIComponent(paymentId)}/status`,
+        { tenantId: t }
+      );
+    },
+    getOrderPaymentStatus: async (orderId: string, tenantId: string) => {
+      const t = tenantId ?? this.defaultTenantId;
+      return this.client.get<PaymentStatusResult>(
+        `/public/orders/${encodeURIComponent(orderId)}/payment-status`,
+        { tenantId: t }
+      );
     },
   };
 
@@ -422,7 +479,27 @@ export class ApiRepository implements Repositories {
       const raw = await this.client.get<ReferrerListItem[]>('/producer/referrers');
       return raw ?? [];
     },
-    assignReferrersToEvent: async (eventId: string, referrerIds: string[]) => {
+    getAssociatedReferrers: async () => {
+      const raw = await this.client.get<ProducerReferrerRelationship[]>('/producer/referrers/associated');
+      return Array.isArray(raw) ? raw : [];
+    },
+    getFreelanceReferrers: async () => {
+      const raw = await this.client.get<ReferrerProfileSummary[]>('/producer/referrers/freelance');
+      return Array.isArray(raw) ? raw : [];
+    },
+    setAssociationStatus: async (referrerProfileId, status, notes) => {
+      return this.client.post<ProducerReferrerRelationship>(
+        `/producer/referrers/${encodeURIComponent(referrerProfileId)}/association`,
+        { status, notes }
+      );
+    },
+    assignReferrerToEvent: async (eventId, referrerProfileId, courtesyQuota) => {
+      return this.client.post(
+        `/producer/referrers/events/${encodeURIComponent(eventId)}/assign`,
+        { referrerProfileId, courtesyQuota }
+      );
+    },
+    assignReferrersToEventLegacy: async (eventId: string, referrerIds: string[]) => {
       const raw = await this.client.put<{ links: ReferralLinkSummary[] }>(
         `/events/${encodeURIComponent(eventId)}/referrals`,
         { referrerIds }
@@ -488,7 +565,16 @@ export class ApiRepository implements Repositories {
 
   producers: ProducersRepo = {
     get: async (id: string) => {
-      return this.client.get<ProducerSummary | null>('/public/producers/' + encodeURIComponent(id));
+      return this.client.get<ProducerDetail | null>('/public/producers/' + encodeURIComponent(id));
+    },
+    list: async (query) => {
+      return this.client.get<{ producers: ProducerSummary[]; total: number }>('/public/producers', query);
+    },
+    getMyProfile: async () => {
+      return this.client.get<ProducerDetail | null>('/producer/profile');
+    },
+    updateMyProfile: async (data: any) => {
+      return this.client.patch<ProducerDetail>('/producer/profile', data);
     },
   };
 

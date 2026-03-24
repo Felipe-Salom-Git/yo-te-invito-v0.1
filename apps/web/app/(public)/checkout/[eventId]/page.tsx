@@ -73,12 +73,24 @@ export default function CheckoutEventPage() {
     },
   });
 
-  const payMutation = useMutation({
+  const payDemoMutation = useMutation({
     mutationFn: () => repos.orders.confirmDemoPayment(orderId!, tenantId, userId),
     onError: (err) => addToast(getErrorMessage(err), 'error'),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tickets', 'me', userId] });
       setStep('done');
+    },
+  });
+
+  const payGetnetMutation = useMutation({
+    mutationFn: () => repos.orders.createPayment(orderId!, tenantId, 'GETNET'),
+    onError: (err) => addToast(getErrorMessage(err), 'error'),
+    onSuccess: (result) => {
+      if (result.checkoutUrl) {
+        window.location.href = result.checkoutUrl;
+      } else {
+        addToast('No se pudo obtener el link de pago', 'error');
+      }
     },
   });
 
@@ -244,20 +256,32 @@ export default function CheckoutEventPage() {
 
       {step === 'pay' && orderId && (
         <div className="mt-8 rounded-xl border border-border bg-bg-muted p-6">
-          <h2 className="font-semibold text-text">Simular pago</h2>
+          <h2 className="font-semibold text-text">Forma de pago</h2>
           <p className="mt-2 text-text-muted">
             Orden {orderId} — Total: ${totalCents}
           </p>
-          <Button
-            onClick={() => payMutation.mutate()}
-            disabled={payMutation.isPending}
-            className="mt-4"
-          >
-            {payMutation.isPending ? 'Procesando…' : 'Pagar (demo)'}
-          </Button>
-          {payMutation.error && (
+          <div className="mt-4 flex flex-wrap gap-3">
+            <Button
+              onClick={() => payDemoMutation.mutate()}
+              disabled={payDemoMutation.isPending || payGetnetMutation.isPending}
+            >
+              {payDemoMutation.isPending ? 'Procesando…' : 'Pagar (demo)'}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => payGetnetMutation.mutate()}
+              disabled={payDemoMutation.isPending || payGetnetMutation.isPending}
+              title="Probar integración Getnet — requiere credenciales en backend"
+            >
+              {payGetnetMutation.isPending ? 'Redirigiendo…' : 'Probar Getnet'}
+            </Button>
+          </div>
+          <p className="mt-3 text-xs text-text-muted">
+            Demo: simula pago sin pasarela. Getnet: te redirige al checkout real (preprod).
+          </p>
+          {(payDemoMutation.error || payGetnetMutation.error) && (
             <p className="mt-2 text-sm text-red-400">
-              {payMutation.error instanceof Error ? payMutation.error.message : 'Error'}
+              {getErrorMessage(payDemoMutation.error ?? payGetnetMutation.error)}
             </p>
           )}
         </div>

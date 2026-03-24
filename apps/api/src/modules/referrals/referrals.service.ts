@@ -17,7 +17,7 @@ import { ErrorCode } from '@yo-te-invito/shared';
 
 @Injectable()
 export class ReferralsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async create(
     tenantId: string,
@@ -52,6 +52,7 @@ export class ReferralsService {
         eventId,
         code: body.code,
         referrerId: body.referrerId ?? null,
+        referrerProfileId: body.referrerProfileId ?? null,
         label: body.label ?? null,
       },
     });
@@ -183,6 +184,103 @@ export class ReferralsService {
     return users;
   }
 
+  // --- REFERRERS 2.0 NEW PATTERNS ---
+
+  async getAssociatedReferrers(tenantId: string, producerProfileId: string) {
+    return this.prisma.producerReferrerRelationship.findMany({
+      where: { producerProfileId, referrerProfile: { tenantId } },
+      include: {
+        referrerProfile: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async getFreelanceReferrers(tenantId: string) {
+    // Return all ReferrerProfiles with ACTIVE status, sorted by salesScore
+    return this.prisma.referrerProfile.findMany({
+      where: { tenantId, status: 'ACTIVE' },
+      orderBy: { salesScore: 'desc' },
+    });
+  }
+
+  async setAssociationStatus(producerProfileId: string, referrerProfileId: string, status: any, notes?: string) {
+    const existing = await this.prisma.producerReferrerRelationship.findUnique({
+      where: { producerProfileId_referrerProfileId: { producerProfileId, referrerProfileId } },
+    });
+
+    if (existing) {
+      return this.prisma.producerReferrerRelationship.update({
+        where: { id: existing.id },
+        data: { status, notes },
+      });
+    }
+
+    return this.prisma.producerReferrerRelationship.create({
+      data: {
+        producerProfileId,
+        referrerProfileId,
+        status,
+        origin: 'INVITED_BY_PRODUCER',
+        notes,
+      },
+    });
+  }
+
+  async createEventAssignment(
+    tenantId: string,
+    eventId: string,
+    producerProfileId: string,
+    referrerProfileId: string,
+    courtesyQuota: number,
+  ) {
+    // Check if event belongs to producer
+    const event = await this.prisma.event.findFirst({
+      where: { id: eventId, tenantId, producerProfileId, deletedAt: null },
+    });
+    if (!event) throw new NotFoundException({ code: ErrorCode.NOT_FOUND, message: 'Event not found or access denied' });
+
+    const referrer = await this.prisma.referrerProfile.findFirst({
+      where: { id: referrerProfileId, tenantId, status: 'ACTIVE' },
+    });
+    if (!referrer) throw new NotFoundException({ code: ErrorCode.NOT_FOUND, message: 'Referrer not found' });
+
+    let code = `ref-${referrerProfileId.slice(-6)}-${eventId.slice(-6)}`;
+    let suffix = 0;
+    while (true) {
+      const existingCode = await this.prisma.referralLink.findUnique({ where: { code } });
+      if (!existingCode) break;
+      code = `ref-${crypto.randomBytes(4).toString('hex')}`;
+      suffix++;
+      if (suffix > 10) break;
+    }
+
+    const referralLink = await this.prisma.referralLink.create({
+      data: {
+        tenantId,
+        eventId,
+        code,
+        referrerProfileId,
+        label: `${referrer.displayName} (v2)`,
+      },
+    });
+
+    return this.prisma.eventReferrerAssignment.create({
+      data: {
+        eventId,
+        producerProfileId,
+        referrerProfileId,
+        referralLinkId: referralLink.id,
+        courtesyQuota,
+        salesScoreSnapshot: referrer.salesScore,
+        status: 'ACTIVE',
+      },
+      include: {
+        referralLink: true,
+      },
+    });
+  }
+
   async lookupByCode(code: string): Promise<{ eventId: string; tenantId: string } | null> {
     const link = await this.prisma.referralLink.findUnique({
       where: { code },
@@ -191,9 +289,19 @@ export class ReferralsService {
     return link ? { eventId: link.eventId, tenantId: link.tenantId } : null;
   }
 
-  async listByReferrer(tenantId: string, referrerId: string): Promise<{ links: (ReferralLinkSummary & { eventId?: string })[] }> {
+  async listByReferrer(tenantId: string, userId: string): Promise<{ links: (ReferralLinkSummary & { eventId?: string })[] }> {
+    const profileIds = await this.prisma.userReferrerMembership.findMany({
+      where: { tenantId, userId, status: 'ACTIVE', profile: { status: 'ACTIVE' } },
+      select: { profileId: true },
+    }).then((r) => r.map((m) => m.profileId));
     const links = await this.prisma.referralLink.findMany({
-      where: { tenantId, referrerId },
+      where: {
+        tenantId,
+        OR: [
+          { referrerId: userId },
+          ...(profileIds.length ? [{ referrerProfileId: { in: profileIds } }] : []),
+        ],
+      },
       include: {
         _count: { select: { attributions: true } },
       },
@@ -211,9 +319,9 @@ export class ReferralsService {
     };
   }
 
-  async listCommissionsByUser(referrerId: string): Promise<ReferralCommission[]> {
+  async listCommissionsByUser(userId: string): Promise<ReferralCommission[]> {
     const items = await this.prisma.referralCommission.findMany({
-      where: { referrerId },
+      where: { referrerId: userId },
       orderBy: { requestedAt: 'desc' },
     });
     return items.map((c) => ({
@@ -231,11 +339,22 @@ export class ReferralsService {
 
   async requestCommission(
     tenantId: string,
-    referrerId: string,
+    userId: string,
     referralLinkId: string,
   ): Promise<ReferralCommission> {
+    const profileIds = await this.prisma.userReferrerMembership.findMany({
+      where: { tenantId, userId, status: 'ACTIVE', profile: { status: 'ACTIVE' } },
+      select: { profileId: true },
+    }).then((r) => r.map((m) => m.profileId));
     const link = await this.prisma.referralLink.findFirst({
-      where: { id: referralLinkId, tenantId, referrerId },
+      where: {
+        id: referralLinkId,
+        tenantId,
+        OR: [
+          { referrerId: userId },
+          ...(profileIds.length ? [{ referrerProfileId: { in: profileIds } }] : []),
+        ],
+      },
       include: { _count: { select: { attributions: true } } },
     });
     if (!link) {
@@ -280,7 +399,7 @@ export class ReferralsService {
     const created = await this.prisma.referralCommission.create({
       data: {
         tenantId,
-        referrerId,
+        referrerId: userId,
         referralLinkId,
         eventId: link.eventId,
         amountCents,

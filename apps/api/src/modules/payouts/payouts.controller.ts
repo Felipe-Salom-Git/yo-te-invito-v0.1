@@ -10,8 +10,10 @@ import {
 } from '@nestjs/common';
 import { JwtOrDevAuthGuard } from '../../auth/jwt-or-dev-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
+import { ProducerRolesGuard } from '../../common/guards/producer-roles.guard';
 import { RequireRole } from '../../common/decorators/require-role.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { ProfilesAuthorizationService } from '../../common/profiles-authorization.service';
 import { Role } from '@yo-te-invito/shared';
 import { PayoutsService } from './payouts.service';
 
@@ -42,17 +44,20 @@ export class AdminPayoutsController {
 
 @Controller('producer')
 export class ProducerPayoutsController {
-  constructor(private readonly service: PayoutsService) {}
+  constructor(
+    private readonly service: PayoutsService,
+    private readonly profilesAuth: ProfilesAuthorizationService,
+  ) {}
 
   @Get('payouts')
-  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @UseGuards(JwtOrDevAuthGuard, ProducerRolesGuard)
   @RequireRole(Role.ADMIN, Role.PRODUCER_OWNER, Role.PRODUCER_STAFF)
   async listByProducer(@CurrentUser() user: { id: string; tenantId: string }) {
     return this.service.listByProducer(user.id, user.tenantId);
   }
 
   @Get('events/:eventId/payouts')
-  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @UseGuards(JwtOrDevAuthGuard, ProducerRolesGuard)
   @RequireRole(Role.ADMIN, Role.PRODUCER_OWNER, Role.PRODUCER_STAFF)
   async listByEvent(
     @CurrentUser() user: { tenantId: string },
@@ -62,8 +67,8 @@ export class ProducerPayoutsController {
   }
 
   @Post('payouts')
-  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
-  @RequireRole(Role.PRODUCER_OWNER)
+  @UseGuards(JwtOrDevAuthGuard, ProducerRolesGuard)
+  @RequireRole(Role.ADMIN, Role.PRODUCER_OWNER, Role.PRODUCER_STAFF)
   async create(
     @CurrentUser() user: { id: string; tenantId: string },
     @Body() body: {
@@ -73,6 +78,7 @@ export class ProducerPayoutsController {
       bankInfo?: { titular?: string; banco?: string; cbu?: string };
     },
   ) {
+    const producerProfileId = await this.profilesAuth.getDefaultProducerProfileId(user.tenantId, user.id);
     return this.service.create(
       user.tenantId,
       body.eventId,
@@ -80,6 +86,7 @@ export class ProducerPayoutsController {
       body.amountCents,
       user.id,
       body.bankInfo,
+      producerProfileId,
     );
   }
 }

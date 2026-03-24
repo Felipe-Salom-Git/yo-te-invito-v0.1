@@ -1,12 +1,11 @@
 'use client';
 
 import { useState, Suspense } from 'react';
-import { signIn, getSession } from 'next-auth/react';
+import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button, Input, Card, CardHeader, CardContent } from '@/components';
 import { Logo } from '@/components/brand/Logo';
-import { getDashboardForRole } from '@/lib/roleRedirect';
 
 function LoginForm() {
   const router = useRouter();
@@ -34,21 +33,8 @@ function LoginForm() {
       return;
     }
 
-    // Role comes from session (set by authorize) or fallback to check-credentials
-    let role: string | undefined;
-    const session = await getSession();
-    role = (session?.user as { role?: string })?.role;
-    if (!role) {
-      const checkRes = await fetch('/api/auth/check-credentials', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = (await checkRes.json()) as { role?: string };
-      role = data?.role;
-    }
-    const dashboard = getDashboardForRole(role);
-    router.push(dashboard);
+    // Post-login: always go to profile selector
+    router.push('/profiles');
     router.refresh();
   }
 
@@ -77,7 +63,7 @@ function LoginForm() {
             <div className="mb-4">
               <button
                 type="button"
-                onClick={() => signIn('google', { callbackUrl: '/cuenta' })}
+                onClick={() => signIn('google', { callbackUrl: '/profiles' })}
                 className="flex w-full items-center justify-center gap-2 rounded border border-border bg-bg-muted px-4 py-2 text-text hover:bg-border transition-colors"
               >
                 <svg className="h-5 w-5" viewBox="0 0 24 24">

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
@@ -20,7 +20,32 @@ function CheckoutSuccessContent() {
 
   const [paid, setPaid] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // On load with orderIds: refresh payment status (sync from Getnet if applicable)
+  useEffect(() => {
+    if (orderIds.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      setRefreshing(true);
+      setError(null);
+      try {
+        for (const oid of orderIds) {
+          const status = await repos.orders.getOrderPaymentStatus(oid, t);
+          if (!cancelled && status.orderStatus === 'PAID') {
+            setPaid(true);
+            break;
+          }
+        }
+      } catch (err) {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Error al verificar');
+      } finally {
+        if (!cancelled) setRefreshing(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [orderIds.join(','), t, repos.orders]);
 
   const handlePayDemo = async () => {
     if (orderIds.length === 0 || !userId) {
@@ -41,6 +66,25 @@ function CheckoutSuccessContent() {
     }
   };
 
+  const handleRefresh = async () => {
+    if (orderIds.length === 0) return;
+    setRefreshing(true);
+    setError(null);
+    try {
+      for (const oid of orderIds) {
+        const status = await repos.orders.getOrderPaymentStatus(oid, t);
+        if (status.orderStatus === 'PAID') {
+          setPaid(true);
+          break;
+        }
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al verificar');
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   if (orderIds.length === 0) {
     return (
       <PageContainer>
@@ -56,7 +100,7 @@ function CheckoutSuccessContent() {
     <PageContainer>
       <SectionTitle>Confirmar pago</SectionTitle>
       <p className="mt-2 text-text-muted">
-        {orderIds.length} orden(es) creada(s). Pago pendiente.
+        {orderIds.length} orden(es) creada(s). {paid ? 'Pago confirmado.' : 'Pago pendiente.'}
       </p>
       {paid ? (
         <div className="mt-8 rounded-lg border border-accent/50 bg-accent/10 p-6">
@@ -72,9 +116,12 @@ function CheckoutSuccessContent() {
           </Link>
         </div>
       ) : (
-        <div className="mt-8">
+        <div className="mt-8 space-y-4">
           <Button onClick={handlePayDemo} disabled={loading}>
             {loading ? 'Procesando…' : 'Pay DEMO'}
+          </Button>
+          <Button variant="outline" onClick={handleRefresh} disabled={refreshing} className="ml-2">
+            {refreshing ? 'Verificando…' : 'Actualizar estado'}
           </Button>
           {!userId && (
             <p className="mt-2 text-sm text-amber-500">

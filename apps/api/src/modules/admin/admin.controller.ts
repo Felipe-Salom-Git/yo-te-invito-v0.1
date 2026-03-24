@@ -43,6 +43,7 @@ import { PlatformMetricsService } from './platform-metrics.service';
 import { AdminUsersService } from './admin-users.service';
 import { AdminConfigService } from './admin-config.service';
 import { AdminApplicationsService } from './admin-applications.service';
+import { AdminProfilesService } from './admin-profiles.service';
 import { ReferralsService } from '../referrals/referrals.service';
 
 @Controller('admin')
@@ -56,6 +57,7 @@ export class AdminController {
     private readonly users: AdminUsersService,
     private readonly config: AdminConfigService,
     private readonly applications: AdminApplicationsService,
+    private readonly profiles: AdminProfilesService,
     private readonly referrals: ReferralsService,
   ) {}
 
@@ -164,6 +166,57 @@ export class AdminController {
     @Param('id') applicationId: string,
   ) {
     return this.applications.reject(user.tenantId, applicationId, user.id);
+  }
+
+  @Get('profiles/producer/pending')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async listPendingProducerProfiles(@CurrentUser() user: { tenantId: string }) {
+    return this.profiles.listPendingProducerProfiles(user.tenantId);
+  }
+
+  @Post('profiles/producer/:id/approve')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async approveProducerProfile(
+    @CurrentUser() user: { tenantId: string },
+    @Param('id') profileId: string,
+  ) {
+    return this.profiles.approveProducerProfile(user.tenantId, profileId);
+  }
+
+  @Get('profiles/gastro/pending')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async listPendingGastroProfiles(@CurrentUser() user: { tenantId: string }) {
+    return this.profiles.listPendingGastroProfiles(user.tenantId);
+  }
+
+  @Post('profiles/gastro/:id/approve')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async approveGastroProfile(
+    @CurrentUser() user: { tenantId: string },
+    @Param('id') profileId: string,
+  ) {
+    return this.profiles.approveGastroProfile(user.tenantId, profileId);
+  }
+
+  @Get('profiles/referrer/pending')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async listPendingReferrerProfiles(@CurrentUser() user: { tenantId: string }) {
+    return this.profiles.listPendingReferrerProfiles(user.tenantId);
+  }
+
+  @Post('profiles/referrer/:id/approve')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async approveReferrerProfile(
+    @CurrentUser() user: { tenantId: string },
+    @Param('id') profileId: string,
+  ) {
+    return this.profiles.approveReferrerProfile(user.tenantId, profileId);
   }
 
   @Get('users')

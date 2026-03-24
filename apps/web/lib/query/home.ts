@@ -7,11 +7,18 @@ import type { EventSummary } from '@/repositories/interfaces';
 import { homeKeys } from './keys';
 
 const TENANT_ID = 'tenant-demo';
+const DEFAULT_CITY = 'Buenos Aires';
 
-export function useHomeCarousels() {
+export interface UseHomeCarouselsOptions {
+  /** When provided, nearYou fetches events in this city (personalized path) */
+  preferredCity?: string | null;
+}
+
+export function useHomeCarousels(options?: UseHomeCarouselsOptions) {
   const repos = useRepositories();
   const { tenantId } = useTenant();
   const t = tenantId || TENANT_ID;
+  const city = options?.preferredCity?.trim() || DEFAULT_CITY;
 
   const trending = useQuery({
     queryKey: homeKeys.trending(t),
@@ -20,8 +27,8 @@ export function useHomeCarousels() {
   });
 
   const nearYou = useQuery({
-    queryKey: homeKeys.nearYou(t, 'Buenos Aires'),
-    queryFn: () => repos.events.list({ tenantId: t, city: 'Buenos Aires', limit: 8 }),
+    queryKey: homeKeys.nearYou(t, city),
+    queryFn: () => repos.events.list({ tenantId: t, city, limit: 8 }),
     enabled: !!t,
   });
 

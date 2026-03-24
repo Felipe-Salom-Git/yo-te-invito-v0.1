@@ -10,7 +10,6 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 const TENANT_ID = 'tenant-demo';
-const PRODUCER_ID = 'user-producer';
 
 function addDays(d: Date, days: number, hours = 0): Date {
   const out = new Date(d);
@@ -383,13 +382,39 @@ async function main() {
     process.exit(1);
   }
 
-  const producer = await prisma.user.findFirst({
-    where: { tenantId: TENANT_ID, role: 'PRODUCER_OWNER' },
+  const admin = await prisma.user.findFirst({
+    where: { tenantId: TENANT_ID, role: 'ADMIN', deletedAt: null },
   });
-  if (!producer) {
-    console.error('Producer user not found. Run demo:seed first.');
+  if (!admin) {
+    console.error('Admin user not found. Run demo:seed first.');
     process.exit(1);
   }
+
+  let producerProfile = await prisma.producerProfile.findFirst({
+    where: { tenantId: TENANT_ID, status: 'ACTIVE' },
+  });
+  if (!producerProfile) {
+    producerProfile = await prisma.producerProfile.create({
+      data: {
+        tenantId: TENANT_ID,
+        displayName: 'Demo Producer',
+        createdByUserId: admin.id,
+        status: 'ACTIVE',
+      },
+    });
+    await prisma.userProducerMembership.create({
+      data: {
+        tenantId: TENANT_ID,
+        userId: admin.id,
+        profileId: producerProfile.id,
+        membershipRole: 'OWNER',
+        status: 'ACTIVE',
+      },
+    });
+    console.log('Created producer profile for admin');
+  }
+
+  const producerId = admin.id;
 
   let created = 0;
   let updated = 0;
@@ -426,7 +451,8 @@ async function main() {
         data: {
           id: ev.id,
           tenantId: TENANT_ID,
-          producerId: producer.id,
+        producerId,
+        producerProfileId: producerProfile.id,
           category: ev.category,
           title: ev.title,
           description: ev.description,

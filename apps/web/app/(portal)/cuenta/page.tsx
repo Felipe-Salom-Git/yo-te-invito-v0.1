@@ -35,6 +35,9 @@ export default function CuentaPage() {
   }
 
   const name = user ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || session.user.name : session.user.name;
+  const producerAccess = user?.availableProfiles?.producer?.hasAccess ?? false;
+  const hasProducerProfiles = (user?.availableProfiles?.producer?.profiles?.length ?? 0) > 0;
+  const canRequestProducer = !producerAccess && !hasProducerProfiles;
 
   return (
     <PageContainer>
@@ -52,6 +55,21 @@ export default function CuentaPage() {
           </p>
         </CardContent>
       </Card>
+      {canRequestProducer && (
+        <Card className="mt-6">
+          <CardContent>
+            <h3 className="font-medium text-text">¿Sos productor de eventos?</h3>
+            <p className="mt-2 text-sm text-text-muted">
+              Solicitá un perfil de productor para crear y gestionar tus eventos.
+            </p>
+            <Link href="/cuenta/solicitar-productor" className="mt-4 inline-block">
+              <span className="rounded border border-accent px-4 py-2 text-sm font-medium text-accent hover:bg-accent/10 transition-colors">
+                Solicitar perfil productor
+              </span>
+            </Link>
+          </CardContent>
+        </Card>
+      )}
     </PageContainer>
   );
 }

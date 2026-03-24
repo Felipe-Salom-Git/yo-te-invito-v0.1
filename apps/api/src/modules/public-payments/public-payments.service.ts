@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  Logger,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -12,6 +13,9 @@ import { randomBytes } from 'crypto';
 import type { OrderResponse } from '@yo-te-invito/shared';
 import { ErrorCode } from '@yo-te-invito/shared';
 import type { PaymentProviderApi } from '@yo-te-invito/shared';
+import { GetnetCheckoutService } from './providers/getnet/getnet-checkout.service';
+import { mapGetnetStatusToLocal } from './providers/getnet/getnet.mapper';
+import { loadGetnetConfig } from './providers/getnet/getnet.config';
 
 function generateQrPayload(): string {
   return 'yti:v1:' + randomBytes(24).toString('hex');
@@ -21,14 +25,27 @@ export interface CreatePaymentResult {
   paymentId: string;
   paymentUrl: string;
   status: string;
+  /** For Getnet: external checkout URL to redirect user */
+  checkoutUrl?: string;
+  provider?: string;
+}
+
+export interface RefreshPaymentStatusResult {
+  paymentId: string;
+  orderId: string;
+  status: string;
+  orderStatus: string;
 }
 
 @Injectable()
 export class PublicPaymentsService {
+  private readonly logger = new Logger(PublicPaymentsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly capacityGuard: EventCapacityGuardService,
     private readonly emailQueue: EmailQueueService,
+    private readonly getnetCheckout: GetnetCheckoutService,
   ) {}
 
   async createPayment(
@@ -92,11 +109,27 @@ export class PublicPaymentsService {
     }
 
     const amountCents = Math.round(Number(order.totalAmount) * 100);
+    const providerTyped = provider as 'DEMO' | 'MERCADOPAGO' | 'GETNET';
+
+    if (providerTyped === 'GETNET') {
+      return this.createGetnetPayment(orderId, tenantId, order, amountCents, providerTyped);
+    }
+
+    return this.createDemoPayment(orderId, tenantId, order, amountCents, providerTyped);
+  }
+
+  private async createDemoPayment(
+    orderId: string,
+    tenantId: string,
+    order: { id: string; totalAmount: unknown; currency: string },
+    amountCents: number,
+    providerTyped: 'DEMO' | 'MERCADOPAGO',
+  ): Promise<CreatePaymentResult> {
     const payment = await this.prisma.payment.create({
       data: {
         tenantId,
         orderId,
-        provider: provider as 'DEMO' | 'MERCADOPAGO' | 'GETNET',
+        provider: providerTyped,
         status: 'CREATED',
         amount: amountCents,
         currency: order.currency,
@@ -114,6 +147,76 @@ export class PublicPaymentsService {
       paymentId: payment.id,
       paymentUrl,
       status: payment.status,
+      provider: providerTyped,
+    };
+  }
+
+  private async createGetnetPayment(
+    orderId: string,
+    tenantId: string,
+    order: { id: string; totalAmount: unknown; currency: string },
+    amountCents: number,
+    providerTyped: 'GETNET',
+  ): Promise<CreatePaymentResult> {
+    const config = loadGetnetConfig();
+    if (!config.enabled) {
+      throw new NotFoundException({
+        code: ErrorCode.NOT_FOUND,
+        message: 'Getnet is not configured',
+      });
+    }
+
+    const fullOrder = await this.prisma.order.findUniqueOrThrow({
+      where: { id: orderId },
+      include: { orderItems: { include: { ticketType: true } } },
+    });
+
+    const items = fullOrder.orderItems.map((oi, idx) => ({
+      id: idx + 1,
+      name: oi.ticketType.name,
+      unitPrice: {
+        currency: 'ARS',
+        amount: Math.round(Number(oi.unitPrice) * 100),
+      },
+      quantity: oi.quantity,
+    }));
+
+    let getnetResult;
+    try {
+      getnetResult = await this.getnetCheckout.createOrder({
+        currency: order.currency,
+        items,
+        reference: orderId,
+      });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      this.logger.warn(`Getnet order creation failed: ${msg}`);
+      throw new ConflictException({
+        code: ErrorCode.CONFLICT,
+        message: `Payment provider error: ${msg}`,
+      });
+    }
+
+    const payment = await this.prisma.payment.create({
+      data: {
+        tenantId,
+        orderId,
+        provider: providerTyped,
+        status: 'PENDING',
+        amount: amountCents,
+        currency: order.currency,
+        externalReference: getnetResult.uuid,
+        paymentUrl: getnetResult.checkoutUrl,
+        metadata: getnetResult.raw ? (getnetResult.raw as object) : undefined,
+      },
+    });
+
+    return {
+      paymentId: payment.id,
+      paymentUrl: getnetResult.checkoutUrl,
+      status: payment.status,
+      checkoutUrl: getnetResult.checkoutUrl,
+      provider: providerTyped,
     };
   }
 
@@ -267,6 +370,197 @@ export class PublicPaymentsService {
       });
 
       return result;
+    });
+  }
+
+  async getOrderPaymentStatus(
+    orderId: string,
+    tenantId: string,
+  ): Promise<RefreshPaymentStatusResult> {
+    const payment = await this.prisma.payment.findFirst({
+      where: { orderId, tenantId },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (!payment) {
+      throw new NotFoundException({
+        code: ErrorCode.NOT_FOUND,
+        message: 'Payment not found for order',
+      });
+    }
+    return this.refreshPaymentStatus(payment.id, tenantId);
+  }
+
+  async refreshPaymentStatus(
+    paymentId: string,
+    tenantId: string,
+  ): Promise<RefreshPaymentStatusResult> {
+    const payment = await this.prisma.payment.findFirst({
+      where: { id: paymentId, tenantId },
+      include: {
+        order: {
+          include: {
+            orderItems: { include: { ticketType: true, tickets: true } },
+            tickets: true,
+          },
+        },
+      },
+    });
+
+    if (!payment) {
+      throw new NotFoundException({
+        code: ErrorCode.NOT_FOUND,
+        message: 'Payment not found',
+      });
+    }
+
+    if (payment.provider !== 'GETNET' || !payment.externalReference) {
+      return {
+        paymentId: payment.id,
+        orderId: payment.orderId,
+        status: payment.status,
+        orderStatus: payment.order.status,
+      };
+    }
+
+    try {
+      const remote = await this.getnetCheckout.getOrderStatus(
+        payment.externalReference,
+      );
+      const localStatus = mapGetnetStatusToLocal(remote.status);
+
+      if (localStatus !== payment.status) {
+        await this.prisma.payment.update({
+          where: { id: paymentId },
+          data: { status: localStatus },
+        });
+      }
+
+      if (localStatus === 'APPROVED' && payment.order.status === 'PENDING_PAYMENT') {
+        await this.completeOrderFromGetnet(payment.orderId, tenantId, paymentId);
+      }
+
+      const updated = await this.prisma.payment.findUniqueOrThrow({
+        where: { id: paymentId },
+        include: { order: true },
+      });
+
+      return {
+        paymentId: updated.id,
+        orderId: updated.orderId,
+        status: updated.status,
+        orderStatus: updated.order.status,
+      };
+    } catch (e) {
+      this.logger.warn(
+        `Getnet status sync failed for payment ${paymentId}: ${e instanceof Error ? e.message : String(e)}`,
+      );
+      return {
+        paymentId: payment.id,
+        orderId: payment.orderId,
+        status: payment.status,
+        orderStatus: payment.order.status,
+      };
+    }
+  }
+
+  private async completeOrderFromGetnet(
+    orderId: string,
+    tenantId: string,
+    paymentId: string,
+  ): Promise<void> {
+    const payment = await this.prisma.payment.findFirst({
+      where: { id: paymentId, tenantId },
+      include: {
+        order: {
+          include: {
+            orderItems: { include: { ticketType: true } },
+          },
+        },
+      },
+    });
+
+    if (!payment || payment.order.status !== 'PENDING_PAYMENT') {
+      return;
+    }
+
+    const now = new Date();
+    const totalTickets = payment.order.orderItems.reduce(
+      (s, oi) => s + oi.quantity,
+      0,
+    );
+
+    await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const orderUpdate = await tx.order.updateMany({
+        where: {
+          id: orderId,
+          status: 'PENDING_PAYMENT',
+          tenantId,
+          OR: [
+            { expiresAt: null },
+            { expiresAt: { gte: now } },
+          ],
+        },
+        data: { status: 'PAID', paidAt: now },
+      });
+
+      if (orderUpdate.count === 0) return;
+
+      await this.capacityGuard.assertEventCapacityAvailable(
+        tx,
+        tenantId,
+        payment.order.eventId,
+        totalTickets,
+      );
+
+      const ownerUser = await tx.user.findFirst({
+        where: {
+          tenantId: payment.order.tenantId,
+          email: payment.order.buyerEmail,
+          deletedAt: null,
+        },
+        select: { id: true },
+      });
+      const ownerUserId = ownerUser?.id ?? null;
+      const seenPayloads = new Set<string>();
+
+      for (const oi of payment.order.orderItems) {
+        for (let i = 0; i < oi.quantity; i++) {
+          let qrPayload = generateQrPayload();
+          while (seenPayloads.has(qrPayload)) {
+            qrPayload = generateQrPayload();
+          }
+          seenPayloads.add(qrPayload);
+
+          await tx.ticket.create({
+            data: {
+              orderId: payment.orderId,
+              orderItemId: oi.id,
+              ticketTypeId: oi.ticketTypeId,
+              eventId: payment.order.eventId,
+              qrPayload,
+              status: 'VALID',
+              ownerUserId,
+            },
+          });
+        }
+      }
+
+      const updatedOrder = await tx.order.findUniqueOrThrow({
+        where: { id: orderId },
+        include: { event: { select: { title: true } } },
+      });
+      const eventTitle = (updatedOrder as { event?: { title: string } }).event?.title ?? 'Evento';
+      const { html, text } = renderOrderConfirmationEmail(
+        payment.order.buyerFirstName,
+        orderId,
+        eventTitle,
+      );
+      this.emailQueue.enqueue({
+        to: payment.order.buyerEmail,
+        subject: 'Tu compra fue confirmada',
+        html,
+        text,
+      });
     });
   }
 

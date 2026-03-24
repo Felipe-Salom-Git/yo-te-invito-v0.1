@@ -1,0 +1,2 @@
+app/(portal)/producer/events/[eventId]/referrals/page.tsx(132,30): error TS2339: Property 'url' does not exist on type 'ReferralLinkSummary'.
+app/(portal)/producer/events/[eventId]/referrals/page.tsx(132,130): error TS2339: Property 'url' does not exist on type 'ReferralLinkSummary'.

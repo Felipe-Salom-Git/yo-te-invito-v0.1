@@ -145,11 +145,8 @@ export default function RegisterPage() {
               Iniciar sesión
             </Link>
           </p>
-          <p className="mt-2 text-center text-sm text-text-muted">
-            ¿Productor o gastro?{' '}
-            <Link href="/register/producer" className="text-accent hover:underline">Productora</Link>
-            {' · '}
-            <Link href="/register/gastro" className="text-accent hover:underline">Gastro</Link>
+          <p className="mt-2 text-center text-xs text-text-muted">
+            Después de registrarte podés solicitar perfiles de productor, gastro o referidor desde tu cuenta.
           </p>
           <p className="mt-2 text-center text-sm text-text-muted">
             <Link href="/home" className="text-accent hover:underline">

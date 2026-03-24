@@ -11,6 +11,8 @@ export interface ContentRailProps {
   subtitle?: string;
   items: EventSummary[];
   isLoading?: boolean;
+  /** When provided, cards open preview on click instead of navigating (homepage mode) */
+  onCardClick?: (item: ContentCardItem) => void;
 }
 
 export function ContentRail({
@@ -18,6 +20,7 @@ export function ContentRail({
   subtitle,
   items,
   isLoading = false,
+  onCardClick,
 }: ContentRailProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -126,7 +129,11 @@ export function ContentRail({
             ))
           ) : (
             items.map((ev) => (
-              <ContentCard key={ev.id} item={ev as ContentCardItem} />
+              <ContentCard
+                key={ev.id}
+                item={ev as ContentCardItem}
+                onClick={onCardClick ? () => onCardClick(ev as ContentCardItem) : undefined}
+              />
             ))
           )}
         </div>

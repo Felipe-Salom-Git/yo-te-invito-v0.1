@@ -22,13 +22,7 @@ export default function ProducerProfilePage() {
     enabled: !!id,
   });
 
-  const { data: eventsData } = useQuery({
-    queryKey: ['events', 'producer', id, t],
-    queryFn: () => repos.events.list({ tenantId: t, producerId: id, limit: 20 }),
-    enabled: !!id && !!t,
-  });
-
-  const events = eventsData?.data ?? [];
+  const events = producer?.events ?? [];
 
   if (isLoading || !id) {
     return (
@@ -55,7 +49,8 @@ export default function ProducerProfilePage() {
         ← Back
       </Link>
       <SectionTitle>{producer.displayName}</SectionTitle>
-      <p className="mt-2 text-text-muted">{producer.slug}</p>
+      {producer.shortDescription && <p className="mt-2 text-text-muted">{producer.shortDescription}</p>}
+      {producer.longDescription && <p className="mt-4 text-sm text-text max-w-2xl whitespace-pre-wrap">{producer.longDescription}</p>}
       {(producer.ratingAvg != null || producer.ratingCount) && (
         <div className="mt-2 flex items-center gap-2 text-sm">
           {producer.ratingAvg != null && (

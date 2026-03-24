@@ -19,6 +19,7 @@ import { MeModule } from './modules/me/me.module';
 import { PayoutsModule } from './modules/payouts/payouts.module';
 import { GastroModule } from './modules/gastro/gastro.module';
 import { ResaleModule } from './modules/resale/resale.module';
+import { ProfilesModule } from './modules/profiles/profiles.module';
 import { AuthModule } from './auth/auth.module';
 import { EmailModule } from './email/email.module';
 
@@ -46,6 +47,7 @@ import { EmailModule } from './email/email.module';
     PayoutsModule,
     GastroModule,
     ResaleModule,
+    ProfilesModule,
   ],
 })
 export class AppModule {}
