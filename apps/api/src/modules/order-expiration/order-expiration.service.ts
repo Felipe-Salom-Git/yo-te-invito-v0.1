@@ -3,12 +3,16 @@ import { Cron } from '@nestjs/schedule';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditAction } from '@prisma/client';
+import { TicketBatchService } from '../../ticketing/ticket-batch.service';
 
 @Injectable()
 export class OrderExpirationService {
   private readonly logger = new Logger(OrderExpirationService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly ticketBatches: TicketBatchService,
+  ) {}
 
   @Cron('0 */3 * * * *')
   handleExpireOrdersCron() {
@@ -54,6 +58,11 @@ export class OrderExpirationService {
         if (result.count > 0) {
           expired += 1;
           for (const oi of order.orderItems) {
+            await this.ticketBatches.releaseReservation(
+              tx,
+              oi.ticketBatchId ?? null,
+              oi.quantity,
+            );
             await tx.ticketType.updateMany({
               where: { id: oi.ticketTypeId },
               data: { capacityAvailable: { increment: oi.quantity } },

@@ -1,194 +1,170 @@
-# FRONTEND_CONTEXT.md
-## Project: Yo Te Invito — Frontend Web
-## Mode: LocalStorage Edition (Backend-ready architecture)
+# FRONTEND CONTEXT — Yo Te Invito
 
-This document explains the current frontend architecture, domain rules, development boundaries, and implementation roadmap for the **Yo Te Invito** web frontend.
-
-It is intended for:
-- AI coding assistants
-- frontend developers
-- reviewers
-- future backend integration work
+Implementation-oriented technical context for AI-assisted development. Describes the **current implemented state** of `apps/web`.
 
 ---
 
-# 1. Project Goal
+## 1. Project Overview
 
-Build the web frontend of **Yo Te Invito**, an event discovery and ticketing platform, using a backend-ready architecture while temporarily persisting data in **localStorage**.
-
-The frontend must support a complete demo flow:
-
-Intro  
-→ Home  
-→ Explore Events  
-→ Event Detail  
-→ Checkout  
-→ Ticket Issuance  
-→ My Tickets  
-→ QR View  
-
-The key objective is to **avoid future refactors** when switching from LocalStorage to a real API backend.
+- **What**: Web frontend for **Yo Te Invito** — discovery and ticketing for events, restaurants, excursions, and equipment rentals.
+- **Current purpose**: Public discovery, checkout, ticket viewing; producer/admin/referrer/gastro/hotel portals; auth and role-based access.
+- **Data mode**: **ApiRepository** only — NestJS API as single source. No LocalStorage/LocalDB in production UI.
+- **Future**: Preference-driven homepage ordering; real payments; ticket render from `TicketTemplate`.
 
 ---
 
-# 2. Tech Stack
+## 2. Stack
 
-- **Next.js** (App Router)
-- **React**
-- **TypeScript**
-- **TailwindCSS**
-- **TanStack Query**
-- **Zod**
-- **NextAuth** (prepared for future integration)
-- **Framer Motion** (for intro/splash animation)
-
----
-
-# 3. Branding
-
-## Color Palette
-- **Black** → primary background
-- **Green** → accents, highlights, scan line, glow
-- **White** → main contrast text
-
-## Logo
-Current logo asset path:
-
-`apps/web/public/brand/logo.png`
-
-It must be used through a centralized reusable component:
-
-`components/brand/Logo.tsx`
-
-The logo should appear in:
-- Navbar
-- Splash intro
-- Login/Auth-related pages
-- Branding blocks / landing areas
+| Technology | Use |
+|------------|-----|
+| Next.js 15 | App Router |
+| React 18 | UI |
+| TypeScript | Strict typing |
+| TailwindCSS | Styles |
+| TanStack Query | Cache and data fetching |
+| Zod | Validation (`packages/shared`) |
+| NextAuth | Auth |
+| Framer Motion | Animations (home, splash, preview modal) |
 
 ---
 
-# 4. Core Frontend Principles
+## 3. Branding and Design
 
-## 4.1 No direct persistence access from UI
-UI components must **never** access:
-- localStorage directly
-- fetch directly
-- API logic directly
-- repository implementation details
-
-All persistence access must flow through repository abstractions.
-
-## 4.2 Query-first UI
-UI should consume data through:
-- TanStack Query hooks
-- repository interfaces
-
-This keeps the app ready for:
-- local mode now
-- API mode later
-
-## 4.3 Small slices only
-Implementation must be done in small, isolated slices.
-Avoid large rewrites and avoid refactoring multiple unrelated areas at once.
-
-## 4.4 Domain consistency matters
-Frontend labels, statuses, and flow names must match the product domain and future backend contracts.
+- **Background**: Black (`#0a0a0a`, muted `#171717`)
+- **Accent**: Green (`#22c55e`, hover `#16a34a`)
+- **Text**: White + muted
+- **Logo**: `components/brand/Logo.tsx` (variants: icon, with-text, navbar, auth, splash)
+- **Direction**: Dark premium platform; Netflix-inspired rails on home
+- **Responsive**: ~16px / 24px / 32px padding (mobile / tablet / desktop)
 
 ---
 
-# 5. Data Access Architecture
+## 4. Architecture
 
-The frontend uses a repository-based architecture.
+```
+UI Components
+      ↓
+Query Hooks (TanStack Query)
+      ↓
+Repository Interfaces (repositories/interfaces.ts)
+      ↓
+ApiRepository (repositories/ApiRepository.ts)
+      ↓
+ApiClient → HTTP (NEXT_PUBLIC_API_BASE_URL)
+```
 
-## Data Flow
-
-UI Components  
-↓  
-Query Hooks (TanStack Query)  
-↓  
-Repository Interfaces  
-↓  
-Local Repository (current) / API Repository (future)
-
-## Current Persistence
-- LocalStorage
-- Seeded demo data
-- Local repositories
-
-## Future Persistence
-- API backend
-- Same repository interfaces
-- UI should remain mostly unchanged
+- No direct `fetch` or `localStorage` in UI components.
+- Query keys in `lib/query/keys.ts`.
 
 ---
 
-# 6. Expected Folder Structure
+## 5. Repository Layer
 
-```txt
-apps/web
-│
-├─ app
-│   ├─ page.tsx
-│   ├─ home/
-│   ├─ explore/
-│   ├─ events/[eventId]/
-│   ├─ checkout/[eventId]/
-│   ├─ my-tickets/
-│   ├─ profile/
-│   └─ ...
-│
-├─ components
-│   ├─ brand/
-│   │   └─ Logo.tsx
-│   │
-│   ├─ layout/
-│   │   ├─ AppShell.tsx
-│   │   ├─ Navbar.tsx
-│   │   └─ PageContainer.tsx
-│   │
-│   ├─ splash/
-│   │   └─ SplashIntro.tsx
-│   │
-│   ├─ events/
-│   │   ├─ EventCard.tsx
-│   │   ├─ EventGrid.tsx
-│   │   └─ EventDetail sections...
-│   │
-│   ├─ tickets/
-│   │   ├─ TicketCard.tsx
-│   │   ├─ TicketStatusBadge.tsx
-│   │   └─ TicketQrModal.tsx
-│   │
-│   ├─ checkout/
-│   └─ domain/
-│
-├─ hooks
-│   ├─ queryKeys.ts
-│   ├─ useEvents.ts
-│   ├─ useOrders.ts
-│   ├─ useTickets.ts
-│   └─ ...
-│
-├─ repositories
-│   ├─ eventRepository.ts
-│   ├─ orderRepository.ts
-│   ├─ ticketRepository.ts
-│   │
-│   ├─ local/
-│   │   ├─ LocalEventRepository.ts
-│   │   ├─ LocalOrderRepository.ts
-│   │   └─ LocalTicketRepository.ts
-│   │
-│   ├─ api/
-│   │   ├─ ApiEventRepository.ts
-│   │   ├─ ApiOrderRepository.ts
-│   │   └─ ApiTicketRepository.ts
-│   │
-│   └─ RepositoryProvider.tsx
-│
-├─ lib
-│   ├─ introStorage.ts
-│   ├─ domainLabels.ts
-│   ├─ seedDemoData.ts
-│   └─ ...
+| Repository | Status | Notes |
+|------------|--------|-------|
+| EventsRepo | ✓ | list, search, trending, detail, ticket types, public discounts |
+| **RentalLocationsRepo** | ✓ | Admin CRUD locales + productos (`/admin/rental-locations`) |
+| SubcategoriesRepo | ✓ | `listPublic`, admin CRUD |
+| OrdersRepo, TicketsRepo, ReviewsRepo | ✓ | |
+| ReferralsRepo, CourtesiesRepo, PayoutsRepo | ✓ | |
+| TicketTemplatesRepo | ✓ | Canvas studio per ticket type |
+| InboxRepo, GastroRepo, HotelRepo | ✓ | |
+| ProfilesRepo, ApplicationsRepo, PlatformConfigRepo | ✓ | |
+
+**Category routing**: `gastro` → `/restaurants`, `excursion` → `/excursiones`, `rental` → `/rentals`, `hotel` → `/hoteles`, default → `/events`.
+
+---
+
+## 6. Routes / Screens (summary)
+
+| Area | Routes |
+|------|--------|
+| Public | `/`, `/home`, `/explore`, `/events/[id]`, `/restaurants/[id]`, `/excursiones/[id]`, **`/rentals/[id]`**, `/hoteles/[id]`, checkout, `/me/tickets`, `/referrers`, `/r/[code]` |
+| Account | `/login`, `/register`, `/cuenta/*` |
+| Admin | `/admin/*`, **`/admin/rentals`**, **`/admin/rentals/locales/...`**, inbox, perfiles, config |
+| Producer | `/producer/events`, ticket studio, referidos, payouts |
+| Gastro / Hotel / Referrer | `/gastro/*`, `/hotel`, `/referrer`, `/cuenta/solicitar-referrer` |
+
+### Rental public detail (`/rentals/[id]`)
+
+Uses **`RentalProductDetailContent`** (not `PlaceDetailView`):
+
+- **`RentalProductHero`**: cover image as full-width background behind title, description, chips (Alquiler / subcategoría / local). No date/time chips.
+- **Galería**: only **additional** images (`event.media`), thumbnails grid; click opens modal carousel (`RentalGalleryThumbnails`). Header/cover image is **not** duplicated in gallery.
+- **Sidebar**: `RentalContactCard` (WhatsApp), `RentalLocalCard` (address, structured opening hours, “Ver ubicación”).
+- Reviews + related products below.
+- Favorites / “Lo espero” via `EventEngagementRow`.
+
+### Rental admin
+
+| Route | Purpose |
+|-------|---------|
+| `/admin/rentals` | List locales |
+| `/admin/rentals/locales/nuevo` | Create local |
+| `/admin/rentals/locales/[locationId]` | Local detail + products list |
+| `/admin/rentals/locales/[locationId]/editar` | Edit local (structured opening hours) |
+| `/admin/rentals/locales/[locationId]/productos/nuevo` | New product |
+| `/admin/rentals/locales/[locationId]/productos/[productId]/editar` | Edit product + images |
+
+**Forms**: `OpeningHoursEditor` (weekday / saturday / sunday + exceptions), `RentalProductImagesForm` (header image + multi-select gallery with thumbnails).
+
+### Other place details
+
+`PlaceDetailView` remains for **restaurant**, **excursion**, **hotel** (event-style hero, schedule, purchase card). Do not change those when editing rental-only code.
+
+---
+
+## 7. Key Components
+
+| Component | Location |
+|-----------|----------|
+| HomeHero, ContentRail, ContentCard | `components/home/` |
+| ContentPreviewModal | `components/home/` |
+| EventHeroPremium, EventScheduleSection | `components/events/` (events/gastro/excursion/hotel) |
+| **RentalProductDetailContent**, **RentalProductHero**, **RentalGalleryThumbnails**, **RentalLocalCard**, **RentalContactCard** | `components/rentals/` |
+| PlaceDetailView | `components/places/` (non-rental) |
+| TicketStudioClient | `components/producer/ticket-studio/` |
+| OpeningHoursEditor, RentalProductImagesForm | `components/forms/`, `components/rentals/` |
+
+---
+
+## 8. Home / Landing
+
+- `HomeLanding` + `useHomeCarousels` (trending, nearYou, gastro, excursion, rental, hotel).
+- Path A (anonymous): category tabs in hero — **pending** (`CONTEXT_PENDIENTES.md`).
+- Path B (logged-in + preferences): “Para vos” rail, reordered categories.
+
+---
+
+## 9. Domain Rules (frontend)
+
+- Ticket/order/scan/event statuses: `lib/domainLabels.ts`, `StatusBadge` — do not invent values.
+- Rentals are **not events** in UX: no event-style “Horarios” section on rental detail unless real bookable slots exist.
+
+---
+
+## 10. Demo / Seed
+
+- API seeds: `pnpm --filter api run demo:seed`, `demo:seed-curated`, `demo:seed-subcategories`.
+- **Demo cleanup**: `pnpm db:cleanup-demo` (dry-run) / `pnpm db:cleanup-demo -- --confirm` — see `apps/api/prisma/scripts/cleanup-demo.ts`.
+- Dev docs: `/dev/seed`, `/dev/local-db`.
+
+---
+
+## 11. Guardrails for AI
+
+1. Extend via repos + hooks; no rewrites.
+2. No fetch/localStorage in components.
+3. Preserve black/green/white branding.
+4. Rental-only changes: branch or dedicated components — do not break event/gastro/excursion pages.
+5. Files ~300–400 lines max; split when larger.
+
+---
+
+## References
+
+- `docs/context/PROJECT_CONTEXT.md`
+- `docs/context/BACKEND_CONTEXT.md`
+- `docs/context/CONTEXT_PENDIENTES.md`
+- `docs/tickets/TICKET_CANVAS_STUDIO.md`
+- `docs/frontend/FRONTEND_CONVENTIONS.md`

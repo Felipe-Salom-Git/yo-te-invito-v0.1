@@ -7,11 +7,17 @@ export interface EventGallerySectionProps {
   coverImageUrl?: string | null;
   /** Additional media items from event.media */
   media?: Array<{ id: string; url: string; type?: string }>;
+  /** Omit default section top margin (e.g. inside a grid row) */
+  noSectionMargin?: boolean;
+  /** Hide the "Galería" heading */
+  hideTitle?: boolean;
 }
 
 export function EventGallerySection({
   coverImageUrl,
   media = [],
+  noSectionMargin = false,
+  hideTitle = false,
 }: EventGallerySectionProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -53,10 +59,16 @@ export function EventGallerySection({
   }, [deduped.length]);
 
   if (deduped.length === 0) return null;
+
+  const sectionClass = noSectionMargin ? undefined : 'mt-10';
+  const title = !hideTitle ? (
+    <h2 className="text-lg font-semibold text-white mb-4">Galería</h2>
+  ) : null;
+
   if (deduped.length === 1) {
     return (
-      <section className="mt-10">
-        <h2 className="text-lg font-semibold text-white mb-4">Galería</h2>
+      <section className={sectionClass}>
+        {title}
         <div className="overflow-hidden rounded-xl border border-border">
           <img
             src={deduped[0].url}
@@ -69,8 +81,8 @@ export function EventGallerySection({
   }
 
   return (
-    <section className="mt-10">
-      <h2 className="text-lg font-semibold text-white mb-4">Galería</h2>
+    <section className={sectionClass}>
+      {title}
       <div className="relative">
         <div
           ref={scrollRef}

@@ -65,9 +65,11 @@ async function cleanupNonAdmin(tenantId: string, adminId: string, preserveCargaI
 
   await prisma.userProducerMembership.deleteMany({ where: { userId: { in: nonAdminIds } } });
   await prisma.userGastroMembership.deleteMany({ where: { userId: { in: nonAdminIds } } });
+  await prisma.userHotelMembership.deleteMany({ where: { userId: { in: nonAdminIds } } });
   await prisma.userReferrerMembership.deleteMany({ where: { userId: { in: nonAdminIds } } });
   await prisma.producerProfile.deleteMany({ where: { tenantId } });
   await prisma.gastroProfile.deleteMany({ where: { tenantId } });
+  await prisma.hotelProfile.deleteMany({ where: { tenantId } });
   await prisma.referrerProfile.deleteMany({ where: { tenantId } });
   await prisma.roleApplication.deleteMany({ where: { tenantId } });
   await prisma.user.deleteMany({ where: { tenantId, id: { in: nonAdminIds } } });

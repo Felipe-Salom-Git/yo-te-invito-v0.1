@@ -27,6 +27,13 @@ export const meAvailableProfilesSchema = z.object({
     })
     .optional()
     .default({ hasAccess: false, profiles: [] }),
+  hotel: z
+    .object({
+      hasAccess: z.boolean(),
+      profiles: z.array(meProfileSummarySchema).default([]),
+    })
+    .optional()
+    .default({ hasAccess: false, profiles: [] }),
   referrer: z
     .object({
       hasAccess: z.boolean(),
@@ -71,6 +78,7 @@ export const meTicketItemSchema = z.object({
     id: z.string(),
     name: z.string(),
   }),
+  ticketBatchId: z.string().nullable().optional(),
 });
 export type MeTicketItem = z.infer<typeof meTicketItemSchema>;
 
@@ -152,12 +160,18 @@ export const meOrdersResponseSchema = z.object({
 });
 export type MeOrdersResponse = z.infer<typeof meOrdersResponseSchema>;
 
+const idListSchema = z.array(z.string().min(1)).max(100);
+
 /** User preferences (GET /me/preferences, PATCH /me/preferences) */
 export const userPreferencesSchema = z.object({
   userId: z.string(),
   preferredCity: z.string().nullable(),
   notifyNewEvents: z.boolean(),
   notifyReminders: z.boolean(),
+  /** Saved events (any category id in Event table) */
+  favoriteEventIds: idListSchema.default([]),
+  /** Wishlist / “voy a ir” independent of ticket ownership */
+  expectedEventIds: idListSchema.default([]),
 });
 export type UserPreferences = z.infer<typeof userPreferencesSchema>;
 
@@ -165,6 +179,8 @@ export const userPreferencesPatchSchema = z.object({
   preferredCity: z.string().nullable().optional(),
   notifyNewEvents: z.boolean().optional(),
   notifyReminders: z.boolean().optional(),
+  favoriteEventIds: idListSchema.optional(),
+  expectedEventIds: idListSchema.optional(),
 });
 export type UserPreferencesPatch = z.infer<typeof userPreferencesPatchSchema>;
 
@@ -226,11 +242,50 @@ export const profileGastroApplySchema = z.object({
 });
 export type ProfileGastroApplyInput = z.infer<typeof profileGastroApplySchema>;
 
+/** Request body for POST /profiles/hotel/apply */
+export const profileHotelApplySchema = z.object({
+  displayName: z.string().min(1, 'displayName requerido'),
+  legalName: z.string().optional(),
+  description: z.string().max(5000).optional(),
+  address: z.string().optional(),
+  city: z.string().optional(),
+  starCategory: z.number().int().min(1).max(5).optional(),
+  contactPhone: z.string().optional(),
+  contactEmail: z.union([z.string().email(), z.literal('')]).optional(),
+  websiteUrl: z
+    .string()
+    .min(1, 'Sitio web requerido')
+    .max(2048)
+    .refine((s) => /^https?:\/\//i.test(s.trim()), {
+      message: 'La URL del sitio debe empezar con http:// o https://',
+    }),
+  bookingUrl: z
+    .string()
+    .max(2048)
+    .optional()
+    .refine((s) => !s?.trim() || /^https?:\/\//i.test(s.trim()), {
+      message: 'La URL de reservas debe empezar con http:// o https://',
+    }),
+  socialLinks: z
+    .object({
+      instagram: z.string().max(500).optional(),
+      facebook: z.string().max(500).optional(),
+      tripadvisor: z.string().max(500).optional(),
+      other: z.string().max(500).optional(),
+    })
+    .optional(),
+});
+export type ProfileHotelApplyInput = z.infer<typeof profileHotelApplySchema>;
+
 /** Request body for POST /profiles/referrer/apply */
 export const profileReferrerApplySchema = z.object({
   displayName: z.string().min(1, 'displayName requerido'),
-  publicHandle: z.string().optional(),
-  bio: z.string().optional(),
+  bio: z.string().max(500).optional(),
+  longBio: z.string().max(5000).optional(),
+  avatarUrl: z.string().max(2048).optional(),
+  city: z.string().max(120).optional(),
+  region: z.string().max(120).optional(),
+  publicVisibility: z.boolean().optional(),
 });
 export type ProfileReferrerApplyInput = z.infer<typeof profileReferrerApplySchema>;
 
@@ -242,7 +297,7 @@ export const authApplyRoleRequestSchema = z.object({
   lastName: z.string().min(1, 'Apellido requerido'),
   phone: z.string().optional(),
   businessName: z.string().optional(),
-  role: z.enum(['PRODUCER_OWNER', 'GASTRO_OWNER']),
+  role: z.enum(['PRODUCER_OWNER', 'GASTRO_OWNER', 'HOTEL_OWNER']),
   tenantId: z.string().optional(),
 });
 export type AuthApplyRoleRequest = z.infer<typeof authApplyRoleRequestSchema>;

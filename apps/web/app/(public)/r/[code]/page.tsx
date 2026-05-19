@@ -3,14 +3,9 @@
 import { useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useRepositories } from '@/repositories/context';
+import { setReferralCodeCookie } from '@/lib/referral-cookie';
 
-const COOKIE_NAME = 'yti_ref';
-const COOKIE_DAYS = 30;
-
-function setReferralCookie(code: string) {
-  const maxAge = COOKIE_DAYS * 24 * 60 * 60;
-  document.cookie = `${COOKIE_NAME}=${encodeURIComponent(code)}; path=/; max-age=${maxAge}; SameSite=Lax`;
-}
+const DEFAULT_TENANT = 'tenant-demo';
 
 export default function ReferralRedirectPage() {
   const params = useParams();
@@ -26,25 +21,33 @@ export default function ReferralRedirectPage() {
 
     let cancelled = false;
 
-    repos.referrals.lookup(code).then((result) => {
-      if (cancelled) return;
+    repos.referrals
+      .lookup(code)
+      .then((result) => {
+        if (cancelled) return;
 
-      if (result.eventId) {
-        setReferralCookie(code);
-        router.replace(`/events/${result.eventId}?tenantId=${result.tenantId ?? 'default-tenant'}`);
-      } else {
-        router.replace('/home');
-      }
-    }).catch(() => {
-      if (!cancelled) router.replace('/home');
-    });
+        if (result.eventId) {
+          setReferralCodeCookie(code);
+          const t = result.tenantId?.trim() || DEFAULT_TENANT;
+          router.replace(
+            `/checkout/${result.eventId}?tenantId=${encodeURIComponent(t)}&ref=${encodeURIComponent(code)}`,
+          );
+        } else {
+          router.replace('/home');
+        }
+      })
+      .catch(() => {
+        if (!cancelled) router.replace('/home');
+      });
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [code, router, repos]);
 
   return (
     <div className="flex min-h-[40vh] items-center justify-center">
-      <p className="text-text-muted">Redirecting…</p>
+      <p className="text-text-muted">Te llevamos al checkout…</p>
     </div>
   );
 }

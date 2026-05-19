@@ -28,6 +28,12 @@ export function ReviewCard({ review }: ReviewCardProps) {
           {review.comment}
         </p>
       )}
+      {review.officialReply && (
+        <p className="mt-3 border-l-2 border-accent pl-3 text-sm text-text">
+          <span className="font-medium text-accent">Organizador</span>
+          <span className="mt-1 block text-text-muted">{review.officialReply}</span>
+        </p>
+      )}
     </article>
   );
 }

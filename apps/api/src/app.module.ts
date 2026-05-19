@@ -18,8 +18,10 @@ import { FraudModule } from './modules/fraud/fraud.module';
 import { MeModule } from './modules/me/me.module';
 import { PayoutsModule } from './modules/payouts/payouts.module';
 import { GastroModule } from './modules/gastro/gastro.module';
+import { HotelModule } from './modules/hotel/hotel.module';
 import { ResaleModule } from './modules/resale/resale.module';
 import { ProfilesModule } from './modules/profiles/profiles.module';
+import { ReferrerModule } from './modules/referrer/referrer.module';
 import { AuthModule } from './auth/auth.module';
 import { EmailModule } from './email/email.module';
 
@@ -46,8 +48,10 @@ import { EmailModule } from './email/email.module';
     MeModule,
     PayoutsModule,
     GastroModule,
+    HotelModule,
     ResaleModule,
     ProfilesModule,
+    ReferrerModule,
   ],
 })
 export class AppModule {}

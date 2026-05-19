@@ -46,9 +46,10 @@ export class JwtOrDevAuthGuard implements CanActivate {
       }
     }
 
-    const isDev = process.env.NODE_ENV === 'development';
-    const devAuthEnabled = process.env.DEV_AUTH_ENABLED === 'true';
-    if (!isDev && !devAuthEnabled) {
+    /** Strict `NODE_ENV === 'development'` fallaba en entornos locales sin variable o con otro valor: no había Bearer ni fallback X-Dev-User-Id. */
+    const allowDevUserIdHeader =
+      process.env.NODE_ENV !== 'production' || process.env.DEV_AUTH_ENABLED === 'true';
+    if (!allowDevUserIdHeader) {
       throw new UnauthorizedException({
         code: ErrorCode.UNAUTHORIZED,
         message: 'Authorization required (Bearer token or X-Dev-User-Id in dev)',

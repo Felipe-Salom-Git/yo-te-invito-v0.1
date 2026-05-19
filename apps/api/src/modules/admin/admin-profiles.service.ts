@@ -81,6 +81,46 @@ export class AdminProfilesService {
     return { id: profileId, status: 'ACTIVE', message: 'Perfil aprobado' };
   }
 
+  async listPendingHotelProfiles(tenantId: string) {
+    const profiles = await this.prisma.hotelProfile.findMany({
+      where: { tenantId, status: 'PENDING' },
+      select: {
+        id: true,
+        displayName: true,
+        websiteUrl: true,
+        createdByUserId: true,
+        createdAt: true,
+      },
+    });
+    return { profiles };
+  }
+
+  async approveHotelProfile(tenantId: string, profileId: string) {
+    const profile = await this.prisma.hotelProfile.findFirst({
+      where: { id: profileId, tenantId, status: 'PENDING' },
+    });
+    if (!profile) {
+      throw new NotFoundException({
+        code: 'NOT_FOUND',
+        message: 'Perfil no encontrado o ya aprobado',
+      });
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.hotelProfile.update({
+        where: { id: profileId },
+        data: { status: 'ACTIVE' },
+      }),
+      this.prisma.userHotelMembership.updateMany({
+        where: { profileId },
+        data: { status: 'ACTIVE' },
+      }),
+    ]);
+
+    return { id: profileId, status: 'ACTIVE', message: 'Perfil aprobado' };
+  }
+
+  /** Legacy: new self-service referrers are ACTIVE immediately; only old PENDING rows appear here. */
   async listPendingReferrerProfiles(tenantId: string) {
     const profiles = await this.prisma.referrerProfile.findMany({
       where: { tenantId, status: 'PENDING' },

@@ -13,6 +13,7 @@ import type {
 } from '@yo-te-invito/shared';
 import type { TicketTypeResponse } from '@yo-te-invito/shared';
 import { ErrorCode } from '@yo-te-invito/shared';
+import { TicketBatchService, pickActiveBatch } from '../../ticketing/ticket-batch.service';
 
 function generateQrPayload(): string {
   return 'yti:v1:' + randomBytes(24).toString('hex');
@@ -23,6 +24,7 @@ export class CourtesiesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly capacityGuard: EventCapacityGuardService,
+    private readonly ticketBatches: TicketBatchService,
   ) {}
 
   async create(
@@ -92,6 +94,36 @@ export class CourtesiesService {
       });
 
       const tickets: { id: string; qrPayload: string }[] = [];
+      let courtesyBatchId: string | null = null;
+
+      if (mode === 'CONSUMES_BATCH' && ticketTypeId) {
+        const now = new Date();
+        try {
+          const { batchId } = await this.ticketBatches.consumeFromActiveBatch(
+            tx,
+            ticketTypeId,
+            quantity,
+            now,
+          );
+          courtesyBatchId = batchId;
+        } catch (e: unknown) {
+          const code =
+            e && typeof e === 'object' && 'code' in e
+              ? (e as { code?: string }).code
+              : '';
+          if (code === 'NO_ACTIVE_BATCH' || code === 'INSUFFICIENT_BATCH_STOCK') {
+            throw new BadRequestException({
+              code: ErrorCode.VALIDATION_FAILED,
+              message: 'Insufficient availability for this ticket type',
+            });
+          }
+          throw e;
+        }
+        await tx.ticketType.update({
+          where: { id: ticketTypeId },
+          data: { capacityAvailable: { decrement: quantity } },
+        });
+      }
 
       for (let i = 0; i < quantity; i++) {
         const qrPayload = generateQrPayload();
@@ -99,6 +131,7 @@ export class CourtesiesService {
           data: {
             eventId,
             ticketTypeId: mode === 'CONSUMES_BATCH' ? ticketTypeId : null,
+            ticketBatchId: courtesyBatchId,
             qrPayload,
             status: 'VALID',
             source: 'COURTESY',
@@ -107,13 +140,6 @@ export class CourtesiesService {
           },
         });
         tickets.push({ id: ticket.id, qrPayload: ticket.qrPayload });
-      }
-
-      if (mode === 'CONSUMES_BATCH' && ticketTypeId) {
-        await tx.ticketType.update({
-          where: { id: ticketTypeId },
-          data: { capacityAvailable: { decrement: quantity } },
-        });
       }
 
       return { grant, tickets };
@@ -141,25 +167,44 @@ export class CourtesiesService {
       });
     }
 
+    const now = new Date();
+    await this.prisma.$transaction(async (tx) => {
+      const rows = await tx.ticketType.findMany({
+        where: { eventId, status: 'ACTIVE', deletedAt: null },
+        select: { id: true },
+      });
+      for (const row of rows) {
+        await this.ticketBatches.reconcileTicketType(tx, row.id, now);
+      }
+    });
+
     const types = await this.prisma.ticketType.findMany({
       where: { eventId, status: 'ACTIVE', deletedAt: null },
+      include: { batches: { orderBy: { orderIndex: 'asc' } } },
       orderBy: { name: 'asc' },
     });
 
-    return types.map((t) => ({
-      id: t.id,
-      eventId: t.eventId,
-      name: t.name,
-      description: t.description,
-      price: t.price.toString(),
-      currency: t.currency,
-      capacityTotal: t.capacityTotal,
-      capacityAvailable: t.capacityAvailable,
-      maxPerOrder: t.maxPerOrder,
-      salesStartAt: t.salesStartAt?.toISOString() ?? null,
-      salesEndAt: t.salesEndAt?.toISOString() ?? null,
-      status: t.status,
-    }));
+    return types.map((t) => {
+      const active = pickActiveBatch(t.batches, now);
+      const remaining = active
+        ? active.effectiveQuantity - active.soldCount - active.reservedQuantity
+        : 0;
+      return {
+        id: t.id,
+        eventId: t.eventId,
+        name: t.name,
+        description: t.description,
+        price: (active?.price ?? t.price).toString(),
+        currency: active?.currency ?? t.currency,
+        capacityTotal: t.capacityTotal,
+        capacityAvailable: remaining,
+        maxPerOrder: t.maxPerOrder,
+        salesStartAt: (active?.startAt ?? t.salesStartAt)?.toISOString() ?? null,
+        salesEndAt: (active?.endAt ?? t.salesEndAt)?.toISOString() ?? null,
+        status: t.status,
+        activeTicketBatchId: active?.id ?? null,
+      };
+    });
   }
 
   async list(

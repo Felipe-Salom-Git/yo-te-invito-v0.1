@@ -45,7 +45,8 @@ export class AdminApplicationsService {
     if (existingUser) {
       if (
         existingUser.role === 'PRODUCER_OWNER' ||
-        existingUser.role === 'GASTRO_OWNER'
+        existingUser.role === 'GASTRO_OWNER' ||
+        existingUser.role === 'HOTEL_OWNER'
       ) {
         throw new ConflictException({
           code: 'CONFLICT',

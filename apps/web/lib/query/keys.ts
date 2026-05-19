@@ -47,6 +47,14 @@ export const ticketsKeys = {
 export const ticketTypesKeys = {
   all: ['ticketTypes'] as const,
   byEvent: (eventId: string) => ['ticketTypes', eventId] as const,
+  /** Producer list with full batches (GET /producer/events/:eventId/ticket-types). */
+  producerByEvent: (eventId: string) => [...ticketTypesKeys.all, 'producer', eventId] as const,
+};
+
+export const ticketTemplateKeys = {
+  all: ['ticketTemplate'] as const,
+  byTicketType: (eventId: string, ticketTypeId: string) =>
+    [...ticketTemplateKeys.all, eventId, ticketTypeId] as const,
 };
 
 // ─── Reviews ───────────────────────────────────────────────────────────────
@@ -70,6 +78,23 @@ export const ordersKeys = {
 export const exploreKeys = {
   all: ['explore'] as const,
   search: (query: EventsSearchQuery) => [...exploreKeys.all, query] as const,
+};
+
+// ─── Subcategories ─────────────────────────────────────────────────────────
+
+export const subcategoriesKeys = {
+  all: ['subcategories'] as const,
+  public: (tenantId: string, category: string) =>
+    [...subcategoriesKeys.all, 'public', tenantId, category] as const,
+  admin: (category: string) => [...subcategoriesKeys.all, 'admin', category] as const,
+};
+
+export const categoryLandingKeys = {
+  all: ['categoryLanding'] as const,
+  rails: (tenantId: string, category: string, subcategorySlug?: string) =>
+    [...categoryLandingKeys.all, tenantId, category, subcategorySlug ?? ''] as const,
+  crossCategory: (tenantId: string, selected: string, other: string) =>
+    [...categoryLandingKeys.all, 'cross', tenantId, selected, other] as const,
 };
 
 // ─── Producers ─────────────────────────────────────────────────────────────

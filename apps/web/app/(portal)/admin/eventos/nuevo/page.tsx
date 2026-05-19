@@ -7,6 +7,10 @@ import { useMutation } from '@tanstack/react-query';
 import { useRepositories } from '@/repositories/context';
 import { PageContainer, SectionTitle, Button, Input, useToast } from '@/components';
 import { getErrorMessage } from '@/lib/errors';
+import { buildAdminEventDescription } from '@/lib/admin/event-description';
+import { ImageUrlPreview } from '@/components/admin/ImageUrlPreview';
+import { LatLngMapPreview } from '@/components/admin/LatLngMapPreview';
+import { SubcategorySelect } from '@/components/forms/SubcategorySelect';
 
 const TENANT_ID = 'tenant-demo';
 
@@ -23,6 +27,7 @@ export default function AdminEventoNuevoPage() {
   const [capacityTotal, setCapacityTotal] = useState('');
   const [valueOptional, setValueOptional] = useState('');
   const [category, setCategory] = useState('event');
+  const [subcategoryId, setSubcategoryId] = useState('');
   const [coverImageUrl, setCoverImageUrl] = useState('');
   const [ofertas, setOfertas] = useState('');
   const [venueAddress, setVenueAddress] = useState('');
@@ -42,7 +47,7 @@ export default function AdminEventoNuevoPage() {
       repos.events.create({
         tenantId: TENANT_ID,
         title: title.trim(),
-        description: description.trim() || null,
+        description: buildAdminEventDescription(description, valueOptional, ofertas),
         city: city.trim() || null,
         venueName: venueName.trim() || null,
         venueAddress: venueAddress.trim() || null,
@@ -51,6 +56,7 @@ export default function AdminEventoNuevoPage() {
         startAt: startAt ? new Date(startAt).toISOString() : new Date().toISOString(),
         endAt: endAt ? new Date(endAt).toISOString() : null,
         category: category || 'event',
+        subcategoryId: subcategoryId || null,
         capacityTotal: capacityTotal ? parseInt(capacityTotal, 10) : null,
         coverImageUrl: coverImageUrl.trim() || null,
         isTicketingEnabled: false,
@@ -106,6 +112,7 @@ export default function AdminEventoNuevoPage() {
             <span className="mr-2">O subir archivo:</span>
             <input type="file" accept="image/*" onChange={handleFileChange} className="text-sm" />
           </label>
+          <ImageUrlPreview url={coverImageUrl} />
         </div>
         <Input label="Ofertas / promoción (opcional)" value={ofertas} onChange={(e) => setOfertas(e.target.value)} placeholder="Texto de oferta" />
         <div>
@@ -115,20 +122,30 @@ export default function AdminEventoNuevoPage() {
             <Input label="Lat" type="number" step="any" value={geoLat} onChange={(e) => setGeoLat(e.target.value)} placeholder="-34.6037" />
             <Input label="Lng" type="number" step="any" value={geoLng} onChange={(e) => setGeoLng(e.target.value)} placeholder="-58.3816" />
           </div>
+          <LatLngMapPreview lat={geoLat} lng={geoLng} />
         </div>
         <div>
           <label className="mb-1.5 block text-sm font-medium text-text">Categoría</label>
           <select
             value={category}
-            onChange={(e) => setCategory(e.target.value)}
+            onChange={(e) => {
+              setCategory(e.target.value);
+              setSubcategoryId('');
+            }}
             className="w-full rounded border border-border bg-bg px-3 py-2 text-text"
           >
             <option value="event">Evento</option>
             <option value="gastro">Gastronomía</option>
             <option value="excursion">Excursión</option>
             <option value="rental">Alquiler</option>
+            <option value="hotel">Hotel</option>
           </select>
         </div>
+        <SubcategorySelect
+          category={category}
+          value={subcategoryId}
+          onChange={setSubcategoryId}
+        />
         <div className="flex gap-3 pt-4">
           <Button type="submit" disabled={createMutation.isPending}>
             {createMutation.isPending ? 'Creando…' : 'Crear evento'}

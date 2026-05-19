@@ -11,6 +11,7 @@ import { useProducerId } from '@/hooks/useProducerId';
 import { eventFormSchema, type EventFormData } from '@/lib/schemas/event';
 import { PageContainer, SectionTitle, Button, Input, useToast, PageLoader, Breadcrumbs } from '@/components';
 import { getErrorMessage } from '@/lib/errors';
+import { SubcategorySelect } from '@/components/forms/SubcategorySelect';
 
 export default function EditEventPage() {
     const router = useRouter();
@@ -32,6 +33,7 @@ export default function EditEventPage() {
 
     const [form, setForm] = useState<EventFormData | null>(null);
     const [errors, setErrors] = useState<Record<string, string>>({});
+    const [subcategoryId, setSubcategoryId] = useState('');
 
     useEffect(() => {
         if (eventData) {
@@ -50,6 +52,7 @@ export default function EditEventPage() {
                 isTicketingEnabled: eventData.isTicketingEnabled,
                 status: (eventData.status as 'draft' | 'pending' | 'approved') || 'draft',
             });
+            setSubcategoryId(eventData.subcategoryId ?? '');
         }
     }, [eventData]);
 
@@ -69,6 +72,7 @@ export default function EditEventPage() {
                 geoLng: data.geoLng ?? null,
                 isTicketingEnabled: data.isTicketingEnabled,
                 status: data.status,
+                subcategoryId: subcategoryId || null,
             });
             return updated;
         },
@@ -137,6 +141,12 @@ export default function EditEventPage() {
                             <Input label="Ciudad" value={form.city} onChange={(e) => setForm((p) => p ? { ...p, city: e.target.value } : null)} />
                             <Input label="Lugar (Venue)" value={form.venueName} onChange={(e) => setForm((p) => p ? { ...p, venueName: e.target.value } : null)} />
                         </div>
+
+                        <SubcategorySelect
+                            category="event"
+                            value={subcategoryId}
+                            onChange={setSubcategoryId}
+                        />
 
                         <div className="pt-2">
                             <label className="mb-1.5 block text-sm font-medium text-text">Imagen de Portada</label>

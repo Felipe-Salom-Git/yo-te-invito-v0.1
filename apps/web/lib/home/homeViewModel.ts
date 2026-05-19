@@ -40,18 +40,23 @@ export interface HomeViewModelInput {
   gastro: EventSummary[];
   excursion: EventSummary[];
   rental: EventSummary[];
+  hotel: EventSummary[];
   eventsLoading: boolean;
   carouselsLoading: boolean;
+  /** Resolved event cards for /me/preferences favoriteEventIds */
+  favoriteItems: EventSummary[];
+  favoritesLoading: boolean;
 }
 
 const DISCOVERY_TABS: FeaturedTab[] = [
   { id: 'event', label: 'Eventos' },
   { id: 'gastro', label: 'Gastronomía' },
+  { id: 'hotel', label: 'Hoteles' },
   { id: 'excursion', label: 'Excursiones' },
   { id: 'rental', label: 'Alquileres' },
 ];
 
-const CONTENT_CATEGORIES = ['gastro', 'excursion', 'rental'];
+const CONTENT_CATEGORIES = ['gastro', 'hotel', 'excursion', 'rental'];
 
 function isEventCategory(cat?: string): boolean {
   return !cat || cat === 'event' || !CONTENT_CATEGORIES.includes(cat);
@@ -77,6 +82,7 @@ function buildHeroItemsByCategory(input: HomeViewModelInput): Record<string, Eve
   return {
     event: eventItems,
     gastro: input.gastro,
+    hotel: input.hotel,
     excursion: input.excursion,
     rental: input.rental,
   };
@@ -88,20 +94,36 @@ const DEFAULT_RAILS: Omit<HomeRail, 'items' | 'isLoading'>[] = [
   { id: 'nearYou', title: 'Cerca de ti', subtitle: 'En Buenos Aires' },
   { id: 'newEvents', title: 'Nuevos', subtitle: 'Recién agregados' },
   { id: 'gastro', title: 'Gastronomía', subtitle: 'Restaurantes y experiencias' },
+  { id: 'hotel', title: 'Hoteles', subtitle: 'Alojamiento y hospedaje' },
   { id: 'excursion', title: 'Excursiones', subtitle: 'Salidas y tours' },
-  { id: 'rental', title: 'Alquileres', subtitle: 'Espacios y propiedades' },
+  { id: 'rental', title: 'Alquileres', subtitle: 'Autos, equipos y movilidad para tu aventura' },
 ];
+
+function favoritesRail(input: HomeViewModelInput): HomeRail[] {
+  if (input.favoriteItems.length === 0 && !input.favoritesLoading) return [];
+  return [
+    {
+      id: 'favorites',
+      title: 'Tus favoritos',
+      subtitle: 'Eventos que guardaste',
+      items: input.favoriteItems,
+      isLoading: input.favoritesLoading,
+    },
+  ];
+}
 
 function buildRails(input: HomeViewModelInput): HomeRail[] {
   const cityLabel = input.preferences?.preferredCity?.trim() || 'Buenos Aires';
+  const fav = favoritesRail(input);
 
   if (input.strategy === 'discovery') {
-    return DEFAULT_RAILS.map((r) => ({
+    const rails = DEFAULT_RAILS.map((r) => ({
       ...r,
       subtitle: r.id === 'nearYou' ? 'En Buenos Aires' : r.subtitle,
       items: getRailItems(input, r.id),
       isLoading: r.id === 'highlights' ? input.eventsLoading : input.carouselsLoading,
     }));
+    return [...fav, ...rails];
   }
 
   // Path B — personalized: "Para vos" first, optionally reorder by preferredCategories
@@ -130,7 +152,7 @@ function buildRails(input: HomeViewModelInput): HomeRail[] {
     isLoading: r.id === 'highlights' ? input.eventsLoading : input.carouselsLoading,
   }));
 
-  return [paraVos, ...rest];
+  return [...fav, paraVos, ...rest];
 }
 
 function reorderRailsByPreference(
@@ -162,6 +184,8 @@ function getRailItems(input: HomeViewModelInput, id: string): EventSummary[] {
       return input.newEvents;
     case 'gastro':
       return input.gastro;
+    case 'hotel':
+      return input.hotel;
     case 'excursion':
       return input.excursion;
     case 'rental':

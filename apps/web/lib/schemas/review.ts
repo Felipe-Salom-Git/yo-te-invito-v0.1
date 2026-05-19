@@ -27,7 +27,7 @@ export type ReviewRestaurantProducer = z.infer<typeof reviewRestaurantProducerSc
 export type ReviewExcursionRental = z.infer<typeof reviewExcursionRentalSchema>;
 export type ReviewGeneric = z.infer<typeof reviewGenericSchema>;
 
-export type EntityType = 'restaurant' | 'producer' | 'excursion' | 'rental' | 'event';
+export type EntityType = 'restaurant' | 'producer' | 'excursion' | 'rental' | 'hotel' | 'event';
 
 export function getReviewSchema(entityType: EntityType) {
   switch (entityType) {
@@ -36,6 +36,7 @@ export function getReviewSchema(entityType: EntityType) {
       return reviewRestaurantProducerSchema;
     case 'excursion':
     case 'rental':
+    case 'hotel':
       return reviewExcursionRentalSchema;
     default:
       return reviewGenericSchema;
@@ -49,6 +50,7 @@ export function getDimensionLabels(entityType: EntityType): Record<string, strin
       return { servicioBrindado: 'Servicio brindado', atencion: 'Atención', localEstetica: 'Local / estética' };
     case 'excursion':
     case 'rental':
+    case 'hotel':
       return { servicio: 'Servicio', atencionBrindada: 'Atención brindada' };
     default:
       return { score: 'Puntaje general' };

@@ -16,6 +16,7 @@ export interface ReviewFormProps {
     score: number;
     comment?: string;
     dimensions?: Record<string, number>;
+    guestName?: string;
   }) => void;
   isSubmitting?: boolean;
 }
@@ -36,6 +37,7 @@ export function ReviewForm({
   isSubmitting = false,
 }: ReviewFormProps) {
   const [comment, setComment] = useState('');
+  const [guestName, setGuestName] = useState('');
   const [scores, setScores] = useState<Record<string, number>>({});
   const [genericScore, setGenericScore] = useState(3);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +46,7 @@ export function ReviewForm({
   const labels = getDimensionLabels(entityType);
   const isGeneric =
     entityType === 'event' ||
-    !['restaurant', 'producer', 'excursion', 'rental'].includes(entityType);
+    !['restaurant', 'producer', 'excursion', 'rental', 'hotel'].includes(entityType);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,6 +66,7 @@ export function ReviewForm({
         onSubmit({
           score: genericScore,
           comment: parsed.data.comment,
+          guestName: guestName.trim() || undefined,
         });
         return;
       }
@@ -81,11 +84,14 @@ export function ReviewForm({
         return;
       }
       const nums = Object.values(values);
-      const avg = avgScores(nums);
+      const rawAvg = avgScores(nums);
+      // API exige entero 1–5 (CreateReviewBody); el promedio de dimensiones suele ser decimal.
+      const score = Math.min(5, Math.max(1, Math.round(rawAvg)));
       onSubmit({
-        score: avg,
+        score,
         comment: (parsed.data as { comment?: string }).comment,
         dimensions: values,
+        guestName: guestName.trim() || undefined,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error');
@@ -145,6 +151,21 @@ export function ReviewForm({
             maxLength={500}
             className="mt-2 w-full resize-y rounded-lg border border-border bg-bg px-4 py-3 text-text placeholder:text-text-muted/60 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
             placeholder="Contá tu experiencia para ayudar a otros usuarios. ¿Qué fue lo que más te gustó? Podés mencionar atención, calidad, ambiente o cualquier detalle importante."
+          />
+        </div>
+
+        <div className="mt-4">
+          <label htmlFor="review-guest-name" className="block text-sm font-medium text-text-muted">
+            Nombre o alias (opcional)
+          </label>
+          <input
+            id="review-guest-name"
+            type="text"
+            value={guestName}
+            onChange={(e) => setGuestName(e.target.value)}
+            maxLength={80}
+            className="mt-2 w-full rounded-lg border border-border bg-bg px-4 py-2.5 text-text placeholder:text-text-muted/60 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+            placeholder="Si no tenés cuenta, podés firmar la valoración aquí. Con sesión iniciada se usa tu perfil."
           />
         </div>
 

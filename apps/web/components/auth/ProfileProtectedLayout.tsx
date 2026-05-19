@@ -14,7 +14,7 @@ import { useMe } from '@/hooks/useMe';
 const LOGIN_PATH = '/login';
 const PROFILES_PATH = '/profiles';
 
-export type ProfileType = 'producer' | 'gastro' | 'referrer';
+export type ProfileType = 'producer' | 'gastro' | 'hotel' | 'referrer';
 
 interface ProfileProtectedLayoutProps {
   children: React.ReactNode;
@@ -27,6 +27,7 @@ interface ProfileProtectedLayoutProps {
 const ROLE_BY_PROFILE: Record<ProfileType, Role[]> = {
   producer: [Role.ADMIN, Role.PRODUCER_OWNER, Role.PRODUCER_STAFF],
   gastro: [Role.ADMIN, Role.GASTRO_OWNER],
+  hotel: [Role.ADMIN, Role.HOTEL_OWNER],
   referrer: [Role.ADMIN, Role.REFERRER],
 };
 
@@ -47,7 +48,9 @@ export function ProfileProtectedLayout({
         ? user.availableProfiles.producer
         : requiredProfile === 'gastro'
           ? user.availableProfiles.gastro
-          : user.availableProfiles.referrer;
+          : requiredProfile === 'hotel'
+            ? user.availableProfiles.hotel
+            : user.availableProfiles.referrer;
     return !!block?.hasAccess;
   };
 

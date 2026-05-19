@@ -11,12 +11,11 @@ export default function AdminRentalsPage() {
   const repos = useRepositories();
 
   const { data, isLoading } = useQuery({
-    queryKey: ['events', 'admin', 'rentals', TENANT_ID],
-    queryFn: () =>
-      repos.events.list({ tenantId: TENANT_ID, category: 'rental', limit: 100 }),
+    queryKey: ['rental-locations', 'admin', TENANT_ID],
+    queryFn: () => repos.rentalLocations.listAdmin({ tenantId: TENANT_ID, includeInactive: true }),
   });
 
-  const events = data?.data ?? [];
+  const locations = data?.data ?? [];
 
   return (
     <PageContainer>
@@ -24,45 +23,52 @@ export default function AdminRentalsPage() {
         ← Admin
       </Link>
       <SectionTitle>Rentals (Alquileres)</SectionTitle>
-      <p className="mt-2 text-text-muted">CRUD de alquileres.</p>
+      <p className="mt-2 text-text-muted">
+        Gestioná locales y los productos que se muestran al usuario en cada uno.
+      </p>
 
       <Link
-        href="/admin/rentals/nuevo"
+        href="/admin/rentals/locales/nuevo"
         className="mt-6 inline-block rounded border border-accent px-4 py-2 text-accent hover:bg-accent/10"
       >
-        Crear rental
+        Crear local
       </Link>
 
       {isLoading ? (
         <p className="mt-6 text-text-muted">Cargando…</p>
       ) : (
         <ul className="mt-6 space-y-3">
-          {events.map((ev) => (
+          {locations.map((loc) => (
             <li
-              key={ev.id}
+              key={loc.id}
               className="flex items-center justify-between rounded-lg border border-border bg-bg-muted p-4"
             >
               <div>
-                <Link href={`/rentals/${ev.id}`} className="font-medium text-text hover:text-accent">
-                  {ev.title}
+                <Link
+                  href={`/admin/rentals/locales/${loc.id}`}
+                  className="font-medium text-text hover:text-accent"
+                >
+                  {loc.name}
                 </Link>
                 <p className="text-sm text-text-muted">
-                  {ev.city ?? ev.venueName ?? '—'} · {ev.startAt ? new Date(ev.startAt).toLocaleDateString() : '—'}
+                  {loc.address ?? 'Sin dirección'}
+                  {loc.productCount != null ? ` · ${loc.productCount} producto(s)` : ''}
+                  {!loc.isActive ? ' · Inactivo' : ''}
                 </p>
               </div>
               <Link
-                href={`/admin/rentals/${ev.id}/editar`}
+                href={`/admin/rentals/locales/${loc.id}/editar`}
                 className="text-sm text-accent hover:underline"
               >
-                Editar
+                Editar local
               </Link>
             </li>
           ))}
         </ul>
       )}
 
-      {!isLoading && events.length === 0 && (
-        <p className="mt-6 text-text-muted">No hay rentals. Creá uno nuevo.</p>
+      {!isLoading && locations.length === 0 && (
+        <p className="mt-6 text-text-muted">No hay locales. Creá el primero.</p>
       )}
     </PageContainer>
   );

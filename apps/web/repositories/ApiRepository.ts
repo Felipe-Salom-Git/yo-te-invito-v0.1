@@ -2,11 +2,13 @@
  * ApiRepository — HTTP implementation of Repositories against the backend API.
  */
 
-import { ApiClient } from '@/lib/api/client';
+import { ApiClient, ApiClientError } from '@/lib/api/client';
 import type {
   Repositories,
   ApplicationsRepo,
   ProfilesRepo,
+  HotelRepo,
+  HotelProfileSummary,
   PendingProducerProfile,
   RoleApplication,
   EventsRepo,
@@ -14,6 +16,9 @@ import type {
   OrdersRepo,
   UsersRepo,
   ReviewsRepo,
+  InboxRepo,
+  InboxItemSummary,
+  ProducerReviewRow,
   ReferralsRepo,
   CourtesiesRepo,
   MetricsRepo,
@@ -25,6 +30,7 @@ import type {
   EventsPaginatedResponse,
   EventSummary,
   EventDetail,
+  PublicGastroDiscountSummary,
   Ticket,
   Order,
   User,
@@ -34,10 +40,18 @@ import type {
   ReferrerListItem,
   ReferrerProfileSummary,
   ProducerReferrerRelationship,
+  ProducerReferrerAssociationResult,
+  ProducerReferrerContext,
+  ReferrerProducerRelationshipRow,
   ReferralCommission,
   CourtesyGrantSummary,
   TicketTypeResponse,
   TicketTypesRepo,
+  TicketTypeCreateInput,
+  TicketTypeUpdateInput,
+  TicketTemplatesRepo,
+  TicketTemplateUpsertInput,
+  TicketTemplateResponse,
   EventMetrics,
   PlatformMetrics,
   ProducersRepo,
@@ -53,10 +67,27 @@ import type {
   GastroDiscountValidation,
   ResaleListing,
   CreateReferrerInput,
+  ReferrerOwnProfile,
+  ReferrerDashboardResponse,
+  PublicReferrersListResponse,
+  PublicReferrerListItem,
+  ReferrerAssociationResolveResponse,
+  AssignReferrerToEventResponse,
+  ProducerEventAssignmentsResponse,
+  FreelanceReferrerListItem,
+  ProducerFreelanceReferrersParams,
   PlatformConfig,
   PlatformConfigRepo,
   CreatePaymentResult,
   PaymentStatusResult,
+  SubcategoriesRepo,
+  RentalLocationsRepo,
+  RentalLocationSummary,
+  RentalLocationDetail,
+  PublicSubcategorySummary,
+  SubcategoryAdmin,
+  ContentMainCategory,
+  ContentCategory,
 } from './interfaces';
 
 function mapOrderResponse(raw: {
@@ -83,14 +114,26 @@ function mapOrderResponse(raw: {
   };
 }
 
-function mapMeTicketToTicket(
-  item: { ticketId: string; status: string; qrPayload: string; event: { id: string } }
-): Ticket {
+type MeTicketApiRow = {
+  ticketId: string;
+  status: string;
+  qrPayload: string;
+  usedAt?: string | null;
+  revokedAt?: string | null;
+  event: { id: string; title?: string; startAt?: string; venueName?: string | null };
+  ticketType?: { id: string; name: string };
+};
+
+function mapMeTicketToTicket(item: MeTicketApiRow): Ticket {
   return {
     id: item.ticketId,
     eventId: item.event.id,
     qrPayload: item.qrPayload,
     status: item.status as Ticket['status'],
+    usedAt: item.usedAt ?? undefined,
+    revokedAt: item.revokedAt ?? undefined,
+    eventTitle: item.event.title,
+    ticketTypeName: item.ticketType?.name,
   };
 }
 
@@ -133,7 +176,17 @@ export class ApiRepository implements Repositories {
       }
       const raw = await this.client.get<{ data: EventSummary[]; meta: { page: number; limit: number; total: number; totalPages: number } }>(
         '/public/events',
-        { tenantId: t, page: query.page, limit: query.limit, city: query.city, dateFrom: query.dateFrom, dateTo: query.dateTo, category: query.category }
+        {
+          tenantId: t,
+          page: query.page,
+          limit: query.limit,
+          city: query.city,
+          dateFrom: query.dateFrom,
+          dateTo: query.dateTo,
+          category: query.category,
+          subcategoryId: query.subcategoryId,
+          subcategorySlug: query.subcategorySlug,
+        },
       );
       return raw;
     },
@@ -144,6 +197,8 @@ export class ApiRepository implements Repositories {
         q: query.q,
         city: query.city,
         category: query.category,
+        subcategoryId: query.subcategoryId,
+        subcategorySlug: query.subcategorySlug,
         page: query.page,
         limit: query.limit,
         dateFrom: query.dateFrom,
@@ -164,6 +219,13 @@ export class ApiRepository implements Repositories {
         tenantId: t,
       });
       return raw;
+    },
+    listPublicDiscounts: async (eventId: string, tenantId: string) => {
+      const t = tenantId ?? this.defaultTenantId;
+      return this.client.get<{ discounts: PublicGastroDiscountSummary[] }>(
+        `/public/events/${encodeURIComponent(eventId)}/discounts`,
+        { tenantId: t },
+      );
     },
     getDetailForProducer: async (eventId: string) => {
       const raw = await this.client.get<EventDetail | null>(
@@ -195,6 +257,8 @@ export class ApiRepository implements Repositories {
         coverImageUrl: input.coverImageUrl ?? null,
         geoLat: input.geoLat ?? null,
         geoLng: input.geoLng ?? null,
+        category: input.category ?? 'event',
+        subcategoryId: (input as { subcategoryId?: string | null }).subcategoryId ?? null,
       };
       return this.client.post<EventDetail>('/producer/events', body) as Promise<EventDetail>;
     },
@@ -204,6 +268,60 @@ export class ApiRepository implements Repositories {
         patch
       ) as Promise<EventDetail | null>;
     },
+  };
+
+  rentalLocations: RentalLocationsRepo = {
+    listAdmin: async (query) =>
+      this.client.get<{ data: RentalLocationSummary[] }>('/admin/rental-locations', {
+        ...(query?.tenantId ? { tenantId: query.tenantId } : {}),
+        ...(query?.includeInactive ? { includeInactive: true } : {}),
+      }),
+    getAdmin: async (id) =>
+      this.client.get<RentalLocationDetail>(
+        `/admin/rental-locations/${encodeURIComponent(id)}`,
+      ),
+    create: async (input) =>
+      this.client.post<RentalLocationSummary>('/admin/rental-locations', input),
+    update: async (id, patch) =>
+      this.client.patch<RentalLocationSummary>(
+        `/admin/rental-locations/${encodeURIComponent(id)}`,
+        patch,
+      ),
+    remove: async (id) =>
+      this.client.delete<{ ok: true }>(
+        `/admin/rental-locations/${encodeURIComponent(id)}`,
+      ),
+    createProduct: async (locationId, input) =>
+      this.client.post<{ id: string; title: string }>(
+        `/admin/rental-locations/${encodeURIComponent(locationId)}/products`,
+        input,
+      ),
+    updateProduct: async (locationId, productId, patch) =>
+      this.client.patch<{ id: string; title: string }>(
+        `/admin/rental-locations/${encodeURIComponent(locationId)}/products/${encodeURIComponent(productId)}`,
+        patch,
+      ),
+  };
+
+  subcategories: SubcategoriesRepo = {
+    listPublic: async (tenantId: string, category: ContentMainCategory) => {
+      const raw = await this.client.get<{ data: PublicSubcategorySummary[] }>(
+        '/public/subcategories',
+        { tenantId: tenantId ?? this.defaultTenantId, category },
+      );
+      return raw.data;
+    },
+    listAdmin: async (category: ContentCategory) => {
+      return this.client.get<{ data: SubcategoryAdmin[]; comingSoon?: boolean }>(
+        '/admin/subcategories',
+        { category },
+      );
+    },
+    create: async (input) => this.client.post<SubcategoryAdmin>('/admin/subcategories', input),
+    update: async (id, patch) =>
+      this.client.patch<SubcategoryAdmin>(`/admin/subcategories/${encodeURIComponent(id)}`, patch),
+    deactivate: async (id) =>
+      this.client.delete<SubcategoryAdmin>(`/admin/subcategories/${encodeURIComponent(id)}`),
   };
 
   applications: ApplicationsRepo = {
@@ -224,6 +342,7 @@ export class ApiRepository implements Repositories {
   profiles: ProfilesRepo = {
     applyProducer: async (body) => this.client.post('/profiles/producer/apply', body),
     applyGastro: async (body) => this.client.post('/profiles/gastro/apply', body),
+    applyHotel: async (body) => this.client.post('/profiles/hotel/apply', body),
     applyReferrer: async (body) => this.client.post('/profiles/referrer/apply', body),
     listPendingProducerProfiles: async () =>
       this.client.get<{ profiles: PendingProducerProfile[] }>('/admin/profiles/producer/pending'),
@@ -237,23 +356,94 @@ export class ApiRepository implements Repositories {
       this.client.post<{ id: string; status: string; message: string }>(
         `/admin/profiles/gastro/${encodeURIComponent(profileId)}/approve`
       ),
+    listPendingHotelProfiles: async () =>
+      this.client.get<{ profiles: PendingProducerProfile[] }>('/admin/profiles/hotel/pending'),
+    approveHotelProfile: async (profileId: string) =>
+      this.client.post<{ id: string; status: string; message: string }>(
+        `/admin/profiles/hotel/${encodeURIComponent(profileId)}/approve`
+      ),
     listPendingReferrerProfiles: async () =>
       this.client.get<{ profiles: PendingProducerProfile[] }>('/admin/profiles/referrer/pending'),
     approveReferrerProfile: async (profileId: string) =>
       this.client.post<{ id: string; status: string; message: string }>(
         `/admin/profiles/referrer/${encodeURIComponent(profileId)}/approve`
       ),
+    getMyReferrerProfile: async () => this.client.get<ReferrerOwnProfile>('/referrer/me'),
+    updateMyReferrerProfile: async (patch) =>
+      this.client.patch<ReferrerOwnProfile>('/referrer/me', patch),
+    getReferrerDashboard: async () =>
+      this.client.get<ReferrerDashboardResponse>('/referrer/me/dashboard'),
+    listPublicReferrers: async (tenantId: string, page = 1, limit = 24) => {
+      const t = tenantId || this.defaultTenantId;
+      return this.client.get<PublicReferrersListResponse>('/public/referrers', {
+        tenantId: t,
+        page,
+        limit,
+      });
+    },
+    getPublicReferrerBySlug: async (tenantId: string, slug: string) => {
+      const t = tenantId || this.defaultTenantId;
+      return this.client.get<
+        PublicReferrerListItem & { longBio: string | null; coverImageUrl: string | null }
+      >(`/public/referrers/slug/${encodeURIComponent(slug)}`, { tenantId: t });
+    },
+    resolveReferrerAssociation: async (tenantId: string, token: string) => {
+      const t = tenantId || this.defaultTenantId;
+      return this.client.get<ReferrerAssociationResolveResponse>(
+        `/public/referrers/association/${encodeURIComponent(token)}`,
+        { tenantId: t },
+      );
+    },
+  };
+
+  hotel: HotelRepo = {
+    getMe: async () => {
+      return this.client.get<{ profile: HotelProfileSummary | null }>('/hotel/me');
+    },
   };
 
   ticketTypes: TicketTypesRepo = {
-    create: async (eventId: string, input) => {
-      const body = {
+    list: async (eventId: string) => {
+      const raw = await this.client.get<Array<TicketTypeResponse & { price?: string | number }>>(
+        `/producer/events/${encodeURIComponent(eventId)}/ticket-types`,
+      );
+      return raw.map((t) => ({
+        ...t,
+        price: typeof t.price === 'string' ? parseFloat(t.price) : t.price,
+        capacityAvailable: t.capacityAvailable ?? (t as { capacityTotal?: number }).capacityTotal ?? 0,
+        saleStart: (t as { salesStartAt?: string }).salesStartAt ?? null,
+        saleEnd: (t as { salesEndAt?: string }).salesEndAt ?? null,
+      }));
+    },
+    create: async (eventId: string, input: TicketTypeCreateInput) => {
+      const capacityTotal = input.capacityTotal ?? input.capacityAvailable;
+      if (capacityTotal == null || capacityTotal < 1) {
+        throw new Error('capacityTotal (or capacityAvailable) is required and must be >= 1');
+      }
+      const body: Record<string, unknown> = {
         name: input.name,
-        price: input.price,
-        capacityTotal: input.capacityAvailable,
-        salesStartAt: input.saleStart ? new Date(input.saleStart).toISOString() : null,
-        salesEndAt: input.saleEnd ? new Date(input.saleEnd).toISOString() : null,
+        capacityTotal,
+        currency: input.currency ?? 'ARS',
+        maxPerOrder: input.maxPerOrder ?? 10,
       };
+      if (input.description !== undefined) body.description = input.description;
+      if (input.status != null) body.status = input.status;
+      if (input.batches?.length) {
+        const sorted = [...input.batches].sort((a, b) => a.orderIndex - b.orderIndex);
+        body.batches = sorted.map((b) => ({
+          orderIndex: b.orderIndex,
+          name: b.name,
+          startAt: b.startAt,
+          endAt: b.endAt,
+          baseQuantity: b.baseQuantity,
+          price: b.price,
+        }));
+        body.price = input.price ?? sorted[0]?.price ?? 0;
+      } else {
+        body.price = input.price ?? 0;
+        if (input.saleStart) body.salesStartAt = new Date(input.saleStart).toISOString();
+        if (input.saleEnd) body.salesEndAt = new Date(input.saleEnd).toISOString();
+      }
       const raw = await this.client.post<TicketTypeResponse>(
         `/producer/events/${encodeURIComponent(eventId)}/ticket-types`,
         body
@@ -266,17 +456,36 @@ export class ApiRepository implements Repositories {
         saleEnd: (raw as { salesEndAt?: string }).salesEndAt ?? null,
       };
     },
-    update: async (id: string, patch) => {
-      const eventId = (patch as { eventId?: string }).eventId;
+    update: async (id: string, patch: TicketTypeUpdateInput) => {
+      const eventId = patch.eventId;
       if (!eventId) {
         throw new Error('ApiRepository ticketTypes.update requires eventId in patch');
       }
       const body: Record<string, unknown> = {};
       if (patch.name != null) body.name = patch.name;
+      if (patch.description !== undefined) body.description = patch.description;
       if (patch.price != null) body.price = patch.price;
+      if (patch.capacityTotal != null) body.capacityTotal = patch.capacityTotal;
       if (patch.capacityAvailable != null) body.capacityTotal = patch.capacityAvailable;
-      if ((patch as { saleStart?: string }).saleStart != null) body.salesStartAt = (patch as { saleStart?: string }).saleStart;
-      if ((patch as { saleEnd?: string }).saleEnd != null) body.salesEndAt = (patch as { saleEnd?: string }).saleEnd;
+      if (patch.maxPerOrder != null) body.maxPerOrder = patch.maxPerOrder;
+      if (patch.status != null) body.status = patch.status;
+      if (patch.saleStart !== undefined) {
+        body.salesStartAt = patch.saleStart ? new Date(patch.saleStart).toISOString() : null;
+      }
+      if (patch.saleEnd !== undefined) {
+        body.salesEndAt = patch.saleEnd ? new Date(patch.saleEnd).toISOString() : null;
+      }
+      if (patch.batches?.length) {
+        const sorted = [...patch.batches].sort((a, b) => a.orderIndex - b.orderIndex);
+        body.batches = sorted.map((b) => ({
+          orderIndex: b.orderIndex,
+          name: b.name,
+          startAt: b.startAt,
+          endAt: b.endAt,
+          baseQuantity: b.baseQuantity,
+          price: b.price,
+        }));
+      }
       const raw = await this.client.patch<TicketTypeResponse>(
         `/producer/events/${encodeURIComponent(eventId)}/ticket-types/${encodeURIComponent(id)}`,
         body
@@ -291,9 +500,28 @@ export class ApiRepository implements Repositories {
     },
   };
 
+  ticketTemplates: TicketTemplatesRepo = {
+    get: async (eventId: string, ticketTypeId: string) => {
+      return this.client.get<{ template: TicketTemplateResponse | null }>(
+        `/producer/events/${encodeURIComponent(eventId)}/ticket-types/${encodeURIComponent(ticketTypeId)}/ticket-template`,
+      );
+    },
+    upsert: async (eventId: string, ticketTypeId: string, body: TicketTemplateUpsertInput) => {
+      return this.client.put<{ template: TicketTemplateResponse }>(
+        `/producer/events/${encodeURIComponent(eventId)}/ticket-types/${encodeURIComponent(ticketTypeId)}/ticket-template`,
+        body,
+      );
+    },
+    delete: async (eventId: string, ticketTypeId: string) => {
+      return this.client.delete<{ ok: true }>(
+        `/producer/events/${encodeURIComponent(eventId)}/ticket-types/${encodeURIComponent(ticketTypeId)}/ticket-template`,
+      );
+    },
+  };
+
   tickets: TicketsRepo = {
     listByOwner: async (userId: string) => {
-      const raw = await this.client.get<{ tickets: Array<{ ticketId: string; status: string; qrPayload: string; event: { id: string } }> }>('/me/tickets');
+      const raw = await this.client.get<{ tickets: MeTicketApiRow[] }>('/me/tickets');
       return (raw.tickets ?? []).map(mapMeTicketToTicket);
     },
     listByEvent: async (eventId: string) => {
@@ -306,7 +534,17 @@ export class ApiRepository implements Repositories {
         return { id, eventId: evId, qrPayload: t.qrPayload, status: t.status as Ticket['status'] };
       });
     },
-    get: async () => null,
+    get: async (ticketId: string) => {
+      try {
+        const raw = await this.client.get<MeTicketApiRow>(
+          `/me/tickets/${encodeURIComponent(ticketId)}`,
+        );
+        return mapMeTicketToTicket(raw);
+      } catch (e) {
+        if (e instanceof ApiClientError && e.status === 404) return null;
+        throw e;
+      }
+    },
     create: async () => {
       throw new Error('NotImplemented: tickets are created via orders');
     },
@@ -353,6 +591,7 @@ export class ApiRepository implements Repositories {
         },
         items: input.items.map((i) => ({ ticketTypeId: i.ticketTypeId, quantity: i.quantity })),
         ...(input.referralCode?.trim() ? { referralCode: input.referralCode.trim() } : {}),
+        ...(input.buyerUserId?.trim() ? { buyerUserId: input.buyerUserId.trim() } : {}),
       };
       const raw = await this.client.post<Parameters<typeof mapOrderResponse>[0]>('/public/orders', body, {
         tenantId: t,
@@ -406,7 +645,7 @@ export class ApiRepository implements Repositories {
       return this.client.get<User>('/me');
     },
     getMyTickets: async (userId: string) => {
-      const raw = await this.client.get<{ tickets: Array<{ ticketId: string; status: string; qrPayload: string; event: { id: string } }> }>('/me/tickets');
+      const raw = await this.client.get<{ tickets: MeTicketApiRow[] }>('/me/tickets');
       return (raw.tickets ?? []).map(mapMeTicketToTicket);
     },
     createReferrer: async (input: CreateReferrerInput) => {
@@ -417,7 +656,13 @@ export class ApiRepository implements Repositories {
       });
     },
     getPreferences: async () => {
-      return this.client.get<UserPreferences | null>('/me/preferences');
+      const raw = await this.client.get<UserPreferences | null>('/me/preferences');
+      if (!raw) return null;
+      return {
+        ...raw,
+        favoriteEventIds: raw.favoriteEventIds ?? [],
+        expectedEventIds: raw.expectedEventIds ?? [],
+      };
     },
     updatePreferences: async (userId: string, patch: Partial<UserPreferences>) => {
       return this.client.patch<UserPreferences>('/me/preferences', patch);
@@ -443,21 +688,54 @@ export class ApiRepository implements Repositories {
       );
       return raw;
     },
-    create: async (eventId: string, body: { score: number; title?: string; comment?: string }) => {
+    create: async (eventId: string, body: { score: number; title?: string; comment?: string; guestName?: string }) => {
       return this.client.post<{ id: string }>(`/events/${encodeURIComponent(eventId)}/reviews`, {
         score: body.score,
         title: body.title ?? null,
         comment: body.comment ?? null,
+        ...(body.guestName?.trim() ? { guestName: body.guestName.trim() } : {}),
       });
+    },
+    listForProducer: async (eventId: string) => {
+      return this.client.get<{ reviews: ProducerReviewRow[] }>(
+        `/producer/events/${encodeURIComponent(eventId)}/reviews`,
+      );
+    },
+  };
+
+  inbox: InboxRepo = {
+    listMine: async () => {
+      return this.client.get<{ items: InboxItemSummary[] }>('/me/inbox');
+    },
+    createGastroPromotion: async (body) => {
+      return this.client.post<InboxItemSummary>('/me/inbox/gastro-promotion', body);
+    },
+    createReviewModeration: async (body) => {
+      return this.client.post<InboxItemSummary>('/me/inbox/review-moderation', body);
+    },
+    listAdmin: async (query) => {
+      return this.client.get<{ items: InboxItemSummary[] }>('/admin/inbox', query);
+    },
+    resolveAdmin: async (id, body) => {
+      return this.client.post<InboxItemSummary>(
+        `/admin/inbox/${encodeURIComponent(id)}/resolve`,
+        body,
+      );
     },
   };
 
   referrals: ReferralsRepo = {
     lookup: async (code: string) => {
-      const raw = await this.client.get<{ eventId?: string | null; tenantId?: string }>(
-        '/public/referral/' + encodeURIComponent(code)
-      );
-      return { eventId: raw.eventId ?? null, tenantId: raw.tenantId };
+      const raw = await this.client.get<{
+        eventId?: string | null;
+        tenantId?: string | null;
+        checkoutUrl?: string | null;
+      }>('/public/referral/' + encodeURIComponent(code));
+      return {
+        eventId: raw.eventId ?? null,
+        tenantId: raw.tenantId ?? null,
+        checkoutUrl: raw.checkoutUrl ?? null,
+      };
     },
     listLinks: async (eventId: string) => {
       const raw = await this.client.get<{ links: ReferralLinkSummary[] }>(
@@ -483,8 +761,16 @@ export class ApiRepository implements Repositories {
       const raw = await this.client.get<ProducerReferrerRelationship[]>('/producer/referrers/associated');
       return Array.isArray(raw) ? raw : [];
     },
-    getFreelanceReferrers: async () => {
-      const raw = await this.client.get<ReferrerProfileSummary[]>('/producer/referrers/freelance');
+    getFreelanceReferrers: async (params?: ProducerFreelanceReferrersParams) => {
+      const query: Record<string, string | number | undefined> = {};
+      const q = params?.q?.trim();
+      if (q) query.q = q;
+      if (params?.sort) query.sort = params.sort;
+      if (params?.relationship) query.relationship = params.relationship;
+      if (params?.activity) query.activity = params.activity;
+      if (params?.assignedEvents) query.assignedEvents = params.assignedEvents;
+      if (params?.limit != null) query.limit = params.limit;
+      const raw = await this.client.get<FreelanceReferrerListItem[]>('/producer/referrers/freelance', query);
       return Array.isArray(raw) ? raw : [];
     },
     setAssociationStatus: async (referrerProfileId, status, notes) => {
@@ -493,10 +779,41 @@ export class ApiRepository implements Repositories {
         { status, notes }
       );
     },
+    getProducerReferrerContext: async () => {
+      return this.client.get<ProducerReferrerContext>('/producer/referrers/context');
+    },
+    requestFreelanceAssociation: async (referrerProfileId: string) => {
+      return this.client.post<ProducerReferrerAssociationResult>(
+        '/producer/referrers/freelance/request',
+        { referrerProfileId },
+      );
+    },
+    associateFromReferrerLink: async (token: string) => {
+      return this.client.post<ProducerReferrerAssociationResult>('/producer/referrers/association-from-link', {
+        token,
+      });
+    },
+    listReferrerProducerRelationships: async () => {
+      const raw = await this.client.get<ReferrerProducerRelationshipRow[]>(
+        '/referrer/me/producer-relationships',
+      );
+      return Array.isArray(raw) ? raw : [];
+    },
+    respondToProducerAssociation: async (producerProfileId, status, notes) => {
+      return this.client.post<ReferrerProducerRelationshipRow>(
+        `/referrer/me/producer-relationships/${encodeURIComponent(producerProfileId)}/respond`,
+        { status, notes },
+      );
+    },
+    listEventAssignments: async (eventId: string) => {
+      return this.client.get<ProducerEventAssignmentsResponse>(
+        `/producer/referrers/events/${encodeURIComponent(eventId)}/assignments`,
+      );
+    },
     assignReferrerToEvent: async (eventId, referrerProfileId, courtesyQuota) => {
-      return this.client.post(
+      return this.client.post<AssignReferrerToEventResponse>(
         `/producer/referrers/events/${encodeURIComponent(eventId)}/assign`,
-        { referrerProfileId, courtesyQuota }
+        { referrerProfileId, courtesyQuota },
       );
     },
     assignReferrersToEventLegacy: async (eventId: string, referrerIds: string[]) => {

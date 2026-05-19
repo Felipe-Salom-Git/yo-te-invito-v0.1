@@ -1,240 +1,120 @@
-# PROJECT_CONTEXT.md
-## Project Context
-### Ticketera – Yo Te Invito
+# PROJECT CONTEXT — Yo Te Invito
+
+High-level project-wide summary. **Current state as verified from the repository.**
 
 ---
 
-# 1. Project Overview
+## 1. Overview
 
-**Ticketera – Yo Te Invito** is a web platform designed to manage invitations, ticket distribution, and event participation tracking.
+**Yo Te Invito** is a multi-tenant platform for discovery and ticketing, plus verticals:
 
-The system allows event organizers to create events, distribute digital invitations or tickets, and track attendee confirmations and participation.
+| Category | `Event.category` | Notes |
+|----------|------------------|--------|
+| Events | `event` | Ticketing, scanner, referrals |
+| Gastronomy | `gastro` | Discounts, inbox promos, validations |
+| Excursions | `excursion` | Content as events |
+| **Rentals** | `rental` | **Locales** (`RentalLocation`) + **products** (events linked to a local) |
+| Hotels | `hotel` | `HotelProfile`, portal `/hotel` |
 
-The platform is designed to be **scalable, modular, and automation-friendly**, allowing AI-assisted development using tools such as **Cursor and Antigravity**.
-
-The project prioritizes:
-
-- maintainable architecture
-- predictable development workflows
-- modular design
-- AI-assisted development with strict rules
-
----
-
-# 2. Core Purpose
-
-The main purpose of the system is to provide a **digital invitation and ticket management platform** where event organizers can:
-
-- create and manage events
-- distribute invitations or tickets
-- track confirmations and attendance
-- manage event-related data efficiently
-
-The platform is designed to simplify invitation management and reduce manual coordination.
+**Maturity**: E2E demo flows (discovery → demo checkout → tickets → scan). Portals for producer, admin, gastro, hotel, referrer. Payments are demo-only.
 
 ---
 
-# 3. Primary Users
+## 2. Monorepo
 
-The platform has two main types of users:
+```
+yo-te-invito-v0.1/
+├── apps/web/       # Next.js — discovery, portals
+├── apps/api/       # NestJS + Prisma + PostgreSQL
+├── apps/scanner/   # PWA door scanning
+├── packages/shared/  # Zod schemas, contracts
+└── docs/
+```
 
-### Event Organizers
-
-Users who create and manage events.
-
-They can:
-
-- create events
-- generate invitations or tickets
-- manage guest lists
-- track confirmations
-- monitor event participation
+- **Web** → API via `ApiRepository`.
+- **Shared** → single validation/contracts source.
 
 ---
 
-### Event Participants
+## 3. Architecture
 
-Users who receive invitations or tickets.
+```
+[Next.js Web] ──HTTP──► [NestJS API] ──Prisma──► [PostgreSQL]
+                              │
+                         [Redis] ← BullMQ (email)
+```
 
-They can:
-
-- view event details
-- confirm attendance
-- access their digital ticket
-- interact with event-related information
-
----
-
-# 4. System Philosophy
-
-The system follows several key development principles:
-
-### Predictability
-
-The architecture must be predictable so that both developers and AI tools can understand and modify the system safely.
+- Auth: NextAuth (web) + JWT / `X-Dev-User-Id` (dev API).
+- Default public tenant: `tenant-demo`.
 
 ---
 
-### Modularity
+## 4. Implemented Scope (high level)
 
-The system is divided into small modules with clear responsibilities.
+### Public
 
-Each module should:
+- Home, explore, category detail pages, checkout (demo), tickets, referrers directory, referral redirect `/r/[code]`.
 
-- have a clear purpose
-- be independently understandable
-- avoid tight coupling with other modules
+### Rentals (Equipos y Rentals)
 
----
+- **Admin**: CRUD **locales** (store) with structured **opening hours** (JSON); CRUD **products** per local (header image + gallery).
+- **Public**: Product detail with hero cover, gallery thumbnails + modal, local card, WhatsApp CTA — **not** the same layout as event ticketing pages.
+- Data: `RentalLocation` + `Event` (`category: rental`, `rentalLocationId`, `subcategoryId`).
 
-### AI-Assisted Development
+### Producer / Admin / Gastro / Hotel / Referrer
 
-The project is designed to work with AI tools such as:
+- Producer: events, ticket types, **Ticket Canvas Studio**, courtesies, referidos, payouts.
+- Admin: users, event approval, inbox (gastro promos, review moderation), profiles (incl. hotel), config, **rentals locales/products**, audit.
+- Gastro / Hotel / Referrer portals as documented in backend/frontend context.
 
-- Cursor
-- Antigravity
+### Backend highlights
 
-Because of this, the repository includes strict documentation and development rules.
-
-AI systems must always:
-
-- read documentation before implementing changes
-- present execution plans before coding
-- avoid breaking architectural rules
+- Referrer ↔ producer relationships (`ProducerReferrerRelationship`).
+- Inbox → gastro discounts / review moderation.
+- Ticket templates (visual design JSON + QR zone rules).
 
 ---
 
-# 5. High-Level System Components
+## 5. Gaps
 
-The platform is composed of several main logical areas.
+See **`docs/context/CONTEXT_PENDIENTES.md`** (checkbox backlog).
 
----
-
-### Event Management
-
-Handles creation and configuration of events.
-
-Responsibilities include:
-
-- event creation
-- event settings
-- event metadata
-- event visibility and access control
+Summary: real payments, gastro scanner QR, image storage (vs data-URL), ticket render from template, anonymous hero category tabs, SEO/loading polish.
 
 ---
 
-### Invitation / Ticket System
+## 6. Product / Design
 
-Manages invitations or tickets associated with events.
-
-Responsibilities include:
-
-- invitation generation
-- ticket distribution
-- ticket validation
-- invitation status tracking
+- Black background, green accent, white text.
+- Premium, cinematic, discovery-first (Netflix-style rails).
 
 ---
 
-### Guest Management
+## 7. Demo database cleanup
 
-Handles guest lists and participant tracking.
+Script: `apps/api/prisma/scripts/cleanup-demo.ts`
 
-Responsibilities include:
+```bash
+pnpm db:cleanup-demo              # dry-run
+pnpm db:cleanup-demo -- --confirm # destructive (dev only)
+```
 
-- managing invited users
-- attendance confirmations
-- guest metadata
-
----
-
-### Participation Tracking
-
-Tracks event participation and attendance.
-
-Responsibilities include:
-
-- confirmation tracking
-- check-in systems
-- event participation records
+Keeps one user (`felipe.e.salom@gmail.com`), tenant, `PlatformConfig`, subcategories (optional delete flag). Removes all events, rental locales, orders, profiles, etc.
 
 ---
 
-### Notifications (Future Scope)
+## 8. AI Guidance
 
-The platform may include a notification system for:
-
-- invitation delivery
-- confirmation reminders
-- event updates
-
----
-
-# 6. Data Consistency Philosophy
-
-The system prioritizes **data stability and consistency**.
-
-Important records should not be deleted if they are still referenced by other modules.
-
-When necessary, systems may **copy or snapshot data** between collections to ensure historical consistency.
-
-Example:
-
-Approved quotes may be copied into tracking collections to avoid data loss if original records are removed.
+1. Extend existing patterns; avoid rewrites.
+2. Use `packages/shared` + repository interfaces.
+3. Small reversible slices.
+4. Check `CONTEXT_PENDIENTES.md` before large work.
 
 ---
 
-# 7. Documentation Driven Development
+## References
 
-This project follows a **documentation-first approach**.
-
-All major modules and components must include documentation explaining:
-
-- purpose
-- inputs
-- outputs
-- data flow
-- dependencies
-
-Documentation is stored inside the `docs/` folder.
-
----
-
-# 8. AI Development Expectations
-
-AI systems working on this repository must:
-
-- read documentation before coding
-- follow `PROJECT_RULES.md`
-- follow `AI_WORKFLOW_RULES.md`
-- present execution plans before making changes
-- avoid creating duplicate modules
-- maintain architectural boundaries
-
----
-
-# 9. Scope Evolution
-
-The platform is expected to evolve over time.
-
-Future modules may include:
-
-- payment systems
-- advanced event analytics
-- integrations with external services
-- notification systems
-- automation workflows
-
-All new features must respect the architectural principles of the system.
-
----
-
-# 10. Summary
-
-Ticketera – Yo Te Invito is a modular event invitation and ticket management platform designed with **maintainability and AI-assisted development in mind**.
-
-The project uses structured documentation, strict development rules, and modular architecture to ensure safe collaboration between human developers and AI tools.
-
----
-
-# End of Project Context
+- `docs/context/AI_ENTRYPOINT.md`
+- `docs/context/BACKEND_CONTEXT.md`
+- `docs/context/FRONTEND_CONTEXT.md`
+- `docs/tickets/TICKET_CANVAS_STUDIO.md`

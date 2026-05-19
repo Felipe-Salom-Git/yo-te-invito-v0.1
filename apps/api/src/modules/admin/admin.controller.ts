@@ -19,6 +19,8 @@ import {
   adminCreateReferrerBodySchema,
   adminUpdateRoleBodySchema,
   adminConfigPatchSchema,
+  adminInboxListQuerySchema,
+  adminResolveInboxBodySchema,
   type AuditLogsListQuery,
   type RevokeTicketParams,
   type RevokeTicketBody,
@@ -28,6 +30,8 @@ import {
   type AdminCreateReferrerBody,
   type AdminUpdateRoleBody,
   type AdminConfigPatch,
+  type AdminInboxListQuery,
+  type AdminResolveInboxBody,
 } from '@yo-te-invito/shared';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { JwtOrDevAuthGuard } from '../../auth/jwt-or-dev-auth.guard';
@@ -45,6 +49,7 @@ import { AdminConfigService } from './admin-config.service';
 import { AdminApplicationsService } from './admin-applications.service';
 import { AdminProfilesService } from './admin-profiles.service';
 import { ReferralsService } from '../referrals/referrals.service';
+import { InboxService } from '../inbox/inbox.service';
 
 @Controller('admin')
 export class AdminController {
@@ -59,6 +64,7 @@ export class AdminController {
     private readonly applications: AdminApplicationsService,
     private readonly profiles: AdminProfilesService,
     private readonly referrals: ReferralsService,
+    private readonly inbox: InboxService,
   ) {}
 
   @Get('events')
@@ -202,6 +208,23 @@ export class AdminController {
     return this.profiles.approveGastroProfile(user.tenantId, profileId);
   }
 
+  @Get('profiles/hotel/pending')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async listPendingHotelProfiles(@CurrentUser() user: { tenantId: string }) {
+    return this.profiles.listPendingHotelProfiles(user.tenantId);
+  }
+
+  @Post('profiles/hotel/:id/approve')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async approveHotelProfile(
+    @CurrentUser() user: { tenantId: string },
+    @Param('id') profileId: string,
+  ) {
+    return this.profiles.approveHotelProfile(user.tenantId, profileId);
+  }
+
   @Get('profiles/referrer/pending')
   @UseGuards(JwtOrDevAuthGuard, RolesGuard)
   @RequireRole(Role.ADMIN)
@@ -265,6 +288,27 @@ export class AdminController {
     @Body(new ZodValidationPipe(adminConfigPatchSchema)) body: AdminConfigPatch,
   ) {
     return this.config.update(user.tenantId, body);
+  }
+
+  @Get('inbox')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async listInbox(
+    @CurrentUser() user: { tenantId: string },
+    @Query(new ZodValidationPipe(adminInboxListQuerySchema)) query: AdminInboxListQuery,
+  ) {
+    return this.inbox.listForAdmin(user.tenantId, query);
+  }
+
+  @Post('inbox/:id/resolve')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async resolveInbox(
+    @CurrentUser() user: { id: string; tenantId: string },
+    @Param('id') inboxItemId: string,
+    @Body(new ZodValidationPipe(adminResolveInboxBodySchema)) body: AdminResolveInboxBody,
+  ) {
+    return this.inbox.resolve(user.tenantId, user.id, inboxItemId, body);
   }
 
   @Post('commissions/:id/confirm')

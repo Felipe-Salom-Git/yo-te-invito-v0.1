@@ -1,15 +1,23 @@
 /**
- * Curated demo content — events, restaurants, excursions, rentals
+ * Curated demo content — events, restaurants, hotels, excursions, rentals
  * for homepage rails and detail pages visual evaluation.
  *
  * Prerequisites: run demo:seed first (tenant, users, producer).
  * Run: pnpm run demo:seed-curated
  */
 
+import * as crypto from 'crypto';
 import { PrismaClient } from '@prisma/client';
+import { ensureGastroDemoUser, ensureSampleGastroDiscountsForHome } from './gastro-demo-samples';
 
 const prisma = new PrismaClient();
 const TENANT_ID = 'tenant-demo';
+
+function hashPassword(password: string): string {
+  const salt = crypto.randomBytes(16);
+  const hash = crypto.scryptSync(password, salt, 64).toString('hex');
+  return `${salt.toString('hex')}:${hash}`;
+}
 
 function addDays(d: Date, days: number, hours = 0): Date {
   const out = new Date(d);
@@ -201,6 +209,59 @@ const CURATED_EVENTS: Array<{
     ratingAvg: 4.7,
     ratingCount: 167,
     fromPrice: 15000,
+  },
+  // ─── Hoteles / alojamiento ───────────────────────────────────────────────
+  {
+    id: 'curated-hotel-boutique-01',
+    category: 'hotel',
+    title: 'Hotel Boutique Palermo',
+    description: 'Habitaciones de diseño, desayuno regional y terraza. A pasos de Plaza Serrano.',
+    city: 'Buenos Aires',
+    venueName: 'Hotel Boutique Palermo',
+    coverImageUrl: 'https://images.pexels.com/photos/271624/pexels-photo-271624.jpeg',
+    startAt: addDays(new Date(), 1, 15),
+    ratingAvg: 4.7,
+    ratingCount: 412,
+    fromPrice: 0,
+  },
+  {
+    id: 'curated-hotel-lake-01',
+    category: 'hotel',
+    title: 'Lodge con Vista al Lago',
+    description: 'Cabañas y suites con vista al Nahuel Huapi. Spa, desayuno incluido y traslado al aeropuerto.',
+    city: 'Bariloche',
+    venueName: 'Lodge Nahuel',
+    coverImageUrl: 'https://images.pexels.com/photos/271639/pexels-photo-271639.jpeg',
+    startAt: addDays(new Date(), 3, 14),
+    ratingAvg: 4.9,
+    ratingCount: 267,
+    fromPrice: 0,
+  },
+  {
+    id: 'curated-hotel-wine-01',
+    category: 'hotel',
+    title: 'Posada en Viñedo — Valle de Uco',
+    description: 'Alojamiento entre viñedos, catas y cocina regional. Ideal para escapada enológica.',
+    city: 'Mendoza',
+    venueName: 'Posada del Viñedo',
+    coverImageUrl: 'https://images.pexels.com/photos/1648771/pexels-photo-1648771.jpeg',
+    startAt: addDays(new Date(), 5, 12),
+    ratingAvg: 4.8,
+    ratingCount: 198,
+    fromPrice: 0,
+  },
+  {
+    id: 'curated-hotel-city-01',
+    category: 'hotel',
+    title: 'Hotel Urbano Córdoba Centro',
+    description: 'Habitaciones ejecutivas, cowork y gym. A metros del centro histórico.',
+    city: 'Córdoba',
+    venueName: 'Urbano Córdoba',
+    coverImageUrl: 'https://images.pexels.com/photos/271743/pexels-photo-271743.jpeg',
+    startAt: addDays(new Date(), 2, 16),
+    ratingAvg: 4.5,
+    ratingCount: 523,
+    fromPrice: 0,
   },
   {
     id: 'curated-gastro-parrilla-01',
@@ -476,8 +537,15 @@ async function main() {
       select: { id: true },
     });
     if (!tt) {
+      const evRow = await prisma.event.findUniqueOrThrow({
+        where: { id: ev.id },
+        select: { tenantId: true, endAt: true, startAt: true },
+      });
+      const now = new Date();
+      const endAt = evRow.endAt ?? new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000);
       await prisma.ticketType.create({
         data: {
+          tenantId: evRow.tenantId,
           eventId: ev.id,
           name: 'General',
           description: 'Entrada general',
@@ -487,6 +555,24 @@ async function main() {
           capacityAvailable: 50,
           maxPerOrder: 10,
           status: 'ACTIVE',
+          batches: {
+            create: {
+              tenantId: evRow.tenantId,
+              eventId: ev.id,
+              orderIndex: 0,
+              name: 'General',
+              startAt: now,
+              endAt,
+              baseQuantity: 50,
+              rolloverQuantity: 0,
+              effectiveQuantity: 50,
+              reservedQuantity: 0,
+              soldCount: 0,
+              price: ev.fromPrice,
+              currency: 'ARS',
+              status: 'ACTIVE',
+            },
+          },
         },
       });
     }
@@ -499,6 +585,10 @@ async function main() {
   console.log('');
   console.log('Categories: eventos, gastro, excursion, rental');
   console.log('Run demo:seed first if tenant/users are missing.');
+
+  const { gastroProfileId } = await ensureGastroDemoUser(prisma, TENANT_ID, hashPassword);
+  await ensureSampleGastroDiscountsForHome(prisma, TENANT_ID, gastroProfileId);
+  console.log('Gastro demo user: gastro@demo.local / demo');
 }
 
 main()

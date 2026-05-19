@@ -19,7 +19,7 @@ import {
   type ReviewsListQuery,
 } from '@yo-te-invito/shared';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
-import { JwtOrDevAuthGuard } from '../../auth/jwt-or-dev-auth.guard';
+import { OptionalJwtOrDevAuthGuard } from '../../auth/optional-jwt-or-dev-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ReviewsService } from './reviews.service';
 
@@ -28,12 +28,12 @@ export class ReviewsController {
   constructor(private readonly service: ReviewsService) {}
 
   @Post('events/:eventId/reviews')
-  @UseGuards(JwtOrDevAuthGuard)
+  @UseGuards(OptionalJwtOrDevAuthGuard)
   async create(
-    @CurrentUser() user: { id: string; tenantId: string },
+    @CurrentUser() user: { id: string; tenantId: string; role: string } | undefined,
     @Param(new ZodValidationPipe(createReviewParamsSchema)) params: CreateReviewParams,
     @Body(new ZodValidationPipe(createReviewBodySchema)) body: CreateReviewBody,
   ): Promise<{ id: string }> {
-    return this.service.create(user.tenantId, user.id, params.eventId, body);
+    return this.service.create(user, params.eventId, body);
   }
 }

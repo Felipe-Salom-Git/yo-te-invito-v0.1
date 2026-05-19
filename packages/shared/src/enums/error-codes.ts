@@ -17,6 +17,10 @@ export const ErrorCode = {
   INTERNAL_ERROR: 'INTERNAL_ERROR',
   CONFLICT: 'CONFLICT',
   ORDER_EXPIRED: 'ORDER_EXPIRED',
+  ASSOCIATION_BLOCKED: 'ASSOCIATION_BLOCKED',
+  ASSOCIATION_INVALID_TRANSITION: 'ASSOCIATION_INVALID_TRANSITION',
+  /** Relación productora–referidor no está ACTIVE; no se puede asignar a evento */
+  ASSOCIATION_NOT_ACTIVE: 'ASSOCIATION_NOT_ACTIVE',
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

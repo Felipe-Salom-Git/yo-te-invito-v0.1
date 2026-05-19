@@ -72,13 +72,18 @@ export default function TicketDetailPage() {
         </div>
 
         <div className="w-full max-w-sm space-y-2 text-left">
-          {event && (
+          {(event || ticket.eventTitle) && (
             <>
-              <p className="font-semibold text-text">{event.title}</p>
-              <p className="text-sm text-text-muted">
-                {event.venueName && `${event.venueName} · `}
-                {event.city ?? '—'} · {new Date(event.startAt).toLocaleDateString('es-AR')}
-              </p>
+              <p className="font-semibold text-text">{event?.title ?? ticket.eventTitle}</p>
+              {ticket.ticketTypeName ? (
+                <p className="text-sm text-text-muted">{ticket.ticketTypeName}</p>
+              ) : null}
+              {event ? (
+                <p className="text-sm text-text-muted">
+                  {event.venueName && `${event.venueName} · `}
+                  {event.city ?? '—'} · {new Date(event.startAt).toLocaleDateString('es-AR')}
+                </p>
+              ) : null}
               <Link
                 href={`/events/${ticket.eventId}?tenantId=${TENANT_ID}`}
                 className="inline-block text-sm text-accent hover:underline"

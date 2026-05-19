@@ -4,7 +4,7 @@
  */
 import type { MeAvailableProfiles, MeProfileSummary } from '@/repositories/interfaces';
 
-export type ProfileKind = 'tickets' | 'producer' | 'gastro' | 'referrer';
+export type ProfileKind = 'tickets' | 'producer' | 'gastro' | 'hotel' | 'referrer';
 
 export type ProfileStatus = 'available' | 'pending' | 'unavailable';
 
@@ -21,7 +21,14 @@ function getProfilesForKind(
   kind: Exclude<ProfileKind, 'tickets'>
 ): { hasAccess: boolean; profiles: MeProfileSummary[] } {
   if (!available) return { hasAccess: false, profiles: [] };
-  const block = kind === 'producer' ? available.producer : kind === 'gastro' ? available.gastro : available.referrer;
+  const block =
+    kind === 'producer'
+      ? available.producer
+      : kind === 'gastro'
+        ? available.gastro
+        : kind === 'hotel'
+          ? available.hotel
+          : available.referrer;
   if (!block) return { hasAccess: false, profiles: [] };
   return {
     hasAccess: !!block.hasAccess,

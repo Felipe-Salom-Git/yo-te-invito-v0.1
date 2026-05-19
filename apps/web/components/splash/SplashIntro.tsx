@@ -16,9 +16,11 @@ const INTRO_LOGO_SRC = '/brand/logo_2.png';
 
 export interface SplashIntroProps {
   onFinish: () => void;
+  /** Fires when splash fade-out begins — use to reveal gateway underneath */
+  onFadeStart?: () => void;
 }
 
-export function SplashIntro({ onFinish }: SplashIntroProps) {
+export function SplashIntro({ onFinish, onFadeStart }: SplashIntroProps) {
   const scanCtrl = useAnimation();
   const maskCtrl = useAnimation();
   const glowCtrl = useAnimation();
@@ -80,7 +82,9 @@ export function SplashIntro({ onFinish }: SplashIntroProps) {
       });
       if (cancelled) return;
 
-      // 5: Fade out
+      // 5: Fade out — reveal gateway underneath while splash dissolves
+      onFadeStart?.();
+
       await Promise.all([
         fadeCtrl.start({
           opacity: 0,
@@ -103,7 +107,7 @@ export function SplashIntro({ onFinish }: SplashIntroProps) {
       cancelled = true;
       stopIntroAudio();
     };
-  }, [scanCtrl, maskCtrl, glowCtrl, fadeCtrl, logoOutCtrl, finish, stopIntroAudio]);
+  }, [scanCtrl, maskCtrl, glowCtrl, fadeCtrl, logoOutCtrl, finish, stopIntroAudio, onFadeStart]);
 
   return (
     <motion.div
@@ -115,7 +119,10 @@ export function SplashIntro({ onFinish }: SplashIntroProps) {
       {/* Skip */}
       <button
         type="button"
-        onClick={finish}
+        onClick={() => {
+          onFadeStart?.();
+          finish();
+        }}
         className="absolute bottom-4 right-4 z-10 text-sm text-white/50 transition-colors hover:text-emerald-400"
         aria-label="Saltar intro"
       >

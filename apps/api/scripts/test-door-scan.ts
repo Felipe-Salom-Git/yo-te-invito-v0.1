@@ -95,9 +95,14 @@ async function main() {
 
   const ticketType = await prisma.ticketType.upsert({
     where: { id: 'door-scan-test-tt' },
-    update: {},
+    update: {
+      tenantId: tenant.id,
+      capacityTotal: 10,
+      capacityAvailable: 9,
+    },
     create: {
       id: 'door-scan-test-tt',
+      tenantId: tenant.id,
       eventId: event.id,
       name: 'General',
       price: 100,
@@ -105,8 +110,51 @@ async function main() {
       capacityTotal: 10,
       capacityAvailable: 9,
       status: 'ACTIVE',
+      batches: {
+        create: {
+          tenantId: tenant.id,
+          eventId: event.id,
+          orderIndex: 0,
+          name: 'General',
+          startAt,
+          endAt,
+          baseQuantity: 10,
+          rolloverQuantity: 0,
+          effectiveQuantity: 10,
+          reservedQuantity: 0,
+          soldCount: 1,
+          price: 100,
+          currency: 'ARS',
+          status: 'ACTIVE',
+        },
+      },
     },
   });
+
+  let scanBatch = await prisma.ticketBatch.findFirst({
+    where: { ticketTypeId: ticketType.id, orderIndex: 0 },
+  });
+  if (!scanBatch) {
+    scanBatch = await prisma.ticketBatch.create({
+      data: {
+        tenantId: tenant.id,
+        eventId: event.id,
+        ticketTypeId: ticketType.id,
+        orderIndex: 0,
+        name: 'General',
+        startAt,
+        endAt,
+        baseQuantity: 10,
+        rolloverQuantity: 0,
+        effectiveQuantity: 10,
+        reservedQuantity: 0,
+        soldCount: 1,
+        price: 100,
+        currency: 'ARS',
+        status: 'ACTIVE',
+      },
+    });
+  }
 
   const qrPayload = generateQrPayload();
 
@@ -129,11 +177,12 @@ async function main() {
 
   const orderItem = await prisma.orderItem.upsert({
     where: { id: 'door-scan-test-oi' },
-    update: {},
+    update: { ticketBatchId: scanBatch.id },
     create: {
       id: 'door-scan-test-oi',
       orderId: order.id,
       ticketTypeId: ticketType.id,
+      ticketBatchId: scanBatch.id,
       quantity: 1,
       unitPrice: 100,
       subtotal: 100,
@@ -142,12 +191,13 @@ async function main() {
 
   const ticket = await prisma.ticket.upsert({
     where: { id: 'door-scan-test-ticket' },
-    update: { status: 'VALID', qrPayload, usedAt: null },
+    update: { status: 'VALID', qrPayload, usedAt: null, ticketBatchId: scanBatch.id },
     create: {
       id: 'door-scan-test-ticket',
       orderId: order.id,
       orderItemId: orderItem.id,
       ticketTypeId: ticketType.id,
+      ticketBatchId: scanBatch.id,
       eventId: event.id,
       qrPayload,
       status: 'VALID',

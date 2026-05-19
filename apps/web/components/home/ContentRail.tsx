@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState, useEffect } from 'react';
+import Link from 'next/link';
 import { motion } from 'framer-motion';
 import type { EventSummary } from '@/repositories/interfaces';
 import { ContentCard, type ContentCardItem } from './ContentCard';
@@ -11,8 +12,15 @@ export interface ContentRailProps {
   subtitle?: string;
   items: EventSummary[];
   isLoading?: boolean;
+  /** Anchor id for scroll-into-view (e.g. category gateway deep link) */
+  sectionId?: string;
   /** When provided, cards open preview on click instead of navigating (homepage mode) */
   onCardClick?: (item: ContentCardItem) => void;
+  /** Optional link shown next to the title (e.g. cross-category discovery) */
+  seeMoreHref?: string;
+  seeMoreLabel?: string;
+  /** Shown when there are no items and not loading (e.g. empty event rail) */
+  emptyMessage?: string;
 }
 
 export function ContentRail({
@@ -20,7 +28,11 @@ export function ContentRail({
   subtitle,
   items,
   isLoading = false,
+  sectionId,
   onCardClick,
+  seeMoreHref,
+  seeMoreLabel = 'Ver más',
+  emptyMessage,
 }: ContentRailProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -54,27 +66,57 @@ export function ContentRail({
     return () => ro.disconnect();
   }, [items.length, isLoading]);
 
-  if (items.length === 0 && !isLoading) return null;
+  if (items.length === 0 && !isLoading) {
+    if (emptyMessage) {
+      return (
+        <section id={sectionId} className="relative mt-10 scroll-mt-24 px-4 sm:px-6 lg:px-8">
+          <div className="mb-4 flex items-end justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-semibold tracking-tight text-white md:text-2xl">{title}</h2>
+              <div className="mt-2 h-[3px] w-12 rounded-full bg-accent" aria-hidden />
+              {subtitle && <p className="mt-2 text-sm text-text-muted">{subtitle}</p>}
+            </div>
+            {seeMoreHref && (
+              <Link
+                href={seeMoreHref}
+                className="shrink-0 text-xs font-bold uppercase tracking-wider text-accent hover:text-white"
+              >
+                {seeMoreLabel}
+              </Link>
+            )}
+          </div>
+          <p className="text-sm text-white/60">{emptyMessage}</p>
+        </section>
+      );
+    }
+    return null;
+  }
 
   return (
     <motion.section
-      className="relative mt-10 overflow-visible first:mt-0"
+      id={sectionId}
+      className="relative mt-10 scroll-mt-24 overflow-visible first:mt-0"
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: 'easeOut' }}
     >
-      {/* Rail header — mobile 16px, tablet 24px, desktop 32px */}
-      <div className="mb-4 px-4 sm:px-6 lg:px-8">
-        <h2 className="text-xl font-semibold tracking-tight text-white md:text-2xl">
-          {title}
-        </h2>
-        {/* Green accent bar — 48px × 3px */}
-        <div
-          className="mt-2 h-[3px] w-12 rounded-full bg-accent"
-          aria-hidden
-        />
-        {subtitle && (
-          <p className="mt-2 text-sm text-text-muted">{subtitle}</p>
+      <div className="mb-4 flex items-end justify-between gap-3 px-4 sm:px-6 lg:px-8">
+        <div>
+          <h2 className="text-xl font-semibold tracking-tight text-white md:text-2xl">
+            {title}
+          </h2>
+          <div className="mt-2 h-[3px] w-12 rounded-full bg-accent" aria-hidden />
+          {subtitle && (
+            <p className="mt-2 text-sm text-text-muted">{subtitle}</p>
+          )}
+        </div>
+        {seeMoreHref && (
+          <Link
+            href={seeMoreHref}
+            className="shrink-0 text-xs font-bold uppercase tracking-wider text-accent hover:text-white"
+          >
+            {seeMoreLabel}
+          </Link>
         )}
       </div>
 

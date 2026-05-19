@@ -13,14 +13,15 @@ AI systems must read the following documents **before implementing features**.
 
 Read them **in this exact order**:
 
-1. docs/context/PROJECT_CONTEXT.md  
-2. docs/rules/PROJECT_RULES.md  
-3. docs/rules/AI_WORKFLOW_RULES.md  
-4. docs/rules/AI_CODE_REVIEW_RULES.md  
-5. docs/rules/ARCHITECTURE_GUARDRAILS.md  
-6. docs/architecture/PROJECT_ARCHITECTURE.md  
-7. docs/architecture/SYSTEM_OVERVIEW.md  
-8. docs/architecture/FOLDER_STRUCTURE.md  
+1. docs/context/AI_ENTRYPOINT.md  
+2. docs/context/PROJECT_CONTEXT.md  
+3. docs/rules/PROJECT_RULES.md  
+4. docs/rules/AI_WORKFLOW_RULES.md  
+5. docs/rules/AI_CODE_REVIEW_RULES.md  
+6. docs/rules/ARCHITECTURE_GUARDRAILS.md  
+7. docs/architecture/PROJECT_ARCHITECTURE.md  
+8. docs/architecture/SYSTEM_OVERVIEW.md  
+9. docs/architecture/FOLDER_STRUCTURE.md  
 
 These documents define:
 
@@ -46,7 +47,12 @@ Project background and goals.
 docs/context/
 
 
-- PROJECT_CONTEXT.md
+- AI_ENTRYPOINT.md — index for AI tools (read first)
+- PROJECT_CONTEXT.md — product vision and monorepo
+- BACKEND_CONTEXT.md — API, Prisma, endpoints
+- FRONTEND_CONTEXT.md — Next.js web app
+- CONTEXT_PENDIENTES.md — backlog checklist
+- FRONTEND_DEMO_NOTES.md — legacy demo mapping (not current persistence)
 
 ---
 

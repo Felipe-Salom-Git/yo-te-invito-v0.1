@@ -1,4 +1,4 @@
-import { Body, Controller, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import {
   createTicketTypeDtoSchema,
   updateTicketTypeDtoSchema,
@@ -18,6 +18,14 @@ import { ProducerTicketTypesService } from './producer-ticket-types.service';
 @RequireRole(Role.ADMIN, Role.PRODUCER_OWNER, Role.PRODUCER_STAFF)
 export class ProducerTicketTypesController {
   constructor(private readonly service: ProducerTicketTypesService) {}
+
+  @Get()
+  async list(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param('eventId') eventId: string,
+  ) {
+    return this.service.listForProducer(user.tenantId, eventId, user.id, user.role);
+  }
 
   @Post()
   async create(

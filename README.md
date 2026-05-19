@@ -6,7 +6,7 @@ Ticketing platform monorepo — Nx + pnpm.
 
 Before writing any code or making architectural changes, please review the following documents in order:
 
-1. [Project Context](docs/context/PROJECT_CONTEXT.md)
+1. [AI Entrypoint](docs/context/AI_ENTRYPOINT.md) · [Project Context](docs/context/PROJECT_CONTEXT.md)
 2. [Project Rules](docs/rules/PROJECT_RULES.md)
 3. [AI Workflow Rules](docs/rules/AI_WORKFLOW_RULES.md)
 4. [Project Architecture](docs/architecture/PROJECT_ARCHITECTURE.md)

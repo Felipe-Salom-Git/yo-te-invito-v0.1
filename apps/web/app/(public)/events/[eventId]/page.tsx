@@ -4,7 +4,6 @@ import { useState, useCallback } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
-import { useSession } from 'next-auth/react';
 import { useEventDetail, eventsKeys } from '@/lib/query/events';
 import { useRepositories } from '@/repositories/context';
 import { useCart } from '@/context/CartContext';
@@ -24,6 +23,7 @@ import { EventReviewsSection } from '@/components/events/EventReviewsSection';
 import { ReviewForm } from '@/components/reviews/ReviewForm';
 import { RelatedEventsSection } from '@/components/events/RelatedEventsSection';
 import { EventMobileStickyCta } from '@/components/events/EventMobileStickyCta';
+import { EventEngagementRow } from '@/components/events/EventEngagementRow';
 import { useToast } from '@/components';
 
 const DEFAULT_TENANT_ID = 'tenant-demo';
@@ -38,7 +38,6 @@ const CATEGORY_TO_ENTITY: Record<string, EntityType> = {
 export default function EventDetailPage() {
   const params = useParams();
   const searchParams = useSearchParams();
-  const { data: session } = useSession();
   const eventId = (params?.eventId as string) ?? '';
   const tenantId = searchParams?.get('tenantId') ?? DEFAULT_TENANT_ID;
   const [reviewPage, setReviewPage] = useState(1);
@@ -83,16 +82,13 @@ export default function EventDetailPage() {
     enabled: !!eventId,
   });
 
-  const userId =
-    (session?.user as { userId?: string })?.userId ??
-    (session?.user as { id?: string })?.id ??
-    'demo-user';
   const createMutation = useMutation({
-    mutationFn: (payload: { score: number; comment?: string }) =>
+    mutationFn: (payload: { score: number; comment?: string; guestName?: string }) =>
       repos.reviews.create(eventId, {
         score: payload.score,
         comment: payload.comment,
-      }, userId),
+        guestName: payload.guestName,
+      }),
     onError: (err) => addToast(getErrorMessage(err), 'error'),
     onSuccess: () => {
       addToast('Valoración publicada', 'success');
@@ -112,6 +108,7 @@ export default function EventDetailPage() {
   const handleSubmitReview = (values: {
     score: number;
     comment?: string;
+    guestName?: string;
   }) => {
     createMutation.mutate(values);
   };
@@ -215,6 +212,10 @@ export default function EventDetailPage() {
             { label: event.title },
           ]}
         />
+
+        <div className="mt-4">
+          <EventEngagementRow eventId={eventId} />
+        </div>
 
         {/* Row 1: Top content (left) + Purchase (right) */}
         <div className="grid gap-8 lg:grid-cols-[1.65fr,1fr] lg:gap-12">

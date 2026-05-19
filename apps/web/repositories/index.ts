@@ -1,6 +1,7 @@
 export type {
   Repositories,
   EventsRepo,
+  InboxRepo,
   TicketsRepo,
   OrdersRepo,
   UsersRepo,

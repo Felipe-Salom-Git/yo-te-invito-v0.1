@@ -7,6 +7,8 @@ import { useRepositories } from '@/repositories/context';
 import { PageContainer, SectionTitle, Button, Input, useToast } from '@/components';
 import { getErrorMessage } from '@/lib/errors';
 import type { GastroContent } from '@/repositories/interfaces';
+import { LatLngMapPreview } from '@/components/admin/LatLngMapPreview';
+import { ImageUrlPreview } from '@/components/admin/ImageUrlPreview';
 
 const TENANT_ID = 'tenant-demo';
 
@@ -20,6 +22,8 @@ export default function GastroContenidoPage() {
   const [newBody, setNewBody] = useState('');
   const [newImageUrl, setNewImageUrl] = useState('');
   const [newLocation, setNewLocation] = useState('');
+  const [newGeoLat, setNewGeoLat] = useState('');
+  const [newGeoLng, setNewGeoLng] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editPatch, setEditPatch] = useState<Partial<GastroContent>>({});
 
@@ -35,14 +39,21 @@ export default function GastroContenidoPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (eventId: string) =>
-      repos.gastro.createContent(eventId, {
+    mutationFn: (eventId: string) => {
+      const locLine = newLocation.trim();
+      const coordLine =
+        newGeoLat.trim() && newGeoLng.trim()
+          ? `Coordenadas (mapa): ${newGeoLat.trim()}, ${newGeoLng.trim()}`
+          : '';
+      const bodyParts = [newBody.trim(), locLine && `Ubicación: ${locLine}`, coordLine].filter(Boolean);
+      return repos.gastro.createContent(eventId, {
         type: newImageUrl ? 'image' : 'editorial',
         title: newTitle.trim() || undefined,
-        body: [newBody.trim(), newLocation.trim()].filter(Boolean).join('\nUbicación: ') || undefined,
+        body: bodyParts.join('\n') || undefined,
         imageUrl: newImageUrl.trim() || undefined,
         sortOrder: content.length,
-      }),
+      });
+    },
     onError: (err) => addToast(getErrorMessage(err), 'error'),
     onSuccess: (_, eventId) => {
       queryClient.invalidateQueries({ queryKey: ['gastroContent', eventId] });
@@ -51,6 +62,8 @@ export default function GastroContenidoPage() {
       setNewBody('');
       setNewImageUrl('');
       setNewLocation('');
+      setNewGeoLat('');
+      setNewGeoLng('');
     },
   });
 
@@ -134,8 +147,14 @@ export default function GastroContenidoPage() {
               <label className="mb-1.5 block text-sm font-medium text-text">Imagen</label>
               <Input value={newImageUrl} onChange={(e) => setNewImageUrl(e.target.value)} placeholder="URL o subir abajo" />
               <input type="file" accept="image/*" onChange={handleFileChange} className="mt-2 text-sm text-text-muted" />
+              <ImageUrlPreview url={newImageUrl} />
             </div>
             <Input label="Ubicación (dirección o mapa)" value={newLocation} onChange={(e) => setNewLocation(e.target.value)} className="mt-3" placeholder="Dirección o link a maps" />
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <Input label="Lat (opcional)" value={newGeoLat} onChange={(e) => setNewGeoLat(e.target.value)} placeholder="-34.6" />
+              <Input label="Lng (opcional)" value={newGeoLng} onChange={(e) => setNewGeoLng(e.target.value)} placeholder="-58.4" />
+            </div>
+            <LatLngMapPreview lat={newGeoLat} lng={newGeoLng} />
             <div className="mt-3 flex gap-2">
               <Button onClick={() => currentEventId && createMutation.mutate(currentEventId)} disabled={createMutation.isPending}>
                 Crear

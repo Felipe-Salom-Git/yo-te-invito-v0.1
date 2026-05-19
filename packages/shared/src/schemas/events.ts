@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { EventMediaType } from '../enums';
+import { rentalOpeningHoursSchema } from './opening-hours';
 
 /**
  * Query params for paginated events list
@@ -12,6 +13,8 @@ export const eventsListQuerySchema = z
     limit: z.coerce.number().int().min(1).max(100).default(20),
     city: z.string().optional(),
     category: z.string().optional(),
+    subcategoryId: z.string().optional(),
+    subcategorySlug: z.string().optional(),
     dateFrom: z.string().datetime().optional(),
     dateTo: z.string().datetime().optional(),
   })
@@ -48,9 +51,13 @@ export const eventSummarySchema = z.object({
   venueName: z.string().nullable(),
   coverImageUrl: z.string().nullable(),
   category: z.string().nullable().optional(),
+  subcategoryId: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
   ratingAvg: z.number().nullable().optional(),
   ratingCount: z.number().optional(),
+  /** When listing gastro events: first active discount teaser for home cards */
+  gastroPromoLabel: z.string().nullable().optional(),
+  gastroPromoImageUrl: z.string().nullable().optional(),
 });
 
 export type EventSummary = z.infer<typeof eventSummarySchema>;
@@ -67,9 +74,40 @@ export const eventDetailSchema = eventSummarySchema.extend({
   media: z.array(eventMediaSchema),
   ratingAvg: z.number().nullable().optional(),
   ratingCount: z.number().optional(),
+  rentalLocation: z
+    .object({
+      id: z.string(),
+      name: z.string(),
+      address: z.string().nullable(),
+      openingHours: rentalOpeningHoursSchema.nullable(),
+      openingHoursNote: z.string().nullable(),
+      geoLat: z.number().nullable(),
+      geoLng: z.number().nullable(),
+    })
+    .nullable()
+    .optional(),
 });
 
 export type EventDetail = z.infer<typeof eventDetailSchema>;
+
+/** Active gastro discounts exposed on public event detail (scanner / promo display). */
+export const publicGastroDiscountSchema = z.object({
+  id: z.string(),
+  code: z.string(),
+  type: z.enum(['PERCENT', 'FIXED']),
+  value: z.number(),
+  validFrom: z.string().datetime().nullable(),
+  validTo: z.string().datetime().nullable(),
+  displayTitle: z.string().nullable().optional(),
+  displayDescription: z.string().nullable().optional(),
+  displayImageUrls: z.array(z.string()).optional(),
+});
+export type PublicGastroDiscount = z.infer<typeof publicGastroDiscountSchema>;
+
+export const publicGastroDiscountsResponseSchema = z.object({
+  discounts: z.array(publicGastroDiscountSchema),
+});
+export type PublicGastroDiscountsResponse = z.infer<typeof publicGastroDiscountsResponseSchema>;
 
 /** Event create/update: capacityTotal (int >= 0, nullable) */
 export const eventCapacityTotalSchema = z.number().int().min(0).nullable();
@@ -86,6 +124,9 @@ export const eventCreateDtoSchema = z.object({
   coverImageUrl: z.string().nullish(),
   geoLat: z.number().nullish(),
   geoLng: z.number().nullish(),
+  category: z.string().nullish(),
+  subcategoryId: z.string().nullish(),
+  rentalLocationId: z.string().nullish(),
 });
 export type EventCreateDto = z.infer<typeof eventCreateDtoSchema>;
 
@@ -95,6 +136,20 @@ export const producerEventMetricsParamsSchema = z.object({
 });
 export type ProducerEventMetricsParams = z.infer<typeof producerEventMetricsParamsSchema>;
 
+/** Per-referral link performance for an event (PAID orders only). */
+export const producerEventReferralPerformanceSchema = z.object({
+  referralLinkId: z.string(),
+  code: z.string(),
+  referrerProfileId: z.string(),
+  referrerDisplayName: z.string().nullable(),
+  paidOrdersCount: z.number().int().min(0),
+  ticketsSoldCount: z.number().int().min(0),
+  grossRevenueCents: z.number().int().min(0),
+});
+export type ProducerEventReferralPerformance = z.infer<
+  typeof producerEventReferralPerformanceSchema
+>;
+
 /** Response for GET /producer/events/:eventId/metrics */
 export const producerEventMetricsResponseSchema = z.object({
   ticketsSold: z.number().int().min(0),
@@ -102,6 +157,7 @@ export const producerEventMetricsResponseSchema = z.object({
   revenue: z.string(),
   currency: z.string(),
   scanCount: z.number().int().min(0),
+  referralPerformance: z.array(producerEventReferralPerformanceSchema).optional(),
 });
 export type ProducerEventMetricsResponse = z.infer<typeof producerEventMetricsResponseSchema>;
 
@@ -173,6 +229,9 @@ export const eventUpdateDtoSchema = z.object({
   geoLat: z.number().optional().nullable(),
   geoLng: z.number().optional().nullable(),
   status: z.enum(['DRAFT', 'PENDING', 'APPROVED', 'PAUSED', 'CANCELLED']).optional(),
+  category: z.string().nullish(),
+  subcategoryId: z.string().nullish(),
+  rentalLocationId: z.string().nullish(),
 });
 export type EventUpdateDto = z.infer<typeof eventUpdateDtoSchema>;
 
@@ -195,6 +254,8 @@ export const eventsSearchQuerySchema = z
     q: z.string().optional(),
     city: z.string().optional(),
     category: z.string().optional(),
+    subcategoryId: z.string().optional(),
+    subcategorySlug: z.string().optional(),
     dateFrom: z.string().datetime().optional(),
     dateTo: z.string().datetime().optional(),
     minRating: z.coerce.number().min(0).max(5).optional(),
@@ -286,6 +347,8 @@ export const referralLinkSummarySchema = z.object({
   createdAt: z.string().datetime(),
   eventId: z.string().optional(),
   referrerId: z.string().nullable().optional(),
+  /** Perfil referidor (asignación v2); legacy puede ser null */
+  referrerProfileId: z.string().nullable().optional(),
 });
 export type ReferralLinkSummary = z.infer<typeof referralLinkSummarySchema>;
 
@@ -323,9 +386,17 @@ export type CreateReviewParams = z.infer<typeof createReviewParamsSchema>;
 
 /** Body for POST /events/:eventId/reviews */
 export const createReviewBodySchema = z.object({
-  score: z.number().int().min(1).max(5),
-  title: z.string().optional(),
-  comment: z.string().optional(),
+  /** Promedios del front pueden venir con decimales; se redondea al entero 1–5. */
+  score: z
+    .number()
+    .min(1)
+    .max(5)
+    .transform((n) => Math.min(5, Math.max(1, Math.round(n)))),
+  /** JSON suele mandar null; optional() solo admite undefined. */
+  title: z.string().nullish(),
+  comment: z.string().nullish(),
+  /** Solo aplica si la valoración es sin cuenta (se ignora si hay JWT). */
+  guestName: z.string().trim().max(80).nullish(),
 });
 export type CreateReviewBody = z.infer<typeof createReviewBodySchema>;
 
@@ -337,8 +408,17 @@ export const reviewItemSchema = z.object({
   comment: z.string().nullable(),
   userName: z.string(),
   createdAt: z.string().datetime(),
+  /** Respuesta oficial del organizador (visible en listado público si existe) */
+  officialReply: z.string().nullable().optional(),
 });
 export type ReviewItem = z.infer<typeof reviewItemSchema>;
+
+/** Fila de reseña para productores (incluye moderación) */
+export const producerReviewRowSchema = reviewItemSchema.extend({
+  hiddenFromPublic: z.boolean(),
+  officialReply: z.string().nullable(),
+});
+export type ProducerReviewRow = z.infer<typeof producerReviewRowSchema>;
 
 /** Query for GET /public/events/:id/reviews */
 export const reviewsListQuerySchema = z.object({

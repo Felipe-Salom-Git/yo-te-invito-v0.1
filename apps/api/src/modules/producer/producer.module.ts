@@ -1,11 +1,17 @@
 import { Module } from '@nestjs/common';
+import { SubcategoriesModule } from '../subcategories/subcategories.module';
+import { RentalLocationsModule } from '../rental-locations/rental-locations.module';
 import { AuthModule } from '../../auth/auth.module';
+import { TicketingModule } from '../../ticketing/ticketing.module';
 import { ReferralsModule } from '../referrals/referrals.module';
+import { ReviewsModule } from '../reviews/reviews.module';
 import { ProfilesAuthorizationService } from '../../common/profiles-authorization.service';
 import { ProducerEventsController } from './producer-events.controller';
 import { ProducerReferrersController } from './producer-referrers.controller';
 import { ProducerRolesGuard } from '../../common/guards/producer-roles.guard';
 import { ProducerTicketTypesController } from './producer-ticket-types.controller';
+import { ProducerTicketTemplateController } from './producer-ticket-template.controller';
+import { ProducerTicketTemplateService } from './producer-ticket-template.service';
 import { EventMetricsService } from './event-metrics.service';
 import { ProducerEventsCrudService } from './producer-events-crud.service';
 import { ProducerTicketTypesService } from './producer-ticket-types.service';
@@ -13,11 +19,19 @@ import { ProducerProfileController } from './producer-profile.controller';
 import { ProducerProfileService } from './producer-profile.service';
 
 @Module({
-  imports: [AuthModule, ReferralsModule],
+  imports: [
+    AuthModule,
+    ReferralsModule,
+    TicketingModule,
+    ReviewsModule,
+    SubcategoriesModule,
+    RentalLocationsModule,
+  ],
   controllers: [
     ProducerEventsController,
     ProducerReferrersController,
     ProducerTicketTypesController,
+    ProducerTicketTemplateController,
     ProducerProfileController,
   ],
   providers: [
@@ -26,6 +40,7 @@ import { ProducerProfileService } from './producer-profile.service';
     EventMetricsService,
     ProducerEventsCrudService,
     ProducerTicketTypesService,
+    ProducerTicketTemplateService,
     ProducerProfileService,
   ],
 })

@@ -2,12 +2,16 @@
 
 ## Scope
 
-This document maps the **Yo-Te-Invito (Demo)** frontend structure to the current **`apps/web`** frontend (LocalStorage edition), to make backend integration easier later.
+**Legacy / mapping doc.** Compares an older **Yo-Te-Invito (Demo)** tree to structural ideas in **`apps/web`**. It is **not** the source of truth for how data is loaded today.
 
-- **Demo reference**: `C:/Users/Felipe Salom/Desktop/Yo-Te-Invito (Demo)` (root `app/` and `apps/web/app/`)
-- **Current app**: `C:/Users/Felipe Salom/Desktop/yo-te-invito-v0.1/apps/web`
-- **Persistence**: LocalStorage via `LocalDB` / `LocalRepository` (no direct API calls from UI)
-- **Rules**: Follows `PROJECT_RULES.md` and `AI_WORKFLOW_RULES.md` (small, documented, backend‑ready changes)
+- **Demo reference**: external demo project paths mentioned below (historical)
+- **Current app**: `apps/web` in this monorepo
+- **Persistence today**: **NestJS API + PostgreSQL**; UI uses **`useRepositories()` → `ApiRepository` → `ApiClient`**. No `LocalRepository` in normal flows.
+- **Current frontend truth**: `docs/context/FRONTEND_CONTEXT.md`
+- **Backlog**: `docs/context/CONTEXT_PENDIENTES.md`
+- **Rules**: `PROJECT_RULES.md`, `AI_WORKFLOW_RULES.md` (small, documented changes)
+
+Sections below that say “LocalRepository” or “LocalStorage” describe the **old** demo mapping, not the current stack.
 
 ---
 
@@ -37,10 +41,9 @@ This document maps the **Yo-Te-Invito (Demo)** frontend structure to the current
   - Main headline: "Descubrí eventos cerca tuyo" + CTA buttons (`/explore`, `/login`).
   - "Destacados" horizontal row using `EventCard`; carousel containers use `scrollbar-hide` (no visible scrollbars); cards have fluid hover (scale, z-index, more detail on hover); container closer to screen edges (`px-2 sm:px-3`).
   - Several `Carousel` components fed by `useHomeCarousels()` with arrows centred on the sides of the container and smooth hover:
-    - Trending, Cerca de ti, Nuevos, Gastronomía, Excursiones, Alquileres.
+    - Trending, Cerca de ti, Nuevos, Gastronomía, **Hoteles**, Excursiones, Alquileres (según `homeViewModel` / categorías en API).
 - **Data source**:
-  - `useHomeCarousels()` → `useRepositories()` → `LocalRepository.events`.
-  - `useEventsList()` for the "Destacados" row.
+  - `useHomeCarousels()` y `useEventsList()` → `useRepositories()` → **`ApiRepository`** (NestJS API), no `LocalRepository`.
 
 ### 1.3 Structural equivalence (demo → current)
 
@@ -56,10 +59,12 @@ This document maps the **Yo-Te-Invito (Demo)** frontend structure to the current
 - **Cards**
   - Demo: `components/event-card.tsx` (Netflix‑style card, overlay gradient, title, date/location, hover CTA).
   - Current: `components/home/EventCard.tsx` now has similar structure but uses:
-    - Our routing (`/events`, `/restaurants`, `/excursiones`, `/rentals` + `tenantId` query).
+    - Our routing (`/events`, `/restaurants`, `/excursiones`, `/rentals`, `/hoteles` + `tenantId` query).
     - Our palette (emerald accent instead of purple).
 
-**Conclusion**: `/home` in the current app already follows the **same layout idea** as the demo home: hero banner + horizontal carousels, but wired through repositories/queries and LocalDB instead of a local `useAppStore`.
+**Conclusion**: `/home` sigue la **misma idea de layout** que el demo (hero + carruseles), pero los datos vienen del **API + PostgreSQL** vía `ApiRepository`, no LocalDB ni `useAppStore`.
+
+**Pendientes y mejoras:** ver `docs/context/CONTEXT_PENDIENTES.md`.
 
 ---
 

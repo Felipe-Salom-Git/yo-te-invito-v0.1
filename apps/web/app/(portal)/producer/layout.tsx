@@ -15,7 +15,7 @@ const NAV = [
 export default function ProducerLayout({ children }: { children: React.ReactNode }) {
   return (
     <ProfileProtectedLayout allowedRoles={[Role.ADMIN, Role.PRODUCER_OWNER, Role.PRODUCER_STAFF]} requiredProfile="producer">
-      <div className="mx-auto max-w-5xl">
+      <div className="mx-auto max-w-7xl">
         <PortalSidebar items={NAV}>{children}</PortalSidebar>
       </div>
     </ProfileProtectedLayout>

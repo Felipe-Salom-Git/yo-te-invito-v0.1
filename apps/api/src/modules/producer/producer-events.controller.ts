@@ -17,6 +17,7 @@ import { EventMetricsService } from './event-metrics.service';
 import { ProducerEventsCrudService } from './producer-events-crud.service';
 import { ProducerTicketTypesService } from './producer-ticket-types.service';
 import { ReferralsService } from '../referrals/referrals.service';
+import { ReviewsService } from '../reviews/reviews.service';
 
 @Controller('producer/events')
 @UseGuards(JwtOrDevAuthGuard, ProducerRolesGuard)
@@ -27,6 +28,7 @@ export class ProducerEventsController {
     private readonly crud: ProducerEventsCrudService,
     private readonly ticketTypesService: ProducerTicketTypesService,
     private readonly referralsService: ReferralsService,
+    private readonly reviews: ReviewsService,
   ) {}
 
   @Get()
@@ -45,6 +47,14 @@ export class ProducerEventsController {
       limit ? parseInt(limit, 10) || 50 : 50,
       status || undefined,
     );
+  }
+
+  @Get(':eventId/reviews')
+  async listEventReviews(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param('eventId') eventId: string,
+  ) {
+    return this.reviews.listForProducer(user.tenantId, user.id, user.role, eventId);
   }
 
   @Get(':eventId')

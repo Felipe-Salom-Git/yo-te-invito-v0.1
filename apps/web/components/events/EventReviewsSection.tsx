@@ -15,7 +15,7 @@ export interface EventReviewsSectionProps {
   total: number;
   page: number;
   onPageChange: (page: number) => void;
-  onSubmitReview: (values: { score: number; comment?: string }) => void;
+  onSubmitReview: (values: { score: number; comment?: string; guestName?: string }) => void;
   isSubmittingReview: boolean;
   /** Optional rating average from event for summary display */
   ratingAvg?: number | null;

@@ -8,72 +8,183 @@ import type {
   EventDetail,
   EventsSearchQuery,
   EventsTrendingQuery,
+  PublicGastroDiscountsResponse,
 } from '@yo-te-invito/shared';
-import { ErrorCode } from '@yo-te-invito/shared';
+import { ErrorCode, parseRentalOpeningHours } from '@yo-te-invito/shared';
+import { mergePublicEventVisibility } from '../common/utils/event-public-visibility.util';
 
 @Injectable()
 export class PublicEventsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  private publicWhere(base: Prisma.EventWhereInput): Prisma.EventWhereInput {
+    return mergePublicEventVisibility(base);
+  }
+
+  private applySubcategoryFilter(
+    where: Prisma.EventWhereInput,
+    query: { tenantId: string; category?: string; subcategoryId?: string; subcategorySlug?: string },
+  ): void {
+    if (query.subcategoryId?.trim()) {
+      where.subcategoryId = query.subcategoryId.trim();
+      return;
+    }
+    if (query.subcategorySlug?.trim() && query.category?.trim()) {
+      where.subcategory = {
+        slug: query.subcategorySlug.trim(),
+        category: query.category.trim(),
+        tenantId: query.tenantId,
+        isActive: true,
+      };
+    }
+  }
+
   async list(query: EventsListQuery): Promise<EventsPaginatedResponse> {
-    const where: Prisma.EventWhereInput = {
+    const base: Prisma.EventWhereInput = {
       tenantId: query.tenantId,
       status: 'APPROVED',
       deletedAt: null,
     };
 
     if (query.city) {
-      where.city = query.city;
+      base.city = query.city;
     }
 
     if (query.category?.trim()) {
-      where.category = query.category.trim();
+      base.category = query.category.trim();
     }
+
+    this.applySubcategoryFilter(base, query);
 
     if (query.dateFrom || query.dateTo) {
-      where.startAt = {};
+      base.startAt = {};
       if (query.dateFrom) {
-        where.startAt.gte = new Date(query.dateFrom);
+        base.startAt.gte = new Date(query.dateFrom);
       }
       if (query.dateTo) {
-        where.startAt.lte = new Date(query.dateTo);
+        base.startAt.lte = new Date(query.dateTo);
       }
     }
 
+    const where = this.publicWhere(base);
+
+    const now = new Date();
+    const gastroList = (query.category ?? '').toLowerCase() === 'gastro';
+
     const [data, total] = await Promise.all([
-      this.prisma.event.findMany({
-        where,
-        select: {
-          id: true,
-          title: true,
-          startAt: true,
-          city: true,
-          venueName: true,
-          coverImageUrl: true,
-          category: true,
-          description: true,
-          ratingAvg: true,
-          ratingCount: true,
-        },
-        orderBy: { startAt: 'asc' },
-        skip: (query.page - 1) * query.limit,
-        take: query.limit,
-      }),
+      gastroList
+        ? this.prisma.event.findMany({
+            where,
+            include: {
+              gastroDiscounts: {
+                where: {
+                  status: 'ACTIVE',
+                  AND: [
+                    { OR: [{ validFrom: null }, { validFrom: { lte: now } }] },
+                    { OR: [{ validTo: null }, { validTo: { gte: now } }] },
+                  ],
+                },
+                orderBy: { createdAt: 'desc' },
+                take: 1,
+              },
+            },
+            orderBy: { startAt: 'asc' },
+            skip: (query.page - 1) * query.limit,
+            take: query.limit,
+          })
+        : this.prisma.event.findMany({
+            where,
+            select: {
+              id: true,
+              title: true,
+              startAt: true,
+              city: true,
+              venueName: true,
+              coverImageUrl: true,
+              category: true,
+              description: true,
+              ratingAvg: true,
+              ratingCount: true,
+            },
+            orderBy: { startAt: 'asc' },
+            skip: (query.page - 1) * query.limit,
+            take: query.limit,
+          }),
       this.prisma.event.count({ where }),
     ]);
 
-    const items: EventSummary[] = data.map((e) => ({
-      id: e.id,
-      title: e.title,
-      startAt: e.startAt.toISOString(),
-      city: e.city,
-      venueName: e.venueName,
-      coverImageUrl: e.coverImageUrl,
-      category: e.category ?? undefined,
-      description: e.description ?? undefined,
-      ratingAvg: e.ratingAvg ?? undefined,
-      ratingCount: e.ratingCount ?? undefined,
-    }));
+    const items: EventSummary[] = gastroList
+      ? (
+          data as Array<{
+            id: string;
+            title: string;
+            startAt: Date;
+            city: string | null;
+            venueName: string | null;
+            coverImageUrl: string | null;
+            category: string | null;
+            description: string | null;
+            ratingAvg: number | null;
+            ratingCount: number;
+            gastroDiscounts: Array<{
+              code: string;
+              type: string;
+              value: number;
+              displayTitle: string | null;
+              displayImageUrls: unknown;
+            }>;
+          }>
+        ).map((e) => {
+          const d = e.gastroDiscounts[0];
+          const promoLabel =
+            d &&
+            (d.displayTitle?.trim() ||
+              `${d.type === 'PERCENT' ? `${d.value}%` : `$${d.value}`} · ${d.code}`);
+          let promoImg: string | null | undefined;
+          if (d?.displayImageUrls != null && Array.isArray(d.displayImageUrls)) {
+            const first = d.displayImageUrls[0];
+            promoImg = typeof first === 'string' ? first : null;
+          }
+          return {
+            id: e.id,
+            title: e.title,
+            startAt: e.startAt.toISOString(),
+            city: e.city,
+            venueName: e.venueName,
+            coverImageUrl: e.coverImageUrl,
+            category: e.category ?? undefined,
+            description: e.description ?? undefined,
+            ratingAvg: e.ratingAvg ?? undefined,
+            ratingCount: e.ratingCount ?? undefined,
+            gastroPromoLabel: promoLabel ?? null,
+            gastroPromoImageUrl: promoImg ?? null,
+          };
+        })
+      : (
+          data as Array<{
+            id: string;
+            title: string;
+            startAt: Date;
+            city: string | null;
+            venueName: string | null;
+            coverImageUrl: string | null;
+            category: string | null;
+            description: string | null;
+            ratingAvg: number | null;
+            ratingCount: number;
+          }>
+        ).map((e) => ({
+          id: e.id,
+          title: e.title,
+          startAt: e.startAt.toISOString(),
+          city: e.city,
+          venueName: e.venueName,
+          coverImageUrl: e.coverImageUrl,
+          category: e.category ?? undefined,
+          description: e.description ?? undefined,
+          ratingAvg: e.ratingAvg ?? undefined,
+          ratingCount: e.ratingCount ?? undefined,
+        }));
 
     return {
       data: items,
@@ -87,37 +198,41 @@ export class PublicEventsService {
   }
 
   async search(query: EventsSearchQuery): Promise<EventsPaginatedResponse> {
-    const where: Prisma.EventWhereInput = {
+    const base: Prisma.EventWhereInput = {
       tenantId: query.tenantId,
       status: 'APPROVED',
       deletedAt: null,
     };
 
     if (query.q?.trim()) {
-      where.title = { contains: query.q.trim(), mode: 'insensitive' };
+      base.title = { contains: query.q.trim(), mode: 'insensitive' };
     }
 
     if (query.city?.trim()) {
-      where.city = query.city.trim();
+      base.city = query.city.trim();
     }
 
     if (query.category?.trim()) {
-      where.category = query.category.trim();
+      base.category = query.category.trim();
     }
 
+    this.applySubcategoryFilter(base, query);
+
     if (query.dateFrom || query.dateTo) {
-      where.startAt = {};
+      base.startAt = {};
       if (query.dateFrom) {
-        where.startAt.gte = new Date(query.dateFrom);
+        base.startAt.gte = new Date(query.dateFrom);
       }
       if (query.dateTo) {
-        where.startAt.lte = new Date(query.dateTo);
+        base.startAt.lte = new Date(query.dateTo);
       }
     }
 
     if (query.minRating != null && query.minRating > 0) {
-      where.ratingAvg = { gte: query.minRating };
+      base.ratingAvg = { gte: query.minRating };
     }
+
+    const where = this.publicWhere(base);
 
     const [data, total] = await Promise.all([
       this.prisma.event.findMany({
@@ -167,13 +282,13 @@ export class PublicEventsService {
 
   async trending(query: EventsTrendingQuery): Promise<EventSummary[]> {
     const data = await this.prisma.event.findMany({
-      where: {
+      where: this.publicWhere({
         tenantId: query.tenantId,
         status: 'APPROVED',
         deletedAt: null,
         ratingCount: { gt: 0 },
         ratingAvg: { not: null },
-      },
+      }),
       select: {
         id: true,
         title: true,
@@ -204,19 +319,89 @@ export class PublicEventsService {
     }));
   }
 
-  async detail(id: string, tenantId: string): Promise<EventDetail> {
+  async listPublicGastroDiscounts(eventId: string, tenantId: string): Promise<PublicGastroDiscountsResponse> {
     const event = await this.prisma.event.findFirst({
       where: {
-        id,
+        id: eventId,
         tenantId,
         status: 'APPROVED',
         deletedAt: null,
       },
+      select: { id: true, category: true },
+    });
+
+    if (!event) {
+      throw new NotFoundException({
+        code: ErrorCode.NOT_FOUND,
+        message: 'Event not found',
+      });
+    }
+
+    if ((event.category ?? '').toLowerCase() !== 'gastro') {
+      return { discounts: [] };
+    }
+
+    const now = new Date();
+    const rows = await this.prisma.gastroDiscount.findMany({
+      where: {
+        tenantId,
+        eventId,
+        status: 'ACTIVE',
+        AND: [
+          { OR: [{ validFrom: null }, { validFrom: { lte: now } }] },
+          { OR: [{ validTo: null }, { validTo: { gte: now } }] },
+        ],
+      },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        code: true,
+        type: true,
+        value: true,
+        validFrom: true,
+        validTo: true,
+        displayTitle: true,
+        displayDescription: true,
+        displayImageUrls: true,
+      },
+    });
+
+    return {
+      discounts: rows.map((r) => {
+        const raw = r.displayImageUrls;
+        const displayImageUrls =
+          raw != null && Array.isArray(raw)
+            ? raw.filter((x): x is string => typeof x === 'string')
+            : undefined;
+        return {
+          id: r.id,
+          code: r.code,
+          type: r.type as 'PERCENT' | 'FIXED',
+          value: r.value,
+          validFrom: r.validFrom?.toISOString() ?? null,
+          validTo: r.validTo?.toISOString() ?? null,
+          displayTitle: r.displayTitle ?? null,
+          displayDescription: r.displayDescription ?? null,
+          displayImageUrls,
+        };
+      }),
+    };
+  }
+
+  async detail(id: string, tenantId: string): Promise<EventDetail> {
+    const event = await this.prisma.event.findFirst({
+      where: this.publicWhere({
+        id,
+        tenantId,
+        status: 'APPROVED',
+        deletedAt: null,
+      }),
       include: {
         media: {
           where: { deletedAt: null },
           orderBy: { sortOrder: 'asc' },
         },
+        rentalLocation: true,
       },
     });
 
@@ -235,6 +420,7 @@ export class PublicEventsService {
       venueName: event.venueName,
       coverImageUrl: event.coverImageUrl,
       category: event.category ?? undefined,
+      subcategoryId: event.subcategoryId ?? undefined,
       description: event.description,
       endAt: event.endAt?.toISOString() ?? null,
       venueAddress: event.venueAddress,
@@ -251,6 +437,17 @@ export class PublicEventsService {
         url: m.url,
         sortOrder: m.sortOrder,
       })),
+      rentalLocation: event.rentalLocation
+        ? {
+            id: event.rentalLocation.id,
+            name: event.rentalLocation.name,
+            address: event.rentalLocation.address,
+            openingHours: parseRentalOpeningHours(event.rentalLocation.openingHours),
+            openingHoursNote: event.rentalLocation.openingHoursNote,
+            geoLat: event.rentalLocation.geoLat,
+            geoLng: event.rentalLocation.geoLng,
+          }
+        : null,
     };
   }
 }

@@ -45,3 +45,11 @@ body {
   display: none;
 }
 
+/* Category gateway — poster-style condensed headline */
+.gateway-poster-title {
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.04em;
+  font-stretch: condensed;
+}
+

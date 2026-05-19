@@ -37,6 +37,9 @@ function ProfileSection({
             >
               <div>
                 <p className="font-medium text-text">{p.displayName}</p>
+                {p.websiteUrl && (
+                  <p className="text-xs text-text-muted truncate max-w-[min(100%,280px)]">{p.websiteUrl}</p>
+                )}
                 <p className="text-xs text-text-muted">
                   Creado: {typeof p.createdAt === 'string' ? p.createdAt : new Date(p.createdAt).toLocaleString()}
                 </p>
@@ -76,6 +79,13 @@ export default function AdminPerfilesPage() {
     queryFn: () => repos.profiles.listPendingGastroProfiles(),
   });
   const {
+    data: hotelData,
+    isLoading: hotelLoading,
+  } = useQuery({
+    queryKey: ['profiles', 'hotel', 'pending'],
+    queryFn: () => repos.profiles.listPendingHotelProfiles(),
+  });
+  const {
     data: referrerData,
     isLoading: referrerLoading,
   } = useQuery({
@@ -85,6 +95,7 @@ export default function AdminPerfilesPage() {
 
   const producerProfiles = producerData?.profiles ?? [];
   const gastroProfiles = gastroData?.profiles ?? [];
+  const hotelProfiles = hotelData?.profiles ?? [];
   const referrerProfiles = referrerData?.profiles ?? [];
 
   const approveProducer = useMutation({
@@ -94,6 +105,11 @@ export default function AdminPerfilesPage() {
   });
   const approveGastro = useMutation({
     mutationFn: (id: string) => repos.profiles.approveGastroProfile(id),
+    onError: (err) => addToast(getErrorMessage(err), 'error'),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['profiles'] }),
+  });
+  const approveHotel = useMutation({
+    mutationFn: (id: string) => repos.profiles.approveHotelProfile(id),
     onError: (err) => addToast(getErrorMessage(err), 'error'),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['profiles'] }),
   });
@@ -108,7 +124,7 @@ export default function AdminPerfilesPage() {
       <Breadcrumbs items={[{ label: 'Admin', href: '/admin' }, { label: 'Perfiles pendientes' }]} />
       <SectionTitle>Perfiles pendientes de aprobación</SectionTitle>
       <p className="mt-2 text-text-muted">
-        Solicitudes de perfiles productor, gastro y referidor.
+        Solicitudes de perfiles productor, gastro, hotel y referidor.
       </p>
 
       <ProfileSection
@@ -126,7 +142,17 @@ export default function AdminPerfilesPage() {
         isApproving={approveGastro.isPending}
       />
       <ProfileSection
-        title="Referidores"
+        title="Hoteles / alojamiento"
+        profiles={hotelProfiles}
+        isLoading={hotelLoading}
+        onApprove={(id) => approveHotel.mutate(id)}
+        isApproving={approveHotel.isPending}
+      />
+      <p className="mt-10 text-xs text-text-muted">
+        Referidores: el alta directa ya no usa esta cola; solo quedan solicitudes antiguas en PENDING.
+      </p>
+      <ProfileSection
+        title="Referidores (legado)"
         profiles={referrerProfiles}
         isLoading={referrerLoading}
         onApprove={(id) => approveReferrer.mutate(id)}

@@ -36,7 +36,7 @@ export default function AdminAplicacionesPage() {
       <Breadcrumbs items={[{ label: 'Admin', href: '/admin' }, { label: 'Solicitudes' }]} />
       <SectionTitle>Solicitudes pendientes</SectionTitle>
       <p className="mt-2 text-text-muted">
-        Productoras y gastro que solicitaron cuenta.
+        Productoras, gastro y hotel que solicitaron cuenta (alta por registro).
       </p>
 
       {isLoading ? (

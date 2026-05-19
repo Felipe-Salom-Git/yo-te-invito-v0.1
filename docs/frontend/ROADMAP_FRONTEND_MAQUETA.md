@@ -210,7 +210,7 @@ Para tener una maqueta navegable de extremo a extremo sin depender de DB:
 
 - **`docs/project/ROLES_OBJECTIVES_SPEC.md`** — Especificación canónica de objetivos por rol (comprador, productora, admin, referido, gastro)
 - `docs/guides/DEVELOPER_USERS.md` — Usuarios mock por rol para testing
-- `docs/context/FRONTEND_CONTEXT_V2.md`
+- `docs/context/FRONTEND_CONTEXT.md`
 - `docs/architecture/CORE_SCHEMA.md`
 - `docs/architecture/DOMAIN_MODEL.md`
 - `docs/architecture/PROJECT_ARCHITECTURE.md`

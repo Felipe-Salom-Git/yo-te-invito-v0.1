@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { ReferrerRolesGuard } from '../../common/guards/referrer-roles.guard';
 import { RequireRole } from '../../common/decorators/require-role.decorator';
 import { Role } from '@yo-te-invito/shared';
@@ -7,16 +7,21 @@ import {
   meOrdersQuerySchema,
   userPreferencesPatchSchema,
   requestCommissionBodySchema,
+  createGastroPromotionRequestBodySchema,
+  createReviewModerationRequestBodySchema,
   type MeTicketsQuery,
   type MeOrdersQuery,
   type UserPreferencesPatch,
   type RequestCommissionBody,
+  type CreateGastroPromotionRequestBody,
+  type CreateReviewModerationRequestBody,
 } from '@yo-te-invito/shared';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { JwtOrDevAuthGuard } from '../../auth/jwt-or-dev-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { MeService } from './me.service';
 import { ReferralsService } from '../referrals/referrals.service';
+import { InboxService } from '../inbox/inbox.service';
 
 @Controller('me')
 @UseGuards(JwtOrDevAuthGuard)
@@ -24,6 +29,7 @@ export class MeController {
   constructor(
     private readonly meService: MeService,
     private readonly referralsService: ReferralsService,
+    private readonly inboxService: InboxService,
   ) {}
 
   @Get()
@@ -31,6 +37,14 @@ export class MeController {
     @CurrentUser() user: { id: string; tenantId: string },
   ) {
     return this.meService.getMe(user.tenantId, user.id);
+  }
+
+  @Get('tickets/:ticketId')
+  async getMyTicket(
+    @CurrentUser() user: { id: string; tenantId: string },
+    @Param('ticketId') ticketId: string,
+  ) {
+    return this.meService.getMyTicketById(user.tenantId, user.id, ticketId);
   }
 
   @Get('tickets')
@@ -90,5 +104,26 @@ export class MeController {
     @Body(new ZodValidationPipe(requestCommissionBodySchema)) body: RequestCommissionBody,
   ) {
     return this.referralsService.requestCommission(user.tenantId, user.id, body.referralLinkId);
+  }
+
+  @Get('inbox')
+  async getMyInbox(@CurrentUser() user: { id: string; tenantId: string }) {
+    return this.inboxService.listOutbound(user.tenantId, user.id);
+  }
+
+  @Post('inbox/gastro-promotion')
+  async createGastroPromotionRequest(
+    @CurrentUser() user: { id: string; tenantId: string },
+    @Body(new ZodValidationPipe(createGastroPromotionRequestBodySchema)) body: CreateGastroPromotionRequestBody,
+  ) {
+    return this.inboxService.createGastroPromotionRequest(user.tenantId, user.id, body);
+  }
+
+  @Post('inbox/review-moderation')
+  async createReviewModerationRequest(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Body(new ZodValidationPipe(createReviewModerationRequestBodySchema)) body: CreateReviewModerationRequestBody,
+  ) {
+    return this.inboxService.createReviewModerationRequest(user.tenantId, user.id, user.role, body);
   }
 }

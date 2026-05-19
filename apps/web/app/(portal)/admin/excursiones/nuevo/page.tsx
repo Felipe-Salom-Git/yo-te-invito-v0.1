@@ -7,6 +7,10 @@ import { useMutation } from '@tanstack/react-query';
 import { useRepositories } from '@/repositories/context';
 import { PageContainer, SectionTitle, Button, Input, useToast } from '@/components';
 import { getErrorMessage } from '@/lib/errors';
+import { buildAdminEventDescription } from '@/lib/admin/event-description';
+import { ImageUrlPreview } from '@/components/admin/ImageUrlPreview';
+import { LatLngMapPreview } from '@/components/admin/LatLngMapPreview';
+import { SubcategorySelect } from '@/components/forms/SubcategorySelect';
 
 const TENANT_ID = 'tenant-demo';
 
@@ -26,6 +30,7 @@ export default function AdminExcursionNuevoPage() {
   const [venueAddress, setVenueAddress] = useState('');
   const [geoLat, setGeoLat] = useState('');
   const [geoLng, setGeoLng] = useState('');
+  const [subcategoryId, setSubcategoryId] = useState('');
 
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -40,7 +45,7 @@ export default function AdminExcursionNuevoPage() {
       repos.events.create({
         tenantId: TENANT_ID,
         title: title.trim(),
-        description: description.trim() || null,
+        description: buildAdminEventDescription(description, valueOptional, ofertas),
         city: city.trim() || null,
         venueName: venueName.trim() || null,
         venueAddress: venueAddress.trim() || null,
@@ -49,6 +54,7 @@ export default function AdminExcursionNuevoPage() {
         startAt: startAt ? new Date(startAt).toISOString() : new Date().toISOString(),
         endAt: null,
         category: 'excursion',
+        subcategoryId: subcategoryId || null,
         capacityTotal: capacityTotal ? parseInt(capacityTotal, 10) : null,
         coverImageUrl: coverImageUrl.trim() || null,
         isTicketingEnabled: true,
@@ -118,6 +124,7 @@ export default function AdminExcursionNuevoPage() {
               <span className="mr-2">O subir archivo:</span>
               <input type="file" accept="image/*" onChange={handleFileChange} className="text-sm" />
             </label>
+            <ImageUrlPreview url={coverImageUrl} />
           </div>
         </div>
         <Input
@@ -152,7 +159,13 @@ export default function AdminExcursionNuevoPage() {
               placeholder="-58.3816"
             />
           </div>
+          <LatLngMapPreview lat={geoLat} lng={geoLng} />
         </div>
+        <SubcategorySelect
+          category="excursion"
+          value={subcategoryId}
+          onChange={setSubcategoryId}
+        />
         <div className="flex gap-3 pt-4">
           <Button type="submit" disabled={createMutation.isPending}>
             {createMutation.isPending ? 'Creando…' : 'Crear'}

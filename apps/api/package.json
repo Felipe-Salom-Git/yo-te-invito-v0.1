@@ -16,8 +16,10 @@
     "test:door-scan": "tsx scripts/test-door-scan.ts",
     "demo:seed": "tsx scripts/demo-seed.ts",
     "demo:seed-curated": "tsx scripts/demo-seed-curated.ts",
+    "demo:seed-subcategories": "tsx scripts/demo-seed-subcategories.ts",
     "demo:load": "tsx scripts/demo-load.ts",
-    "smoke": "tsx scripts/smoke-api.ts"
+    "smoke": "tsx scripts/smoke-api.ts",
+    "db:cleanup-demo": "tsx prisma/scripts/cleanup-demo.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",

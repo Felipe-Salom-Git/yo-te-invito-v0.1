@@ -37,6 +37,9 @@ function TicketCard({
     <div className="flex items-center justify-between rounded-lg border border-border bg-bg-muted p-4">
       <div>
         <p className="font-medium text-text">{eventTitle}</p>
+        {ticket.ticketTypeName ? (
+          <p className="text-xs text-text-muted">{ticket.ticketTypeName}</p>
+        ) : null}
         <p className="text-xs text-text-muted truncate max-w-[200px]">ID: {ticket.id}</p>
       </div>
       <StatusBadge status={ticket.status} kind="ticket" />
@@ -138,7 +141,7 @@ export default function MyTicketsPage() {
           {Array.from(byEvent.entries()).map(([eventId, eventTickets]) => (
             <section key={eventId}>
               <h2 className="text-lg font-semibold text-text mb-4">
-                Evento {eventId}
+                {eventTickets[0]?.eventTitle ?? `Evento ${eventId}`}
                 <Link href={`/events/${eventId}`} className="ml-2 text-sm text-accent hover:underline">
                   Ver evento
                 </Link>
@@ -148,7 +151,7 @@ export default function MyTicketsPage() {
                   <li key={t.id}>
                     <TicketCard
                       ticket={t}
-                      eventTitle={`Evento ${eventId}`}
+                      eventTitle={t.eventTitle ?? `Evento ${eventId}`}
                       onSimulateScan={() => handleSimulateScan(t)}
                       isScanning={scanningId === t.id}
                     />

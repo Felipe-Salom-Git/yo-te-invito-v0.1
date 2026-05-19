@@ -56,7 +56,7 @@ function CheckoutSuccessContent() {
     setError(null);
     try {
       for (const oid of orderIds) {
-        await repos.orders.confirmDemoPayment(oid, t, userId);
+        await repos.orders.confirmDemoPayment(oid, t);
       }
       setPaid(true);
     } catch (err) {

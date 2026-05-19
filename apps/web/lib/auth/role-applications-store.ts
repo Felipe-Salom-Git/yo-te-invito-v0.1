@@ -14,7 +14,7 @@ export interface StoredApplication {
   lastName: string;
   phone?: string;
   businessName?: string;
-  role: 'PRODUCER_OWNER' | 'GASTRO_OWNER';
+  role: 'PRODUCER_OWNER' | 'GASTRO_OWNER' | 'HOTEL_OWNER';
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
   createdAt: Date;
 }

@@ -37,6 +37,15 @@ export class PublicEventsController {
     return this.service.trending(query);
   }
 
+  /** Public active gastro promos for an approved event (empty if not gastro). */
+  @Get(':id/discounts')
+  async listGastroDiscounts(
+    @Param('id') id: string,
+    @Query(new ZodValidationPipe(eventDetailQuerySchema)) query: EventDetailQuery,
+  ) {
+    return this.service.listPublicGastroDiscounts(id, query.tenantId);
+  }
+
   @Get(':id')
   async detail(
     @Param('id') id: string,

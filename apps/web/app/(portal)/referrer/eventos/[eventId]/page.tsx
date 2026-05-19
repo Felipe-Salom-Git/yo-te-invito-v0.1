@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRepositories } from '@/repositories/context';
+import { useTenant } from '@/hooks/useTenant';
 import { PageContainer, SectionTitle, Button, useToast } from '@/components';
 import { getErrorMessage } from '@/lib/errors';
 
@@ -15,11 +16,13 @@ export default function ReferrerEventoDetailPage() {
   const eventId = (params?.eventId as string) ?? '';
   const repos = useRepositories();
   const { addToast } = useToast();
+  const { tenantId: hookTenant } = useTenant();
+  const tenantId = hookTenant ?? 'tenant-demo';
   const userId = (session?.user as { userId?: string })?.userId ?? (session?.user as { id?: string })?.id ?? '';
 
   const { data: event } = useQuery({
-    queryKey: ['events', 'detail', eventId],
-    queryFn: () => repos.events.getDetail(eventId, 'tenant-demo'),
+    queryKey: ['events', 'detail', eventId, tenantId],
+    queryFn: () => repos.events.getDetail(eventId, tenantId),
     enabled: !!eventId,
   });
 
@@ -78,26 +81,45 @@ export default function ReferrerEventoDetailPage() {
         <ul className="mt-4 space-y-2">
           {links.map((l) => {
             const comm = eventCommissions.find((c) => c.referralLinkId === l.id);
+            const salePath = `/checkout/${eventId}?tenantId=${encodeURIComponent(tenantId)}&ref=${encodeURIComponent(l.code)}`;
+            const saleUrl =
+              typeof window !== 'undefined' ? `${window.location.origin}${salePath}` : salePath;
             return (
-              <li key={l.id} className="flex items-center justify-between rounded border border-border bg-bg-muted p-3">
+              <li key={l.id} className="flex flex-col gap-2 rounded border border-border bg-bg-muted p-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <span className="font-medium">{l.code}</span>
                   {l.label && <span className="ml-2 text-text-muted">— {l.label}</span>}
                   <span className="ml-2 text-sm text-text-muted">({l.attributedOrdersCount} ventas)</span>
+                  <p className="mt-1 text-xs text-text-muted">Link de venta (checkout)</p>
                 </div>
-                {comm?.status === 'PAID' ? (
-                  <span className="rounded bg-green-500/20 px-2 py-0.5 text-sm text-green-600">Cobrado</span>
-                ) : comm?.status === 'REQUESTED' ? (
-                  <span className="rounded bg-amber-500/20 px-2 py-0.5 text-sm text-amber-600">Solicitado</span>
-                ) : (
+                <div className="flex flex-col items-end gap-2">
                   <Button
+                    type="button"
                     size="sm"
-                    onClick={() => requestMutation.mutate(l.id)}
-                    disabled={requestMutation.isPending || (l.attributedOrdersCount ?? 0) === 0}
+                    variant="outline"
+                    onClick={() =>
+                      void navigator.clipboard.writeText(saleUrl).then(
+                        () => addToast('Link de venta copiado', 'success'),
+                        () => addToast('No se pudo copiar', 'error'),
+                      )
+                    }
                   >
-                    Solicitar cobro
+                    Copiar link
                   </Button>
-                )}
+                  {comm?.status === 'PAID' ? (
+                    <span className="rounded bg-green-500/20 px-2 py-0.5 text-sm text-green-600">Cobrado</span>
+                  ) : comm?.status === 'REQUESTED' ? (
+                    <span className="rounded bg-amber-500/20 px-2 py-0.5 text-sm text-amber-600">Solicitado</span>
+                  ) : (
+                    <Button
+                      size="sm"
+                      onClick={() => requestMutation.mutate(l.id)}
+                      disabled={requestMutation.isPending || (l.attributedOrdersCount ?? 0) === 0}
+                    >
+                      Solicitar cobro
+                    </Button>
+                  )}
+                </div>
               </li>
             );
           })}

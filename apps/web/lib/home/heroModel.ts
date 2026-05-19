@@ -3,7 +3,7 @@
  * Keeps presentational logic out of components.
  */
 
-export type HeroContentType = 'event' | 'gastro' | 'excursion' | 'rental';
+export type HeroContentType = 'event' | 'gastro' | 'hotel' | 'excursion' | 'rental';
 
 export interface HeroViewModel {
   id: string;
@@ -45,11 +45,13 @@ function getDetailHref(item: FeaturedItem): string {
   const base =
     item.category === 'gastro'
       ? '/restaurants'
-      : item.category === 'excursion'
-        ? '/excursiones'
-        : item.category === 'rental'
-          ? '/rentals'
-          : '/events';
+      : item.category === 'hotel'
+        ? '/hoteles'
+        : item.category === 'excursion'
+          ? '/excursiones'
+          : item.category === 'rental'
+            ? '/rentals'
+            : '/events';
   return `${base}/${item.id}?tenantId=${TENANT_ID}`;
 }
 
@@ -57,6 +59,8 @@ function getCtaLabels(category?: string): { primary: string; secondary: string }
   switch (category) {
     case 'gastro':
       return { primary: 'Ver detalle', secondary: 'Más información' };
+    case 'hotel':
+      return { primary: 'Ver hotel', secondary: 'Reservar' };
     case 'excursion':
       return { primary: 'Explorar', secondary: 'Ver categoría' };
     case 'rental':
@@ -70,6 +74,8 @@ function getCategoryLabel(category?: string): string {
   switch (category) {
     case 'gastro':
       return 'Gastronomía';
+    case 'hotel':
+      return 'Hotel';
     case 'excursion':
       return 'Excursión';
     case 'rental':

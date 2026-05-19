@@ -49,26 +49,51 @@ export default function AdminPortalPage() {
         <Card><CardContent><p className="text-sm text-text-muted">Reviews</p><p className="text-2xl font-bold">{m.totalReviews}</p></CardContent></Card>
       </div>
 
-      {pendingPayouts.length > 0 && (
-        <Card className="mt-6 border-accent/50">
+      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <Card className={pendingPayouts.length > 0 ? 'border-accent/50' : ''}>
           <CardContent className="pt-4">
             <p className="text-sm text-text-muted">Payouts pendientes</p>
-            <p className="text-2xl font-bold text-accent">{pendingPayouts.length}</p>
-            <Link
-              href="/admin/payouts"
-              className="mt-2 inline-block text-sm text-accent hover:underline"
-            >
-              Revisar y aprobar →
+            <p className="text-2xl font-bold text-text">{pendingPayouts.length}</p>
+            <Link href="/admin/payouts" className="mt-2 inline-block text-sm text-accent hover:underline">
+              {pendingPayouts.length > 0 ? 'Revisar y aprobar →' : 'Ir a payouts →'}
             </Link>
+            {pendingPayouts.length === 0 && (
+              <p className="mt-1 text-xs text-text-muted">No hay solicitudes en cola.</p>
+            )}
           </CardContent>
         </Card>
-      )}
+        <Card>
+          <CardContent className="pt-4">
+            <p className="text-sm text-text-muted">Operaciones</p>
+            <ul className="mt-2 space-y-1 text-sm">
+              <li>
+                <Link href="/admin/gastronomicos" className="text-accent hover:underline">
+                  Gastronómicos
+                </Link>
+              </li>
+              <li>
+                <Link href="/admin/contactos" className="text-accent hover:underline">
+                  Contactos
+                </Link>
+              </li>
+              <li>
+                <Link href="/admin/excursiones" className="text-accent hover:underline">
+                  Excursiones
+                </Link>
+                {' · '}
+                <Link href="/admin/rentals" className="text-accent hover:underline">
+                  Rentals
+                </Link>
+              </li>
+            </ul>
+          </CardContent>
+        </Card>
+      </div>
 
       <div className="mt-8 flex flex-wrap gap-4">
         <Link href="/admin/eventos" className="rounded border border-accent px-4 py-2 text-accent hover:bg-accent/10">Eventos recientes</Link>
         <Link href="/admin/usuarios" className="rounded border border-border px-4 py-2 text-text hover:bg-bg-muted">Usuarios</Link>
         <Link href="/admin/aplicaciones" className="rounded border border-border px-4 py-2 text-text hover:bg-bg-muted">Solicitudes</Link>
-        <Link href="/admin/audit" className="rounded border border-border px-4 py-2 text-text hover:bg-bg-muted">Audit logs</Link>
       </div>
     </PageContainer>
   );

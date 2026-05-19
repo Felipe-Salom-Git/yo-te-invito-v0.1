@@ -1,5 +1,5 @@
 /**
- * Apply for PRODUCER_OWNER or GASTRO_OWNER role (LocalStorage mode).
+ * Apply for PRODUCER_OWNER, GASTRO_OWNER or HOTEL_OWNER role (in-memory demo mode).
  */
 import * as crypto from 'crypto';
 import { NextResponse } from 'next/server';
@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     const password = (body?.password as string);
     const firstName = (body?.firstName as string)?.trim();
     const lastName = (body?.lastName as string)?.trim();
-    const role = body?.role as 'PRODUCER_OWNER' | 'GASTRO_OWNER';
+    const role = body?.role as 'PRODUCER_OWNER' | 'GASTRO_OWNER' | 'HOTEL_OWNER';
     const phone = (body?.phone as string)?.trim();
     const businessName = (body?.businessName as string)?.trim();
 
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-    if (role !== 'PRODUCER_OWNER' && role !== 'GASTRO_OWNER') {
+    if (role !== 'PRODUCER_OWNER' && role !== 'GASTRO_OWNER' && role !== 'HOTEL_OWNER') {
       return NextResponse.json({ error: 'Rol inválido' }, { status: 400 });
     }
     if (password.length < 6) {
@@ -50,9 +50,14 @@ export async function POST(request: Request) {
     }
 
     const demoUser = findDemoUserByEmail(email);
-    if (demoUser && (demoUser.role === 'PRODUCER_OWNER' || demoUser.role === 'GASTRO_OWNER')) {
+    if (
+      demoUser &&
+      (demoUser.role === 'PRODUCER_OWNER' ||
+        demoUser.role === 'GASTRO_OWNER' ||
+        demoUser.role === 'HOTEL_OWNER')
+    ) {
       return NextResponse.json(
-        { error: 'Este email ya tiene rol de productor o gastro' },
+        { error: 'Este email ya tiene rol de productor, gastro u hotel' },
         { status: 409 }
       );
     }

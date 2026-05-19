@@ -1,13 +1,14 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../../auth/auth.module';
 import { ReferralsModule } from '../referrals/referrals.module';
+import { InboxModule } from '../inbox/inbox.module';
 import { ProfilesAuthorizationService } from '../../common/profiles-authorization.service';
 import { ReferrerRolesGuard } from '../../common/guards/referrer-roles.guard';
 import { MeController } from './me.controller';
 import { MeService } from './me.service';
 
 @Module({
-  imports: [AuthModule, ReferralsModule],
+  imports: [AuthModule, ReferralsModule, InboxModule],
   controllers: [MeController],
   providers: [ProfilesAuthorizationService, ReferrerRolesGuard, MeService],
 })

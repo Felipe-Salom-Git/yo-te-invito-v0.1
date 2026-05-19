@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams, useSearchParams } from 'next/navigation';
-import { PlaceDetailView } from '@/components/places/PlaceDetailView';
+import { RentalProductDetailContent } from '@/components/rentals/RentalProductDetailContent';
 
 const DEFAULT_TENANT_ID = 'tenant-demo';
 
@@ -11,5 +11,5 @@ export default function RentalDetailPage() {
   const id = (params?.id as string) ?? '';
   const tenantId = searchParams?.get('tenantId') ?? DEFAULT_TENANT_ID;
 
-  return <PlaceDetailView id={id} variant="rental" tenantId={tenantId} />;
+  return <RentalProductDetailContent id={id} tenantId={tenantId} />;
 }

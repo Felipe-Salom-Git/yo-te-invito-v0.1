@@ -1,6 +1,6 @@
 /**
  * Admin: approve application (LocalStorage mode).
- * Creates user in dynamic-users with PRODUCER_OWNER or GASTRO_OWNER.
+ * Creates user in dynamic-users with PRODUCER_OWNER, GASTRO_OWNER or HOTEL_OWNER.
  */
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
@@ -32,7 +32,12 @@ export async function POST(
   }
 
   const demoUser = findDemoUserByEmail(app.email);
-  if (demoUser && (demoUser.role === 'PRODUCER_OWNER' || demoUser.role === 'GASTRO_OWNER')) {
+  if (
+    demoUser &&
+    (demoUser.role === 'PRODUCER_OWNER' ||
+      demoUser.role === 'GASTRO_OWNER' ||
+      demoUser.role === 'HOTEL_OWNER')
+  ) {
     return NextResponse.json(
       { error: 'User already has this role' },
       { status: 409 }

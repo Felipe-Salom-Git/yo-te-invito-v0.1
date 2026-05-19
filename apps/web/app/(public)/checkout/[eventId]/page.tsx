@@ -1,16 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRepositories } from '@/repositories/context';
+import { ticketsKeys } from '@/lib/query/keys';
 import { useEventDetail } from '@/lib/query/events';
 import { checkoutFormSchema, type CheckoutFormData } from '@/lib/schemas/checkout';
 import { PageContainer, SectionTitle, Button, Input, useToast } from '@/components';
 import { getErrorMessage } from '@/lib/errors';
-import { getReferralCode } from '@/lib/referral-cookie';
+import { getReferralCode, setReferralCodeCookie } from '@/lib/referral-cookie';
 import type { TicketTypeResponse } from '@/repositories/interfaces';
 
 const DEFAULT_TENANT_ID = 'tenant-demo';
@@ -21,6 +22,7 @@ export default function CheckoutEventPage() {
   const router = useRouter();
   const eventId = (params?.eventId as string) ?? '';
   const tenantId = searchParams?.get('tenantId') ?? DEFAULT_TENANT_ID;
+  const refFromUrl = useMemo(() => searchParams?.get('ref')?.trim() ?? '', [searchParams]);
 
   const { data: session } = useSession();
   const repos = useRepositories();
@@ -38,6 +40,10 @@ export default function CheckoutEventPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [step, setStep] = useState<'select' | 'form' | 'pay' | 'done'>('select');
   const [orderId, setOrderId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (refFromUrl) setReferralCodeCookie(refFromUrl);
+  }, [refFromUrl]);
 
   const { data: event, isLoading: eventLoading } = useEventDetail(eventId, tenantId);
   const { data: ticketTypes, isLoading: typesLoading } = useQuery({
@@ -59,11 +65,11 @@ export default function CheckoutEventPage() {
       return repos.orders.create({
         tenantId,
         eventId,
-        buyerEmail: form.email,
+        buyerEmail: form.email.trim(),
         buyerName: `${form.firstName} ${form.lastName}`,
-        buyerUserId: userId !== 'guest-demo' ? userId : undefined,
+        ...(userId && userId !== 'guest-demo' ? { buyerUserId: userId } : {}),
         items,
-        referralCode: getReferralCode(),
+        referralCode: refFromUrl || getReferralCode() || undefined,
       });
     },
     onError: (err) => addToast(getErrorMessage(err), 'error'),
@@ -74,10 +80,10 @@ export default function CheckoutEventPage() {
   });
 
   const payDemoMutation = useMutation({
-    mutationFn: () => repos.orders.confirmDemoPayment(orderId!, tenantId, userId),
+    mutationFn: () => repos.orders.confirmDemoPayment(orderId!, tenantId),
     onError: (err) => addToast(getErrorMessage(err), 'error'),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tickets', 'me', userId] });
+      queryClient.invalidateQueries({ queryKey: ticketsKeys.all });
       setStep('done');
     },
   });

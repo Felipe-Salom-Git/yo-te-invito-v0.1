@@ -8,6 +8,7 @@ const NAV = [
   { href: '/me/orders', label: 'Mis pedidos' },
   { href: '/me/tickets', label: 'Mis tickets' },
   { href: '/cuenta/preferencias', label: 'Preferencias' },
+  { href: '/cuenta/favoritos', label: 'Favoritos' },
   { href: '/cuenta/configuracion', label: 'Configuración' },
   { href: '/cuenta/eventos-asistidos', label: 'Eventos asistidos' },
   { href: '/cuenta/eventos-esperados', label: 'Eventos esperados' },

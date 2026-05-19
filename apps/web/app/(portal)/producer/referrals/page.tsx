@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -9,6 +9,153 @@ import { useTenant } from '@/hooks/useTenant';
 import { useProducerId } from '@/hooks/useProducerId';
 import { PageContainer, SectionTitle, Button, Input, useToast } from '@/components';
 import { getErrorMessage } from '@/lib/errors';
+import type {
+  FreelanceReferrersSort,
+  ProducerReferrerRelationship,
+  ProducerFreelanceReferrersParams,
+} from '@/repositories/interfaces';
+
+/** Solo este origen: el referidor pidió; la productora cierra aceptando/rechazando. */
+const REFERRER_INITIATED_ORIGINS = new Set(['REQUESTED_BY_REFERRER']);
+
+function statusLabel(s: string): string {
+  switch (s) {
+    case 'PENDING':
+      return 'Pendiente';
+    case 'ACTIVE':
+      return 'Activa';
+    case 'REJECTED':
+      return 'Rechazada';
+    case 'BLOCKED':
+      return 'Bloqueada';
+    default:
+      return s;
+  }
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const colors: Record<string, string> = {
+    PENDING: 'bg-amber-500/15 text-amber-400 border-amber-500/25',
+    ACTIVE: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25',
+    REJECTED: 'bg-zinc-500/15 text-zinc-400 border-zinc-500/25',
+    BLOCKED: 'bg-red-500/15 text-red-400 border-red-500/25',
+  };
+  return (
+    <span
+      className={`inline-block rounded-full border px-2.5 py-0.5 text-xs font-medium ${
+        colors[status] ?? 'border-border text-text-muted'
+      }`}
+    >
+      {statusLabel(status)}
+    </span>
+  );
+}
+
+function FreelanceRelationHint({ status }: { status: string | null }) {
+  if (status === null) {
+    return (
+      <span className="inline-block rounded-full border border-dashed border-border px-2.5 py-0.5 text-xs text-text-muted">
+        Sin relación con tu productora
+      </span>
+    );
+  }
+  return <StatusBadge status={status} />;
+}
+
+const selectClass =
+  'w-full rounded-lg border border-border bg-bg px-3 py-2 text-sm text-text focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent';
+
+function invalidateReferrerProducerQueries(queryClient: ReturnType<typeof useQueryClient>) {
+  queryClient.invalidateQueries({ queryKey: ['producer', 'referrers'] });
+  queryClient.invalidateQueries({ queryKey: ['referrer', 'producer-relationships'] });
+  queryClient.invalidateQueries({ queryKey: ['referrer', 'dashboard'] });
+}
+
+function RelationshipCard({
+  rel,
+  onStatusChange,
+  statusBusy,
+}: {
+  rel: ProducerReferrerRelationship;
+  onStatusChange: (referrerProfileId: string, newStatus: string) => void;
+  statusBusy: boolean;
+}) {
+  return (
+    <div className="rounded-xl border border-border bg-bg-muted p-5">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-text-muted">Asociación general</p>
+          <h3 className="font-semibold text-text">{rel.referrerProfile.displayName}</h3>
+        </div>
+        <StatusBadge status={rel.status} />
+      </div>
+      <p className="mt-2 text-xs text-text-muted">Origen: {rel.origin}</p>
+      <p className="mb-4 mt-2 text-xs text-text-muted">
+        Ventas (perfil): {rel.referrerProfile.completedSales ?? 0} · Score: {rel.referrerProfile.salesScore ?? '—'}
+      </p>
+      <p className="mb-3 text-xs text-text-muted">
+        La asociación general no asigna eventos. Los links de venta por evento se gestionan en la pestaña &quot;Por
+        evento&quot;.
+      </p>
+
+      {rel.status === 'PENDING' && REFERRER_INITIATED_ORIGINS.has(rel.origin) && (
+        <div className="flex flex-wrap gap-2">
+          <Button
+            size="sm"
+            disabled={statusBusy}
+            onClick={() => onStatusChange(rel.referrerProfileId, 'ACTIVE')}
+          >
+            Aceptar
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={statusBusy}
+            onClick={() => onStatusChange(rel.referrerProfileId, 'REJECTED')}
+          >
+            Rechazar
+          </Button>
+        </div>
+      )}
+
+      {rel.status === 'PENDING' && !REFERRER_INITIATED_ORIGINS.has(rel.origin) && (
+        <>
+          <p className="text-xs font-medium text-amber-500/90">
+            Esperando respuesta del referidor (solicitud iniciada por tu productora o desde su link).
+          </p>
+          <Button
+            size="sm"
+            variant="outline"
+            className="mt-2"
+            disabled={statusBusy}
+            onClick={() => onStatusChange(rel.referrerProfileId, 'REJECTED')}
+          >
+            Cancelar solicitud
+          </Button>
+        </>
+      )}
+
+      {rel.status === 'ACTIVE' && (
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={statusBusy}
+          onClick={() => onStatusChange(rel.referrerProfileId, 'BLOCKED')}
+        >
+          Bloquear relación
+        </Button>
+      )}
+
+      {(rel.status === 'REJECTED' || rel.status === 'BLOCKED') && (
+        <p className="text-xs text-text-muted">
+          {rel.status === 'BLOCKED'
+            ? 'Bloqueada: no se reabre automáticamente.'
+            : 'Podés volver a solicitar desde el directorio o el link del referidor.'}
+        </p>
+      )}
+    </div>
+  );
+}
 
 export default function ProducerReferralsPage() {
   const { data: session, status } = useSession();
@@ -19,16 +166,99 @@ export default function ProducerReferralsPage() {
   const { addToast } = useToast();
 
   const [activeTab, setActiveTab] = useState<'associated' | 'freelance' | 'events'>('associated');
+  const [freelanceBusyId, setFreelanceBusyId] = useState<string | null>(null);
+  const [freelanceSearch, setFreelanceSearch] = useState('');
+  const [debouncedFreelanceSearch, setDebouncedFreelanceSearch] = useState('');
+  const [freelanceSort, setFreelanceSort] = useState<FreelanceReferrersSort>('default');
+  const [freelanceRelationship, setFreelanceRelationship] = useState<
+    NonNullable<ProducerFreelanceReferrersParams['relationship']>
+  >('any');
+  const [freelanceActivity, setFreelanceActivity] = useState<NonNullable<ProducerFreelanceReferrersParams['activity']>>(
+    'any',
+  );
+  const [freelanceAssigned, setFreelanceAssigned] = useState<
+    NonNullable<ProducerFreelanceReferrersParams['assignedEvents']>
+  >('any');
 
   const { data: associated = [] } = useQuery({
     queryKey: ['producer', 'referrers', 'associated'],
     queryFn: () => repos.referrals.getAssociatedReferrers(),
-    enabled: status === 'authenticated' && activeTab === 'associated',
+    enabled: status === 'authenticated',
   });
 
-  const { data: freelance = [] } = useQuery({
-    queryKey: ['producer', 'referrers', 'freelance'],
-    queryFn: () => repos.referrals.getFreelanceReferrers(),
+  const { data: producerReferrerCtx } = useQuery({
+    queryKey: ['producer', 'referrers', 'context'],
+    queryFn: () => repos.referrals.getProducerReferrerContext(),
+    enabled: status === 'authenticated',
+  });
+  const hasProducerProfile = producerReferrerCtx?.hasProducerProfile === true;
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedFreelanceSearch(freelanceSearch.trim()), 320);
+    return () => clearTimeout(t);
+  }, [freelanceSearch]);
+
+  useEffect(() => {
+    if (!hasProducerProfile) setFreelanceRelationship('any');
+  }, [hasProducerProfile]);
+
+  const relByReferrerId = useMemo(() => {
+    const m = new Map<string, ProducerReferrerRelationship>();
+    for (const r of associated) {
+      m.set(r.referrerProfileId, r);
+    }
+    return m;
+  }, [associated]);
+
+  const grouped = useMemo(() => {
+    const pending: ProducerReferrerRelationship[] = [];
+    const active: ProducerReferrerRelationship[] = [];
+    const closed: ProducerReferrerRelationship[] = [];
+    for (const r of associated) {
+      if (r.status === 'PENDING') pending.push(r);
+      else if (r.status === 'ACTIVE') active.push(r);
+      else closed.push(r);
+    }
+    return { pending, active, closed };
+  }, [associated]);
+
+  const freelanceQueryParams = useMemo(
+    (): ProducerFreelanceReferrersParams => ({
+      q: debouncedFreelanceSearch || undefined,
+      sort: freelanceSort,
+      relationship: hasProducerProfile ? freelanceRelationship : 'any',
+      activity: freelanceActivity,
+      assignedEvents: freelanceAssigned,
+    }),
+    [
+      debouncedFreelanceSearch,
+      freelanceSort,
+      freelanceRelationship,
+      freelanceActivity,
+      freelanceAssigned,
+      hasProducerProfile,
+    ],
+  );
+
+  const hasFreelanceFiltersBeyondDefault = useMemo(() => {
+    return (
+      debouncedFreelanceSearch.length > 0 ||
+      freelanceSort !== 'default' ||
+      freelanceRelationship !== 'any' ||
+      freelanceActivity !== 'any' ||
+      freelanceAssigned !== 'any'
+    );
+  }, [
+    debouncedFreelanceSearch,
+    freelanceSort,
+    freelanceRelationship,
+    freelanceActivity,
+    freelanceAssigned,
+  ]);
+
+  const { data: freelance = [], isFetching: freelanceFetching } = useQuery({
+    queryKey: ['producer', 'referrers', 'freelance', freelanceQueryParams],
+    queryFn: () => repos.referrals.getFreelanceReferrers(freelanceQueryParams),
     enabled: status === 'authenticated' && activeTab === 'freelance',
   });
 
@@ -41,26 +271,62 @@ export default function ProducerReferralsPage() {
 
   const updateStatusMutation = useMutation({
     mutationFn: ({ referrerProfileId, newStatus }: { referrerProfileId: string; newStatus: string }) =>
-      repos.referrals.setAssociationStatus(referrerProfileId, newStatus, 'Status updated via dashboard'),
+      repos.referrals.setAssociationStatus(referrerProfileId, newStatus, 'Panel productor'),
     onSuccess: () => {
-      addToast('Estado de asociación actualizado', 'success');
-      queryClient.invalidateQueries({ queryKey: ['producer', 'referrers', 'associated'] });
-      queryClient.invalidateQueries({ queryKey: ['producer', 'referrers', 'freelance'] });
+      addToast('Estado actualizado', 'success');
+      invalidateReferrerProducerQueries(queryClient);
     },
     onError: (err) => addToast(getErrorMessage(err), 'error'),
   });
 
-  const requestAssociationMutation = useMutation({
-    mutationFn: (referrerProfileId: string) =>
-      repos.referrals.setAssociationStatus(referrerProfileId, 'REQUESTED'),
-    onSuccess: () => {
-      addToast('Solicitud enviada al referido', 'success');
-      queryClient.invalidateQueries({ queryKey: ['producer', 'referrers', 'freelance'] });
-      queryClient.invalidateQueries({ queryKey: ['producer', 'referrers', 'associated'] });
-      setActiveTab('associated');
+  const freelanceRequestMutation = useMutation({
+    mutationFn: (referrerProfileId: string) => repos.referrals.requestFreelanceAssociation(referrerProfileId),
+    onMutate: (id) => setFreelanceBusyId(id),
+    onSettled: () => setFreelanceBusyId(null),
+    onSuccess: (res) => {
+      addToast(
+        res.created ? 'Solicitud registrada' : 'Ya existe una relación o solicitud con este referidor',
+        'success',
+      );
+      invalidateReferrerProducerQueries(queryClient);
     },
     onError: (err) => addToast(getErrorMessage(err), 'error'),
   });
+
+  function freelanceCta(refId: string): {
+    label: string;
+    disabled: boolean;
+    variant: 'primary' | 'outline';
+    onClick?: () => void;
+  } {
+    const rel = relByReferrerId.get(refId);
+    const busy = freelanceRequestMutation.isPending && freelanceBusyId === refId;
+    if (!rel) {
+      return {
+        label: busy ? 'Enviando…' : 'Solicitar asociación',
+        disabled: busy,
+        variant: 'primary',
+        onClick: () => freelanceRequestMutation.mutate(refId),
+      };
+    }
+    switch (rel.status) {
+      case 'ACTIVE':
+        return { label: 'Asociado', disabled: true, variant: 'outline' };
+      case 'PENDING':
+        return { label: 'Solicitud pendiente', disabled: true, variant: 'outline' };
+      case 'REJECTED':
+        return {
+          label: busy ? 'Enviando…' : 'Volver a solicitar',
+          disabled: busy,
+          variant: 'primary',
+          onClick: () => freelanceRequestMutation.mutate(refId),
+        };
+      case 'BLOCKED':
+        return { label: 'Bloqueada', disabled: true, variant: 'outline' };
+      default:
+        return { label: '—', disabled: true, variant: 'outline' };
+    }
+  }
 
   if (status === 'loading') {
     return (
@@ -74,7 +340,9 @@ export default function ProducerReferralsPage() {
     return (
       <PageContainer>
         <p className="text-text-muted">Debés iniciar sesión.</p>
-        <Link href="/login" className="mt-4 inline-block text-accent hover:underline">Iniciar sesión</Link>
+        <Link href="/login" className="mt-4 inline-block text-accent hover:underline">
+          Iniciar sesión
+        </Link>
       </PageContainer>
     );
   }
@@ -84,122 +352,315 @@ export default function ProducerReferralsPage() {
       <Link href="/producer" className="mb-4 inline-block text-sm text-text-muted hover:text-text">
         ← Panel
       </Link>
-      <SectionTitle>Gestión de Referidos</SectionTitle>
-      <p className="mt-2 text-text-muted mb-6">
-        Administrá tu equipo de ventas, aceptá solicitudes y asigná referidos a tus eventos.
+      <SectionTitle>Gestión de referidos</SectionTitle>
+      <p className="mb-6 mt-2 text-text-muted">
+        Asociación general productora–referidor (directorio o link del referidor). No implica asignación a un evento ni
+        creación de links de venta <span className="font-mono text-xs">/r/</span>.
       </p>
 
-      {/* Tabs */}
-      <div className="flex border-b border-border mb-6">
+      <div className="mb-6 flex border-b border-border">
         <button
+          type="button"
           onClick={() => setActiveTab('associated')}
-          className={`px-4 py-2 font-medium transition-colors ${activeTab === 'associated' ? 'border-b-2 border-accent text-accent' : 'text-text-muted hover:text-text'
-            }`}
+          className={`px-4 py-2 font-medium transition-colors ${
+            activeTab === 'associated' ? 'border-b-2 border-accent text-accent' : 'text-text-muted hover:text-text'
+          }`}
         >
-          Mis Referidos ({activeTab === 'associated' ? associated.length : '-'})
+          Mis referidos ({associated.length})
         </button>
         <button
+          type="button"
           onClick={() => setActiveTab('freelance')}
-          className={`px-4 py-2 font-medium transition-colors ${activeTab === 'freelance' ? 'border-b-2 border-accent text-accent' : 'text-text-muted hover:text-text'
-            }`}
+          className={`px-4 py-2 font-medium transition-colors ${
+            activeTab === 'freelance' ? 'border-b-2 border-accent text-accent' : 'text-text-muted hover:text-text'
+          }`}
         >
-          Mercado Freelance ({activeTab === 'freelance' ? freelance.length : '-'})
+          Directorio ({activeTab === 'freelance' ? freelance.length : '—'})
         </button>
         <button
+          type="button"
           onClick={() => setActiveTab('events')}
-          className={`px-4 py-2 font-medium transition-colors ${activeTab === 'events' ? 'border-b-2 border-accent text-accent' : 'text-text-muted hover:text-text'
-            }`}
+          className={`px-4 py-2 font-medium transition-colors ${
+            activeTab === 'events' ? 'border-b-2 border-accent text-accent' : 'text-text-muted hover:text-text'
+          }`}
         >
-          Asignar por Evento
+          Por evento
         </button>
       </div>
 
-      {/* ASSOCIATED TAB */}
       {activeTab === 'associated' && (
-        <section className="space-y-4">
+        <section className="space-y-8">
           {associated.length === 0 ? (
-            <p className="text-text-muted">No tenés referidos asociados ni solicitudes pendientes.</p>
+            <p className="text-text-muted">No tenés relaciones ni solicitudes.</p>
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {associated.map((rel) => (
-                <div key={rel.id} className="rounded-xl border border-border bg-bg-muted p-5">
-                  <h3 className="font-semibold text-text">{rel.referrerProfile.displayName}</h3>
-                  <p className="text-sm text-text-muted mt-1">Estado: <span className="font-medium text-accent">{rel.status}</span></p>
-                  <p className="text-sm text-text-muted">Origen: {rel.origin}</p>
-                  <p className="text-xs text-text-muted mt-2 mb-4">Ventas: {rel.referrerProfile.completedSales ?? 0} | Puntuación: {rel.referrerProfile.salesScore ?? 0}</p>
-
-                  {rel.status === 'REQUESTED' && rel.origin === 'REFERRER' && (
-                    <div className="flex gap-2">
-                      <Button size="sm" onClick={() => updateStatusMutation.mutate({ referrerProfileId: rel.referrerProfileId, newStatus: 'ACTIVE' })}>
-                        Aceptar
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => updateStatusMutation.mutate({ referrerProfileId: rel.referrerProfileId, newStatus: 'REJECTED' })}>
-                        Rechazar
-                      </Button>
-                    </div>
-                  )}
-                  {rel.status === 'ACTIVE' && (
-                    <Button size="sm" variant="outline" onClick={() => updateStatusMutation.mutate({ referrerProfileId: rel.referrerProfileId, newStatus: 'INACTIVE' })}>
-                      Deshabilitar
-                    </Button>
-                  )}
-                  {rel.status === 'INACTIVE' && (
-                    <Button size="sm" variant="outline" onClick={() => updateStatusMutation.mutate({ referrerProfileId: rel.referrerProfileId, newStatus: 'ACTIVE' })}>
-                      Rehabilitar
-                    </Button>
-                  )}
-                  {rel.status === 'REQUESTED' && rel.origin === 'PRODUCER' && (
-                    <p className="text-xs text-amber-500 font-medium">Esperando respuesta del referido</p>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-      )}
-
-      {/* FREELANCE TAB */}
-      {activeTab === 'freelance' && (
-        <section className="space-y-4">
-          <p className="text-sm text-text-muted mb-4">Explorá referidos disponibles para vender entradas en la plataforma y enviales una solicitud.</p>
-          {freelance.length === 0 ? (
-            <p className="text-text-muted">No hay referidos freelance disponibles en este momento.</p>
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {freelance.map((ref) => (
-                <div key={ref.id} className="rounded-xl border border-border bg-bg-muted p-5 flex flex-col justify-between">
-                  <div>
-                    <h3 className="font-semibold text-text">{ref.displayName}</h3>
-                    {ref.bio && <p className="text-sm text-text-muted mt-2 line-clamp-2">{ref.bio}</p>}
-                    <div className="mt-3 flex gap-4 text-sm mb-4">
-                      <div>
-                        <span className="block text-text-muted text-xs">Ventas Total</span>
-                        <span className="font-medium text-text">{ref.completedSales}</span>
-                      </div>
-                      <div>
-                        <span className="block text-text-muted text-xs">Score</span>
-                        <span className="font-medium text-amber-400">★ {(ref.salesScore ?? 0).toFixed(1)}</span>
-                      </div>
-                    </div>
+            <>
+              {grouped.pending.length > 0 && (
+                <div>
+                  <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-text-muted">Pendientes</h2>
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {grouped.pending.map((rel) => (
+                      <RelationshipCard
+                        key={rel.id}
+                        rel={rel}
+                        statusBusy={updateStatusMutation.isPending}
+                        onStatusChange={(id, s) => updateStatusMutation.mutate({ referrerProfileId: id, newStatus: s })}
+                      />
+                    ))}
                   </div>
-                  <Button
-                    size="sm"
-                    disabled={requestAssociationMutation.isPending}
-                    onClick={() => requestAssociationMutation.mutate(ref.id)}
-                  >
-                    Enviar Solicitud
-                  </Button>
                 </div>
-              ))}
+              )}
+              {grouped.active.length > 0 && (
+                <div>
+                  <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-text-muted">Activas</h2>
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {grouped.active.map((rel) => (
+                      <RelationshipCard
+                        key={rel.id}
+                        rel={rel}
+                        statusBusy={updateStatusMutation.isPending}
+                        onStatusChange={(id, s) => updateStatusMutation.mutate({ referrerProfileId: id, newStatus: s })}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+              {grouped.closed.length > 0 && (
+                <div>
+                  <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-text-muted">
+                    Rechazadas o bloqueadas
+                  </h2>
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {grouped.closed.map((rel) => (
+                      <RelationshipCard
+                        key={rel.id}
+                        rel={rel}
+                        statusBusy={updateStatusMutation.isPending}
+                        onStatusChange={(id, s) => updateStatusMutation.mutate({ referrerProfileId: id, newStatus: s })}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </section>
+      )}
+
+      {activeTab === 'freelance' && (
+        <section className="space-y-6">
+          <div>
+            <p className="text-sm text-text-muted">
+              Referidores con perfil <span className="text-text">público activo</span>. Podés buscar por nombre,{' '}
+              <span className="font-mono text-xs">@handle</span> o slug. El estado mostrado es la{' '}
+              <span className="text-text">relación con tu productora</span>; los eventos asignados son globales en la
+              plataforma (cualquier productora).
+            </p>
+            {!hasProducerProfile && (
+              <p className="mt-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-200/90">
+                Sin perfil productor activo no podemos mostrar ni filtrar por relación con tu productora. Los demás
+                filtros y la búsqueda siguen funcionando.
+              </p>
+            )}
+            {freelanceFetching && (
+              <p className="mt-2 text-xs text-accent">Actualizando resultados…</p>
+            )}
+          </div>
+
+          <div className="rounded-xl border border-border bg-bg-muted/40 p-4">
+            <div className="mb-4">
+              <Input
+                label="Buscar"
+                placeholder="Nombre, @handle o slug"
+                value={freelanceSearch}
+                onChange={(e) => setFreelanceSearch(e.target.value)}
+              />
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <label className="block text-xs font-medium text-text-muted">
+                Orden
+                <select
+                  className={`${selectClass} mt-1`}
+                  value={freelanceSort}
+                  onChange={(e) => setFreelanceSort(e.target.value as FreelanceReferrersSort)}
+                >
+                  <option value="default">Recomendado (score / ventas perfil)</option>
+                  <option value="recent">Más recientes (perfil)</option>
+                  <option value="name_asc">Nombre A–Z</option>
+                  <option value="name_desc">Nombre Z–A</option>
+                  <option value="activity">Más actividad (ventas perfil)</option>
+                  <option value="assigned_events">Más eventos asignados</option>
+                  <option value="completed_sales">Más ventas (perfil)</option>
+                </select>
+              </label>
+              <label className={`block text-xs font-medium ${hasProducerProfile ? 'text-text-muted' : 'text-text-muted/60'}`}>
+                Relación con vos
+                <select
+                  className={`${selectClass} mt-1 disabled:cursor-not-allowed disabled:opacity-50`}
+                  value={hasProducerProfile ? freelanceRelationship : 'any'}
+                  disabled={!hasProducerProfile}
+                  onChange={(e) =>
+                    setFreelanceRelationship(e.target.value as NonNullable<ProducerFreelanceReferrersParams['relationship']>)
+                  }
+                >
+                  <option value="any">Todas</option>
+                  <option value="none">Sin relación aún</option>
+                  <option value="active">Ya asociados</option>
+                  <option value="pending">Pendiente</option>
+                  <option value="closed">Rechazada o bloqueada</option>
+                </select>
+              </label>
+              <label className="block text-xs font-medium text-text-muted">
+                Actividad (perfil)
+                <select
+                  className={`${selectClass} mt-1`}
+                  value={freelanceActivity}
+                  onChange={(e) =>
+                    setFreelanceActivity(e.target.value as NonNullable<ProducerFreelanceReferrersParams['activity']>)
+                  }
+                >
+                  <option value="any">Todas</option>
+                  <option value="with_sales">Con ventas en perfil (&gt;0)</option>
+                  <option value="no_sales">Sin ventas en perfil</option>
+                </select>
+              </label>
+              <label className="block text-xs font-medium text-text-muted">
+                Asignación a eventos
+                <select
+                  className={`${selectClass} mt-1`}
+                  value={freelanceAssigned}
+                  onChange={(e) =>
+                    setFreelanceAssigned(
+                      e.target.value as NonNullable<ProducerFreelanceReferrersParams['assignedEvents']>,
+                    )
+                  }
+                >
+                  <option value="any">Todas</option>
+                  <option value="with">Con eventos asignados (activos)</option>
+                  <option value="without">Sin eventos asignados</option>
+                </select>
+              </label>
+            </div>
+            {hasFreelanceFiltersBeyondDefault && (
+              <div className="mt-4 flex flex-wrap items-center gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setFreelanceSearch('');
+                    setDebouncedFreelanceSearch('');
+                    setFreelanceSort('default');
+                    setFreelanceRelationship('any');
+                    setFreelanceActivity('any');
+                    setFreelanceAssigned('any');
+                  }}
+                >
+                  Limpiar filtros
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {freelance.length === 0 && !hasFreelanceFiltersBeyondDefault ? (
+            <p className="rounded-lg border border-dashed border-border px-4 py-8 text-center text-text-muted">
+              No hay referidores públicos en el directorio por ahora.
+            </p>
+          ) : freelance.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-border px-4 py-8 text-center">
+              <p className="text-text-muted">No hay resultados con estos criterios.</p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="mt-4"
+                onClick={() => {
+                  setFreelanceSearch('');
+                  setDebouncedFreelanceSearch('');
+                  setFreelanceSort('default');
+                  setFreelanceRelationship('any');
+                  setFreelanceActivity('any');
+                  setFreelanceAssigned('any');
+                }}
+              >
+                Restablecer búsqueda y filtros
+              </Button>
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {freelance.map((ref) => {
+                const cta = freelanceCta(ref.id);
+                return (
+                  <article
+                    key={ref.id}
+                    className="flex flex-col rounded-xl border border-border bg-bg-muted/80 p-5 shadow-sm transition-colors hover:border-accent/40"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div>
+                        <h3 className="font-semibold text-text">{ref.displayName}</h3>
+                        {ref.publicHandle && (
+                          <p className="font-mono text-xs text-accent">@{ref.publicHandle}</p>
+                        )}
+                      </div>
+                      {hasProducerProfile ? (
+                        <FreelanceRelationHint status={ref.relationshipStatusWithProducer} />
+                      ) : (
+                        <span className="text-[10px] text-text-muted">Relación: N/D</span>
+                      )}
+                    </div>
+                    {ref.bio && (
+                      <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-text-muted">{ref.bio}</p>
+                    )}
+                    <div className="mt-4 grid grid-cols-3 gap-2 border-t border-border pt-4 text-center text-xs">
+                      <div>
+                        <p className="text-text-muted">Eventos asign.</p>
+                        <p className="mt-0.5 font-semibold text-text">{ref.activeAssignedEventsCount}</p>
+                        <p className="text-[10px] text-text-muted">(plataforma)</p>
+                      </div>
+                      <div>
+                        <p className="text-text-muted">Ventas perfil</p>
+                        <p className="mt-0.5 font-semibold text-text">{ref.completedSales}</p>
+                      </div>
+                      <div>
+                        <p className="text-text-muted">Score</p>
+                        <p className="mt-0.5 font-semibold text-amber-400">
+                          {ref.salesScore != null ? Number(ref.salesScore).toFixed(1) : '—'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {ref.slug && (
+                        <Link
+                          href={`/referrers/${ref.slug}`}
+                          className="text-xs font-medium text-accent hover:underline"
+                        >
+                          Ver perfil público →
+                        </Link>
+                      )}
+                    </div>
+                    <div className="mt-auto flex pt-4">
+                      <Button
+                        size="sm"
+                        variant={cta.variant}
+                        disabled={cta.disabled}
+                        onClick={cta.onClick}
+                        className="w-full sm:w-auto"
+                      >
+                        {cta.label}
+                      </Button>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           )}
         </section>
       )}
 
-      {/* EVENTS TAB (Assignments) */}
       {activeTab === 'events' && (
         <section className="space-y-4">
-          <p className="text-sm text-text-muted mb-4">Seleccioná un evento para habilitar referidos asociados y generar links de venta.</p>
+          <p className="mb-4 text-sm text-text-muted">
+            Asignación por evento y links de venta (distinto de la asociación general de esta pantalla).
+          </p>
           <ul className="space-y-3">
             {events.map((ev) => (
               <li key={ev.id}>
@@ -209,15 +670,13 @@ export default function ProducerReferralsPage() {
                 >
                   <p className="font-medium text-text">{ev.title}</p>
                   <p className="text-sm text-text-muted">
-                    {ev.city ?? ev.venueName ?? '—'} · Ver referidos activos en este evento
+                    {ev.city ?? ev.venueName ?? '—'} · Referidos del evento
                   </p>
                 </Link>
               </li>
             ))}
           </ul>
-          {events.length === 0 && (
-            <p className="text-text-muted">No tenés eventos. Creá uno desde la pestaña Eventos.</p>
-          )}
+          {events.length === 0 && <p className="text-text-muted">No tenés eventos.</p>}
         </section>
       )}
     </PageContainer>

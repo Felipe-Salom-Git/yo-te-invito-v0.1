@@ -5,6 +5,7 @@ import { Logo } from './brand/Logo';
 import { NavbarUserMenu } from './NavbarUserMenu';
 import { ThemeToggle } from './ThemeToggle';
 import { useRole } from '@/hooks/useRole';
+import { CATEGORY_GATEWAY_PATH } from '@/lib/home/categoryGatewayConfig';
 
 export function Navbar() {
   const { role } = useRole();
@@ -12,7 +13,11 @@ export function Navbar() {
   return (
     <nav className="sticky top-0 z-40 border-b border-border bg-gradient-to-b from-black/80 via-black/60 to-transparent backdrop-blur-md" role="navigation" aria-label="Menú principal">
       <div className="mx-auto flex h-16 sm:h-20 max-w-6xl items-center justify-between px-3 sm:px-4">
-        <Link href="/home" className="flex items-center gap-2 text-text hover:text-accent transition-colors">
+        <Link
+          href={CATEGORY_GATEWAY_PATH}
+          className="flex items-center gap-2 text-text hover:text-accent transition-colors"
+          aria-label="Elegir categoría"
+        >
           <Logo variant="navbar" priority showText />
         </Link>
         <div className="flex items-center gap-2 sm:gap-6 text-sm">
@@ -22,6 +27,9 @@ export function Navbar() {
           </Link>
           <Link href="/explore" className="text-text-muted hover:text-accent transition-colors">
             Explorar
+          </Link>
+          <Link href="/referrers" className="text-text-muted hover:text-accent transition-colors">
+            Referidores
           </Link>
           <Link href="/reventa" className="text-text-muted hover:text-accent transition-colors">
             Reventa

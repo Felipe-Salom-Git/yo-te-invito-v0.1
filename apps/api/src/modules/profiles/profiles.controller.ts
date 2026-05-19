@@ -5,9 +5,11 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import {
   profileProducerApplySchema,
   profileGastroApplySchema,
+  profileHotelApplySchema,
   profileReferrerApplySchema,
   type ProfileProducerApplyInput,
   type ProfileGastroApplyInput,
+  type ProfileHotelApplyInput,
   type ProfileReferrerApplyInput,
 } from '@yo-te-invito/shared';
 import { ProfilesService } from './profiles.service';
@@ -31,6 +33,14 @@ export class ProfilesController {
     @Body(new ZodValidationPipe(profileGastroApplySchema)) body: ProfileGastroApplyInput,
   ) {
     return this.profiles.applyGastro(user.tenantId, user.id, body);
+  }
+
+  @Post('hotel/apply')
+  async applyHotel(
+    @CurrentUser() user: { id: string; tenantId: string },
+    @Body(new ZodValidationPipe(profileHotelApplySchema)) body: ProfileHotelApplyInput,
+  ) {
+    return this.profiles.applyHotel(user.tenantId, user.id, body);
   }
 
   @Post('referrer/apply')

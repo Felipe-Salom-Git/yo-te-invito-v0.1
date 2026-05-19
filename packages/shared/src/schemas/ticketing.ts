@@ -3,6 +3,17 @@ import { TicketRevocationReason } from '../enums';
 
 // Prisma-compatible enums (uppercase) - internal to schemas, not re-exported to avoid conflict with ./enums
 const TicketTypeStatus = { ACTIVE: 'ACTIVE', PAUSED: 'PAUSED' } as const;
+
+/** Child tanda / tier within a base TicketType (matches Prisma TicketBatchStatus). */
+export const TicketBatchStatusApi = {
+  SCHEDULED: 'SCHEDULED',
+  ACTIVE: 'ACTIVE',
+  CLOSED: 'CLOSED',
+  SOLD_OUT: 'SOLD_OUT',
+  SKIPPED: 'SKIPPED',
+} as const;
+export type TicketBatchStatusApi =
+  (typeof TicketBatchStatusApi)[keyof typeof TicketBatchStatusApi];
 const OrderStatusApi = {
   PENDING_PAYMENT: 'PENDING_PAYMENT',
   PAID: 'PAID',
@@ -43,8 +54,28 @@ export const createOrderDtoSchema = z.object({
   buyer: createOrderBuyerSchema,
   items: z.array(createOrderItemSchema).min(1),
   referralCode: z.string().optional(),
+  /** Logged-in buyer; must match buyer.email (case-insensitive) for the same tenant. */
+  buyerUserId: z.string().min(1).optional(),
 });
 export type CreateOrderDto = z.infer<typeof createOrderDtoSchema>;
+
+export const ticketBatchResponseSchema = z.object({
+  id: z.string(),
+  ticketTypeId: z.string(),
+  orderIndex: z.number().int(),
+  name: z.string(),
+  startAt: z.string().datetime(),
+  endAt: z.string().datetime(),
+  baseQuantity: z.number().int(),
+  rolloverQuantity: z.number().int(),
+  effectiveQuantity: z.number().int(),
+  reservedQuantity: z.number().int(),
+  soldCount: z.number().int(),
+  price: z.string(),
+  currency: z.string(),
+  status: z.nativeEnum(TicketBatchStatusApi),
+});
+export type TicketBatchResponse = z.infer<typeof ticketBatchResponseSchema>;
 
 export const ticketTypeResponseSchema = z.object({
   id: z.string(),
@@ -59,38 +90,125 @@ export const ticketTypeResponseSchema = z.object({
   salesStartAt: z.string().datetime().nullable(),
   salesEndAt: z.string().datetime().nullable(),
   status: z.nativeEnum(TicketTypeStatus),
+  /** Present when API includes batch detail (producer list / extended public). */
+  batches: z.array(ticketBatchResponseSchema).optional(),
+  /** Selling window / price source for checkout when batches exist. */
+  activeTicketBatchId: z.string().nullable().optional(),
+  /** Set when a custom TicketTemplate is linked (canvas studio). */
+  ticketTemplateId: z.string().nullable().optional(),
 });
 export type TicketTypeResponse = z.infer<typeof ticketTypeResponseSchema>;
 
-/** Body for POST /producer/events/:eventId/ticket-types */
-export const createTicketTypeDtoSchema = z.object({
+/** Input tanda row for create/update ticket type (producer). */
+export const ticketBatchInputSchema = z.object({
+  orderIndex: z.number().int().min(0),
   name: z.string().min(1),
-  description: z.string().optional().nullable(),
+  startAt: z.string().datetime(),
+  endAt: z.string().datetime(),
+  baseQuantity: z.number().int().min(0),
   price: z.number().nonnegative(),
-  capacityTotal: z.number().int().min(1),
-  currency: z.string().default('ARS'),
-  maxPerOrder: z.number().int().min(1).max(100).default(10),
-  salesStartAt: z.string().datetime().optional().nullable(),
-  salesEndAt: z.string().datetime().optional().nullable(),
 });
+
+export const createTicketTypeDtoSchema = z
+  .object({
+    name: z.string().min(1),
+    description: z.string().optional().nullable(),
+    /** Required when `batches` is omitted; when batches are set, defaults to first batch price server-side if omitted. */
+    price: z.number().nonnegative().optional(),
+    capacityTotal: z.number().int().min(1),
+    currency: z.string().default('ARS'),
+    maxPerOrder: z.number().int().min(1).max(100).default(10),
+    salesStartAt: z.string().datetime().optional().nullable(),
+    salesEndAt: z.string().datetime().optional().nullable(),
+    /** When set, sum of baseQuantity must equal capacityTotal; defines chained tandas. */
+    batches: z.array(ticketBatchInputSchema).min(1).optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (!data.batches?.length && data.price === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'price is required when batches are omitted',
+        path: ['price'],
+      });
+    }
+    if (!data.batches?.length) return;
+    const sum = data.batches.reduce((s, b) => s + b.baseQuantity, 0);
+    if (sum !== data.capacityTotal) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'sum of batch baseQuantity must equal capacityTotal',
+        path: ['batches'],
+      });
+    }
+    const idx = data.batches.map((b) => b.orderIndex);
+    if (new Set(idx).size !== idx.length) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'orderIndex values must be unique',
+        path: ['batches'],
+      });
+    }
+    for (const b of data.batches) {
+      if (new Date(b.endAt) <= new Date(b.startAt)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'each batch endAt must be after startAt',
+          path: ['batches'],
+        });
+      }
+    }
+  });
 export type CreateTicketTypeDto = z.infer<typeof createTicketTypeDtoSchema>;
+export type TicketBatchInput = z.infer<typeof ticketBatchInputSchema>;
 
 /** Body for PATCH /producer/events/:eventId/ticket-types/:id */
-export const updateTicketTypeDtoSchema = z.object({
-  name: z.string().min(1).optional(),
-  description: z.string().nullable().optional(),
-  price: z.number().nonnegative().optional(),
-  capacityTotal: z.number().int().min(0).optional(),
-  maxPerOrder: z.number().int().min(1).max(100).optional(),
-  salesStartAt: z.string().datetime().optional().nullable(),
-  salesEndAt: z.string().datetime().optional().nullable(),
-  status: z.nativeEnum(TicketTypeStatus).optional(),
-});
+export const updateTicketTypeDtoSchema = z
+  .object({
+    name: z.string().min(1).optional(),
+    description: z.string().nullable().optional(),
+    price: z.number().nonnegative().optional(),
+    capacityTotal: z.number().int().min(0).optional(),
+    maxPerOrder: z.number().int().min(1).max(100).optional(),
+    salesStartAt: z.string().datetime().optional().nullable(),
+    salesEndAt: z.string().datetime().optional().nullable(),
+    status: z.nativeEnum(TicketTypeStatus).optional(),
+    /** Replaces all batches only when no order items exist for this type. */
+    batches: z.array(ticketBatchInputSchema).min(1).optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (!data.batches?.length) return;
+    const sum = data.batches.reduce((s, b) => s + b.baseQuantity, 0);
+    if (data.capacityTotal !== undefined && sum !== data.capacityTotal) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'sum of batch baseQuantity must equal capacityTotal',
+        path: ['batches'],
+      });
+    }
+    const idx = data.batches.map((b) => b.orderIndex);
+    if (new Set(idx).size !== idx.length) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'orderIndex values must be unique',
+        path: ['batches'],
+      });
+    }
+    for (const b of data.batches) {
+      if (new Date(b.endAt) <= new Date(b.startAt)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'each batch endAt must be after startAt',
+          path: ['batches'],
+        });
+      }
+    }
+  });
 export type UpdateTicketTypeDto = z.infer<typeof updateTicketTypeDtoSchema>;
 
 export const ticketResponseSchema = z.object({
   id: z.string(),
   ticketTypeId: z.string().nullable(),
+  ticketBatchId: z.string().nullable().optional(),
   ticketTypeName: z.string().nullable(),
   qrPayload: z.string(),
   status: z.nativeEnum(TicketStatusApi),
@@ -100,6 +218,7 @@ export type TicketResponse = z.infer<typeof ticketResponseSchema>;
 export const orderItemResponseSchema = z.object({
   id: z.string(),
   ticketTypeId: z.string(),
+  ticketBatchId: z.string().nullable().optional(),
   ticketTypeName: z.string(),
   quantity: z.number(),
   unitPrice: z.string(),

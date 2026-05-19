@@ -1,12 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRepositories } from '@/repositories/context';
 import { PageContainer, SectionTitle, Button, Input, useToast } from '@/components';
 import { getErrorMessage } from '@/lib/errors';
+import { ImageUrlPreview } from '@/components/admin/ImageUrlPreview';
+import { LatLngMapPreview } from '@/components/admin/LatLngMapPreview';
+import { SubcategorySelect } from '@/components/forms/SubcategorySelect';
 
 const TENANT_ID = 'tenant-demo';
 
@@ -30,6 +33,19 @@ export default function AdminRentalEditarPage() {
   const [venueName, setVenueName] = useState('');
   const [startAt, setStartAt] = useState('');
   const [capacityTotal, setCapacityTotal] = useState('');
+  const [coverImageUrl, setCoverImageUrl] = useState('');
+  const [venueAddress, setVenueAddress] = useState('');
+  const [geoLat, setGeoLat] = useState('');
+  const [geoLng, setGeoLng] = useState('');
+  const [subcategoryId, setSubcategoryId] = useState('');
+
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file?.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = () => setCoverImageUrl(reader.result as string);
+    reader.readAsDataURL(file);
+  }, []);
 
   useEffect(() => {
     if (event) {
@@ -39,6 +55,11 @@ export default function AdminRentalEditarPage() {
       setVenueName(event.venueName ?? '');
       setStartAt(event.startAt ? event.startAt.slice(0, 16) : '');
       setCapacityTotal(event.capacityTotal != null ? String(event.capacityTotal) : '');
+      setCoverImageUrl(event.coverImageUrl ?? '');
+      setVenueAddress(event.venueAddress ?? '');
+      setGeoLat(event.geoLat != null ? String(event.geoLat) : '');
+      setGeoLng(event.geoLng != null ? String(event.geoLng) : '');
+      setSubcategoryId(event.subcategoryId ?? '');
     }
   }, [event]);
 
@@ -54,13 +75,24 @@ export default function AdminRentalEditarPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
+    const cover = coverImageUrl.trim();
     updateMutation.mutate({
       title: title.trim(),
       description: description.trim() || null,
       city: city.trim() || null,
       venueName: venueName.trim() || null,
+      venueAddress: venueAddress.trim() || null,
+      geoLat: geoLat ? Number(geoLat) : null,
+      geoLng: geoLng ? Number(geoLng) : null,
       startAt: startAt ? new Date(startAt).toISOString() : null,
       capacityTotal: capacityTotal ? parseInt(capacityTotal, 10) : null,
+      coverImageUrl: cover || null,
+      subcategoryId: subcategoryId || null,
+      ...(cover
+        ? {
+            media: [{ id: `img-${Date.now()}`, type: 'image' as const, url: cover, sortOrder: 0 }],
+          }
+        : {}),
     });
   };
 
@@ -93,16 +125,49 @@ export default function AdminRentalEditarPage() {
         <Input label="Ciudad" value={city} onChange={(e) => setCity(e.target.value)} />
         <Input label="Lugar" value={venueName} onChange={(e) => setVenueName(e.target.value)} />
         <Input
-          label="Fecha inicio"
+          label="Fecha inicio (opcional)"
           type="datetime-local"
           value={startAt}
           onChange={(e) => setStartAt(e.target.value)}
         />
         <Input
-          label="Capacidad"
+          label="Capacidad (opcional)"
           type="number"
           value={capacityTotal}
           onChange={(e) => setCapacityTotal(e.target.value)}
+        />
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-text">Imagen</label>
+          <Input
+            label="URL de imagen"
+            value={coverImageUrl}
+            onChange={(e) => setCoverImageUrl(e.target.value)}
+            placeholder="https://…"
+          />
+          <label className="mt-2 block text-sm text-text-muted">
+            <span className="mr-2">O subir archivo:</span>
+            <input type="file" accept="image/*" onChange={handleFileChange} className="text-sm" />
+          </label>
+          <ImageUrlPreview url={coverImageUrl} />
+        </div>
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-text">Ubicación (opcional)</label>
+          <Input
+            label="Dirección"
+            value={venueAddress}
+            onChange={(e) => setVenueAddress(e.target.value)}
+            placeholder="Calle, ciudad"
+          />
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <Input label="Lat" type="number" step="any" value={geoLat} onChange={(e) => setGeoLat(e.target.value)} />
+            <Input label="Lng" type="number" step="any" value={geoLng} onChange={(e) => setGeoLng(e.target.value)} />
+          </div>
+          <LatLngMapPreview lat={geoLat} lng={geoLng} />
+        </div>
+        <SubcategorySelect
+          category="rental"
+          value={subcategoryId}
+          onChange={setSubcategoryId}
         />
         <div className="flex gap-3 pt-4">
           <Button type="submit" disabled={updateMutation.isPending}>

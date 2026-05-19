@@ -34,7 +34,7 @@ export function Footer() {
             <Link href="/home" className="hover:text-accent transition-colors">
               Eventos
             </Link>
-            <Link href="/admin/audit" className="hover:text-accent transition-colors">
+            <Link href="/admin" className="hover:text-accent transition-colors">
               Admin
             </Link>
           </div>

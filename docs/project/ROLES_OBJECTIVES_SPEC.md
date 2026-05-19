@@ -209,7 +209,7 @@ Siguiendo `docs/rules/PROJECT_RULES.md`: plan antes de implementar, cambios mín
 
 - **`docs/guides/EXECUTION_PLAN_PRODUCER_PHASE.md`** — Plan de ejecución Fase Productora (payouts, tandas, referidos)
 - `docs/frontend/ROADMAP_FRONTEND_MAQUETA.md`
-- `docs/context/FRONTEND_CONTEXT_V2.md`
+- `docs/context/FRONTEND_CONTEXT.md`
 - `docs/guides/DEVELOPER_USERS.md`
 - `docs/rules/PROJECT_RULES.md`
 - `docs/rules/AI_WORKFLOW_RULES.md`

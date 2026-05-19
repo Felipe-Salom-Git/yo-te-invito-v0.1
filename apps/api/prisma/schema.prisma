@@ -16,6 +16,7 @@ enum Role {
   PRODUCER_OWNER
   PRODUCER_STAFF
   GASTRO_OWNER
+  HOTEL_OWNER
   REFERRER
   SCANNER
   USER
@@ -25,6 +26,29 @@ enum UserStatus {
   ACTIVE
   SUSPENDED
   DELETED
+}
+
+enum InboxItemKind {
+  GASTRO_PROMOTION_REQUEST
+  REVIEW_MODERATION_REQUEST
+}
+
+enum InboxItemStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum GastroDiscountType {
+  PERCENT
+  FIXED
+}
+
+enum GastroDiscountStatus {
+  ACTIVE
+  INACTIVE
+  EXPIRED
 }
 
 // ─── Operational profiles (single user + profiles model) ─────────────────────
@@ -73,10 +97,41 @@ model Tenant {
   roleApplications    RoleApplication[]
   producerProfiles    ProducerProfile[]
   gastroProfiles      GastroProfile[]
+  hotelProfiles       HotelProfile[]
   referrerProfiles    ReferrerProfile[]
+  ticketTypes         TicketType[]
+  ticketBatches       TicketBatch[]
+  ticketTemplates     TicketTemplate[]
   userProducerMemberships UserProducerMembership[]
   userGastroMemberships   UserGastroMembership[]
+  userHotelMemberships    UserHotelMembership[]
   userReferrerMemberships UserReferrerMembership[]
+  inboxItems              InboxItem[]
+  gastroDiscounts         GastroDiscount[]
+  contentSubcategories    ContentSubcategory[]
+  rentalLocations         RentalLocation[]
+}
+
+model RentalLocation {
+  id        String    @id @default(cuid())
+  tenantId  String
+  name          String
+  address       String?
+  openingHours     Json?
+  openingHoursNote String?
+  geoLat           Float?
+  geoLng    Float?
+  isActive  Boolean   @default(true)
+  sortOrder Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  tenant   Tenant  @relation(fields: [tenantId], references: [id])
+  products Event[]
+
+  @@index([tenantId])
+  @@index([tenantId, isActive])
 }
 
 model ProducerProfile {
@@ -133,25 +188,63 @@ model GastroProfile {
   updatedAt       DateTime      @updatedAt
 
   tenant     Tenant                  @relation(fields: [tenantId], references: [id])
-  memberships UserGastroMembership[]
+  memberships     UserGastroMembership[]
+  gastroDiscounts GastroDiscount[]
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+}
+
+model HotelProfile {
+  id              String        @id @default(cuid())
+  tenantId        String
+  displayName     String
+  legalName       String?
+  description     String?
+  logoUrl         String?
+  bannerUrl       String?
+  address         String?
+  city            String?
+  starCategory    Int?
+  contactPhone    String?
+  contactEmail    String?
+  websiteUrl      String?
+  bookingUrl      String?
+  socialLinks     Json?
+  ratingAvg       Float?
+  ratingCount     Int           @default(0)
+  createdByUserId String?
+  status          ProfileStatus @default(DRAFT)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  tenant      Tenant                 @relation(fields: [tenantId], references: [id])
+  memberships UserHotelMembership[]
 
   @@index([tenantId])
   @@index([tenantId, status])
 }
 
 model ReferrerProfile {
-  id              String        @id @default(cuid())
-  tenantId        String
-  displayName     String
-  publicHandle    String?
-  bio             String?
-  avatarUrl       String?
-  salesScore      Float?
-  completedSales  Int           @default(0)
-  createdByUserId String?
-  status          ProfileStatus @default(DRAFT)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  id                    String        @id @default(cuid())
+  tenantId              String
+  displayName           String
+  slug                  String?
+  publicHandle          String?
+  bio                   String?
+  longBio               String?
+  avatarUrl             String?
+  coverImageUrl         String?
+  city                  String?
+  region                String?
+  publicVisibility      Boolean       @default(false)
+  associationLinkToken  String        @unique
+  salesScore            Float?
+  completedSales        Int           @default(0)
+  createdByUserId       String?
+  status                ProfileStatus @default(DRAFT)
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
 
   tenant     Tenant                     @relation(fields: [tenantId], references: [id])
   memberships UserReferrerMembership[]
@@ -159,8 +252,11 @@ model ReferrerProfile {
   producerRelationships ProducerReferrerRelationship[]
   eventAssignments EventReferrerAssignment[]
 
+  @@unique([tenantId, slug])
+  @@unique([tenantId, publicHandle])
   @@index([tenantId])
   @@index([tenantId, status])
+  @@index([tenantId, publicVisibility, status])
 }
 
 enum RelationshipStatus {
@@ -174,6 +270,8 @@ enum RelationshipOrigin {
   REQUESTED_BY_REFERRER
   INVITED_BY_PRODUCER
   FREELANCE_CONTACT
+  REQUESTED_BY_REFERRER_LINK
+  DISCOVERED_IN_FREELANCE_LIST
 }
 
 model ProducerReferrerRelationship {
@@ -257,6 +355,26 @@ model UserGastroMembership {
   tenant  Tenant        @relation(fields: [tenantId], references: [id])
   user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   profile GastroProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, profileId])
+  @@index([tenantId])
+  @@index([userId])
+  @@index([profileId])
+}
+
+model UserHotelMembership {
+  id             String           @id @default(cuid())
+  tenantId       String
+  userId         String
+  profileId      String
+  membershipRole MembershipRole   @default(OWNER)
+  status         MembershipStatus @default(ACTIVE)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  tenant  Tenant       @relation(fields: [tenantId], references: [id])
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  profile HotelProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 
   @@unique([userId, profileId])
   @@index([tenantId])
@@ -360,7 +478,12 @@ model User {
   transfersTo        TicketTransfer[] @relation("TransferToUser")
   producerMemberships UserProducerMembership[]
   gastroMemberships   UserGastroMembership[]
+  hotelMemberships    UserHotelMembership[]
   referrerMemberships UserReferrerMembership[]
+  ordersAsBuyer       Order[]                @relation("OrderBuyer")
+  inboxItemsCreated   InboxItem[]            @relation("InboxItemCreator")
+  inboxItemsResolved  InboxItem[]            @relation("InboxItemResolver")
+  reviewsModerated    Review[]               @relation("ReviewModerator")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -380,12 +503,36 @@ enum EventMediaType {
   VIDEO
 }
 
+model ContentSubcategory {
+  id          String   @id @default(cuid())
+  tenantId    String
+  category    String   // event | gastro | rental | excursion | hotel
+  name        String
+  slug        String
+  description String?
+  imageUrl    String?
+  iconName    String?
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant Tenant  @relation(fields: [tenantId], references: [id])
+  events Event[]
+
+  @@unique([tenantId, category, slug])
+  @@index([tenantId, category])
+  @@index([tenantId, category, isActive])
+}
+
 model Event {
   id                String       @id @default(cuid())
   tenantId          String
   producerId        String       // LEGACY: kept for compatibility; prefer producerProfileId
   producerProfileId String?      // ownership via ProducerProfile
-  category          String?      // event | gastro | excursion | rental — for catalog display
+  category          String?      // event | gastro | excursion | rental | hotel
+  subcategoryId     String?
+  rentalLocationId  String?
   title             String
   description       String?
   startAt           DateTime
@@ -408,7 +555,9 @@ model Event {
 
   tenant      Tenant       @relation(fields: [tenantId], references: [id])
   producerProfile ProducerProfile? @relation(fields: [producerProfileId], references: [id], onDelete: SetNull)
-  media       EventMedia[]
+  subcategory      ContentSubcategory? @relation(fields: [subcategoryId], references: [id], onDelete: SetNull)
+  rentalLocation   RentalLocation?     @relation(fields: [rentalLocationId], references: [id], onDelete: SetNull)
+  media            EventMedia[]
   ticketTypes     TicketType[]
   tickets         Ticket[]
   ticketScans     TicketScan[]
@@ -422,17 +571,30 @@ model Event {
   reviews             Review[]
   fraudSignals        FraudSignal[]
   payouts             Payout[]
+  ticketBatches       TicketBatch[]
+  gastroDiscounts     GastroDiscount[]
 
   @@index([tenantId])
   @@index([tenantId, status])
   @@index([tenantId, status, deletedAt, startAt])
   @@index([tenantId, city])
   @@index([producerProfileId])
+  @@index([subcategoryId])
+  @@index([rentalLocationId])
+  @@index([tenantId, category, rentalLocationId])
 }
 
 enum TicketTypeStatus {
   ACTIVE
   PAUSED
+}
+
+enum TicketBatchStatus {
+  SCHEDULED
+  ACTIVE
+  CLOSED
+  SOLD_OUT
+  SKIPPED
 }
 
 enum OrderStatus {
@@ -465,6 +627,7 @@ enum PaymentStatus {
 
 model TicketType {
   id               String           @id @default(cuid())
+  tenantId         String
   eventId          String
   name             String
   description      String?
@@ -476,16 +639,74 @@ model TicketType {
   salesStartAt     DateTime?
   salesEndAt       DateTime?
   status           TicketTypeStatus @default(ACTIVE)
+  ticketTemplateId String?          @unique
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
   deletedAt        DateTime?
 
-  event          Event          @relation(fields: [eventId], references: [id])
+  tenant         Tenant           @relation(fields: [tenantId], references: [id])
+  event          Event            @relation(fields: [eventId], references: [id])
+  ticketTemplate TicketTemplate?  @relation(fields: [ticketTemplateId], references: [id], onDelete: SetNull)
+  batches        TicketBatch[]
   orderItems     OrderItem[]
   tickets        Ticket[]
   courtesyGrants CourtesyGrant[]
 
   @@index([eventId, status])
+  @@index([tenantId])
+}
+
+/// Visual layout for digital ticket (producer canvas studio). QR payload at issuance is unchanged; this is display-only until a renderer consumes it.
+model TicketTemplate {
+  id              String   @id @default(cuid())
+  tenantId        String
+  name            String   @default("Diseño personalizado")
+  canvasWidth     Int      @default(320)
+  canvasHeight    Int      @default(560)
+  backgroundType  String   @default("SOLID")
+  backgroundValue String   @default("#0a0a0a")
+  elementsJson    Json     @default("[]")
+  qrZoneJson      Json
+  version         Int      @default(1)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tenant     Tenant      @relation(fields: [tenantId], references: [id])
+  ticketType TicketType?
+
+  @@index([tenantId])
+}
+
+model TicketBatch {
+  id                 String             @id @default(cuid())
+  tenantId           String
+  eventId            String
+  ticketTypeId       String
+  orderIndex         Int
+  name               String
+  startAt            DateTime
+  endAt              DateTime
+  baseQuantity       Int
+  rolloverQuantity   Int                @default(0)
+  effectiveQuantity  Int
+  reservedQuantity   Int                @default(0)
+  soldCount          Int                @default(0)
+  price              Decimal            @db.Decimal(12, 2)
+  currency           String             @default("ARS")
+  status             TicketBatchStatus  @default(SCHEDULED)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  tenant     Tenant     @relation(fields: [tenantId], references: [id])
+  event      Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  ticketType TicketType @relation(fields: [ticketTypeId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
+  tickets    Ticket[]
+
+  @@unique([ticketTypeId, orderIndex])
+  @@index([ticketTypeId])
+  @@index([eventId])
+  @@index([tenantId])
 }
 
 model Order {
@@ -497,6 +718,8 @@ model Order {
   buyerFirstName  String
   buyerLastName   String
   buyerDocument   String?
+  /// When set at checkout, tickets assign to this user even if buyerEmail casing differs from User.email lookup.
+  buyerUserId     String?
   totalAmount     Decimal     @db.Decimal(12, 2)
   currency        String      @default("ARS")
   expiresAt       DateTime?
@@ -508,6 +731,7 @@ model Order {
 
   tenant         Tenant      @relation(fields: [tenantId], references: [id])
   event          Event       @relation(fields: [eventId], references: [id])
+  buyerUser      User?       @relation("OrderBuyer", fields: [buyerUserId], references: [id], onDelete: SetNull)
   orderItems     OrderItem[]
   tickets        Ticket[]
   payments       Payment[]
@@ -518,21 +742,26 @@ model Order {
   @@index([tenantId, eventId])
   @@index([tenantId, status])
   @@index([expiresAt])
+  @@index([buyerUserId])
 }
 
 model OrderItem {
-  id           String   @id @default(cuid())
-  orderId      String
-  ticketTypeId String
-  quantity     Int
-  unitPrice    Decimal  @db.Decimal(12, 2)
-  subtotal     Decimal  @db.Decimal(12, 2)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id             String   @id @default(cuid())
+  orderId        String
+  ticketTypeId   String
+  ticketBatchId  String?
+  quantity       Int
+  unitPrice      Decimal  @db.Decimal(12, 2)
+  subtotal       Decimal  @db.Decimal(12, 2)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  order      Order       @relation(fields: [orderId], references: [id])
-  ticketType TicketType  @relation(fields: [ticketTypeId], references: [id])
-  tickets    Ticket[]
+  order        Order         @relation(fields: [orderId], references: [id])
+  ticketType   TicketType    @relation(fields: [ticketTypeId], references: [id])
+  ticketBatch  TicketBatch?  @relation(fields: [ticketBatchId], references: [id])
+  tickets      Ticket[]
+
+  @@index([ticketBatchId])
 }
 
 enum ScanResult {
@@ -578,6 +807,7 @@ model Ticket {
   orderId          String?
   orderItemId      String?
   ticketTypeId     String?
+  ticketBatchId    String?
   eventId          String
   qrPayload        String       @unique
   status           TicketStatus @default(VALID)
@@ -594,6 +824,7 @@ model Ticket {
   order          Order?           @relation(fields: [orderId], references: [id])
   orderItem      OrderItem?       @relation(fields: [orderItemId], references: [id])
   ticketType     TicketType?      @relation(fields: [ticketTypeId], references: [id])
+  ticketBatch    TicketBatch?     @relation(fields: [ticketBatchId], references: [id])
   event          Event            @relation(fields: [eventId], references: [id])
   ownerUser      User?            @relation("TicketOwner", fields: [ownerUserId], references: [id])
   ticketScans    TicketScan[]
@@ -603,6 +834,7 @@ model Ticket {
   @@index([eventId, status])
   @@index([orderId])
   @@index([ownerUserId])
+  @@index([ticketBatchId])
 }
 
 model TicketTransfer {
@@ -851,20 +1083,93 @@ model AuditLog {
 }
 
 model Review {
-  id        String   @id @default(cuid())
-  tenantId  String
-  eventId   String
-  userId    String
-  score     Int
-  title     String?
-  comment   String?
-  createdAt DateTime @default(now())
+  id                 String    @id @default(cuid())
+  tenantId           String
+  eventId            String
+  userId             String?
+  score              Int
+  title              String?
+  comment            String?
+  /// Display name when userId is null (valoración sin cuenta)
+  guestName          String?
+  hiddenFromPublic   Boolean   @default(false)
+  officialReply      String?
+  moderatedAt        DateTime?
+  moderatedByUserId  String?
+  createdAt          DateTime  @default(now())
 
-  tenant Tenant @relation(fields: [tenantId], references: [id])
-  event  Event  @relation(fields: [eventId], references: [id])
-  user   User   @relation(fields: [userId], references: [id])
+  tenant      Tenant @relation(fields: [tenantId], references: [id])
+  event       Event  @relation(fields: [eventId], references: [id])
+  user        User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
+  moderatedBy User?  @relation("ReviewModerator", fields: [moderatedByUserId], references: [id], onDelete: SetNull)
 
   @@unique([eventId, userId])
   @@index([tenantId])
   @@index([eventId])
+  @@index([moderatedByUserId])
+}
+
+model InboxItem {
+  id               String          @id @default(cuid())
+  tenantId         String
+  kind             InboxItemKind
+  status           InboxItemStatus @default(PENDING)
+  createdByUserId  String
+  assigneeRole     Role            @default(ADMIN)
+  title            String
+  summary          String?
+  payload          Json
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  resolvedAt       DateTime?
+  resolvedByUserId String?
+  resolutionNote   String?
+
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+  creator  User   @relation("InboxItemCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  resolver User?  @relation("InboxItemResolver", fields: [resolvedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, status, kind])
+  @@index([tenantId, status])
+  @@index([createdByUserId])
+}
+
+model GastroDiscount {
+  id                String               @id @default(cuid())
+  tenantId          String
+  eventId           String
+  gastroProfileId   String?
+  code              String
+  type              GastroDiscountType
+  value             Float
+  validFrom         DateTime?
+  validTo           DateTime?
+  status            GastroDiscountStatus @default(ACTIVE)
+  /// Copy of gastro promo request title for public cards / home
+  displayTitle       String?
+  displayDescription String?
+  displayImageUrls   Json?
+  sourceInboxItemId String?              @unique
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  tenant        Tenant                  @relation(fields: [tenantId], references: [id])
+  event         Event                   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  gastroProfile GastroProfile?          @relation(fields: [gastroProfileId], references: [id], onDelete: SetNull)
+  validations   GastroDiscountValidation[]
+
+  @@unique([eventId, code])
+  @@index([tenantId, eventId])
+}
+
+model GastroDiscountValidation {
+  id          String   @id @default(cuid())
+  discountId  String
+  validatedAt DateTime @default(now())
+  userId      String?
+  orderId     String?
+
+  discount GastroDiscount @relation(fields: [discountId], references: [id], onDelete: Cascade)
+
+  @@index([discountId])
 }

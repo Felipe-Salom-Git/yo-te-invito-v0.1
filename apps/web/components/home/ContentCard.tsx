@@ -119,12 +119,24 @@ export function ContentCard({ item, onClick, tenantId }: ContentCardProps) {
           aria-hidden
         />
 
+        {item.gastroPromoImageUrl ? (
+          <div className="absolute right-3 top-3 z-10 h-16 w-16 overflow-hidden rounded-lg border border-white/25 shadow-md">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={item.gastroPromoImageUrl} alt="" className="h-full w-full object-cover" />
+          </div>
+        ) : null}
+
         {/* Base content: visible when collapsed on desktop, always on mobile */}
         <div
           className={`absolute inset-0 flex flex-col justify-end p-4 transition-opacity duration-200 md:duration-150 ${
             expanded ? 'opacity-0 md:pointer-events-none' : 'opacity-100'
           }`}
         >
+          {item.gastroPromoLabel ? (
+            <span className="mb-1.5 w-fit max-w-[90%] rounded border border-amber-400/45 bg-amber-500/20 px-2 py-0.5 text-[10px] font-medium leading-tight text-amber-50 line-clamp-2">
+              Cupón · {item.gastroPromoLabel}
+            </span>
+          ) : null}
           {item.category && (
             <span className="mb-1.5 w-fit rounded bg-accent/90 px-2 py-0.5 text-[11px] font-medium text-bg">
               {item.category}

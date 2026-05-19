@@ -2,11 +2,15 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
+import { Decimal } from '@prisma/client/runtime/library';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventCapacityGuardService } from '../common/event-capacity-guard.service';
+import { TicketBatchService } from '../ticketing/ticket-batch.service';
 import type { CreateOrderDto, OrderResponse } from '@yo-te-invito/shared';
 import { ErrorCode } from '@yo-te-invito/shared';
+import { mergePublicEventVisibility } from '../common/utils/event-public-visibility.util';
 
 const ORDER_EXPIRY_MINUTES = 15;
 
@@ -21,17 +25,18 @@ export class PublicOrdersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly capacityGuard: EventCapacityGuardService,
+    private readonly ticketBatches: TicketBatchService,
   ) {}
 
   async create(tenantId: string, dto: CreateOrderDto): Promise<OrderResponse> {
     return this.prisma.$transaction(async (tx) => {
       const event = await tx.event.findFirst({
-        where: {
+        where: mergePublicEventVisibility({
           id: dto.eventId,
           tenantId,
           status: 'APPROVED',
           deletedAt: null,
-        },
+        }),
       });
 
       if (!event) {
@@ -59,12 +64,14 @@ export class PublicOrdersService {
       }
 
       const typeMap = new Map(ticketTypes.map((t) => [t.id, t]));
+      const now = new Date();
       let totalAmount = 0;
       const orderItemsData: Array<{
         ticketTypeId: string;
+        ticketBatchId: string;
         quantity: number;
-        unitPrice: number;
-        subtotal: number;
+        unitPrice: Decimal;
+        subtotal: Decimal;
       }> = [];
 
       for (const item of dto.items) {
@@ -76,11 +83,29 @@ export class PublicOrdersService {
             message: `Quantity exceeds maxPerOrder (${tt.maxPerOrder}) for ${tt.name}`,
           });
         }
-        const unitPrice = Number(tt.price);
-        const subtotal = unitPrice * item.quantity;
-        totalAmount += subtotal;
+        let batchReserve: { batchId: string; unitPrice: Decimal; currency: string };
+        try {
+          batchReserve = await this.ticketBatches.reserveForPurchase(
+            tx,
+            { ticketTypeId: tt.id, quantity: item.quantity },
+            now,
+          );
+        } catch (e: unknown) {
+          const code = e && typeof e === 'object' && 'code' in e ? (e as { code?: string }).code : '';
+          if (code === 'NO_ACTIVE_BATCH' || code === 'INSUFFICIENT_BATCH_STOCK') {
+            throw new ConflictException({
+              code: ErrorCode.CONFLICT,
+              message: 'Insufficient availability',
+            });
+          }
+          throw e;
+        }
+        const unitPrice = batchReserve.unitPrice;
+        const subtotal = unitPrice.mul(item.quantity);
+        totalAmount += Number(subtotal);
         orderItemsData.push({
           ticketTypeId: tt.id,
+          ticketBatchId: batchReserve.batchId,
           quantity: item.quantity,
           unitPrice,
           subtotal,
@@ -122,6 +147,32 @@ export class PublicOrdersService {
         }
       }
 
+      let buyerUserId: string | null = null;
+      if (dto.buyerUserId?.trim()) {
+        const buyerUser = await tx.user.findFirst({
+          where: {
+            id: dto.buyerUserId.trim(),
+            tenantId,
+            deletedAt: null,
+            status: 'ACTIVE',
+          },
+          select: { id: true, email: true },
+        });
+        if (!buyerUser) {
+          throw new BadRequestException({
+            code: ErrorCode.VALIDATION_FAILED,
+            message: 'buyerUserId is invalid for this tenant',
+          });
+        }
+        if (buyerUser.email.trim().toLowerCase() !== dto.buyer.email.trim().toLowerCase()) {
+          throw new BadRequestException({
+            code: ErrorCode.VALIDATION_FAILED,
+            message: 'buyer email must match the logged-in user',
+          });
+        }
+        buyerUserId = buyerUser.id;
+      }
+
       const createdOrder = await tx.order.create({
         data: {
           tenantId,
@@ -131,7 +182,8 @@ export class PublicOrdersService {
           buyerFirstName: dto.buyer.firstName,
           buyerLastName: dto.buyer.lastName,
           buyerDocument: dto.buyer.document ?? null,
-          totalAmount,
+          buyerUserId,
+          totalAmount: new Decimal(totalAmount.toFixed(2)),
           currency: 'ARS',
           expiresAt: getExpiresAt(),
           referralLinkId,
@@ -154,6 +206,7 @@ export class PublicOrdersService {
           data: {
             orderId: createdOrder.id,
             ticketTypeId: item.ticketTypeId,
+            ticketBatchId: item.ticketBatchId,
             quantity: item.quantity,
             unitPrice: item.unitPrice,
             subtotal: item.subtotal,
@@ -211,6 +264,7 @@ export class PublicOrdersService {
     orderItems: Array<{
       id: string;
       ticketTypeId: string;
+      ticketBatchId: string | null;
       ticketType: { name: string };
       quantity: number;
       unitPrice: { toString: () => string };
@@ -218,6 +272,7 @@ export class PublicOrdersService {
       tickets: Array<{
         id: string;
         ticketTypeId: string | null;
+        ticketBatchId: string | null;
         qrPayload: string;
         status: string;
       }>;
@@ -225,6 +280,7 @@ export class PublicOrdersService {
     tickets: Array<{
       id: string;
       ticketTypeId: string | null;
+      ticketBatchId: string | null;
       orderItemId: string | null;
       qrPayload: string;
       status: string;
@@ -233,6 +289,7 @@ export class PublicOrdersService {
     const orderItems = order.orderItems.map((oi) => ({
       id: oi.id,
       ticketTypeId: oi.ticketTypeId,
+      ticketBatchId: oi.ticketBatchId ?? undefined,
       ticketTypeName: oi.ticketType.name,
       quantity: oi.quantity,
       unitPrice: oi.unitPrice.toString(),
@@ -240,6 +297,7 @@ export class PublicOrdersService {
       tickets: oi.tickets.map((t) => ({
         id: t.id,
         ticketTypeId: t.ticketTypeId ?? oi.ticketTypeId,
+        ticketBatchId: t.ticketBatchId ?? oi.ticketBatchId ?? undefined,
         ticketTypeName: oi.ticketType.name,
         qrPayload: t.qrPayload,
         status: t.status as 'VALID' | 'USED' | 'REVOKED',
@@ -253,6 +311,7 @@ export class PublicOrdersService {
         return {
           id: t.id,
           ticketTypeId: t.ticketTypeId ?? oi?.ticketTypeId ?? null,
+          ticketBatchId: t.ticketBatchId ?? oi?.ticketBatchId ?? undefined,
           ticketTypeName: oi?.ticketType.name ?? null,
           qrPayload: t.qrPayload,
           status: t.status as 'VALID' | 'USED' | 'REVOKED',

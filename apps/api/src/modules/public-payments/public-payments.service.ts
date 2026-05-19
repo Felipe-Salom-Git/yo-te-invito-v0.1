@@ -16,6 +16,7 @@ import type { PaymentProviderApi } from '@yo-te-invito/shared';
 import { GetnetCheckoutService } from './providers/getnet/getnet-checkout.service';
 import { mapGetnetStatusToLocal } from './providers/getnet/getnet.mapper';
 import { loadGetnetConfig } from './providers/getnet/getnet.config';
+import { TicketBatchService } from '../../ticketing/ticket-batch.service';
 
 function generateQrPayload(): string {
   return 'yti:v1:' + randomBytes(24).toString('hex');
@@ -46,6 +47,7 @@ export class PublicPaymentsService {
     private readonly capacityGuard: EventCapacityGuardService,
     private readonly emailQueue: EmailQueueService,
     private readonly getnetCheckout: GetnetCheckoutService,
+    private readonly ticketBatches: TicketBatchService,
   ) {}
 
   async createPayment(
@@ -95,6 +97,11 @@ export class PublicPaymentsService {
             include: { orderItems: true },
           });
           for (const oi of fullOrder.orderItems) {
+            await this.ticketBatches.releaseReservation(
+              tx,
+              oi.ticketBatchId ?? null,
+              oi.quantity,
+            );
             await tx.ticketType.updateMany({
               where: { id: oi.ticketTypeId },
               data: { capacityAvailable: { increment: oi.quantity } },
@@ -307,19 +314,24 @@ export class PublicPaymentsService {
         data: { status: 'APPROVED' },
       });
 
-      // Demo: assign tickets to user by buyerEmail so GET /me/tickets returns them
+      // Assign tickets: prefer Order.buyerUserId (checkout logged-in), else match by buyer email
       const ownerUser = await tx.user.findFirst({
         where: {
           tenantId: payment.order.tenantId,
-          email: payment.order.buyerEmail,
+          email: { equals: payment.order.buyerEmail, mode: 'insensitive' },
           deletedAt: null,
         },
         select: { id: true },
       });
-      const ownerUserId = ownerUser?.id ?? null;
+      const ownerUserId = payment.order.buyerUserId ?? ownerUser?.id ?? null;
 
       const seenPayloads = new Set<string>();
       for (const oi of payment.order.orderItems) {
+        await this.ticketBatches.confirmReservedAsSold(
+          tx,
+          oi.ticketBatchId ?? null,
+          oi.quantity,
+        );
         for (let i = 0; i < oi.quantity; i++) {
           let qrPayload = generateQrPayload();
           while (seenPayloads.has(qrPayload)) {
@@ -332,6 +344,7 @@ export class PublicPaymentsService {
               orderId: payment.orderId,
               orderItemId: oi.id,
               ticketTypeId: oi.ticketTypeId,
+              ticketBatchId: oi.ticketBatchId ?? null,
               eventId: payment.order.eventId,
               qrPayload,
               status: 'VALID',
@@ -515,15 +528,20 @@ export class PublicPaymentsService {
       const ownerUser = await tx.user.findFirst({
         where: {
           tenantId: payment.order.tenantId,
-          email: payment.order.buyerEmail,
+          email: { equals: payment.order.buyerEmail, mode: 'insensitive' },
           deletedAt: null,
         },
         select: { id: true },
       });
-      const ownerUserId = ownerUser?.id ?? null;
+      const ownerUserId = payment.order.buyerUserId ?? ownerUser?.id ?? null;
       const seenPayloads = new Set<string>();
 
       for (const oi of payment.order.orderItems) {
+        await this.ticketBatches.confirmReservedAsSold(
+          tx,
+          oi.ticketBatchId ?? null,
+          oi.quantity,
+        );
         for (let i = 0; i < oi.quantity; i++) {
           let qrPayload = generateQrPayload();
           while (seenPayloads.has(qrPayload)) {
@@ -536,6 +554,7 @@ export class PublicPaymentsService {
               orderId: payment.orderId,
               orderItemId: oi.id,
               ticketTypeId: oi.ticketTypeId,
+              ticketBatchId: oi.ticketBatchId ?? null,
               eventId: payment.order.eventId,
               qrPayload,
               status: 'VALID',
@@ -578,6 +597,7 @@ export class PublicPaymentsService {
     orderItems: Array<{
       id: string;
       ticketTypeId: string;
+      ticketBatchId: string | null;
       ticketType: { name: string };
       quantity: number;
       unitPrice: { toString: () => string };
@@ -585,6 +605,7 @@ export class PublicPaymentsService {
       tickets: Array<{
         id: string;
         ticketTypeId: string | null;
+        ticketBatchId: string | null;
         qrPayload: string;
         status: string;
       }>;
@@ -592,6 +613,7 @@ export class PublicPaymentsService {
     tickets: Array<{
       id: string;
       ticketTypeId: string | null;
+      ticketBatchId: string | null;
       orderItemId: string | null;
       qrPayload: string;
       status: string;
@@ -600,6 +622,7 @@ export class PublicPaymentsService {
     const orderItems = order.orderItems.map((oi) => ({
       id: oi.id,
       ticketTypeId: oi.ticketTypeId,
+      ticketBatchId: oi.ticketBatchId ?? undefined,
       ticketTypeName: oi.ticketType.name,
       quantity: oi.quantity,
       unitPrice: oi.unitPrice.toString(),
@@ -607,6 +630,7 @@ export class PublicPaymentsService {
       tickets: oi.tickets.map((t) => ({
         id: t.id,
         ticketTypeId: t.ticketTypeId ?? oi.ticketTypeId,
+        ticketBatchId: t.ticketBatchId ?? oi.ticketBatchId ?? undefined,
         ticketTypeName: oi.ticketType.name,
         qrPayload: t.qrPayload,
         status: t.status as 'VALID' | 'USED' | 'REVOKED',
@@ -620,6 +644,7 @@ export class PublicPaymentsService {
         return {
           id: t.id,
           ticketTypeId: t.ticketTypeId ?? oi?.ticketTypeId ?? null,
+          ticketBatchId: t.ticketBatchId ?? oi?.ticketBatchId ?? undefined,
           ticketTypeName: oi?.ticketType.name ?? null,
           qrPayload: t.qrPayload,
           status: t.status as 'VALID' | 'USED' | 'REVOKED',

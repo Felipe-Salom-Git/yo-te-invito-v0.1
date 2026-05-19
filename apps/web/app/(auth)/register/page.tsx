@@ -146,7 +146,7 @@ export default function RegisterPage() {
             </Link>
           </p>
           <p className="mt-2 text-center text-xs text-text-muted">
-            Después de registrarte podés solicitar perfiles de productor, gastro o referidor desde tu cuenta.
+            Después de registrarte podés solicitar perfiles de productor, gastro, hotel o referidor desde tu cuenta.
           </p>
           <p className="mt-2 text-center text-sm text-text-muted">
             <Link href="/home" className="text-accent hover:underline">

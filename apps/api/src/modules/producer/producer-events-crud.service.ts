@@ -13,13 +13,17 @@ import type {
   EventSummary,
   EventsPaginatedResponse,
 } from '@yo-te-invito/shared';
-import { ErrorCode } from '@yo-te-invito/shared';
+import { ErrorCode, parseRentalOpeningHours, type RentalOpeningHours } from '@yo-te-invito/shared';
+import { SubcategoriesService } from '../subcategories/subcategories.service';
+import { RentalLocationsService } from '../rental-locations/rental-locations.service';
 
 @Injectable()
 export class ProducerEventsCrudService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly profilesAuth: ProfilesAuthorizationService,
+    private readonly subcategories: SubcategoriesService,
+    private readonly rentalLocations: RentalLocationsService,
   ) {}
 
   private async assertEventOwnedByUser(
@@ -58,6 +62,18 @@ export class ProducerEventsCrudService {
     city: string | null;
     venueName: string | null;
     coverImageUrl: string | null;
+    category: string | null;
+    subcategoryId: string | null;
+    rentalLocationId?: string | null;
+    rentalLocation?: {
+      id: string;
+      name: string;
+      address: string | null;
+      openingHours: RentalOpeningHours | null;
+      openingHoursNote: string | null;
+      geoLat: number | null;
+      geoLng: number | null;
+    } | null;
     description: string | null;
     endAt: Date | null;
     venueAddress: string | null;
@@ -77,6 +93,8 @@ export class ProducerEventsCrudService {
       city: event.city,
       venueName: event.venueName,
       coverImageUrl: event.coverImageUrl,
+      category: event.category ?? undefined,
+      subcategoryId: event.subcategoryId ?? undefined,
       description: event.description,
       endAt: event.endAt?.toISOString() ?? null,
       venueAddress: event.venueAddress,
@@ -93,6 +111,7 @@ export class ProducerEventsCrudService {
         url: m.url,
         sortOrder: m.sortOrder,
       })),
+      rentalLocation: event.rentalLocation ?? undefined,
     };
   }
 
@@ -107,6 +126,7 @@ export class ProducerEventsCrudService {
       where: { id: eventId, tenantId, deletedAt: null },
       include: {
         media: { where: { deletedAt: null }, orderBy: { sortOrder: 'asc' } },
+        rentalLocation: true,
       },
     });
     if (!event) {
@@ -118,6 +138,17 @@ export class ProducerEventsCrudService {
     return this.toEventDetail({
       ...event,
       media: event.media,
+      rentalLocation: event.rentalLocation
+        ? {
+            id: event.rentalLocation.id,
+            name: event.rentalLocation.name,
+            address: event.rentalLocation.address,
+            openingHours: parseRentalOpeningHours(event.rentalLocation.openingHours),
+            openingHoursNote: event.rentalLocation.openingHoursNote,
+            geoLat: event.rentalLocation.geoLat,
+            geoLng: event.rentalLocation.geoLng,
+          }
+        : null,
     });
   }
 
@@ -204,11 +235,25 @@ export class ProducerEventsCrudService {
       tenantId,
       producerId,
     );
+    const category = body.category?.trim() || 'event';
+    const subcategoryId = await this.subcategories.resolveSubcategoryForEvent(
+      tenantId,
+      category,
+      body.subcategoryId ?? null,
+    );
+    const rentalLocationId = await this.rentalLocations.resolveRentalLocationForEvent(
+      tenantId,
+      category,
+      body.rentalLocationId ?? null,
+    );
     const event = await this.prisma.event.create({
       data: {
         tenantId,
         producerId,
         producerProfileId: producerProfileId ?? undefined,
+        category,
+        subcategoryId,
+        rentalLocationId,
         title: body.title,
         description: body.description ?? null,
         startAt: new Date(body.startAt),
@@ -225,12 +270,24 @@ export class ProducerEventsCrudService {
       },
       include: {
         media: { where: { deletedAt: null }, orderBy: { sortOrder: 'asc' } },
+        rentalLocation: true,
       },
     });
 
     return this.toEventDetail({
       ...event,
       media: event.media,
+      rentalLocation: event.rentalLocation
+        ? {
+            id: event.rentalLocation.id,
+            name: event.rentalLocation.name,
+            address: event.rentalLocation.address,
+            openingHours: parseRentalOpeningHours(event.rentalLocation.openingHours),
+            openingHoursNote: event.rentalLocation.openingHoursNote,
+            geoLat: event.rentalLocation.geoLat,
+            geoLng: event.rentalLocation.geoLng,
+          }
+        : null,
     });
   }
 
@@ -242,6 +299,42 @@ export class ProducerEventsCrudService {
     body: EventUpdateDto,
   ): Promise<EventDetail> {
     await this.assertEventOwnedByUser(eventId, tenantId, userId, userRole);
+
+    const existing = await this.prisma.event.findFirst({
+      where: { id: eventId, tenantId },
+    });
+    if (!existing) {
+      throw new NotFoundException({
+        code: ErrorCode.NOT_FOUND,
+        message: 'Event not found',
+      });
+    }
+
+    const nextCategory =
+      body.category !== undefined ? body.category?.trim() || 'event' : existing.category;
+    let subcategoryId: string | null | undefined = undefined;
+    if (body.subcategoryId !== undefined) {
+      subcategoryId = await this.subcategories.resolveSubcategoryForEvent(
+        tenantId,
+        nextCategory,
+        body.subcategoryId,
+      );
+    } else if (body.category !== undefined && existing.subcategoryId) {
+      subcategoryId = await this.subcategories.resolveSubcategoryForEvent(
+        tenantId,
+        nextCategory,
+        existing.subcategoryId,
+      );
+    }
+
+    let rentalLocationId: string | null | undefined = undefined;
+    if (body.rentalLocationId !== undefined) {
+      rentalLocationId = await this.rentalLocations.resolveRentalLocationForEvent(
+        tenantId,
+        nextCategory ?? 'event',
+        body.rentalLocationId,
+      );
+    }
 
     const event = await this.prisma.event.update({
       where: { id: eventId },
@@ -266,15 +359,30 @@ export class ProducerEventsCrudService {
         ...(body.geoLat !== undefined && { geoLat: body.geoLat }),
         ...(body.geoLng !== undefined && { geoLng: body.geoLng }),
         ...(body.status !== undefined && { status: body.status }),
+        ...(body.category !== undefined && { category: nextCategory }),
+        ...(subcategoryId !== undefined && { subcategoryId }),
+        ...(rentalLocationId !== undefined && { rentalLocationId }),
       },
       include: {
         media: { where: { deletedAt: null }, orderBy: { sortOrder: 'asc' } },
+        rentalLocation: true,
       },
     });
 
     return this.toEventDetail({
       ...event,
       media: event.media,
+      rentalLocation: event.rentalLocation
+        ? {
+            id: event.rentalLocation.id,
+            name: event.rentalLocation.name,
+            address: event.rentalLocation.address,
+            openingHours: parseRentalOpeningHours(event.rentalLocation.openingHours),
+            openingHoursNote: event.rentalLocation.openingHoursNote,
+            geoLat: event.rentalLocation.geoLat,
+            geoLng: event.rentalLocation.geoLng,
+          }
+        : null,
     });
   }
 }

@@ -38,7 +38,16 @@ export function EventMetaSummary({
   if (city) items.push({ icon: '📍', label: city });
   if (dateLabel) items.push({ icon: '📅', label: dateLabel });
   if (categoryLabel) {
-    const icon = category === 'gastro' ? '🍽' : category === 'excursion' ? '🥾' : category === 'rental' ? '🏠' : '🎫';
+    const icon =
+      category === 'gastro'
+        ? '🍽'
+        : category === 'hotel'
+          ? '🏨'
+          : category === 'excursion'
+            ? '🥾'
+            : category === 'rental'
+              ? '🏠'
+              : '🎫';
     items.push({ icon, label: categoryLabel });
   }
 

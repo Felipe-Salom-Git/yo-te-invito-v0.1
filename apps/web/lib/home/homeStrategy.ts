@@ -10,6 +10,7 @@ export interface HomeStrategyPreferences {
   preferredCity?: string | null;
   /** Future: favorite category ids for rail ordering (e.g. ['gastro','excursion']) */
   preferredCategories?: string[] | null;
+  favoriteEventIds?: string[] | null;
 }
 
 export interface HomeStrategyInput {
@@ -29,7 +30,9 @@ export function hasUsablePreferences(
   const hasCity = typeof city === 'string' && city.trim().length > 0;
   const cats = preferences.preferredCategories;
   const hasCategories = Array.isArray(cats) && cats.length > 0;
-  return hasCity || hasCategories;
+  const favs = preferences.favoriteEventIds;
+  const hasFavorites = Array.isArray(favs) && favs.length > 0;
+  return hasCity || hasCategories || hasFavorites;
 }
 
 /**

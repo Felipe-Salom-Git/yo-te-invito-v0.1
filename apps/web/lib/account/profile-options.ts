@@ -44,10 +44,19 @@ export const PROFILE_OPTIONS: ProfileOption[] = [
     pendingRoute: '/cuenta/solicitar-gastro',
   },
   {
+    id: 'hotel',
+    title: 'Hotel / alojamiento',
+    description:
+      'Cargá tu establecimiento, sitio web y enlaces. Gestioná tu presencia en la sección Hoteles del inicio.',
+    dashboardRoute: '/hotel',
+    setupRoute: '/cuenta/solicitar-hotel',
+    pendingRoute: '/cuenta/solicitar-hotel',
+  },
+  {
     id: 'referrer',
     title: 'Referido',
     description:
-      'Difundí eventos, generá ventas y seguí tus resultados o comisiones.',
+      'Perfil activo al instante, link para productoras, métricas y directorio público opcional.',
     dashboardRoute: '/referrer',
     setupRoute: '/cuenta/solicitar-referrer',
     pendingRoute: '/cuenta/solicitar-referrer',

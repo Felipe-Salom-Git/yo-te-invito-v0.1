@@ -188,11 +188,13 @@ export class AuthService {
     });
     if (existingUser) {
       const hasRole =
-        existingUser.role === 'PRODUCER_OWNER' || existingUser.role === 'GASTRO_OWNER';
+        existingUser.role === 'PRODUCER_OWNER' ||
+        existingUser.role === 'GASTRO_OWNER' ||
+        existingUser.role === 'HOTEL_OWNER';
       if (hasRole) {
         throw new ConflictException({
           code: 'CONFLICT',
-          message: 'Email already has producer or gastro role',
+          message: 'Email already has producer, gastro or hotel role',
         });
       }
     }

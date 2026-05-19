@@ -14,6 +14,8 @@ export function getDashboardForRole(role: string | undefined): string {
       return '/producer';
     case 'GASTRO_OWNER':
       return '/gastro';
+    case 'HOTEL_OWNER':
+      return '/hotel';
     case 'REFERRER':
       return '/referrer';
     case 'SCANNER':

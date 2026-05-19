@@ -4,6 +4,7 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtOrDevAuthGuard } from './jwt-or-dev-auth.guard';
+import { OptionalJwtOrDevAuthGuard } from './optional-jwt-or-dev-auth.guard';
 
 @Module({
   imports: [
@@ -14,7 +15,7 @@ import { JwtOrDevAuthGuard } from './jwt-or-dev-auth.guard';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtOrDevAuthGuard],
-  exports: [AuthService, JwtOrDevAuthGuard, JwtModule, PrismaModule],
+  providers: [AuthService, JwtOrDevAuthGuard, OptionalJwtOrDevAuthGuard],
+  exports: [AuthService, JwtOrDevAuthGuard, OptionalJwtOrDevAuthGuard, JwtModule, PrismaModule],
 })
 export class AuthModule {}

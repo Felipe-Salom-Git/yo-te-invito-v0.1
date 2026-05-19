@@ -10,6 +10,7 @@
 
 import * as crypto from 'crypto';
 import { PrismaClient } from '@prisma/client';
+import { ensureGastroDemoUser, ensureSampleGastroDiscountsForHome } from './gastro-demo-samples';
 
 const prisma = new PrismaClient();
 const TENANT_ID = 'tenant-demo';
@@ -525,8 +526,15 @@ async function ensureTicketType(eventId: string, fromPrice: number) {
     where: { eventId },
   });
   if (existing) return;
+  const event = await prisma.event.findUniqueOrThrow({
+    where: { id: eventId },
+    select: { tenantId: true, startAt: true, endAt: true },
+  });
+  const now = new Date();
+  const endAt = event.endAt ?? new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000);
   await prisma.ticketType.create({
     data: {
+      tenantId: event.tenantId,
       eventId,
       name: 'General',
       description: 'Entrada general',
@@ -536,6 +544,24 @@ async function ensureTicketType(eventId: string, fromPrice: number) {
       capacityAvailable: 100,
       maxPerOrder: 10,
       status: 'ACTIVE',
+      batches: {
+        create: {
+          tenantId: event.tenantId,
+          eventId,
+          orderIndex: 0,
+          name: 'General',
+          startAt: now,
+          endAt,
+          baseQuantity: 100,
+          rolloverQuantity: 0,
+          effectiveQuantity: 100,
+          reservedQuantity: 0,
+          soldCount: 0,
+          price: fromPrice,
+          currency: 'ARS',
+          status: 'ACTIVE',
+        },
+      },
     },
   });
 }
@@ -603,6 +629,10 @@ async function main() {
   console.log('Duplicate prevention: Stable IDs (demo-load-*), upsert by id.');
   console.log('\nRecommended flow: demo:seed -> demo:load');
   console.log('Password for cuenta_cargas@demo.com:', CARGA_PASSWORD);
+
+  const { gastroProfileId } = await ensureGastroDemoUser(prisma, tenant.id, hashPassword);
+  await ensureSampleGastroDiscountsForHome(prisma, tenant.id, gastroProfileId);
+  console.log('\nGastro login (documentación): gastro@demo.local /', CARGA_PASSWORD);
 }
 
 main()

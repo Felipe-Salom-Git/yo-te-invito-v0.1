@@ -1,302 +1,94 @@
 # AI_ENTRYPOINT.md
 AI Development Entry Point
 
-This file provides a **compressed overview of the entire project** so that AI development tools (Cursor, Antigravity, etc.) can quickly understand how the system works.
-
-AI tools should read this file **before generating or modifying code**.
-
-This document summarizes:
-
-- system architecture
-- module structure
-- development rules
-- backend and frontend conventions
-- AI development workflow
-
-For detailed documentation, refer to the files listed below.
+Read this file **before generating or modifying code**.
 
 ---
 
-# 1 Project Overview
+## 1. Project Overview
 
-**Ticketera – Yo Te Invito** is a platform for managing invitations and event participation.
+**Yo Te Invito** — multi-tenant platform for events, gastronomy, excursions, **equipment rentals**, and hotels: discovery, ticketing (demo payments), portals, scanner PWA.
 
-The system allows event organizers to:
-
-- create events
-- invite guests
-- track guest participation
-- manage event invitations
-- control guest access to events
-
-The system is built with **AI-assisted development** and relies heavily on **documentation-driven architecture**.
+Built with **documentation-driven architecture** and AI-assisted development.
 
 ---
 
-# 2 Tech Stack
+## 2. Tech Stack
 
-## Monorepo
-
-- Nx + pnpm workspaces
-- apps/web, apps/scanner, apps/api
-- packages/shared (types, Zod schemas, enums)
-
-## Backend
-
-- NestJS
-- TypeScript
-- Prisma ORM
-- PostgreSQL
-- Zod (request validation)
-
-## Frontend
-
-- Next.js (App Router)
-- React
-- TypeScript
-- TailwindCSS
-- TanStack Query
-- NextAuth (auth baseline)
-
-## Infrastructure
-
-- Docker (Postgres)
-- Environment-based configuration
+| Layer | Stack |
+|-------|--------|
+| Monorepo | Nx + pnpm — `apps/web`, `apps/api`, `apps/scanner`, `packages/shared` |
+| Backend | NestJS, Prisma, PostgreSQL, Zod |
+| Frontend | Next.js 15 App Router, React, Tailwind, TanStack Query, NextAuth |
+| Infra | Docker (Postgres), Redis (queues) |
 
 ---
 
-# 3 High-Level System Flow
+## 3. Request Flow
 
-System request flow:
+```
+User → Next.js → ApiRepository → NestJS Controller → Service → Prisma → PostgreSQL
+```
 
-User  
-↓  
-Frontend (Next.js / React)  
-↓  
-API Layer (NestJS Controllers)  
-↓  
-Service Layer (Business Logic)  
-↓  
-Prisma ORM  
-↓  
-PostgreSQL Database  
-
-Controllers orchestrate requests.  
-Services contain business logic.  
-Prisma handles database access.
+Controllers: HTTP + Zod only. Services: business logic. Prisma: persistence only.
 
 ---
 
-# 4 Core Architecture Rules
+## 4. Context documents (source of truth)
 
-The project follows a **layered architecture**.
+| File | Content |
+|------|---------|
+| **`AI_ENTRYPOINT.md`** | This index |
+| **`PROJECT_CONTEXT.md`** | Product vision, monorepo, scope, rentals domain |
+| **`BACKEND_CONTEXT.md`** | API modules, Prisma, endpoints, demo scripts |
+| **`FRONTEND_CONTEXT.md`** | Web app routes, repos, rental UI, components |
+| **`CONTEXT_PENDIENTES.md`** | Checkbox backlog — mark `[x]` when done |
+| **`FRONTEND_DEMO_NOTES.md`** | Legacy demo mapping (not current persistence) |
 
-Structure:
+**Ticket studio:** `docs/tickets/TICKET_CANVAS_STUDIO.md`
 
+**Rules:** `docs/rules/PROJECT_RULES.md`, `AI_WORKFLOW_RULES.md`, `AI_CODE_REVIEW_RULES.md`, `ARCHITECTURE_GUARDRAILS.md`
 
-Controller → Service → Prisma → Database
-
-
-Responsibilities:
-
-### Controllers
-
-Responsible for:
-
-- handling HTTP requests
-- validating inputs (Zod)
-- calling services
-- formatting responses
-
-Controllers must **NOT contain business logic**.
+**Architecture:** `docs/architecture/PROJECT_ARCHITECTURE.md`, `FOLDER_STRUCTURE.md`
 
 ---
 
-### Services
+## 5. Key folders
 
-Responsible for:
-
-- business rules
-- domain logic
-- orchestrating database operations
-- enforcing domain constraints
-
-Services must **NOT handle HTTP concerns**.
-
----
-
-### Prisma Layer
-
-Responsible for:
-
-- database access
-- queries
-- transactions
-- persistence
-
-No business rules should exist in the persistence layer.
+```
+docs/context/     ← start here
+docs/rules/
+apps/api/src/     ← NestJS modules
+apps/api/prisma/  ← schema + scripts (incl. cleanup-demo.ts)
+apps/web/         ← Next.js
+packages/shared/  ← Zod schemas
+```
 
 ---
 
-# 5 Validation Strategy
+## 6. AI workflow
 
-All API inputs must be validated using **Zod schemas**.
-
-Validation occurs in the **controller layer** before calling services.
-
-Example:
-
-- request body validation
-- query validation
-- route params validation
-
-Services assume validated input.
+1. Read relevant context + rules.
+2. Use templates in `docs/guides/` when adding modules.
+3. Small slices; ~300–400 lines per file.
+4. Update `CONTEXT_PENDIENTES.md` when closing backlog items.
 
 ---
 
-# 6 File Size Constraints
+## 7. Boundaries (do not break)
 
-To maintain AI readability and modularity:
-
-Recommended limits:
-
-
-~300–400 lines per file
-
-
-If a file grows beyond this size, it should be split into smaller modules.
+- No business logic in controllers.
+- No direct `fetch` / `localStorage` in web UI — use repositories.
+- Rental UX changes must not alter event/gastro/excursion detail behavior (use rental-specific components).
+- Do not invent Prisma models — read `schema.prisma`.
 
 ---
 
-# 7 Project Folder Structure
+## 8. Demo DB cleanup
 
-The project documentation describes the full folder structure.
+```bash
+pnpm db:cleanup-demo              # dry-run
+pnpm db:cleanup-demo -- --confirm # delete demo content (dev)
+```
 
-Key folders:
-
-
-docs/
-context/
-rules/
-architecture/
-backend/
-frontend/
-
-
-Backend (apps/api) structure:
-
-src/
-  main.ts
-  app.module.ts
-  health/
-  public/
-  scanner/
-  ... (domain modules)
-prisma/
-  schema.prisma
-
-
-Frontend (apps/web, apps/scanner) structure:
-
-app/         (App Router)
-  page.tsx
-  layout.tsx
-components/
-lib/
-  api/
-  query/
-
-
----
-
-# 8 Documentation System
-
-This project relies heavily on documentation to guide AI development.
-
-AI tools must read documentation before generating code.
-
-Primary documents:
-
-
-docs/context/PROJECT_CONTEXT.md
-docs/rules/PROJECT_RULES.md
-docs/rules/AI_WORKFLOW_RULES.md
-docs/rules/AI_CODE_REVIEW_RULES.md
-docs/rules/ARCHITECTURE_GUARDRAILS.md
-
-docs/architecture/PROJECT_ARCHITECTURE.md
-docs/architecture/SYSTEM_OVERVIEW.md
-docs/architecture/FOLDER_STRUCTURE.md
-
-
----
-
-# 9 AI Development Templates
-
-The project includes templates to enforce consistent code structure.
-
-Templates:
-
-
-ENDPOINT_TEMPLATE.md
-SERVICE_TEMPLATE.md
-REPOSITORY_TEMPLATE.md
-ERROR_HANDLING_TEMPLATE.md
-FRONTEND_COMPONENT_TEMPLATE.md
-HOOK_TEMPLATE.md
-DOCS_TEMPLATE.md
-
-
-AI tools must follow these templates when generating new modules.
-
----
-
-# 10 AI Development Workflow
-
-When implementing new features:
-
-1. Read the architecture documentation.
-2. Identify the module involved.
-3. Select the appropriate development template.
-4. Implement the feature following the layered architecture.
-5. Review the code against the AI code review rules.
-
-Documentation must always be considered the **source of truth**.
-
----
-
-# 11 Architectural Boundaries
-
-AI must respect the following boundaries:
-
-Controllers:
-- HTTP orchestration only
-
-Services:
-- business logic only
-
-Prisma:
-- persistence only
-
-Validation:
-- Zod schemas in controllers
-
-No layer should break these responsibilities.
-
----
-
-# 12 Important AI Rules
-
-AI must never:
-
-- invent new architectural patterns
-- bypass the service layer
-- add business logic to controllers
-- mix database access with controllers
-- create overly large files
-
-If a feature does not fit the architecture, AI must propose a design change before implementing it.
-
----
-
-# End of AI_ENTRYPOINT.md
+Preserves `felipe.e.salom@gmail.com` + tenant/config. See `BACKEND_CONTEXT.md`.

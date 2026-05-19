@@ -97,6 +97,28 @@ export class ProfilesAuthorizationService {
   }
 
   /**
+   * Check if user has active hotel membership.
+   */
+  async hasHotelAccess(tenantId: string, userId: string): Promise<boolean> {
+    const [membership, user] = await Promise.all([
+      this.prisma.userHotelMembership.findFirst({
+        where: {
+          tenantId,
+          userId,
+          status: 'ACTIVE',
+          profile: { status: 'ACTIVE' },
+        },
+      }),
+      this.prisma.user.findFirst({
+        where: { id: userId, tenantId, deletedAt: null },
+        select: { role: true },
+      }),
+    ]);
+    if (membership) return true;
+    return user?.role === 'HOTEL_OWNER';
+  }
+
+  /**
    * Check if user has active referrer membership.
    */
   async hasReferrerAccess(tenantId: string, userId: string): Promise<boolean> {

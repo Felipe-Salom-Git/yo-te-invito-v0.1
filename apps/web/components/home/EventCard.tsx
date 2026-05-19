@@ -7,6 +7,7 @@ const TENANT_ID = 'tenant-demo';
 
 function getDetailHref(event: EventSummary): string {
   const base = event.category === 'gastro' ? '/restaurants'
+    : event.category === 'hotel' ? '/hoteles'
     : event.category === 'excursion' ? '/excursiones'
     : event.category === 'rental' ? '/rentals'
     : '/events';

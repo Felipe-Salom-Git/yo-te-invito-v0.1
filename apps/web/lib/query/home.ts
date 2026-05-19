@@ -57,6 +57,12 @@ export function useHomeCarousels(options?: UseHomeCarouselsOptions) {
     enabled: !!t,
   });
 
+  const hotel = useQuery({
+    queryKey: homeKeys.category(t, 'hotel'),
+    queryFn: () => repos.events.list({ tenantId: t, category: 'hotel', limit: 8 }),
+    enabled: !!t,
+  });
+
   return {
     trending: trending.data ?? [],
     nearYou: nearYou.data?.data ?? [],
@@ -64,6 +70,13 @@ export function useHomeCarousels(options?: UseHomeCarouselsOptions) {
     gastro: gastro.data?.data ?? [],
     excursion: excursion.data?.data ?? [],
     rental: rental.data?.data ?? [],
-    isLoading: trending.isLoading || nearYou.isLoading,
+    hotel: hotel.data?.data ?? [],
+    isLoading:
+      trending.isLoading ||
+      nearYou.isLoading ||
+      gastro.isLoading ||
+      excursion.isLoading ||
+      rental.isLoading ||
+      hotel.isLoading,
   };
 }

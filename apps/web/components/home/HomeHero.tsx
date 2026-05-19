@@ -33,6 +33,8 @@ export interface HomeHeroProps {
   featuredTabs?: FeaturedTabConfig[];
   /** Hero items by tab id; used when featuredTabs is provided */
   heroItemsByCategory?: Record<string, FeaturedItem[]>;
+  /** Pre-select tab when arriving from category gateway (e.g. ?category=gastro) */
+  initialTabId?: string | null;
   isLoading?: boolean;
 }
 
@@ -120,11 +122,15 @@ export function HomeHero({
   featuredItems,
   featuredTabs = [],
   heroItemsByCategory = {},
+  initialTabId = null,
   isLoading = false,
 }: HomeHeroProps) {
-  const [selectedTabId, setSelectedTabId] = useState<string | null>(
-    featuredTabs.length > 0 ? featuredTabs[0].id : null
-  );
+  const defaultTabId =
+    initialTabId && featuredTabs.some((t) => t.id === initialTabId)
+      ? initialTabId
+      : featuredTabs[0]?.id ?? null;
+
+  const [selectedTabId, setSelectedTabId] = useState<string | null>(defaultTabId);
   const [index, setIndex] = useState(0);
 
   const sourceItems = useMemo(() => {
@@ -153,12 +159,16 @@ export function HomeHero({
 
   useEffect(() => {
     if (featuredTabs.length > 0) {
+      const preferred =
+        initialTabId && featuredTabs.some((t) => t.id === initialTabId)
+          ? initialTabId
+          : featuredTabs[0].id;
       const valid = featuredTabs.some((t) => t.id === selectedTabId);
-      if (!selectedTabId || !valid) setSelectedTabId(featuredTabs[0].id);
+      if (!selectedTabId || !valid) setSelectedTabId(preferred);
     } else {
       setSelectedTabId(null);
     }
-  }, [featuredTabs, selectedTabId]);
+  }, [featuredTabs, selectedTabId, initialTabId]);
 
   if (isLoading || candidates.length === 0) {
     return (

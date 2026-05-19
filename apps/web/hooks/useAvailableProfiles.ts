@@ -18,6 +18,7 @@ export function useAvailableProfiles() {
       tickets: getTicketsProfileStatus(),
       producer: getProfileStatusInfo(available, 'producer'),
       gastro: getProfileStatusInfo(available, 'gastro'),
+      hotel: getProfileStatusInfo(available, 'hotel'),
       referrer: getProfileStatusInfo(available, 'referrer'),
     };
     return map;

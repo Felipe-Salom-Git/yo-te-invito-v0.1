@@ -4,7 +4,7 @@ import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { useRepositories } from '@/repositories/context';
-import { PageContainer, SectionTitle } from '@/components';
+import { PageContainer, SectionTitle, Card, CardContent } from '@/components';
 
 const TENANT_ID = 'tenant-demo';
 
@@ -18,7 +18,21 @@ export default function GastroPortalPage() {
     enabled: status === 'authenticated',
   });
 
+  const { data: validations = [] } = useQuery({
+    queryKey: ['gastroValidations'],
+    queryFn: () => repos.gastro.listValidations(),
+    enabled: status === 'authenticated',
+  });
+
+  const firstEventId = eventsData?.data?.[0]?.id;
+  const { data: reviewsData } = useQuery({
+    queryKey: ['reviews', 'gastro-dash', firstEventId],
+    queryFn: () => repos.reviews.list(firstEventId!, TENANT_ID, 1, 1),
+    enabled: status === 'authenticated' && !!firstEventId,
+  });
+
   const events = eventsData?.data ?? [];
+  const reviewCount = reviewsData?.total ?? 0;
 
   if (status === 'loading') return <PageContainer><p className="text-text-muted">Loading…</p></PageContainer>;
   if (!session?.user) return <PageContainer><p>Iniciar sesión</p><Link href="/login" className="text-accent">Login</Link></PageContainer>;
@@ -28,6 +42,34 @@ export default function GastroPortalPage() {
       <Link href="/home" className="mb-4 inline-block text-sm text-text-muted hover:text-text">← Volver</Link>
       <SectionTitle>Portal Gastro</SectionTitle>
       <p className="mt-4 text-text-muted">Editor de contenido, descuentos y resumen.</p>
+
+      <div className="mt-6 grid gap-4 sm:grid-cols-3">
+        <Card>
+          <CardContent className="pt-4">
+            <p className="text-xs text-text-muted">Establecimientos en catálogo</p>
+            <p className="text-2xl font-bold text-text">{events.length}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4">
+            <p className="text-xs text-text-muted">Usos de descuentos</p>
+            <p className="text-2xl font-bold text-text">{validations.length}</p>
+            <Link href="/gastro/validaciones" className="mt-1 inline-block text-xs text-accent hover:underline">
+              Ver resumen
+            </Link>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4">
+            <p className="text-xs text-text-muted">Valoraciones (primer local)</p>
+            <p className="text-2xl font-bold text-text">{firstEventId ? reviewCount : '—'}</p>
+            <Link href="/gastro/valoraciones" className="mt-1 inline-block text-xs text-accent hover:underline">
+              Ver todas
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+
       <div className="mt-6 flex flex-wrap gap-2">
         <Link href="/gastro/contenido" className="rounded border border-accent px-4 py-2 text-accent hover:bg-accent/10">
           Contenido

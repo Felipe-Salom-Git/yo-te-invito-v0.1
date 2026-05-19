@@ -9,17 +9,30 @@ import { PublicProducersController } from './public-producers.controller';
 import { PublicProducersService } from './public-producers.service';
 import { PublicReferralController } from './public-referral.controller';
 import { PublicReviewsController } from './public-reviews.controller';
+import { PublicReferrersController } from './public-referrers.controller';
 import { ReferralsModule } from '../modules/referrals/referrals.module';
 import { ReviewsModule } from '../modules/reviews/reviews.module';
+import { ReferrerModule } from '../modules/referrer/referrer.module';
+import { TicketingModule } from '../ticketing/ticketing.module';
+import { SubcategoriesModule } from '../modules/subcategories/subcategories.module';
+import { RentalLocationsModule } from '../modules/rental-locations/rental-locations.module';
 
 @Module({
-  imports: [ReferralsModule, ReviewsModule],
+  imports: [
+    ReferralsModule,
+    ReviewsModule,
+    ReferrerModule,
+    TicketingModule,
+    SubcategoriesModule,
+    RentalLocationsModule,
+  ],
   controllers: [
     PublicEventsController,
     PublicTicketTypesController,
     PublicOrdersController,
     PublicProducersController,
     PublicReferralController,
+    PublicReferrersController,
     PublicReviewsController,
   ],
   providers: [

@@ -3,7 +3,6 @@
 import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import { useSession } from 'next-auth/react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRepositories } from '@/repositories/context';
 import { useCart } from '@/context/CartContext';
@@ -20,24 +19,28 @@ import { EventPurchaseCard } from '@/components/events/EventPurchaseCard';
 import { EventReviewsSection } from '@/components/events/EventReviewsSection';
 import { ReviewForm } from '@/components/reviews/ReviewForm';
 import { RelatedEventsSection } from '@/components/events/RelatedEventsSection';
+import { GastroPromosSection } from '@/components/events/GastroPromosSection';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { getCategoryLabel } from '@/lib/home/contentRoutes';
 import { useToast } from '@/components';
+import { EventEngagementRow } from '@/components/events/EventEngagementRow';
 import { getErrorMessage } from '@/lib/errors';
 import type { EntityType } from '@/lib/schemas/review';
 
-export type PlaceVariant = 'restaurant' | 'excursion' | 'rental';
+export type PlaceVariant = 'restaurant' | 'excursion' | 'rental' | 'hotel';
 
 const VARIANT_TO_CATEGORY: Record<PlaceVariant, string> = {
   restaurant: 'gastro',
   excursion: 'excursion',
   rental: 'rental',
+  hotel: 'hotel',
 };
 
 const CATEGORY_TO_ENTITY: Record<PlaceVariant, EntityType> = {
   restaurant: 'restaurant',
   excursion: 'excursion',
   rental: 'rental',
+  hotel: 'hotel',
 };
 
 export type PlaceDetailViewProps = {
@@ -47,7 +50,6 @@ export type PlaceDetailViewProps = {
 };
 
 export function PlaceDetailView({ id, variant, tenantId = 'tenant-demo' }: PlaceDetailViewProps) {
-  const { data: session } = useSession();
   const repos = useRepositories();
   const queryClient = useQueryClient();
   const { addItem } = useCart();
@@ -83,13 +85,19 @@ export function PlaceDetailView({ id, variant, tenantId = 'tenant-demo' }: Place
     enabled: !!tenantId && !!event,
   });
 
-  const userId =
-    (session?.user as { userId?: string })?.userId ??
-    (session?.user as { id?: string })?.id ??
-    'demo-user';
+  const { data: publicDiscountsData } = useQuery({
+    queryKey: ['events', 'public-discounts', id, tenantId],
+    queryFn: () => repos.events.listPublicDiscounts(id, tenantId),
+    enabled: !!id && !!tenantId && !!event && variant === 'restaurant',
+  });
+
   const createMutation = useMutation({
-    mutationFn: (payload: { score: number; comment?: string }) =>
-      repos.reviews.create(id, { score: payload.score, comment: payload.comment }, userId),
+    mutationFn: (payload: { score: number; comment?: string; guestName?: string }) =>
+      repos.reviews.create(id, {
+        score: payload.score,
+        comment: payload.comment,
+        guestName: payload.guestName,
+      }),
     onError: (err) => addToast(getErrorMessage(err), 'error'),
     onSuccess: () => {
       addToast('Valoración publicada', 'success');
@@ -128,7 +136,11 @@ export function PlaceDetailView({ id, variant, tenantId = 'tenant-demo' }: Place
     setQtyByType((p) => ({ ...p, [tt.id]: 0 }));
   };
 
-  const handleSubmitReview = (values: { score: number; comment?: string }) => {
+  const handleSubmitReview = (values: {
+    score: number;
+    comment?: string;
+    guestName?: string;
+  }) => {
     createMutation.mutate(values);
   };
 
@@ -160,6 +172,11 @@ export function PlaceDetailView({ id, variant, tenantId = 'tenant-demo' }: Place
       ? window.location.href
       : `${variant === 'restaurant' ? '/restaurants' : variant === 'excursion' ? '/excursiones' : '/rentals'}/${id}?tenantId=${tenantId}`;
 
+  const locationVenueName = event.venueName;
+  const locationAddress = event.venueAddress;
+  const locationGeoLat = event.geoLat;
+  const locationGeoLng = event.geoLng;
+
   return (
     <div className="min-h-screen bg-bg">
       <EventHeroPremium
@@ -180,6 +197,10 @@ export function PlaceDetailView({ id, variant, tenantId = 'tenant-demo' }: Place
             { label: event.title },
           ]}
         />
+
+        <div className="mt-4">
+          <EventEngagementRow eventId={id} />
+        </div>
 
         {/* Row 1: Top content (left) + Purchase (right) */}
         <div className="grid gap-8 lg:grid-cols-[1.65fr,1fr] lg:gap-12">
@@ -204,6 +225,10 @@ export function PlaceDetailView({ id, variant, tenantId = 'tenant-demo' }: Place
               startAt={event.startAt}
               endAt={event.endAt}
             />
+
+            {variant === 'restaurant' && (
+              <GastroPromosSection discounts={publicDiscountsData?.discounts ?? []} />
+            )}
           </div>
 
           <div className="lg:self-start order-2" id="comprar">
@@ -222,7 +247,7 @@ export function PlaceDetailView({ id, variant, tenantId = 'tenant-demo' }: Place
                 <p className="text-text-muted">
                   {variant === 'restaurant' && 'Reservá por WhatsApp o consultá disponibilidad.'}
                   {variant === 'excursion' && 'Contactanos por WhatsApp para más información.'}
-                  {variant === 'rental' && 'Consultá disponibilidad por WhatsApp.'}
+                  {variant === 'hotel' && 'Consultá tarifas y disponibilidad por WhatsApp o en la web del hotel.'}
                 </p>
                 <a
                   href={`https://wa.me/5491112345678?text=${encodeURIComponent(`Hola, me interesa ${event.title}`)}`}
@@ -262,11 +287,11 @@ export function PlaceDetailView({ id, variant, tenantId = 'tenant-demo' }: Place
           </div>
           <div className="order-2 flex flex-col min-h-[280px]">
             <EventLocationSection
-              venueName={event.venueName}
-              venueAddress={event.venueAddress}
+              venueName={locationVenueName}
+              venueAddress={locationAddress}
               city={event.city}
-              geoLat={event.geoLat}
-              geoLng={event.geoLng}
+              geoLat={locationGeoLat}
+              geoLng={locationGeoLng}
               fillHeight
             />
           </div>
@@ -295,11 +320,11 @@ export function PlaceDetailView({ id, variant, tenantId = 'tenant-demo' }: Place
       <EventLocationModal
         isOpen={isLocationModalOpen}
         onClose={() => setIsLocationModalOpen(false)}
-        venueName={event.venueName}
-        venueAddress={event.venueAddress}
+        venueName={locationVenueName}
+        venueAddress={locationAddress}
         city={event.city}
-        geoLat={event.geoLat}
-        geoLng={event.geoLng}
+        geoLat={locationGeoLat}
+        geoLng={locationGeoLng}
       />
     </div>
   );

@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useExploreEvents } from '@/lib/query/explore';
 import { usePlatformConfig } from '@/hooks/usePlatformConfig';
 import { ContentCard, type ContentCardItem } from '@/components/home/ContentCard';
@@ -17,7 +18,8 @@ const DEFAULT_CATEGORIES = [
   { value: 'rental', label: 'Alquileres' },
 ];
 
-export default function ExplorePage() {
+function ExplorePageContent() {
+  const searchParams = useSearchParams();
   const { data: config } = usePlatformConfig();
   const categories = useMemo(() => {
     const fromConfig = config?.categories ?? [];
@@ -35,6 +37,14 @@ export default function ExplorePage() {
   const [category, setCategory] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    const fromUrl = searchParams.get('category');
+    if (!fromUrl) return;
+    setCategory(fromUrl);
+    setSubmitted(true);
+    setPage(1);
+  }, [searchParams]);
 
   const filters = submitted || q || city || category ? { q, city, dateFrom: dateFrom || undefined, dateTo: dateTo || undefined, category: category || undefined, page } : { page: 1 };
   const { data, isLoading } = useExploreEvents(filters);
@@ -161,5 +171,13 @@ export default function ExplorePage() {
         </div>
       )}
     </PageContainer>
+  );
+}
+
+export default function ExplorePage() {
+  return (
+    <Suspense fallback={<PageContainer><p className="text-text-muted">Cargando…</p></PageContainer>}>
+      <ExplorePageContent />
+    </Suspense>
   );
 }

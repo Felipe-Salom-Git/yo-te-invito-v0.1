@@ -4,18 +4,30 @@ import {
   ForbiddenException,
   BadRequestException,
 } from '@nestjs/common';
+import { TicketBatchStatus, type TicketBatch } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { TicketBatchService, pickActiveBatch } from '../../ticketing/ticket-batch.service';
 import type {
   CreateTicketTypeDto,
   UpdateTicketTypeDto,
   TicketTypeResponse,
+  TicketBatchResponse,
 } from '@yo-te-invito/shared';
 import { ErrorCode } from '@yo-te-invito/shared';
 import { Decimal } from '@prisma/client/runtime/library';
 
+function deriveBatchStatus(start: Date, end: Date, now: Date): TicketBatchStatus {
+  if (now.getTime() < start.getTime()) return 'SCHEDULED';
+  if (now.getTime() > end.getTime()) return 'CLOSED';
+  return 'ACTIVE';
+}
+
 @Injectable()
 export class ProducerTicketTypesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly ticketBatches: TicketBatchService,
+  ) {}
 
   private async assertEventOwnedByUser(
     eventId: string,
@@ -25,7 +37,7 @@ export class ProducerTicketTypesService {
   ) {
     const event = await this.prisma.event.findFirst({
       where: { id: eventId, tenantId, deletedAt: null },
-      select: { id: true, producerId: true, isTicketingEnabled: true },
+      select: { id: true, producerId: true, isTicketingEnabled: true, tenantId: true },
     });
     if (!event) {
       throw new NotFoundException({
@@ -44,21 +56,60 @@ export class ProducerTicketTypesService {
     return event;
   }
 
-  private toResponse(t: {
+  private batchToResponse(b: {
     id: string;
-    eventId: string;
+    ticketTypeId: string;
+    orderIndex: number;
     name: string;
-    description: string | null;
+    startAt: Date;
+    endAt: Date;
+    baseQuantity: number;
+    rolloverQuantity: number;
+    effectiveQuantity: number;
+    reservedQuantity: number;
+    soldCount: number;
     price: Decimal;
     currency: string;
-    capacityTotal: number;
-    capacityAvailable: number;
-    maxPerOrder: number;
-    salesStartAt: Date | null;
-    salesEndAt: Date | null;
-    status: string;
-  }): TicketTypeResponse {
+    status: TicketBatchStatus;
+  }): TicketBatchResponse {
     return {
+      id: b.id,
+      ticketTypeId: b.ticketTypeId,
+      orderIndex: b.orderIndex,
+      name: b.name,
+      startAt: b.startAt.toISOString(),
+      endAt: b.endAt.toISOString(),
+      baseQuantity: b.baseQuantity,
+      rolloverQuantity: b.rolloverQuantity,
+      effectiveQuantity: b.effectiveQuantity,
+      reservedQuantity: b.reservedQuantity,
+      soldCount: b.soldCount,
+      price: b.price.toString(),
+      currency: b.currency,
+      status: b.status,
+    };
+  }
+
+  private toResponse(
+    t: {
+      id: string;
+      eventId: string;
+      name: string;
+      description: string | null;
+      price: Decimal;
+      currency: string;
+      capacityTotal: number;
+      capacityAvailable: number;
+      maxPerOrder: number;
+      salesStartAt: Date | null;
+      salesEndAt: Date | null;
+      status: string;
+      ticketTemplateId?: string | null;
+    },
+    batches?: Array<Parameters<ProducerTicketTypesService['batchToResponse']>[0]>,
+    now = new Date(),
+  ): TicketTypeResponse {
+    const base: TicketTypeResponse = {
       id: t.id,
       eventId: t.eventId,
       name: t.name,
@@ -71,7 +122,41 @@ export class ProducerTicketTypesService {
       salesStartAt: t.salesStartAt?.toISOString() ?? null,
       salesEndAt: t.salesEndAt?.toISOString() ?? null,
       status: t.status as 'ACTIVE' | 'PAUSED',
+      ticketTemplateId: t.ticketTemplateId ?? null,
     };
+    if (!batches?.length) return base;
+    const active = pickActiveBatch(batches as TicketBatch[], now);
+    const batchViews = batches.map((b) => this.batchToResponse(b));
+    return {
+      ...base,
+      batches: batchViews,
+      activeTicketBatchId: active?.id ?? null,
+    };
+  }
+
+  async listForProducer(
+    tenantId: string,
+    eventId: string,
+    userId: string,
+    userRole: string,
+  ): Promise<TicketTypeResponse[]> {
+    await this.assertEventOwnedByUser(eventId, tenantId, userId, userRole);
+    const now = new Date();
+    await this.prisma.$transaction(async (tx) => {
+      const types = await tx.ticketType.findMany({
+        where: { eventId, deletedAt: null },
+        select: { id: true },
+      });
+      for (const tt of types) {
+        await this.ticketBatches.reconcileTicketType(tx, tt.id, now);
+      }
+    });
+    const types = await this.prisma.ticketType.findMany({
+      where: { eventId, deletedAt: null },
+      include: { batches: { orderBy: { orderIndex: 'asc' } } },
+      orderBy: { name: 'asc' },
+    });
+    return types.map((row) => this.toResponse(row, row.batches, now));
   }
 
   async create(
@@ -81,24 +166,105 @@ export class ProducerTicketTypesService {
     userRole: string,
     body: CreateTicketTypeDto,
   ): Promise<TicketTypeResponse> {
-    await this.assertEventOwnedByUser(eventId, tenantId, userId, userRole);
+    const event = await this.assertEventOwnedByUser(eventId, tenantId, userId, userRole);
+    const now = new Date();
+
+    if (body.batches?.length) {
+      const sorted = [...body.batches].sort((a, b) => a.orderIndex - b.orderIndex);
+      const firstPrice = sorted[0]!.price;
+      const typePrice = body.price ?? firstPrice;
+      const minStart = sorted.reduce(
+        (m, b) => (new Date(b.startAt) < m ? new Date(b.startAt) : m),
+        new Date(sorted[0]!.startAt),
+      );
+      const maxEnd = sorted.reduce(
+        (m, b) => (new Date(b.endAt) > m ? new Date(b.endAt) : m),
+        new Date(sorted[0]!.endAt),
+      );
+
+      const ticketType = await this.prisma.ticketType.create({
+        data: {
+          tenantId: event.tenantId,
+          eventId,
+          name: body.name,
+          description: body.description ?? null,
+          price: new Decimal(typePrice),
+          currency: body.currency ?? 'ARS',
+          capacityTotal: body.capacityTotal,
+          capacityAvailable: body.capacityTotal,
+          maxPerOrder: body.maxPerOrder ?? 10,
+          salesStartAt: body.salesStartAt ? new Date(body.salesStartAt) : minStart,
+          salesEndAt: body.salesEndAt ? new Date(body.salesEndAt) : maxEnd,
+          status: 'ACTIVE',
+          batches: {
+            create: sorted.map((b) => ({
+              tenantId: event.tenantId,
+              eventId,
+              orderIndex: b.orderIndex,
+              name: b.name,
+              startAt: new Date(b.startAt),
+              endAt: new Date(b.endAt),
+              baseQuantity: b.baseQuantity,
+              rolloverQuantity: 0,
+              effectiveQuantity: b.baseQuantity,
+              reservedQuantity: 0,
+              soldCount: 0,
+              price: new Decimal(b.price),
+              currency: body.currency ?? 'ARS',
+              status: deriveBatchStatus(new Date(b.startAt), new Date(b.endAt), now),
+            })),
+          },
+        },
+        include: { batches: { orderBy: { orderIndex: 'asc' } } },
+      });
+
+      await this.prisma.event.update({
+        where: { id: eventId },
+        data: { isTicketingEnabled: true },
+      });
+
+      return this.toResponse(ticketType, ticketType.batches, now);
+    }
+
+    const startAt = body.salesStartAt ? new Date(body.salesStartAt) : now;
+    const endAt = body.salesEndAt
+      ? new Date(body.salesEndAt)
+      : new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000);
 
     const ticketType = await this.prisma.ticketType.create({
       data: {
+        tenantId: event.tenantId,
         eventId,
         name: body.name,
         description: body.description ?? null,
-        price: new Decimal(body.price),
+        price: new Decimal(body.price!),
         currency: body.currency ?? 'ARS',
         capacityTotal: body.capacityTotal,
         capacityAvailable: body.capacityTotal,
         maxPerOrder: body.maxPerOrder ?? 10,
-        salesStartAt: body.salesStartAt
-          ? new Date(body.salesStartAt)
-          : null,
+        salesStartAt: body.salesStartAt ? new Date(body.salesStartAt) : null,
         salesEndAt: body.salesEndAt ? new Date(body.salesEndAt) : null,
         status: 'ACTIVE',
+        batches: {
+          create: {
+            tenantId: event.tenantId,
+            eventId,
+            orderIndex: 0,
+            name: body.name,
+            startAt,
+            endAt,
+            baseQuantity: body.capacityTotal,
+            rolloverQuantity: 0,
+            effectiveQuantity: body.capacityTotal,
+            reservedQuantity: 0,
+            soldCount: 0,
+            price: new Decimal(body.price!),
+            currency: body.currency ?? 'ARS',
+            status: deriveBatchStatus(startAt, endAt, now),
+          },
+        },
       },
+      include: { batches: { orderBy: { orderIndex: 'asc' } } },
     });
 
     await this.prisma.event.update({
@@ -106,7 +272,7 @@ export class ProducerTicketTypesService {
       data: { isTicketingEnabled: true },
     });
 
-    return this.toResponse(ticketType);
+    return this.toResponse(ticketType, ticketType.batches, now);
   }
 
   async getEventTicketsForProducer(
@@ -153,6 +319,7 @@ export class ProducerTicketTypesService {
 
     const existing = await this.prisma.ticketType.findFirst({
       where: { id: ticketTypeId, eventId, deletedAt: null },
+      include: { batches: { orderBy: { orderIndex: 'asc' } } },
     });
 
     if (!existing) {
@@ -167,6 +334,83 @@ export class ProducerTicketTypesService {
         code: 'BAD_REQUEST',
         message: 'capacityTotal cannot be less than already sold capacity',
       });
+    }
+
+    const now = new Date();
+
+    if (body.batches?.length) {
+      const orderItems = await this.prisma.orderItem.count({
+        where: { ticketTypeId },
+      });
+      const prevSold = existing.capacityTotal - existing.capacityAvailable;
+      if (orderItems > 0 || prevSold > 0) {
+        throw new BadRequestException({
+          code: 'BAD_REQUEST',
+          message:
+            'Cannot replace batches when orders exist or tickets have been sold for this type',
+        });
+      }
+      const capacityTotal =
+        body.capacityTotal ??
+        body.batches.reduce((s, b) => s + b.baseQuantity, 0);
+      const sorted = [...body.batches].sort((a, b) => a.orderIndex - b.orderIndex);
+      const minStart = sorted.reduce(
+        (m, b) => (new Date(b.startAt) < m ? new Date(b.startAt) : m),
+        new Date(sorted[0]!.startAt),
+      );
+      const maxEnd = sorted.reduce(
+        (m, b) => (new Date(b.endAt) > m ? new Date(b.endAt) : m),
+        new Date(sorted[0]!.endAt),
+      );
+      const firstPrice = sorted[0]!.price;
+
+      const ticketType = await this.prisma.$transaction(async (tx) => {
+        await tx.ticketBatch.deleteMany({ where: { ticketTypeId } });
+        return tx.ticketType.update({
+          where: { id: ticketTypeId },
+          data: {
+            ...(body.name !== undefined && { name: body.name }),
+            ...(body.description !== undefined && { description: body.description }),
+            ...(body.price !== undefined && { price: new Decimal(body.price) }),
+            ...(body.maxPerOrder !== undefined && { maxPerOrder: body.maxPerOrder }),
+            ...(body.status !== undefined && { status: body.status }),
+            capacityTotal,
+            capacityAvailable: capacityTotal,
+            price: new Decimal(body.price ?? firstPrice),
+            salesStartAt: body.salesStartAt !== undefined
+              ? body.salesStartAt
+                ? new Date(body.salesStartAt)
+                : null
+              : minStart,
+            salesEndAt: body.salesEndAt !== undefined
+              ? body.salesEndAt
+                ? new Date(body.salesEndAt)
+                : null
+              : maxEnd,
+            batches: {
+              create: sorted.map((b) => ({
+                tenantId: existing.tenantId,
+                eventId,
+                orderIndex: b.orderIndex,
+                name: b.name,
+                startAt: new Date(b.startAt),
+                endAt: new Date(b.endAt),
+                baseQuantity: b.baseQuantity,
+                rolloverQuantity: 0,
+                effectiveQuantity: b.baseQuantity,
+                reservedQuantity: 0,
+                soldCount: 0,
+                price: new Decimal(b.price),
+                currency: existing.currency,
+                status: deriveBatchStatus(new Date(b.startAt), new Date(b.endAt), now),
+              })),
+            },
+          },
+          include: { batches: { orderBy: { orderIndex: 'asc' } } },
+        });
+      });
+
+      return this.toResponse(ticketType, ticketType.batches, now);
     }
 
     const ticketType = await this.prisma.ticketType.update({
@@ -185,11 +429,22 @@ export class ProducerTicketTypesService {
         ...(body.status !== undefined && { status: body.status }),
         ...(body.capacityTotal !== undefined && {
           capacityTotal: body.capacityTotal,
-          capacityAvailable: existing.capacityAvailable + (body.capacityTotal - existing.capacityTotal),
+          capacityAvailable:
+            existing.capacityAvailable + (body.capacityTotal - existing.capacityTotal),
         }),
       },
+      include: { batches: { orderBy: { orderIndex: 'asc' } } },
     });
 
-    return this.toResponse(ticketType);
+    await this.prisma.$transaction(async (tx) => {
+      await this.ticketBatches.reconcileTicketType(tx, ticketTypeId, now);
+    });
+
+    const refreshed = await this.prisma.ticketType.findUniqueOrThrow({
+      where: { id: ticketTypeId },
+      include: { batches: { orderBy: { orderIndex: 'asc' } } },
+    });
+
+    return this.toResponse(refreshed, refreshed.batches, now);
   }
 }

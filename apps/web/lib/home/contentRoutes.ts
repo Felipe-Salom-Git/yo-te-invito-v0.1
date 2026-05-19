@@ -17,11 +17,13 @@ export function getContentDetailHref(
   const base =
     item.category === 'gastro'
       ? '/restaurants'
-      : item.category === 'excursion'
-        ? '/excursiones'
-        : item.category === 'rental'
-          ? '/rentals'
-          : '/events';
+      : item.category === 'hotel'
+        ? '/hoteles'
+        : item.category === 'excursion'
+          ? '/excursiones'
+          : item.category === 'rental'
+            ? '/rentals'
+            : '/events';
   return `${base}/${item.id}?tenantId=${tenant}`;
 }
 
@@ -29,6 +31,8 @@ export function getCategoryLabel(category?: string): string {
   switch (category) {
     case 'gastro':
       return 'Gastronomía';
+    case 'hotel':
+      return 'Hotel';
     case 'excursion':
       return 'Excursión';
     case 'rental':
@@ -47,6 +51,8 @@ export function getPlaceHeroCtaLabel(category?: string): string {
   switch (category) {
     case 'gastro':
       return 'Reservar';
+    case 'hotel':
+      return 'Reservar / consultar';
     case 'excursion':
       return 'Explorar';
     case 'rental':
@@ -61,6 +67,8 @@ export function getRelatedSectionTitle(category?: string): string {
   switch (category) {
     case 'gastro':
       return 'Restaurantes que también te pueden gustar';
+    case 'hotel':
+      return 'Hoteles que también te pueden interesar';
     case 'excursion':
       return 'Excursiones que también te pueden gustar';
     case 'rental':
@@ -74,6 +82,8 @@ export function getSecondaryCtaLabel(category?: string): string {
   switch (category) {
     case 'gastro':
       return 'Ver restaurante';
+    case 'hotel':
+      return 'Ver hotel';
     case 'excursion':
       return 'Explorar';
     case 'rental':
@@ -88,6 +98,8 @@ export function getSecondaryCtaLabelForModal(category?: string): string {
   switch (category) {
     case 'gastro':
       return 'Reservar';
+    case 'hotel':
+      return 'Ver detalle';
     case 'excursion':
       return 'Explorar';
     case 'rental':
