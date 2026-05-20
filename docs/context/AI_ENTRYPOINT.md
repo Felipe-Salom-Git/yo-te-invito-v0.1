@@ -45,6 +45,8 @@ Controllers: HTTP + Zod only. Services: business logic. Prisma: persistence only
 | **`CONTEXT_PENDIENTES.md`** | Checkbox backlog — mark `[x]` when done |
 | **`FRONTEND_DEMO_NOTES.md`** | Legacy demo mapping (not current persistence) |
 
+**Portal productor (perfil por bloques, reseñas públicas, disputas, valoraciones comerciales B2B):** detalle en `PROJECT_CONTEXT.md`, API en `BACKEND_CONTEXT.md`, rutas/repos en `FRONTEND_CONTEXT.md`, seguimiento en `CONTEXT_PENDIENTES.md` § K.
+
 **Ticket studio:** `docs/tickets/TICKET_CANVAS_STUDIO.md`
 
 **Rules:** `docs/rules/PROJECT_RULES.md`, `AI_WORKFLOW_RULES.md`, `AI_CODE_REVIEW_RULES.md`, `ARCHITECTURE_GUARDRAILS.md`
