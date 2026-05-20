@@ -16,11 +16,20 @@ const STATUS_MESSAGES: Record<number, string> = {
 
 export function getErrorMessage(err: unknown): string {
   if (err instanceof ApiClientError) {
+    const body = err.body && typeof err.body === 'object' ? (err.body as Record<string, unknown>) : null;
+    const details = body?.details;
+    if (Array.isArray(details) && details.length > 0) {
+      const first = details[0] as { path?: unknown[]; message?: string };
+      const path =
+        Array.isArray(first.path) && first.path.length > 0
+          ? first.path.join('.')
+          : null;
+      const msg = first.message?.trim();
+      if (msg) return path ? `${path}: ${msg}` : msg;
+    }
     const fromBody =
-      err.body && typeof err.body === 'object' && 'message' in err.body
-        ? String((err.body as { message?: string }).message)
-        : null;
-    if (fromBody && fromBody.trim()) return fromBody;
+      body && 'message' in body && typeof body.message === 'string' ? body.message : null;
+    if (fromBody && fromBody.trim() && fromBody !== 'Validation failed') return fromBody;
     return STATUS_MESSAGES[err.status] ?? err.message ?? `Error (${err.status})`;
   }
   if (err instanceof Error && err.message) return err.message;

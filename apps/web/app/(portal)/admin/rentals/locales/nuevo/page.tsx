@@ -8,8 +8,14 @@ import { createEmptyRentalOpeningHours } from '@yo-te-invito/shared';
 import { useRepositories } from '@/repositories/context';
 import { PageContainer, SectionTitle, Button, Input, useToast } from '@/components';
 import { getErrorMessage } from '@/lib/errors';
-import { LatLngMapPreview } from '@/components/admin/LatLngMapPreview';
 import { OpeningHoursEditor } from '@/components/forms/OpeningHoursEditor';
+import {
+  EMPTY_LOCATION_VALUE,
+  RentalLocationFields,
+  rentalLocationPayloadFromLocationValue,
+  validateLocationValue,
+  type LocationValue,
+} from '@/components/location';
 
 const TENANT_ID = 'tenant-demo';
 
@@ -18,23 +24,24 @@ export default function AdminRentalLocalNuevoPage() {
   const repos = useRepositories();
   const { addToast } = useToast();
   const [name, setName] = useState('');
-  const [address, setAddress] = useState('');
+  const [location, setLocation] = useState<LocationValue>(EMPTY_LOCATION_VALUE);
   const [openingHours, setOpeningHours] = useState(() => createEmptyRentalOpeningHours());
   const [openingHoursNote, setOpeningHoursNote] = useState('');
-  const [geoLat, setGeoLat] = useState('');
-  const [geoLng, setGeoLng] = useState('');
+  const [locationError, setLocationError] = useState<string | null>(null);
 
   const createMutation = useMutation({
-    mutationFn: () =>
-      repos.rentalLocations.create({
+    mutationFn: () => {
+      const geo = rentalLocationPayloadFromLocationValue(location);
+      return repos.rentalLocations.create({
         tenantId: TENANT_ID,
         name: name.trim(),
-        address: address.trim() || null,
+        address: geo.address,
         openingHours,
         openingHoursNote: openingHoursNote.trim() || null,
-        geoLat: geoLat ? Number(geoLat) : null,
-        geoLng: geoLng ? Number(geoLng) : null,
-      }),
+        geoLat: geo.geoLat,
+        geoLng: geo.geoLng,
+      });
+    },
     onError: (err) => addToast(getErrorMessage(err), 'error'),
     onSuccess: (loc) => router.push(`/admin/rentals/locales/${loc.id}`),
   });
@@ -42,6 +49,12 @@ export default function AdminRentalLocalNuevoPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
+    const locErr = validateLocationValue(location, { requireAddress: false });
+    if (locErr) {
+      setLocationError(locErr);
+      return;
+    }
+    setLocationError(null);
     createMutation.mutate();
   };
 
@@ -57,11 +70,11 @@ export default function AdminRentalLocalNuevoPage() {
 
       <form onSubmit={handleSubmit} className="mt-6 max-w-2xl space-y-4">
         <Input label="Nombre" value={name} onChange={(e) => setName(e.target.value)} required />
-        <Input
-          label="Dirección"
-          value={address}
-          onChange={(e) => setAddress(e.target.value)}
-          placeholder="Calle, número, ciudad"
+
+        <RentalLocationFields
+          value={location}
+          onChange={setLocation}
+          mapError={locationError ?? undefined}
         />
 
         <OpeningHoursEditor
@@ -70,29 +83,6 @@ export default function AdminRentalLocalNuevoPage() {
           note={openingHoursNote}
           onNoteChange={setOpeningHoursNote}
         />
-
-        <fieldset className="space-y-2">
-          <legend className="mb-1.5 text-sm font-medium text-text">Ubicación en Maps</legend>
-          <div>
-            <Input
-              label="Lat"
-              type="number"
-              step="any"
-              value={geoLat}
-              onChange={(e) => setGeoLat(e.target.value)}
-              placeholder="-34.6037"
-            />
-            <Input
-              label="Lng"
-              type="number"
-              step="any"
-              value={geoLng}
-              onChange={(e) => setGeoLng(e.target.value)}
-              placeholder="-58.3816"
-            />
-          </div>
-          <LatLngMapPreview lat={geoLat} lng={geoLng} />
-        </fieldset>
 
         <div>
           <Button type="submit" disabled={createMutation.isPending}>

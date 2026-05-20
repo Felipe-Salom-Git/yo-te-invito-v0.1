@@ -4,12 +4,15 @@ import { useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import type { EventSummary } from '@/repositories/interfaces';
+import { CategorySectionHeading } from '@/components/categories/CategorySectionHeading';
 import { ContentCard, type ContentCardItem } from './ContentCard';
 import { ContentCardSkeleton } from './ContentCardSkeleton';
 
 export interface ContentRailProps {
   title: string;
   subtitle?: string;
+  /** Category landing pages use Subcategorías-style headings */
+  headingVariant?: 'home' | 'category';
   items: EventSummary[];
   isLoading?: boolean;
   /** Anchor id for scroll-into-view (e.g. category gateway deep link) */
@@ -33,8 +36,21 @@ export function ContentRail({
   seeMoreHref,
   seeMoreLabel = 'Ver más',
   emptyMessage,
+  headingVariant = 'home',
 }: ContentRailProps) {
+  const isCategoryHeading = headingVariant === 'category';
+  const railPad = isCategoryHeading ? 'px-4 sm:px-6' : 'px-4 sm:px-6 lg:px-8';
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const railHeading = isCategoryHeading ? (
+    <CategorySectionHeading title={title} subtitle={subtitle} />
+  ) : (
+    <div>
+      <h2 className="text-xl font-semibold tracking-tight text-white md:text-2xl">{title}</h2>
+      <div className="mt-2 h-[3px] w-12 rounded-full bg-accent" aria-hidden />
+      {subtitle ? <p className="mt-2 text-sm text-text-muted">{subtitle}</p> : null}
+    </div>
+  );
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
 
@@ -69,13 +85,9 @@ export function ContentRail({
   if (items.length === 0 && !isLoading) {
     if (emptyMessage) {
       return (
-        <section id={sectionId} className="relative mt-10 scroll-mt-24 px-4 sm:px-6 lg:px-8">
+        <section id={sectionId} className={`relative mt-10 scroll-mt-24 ${railPad}`}>
           <div className="mb-4 flex items-end justify-between gap-3">
-            <div>
-              <h2 className="text-xl font-semibold tracking-tight text-white md:text-2xl">{title}</h2>
-              <div className="mt-2 h-[3px] w-12 rounded-full bg-accent" aria-hidden />
-              {subtitle && <p className="mt-2 text-sm text-text-muted">{subtitle}</p>}
-            </div>
+            {railHeading}
             {seeMoreHref && (
               <Link
                 href={seeMoreHref}
@@ -100,16 +112,8 @@ export function ContentRail({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: 'easeOut' }}
     >
-      <div className="mb-4 flex items-end justify-between gap-3 px-4 sm:px-6 lg:px-8">
-        <div>
-          <h2 className="text-xl font-semibold tracking-tight text-white md:text-2xl">
-            {title}
-          </h2>
-          <div className="mt-2 h-[3px] w-12 rounded-full bg-accent" aria-hidden />
-          {subtitle && (
-            <p className="mt-2 text-sm text-text-muted">{subtitle}</p>
-          )}
-        </div>
+      <div className={`mb-4 flex items-end justify-between gap-3 ${railPad}`}>
+        {railHeading}
         {seeMoreHref && (
           <Link
             href={seeMoreHref}
@@ -138,7 +142,7 @@ export function ContentRail({
         />
 
         {/* Scroll arrows — aligned with rail padding, z-50 above cards */}
-        <div className="pointer-events-none absolute inset-y-0 left-0 right-0 z-50 flex items-center justify-between px-4 sm:px-6 lg:px-8">
+        <div className={`pointer-events-none absolute inset-y-0 left-0 right-0 z-50 flex items-center justify-between ${railPad}`}>
           <button
             type="button"
             onClick={() => scroll('left')}
@@ -163,7 +167,7 @@ export function ContentRail({
         <div
           ref={scrollRef}
           onScroll={updateScrollState}
-          className="flex gap-5 overflow-x-auto overflow-y-visible px-4 py-4 pb-8 sm:px-6 lg:px-8 scrollbar-hide"
+          className={`flex gap-5 overflow-x-auto overflow-y-visible py-4 pb-8 scrollbar-hide ${railPad}`}
         >
           {isLoading ? (
             Array.from({ length: 4 }).map((_, i) => (

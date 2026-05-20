@@ -24,6 +24,9 @@ import { ReviewForm } from '@/components/reviews/ReviewForm';
 import { RelatedEventsSection } from '@/components/events/RelatedEventsSection';
 import { EventMobileStickyCta } from '@/components/events/EventMobileStickyCta';
 import { EventEngagementRow } from '@/components/events/EventEngagementRow';
+import { EventProducerCard } from '@/components/events/EventProducerCard';
+import { EventPublicityInfoCard } from '@/components/events/detail/EventPublicityInfoCard';
+import { EventSectionCard } from '@/components/events/detail/EventSectionCard';
 import { useToast } from '@/components';
 
 const DEFAULT_TENANT_ID = 'tenant-demo';
@@ -56,7 +59,7 @@ export default function EventDetailPage() {
   const { data: ticketTypes } = useQuery({
     queryKey: ['ticketTypes', eventId],
     queryFn: () => repos.events.getTicketTypes(eventId),
-    enabled: !!eventId && !!event?.isTicketingEnabled,
+    enabled: !!eventId && !!event?.isTicketingEnabled && !event?.isGeneralPublication,
   });
 
   const { data: reviewsData } = useQuery({
@@ -187,10 +190,19 @@ export default function EventDetailPage() {
         )
       : null;
 
-  const showMobileSticky =
+  const canPurchaseTickets =
+    !event.isGeneralPublication &&
     event.isTicketingEnabled &&
     ticketTypes &&
     ticketTypes.length > 0;
+
+  const showMobileSticky = canPurchaseTickets;
+  const isProducerEvent = !event.category || event.category === 'event';
+  const showTicketingSoon =
+    isProducerEvent &&
+    !event.isGeneralPublication &&
+    event.isTicketingEnabled &&
+    !canPurchaseTickets;
 
   return (
     <div className="min-h-screen bg-bg pb-20 md:pb-0">
@@ -205,23 +217,23 @@ export default function EventDetailPage() {
       />
 
       <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 md:px-8">
-        <Breadcrumbs
-          items={[
-            { label: 'Inicio', href: '/home' },
-            { label: getCategoryLabel(event.category), href: '/explore' },
-            { label: event.title },
-          ]}
-        />
+        <div className="grid gap-8 lg:grid-cols-[1.65fr,1fr] lg:items-start lg:gap-x-12 lg:gap-y-8">
+          <div className="lg:col-span-2">
+            <Breadcrumbs
+              items={[
+                { label: 'Inicio', href: '/home' },
+                { label: getCategoryLabel(event.category), href: '/explore' },
+                { label: event.title },
+              ]}
+            />
+            <div className="mt-4">
+              <EventEngagementRow eventId={eventId} />
+            </div>
+          </div>
 
-        <div className="mt-4">
-          <EventEngagementRow eventId={eventId} />
-        </div>
-
-        {/* Row 1: Top content (left) + Purchase (right) */}
-        <div className="grid gap-8 lg:grid-cols-[1.65fr,1fr] lg:gap-12">
-          <div className="min-w-0 space-y-0 order-1">
+          <div className="min-w-0 flex flex-col gap-10">
             {event.description && (
-              <section className="mt-10 first:mt-0">
+              <section>
                 <h2 className="text-lg font-semibold text-white">Descripción</h2>
                 <p className="mt-3 text-text-muted leading-relaxed">
                   {event.description}
@@ -230,6 +242,7 @@ export default function EventDetailPage() {
             )}
 
             <EventHighlightsSection
+              className="mt-0"
               category={event.category}
               city={event.city}
               venueName={event.venueName}
@@ -239,15 +252,18 @@ export default function EventDetailPage() {
             />
 
             <EventScheduleSection
+              className="mt-0"
               startAt={event.startAt}
               endAt={event.endAt}
             />
           </div>
 
-          <div className="lg:self-start order-2">
-            {event.isTicketingEnabled &&
-            ticketTypes &&
-            ticketTypes.length > 0 ? (
+          {isProducerEvent ? (
+          <div className="flex w-full min-w-0 flex-col gap-4">
+            {event.producer ? (
+              <EventProducerCard producer={event.producer} />
+            ) : null}
+            {canPurchaseTickets && ticketTypes ? (
               <EventPurchaseCard
                 eventId={eventId}
                 eventTitle={event.title}
@@ -262,14 +278,19 @@ export default function EventDetailPage() {
                 ratingCount={event.ratingCount}
                 hasResale={hasResale}
               />
-            ) : (
-              <div className="rounded-xl border border-border bg-bg-muted p-6 text-center">
-                <p className="text-text-muted">
-                  Entradas no disponibles
+            ) : null}
+            {event.isGeneralPublication ? (
+              <EventPublicityInfoCard producer={event.producer} />
+            ) : null}
+            {showTicketingSoon ? (
+              <EventSectionCard title="Entradas">
+                <p className="text-sm text-text-muted">
+                  Las entradas para este evento estarán disponibles próximamente.
                 </p>
-              </div>
-            )}
+              </EventSectionCard>
+            ) : null}
           </div>
+          ) : null}
         </div>
 
         {/* Row 2: Reviews (left) + Map (right), aligned same height */}

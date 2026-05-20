@@ -73,8 +73,8 @@ HTTP → Controller (thin) → ZodValidationPipe → Service → Prisma → Post
 See previous full endpoint tables in git history; key groups:
 
 - **Me**: tickets, orders, preferences, inbox create, commissions.
-- **Producer**: events CRUD, metrics, ticket types, **ticket-template** PUT/GET/DELETE, referrers (associated, freelance, association link).
-- **Admin**: event approval, users, applications, inbox resolve, config, payouts, hotel/referrer profile approval.
+- **Producer**: events CRUD, metrics, ticket types, **ticket-template** PUT/GET/DELETE, referrers (associated, freelance, association link); **profile** `GET/POST/PATCH /producer/profile` (GET puede devolver `null`); **reseñas del productor** `GET /producer/reviews`, `GET /producer/reviews/summary`, `POST /producer/reviews/:reviewId/dispute`, `GET /producer/review-disputes*`; valoraciones comerciales `commercial-reviews` (productora↔referidor).
+- **Admin**: event approval, users, applications, inbox resolve, config, payouts, hotel/referrer profile approval; **disputas de reseñas** `GET/POST /admin/review-disputes/:id` (`mark-in-review`, `accept`, `reject`, `resolve`).
 - **Hotel**: `GET /hotel/me`, `POST /profiles/hotel/apply`.
 - **Scanner**: validate, scan, logs.
 - **Gastro / Resale**: content, discounts, validations, listings.
@@ -88,9 +88,10 @@ See previous full endpoint tables in git history; key groups:
 - **RentalLocation** → rental products
 - **TicketType**, **TicketTemplate**, **TicketBatch**, **Order**, **OrderItem**, **Payment**, **Ticket**
 - **ReferrerProfile**, **ProducerReferrerRelationship**, **ReferralLink**, **ReferralAttribution**, **ReferralCommission**
-- **GastroDiscount**, **GastroDiscountValidation**, **InboxItem**
+- **GastroDiscount**, **GastroDiscountValidation**, **InboxItem** (kind incl. `REVIEW_DISPUTE_REQUEST`)
 - **HotelProfile**, memberships, **ProducerProfile**, **GastroProfile**
-- **Review**, **CourtesyGrant**, **TicketScanLog**, **FraudSignal**, **Payout**, **AuditLog**, **PlatformConfig**
+- **Review**, **ReviewDisputeRequest** (motivo, estado, vínculo inbox opcional), **CommercialRelationshipReview**
+- **CourtesyGrant**, **TicketScanLog**, **FraudSignal**, **Payout**, **AuditLog** (acciones review-dispute), **PlatformConfig**
 
 ---
 

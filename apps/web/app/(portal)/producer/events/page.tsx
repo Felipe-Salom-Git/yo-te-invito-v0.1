@@ -7,6 +7,9 @@ import { useRepositories } from '@/repositories/context';
 import { useTenant } from '@/hooks/useTenant';
 import { useProducerId } from '@/hooks/useProducerId';
 import { PageContainer, SectionTitle, Card, CardContent, Button, PageLoader, EventCardSkeleton, EmptyState, Breadcrumbs } from '@/components';
+import { EventModeBadge } from '@/components/producer/events/EventModeBadge';
+import { deriveEventModeFromEvent } from '@/lib/producer/event-mode';
+import { ProducerPublicPageLink } from '@/components/producer/profile/ProducerPublicPageLink';
 
 export default function ProducerEventsPage() {
   const { data: session, status } = useSession();
@@ -21,6 +24,12 @@ export default function ProducerEventsPage() {
     enabled: !!t && status === 'authenticated',
   });
 
+  const { data: myProfile } = useQuery({
+    queryKey: ['producer', 'my-profile'],
+    queryFn: () => repos.producers.getMyProfile(),
+    enabled: status === 'authenticated',
+  });
+
   const events = eventsData?.data ?? [];
 
   if (status === 'loading') return <PageContainer><PageLoader message="Cargando eventos…" /></PageContainer>;
@@ -29,7 +38,15 @@ export default function ProducerEventsPage() {
   return (
     <PageContainer>
       <Breadcrumbs items={[{ label: 'Panel', href: '/producer' }, { label: 'Mis eventos' }]} />
-      <SectionTitle>Mis eventos</SectionTitle>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <SectionTitle>Mis eventos</SectionTitle>
+        {myProfile ? (
+          <ProducerPublicPageLink
+            producer={myProfile}
+            label="Ver página de productora"
+          />
+        ) : null}
+      </div>
 
       <Link href="/producer/events/new" className="inline-block mt-4">
         <Button>Crear evento</Button>
@@ -52,8 +69,17 @@ export default function ProducerEventsPage() {
             <CardContent>
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-semibold text-text">{ev.title}</h3>
-                  <p className="text-sm text-text-muted">{ev.city ?? ev.venueName ?? '—'} · {new Date(ev.startAt).toLocaleDateString('es-AR')}</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="font-semibold text-text">{ev.title}</h3>
+                    <EventModeBadge
+                      mode={deriveEventModeFromEvent(ev)}
+                      hasActiveTicketing={ev.isTicketingEnabled}
+                    />
+                  </div>
+                  <p className="text-sm text-text-muted">
+                    {ev.city ?? ev.venueName ?? '—'} ·{' '}
+                    {new Date(ev.startAt).toLocaleDateString('es-AR')}
+                  </p>
                 </div>
                 <div className="flex gap-2">
                   <Link href={`/producer/events/${ev.id}`} className="rounded border border-accent px-3 py-1.5 text-sm font-medium text-accent hover:bg-accent hover:text-bg transition-colors">

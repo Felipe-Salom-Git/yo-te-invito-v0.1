@@ -12,6 +12,12 @@ import { eventFormSchema, type EventFormData } from '@/lib/schemas/event';
 import { PageContainer, SectionTitle, Button, Input, useToast, PageLoader, Breadcrumbs } from '@/components';
 import { getErrorMessage } from '@/lib/errors';
 import { SubcategorySelect } from '@/components/forms/SubcategorySelect';
+import {
+    EventLocationFields,
+    eventFieldsFromLocationValue,
+    locationValueFromEventFields,
+    type LocationValue,
+} from '@/components/location';
 
 export default function EditEventPage() {
     const router = useRouter();
@@ -32,6 +38,7 @@ export default function EditEventPage() {
     });
 
     const [form, setForm] = useState<EventFormData | null>(null);
+    const [location, setLocation] = useState<LocationValue | null>(null);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [subcategoryId, setSubcategoryId] = useState('');
 
@@ -53,23 +60,25 @@ export default function EditEventPage() {
                 status: (eventData.status as 'draft' | 'pending' | 'approved') || 'draft',
             });
             setSubcategoryId(eventData.subcategoryId ?? '');
+            setLocation(locationValueFromEventFields(eventData));
         }
     }, [eventData]);
 
     const updateMutation = useMutation({
         mutationFn: async (data: EventFormData) => {
+            const loc = location ? eventFieldsFromLocationValue(location) : null;
             const updated = await repos.events.update(eventId, {
                 title: data.title,
                 description: data.description || null,
                 startAt: data.startAt ? new Date(data.startAt).toISOString() : new Date().toISOString(),
                 endAt: data.endAt ? new Date(data.endAt).toISOString() : null,
-                city: data.city || null,
+                city: loc?.city ?? (data.city || null),
                 venueName: data.venueName || null,
-                venueAddress: data.venueAddress || null,
+                venueAddress: loc?.venueAddress ?? (data.venueAddress || null),
                 capacityTotal: data.capacityTotal ?? null,
                 coverImageUrl: data.coverImageUrl || null,
-                geoLat: data.geoLat ?? null,
-                geoLng: data.geoLng ?? null,
+                geoLat: loc?.geoLat ?? data.geoLat ?? null,
+                geoLng: loc?.geoLng ?? data.geoLng ?? null,
                 isTicketingEnabled: data.isTicketingEnabled,
                 status: data.status,
                 subcategoryId: subcategoryId || null,
@@ -116,7 +125,7 @@ export default function EditEventPage() {
         );
     }
 
-    if (isLoading || !form) {
+    if (isLoading || !form || !location) {
         return <PageLoader />;
     }
 
@@ -137,10 +146,7 @@ export default function EditEventPage() {
                         <Input label="Título del Evento" value={form.title} onChange={(e) => setForm((p) => p ? { ...p, title: e.target.value } : null)} required />
                         <Input label="Fecha y Hora de inicio" type="datetime-local" value={form.startAt} onChange={(e) => setForm((p) => p ? { ...p, startAt: e.target.value } : null)} />
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <Input label="Ciudad" value={form.city} onChange={(e) => setForm((p) => p ? { ...p, city: e.target.value } : null)} />
-                            <Input label="Lugar (Venue)" value={form.venueName} onChange={(e) => setForm((p) => p ? { ...p, venueName: e.target.value } : null)} />
-                        </div>
+                        <Input label="Lugar (Venue)" value={form.venueName} onChange={(e) => setForm((p) => p ? { ...p, venueName: e.target.value } : null)} />
 
                         <SubcategorySelect
                             category="event"
@@ -167,13 +173,8 @@ export default function EditEventPage() {
                     </div>
 
                     <div className="rounded-xl border border-border bg-bg-muted p-6 space-y-4">
-                        <h3 className="font-semibold text-text text-lg border-b border-border pb-3 mb-4">Ubicación y Detalles</h3>
-
-                        <Input label="Dirección Exacta" value={form.venueAddress ?? ''} onChange={(e) => setForm((p) => p ? { ...p, venueAddress: e.target.value || undefined } : null)} placeholder="Av. Corrientes 1234, CABA" />
-                        <div className="grid grid-cols-2 gap-4 mt-4">
-                            <Input label="Latitud" type="number" step="any" value={form.geoLat ?? ''} onChange={(e) => setForm((p) => p ? { ...p, geoLat: e.target.value ? Number(e.target.value) : null } : null)} placeholder="-34.6037" />
-                            <Input label="Longitud" type="number" step="any" value={form.geoLng ?? ''} onChange={(e) => setForm((p) => p ? { ...p, geoLng: e.target.value ? Number(e.target.value) : null } : null)} placeholder="-58.3816" />
-                        </div>
+                        <h3 className="font-semibold text-text text-lg border-b border-border pb-3 mb-4">Ubicación</h3>
+                        <EventLocationFields value={location} onChange={setLocation} />
                     </div>
 
                     <div className="flex justify-end gap-4 pt-6 pb-20">

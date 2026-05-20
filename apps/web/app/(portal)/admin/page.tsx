@@ -91,7 +91,8 @@ export default function AdminPortalPage() {
       </div>
 
       <div className="mt-8 flex flex-wrap gap-4">
-        <Link href="/admin/eventos" className="rounded border border-accent px-4 py-2 text-accent hover:bg-accent/10">Eventos recientes</Link>
+        <Link href="/admin/publicaciones-generales" className="rounded border border-accent px-4 py-2 text-accent hover:bg-accent/10">Publicaciones generales</Link>
+        <Link href="/admin/productoras" className="rounded border border-border px-4 py-2 text-text hover:bg-bg-muted">Productoras</Link>
         <Link href="/admin/usuarios" className="rounded border border-border px-4 py-2 text-text hover:bg-bg-muted">Usuarios</Link>
         <Link href="/admin/aplicaciones" className="rounded border border-border px-4 py-2 text-text hover:bg-bg-muted">Solicitudes</Link>
       </div>

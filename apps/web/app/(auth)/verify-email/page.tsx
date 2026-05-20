@@ -50,7 +50,7 @@ function VerifyEmailContent() {
           )}
           {status === 'success' && (
             <>
-              <p className="text-green-400">{message}</p>
+              <p className="text-accent-soft">{message}</p>
               <Link href="/login?verify=1" className="mt-4 block">
                 <Button className="w-full">Iniciar sesión</Button>
               </Link>

@@ -8,6 +8,7 @@ const NAV = [
   { href: '/producer', label: 'Dashboard' },
   { href: '/producer/profile', label: 'Perfil' },
   { href: '/producer/events', label: 'Eventos' },
+  { href: '/producer/comments', label: 'Comentarios' },
   { href: '/producer/referrals', label: 'Referidos' },
   { href: '/producer/payouts', label: 'Payouts' },
 ];

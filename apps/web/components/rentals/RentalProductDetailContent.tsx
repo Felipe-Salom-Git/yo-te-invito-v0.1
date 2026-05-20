@@ -21,6 +21,7 @@ import {
 } from '@/lib/rentals/productGallery';
 import { RentalProductHero } from './RentalProductHero';
 import { RentalGalleryThumbnails } from './RentalGalleryThumbnails';
+import { RentalDescriptionBlock } from './RentalDescriptionBlock';
 import { RentalLocalCard } from './RentalLocalCard';
 import { RentalContactCard } from './RentalContactCard';
 import type { RentalOpeningHours } from '@yo-te-invito/shared';
@@ -151,6 +152,7 @@ export function RentalProductDetailContent({
       <RentalProductHero
         coverImageUrl={headerImageUrl}
         title={event.title}
+        summary={event.summary}
         description={event.description}
         subcategoryName={subcategoryName}
         localName={rentalLoc?.name}
@@ -167,22 +169,22 @@ export function RentalProductDetailContent({
           ]}
         />
 
-        {hasGallery && (
-          <h2 className="mt-8 text-lg font-semibold text-white">Galería</h2>
-        )}
+        <div className="mt-8 grid gap-8 lg:grid-cols-[1.65fr,1fr] lg:items-start lg:gap-10">
+          <div className="min-w-0 space-y-8">
+            <RentalDescriptionBlock
+              productTitle={event.title}
+              description={event.description}
+            />
 
-        <div
-          className={`grid gap-8 lg:grid-cols-[1.65fr,1fr] lg:gap-10 lg:items-start ${
-            hasGallery ? 'mt-4' : 'mt-8'
-          }`}
-        >
-          {hasGallery ? (
-            <div className="min-w-0">
-              <RentalGalleryThumbnails images={galleryImages} />
-            </div>
-          ) : (
-            <div className="hidden lg:block" aria-hidden />
-          )}
+            {hasGallery && (
+              <section>
+                <h2 className="text-lg font-semibold text-white">Galería</h2>
+                <div className="mt-4">
+                  <RentalGalleryThumbnails images={galleryImages} />
+                </div>
+              </section>
+            )}
+          </div>
 
           <aside className="space-y-4 lg:sticky lg:top-8">
             <RentalContactCard whatsAppHref={whatsAppHref} />

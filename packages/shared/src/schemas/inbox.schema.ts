@@ -1,6 +1,10 @@
 import { z } from 'zod';
 
-export const inboxItemKindSchema = z.enum(['GASTRO_PROMOTION_REQUEST', 'REVIEW_MODERATION_REQUEST']);
+export const inboxItemKindSchema = z.enum([
+  'GASTRO_PROMOTION_REQUEST',
+  'REVIEW_MODERATION_REQUEST',
+  'REVIEW_DISPUTE_REQUEST',
+]);
 export type InboxItemKind = z.infer<typeof inboxItemKindSchema>;
 
 export const inboxItemStatusSchema = z.enum(['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED']);

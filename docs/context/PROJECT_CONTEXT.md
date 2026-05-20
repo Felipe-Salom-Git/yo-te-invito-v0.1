@@ -63,14 +63,16 @@ yo-te-invito-v0.1/
 
 ### Producer / Admin / Gastro / Hotel / Referrer
 
-- Producer: events, ticket types, **Ticket Canvas Studio**, courtesies, referidos, payouts.
-- Admin: users, event approval, inbox (gastro promos, review moderation), profiles (incl. hotel), config, **rentals locales/products**, audit.
+- **Producer (productoras / “Proveedores v2”)**: events, ticket types, **Ticket Canvas Studio**, courtesies, referidos, payouts; **perfil público** (`ProducerProfile`) con página `/producers/[id|slug]`, portal por **bloques** en `/producer/profile` (+ `/create`, `/identity`, `/images`, `/contact`); **comentarios y disputas** de reseñas de eventos (`/producer/comments`, flujo admin `/admin/review-disputes`); valoraciones **comerciales** privadas productora↔referidor (separadas de reseñas públicas).
+- Admin: users, event approval, inbox (gastro promos, review moderation, **solicitudes de disputa de reseñas**), profiles (incl. hotel), config, **rentals locales/products**, audit.
 - Gastro / Hotel / Referrer portals as documented in backend/frontend context.
 
 ### Backend highlights
 
 - Referrer ↔ producer relationships (`ProducerReferrerRelationship`).
-- Inbox → gastro discounts / review moderation.
+- Inbox → gastro discounts / review moderation / **cola de disputas de reseñas** (`REVIEW_DISPUTE_REQUEST` + modelo `ReviewDisputeRequest`).
+- Reseñas públicas de eventos (`Review`); disputas con auditoría (`AuditLog`); ocultar del público al aceptar disputa (sin borrar reseña por defecto).
+- Valoraciones B2B (`CommercialRelationshipReview`) — no mezclar con reseñas de eventos.
 - Ticket templates (visual design JSON + QR zone rules).
 
 ---

@@ -8,6 +8,7 @@ import type {
   EventDetail,
   EventsSearchQuery,
   EventsTrendingQuery,
+  EventsCalendarMonthQuery,
   PublicGastroDiscountsResponse,
 } from '@yo-te-invito/shared';
 import { ErrorCode, parseRentalOpeningHours } from '@yo-te-invito/shared';
@@ -19,6 +20,82 @@ export class PublicEventsService {
 
   private publicWhere(base: Prisma.EventWhereInput): Prisma.EventWhereInput {
     return mergePublicEventVisibility(base);
+  }
+
+  private listOrderBy(
+    sort: EventsListQuery['sort'],
+  ): Prisma.EventOrderByWithRelationInput | Prisma.EventOrderByWithRelationInput[] {
+    switch (sort) {
+      case 'recent':
+        return { createdAt: 'desc' };
+      case 'featured_rating':
+        return [{ ratingAvg: 'desc' }, { ratingCount: 'desc' }, { startAt: 'asc' }];
+      case 'featured_event':
+        return [
+          { isTicketingEnabled: 'desc' },
+          { ratingAvg: 'desc' },
+          { ratingCount: 'desc' },
+          { startAt: 'asc' },
+        ];
+      case 'dateAsc':
+      case 'upcoming':
+      default:
+        return { startAt: 'asc' };
+    }
+  }
+
+  private applyPublicListFilters(base: Prisma.EventWhereInput, query: EventsListQuery): void {
+    if (query.excludeGeneralPublications === true) {
+      base.isGeneralPublication = false;
+    }
+    if (query.hasTicketing === true) {
+      base.isTicketingEnabled = true;
+      base.isGeneralPublication = false;
+      base.ticketTypes = { some: { deletedAt: null, status: 'ACTIVE' } };
+    } else if (query.hasTicketing === false) {
+      base.OR = [
+        { isTicketingEnabled: false },
+        { isGeneralPublication: true },
+        { ticketTypes: { none: { deletedAt: null, status: 'ACTIVE' } } },
+      ];
+    }
+  }
+
+  private mapHasTicketing(row: {
+    isTicketingEnabled: boolean;
+    isGeneralPublication: boolean;
+    ticketTypes: Array<{ id: string }>;
+  }): boolean {
+    return (
+      row.isTicketingEnabled &&
+      !row.isGeneralPublication &&
+      row.ticketTypes.length > 0
+    );
+  }
+
+  private listSummarySelect() {
+    return {
+      id: true,
+      title: true,
+      startAt: true,
+      city: true,
+      venueName: true,
+      coverImageUrl: true,
+      category: true,
+      subcategoryId: true,
+      description: true,
+      ratingAvg: true,
+      ratingCount: true,
+      createdAt: true,
+      isTicketingEnabled: true,
+      isGeneralPublication: true,
+      subcategory: { select: { name: true } },
+      ticketTypes: {
+        where: { deletedAt: null, status: 'ACTIVE' },
+        select: { id: true },
+        take: 1,
+      },
+    } as const;
   }
 
   private applySubcategoryFilter(
@@ -39,6 +116,15 @@ export class PublicEventsService {
     }
   }
 
+  private applyCategoryFilter(base: Prisma.EventWhereInput, category?: string): void {
+    const c = category?.trim();
+    if (c === 'event') {
+      base.OR = [{ category: 'event' }, { category: null }];
+    } else if (c) {
+      base.category = c;
+    }
+  }
+
   async list(query: EventsListQuery): Promise<EventsPaginatedResponse> {
     const base: Prisma.EventWhereInput = {
       tenantId: query.tenantId,
@@ -50,11 +136,9 @@ export class PublicEventsService {
       base.city = query.city;
     }
 
-    if (query.category?.trim()) {
-      base.category = query.category.trim();
-    }
-
+    this.applyCategoryFilter(base, query.category);
     this.applySubcategoryFilter(base, query);
+    this.applyPublicListFilters(base, query);
 
     if (query.dateFrom || query.dateTo) {
       base.startAt = {};
@@ -70,6 +154,8 @@ export class PublicEventsService {
 
     const now = new Date();
     const gastroList = (query.category ?? '').toLowerCase() === 'gastro';
+    const orderBy = this.listOrderBy(query.sort);
+    const summarySelect = this.listSummarySelect();
 
     const [data, total] = await Promise.all([
       gastroList
@@ -88,25 +174,14 @@ export class PublicEventsService {
                 take: 1,
               },
             },
-            orderBy: { startAt: 'asc' },
+            orderBy,
             skip: (query.page - 1) * query.limit,
             take: query.limit,
           })
         : this.prisma.event.findMany({
             where,
-            select: {
-              id: true,
-              title: true,
-              startAt: true,
-              city: true,
-              venueName: true,
-              coverImageUrl: true,
-              category: true,
-              description: true,
-              ratingAvg: true,
-              ratingCount: true,
-            },
-            orderBy: { startAt: 'asc' },
+            select: summarySelect,
+            orderBy,
             skip: (query.page - 1) * query.limit,
             take: query.limit,
           }),
@@ -126,6 +201,9 @@ export class PublicEventsService {
             description: string | null;
             ratingAvg: number | null;
             ratingCount: number;
+            createdAt: Date;
+            isTicketingEnabled: boolean;
+            subcategoryId: string | null;
             gastroDiscounts: Array<{
               code: string;
               type: string;
@@ -156,6 +234,9 @@ export class PublicEventsService {
             description: e.description ?? undefined,
             ratingAvg: e.ratingAvg ?? undefined,
             ratingCount: e.ratingCount ?? undefined,
+            createdAt: e.createdAt.toISOString(),
+            isTicketingEnabled: e.isTicketingEnabled,
+            subcategoryId: e.subcategoryId ?? undefined,
             gastroPromoLabel: promoLabel ?? null,
             gastroPromoImageUrl: promoImg ?? null,
           };
@@ -169,9 +250,15 @@ export class PublicEventsService {
             venueName: string | null;
             coverImageUrl: string | null;
             category: string | null;
+            subcategoryId: string | null;
             description: string | null;
             ratingAvg: number | null;
             ratingCount: number;
+            createdAt: Date;
+            isTicketingEnabled: boolean;
+            isGeneralPublication: boolean;
+            subcategory: { name: string } | null;
+            ticketTypes: Array<{ id: string }>;
           }>
         ).map((e) => ({
           id: e.id,
@@ -181,9 +268,15 @@ export class PublicEventsService {
           venueName: e.venueName,
           coverImageUrl: e.coverImageUrl,
           category: e.category ?? undefined,
+          subcategoryId: e.subcategoryId ?? undefined,
+          subcategoryName: e.subcategory?.name ?? null,
           description: e.description ?? undefined,
           ratingAvg: e.ratingAvg ?? undefined,
           ratingCount: e.ratingCount ?? undefined,
+          createdAt: e.createdAt.toISOString(),
+          isTicketingEnabled: e.isTicketingEnabled,
+          isGeneralPublication: e.isGeneralPublication,
+          hasTicketing: this.mapHasTicketing(e),
         }));
 
     return {
@@ -195,6 +288,27 @@ export class PublicEventsService {
         totalPages: Math.ceil(total / query.limit) || 1,
       },
     };
+  }
+
+  async listCalendarMonth(query: EventsCalendarMonthQuery): Promise<EventSummary[]> {
+    const [year, month] = query.month.split('-').map(Number);
+    const dateFrom = new Date(year, month - 1, 1);
+    const dateTo = new Date(year, month, 0, 23, 59, 59, 999);
+
+    const listQuery: EventsListQuery = {
+      tenantId: query.tenantId,
+      page: 1,
+      limit: 200,
+      category: query.category?.trim() || 'event',
+      subcategoryId: query.subcategoryId,
+      subcategorySlug: query.subcategorySlug,
+      dateFrom: dateFrom.toISOString(),
+      dateTo: dateTo.toISOString(),
+      sort: 'dateAsc',
+    };
+
+    const result = await this.list(listQuery);
+    return result.data;
   }
 
   async search(query: EventsSearchQuery): Promise<EventsPaginatedResponse> {
@@ -212,10 +326,7 @@ export class PublicEventsService {
       base.city = query.city.trim();
     }
 
-    if (query.category?.trim()) {
-      base.category = query.category.trim();
-    }
-
+    this.applyCategoryFilter(base, query.category);
     this.applySubcategoryFilter(base, query);
 
     if (query.dateFrom || query.dateTo) {
@@ -402,6 +513,20 @@ export class PublicEventsService {
           orderBy: { sortOrder: 'asc' },
         },
         rentalLocation: true,
+        excursionOperator: true,
+        producerProfile: {
+          where: { status: 'ACTIVE' },
+          select: {
+            id: true,
+            slug: true,
+            displayName: true,
+            logoUrl: true,
+            shortDescription: true,
+            primaryEmail: true,
+            primaryPhone: true,
+            whatsapp: true,
+          },
+        },
       },
     });
 
@@ -422,12 +547,14 @@ export class PublicEventsService {
       category: event.category ?? undefined,
       subcategoryId: event.subcategoryId ?? undefined,
       description: event.description,
+      summary: event.summary ?? null,
       endAt: event.endAt?.toISOString() ?? null,
       venueAddress: event.venueAddress,
       geoLat: event.geoLat,
       geoLng: event.geoLng,
       capacityTotal: event.capacityTotal,
       isTicketingEnabled: event.isTicketingEnabled,
+      isGeneralPublication: event.isGeneralPublication,
       status: event.status,
       ratingAvg: event.ratingAvg,
       ratingCount: event.ratingCount,
@@ -446,6 +573,31 @@ export class PublicEventsService {
             openingHoursNote: event.rentalLocation.openingHoursNote,
             geoLat: event.rentalLocation.geoLat,
             geoLng: event.rentalLocation.geoLng,
+          }
+        : null,
+      excursionOperator: event.excursionOperator
+        ? {
+            id: event.excursionOperator.id,
+            name: event.excursionOperator.name,
+            address: event.excursionOperator.address,
+            city: event.excursionOperator.city,
+            openingHours: parseRentalOpeningHours(event.excursionOperator.openingHours),
+            openingHoursNote: event.excursionOperator.openingHoursNote,
+            contactPhone: event.excursionOperator.contactPhone,
+            geoLat: event.excursionOperator.geoLat,
+            geoLng: event.excursionOperator.geoLng,
+          }
+        : null,
+      producer: event.producerProfile
+        ? {
+            id: event.producerProfile.id,
+            slug: event.producerProfile.slug,
+            displayName: event.producerProfile.displayName,
+            logoUrl: event.producerProfile.logoUrl,
+            shortDescription: event.producerProfile.shortDescription,
+            primaryEmail: event.producerProfile.primaryEmail,
+            primaryPhone: event.producerProfile.primaryPhone,
+            whatsapp: event.producerProfile.whatsapp,
           }
         : null,
     };

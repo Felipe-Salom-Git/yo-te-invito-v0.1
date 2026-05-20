@@ -123,7 +123,7 @@ export function SplashIntro({ onFinish, onFadeStart }: SplashIntroProps) {
           onFadeStart?.();
           finish();
         }}
-        className="absolute bottom-4 right-4 z-10 text-sm text-white/50 transition-colors hover:text-emerald-400"
+        className="absolute bottom-4 right-4 z-10 text-sm text-white/50 transition-colors hover:text-accent-soft"
         aria-label="Saltar intro"
       >
         Saltar

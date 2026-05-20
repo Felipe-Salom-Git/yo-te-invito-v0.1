@@ -128,6 +128,16 @@ export const authLoginResponseSchema = z.object({
 });
 export type AuthLoginResponse = z.infer<typeof authLoginResponseSchema>;
 
+/** Profile type chosen during public registration (not ADMIN / SCANNER). */
+export const registrationProfileTypeSchema = z.enum([
+  'USER',
+  'PRODUCER',
+  'GASTRO',
+  'HOTEL',
+  'REFERRER',
+]);
+export type RegistrationProfileType = z.infer<typeof registrationProfileTypeSchema>;
+
 /** Request body for POST /auth/register */
 export const authRegisterRequestSchema = z.object({
   email: z.string().email(),
@@ -135,6 +145,8 @@ export const authRegisterRequestSchema = z.object({
   firstName: z.string().min(1, 'Nombre requerido'),
   lastName: z.string().min(1, 'Apellido requerido'),
   tenantId: z.string().optional(),
+  profileType: registrationProfileTypeSchema.optional().default('USER'),
+  profileData: z.unknown().optional(),
 });
 export type AuthRegisterRequest = z.infer<typeof authRegisterRequestSchema>;
 

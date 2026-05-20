@@ -2,6 +2,16 @@ import { z } from 'zod';
 import { EventMediaType } from '../enums';
 import { rentalOpeningHoursSchema } from './opening-hours';
 
+/** Producer intent when creating an event (stored as isGeneralPublication + isTicketingEnabled). */
+export const producerEventModeSchema = z.enum(['PUBLICITY_ONLY', 'TICKETED']);
+export type ProducerEventMode = z.infer<typeof producerEventModeSchema>;
+
+export function deriveProducerEventMode(
+  isGeneralPublication: boolean,
+): ProducerEventMode {
+  return isGeneralPublication ? 'PUBLICITY_ONLY' : 'TICKETED';
+}
+
 /**
  * Query params for paginated events list
  * tenantId required (multi-tenant)
@@ -17,6 +27,12 @@ export const eventsListQuerySchema = z
     subcategorySlug: z.string().optional(),
     dateFrom: z.string().datetime().optional(),
     dateTo: z.string().datetime().optional(),
+    /** Public list ordering — category landing carousels */
+    sort: z
+      .enum(['recent', 'featured_rating', 'featured_event', 'upcoming', 'dateAsc'])
+      .optional(),
+    hasTicketing: z.coerce.boolean().optional(),
+    excludeGeneralPublications: z.coerce.boolean().optional(),
   })
   .refine(
     (data) => {
@@ -53,12 +69,33 @@ export const eventSummarySchema = z.object({
   category: z.string().nullable().optional(),
   subcategoryId: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
+  /** Short teaser — used on rental product public hero */
+  summary: z.string().nullable().optional(),
   ratingAvg: z.number().nullable().optional(),
   ratingCount: z.number().optional(),
   /** When listing gastro events: first active discount teaser for home cards */
   gastroPromoLabel: z.string().nullable().optional(),
   gastroPromoImageUrl: z.string().nullable().optional(),
+  /** Present on public list when API selects it — used for Recientes carousel */
+  createdAt: z.string().datetime().optional(),
+  /** Present on public list — used for event Destacados (ticketing-first) */
+  isTicketingEnabled: z.boolean().optional(),
+  /** True when ticketing is enabled, has active ticket types, and not a general publication */
+  hasTicketing: z.boolean().optional(),
+  isGeneralPublication: z.boolean().optional(),
+  eventMode: producerEventModeSchema.optional(),
+  subcategoryName: z.string().nullable().optional(),
 });
+
+export const eventsCalendarMonthQuerySchema = z.object({
+  tenantId: z.string().min(1, 'tenantId is required'),
+  month: z.string().regex(/^\d{4}-\d{2}$/, 'month must be YYYY-MM'),
+  category: z.string().optional(),
+  subcategoryId: z.string().optional(),
+  subcategorySlug: z.string().optional(),
+});
+
+export type EventsCalendarMonthQuery = z.infer<typeof eventsCalendarMonthQuerySchema>;
 
 export type EventSummary = z.infer<typeof eventSummarySchema>;
 
@@ -70,6 +107,8 @@ export const eventDetailSchema = eventSummarySchema.extend({
   geoLng: z.number().nullable(),
   capacityTotal: z.number().nullable(),
   isTicketingEnabled: z.boolean(),
+  isGeneralPublication: z.boolean().optional(),
+  eventMode: producerEventModeSchema.optional(),
   status: z.string(),
   media: z.array(eventMediaSchema),
   ratingAvg: z.number().nullable().optional(),
@@ -83,6 +122,33 @@ export const eventDetailSchema = eventSummarySchema.extend({
       openingHoursNote: z.string().nullable(),
       geoLat: z.number().nullable(),
       geoLng: z.number().nullable(),
+    })
+    .nullable()
+    .optional(),
+  excursionOperator: z
+    .object({
+      id: z.string(),
+      name: z.string(),
+      address: z.string().nullable(),
+      city: z.string().nullable(),
+      openingHours: rentalOpeningHoursSchema.nullable(),
+      openingHoursNote: z.string().nullable(),
+      contactPhone: z.string().nullable(),
+      geoLat: z.number().nullable(),
+      geoLng: z.number().nullable(),
+    })
+    .nullable()
+    .optional(),
+  producer: z
+    .object({
+      id: z.string(),
+      slug: z.string().nullable(),
+      displayName: z.string(),
+      logoUrl: z.string().nullable().optional(),
+      shortDescription: z.string().nullable().optional(),
+      primaryEmail: z.string().nullable().optional(),
+      primaryPhone: z.string().nullable().optional(),
+      whatsapp: z.string().nullable().optional(),
     })
     .nullable()
     .optional(),
@@ -127,6 +193,7 @@ export const eventCreateDtoSchema = z.object({
   category: z.string().nullish(),
   subcategoryId: z.string().nullish(),
   rentalLocationId: z.string().nullish(),
+  eventMode: producerEventModeSchema,
 });
 export type EventCreateDto = z.infer<typeof eventCreateDtoSchema>;
 
@@ -218,6 +285,7 @@ export type FraudSignalsResponse = z.infer<typeof fraudSignalsResponseSchema>;
 
 export const eventUpdateDtoSchema = z.object({
   title: z.string().min(1).optional(),
+  summary: z.string().max(220).nullable().optional(),
   description: z.string().nullable().optional(),
   startAt: z.string().datetime().optional(),
   endAt: z.string().datetime().nullable().optional(),

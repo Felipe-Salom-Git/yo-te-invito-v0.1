@@ -50,12 +50,12 @@ function LoginForm() {
         </CardHeader>
         <CardContent>
           {registered && (
-            <p className="mb-4 rounded bg-green-500/20 px-3 py-2 text-sm text-green-300">
+            <p className="mb-4 rounded border border-accent-muted bg-accent-surface/70 px-3 py-2 text-sm text-accent-soft">
               Cuenta creada. Revisá tu email para verificar tu cuenta e iniciar sesión.
             </p>
           )}
           {verify && (
-            <p className="mb-4 rounded bg-green-500/20 px-3 py-2 text-sm text-green-300">
+            <p className="mb-4 rounded border border-accent-muted bg-accent-surface/70 px-3 py-2 text-sm text-accent-soft">
               Email verificado. Iniciá sesión.
             </p>
           )}

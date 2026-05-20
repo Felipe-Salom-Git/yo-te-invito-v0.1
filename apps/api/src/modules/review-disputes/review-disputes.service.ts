@@ -1,0 +1,640 @@
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { Prisma, ReviewDisputeStatus } from '@prisma/client';
+import { PrismaService } from '../../prisma/prisma.service';
+import { ProfilesAuthorizationService } from '../../common/profiles-authorization.service';
+import { ReviewsService } from '../reviews/reviews.service';
+import { AuditService } from '../audit/audit.service';
+import {
+  ErrorCode,
+  type AdminReviewDisputeActionInput,
+  type AdminReviewDisputeListQuery,
+  type CreateReviewDisputeInput,
+  type ProducerManagedReviewListQuery,
+  type ProducerManagedReviewListResponse,
+  type ProducerManagedReviewSummary,
+  type ReviewDisputeResponse,
+} from '@yo-te-invito/shared';
+
+const OPEN_DISPUTE_STATUSES: ReviewDisputeStatus[] = ['PENDING', 'IN_REVIEW'];
+
+function reviewUserName(row: {
+  guestName: string | null;
+  user: { firstName: string; lastName: string } | null;
+}): string {
+  if (row.user) {
+    return `${row.user.firstName} ${row.user.lastName}`.trim() || 'Usuario';
+  }
+  return row.guestName?.trim() || 'Invitado';
+}
+
+function mapDispute(row: {
+  id: string;
+  reviewId: string;
+  producerProfileId: string;
+  eventId: string;
+  reasonType: string;
+  message: string;
+  status: string;
+  adminNote: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  resolvedAt: Date | null;
+  review: { score: number; comment: string | null; guestName: string | null; user: { firstName: string; lastName: string } | null };
+  event: { title: string };
+}): ReviewDisputeResponse {
+  return {
+    id: row.id,
+    reviewId: row.reviewId,
+    producerProfileId: row.producerProfileId,
+    eventId: row.eventId,
+    eventTitle: row.event.title,
+    reasonType: row.reasonType as ReviewDisputeResponse['reasonType'],
+    message: row.message,
+    status: row.status as ReviewDisputeResponse['status'],
+    adminNote: row.adminNote,
+    reviewScore: row.review.score,
+    reviewComment: row.review.comment,
+    reviewUserDisplayName: reviewUserName(row.review),
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+    resolvedAt: row.resolvedAt?.toISOString() ?? null,
+  };
+}
+
+@Injectable()
+export class ReviewDisputesService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly profiles: ProfilesAuthorizationService,
+    private readonly reviews: ReviewsService,
+    private readonly audit: AuditService,
+  ) {}
+
+  private async requireProducerProfileId(tenantId: string, userId: string) {
+    const profileId = await this.profiles.getDefaultProducerProfileId(tenantId, userId);
+    if (!profileId) {
+      throw new ForbiddenException({
+        code: ErrorCode.FORBIDDEN,
+        message: 'No active producer profile found',
+      });
+    }
+    return profileId;
+  }
+
+  private async eventIdsForProducer(tenantId: string, producerProfileId: string) {
+    const events = await this.prisma.event.findMany({
+      where: { tenantId, producerProfileId, deletedAt: null },
+      select: { id: true, title: true },
+      orderBy: { title: 'asc' },
+    });
+    return events;
+  }
+
+  async getProducerSummary(tenantId: string, userId: string): Promise<ProducerManagedReviewSummary> {
+    const producerProfileId = await this.requireProducerProfileId(tenantId, userId);
+    const events = await this.eventIdsForProducer(tenantId, producerProfileId);
+    const eventIds = events.map((e) => e.id);
+    if (eventIds.length === 0) {
+      return {
+        averageRating: null,
+        totalReviews: 0,
+        distribution: { '1': 0, '2': 0, '3': 0, '4': 0, '5': 0 },
+      };
+    }
+
+    const rows = await this.prisma.review.findMany({
+      where: { tenantId, eventId: { in: eventIds }, hiddenFromPublic: false },
+      select: { score: true },
+    });
+
+    const distribution = { '1': 0, '2': 0, '3': 0, '4': 0, '5': 0 };
+    let sum = 0;
+    for (const r of rows) {
+      sum += r.score;
+      const key = String(r.score) as keyof typeof distribution;
+      if (key in distribution) distribution[key] += 1;
+    }
+
+    return {
+      averageRating:
+        rows.length > 0 ? Math.round((sum / rows.length) * 10) / 10 : null,
+      totalReviews: rows.length,
+      distribution,
+    };
+  }
+
+  async listProducerReviews(
+    tenantId: string,
+    userId: string,
+    query: ProducerManagedReviewListQuery,
+  ): Promise<ProducerManagedReviewListResponse> {
+    const producerProfileId = await this.requireProducerProfileId(tenantId, userId);
+    const events = await this.eventIdsForProducer(tenantId, producerProfileId);
+    let eventIds = events.map((e) => e.id);
+
+    if (query.eventId) {
+      if (!eventIds.includes(query.eventId)) {
+        throw new ForbiddenException({
+          code: ErrorCode.FORBIDDEN,
+          message: 'Event does not belong to this producer',
+        });
+      }
+      eventIds = [query.eventId];
+    }
+
+    if (eventIds.length === 0) {
+      return { reviews: [], page: query.page, total: 0, events: [] };
+    }
+
+    const disputes = await this.prisma.reviewDisputeRequest.findMany({
+      where: { tenantId, producerProfileId },
+      orderBy: { createdAt: 'desc' },
+    });
+    const latestDisputeByReview = new Map<string, (typeof disputes)[0]>();
+    for (const d of disputes) {
+      if (!latestDisputeByReview.has(d.reviewId)) {
+        latestDisputeByReview.set(d.reviewId, d);
+      }
+    }
+
+    const where: Prisma.ReviewWhereInput = {
+      tenantId,
+      eventId: { in: eventIds },
+      ...(query.rating ? { score: query.rating } : {}),
+    };
+
+    if (query.disputeStatus && query.disputeStatus !== 'ALL') {
+      const allReviews = await this.prisma.review.findMany({
+        where,
+        select: { id: true },
+      });
+      const matchingReviewIds: string[] = [];
+      for (const r of allReviews) {
+        const d = latestDisputeByReview.get(r.id);
+        if (query.disputeStatus === 'NONE') {
+          if (!d || !OPEN_DISPUTE_STATUSES.includes(d.status)) {
+            matchingReviewIds.push(r.id);
+          }
+        } else if (d?.status === query.disputeStatus) {
+          matchingReviewIds.push(r.id);
+        }
+      }
+      where.id = { in: matchingReviewIds.length ? matchingReviewIds : ['__none__'] };
+    }
+
+    const total = await this.prisma.review.count({ where });
+    const skip = (query.page - 1) * query.limit;
+
+    const rows = await this.prisma.review.findMany({
+      where,
+      include: {
+        event: { select: { title: true } },
+        user: { select: { firstName: true, lastName: true } },
+      },
+      orderBy: { createdAt: query.sort === 'oldest' ? 'asc' : 'desc' },
+      skip,
+      take: query.limit,
+    });
+
+    return {
+      reviews: rows.map((r) => {
+        const d = latestDisputeByReview.get(r.id);
+        return {
+          id: r.id,
+          eventId: r.eventId,
+          eventTitle: r.event.title,
+          score: r.score,
+          title: r.title,
+          comment: r.comment,
+          userDisplayName: reviewUserName(r),
+          hiddenFromPublic: r.hiddenFromPublic,
+          createdAt: r.createdAt.toISOString(),
+          dispute: d
+            ? {
+                id: d.id,
+                status: d.status as ReviewDisputeResponse['status'],
+                reasonType: d.reasonType as ReviewDisputeResponse['reasonType'],
+                adminNote: d.adminNote,
+                createdAt: d.createdAt.toISOString(),
+              }
+            : null,
+        };
+      }),
+      page: query.page,
+      total,
+      events,
+    };
+  }
+
+  async createDispute(
+    tenantId: string,
+    userId: string,
+    userRole: string,
+    reviewId: string,
+    body: CreateReviewDisputeInput,
+  ): Promise<ReviewDisputeResponse> {
+    const producerProfileId = await this.requireProducerProfileId(tenantId, userId);
+
+    const review = await this.prisma.review.findFirst({
+      where: { id: reviewId, tenantId },
+      include: { event: true, user: { select: { firstName: true, lastName: true } } },
+    });
+    if (!review) {
+      throw new NotFoundException({ code: ErrorCode.NOT_FOUND, message: 'Review not found' });
+    }
+
+    const canManage =
+      userRole === 'ADMIN' ||
+      (review.event.producerProfileId === producerProfileId &&
+        (await this.profiles.canManageEvent(tenantId, userId, review.event)));
+    if (!canManage) {
+      throw new ForbiddenException({
+        code: ErrorCode.FORBIDDEN,
+        message: 'Cannot dispute reviews for this event',
+      });
+    }
+
+    const existingOpen = await this.prisma.reviewDisputeRequest.findFirst({
+      where: {
+        tenantId,
+        reviewId,
+        producerProfileId,
+        status: { in: OPEN_DISPUTE_STATUSES },
+      },
+    });
+    if (existingOpen) {
+      throw new ConflictException({
+        code: ErrorCode.CONFLICT,
+        message: 'Ya existe una solicitud abierta para esta valoración',
+      });
+    }
+
+    const dispute = await this.prisma.$transaction(async (tx) => {
+      const inbox = await tx.inboxItem.create({
+        data: {
+          tenantId,
+          kind: 'REVIEW_DISPUTE_REQUEST',
+          status: 'PENDING',
+          createdByUserId: userId,
+          assigneeRole: 'ADMIN',
+          title: `Revisión valoración · ${review.event.title}`,
+          summary: body.message.slice(0, 500),
+          payload: {
+            reviewId,
+            reasonType: body.reasonType,
+            message: body.message,
+            eventId: review.eventId,
+            producerProfileId,
+          } as object,
+        },
+      });
+
+      return tx.reviewDisputeRequest.create({
+        data: {
+          tenantId,
+          reviewId,
+          producerProfileId,
+          eventId: review.eventId,
+          requestedByUserId: userId,
+          reasonType: body.reasonType,
+          message: body.message,
+          status: 'PENDING',
+          inboxItemId: inbox.id,
+        },
+        include: {
+          review: {
+            include: { user: { select: { firstName: true, lastName: true } } },
+          },
+          event: { select: { title: true } },
+        },
+      });
+    });
+
+    return mapDispute(dispute);
+  }
+
+  async listProducerDisputes(
+    tenantId: string,
+    userId: string,
+  ): Promise<{ disputes: ReviewDisputeResponse[] }> {
+    const producerProfileId = await this.requireProducerProfileId(tenantId, userId);
+    const rows = await this.prisma.reviewDisputeRequest.findMany({
+      where: { tenantId, producerProfileId },
+      include: {
+        review: {
+          include: { user: { select: { firstName: true, lastName: true } } },
+        },
+        event: { select: { title: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    });
+    return { disputes: rows.map(mapDispute) };
+  }
+
+  async getProducerDispute(
+    tenantId: string,
+    userId: string,
+    disputeId: string,
+  ): Promise<ReviewDisputeResponse> {
+    const producerProfileId = await this.requireProducerProfileId(tenantId, userId);
+    const row = await this.prisma.reviewDisputeRequest.findFirst({
+      where: { id: disputeId, tenantId, producerProfileId },
+      include: {
+        review: {
+          include: { user: { select: { firstName: true, lastName: true } } },
+        },
+        event: { select: { title: true } },
+      },
+    });
+    if (!row) {
+      throw new NotFoundException({ code: ErrorCode.NOT_FOUND, message: 'Dispute not found' });
+    }
+    return mapDispute(row);
+  }
+
+  async listAdminDisputes(tenantId: string, query: AdminReviewDisputeListQuery) {
+    const where = {
+      tenantId,
+      ...(query.status ? { status: query.status } : {}),
+    };
+    const total = await this.prisma.reviewDisputeRequest.count({ where });
+    const skip = (query.page - 1) * query.limit;
+    const rows = await this.prisma.reviewDisputeRequest.findMany({
+      where,
+      include: {
+        review: {
+          include: { user: { select: { firstName: true, lastName: true } } },
+        },
+        event: { select: { title: true } },
+        producerProfile: { select: { displayName: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: query.limit,
+    });
+
+    return {
+      disputes: rows.map((row) => ({
+        ...mapDispute(row),
+        producerDisplayName: row.producerProfile.displayName,
+      })),
+      page: query.page,
+      total,
+    };
+  }
+
+  async getAdminDispute(tenantId: string, disputeId: string) {
+    const row = await this.prisma.reviewDisputeRequest.findFirst({
+      where: { id: disputeId, tenantId },
+      include: {
+        review: {
+          include: { user: { select: { firstName: true, lastName: true } } },
+        },
+        event: { select: { title: true } },
+        producerProfile: { select: { displayName: true } },
+      },
+    });
+    if (!row) {
+      throw new NotFoundException({ code: ErrorCode.NOT_FOUND, message: 'Dispute not found' });
+    }
+    return {
+      ...mapDispute(row),
+      producerDisplayName: row.producerProfile.displayName,
+    };
+  }
+
+  private async loadDisputeForAdmin(tenantId: string, disputeId: string) {
+    const row = await this.prisma.reviewDisputeRequest.findFirst({
+      where: { id: disputeId, tenantId },
+      include: {
+        review: true,
+        inboxItem: true,
+        event: { select: { title: true } },
+        producerProfile: { select: { displayName: true } },
+      },
+    });
+    if (!row) {
+      throw new NotFoundException({ code: ErrorCode.NOT_FOUND, message: 'Dispute not found' });
+    }
+    return row;
+  }
+
+  private async syncInboxResolved(
+    tx: Prisma.TransactionClient,
+    inboxItemId: string | null,
+    adminUserId: string,
+    inboxStatus: 'APPROVED' | 'REJECTED',
+    note?: string,
+  ) {
+    if (!inboxItemId) return;
+    const item = await tx.inboxItem.findUnique({ where: { id: inboxItemId } });
+    if (item && item.status === 'PENDING') {
+      await tx.inboxItem.update({
+        where: { id: inboxItemId },
+        data: {
+          status: inboxStatus,
+          resolvedAt: new Date(),
+          resolvedByUserId: adminUserId,
+          resolutionNote: note ?? null,
+        },
+      });
+    }
+  }
+
+  async markInReview(
+    tenantId: string,
+    adminUserId: string,
+    adminRole: string,
+    disputeId: string,
+    body: AdminReviewDisputeActionInput,
+  ) {
+    const row = await this.loadDisputeForAdmin(tenantId, disputeId);
+    if (!['PENDING', 'IN_REVIEW'].includes(row.status)) {
+      throw new BadRequestException('Dispute is not open for status change');
+    }
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const d = await tx.reviewDisputeRequest.update({
+        where: { id: disputeId },
+        data: {
+          status: 'IN_REVIEW',
+          adminNote: body.adminNote ?? row.adminNote,
+        },
+        include: {
+          review: {
+            include: { user: { select: { firstName: true, lastName: true } } },
+          },
+          event: { select: { title: true } },
+        },
+      });
+      return d;
+    });
+
+    await this.audit.logAction({
+      tenantId,
+      actorId: adminUserId,
+      actorRole: adminRole,
+      action: 'REVIEW_DISPUTE_IN_REVIEW',
+      entityType: 'ReviewDisputeRequest',
+      entityId: disputeId,
+      before: { status: row.status },
+      after: { status: 'IN_REVIEW' },
+    });
+
+    return mapDispute(updated);
+  }
+
+  async acceptDispute(
+    tenantId: string,
+    adminUserId: string,
+    adminRole: string,
+    disputeId: string,
+    body: AdminReviewDisputeActionInput,
+  ) {
+    const row = await this.loadDisputeForAdmin(tenantId, disputeId);
+    if (!['PENDING', 'IN_REVIEW'].includes(row.status)) {
+      throw new BadRequestException('Dispute is not open for acceptance');
+    }
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      await tx.review.update({
+        where: { id: row.reviewId },
+        data: {
+          hiddenFromPublic: true,
+          moderatedAt: new Date(),
+          moderatedByUserId: adminUserId,
+        },
+      });
+      await this.syncInboxResolved(tx, row.inboxItemId, adminUserId, 'APPROVED', body.adminNote);
+
+      return tx.reviewDisputeRequest.update({
+        where: { id: disputeId },
+        data: {
+          status: 'ACCEPTED',
+          adminNote: body.adminNote ?? null,
+          resolvedByUserId: adminUserId,
+          resolvedAt: new Date(),
+        },
+        include: {
+          review: {
+            include: { user: { select: { firstName: true, lastName: true } } },
+          },
+          event: { select: { title: true } },
+        },
+      });
+    });
+
+    await this.reviews.recomputeEventRating(row.eventId);
+
+    await this.audit.logAction({
+      tenantId,
+      actorId: adminUserId,
+      actorRole: adminRole,
+      action: 'REVIEW_DISPUTE_ACCEPTED',
+      entityType: 'ReviewDisputeRequest',
+      entityId: disputeId,
+      before: { status: row.status, hiddenFromPublic: row.review.hiddenFromPublic },
+      after: { status: 'ACCEPTED', hiddenFromPublic: true },
+      metadata: { reviewId: row.reviewId },
+    });
+
+    return mapDispute(updated);
+  }
+
+  async rejectDispute(
+    tenantId: string,
+    adminUserId: string,
+    adminRole: string,
+    disputeId: string,
+    body: AdminReviewDisputeActionInput,
+  ) {
+    const row = await this.loadDisputeForAdmin(tenantId, disputeId);
+    if (!['PENDING', 'IN_REVIEW'].includes(row.status)) {
+      throw new BadRequestException('Dispute is not open for rejection');
+    }
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      await this.syncInboxResolved(tx, row.inboxItemId, adminUserId, 'REJECTED', body.adminNote);
+      return tx.reviewDisputeRequest.update({
+        where: { id: disputeId },
+        data: {
+          status: 'REJECTED',
+          adminNote: body.adminNote ?? null,
+          resolvedByUserId: adminUserId,
+          resolvedAt: new Date(),
+        },
+        include: {
+          review: {
+            include: { user: { select: { firstName: true, lastName: true } } },
+          },
+          event: { select: { title: true } },
+        },
+      });
+    });
+
+    await this.audit.logAction({
+      tenantId,
+      actorId: adminUserId,
+      actorRole: adminRole,
+      action: 'REVIEW_DISPUTE_REJECTED',
+      entityType: 'ReviewDisputeRequest',
+      entityId: disputeId,
+      before: { status: row.status },
+      after: { status: 'REJECTED' },
+    });
+
+    return mapDispute(updated);
+  }
+
+  async resolveDispute(
+    tenantId: string,
+    adminUserId: string,
+    adminRole: string,
+    disputeId: string,
+    body: AdminReviewDisputeActionInput,
+  ) {
+    const row = await this.loadDisputeForAdmin(tenantId, disputeId);
+    if (['CANCELLED'].includes(row.status)) {
+      throw new BadRequestException('Dispute is closed');
+    }
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      await this.syncInboxResolved(tx, row.inboxItemId, adminUserId, 'APPROVED', body.adminNote);
+      return tx.reviewDisputeRequest.update({
+        where: { id: disputeId },
+        data: {
+          status: 'RESOLVED',
+          adminNote: body.adminNote ?? row.adminNote,
+          resolvedByUserId: adminUserId,
+          resolvedAt: new Date(),
+        },
+        include: {
+          review: {
+            include: { user: { select: { firstName: true, lastName: true } } },
+          },
+          event: { select: { title: true } },
+        },
+      });
+    });
+
+    await this.audit.logAction({
+      tenantId,
+      actorId: adminUserId,
+      actorRole: adminRole,
+      action: 'REVIEW_DISPUTE_RESOLVED',
+      entityType: 'ReviewDisputeRequest',
+      entityId: disputeId,
+      before: { status: row.status },
+      after: { status: 'RESOLVED', adminNote: body.adminNote },
+    });
+
+    return mapDispute(updated);
+  }
+}

@@ -10,7 +10,7 @@ interface BadgeProps {
 
 const variants: Record<BadgeVariant, string> = {
   default: 'bg-border text-text',
-  accent: 'bg-accent/20 text-accent border border-accent/40',
+  accent: 'bg-accent-surface/70 text-accent-soft border border-accent-muted',
   muted: 'bg-bg-muted text-text-muted',
 };
 

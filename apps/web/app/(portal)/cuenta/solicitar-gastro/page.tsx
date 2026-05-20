@@ -46,9 +46,9 @@ export default function SolicitarGastroPage() {
       <Link href="/profiles" className="mb-4 inline-block text-sm text-text-muted hover:text-text">
         ← Volver a perfiles
       </Link>
-      <SectionTitle>Solicitar perfil gastronómico</SectionTitle>
+      <SectionTitle>Crear perfil gastronómico</SectionTitle>
       <p className="mt-2 text-text-muted">
-        Completá el formulario para solicitar un perfil gastronómico. Un administrador revisará tu solicitud.
+        Activá tu local al instante. Los tickets de descuento siguen requiriendo aprobación de administración.
       </p>
       <Card className="mt-6">
         <CardContent>
@@ -93,7 +93,7 @@ export default function SolicitarGastroPage() {
             </div>
             <div className="flex gap-2 pt-2">
               <Button type="submit" disabled={mutation.isPending}>
-                {mutation.isPending ? 'Enviando…' : 'Enviar solicitud'}
+                {mutation.isPending ? 'Creando…' : 'Crear perfil'}
               </Button>
               <Link href="/profiles">
                 <Button variant="outline" type="button">

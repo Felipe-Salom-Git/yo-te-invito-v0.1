@@ -13,6 +13,7 @@ import type {
   EventSummary,
   EventsPaginatedResponse,
 } from '@yo-te-invito/shared';
+import { deriveProducerEventMode } from '@yo-te-invito/shared';
 import { ErrorCode, parseRentalOpeningHours, type RentalOpeningHours } from '@yo-te-invito/shared';
 import { SubcategoriesService } from '../subcategories/subcategories.service';
 import { RentalLocationsService } from '../rental-locations/rental-locations.service';
@@ -75,12 +76,14 @@ export class ProducerEventsCrudService {
       geoLng: number | null;
     } | null;
     description: string | null;
+    summary?: string | null;
     endAt: Date | null;
     venueAddress: string | null;
     geoLat: number | null;
     geoLng: number | null;
     capacityTotal: number | null;
     isTicketingEnabled: boolean;
+    isGeneralPublication: boolean;
     status: string;
     ratingAvg: number | null;
     ratingCount: number;
@@ -96,12 +99,15 @@ export class ProducerEventsCrudService {
       category: event.category ?? undefined,
       subcategoryId: event.subcategoryId ?? undefined,
       description: event.description,
+      summary: event.summary ?? null,
       endAt: event.endAt?.toISOString() ?? null,
       venueAddress: event.venueAddress,
       geoLat: event.geoLat,
       geoLng: event.geoLng,
       capacityTotal: event.capacityTotal,
       isTicketingEnabled: event.isTicketingEnabled,
+      isGeneralPublication: event.isGeneralPublication,
+      eventMode: deriveProducerEventMode(event.isGeneralPublication),
       status: event.status,
       ratingAvg: event.ratingAvg ?? undefined,
       ratingCount: event.ratingCount,
@@ -200,6 +206,9 @@ export class ProducerEventsCrudService {
           city: true,
           venueName: true,
           coverImageUrl: true,
+          isTicketingEnabled: true,
+          isGeneralPublication: true,
+          status: true,
         },
         orderBy: { startAt: 'asc' },
         skip: (page - 1) * limit,
@@ -214,6 +223,9 @@ export class ProducerEventsCrudService {
       city: e.city,
       venueName: e.venueName,
       coverImageUrl: e.coverImageUrl,
+      isTicketingEnabled: e.isTicketingEnabled,
+      isGeneralPublication: e.isGeneralPublication,
+      eventMode: deriveProducerEventMode(e.isGeneralPublication),
     }));
     return {
       data: items,
@@ -246,6 +258,8 @@ export class ProducerEventsCrudService {
       category,
       body.rentalLocationId ?? null,
     );
+    const isPublicityOnly = body.eventMode === 'PUBLICITY_ONLY';
+
     const event = await this.prisma.event.create({
       data: {
         tenantId,
@@ -267,6 +281,7 @@ export class ProducerEventsCrudService {
         geoLng: body.geoLng ?? null,
         status: 'DRAFT',
         isTicketingEnabled: false,
+        isGeneralPublication: isPublicityOnly,
       },
       include: {
         media: { where: { deletedAt: null }, orderBy: { sortOrder: 'asc' } },
@@ -341,6 +356,12 @@ export class ProducerEventsCrudService {
       data: {
         ...(body.title !== undefined && { title: body.title }),
         ...(body.description !== undefined && { description: body.description }),
+        ...(body.summary !== undefined && {
+          summary:
+            body.summary == null || body.summary.trim() === ''
+              ? null
+              : body.summary.trim().slice(0, 220),
+        }),
         ...(body.startAt !== undefined && { startAt: new Date(body.startAt) }),
         ...(body.endAt !== undefined && {
           endAt: body.endAt ? new Date(body.endAt) : null,

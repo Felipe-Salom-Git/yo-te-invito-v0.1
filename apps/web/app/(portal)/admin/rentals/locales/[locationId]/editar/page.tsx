@@ -8,8 +8,14 @@ import { createEmptyRentalOpeningHours } from '@yo-te-invito/shared';
 import { useRepositories } from '@/repositories/context';
 import { PageContainer, SectionTitle, Button, Input, useToast } from '@/components';
 import { getErrorMessage } from '@/lib/errors';
-import { LatLngMapPreview } from '@/components/admin/LatLngMapPreview';
 import { OpeningHoursEditor } from '@/components/forms/OpeningHoursEditor';
+import {
+  RentalLocationFields,
+  locationValueFromRentalLocation,
+  rentalLocationPayloadFromLocationValue,
+  validateLocationValue,
+  type LocationValue,
+} from '@/components/location';
 
 export default function AdminRentalLocalEditarPage() {
   const params = useParams();
@@ -26,33 +32,41 @@ export default function AdminRentalLocalEditarPage() {
   });
 
   const [name, setName] = useState('');
-  const [address, setAddress] = useState('');
+  const [locationValue, setLocationValue] = useState<LocationValue>({
+    address: '',
+    province: '',
+    city: '',
+    lat: null,
+    lng: null,
+    placeId: null,
+  });
   const [openingHours, setOpeningHours] = useState(() => createEmptyRentalOpeningHours());
   const [openingHoursNote, setOpeningHoursNote] = useState('');
-  const [geoLat, setGeoLat] = useState('');
-  const [geoLng, setGeoLng] = useState('');
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    if (location) {
+    if (location && !hydrated) {
       setName(location.name);
-      setAddress(location.address ?? '');
+      setLocationValue(locationValueFromRentalLocation(location));
       setOpeningHours(location.openingHours ?? createEmptyRentalOpeningHours());
       setOpeningHoursNote(location.openingHoursNote ?? '');
-      setGeoLat(location.geoLat != null ? String(location.geoLat) : '');
-      setGeoLng(location.geoLng != null ? String(location.geoLng) : '');
+      setHydrated(true);
     }
-  }, [location]);
+  }, [location, hydrated]);
 
   const updateMutation = useMutation({
-    mutationFn: () =>
-      repos.rentalLocations.update(locationId, {
+    mutationFn: () => {
+      const geo = rentalLocationPayloadFromLocationValue(locationValue);
+      return repos.rentalLocations.update(locationId, {
         name: name.trim(),
-        address: address.trim() || null,
+        address: geo.address,
         openingHours,
         openingHoursNote: openingHoursNote.trim() || null,
-        geoLat: geoLat ? Number(geoLat) : null,
-        geoLng: geoLng ? Number(geoLng) : null,
-      }),
+        geoLat: geo.geoLat,
+        geoLng: geo.geoLng,
+      });
+    },
     onError: (err) => addToast(getErrorMessage(err), 'error'),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['rental-locations'] });
@@ -63,6 +77,12 @@ export default function AdminRentalLocalEditarPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
+    const locErr = validateLocationValue(locationValue);
+    if (locErr) {
+      setLocationError(locErr);
+      return;
+    }
+    setLocationError(null);
     updateMutation.mutate();
   };
 
@@ -86,7 +106,12 @@ export default function AdminRentalLocalEditarPage() {
 
       <form onSubmit={handleSubmit} className="mt-6 max-w-2xl space-y-4">
         <Input label="Nombre" value={name} onChange={(e) => setName(e.target.value)} required />
-        <Input label="Dirección" value={address} onChange={(e) => setAddress(e.target.value)} />
+
+        <RentalLocationFields
+          value={locationValue}
+          onChange={setLocationValue}
+          mapError={locationError ?? undefined}
+        />
 
         <OpeningHoursEditor
           value={openingHours}
@@ -94,15 +119,6 @@ export default function AdminRentalLocalEditarPage() {
           note={openingHoursNote}
           onNoteChange={setOpeningHoursNote}
         />
-
-        <fieldset className="space-y-2">
-          <legend className="mb-1.5 text-sm font-medium text-text">Ubicación en Maps</legend>
-          <div className="grid grid-cols-2 gap-2">
-            <Input label="Lat" type="number" step="any" value={geoLat} onChange={(e) => setGeoLat(e.target.value)} />
-            <Input label="Lng" type="number" step="any" value={geoLng} onChange={(e) => setGeoLng(e.target.value)} />
-          </div>
-          <LatLngMapPreview lat={geoLat} lng={geoLng} />
-        </fieldset>
 
         <div>
           <Button type="submit" disabled={updateMutation.isPending}>

@@ -9,6 +9,11 @@ import { PublicProducersController } from './public-producers.controller';
 import { PublicProducersService } from './public-producers.service';
 import { PublicReferralController } from './public-referral.controller';
 import { PublicReviewsController } from './public-reviews.controller';
+import { PublicGastroLocationsController } from './public-gastro-locations.controller';
+import { PublicGastroLocationsService } from './public-gastro-locations.service';
+import { PublicGastroDiscountsController } from './public-gastro-discounts.controller';
+import { PublicGastroDiscountsService } from './public-gastro-discounts.service';
+import { EmailModule } from '../email/email.module';
 import { PublicReferrersController } from './public-referrers.controller';
 import { ReferralsModule } from '../modules/referrals/referrals.module';
 import { ReviewsModule } from '../modules/reviews/reviews.module';
@@ -16,6 +21,7 @@ import { ReferrerModule } from '../modules/referrer/referrer.module';
 import { TicketingModule } from '../ticketing/ticketing.module';
 import { SubcategoriesModule } from '../modules/subcategories/subcategories.module';
 import { RentalLocationsModule } from '../modules/rental-locations/rental-locations.module';
+import { CategoryBannersModule } from '../modules/category-banners/category-banners.module';
 
 @Module({
   imports: [
@@ -25,6 +31,8 @@ import { RentalLocationsModule } from '../modules/rental-locations/rental-locati
     TicketingModule,
     SubcategoriesModule,
     RentalLocationsModule,
+    CategoryBannersModule,
+    EmailModule,
   ],
   controllers: [
     PublicEventsController,
@@ -34,12 +42,16 @@ import { RentalLocationsModule } from '../modules/rental-locations/rental-locati
     PublicReferralController,
     PublicReferrersController,
     PublicReviewsController,
+    PublicGastroLocationsController,
+    PublicGastroDiscountsController,
   ],
   providers: [
     PublicEventsService,
     PublicTicketTypesService,
     PublicOrdersService,
     PublicProducersService,
+    PublicGastroLocationsService,
+    PublicGastroDiscountsService,
   ],
 })
 export class PublicModule {}

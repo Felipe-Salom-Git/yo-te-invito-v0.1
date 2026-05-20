@@ -4,6 +4,14 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 
 **Convención:** `- [ ]` pendiente · `- [x]` hecho
 
+## Perfiles y registro (2026-05)
+
+- [x] Registro con elección de perfil + formulario específico (`POST /auth/register` con `profileType` / `profileData`)
+- [x] Perfiles comerciales activos al crear (sin cola admin de perfiles)
+- [x] Admin: ocultar «Perfiles pendientes» (`/admin/perfiles` redirige a `/admin`)
+- [x] Script test user: `pnpm --filter api run demo:enable-test-user-profiles` (`felipe.e.salom@gmail.com`)
+- [ ] Deprecar/eliminar endpoints legacy `RoleApplication` y `/admin/applications` (opcional)
+
 ---
 
 ## A. Infraestructura y backend
@@ -91,6 +99,18 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 
 ---
 
+## K. Productoras / Proveedores (portal + reseñas)
+
+- [x] Perfil productor por bloques: API `GET/POST/PATCH /producer/profile`, rutas `/producer/profile/*` (create, identity, images, contact)
+- [x] Ficha pública productor (`/producers/[id|slug]`) y reseñas públicas de eventos
+- [x] Portal: `/producer/comments` — reseñas de eventos + solicitud de revisión (disputa) vía inbox
+- [x] Admin: cola `/admin/review-disputes` para resolver disputas de reseñas
+- [x] Reseñas B2B (`CommercialRelationshipReview`): API + UI portal (valoración comercial privada)
+- [ ] Moderación avanzada / notificaciones email para disputas (si aplica)
+- [ ] Export o reporting de disputas y reseñas comerciales
+
+---
+
 ## Referencias
 
 | Documento | Uso |
@@ -100,4 +120,4 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 | `BACKEND_CONTEXT.md` | API + Prisma + scripts |
 | `FRONTEND_CONTEXT.md` | Web + rentals UI |
 | `FRONTEND_DEMO_NOTES.md` | Histórico demo |
-
+

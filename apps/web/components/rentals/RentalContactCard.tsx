@@ -17,7 +17,7 @@ export function RentalContactCard({ whatsAppHref }: RentalContactCardProps) {
         href={whatsAppHref}
         target="_blank"
         rel="noopener noreferrer"
-        className="mt-4 flex w-full items-center justify-center rounded-lg bg-emerald-600 px-5 py-2.5 text-center text-sm font-semibold text-white hover:bg-emerald-500"
+        className="mt-4 flex w-full items-center justify-center rounded-lg bg-accent px-5 py-2.5 text-center text-sm font-semibold text-bg hover:bg-accent-hover"
       >
         Contactar por WhatsApp
       </a>

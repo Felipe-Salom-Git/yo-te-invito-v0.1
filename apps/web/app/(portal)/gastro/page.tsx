@@ -41,7 +41,7 @@ export default function GastroPortalPage() {
     <PageContainer>
       <Link href="/home" className="mb-4 inline-block text-sm text-text-muted hover:text-text">← Volver</Link>
       <SectionTitle>Portal Gastro</SectionTitle>
-      <p className="mt-4 text-text-muted">Editor de contenido, descuentos y resumen.</p>
+      <p className="mt-4 text-text-muted">Gestioná tu local, tickets de descuento y resumen de uso.</p>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-3">
         <Card>
@@ -71,8 +71,8 @@ export default function GastroPortalPage() {
       </div>
 
       <div className="mt-6 flex flex-wrap gap-2">
-        <Link href="/gastro/contenido" className="rounded border border-accent px-4 py-2 text-accent hover:bg-accent/10">
-          Contenido
+        <Link href="/gastro/local" className="rounded border border-accent px-4 py-2 text-accent hover:bg-accent/10">
+          Mi local
         </Link>
         <Link href="/gastro/descuentos" className="rounded border border-accent px-4 py-2 text-accent hover:bg-accent/10">
           Descuentos

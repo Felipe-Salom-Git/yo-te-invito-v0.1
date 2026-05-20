@@ -13,14 +13,19 @@ export function useMe() {
     queryKey: ['me', userId],
     queryFn: () => (userId ? repos.users.getMe(userId) : Promise.resolve(null)),
     enabled: !!userId && status === 'authenticated',
+    staleTime: 60_000,
   });
+
+  /** Solo bloquear UI en la carga inicial; no al refetch al volver a la pestaña. */
+  const isInitialLoading =
+    status === 'loading' || (status === 'authenticated' && isLoading && user === undefined);
 
   return {
     session,
     user,
     userId,
     status,
-    isLoading: status === 'loading' || isLoading,
+    isLoading: isInitialLoading,
     isAuthenticated: status === 'authenticated',
   };
 }

@@ -57,14 +57,6 @@ export const CROSS_CATEGORY_DISCOVERY_SUBHEADING = 'Más para hacer en Bariloche
 export const CROSS_CATEGORY_EMPTY_EVENT_MESSAGE =
   'No hay eventos próximos disponibles por ahora.';
 
-export interface CategoryLandingRailConfig {
-  id: string;
-  title: string;
-  subtitle: string;
-  /** list | trending | new — how to load items */
-  source: 'list' | 'trending' | 'new';
-}
-
 export interface CategoryLandingMeta {
   id: CategoryGatewayId;
   title: string;
@@ -92,33 +84,6 @@ export const CATEGORY_LANDING_META: Record<CategoryGatewayId, CategoryLandingMet
     title: 'EXCURSIONES',
     subtitle: 'Recorridos y experiencias únicas',
   },
-};
-
-export const CATEGORY_LANDING_RAILS: Record<CategoryGatewayId, CategoryLandingRailConfig[]> = {
-  event: [
-    { id: 'featured', title: 'Destacados en Eventos', subtitle: 'Lo más elegido', source: 'trending' },
-    { id: 'upcoming', title: 'Próximos eventos', subtitle: 'Agenda cercana', source: 'list' },
-    { id: 'top', title: 'Más elegidos', subtitle: 'Alta valoración', source: 'list' },
-    { id: 'new', title: 'Nuevos eventos', subtitle: 'Recién sumados', source: 'new' },
-  ],
-  gastro: [
-    { id: 'featured', title: 'Destacados gastronómicos', subtitle: 'Imperdibles', source: 'trending' },
-    { id: 'promos', title: 'Promos', subtitle: 'Ofertas activas', source: 'list' },
-    { id: 'top', title: 'Mejor valorados', subtitle: 'Favoritos del público', source: 'list' },
-    { id: 'new', title: 'Nuevos lugares', subtitle: 'Recién agregados', source: 'new' },
-  ],
-  rental: [
-    { id: 'featured', title: 'Destacados', subtitle: 'Equipos y movilidad', source: 'trending' },
-    { id: 'mobility', title: 'Movilidad', subtitle: 'Autos y bicis', source: 'list' },
-    { id: 'adventure', title: 'Equipo de aventura', subtitle: 'Outdoor y nieve', source: 'list' },
-    { id: 'new', title: 'Nuevos alquileres', subtitle: 'Recién sumados', source: 'new' },
-  ],
-  excursion: [
-    { id: 'featured', title: 'Excursiones destacadas', subtitle: 'Las más buscadas', source: 'trending' },
-    { id: 'adventure', title: 'Aventura', subtitle: 'Adrenalina pura', source: 'list' },
-    { id: 'nature', title: 'Naturaleza', subtitle: 'Paisajes únicos', source: 'list' },
-    { id: 'new', title: 'Nuevas experiencias', subtitle: 'Recién agregadas', source: 'new' },
-  ],
 };
 
 export function isCategoryLandingId(value: string): value is CategoryGatewayId {

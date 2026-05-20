@@ -17,6 +17,10 @@ export interface EventsListQuery {
   subcategorySlug?: string;
   producerId?: string;
   status?: string;
+  /** Public list sort — see packages/shared eventsListQuerySchema */
+  sort?: 'recent' | 'featured_rating' | 'featured_event' | 'upcoming' | 'dateAsc';
+  hasTicketing?: boolean;
+  excludeGeneralPublications?: boolean;
   /** When true, use GET /admin/events (all events for approval queue) */
   forAdmin?: boolean;
 }
@@ -120,6 +124,7 @@ export interface RentalLocationsRepo {
     locationId: string,
     input: {
       title: string;
+      summary?: string | null;
       description?: string | null;
       subcategoryId?: string | null;
       headerImageUrl?: string | null;
@@ -134,6 +139,7 @@ export interface RentalLocationsRepo {
     productId: string,
     patch: {
       title?: string;
+      summary?: string | null;
       description?: string | null;
       subcategoryId?: string | null;
       headerImageUrl?: string | null;
@@ -143,6 +149,151 @@ export interface RentalLocationsRepo {
       status?: string;
     },
   ): Promise<{ id: string; title: string }>;
+}
+
+export interface ExcursionOperatorSummary {
+  id: string;
+  tenantId: string;
+  name: string;
+  address: string | null;
+  city: string | null;
+  openingHours: import('@yo-te-invito/shared').RentalOpeningHours | null;
+  openingHoursNote: string | null;
+  contactPhone: string | null;
+  geoLat: number | null;
+  geoLng: number | null;
+  isActive: boolean;
+  sortOrder: number;
+  excursionCount?: number;
+}
+
+export interface ExcursionOperatorDetail extends ExcursionOperatorSummary {
+  createdAt: string;
+  updatedAt: string;
+  excursions?: Array<{
+    id: string;
+    title: string;
+    startAt: string;
+    city: string | null;
+    venueName: string | null;
+    coverImageUrl: string | null;
+    category?: string | null;
+    subcategoryId?: string | null;
+    description?: string | null;
+    summary?: string | null;
+  }>;
+}
+
+export interface ExcursionOperatorsRepo {
+  listAdmin(query?: { tenantId?: string; includeInactive?: boolean }): Promise<{
+    data: ExcursionOperatorSummary[];
+  }>;
+  getAdmin(id: string): Promise<ExcursionOperatorDetail>;
+  create(input: {
+    tenantId?: string;
+    name: string;
+    address?: string | null;
+    city?: string | null;
+    openingHours?: import('@yo-te-invito/shared').RentalOpeningHours | null;
+    openingHoursNote?: string | null;
+    contactPhone?: string | null;
+    geoLat?: number | null;
+    geoLng?: number | null;
+    isActive?: boolean;
+    sortOrder?: number;
+  }): Promise<ExcursionOperatorSummary>;
+  update(
+    id: string,
+    patch: {
+      name?: string;
+      address?: string | null;
+      city?: string | null;
+      openingHours?: import('@yo-te-invito/shared').RentalOpeningHours | null;
+      openingHoursNote?: string | null;
+      contactPhone?: string | null;
+      geoLat?: number | null;
+      geoLng?: number | null;
+      isActive?: boolean;
+      sortOrder?: number;
+    },
+  ): Promise<ExcursionOperatorSummary>;
+  remove(id: string): Promise<{ ok: true }>;
+  createExcursion(
+    operatorId: string,
+    input: {
+      title: string;
+      summary?: string | null;
+      description?: string | null;
+      subcategoryId?: string | null;
+      headerImageUrl?: string | null;
+      galleryImages?: Array<{ url: string; type?: string }>;
+      coverImageUrl?: string | null;
+      media?: Array<{ id: string; type: string; url: string; sortOrder: number }>;
+      status?: string;
+    },
+  ): Promise<{ id: string; title: string }>;
+  updateExcursion(
+    operatorId: string,
+    excursionId: string,
+    patch: {
+      title?: string;
+      summary?: string | null;
+      description?: string | null;
+      subcategoryId?: string | null;
+      headerImageUrl?: string | null;
+      galleryImages?: Array<{ url: string; type?: string }>;
+      coverImageUrl?: string | null;
+      media?: Array<{ id: string; type: string; url: string; sortOrder: number }>;
+      status?: string;
+    },
+  ): Promise<{ id: string; title: string }>;
+}
+
+export interface CategoryBannerResolvedItem {
+  id: string;
+  eventId: string;
+  title: string;
+  description: string | null;
+  coverImageUrl: string | null;
+  category: string | null;
+  subcategoryId?: string | null;
+  subcategoryName?: string | null;
+  city: string | null;
+  venueName: string | null;
+  startAt: string;
+  position?: number;
+  isManual: boolean;
+}
+
+export interface CategoryBannerAdminItem {
+  id: string;
+  eventId: string;
+  position: number;
+  isActive: boolean;
+  title: string;
+  coverImageUrl: string | null;
+  category: string | null;
+  status: string;
+  startAt: string;
+}
+
+export interface CategoryBannersRepo {
+  getPublic(
+    tenantId: string,
+    category: ContentMainCategory,
+  ): Promise<{ mode: 'automatic' | 'manual'; data: CategoryBannerResolvedItem[] }>;
+  getAdmin(category: ContentMainCategory): Promise<{
+    mode: 'automatic' | 'manual';
+    items: CategoryBannerAdminItem[];
+  }>;
+  updateAdmin(
+    category: ContentMainCategory,
+    items: Array<{ eventId: string; position: number }>,
+  ): Promise<{ mode: 'automatic' | 'manual'; items: CategoryBannerAdminItem[] }>;
+  removeAdminItem(
+    category: ContentMainCategory,
+    itemId: string,
+  ): Promise<{ mode: 'automatic' | 'manual'; items: CategoryBannerAdminItem[] }>;
 }
 
 export interface SubcategoriesRepo {
@@ -187,11 +338,20 @@ export interface EventSummary {
   coverImageUrl: string | null;
   category?: string;
   subcategoryId?: string | null;
+  summary?: string | null;
+  description?: string | null;
   producerId?: string;
   status?: string;
   /** API: list with category=gastro may include first active discount teaser */
   gastroPromoLabel?: string | null;
   gastroPromoImageUrl?: string | null;
+  ratingAvg?: number | null;
+  ratingCount?: number;
+  createdAt?: string;
+  isTicketingEnabled?: boolean;
+  hasTicketing?: boolean;
+  isGeneralPublication?: boolean;
+  subcategoryName?: string | null;
 }
 
 export interface ProducerSummary {
@@ -208,20 +368,190 @@ export interface ProducerSummary {
   ratingCount: number;
 }
 
+export interface ProducerGalleryItem {
+  id: string;
+  url: string;
+  alt?: string;
+  position?: number;
+}
+
+export interface PublicProducerEventSummary {
+  id: string;
+  title: string;
+  startAt: string;
+  coverImageUrl?: string | null;
+  city?: string | null;
+  venueName?: string | null;
+  eventMode: 'PUBLICITY_ONLY' | 'TICKETED';
+  hasTicketing: boolean;
+  status: string;
+  isTicketingEnabled?: boolean;
+  isGeneralPublication?: boolean;
+}
+
 export interface ProducerDetail extends ProducerSummary {
   longDescription: string | null;
-  legalName: string | null;
+  legalName?: string | null;
   primaryPhone: string | null;
   secondaryPhone: string | null;
   primaryEmail: string | null;
   secondaryEmail: string | null;
   whatsapp: string | null;
-  socialLinks: any;
-  events: EventSummary[];
+  socialLinks?: { website?: string; instagram?: string } | null;
+  websiteUrl?: string | null;
+  instagramUrl?: string | null;
+  gallery?: ProducerGalleryItem[];
+  galleryUrls?: string[] | null;
+  events: PublicProducerEventSummary[] | EventSummary[];
+  /** Solo portal: estado Prisma del perfil */
+  status?: string;
+}
+
+export interface EventProducerPublicSummary {
+  id: string;
+  slug: string | null;
+  displayName: string;
+  logoUrl?: string | null;
+  shortDescription?: string | null;
+  primaryEmail?: string | null;
+  primaryPhone?: string | null;
+  whatsapp?: string | null;
+}
+
+export interface ProducerReviewsSummary {
+  averageRating: number | null;
+  totalReviews: number;
+  distribution: Record<'1' | '2' | '3' | '4' | '5', number>;
+}
+
+export interface ProducerReviewListItem {
+  id: string;
+  eventId: string;
+  eventTitle: string;
+  rating: number;
+  comment: string | null;
+  userDisplayName: string;
+  createdAt: string;
+}
+
+export interface CommercialRelationshipReview {
+  id: string;
+  producerProfileId: string;
+  referrerProfileId: string;
+  relationshipId: string | null;
+  reviewerUserId: string;
+  reviewerRole: 'PRODUCER' | 'REFERRER';
+  targetType: 'PRODUCER' | 'REFERRER';
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CommercialReviewsBundle {
+  aboutReferrer: CommercialRelationshipReview[];
+  aboutProducer: CommercialRelationshipReview[];
+  summaryAboutReferrer: { averageRating: number | null; totalReviews: number };
+  summaryAboutProducer: { averageRating: number | null; totalReviews: number };
+}
+
+export type ReviewDisputeReasonType =
+  | 'UNFAIR_RATING'
+  | 'OFFENSIVE'
+  | 'FALSE_INFORMATION'
+  | 'WRONG_EVENT'
+  | 'OTHER';
+
+export type ReviewDisputeStatus =
+  | 'PENDING'
+  | 'IN_REVIEW'
+  | 'ACCEPTED'
+  | 'REJECTED'
+  | 'RESOLVED'
+  | 'CANCELLED';
+
+export interface ProducerManagedReviewSummary {
+  averageRating: number | null;
+  totalReviews: number;
+  distribution: Record<'1' | '2' | '3' | '4' | '5', number>;
+}
+
+export interface ProducerManagedReviewListItem {
+  id: string;
+  eventId: string;
+  eventTitle: string;
+  score: number;
+  title: string | null;
+  comment: string | null;
+  userDisplayName: string;
+  hiddenFromPublic: boolean;
+  createdAt: string;
+  dispute: {
+    id: string;
+    status: ReviewDisputeStatus;
+    reasonType: ReviewDisputeReasonType;
+    adminNote: string | null;
+    createdAt: string;
+  } | null;
+}
+
+export interface ReviewDisputeDetail {
+  id: string;
+  reviewId: string;
+  producerProfileId: string;
+  eventId: string;
+  eventTitle: string;
+  reasonType: ReviewDisputeReasonType;
+  message: string;
+  status: ReviewDisputeStatus;
+  adminNote: string | null;
+  reviewScore: number;
+  reviewComment: string | null;
+  reviewUserDisplayName: string;
+  createdAt: string;
+  updatedAt: string;
+  resolvedAt: string | null;
+  producerDisplayName?: string;
+}
+
+export interface ProducerReviewsRepo {
+  getSummary(): Promise<ProducerManagedReviewSummary>;
+  listReviews(params?: {
+    eventId?: string;
+    rating?: number;
+    disputeStatus?: string;
+    sort?: 'newest' | 'oldest';
+    page?: number;
+    limit?: number;
+  }): Promise<{
+    reviews: ProducerManagedReviewListItem[];
+    page: number;
+    total: number;
+    events: Array<{ id: string; title: string }>;
+  }>;
+  createDispute(
+    reviewId: string,
+    payload: { reasonType: ReviewDisputeReasonType; message: string },
+  ): Promise<ReviewDisputeDetail>;
+  getDispute(id: string): Promise<ReviewDisputeDetail>;
+}
+
+export interface AdminReviewDisputesRepo {
+  list(params?: { status?: ReviewDisputeStatus; page?: number; limit?: number }): Promise<{
+    disputes: ReviewDisputeDetail[];
+    page: number;
+    total: number;
+  }>;
+  get(id: string): Promise<ReviewDisputeDetail>;
+  markInReview(id: string, body?: { adminNote?: string }): Promise<ReviewDisputeDetail>;
+  accept(id: string, body?: { adminNote?: string }): Promise<ReviewDisputeDetail>;
+  reject(id: string, body?: { adminNote?: string }): Promise<ReviewDisputeDetail>;
+  resolve(id: string, body?: { adminNote?: string }): Promise<ReviewDisputeDetail>;
 }
 
 export interface EventDetail extends EventSummary {
   description: string | null;
+  summary?: string | null;
   endAt: string | null;
   venueAddress: string | null;
   geoLat: number | null;
@@ -232,6 +562,7 @@ export interface EventDetail extends EventSummary {
   media: Array<{ id: string; type: string; url: string; sortOrder: number }>;
   ratingAvg?: number | null;
   ratingCount?: number;
+  producer?: EventProducerPublicSummary | null;
 }
 
 export interface Ticket {
@@ -787,9 +1118,18 @@ export interface PublicGastroDiscountSummary {
   displayImageUrls?: string[];
 }
 
+export interface EventsCalendarMonthQuery {
+  tenantId: string;
+  month: string;
+  category?: string;
+  subcategorySlug?: string;
+  subcategoryId?: string;
+}
+
 export interface EventsRepo {
   list(query: EventsListQuery): Promise<EventsPaginatedResponse>;
   search(query: EventsSearchQuery): Promise<EventsPaginatedResponse>;
+  listCalendarMonth(query: EventsCalendarMonthQuery): Promise<{ data: EventSummary[] }>;
   trending(tenantId: string, limit?: number): Promise<EventSummary[]>;
   getDetail(eventId: string, tenantId: string): Promise<EventDetail | null>;
   /** GET /public/events/:id/discounts — empty discounts if event is not gastro. */
@@ -797,7 +1137,13 @@ export interface EventsRepo {
   /** Event detail for producer portal (includes DRAFT/PENDING). */
   getDetailForProducer(eventId: string): Promise<EventDetail | null>;
   getTicketTypes(eventId: string): Promise<TicketTypeResponse[]>;
-  create(input: Partial<EventDetail> & { tenantId: string; producerId?: string }): Promise<EventDetail>;
+  create(
+    input: Partial<EventDetail> & {
+      tenantId: string;
+      producerId?: string;
+      eventMode?: 'PUBLICITY_ONLY' | 'TICKETED';
+    },
+  ): Promise<EventDetail>;
   update(eventId: string, patch: Partial<EventDetail>): Promise<EventDetail | null>;
 }
 
@@ -895,6 +1241,29 @@ export interface ApplyReferrerBody {
   city?: string;
   region?: string;
   publicVisibility?: boolean;
+}
+
+export interface AuthRepo {
+  register(body: {
+    email: string;
+    password: string;
+    firstName: string;
+    lastName: string;
+    tenantId?: string;
+    profileType?: 'USER' | 'PRODUCER' | 'GASTRO' | 'HOTEL' | 'REFERRER';
+    profileData?: unknown;
+  }): Promise<{
+    token: string;
+    user: {
+      id: string;
+      tenantId: string;
+      email: string;
+      role: string;
+      status: string;
+      firstName: string;
+      lastName: string;
+    };
+  }>;
 }
 
 export interface ProfilesRepo {
@@ -1064,7 +1433,35 @@ export interface ProducersRepo {
   get(id: string): Promise<ProducerDetail | null>;
   list(query: { page?: number; limit?: number; city?: string }): Promise<{ producers: ProducerSummary[]; total: number }>;
   getMyProfile(): Promise<ProducerDetail | null>;
-  updateMyProfile(data: any): Promise<ProducerDetail>;
+  createMyProfile(data: import('@yo-te-invito/shared').CreateProducerProfileInput): Promise<ProducerDetail>;
+  updateMyProfile(data: import('@yo-te-invito/shared').UpdateProducerProfileInput): Promise<ProducerDetail>;
+  updateMyProfileIdentity(
+    data: import('@yo-te-invito/shared').ProducerProfileIdentityUpdateInput,
+  ): Promise<ProducerDetail>;
+  updateMyProfileImages(
+    data: import('@yo-te-invito/shared').ProducerProfileImagesUpdateInput,
+  ): Promise<ProducerDetail>;
+  updateMyProfileContact(
+    data: import('@yo-te-invito/shared').ProducerProfileContactUpdateInput,
+  ): Promise<ProducerDetail>;
+  getReviewsSummary(idOrSlug: string): Promise<ProducerReviewsSummary>;
+  listReviews(
+    idOrSlug: string,
+    query?: { page?: number; limit?: number; minScore?: number },
+  ): Promise<{ reviews: ProducerReviewListItem[]; page: number; total: number }>;
+}
+
+export interface CommercialReviewsRepo {
+  listForProducerReferrer(referrerProfileId: string): Promise<CommercialReviewsBundle>;
+  createAsProducer(
+    referrerProfileId: string,
+    payload: { rating: number; comment?: string },
+  ): Promise<CommercialRelationshipReview>;
+  listForReferrerProducer(producerProfileId: string): Promise<CommercialReviewsBundle>;
+  createAsReferrer(
+    producerProfileId: string,
+    payload: { rating: number; comment?: string },
+  ): Promise<CommercialRelationshipReview>;
 }
 
 export type ScanResult = 'OK' | 'ALREADY_USED' | 'REVOKED' | 'INVALID';
@@ -1107,6 +1504,15 @@ export interface GastroContent {
   sortOrder: number;
 }
 
+export type GastroDiscountStatus =
+  | 'PENDING_REVIEW'
+  | 'COMMISSION_NEGOTIATION'
+  | 'APPROVED'
+  | 'ACTIVE'
+  | 'REJECTED'
+  | 'CANCELLED'
+  | 'EXPIRED';
+
 export interface GastroDiscount {
   id: string;
   eventId: string;
@@ -1115,8 +1521,96 @@ export interface GastroDiscount {
   value: number;
   validFrom: string | null;
   validTo: string | null;
-  status: 'ACTIVE' | 'EXPIRED' | 'INACTIVE';
+  status: GastroDiscountStatus;
   createdAt: string;
+}
+
+export interface GastroLocal {
+  id: string;
+  tenantId: string;
+  displayName: string;
+  legalName: string | null;
+  summary: string | null;
+  detail: string | null;
+  description: string | null;
+  logoUrl: string | null;
+  bannerUrl: string | null;
+  galleryUrls: string[] | null;
+  province: string | null;
+  city: string | null;
+  address: string | null;
+  geoLat: number | null;
+  geoLng: number | null;
+  openingHours: import('@yo-te-invito/shared').RentalOpeningHours | null;
+  openingHoursNote: string | null;
+  contactPhone: string | null;
+  contactEmail: string | null;
+  menuUrl: string | null;
+  websiteUrl: string | null;
+  subcategoryId: string | null;
+  publicEventId: string | null;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GastroPortalDiscount {
+  id: string;
+  tenantId: string;
+  eventId: string;
+  gastroProfileId: string | null;
+  gastroProfileName?: string | null;
+  code: string;
+  type: 'PERCENT' | 'FIXED';
+  value: number;
+  title: string | null;
+  summary: string | null;
+  detail: string | null;
+  discountDate: string | null;
+  validFrom: string | null;
+  validTo: string | null;
+  status: GastroDiscountStatus;
+  adminNotes?: string | null;
+  rejectionReason?: string | null;
+  qrToken?: string | null;
+  emailSentAt?: string | null;
+  emailSendError?: string | null;
+  ownerEmail?: string | null;
+  ownerPhone?: string | null;
+  headerImageUrl?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GastroLocalUpsertPayload {
+  displayName: string;
+  summary?: string | null;
+  detail?: string | null;
+  subcategoryId?: string | null;
+  bannerUrl?: string | null;
+  galleryUrls?: string[];
+  location: {
+    province: string;
+    city: string;
+    address: string;
+    lat: number;
+    lng: number;
+  };
+  openingHours?: import('@yo-te-invito/shared').RentalOpeningHours | null;
+  openingHoursNote?: string | null;
+  contactPhone?: string | null;
+  contactEmail: string;
+  menuUrl?: string | null;
+  websiteUrl?: string | null;
+}
+
+export interface GastroDiscountCreatePayload {
+  title: string;
+  summary: string;
+  detail: string;
+  imageUrls: string[];
+  discountDate: string;
+  commissionCoordinationAccepted: true;
 }
 
 export interface GastroDiscountValidation {
@@ -1125,6 +1619,93 @@ export interface GastroDiscountValidation {
   validatedAt: string;
   userId: string | null;
   orderId: string | null;
+}
+
+export interface PublicGastroLocation extends GastroLocal {
+  subcategoryName: string | null;
+  ratingAvg?: number | null;
+  ratingCount?: number;
+}
+
+export interface PublicGastroLocationDiscount {
+  id: string;
+  title: string | null;
+  summary: string | null;
+  detail: string | null;
+  headerImageUrl: string | null;
+  discountDate: string | null;
+  type: 'PERCENT' | 'FIXED';
+  value: number;
+}
+
+export interface PublicGastroDiscountListItem extends PublicGastroLocationDiscount {
+  locationId: string;
+  locationName: string;
+  locationCity: string | null;
+  locationSlug: string | null;
+}
+
+export interface PublicGastroDiscountDetail extends PublicGastroDiscountListItem {
+  imageUrls: string[];
+  eventId: string;
+  claimable: boolean;
+}
+
+export interface PublicGastroDiscountClaimResult {
+  claimId: string;
+  accessToken: string;
+  email: string;
+  emailSent: boolean;
+  qrPayload: string;
+  discountTitle: string | null;
+  locationName: string;
+}
+
+export interface PublicGastroDiscountClaimView {
+  claimId: string;
+  email: string;
+  qrPayload: string;
+  discountTitle: string | null;
+  discountSummary: string | null;
+  locationName: string;
+  locationId: string;
+  discountDate: string | null;
+  emailSentAt: string | null;
+}
+
+export interface PublicGastroLocationsRepo {
+  getById(locationId: string, tenantId: string): Promise<PublicGastroLocation>;
+  getByPublicEventId(eventId: string, tenantId: string): Promise<PublicGastroLocation>;
+  listDiscounts(locationId: string, tenantId: string): Promise<{
+    discounts: PublicGastroLocationDiscount[];
+  }>;
+  list(params: { tenantId: string; city?: string; limit?: number }): Promise<{
+    data: Array<{
+      id: string;
+      publicEventId: string | null;
+      displayName: string;
+      summary: string | null;
+      city: string | null;
+      province: string | null;
+      bannerUrl: string | null;
+      subcategoryName: string | null;
+    }>;
+  }>;
+  countPublishedDiscounts(tenantId: string): Promise<{ count: number }>;
+  listPublishedDiscounts(params: {
+    tenantId: string;
+    subcategorySlug?: string;
+    limit?: number;
+  }): Promise<{ data: PublicGastroDiscountListItem[] }>;
+  getPublishedDiscount(discountId: string, tenantId: string): Promise<PublicGastroDiscountDetail>;
+  claimDiscount(
+    discountId: string,
+    body: { tenantId: string; email: string },
+  ): Promise<PublicGastroDiscountClaimResult>;
+  getDiscountClaim(
+    claimId: string,
+    params: { tenantId: string; accessToken: string },
+  ): Promise<PublicGastroDiscountClaimView>;
 }
 
 export interface GastroRepo {
@@ -1136,6 +1717,130 @@ export interface GastroRepo {
   updateDiscount(id: string, patch: Partial<GastroDiscount>): Promise<GastroDiscount | null>;
   listValidations(discountId?: string): Promise<GastroDiscountValidation[]>;
   recordValidation(discountId: string, userId?: string, orderId?: string): Promise<GastroDiscountValidation>;
+  getMyLocal(): Promise<GastroLocal | null>;
+  createMyLocal(payload: GastroLocalUpsertPayload): Promise<GastroLocal>;
+  updateMyLocal(payload: Partial<GastroLocalUpsertPayload>): Promise<GastroLocal>;
+  listMyDiscounts(): Promise<{ data: GastroPortalDiscount[] }>;
+  getMyDiscount(id: string): Promise<GastroPortalDiscount>;
+  createMyDiscount(payload: GastroDiscountCreatePayload): Promise<GastroPortalDiscount>;
+  updateMyDiscount(id: string, payload: Partial<Omit<GastroDiscountCreatePayload, 'commissionCoordinationAccepted'>>): Promise<GastroPortalDiscount>;
+}
+
+export interface AdminGastroLocationListItem {
+  id: string;
+  displayName: string;
+  status: string;
+  city: string | null;
+  province: string | null;
+  contactEmail: string | null;
+  contactPhone: string | null;
+  publicEventId: string | null;
+  owner: { userId: string | null; name: string | null; email: string | null };
+  discountsCount: number;
+  pendingDiscountsCount: number;
+  activeDiscountsCount: number;
+  createdAt: string;
+}
+
+export interface AdminGastroLocationDetail extends AdminGastroLocationListItem {
+  summary: string | null;
+  address: string | null;
+  bannerUrl: string | null;
+  menuUrl: string | null;
+  websiteUrl: string | null;
+  updatedAt: string;
+}
+
+export interface AdminGastroDiscountListItem {
+  id: string;
+  title: string | null;
+  summary: string | null;
+  status: GastroDiscountStatus;
+  discountDate: string | null;
+  validationCount: number;
+  createdAt: string;
+}
+
+export interface AdminGastroDiscountDetail {
+  id: string;
+  profileId: string;
+  eventId: string;
+  title: string | null;
+  summary: string | null;
+  detail: string | null;
+  discountDate: string | null;
+  status: GastroDiscountStatus;
+  submittedImageUrls: string[];
+  displayImageUrls: string[];
+  adminNotes: string | null;
+  rejectionReason: string | null;
+  qrToken: string | null;
+  emailSentAt: string | null;
+  emailSendError: string | null;
+  ownerEmail: string | null;
+  ownerPhone: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminGastroDiscountMetrics {
+  validationCount: number;
+  status: GastroDiscountStatus;
+  discountDate: string | null;
+  emailSentAt: string | null;
+  lastValidationAt: string | null;
+}
+
+export interface AdminGastroPendingDiscountItem extends AdminGastroDiscountListItem {
+  profileId: string;
+  profileName: string;
+}
+
+export interface AdminGastroRepo {
+  listPendingDiscounts(): Promise<{ data: AdminGastroPendingDiscountItem[] }>;
+  listLocations(params?: {
+    search?: string;
+    status?: string;
+    hasPendingDiscounts?: boolean;
+    page?: number;
+    limit?: number;
+  }): Promise<{
+    data: AdminGastroLocationListItem[];
+    meta: { page: number; limit: number; total: number; totalPages: number };
+  }>;
+  getLocation(profileId: string): Promise<AdminGastroLocationDetail>;
+  listLocationDiscounts(profileId: string): Promise<{ data: AdminGastroDiscountListItem[] }>;
+  getDiscount(profileId: string, discountId: string): Promise<AdminGastroDiscountDetail>;
+  getDiscountMetrics(profileId: string, discountId: string): Promise<AdminGastroDiscountMetrics>;
+  updatePublication(
+    profileId: string,
+    discountId: string,
+    body: {
+      title: string;
+      summary: string;
+      detail: string;
+      displayImageUrls: string[];
+    },
+  ): Promise<AdminGastroDiscountDetail>;
+  markCommissionNegotiation(
+    profileId: string,
+    discountId: string,
+    note?: string | null,
+  ): Promise<AdminGastroDiscountDetail>;
+  approve(profileId: string, discountId: string): Promise<AdminGastroDiscountDetail>;
+  reject(
+    profileId: string,
+    discountId: string,
+    reason: string,
+    note?: string | null,
+  ): Promise<AdminGastroDiscountDetail>;
+  cancel(
+    profileId: string,
+    discountId: string,
+    reason: string,
+    note?: string | null,
+  ): Promise<AdminGastroDiscountDetail>;
+  sendQrEmail(profileId: string, discountId: string): Promise<AdminGastroDiscountDetail>;
 }
 
 export interface PlatformConfig {
@@ -1175,15 +1880,166 @@ export interface HotelRepo {
   getMe(): Promise<{ profile: HotelProfileSummary | null }>;
 }
 
+export interface AdminProducerListItem {
+  id: string;
+  displayName: string;
+  status: string;
+  primaryEmail: string | null;
+  primaryPhone: string | null;
+  city: string | null;
+  owner: { userId: string | null; name: string | null; email: string | null };
+  eventsCount: number;
+  pendingEventsCount: number;
+  approvedEventsCount: number;
+  createdAt: string;
+}
+
+export interface AdminProducerDetail extends AdminProducerListItem {
+  legalName: string | null;
+  shortDescription: string | null;
+  longDescription: string | null;
+  whatsapp: string | null;
+  secondaryEmail: string | null;
+  secondaryPhone: string | null;
+  slug: string | null;
+  updatedAt: string;
+}
+
+export interface AdminProducerEventListItem {
+  id: string;
+  title: string;
+  startAt: string;
+  endAt: string | null;
+  city: string | null;
+  venueName: string | null;
+  status: string;
+  category: string | null;
+  hasTicketing: boolean;
+  isTicketingEnabled: boolean;
+  isGeneralPublication?: boolean;
+  eventMode?: 'PUBLICITY_ONLY' | 'TICKETED';
+  ticketTypesCount: number;
+  activeTicketTypesCount: number;
+  ticketsSold?: number;
+  revenue?: string;
+  ratingAvg?: number | null;
+  ratingCount?: number;
+}
+
+export interface AdminProducerEventMetrics {
+  hasTicketing: boolean;
+  isGeneralPublication?: boolean;
+  ticketTypesCount: number;
+  activeTicketTypesCount: number;
+  ticketsSold: number;
+  courtesyCount: number;
+  revenue: string;
+  currency: string;
+  scanCount: number;
+  ticketsAvailable: number;
+  paidOrdersCount: number;
+  pendingOrdersCount: number;
+  expiredOrdersCount: number;
+  attendanceRatePercent?: number;
+  ratingAvg?: number | null;
+  ratingCount?: number;
+  referralPerformance?: Array<{
+    referralLinkId: string;
+    code: string;
+    referrerProfileId: string;
+    referrerDisplayName: string | null;
+    paidOrdersCount: number;
+    ticketsSoldCount: number;
+    grossRevenueCents: number;
+  }>;
+}
+
+export interface GeneralPublicationsRepo {
+  list(params?: {
+    status?: string;
+    category?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{
+    data: EventSummary[];
+    meta: { page: number; limit: number; total: number; totalPages: number };
+  }>;
+  create(input: {
+    category: string;
+    title: string;
+    summary?: string | null;
+    description?: string | null;
+    subcategoryId?: string | null;
+    venueName?: string | null;
+    city?: string | null;
+    venueAddress?: string | null;
+    geoLat?: number | null;
+    geoLng?: number | null;
+    startAt?: string;
+    endAt?: string | null;
+    capacityTotal?: number | null;
+    coverImageUrl?: string | null;
+    headerImageUrl?: string | null;
+    galleryImages?: Array<{ url: string; type?: string }>;
+    status?: string;
+  }): Promise<{ id: string; title: string; category: string | null; status: string }>;
+}
+
+export interface AdminProducersRepo {
+  listProducers(params?: {
+    search?: string;
+    status?: string;
+    hasPendingEvents?: boolean;
+    page?: number;
+    limit?: number;
+  }): Promise<{
+    data: AdminProducerListItem[];
+    meta: { page: number; limit: number; total: number; totalPages: number };
+  }>;
+  getProducer(producerId: string): Promise<AdminProducerDetail>;
+  listProducerEvents(producerId: string): Promise<{ data: AdminProducerEventListItem[] }>;
+  getProducerEventMetrics(
+    producerId: string,
+    eventId: string,
+  ): Promise<AdminProducerEventMetrics>;
+  approveProducerEvent(
+    producerId: string,
+    eventId: string,
+  ): Promise<{ id: string; status: string }>;
+  rejectProducerEvent(
+    producerId: string,
+    eventId: string,
+    reason: string,
+  ): Promise<{ id: string; status: string }>;
+  postponeProducerEvent(
+    producerId: string,
+    eventId: string,
+    reason: string,
+    newStartAt?: string,
+  ): Promise<{ id: string; status: string }>;
+  cancelProducerEvent(
+    producerId: string,
+    eventId: string,
+    reason: string,
+  ): Promise<{ id: string; status: string }>;
+}
+
 export interface Repositories {
+  auth: AuthRepo;
   events: EventsRepo;
+  generalPublications: GeneralPublicationsRepo;
+  adminProducers: AdminProducersRepo;
+  adminGastro: AdminGastroRepo;
   rentalLocations: RentalLocationsRepo;
+  excursionOperators: ExcursionOperatorsRepo;
+  categoryBanners: CategoryBannersRepo;
   subcategories: SubcategoriesRepo;
   applications: ApplicationsRepo;
   profiles: ProfilesRepo;
   hotel: HotelRepo;
   inbox: InboxRepo;
   gastro: GastroRepo;
+  publicGastro: PublicGastroLocationsRepo;
   ticketTypes: TicketTypesRepo;
   ticketTemplates: TicketTemplatesRepo;
   tickets: TicketsRepo;
@@ -1194,6 +2050,9 @@ export interface Repositories {
   courtesies: CourtesiesRepo;
   metrics: MetricsRepo;
   producers: ProducersRepo;
+  commercialReviews: CommercialReviewsRepo;
+  producerReviews: ProducerReviewsRepo;
+  adminReviewDisputes: AdminReviewDisputesRepo;
   scanner: ScannerRepo;
   payouts: PayoutsRepo;
   resale: ResaleRepo;

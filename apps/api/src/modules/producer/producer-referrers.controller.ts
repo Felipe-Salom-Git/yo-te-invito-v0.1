@@ -15,6 +15,7 @@ import { RequireRole } from '../../common/decorators/require-role.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Role } from '@yo-te-invito/shared';
 import { ReferralsService } from '../referrals/referrals.service';
+import { CommercialReviewsService } from '../commercial-reviews/commercial-reviews.service';
 import { ProfilesAuthorizationService } from '../../common/profiles-authorization.service';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import {
@@ -23,6 +24,8 @@ import {
   producerAssociationFromLinkSchema,
   producerFreelanceAssociationRequestSchema,
   producerFreelanceReferrersQuerySchema,
+  commercialRelationshipReviewSubmitSchema,
+  type CommercialRelationshipReviewSubmitInput,
   type UpdateAssociationStatusInput,
   type AssignReferrerToEventInput,
   type ProducerAssociationFromLinkInput,
@@ -36,8 +39,41 @@ import {
 export class ProducerReferrersController {
   constructor(
     private readonly referrals: ReferralsService,
+    private readonly commercialReviews: CommercialReviewsService,
     private readonly profilesAuth: ProfilesAuthorizationService,
-  ) { }
+  ) {}
+
+  @Get(':referrerProfileId/commercial-reviews')
+  async listCommercialReviews(
+    @CurrentUser() user: { id: string; tenantId: string },
+    @Param('referrerProfileId') referrerProfileId: string,
+  ) {
+    const profileId = await this.profilesAuth.getDefaultProducerProfileId(user.tenantId, user.id);
+    if (!profileId) throw new NotFoundException('No active producer profile found');
+    return this.commercialReviews.listForProducerReferrer(
+      user.tenantId,
+      user.id,
+      profileId,
+      referrerProfileId,
+    );
+  }
+
+  @Post(':referrerProfileId/commercial-reviews')
+  async createCommercialReview(
+    @CurrentUser() user: { id: string; tenantId: string },
+    @Param('referrerProfileId') referrerProfileId: string,
+    @Body(new ZodValidationPipe(commercialRelationshipReviewSubmitSchema))
+    body: CommercialRelationshipReviewSubmitInput,
+  ) {
+    const profileId = await this.profilesAuth.getDefaultProducerProfileId(user.tenantId, user.id);
+    if (!profileId) throw new NotFoundException('No active producer profile found');
+    return this.commercialReviews.createAsProducer(user.tenantId, user.id, {
+      ...body,
+      producerProfileId: profileId,
+      referrerProfileId,
+      targetType: 'REFERRER',
+    });
+  }
 
   @Get()
   async listReferrers(@CurrentUser() user: { tenantId: string }) {

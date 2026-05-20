@@ -7,6 +7,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRepositories } from '@/repositories/context';
 import { PageContainer, SectionTitle, Button, Input, useToast } from '@/components';
 import { getErrorMessage } from '@/lib/errors';
+import { eventsKeys } from '@/lib/query/keys';
 import { SubcategorySelect } from '@/components/forms/SubcategorySelect';
 import {
   RentalProductImagesForm,
@@ -14,6 +15,7 @@ import {
   rentalProductImagesToPayload,
   type RentalProductImagesValue,
 } from '@/components/rentals/RentalProductImagesForm';
+import { RentalSummaryField } from '@/components/rentals/RentalSummaryField';
 
 const TENANT_ID = 'tenant-demo';
 
@@ -32,12 +34,13 @@ export default function AdminRentalProductoEditarPage() {
   const { addToast } = useToast();
 
   const { data: event, isLoading } = useQuery({
-    queryKey: ['events', 'detail', productId, TENANT_ID],
+    queryKey: eventsKeys.detail(productId, TENANT_ID),
     queryFn: () => repos.events.getDetail(productId, TENANT_ID),
     enabled: !!productId,
   });
 
   const [title, setTitle] = useState('');
+  const [summary, setSummary] = useState('');
   const [description, setDescription] = useState('');
   const [subcategoryId, setSubcategoryId] = useState('');
   const [images, setImages] = useState<RentalProductImagesValue>(emptyImages);
@@ -45,6 +48,7 @@ export default function AdminRentalProductoEditarPage() {
   useEffect(() => {
     if (event) {
       setTitle(event.title ?? '');
+      setSummary(event.summary ?? '');
       setDescription(event.description ?? '');
       setSubcategoryId(event.subcategoryId ?? '');
       setImages(rentalProductImagesFromEvent(event));
@@ -55,12 +59,14 @@ export default function AdminRentalProductoEditarPage() {
     mutationFn: () =>
       repos.rentalLocations.updateProduct(locationId, productId, {
         title: title.trim(),
+        summary: summary.trim() || null,
         description: description.trim() || null,
         subcategoryId: subcategoryId || null,
         ...rentalProductImagesToPayload(images),
       }),
     onError: (err) => addToast(getErrorMessage(err), 'error'),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: eventsKeys.detail(productId, TENANT_ID) });
       queryClient.invalidateQueries({ queryKey: ['events'] });
       queryClient.invalidateQueries({ queryKey: ['rental-locations'] });
       router.push(`/admin/rentals/locales/${locationId}`);
@@ -93,8 +99,9 @@ export default function AdminRentalProductoEditarPage() {
 
       <form onSubmit={handleSubmit} className="mt-6 max-w-xl space-y-4">
         <Input label="Nombre" value={title} onChange={(e) => setTitle(e.target.value)} required />
+        <RentalSummaryField value={summary} onChange={setSummary} />
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-text">Descripción</label>
+          <label className="mb-1.5 block text-sm font-medium text-text">Descripción / Detalle</label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}

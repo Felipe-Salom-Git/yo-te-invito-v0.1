@@ -14,9 +14,26 @@ import { AdminApplicationsService } from './admin-applications.service';
 import { AdminProfilesService } from './admin-profiles.service';
 import { SubcategoriesModule } from '../subcategories/subcategories.module';
 import { RentalLocationsModule } from '../rental-locations/rental-locations.module';
+import { ExcursionOperatorsModule } from '../excursion-operators/excursion-operators.module';
+import { CategoryBannersModule } from '../category-banners/category-banners.module';
+import { ProducerModule } from '../producer/producer.module';
+import { AdminProducersService } from './admin-producers.service';
+import { AdminGeneralPublicationsService } from './admin-general-publications.service';
+import { EmailModule } from '../../email/email.module';
+import { AdminGastroService } from './admin-gastro.service';
 
 @Module({
-  imports: [AuthModule, ReferralsModule, InboxModule, SubcategoriesModule, RentalLocationsModule],
+  imports: [
+    AuthModule,
+    ReferralsModule,
+    InboxModule,
+    SubcategoriesModule,
+    RentalLocationsModule,
+    ExcursionOperatorsModule,
+    CategoryBannersModule,
+    ProducerModule,
+    EmailModule,
+  ],
   controllers: [AdminController],
   providers: [
     AdminEventsService,
@@ -28,6 +45,9 @@ import { RentalLocationsModule } from '../rental-locations/rental-locations.modu
     AdminUsersService,
     AdminConfigService,
     AdminApplicationsService,
+    AdminProducersService,
+    AdminGeneralPublicationsService,
+    AdminGastroService,
   ],
 })
 export class AdminModule {}

@@ -253,7 +253,7 @@ export function PlaceDetailView({ id, variant, tenantId = 'tenant-demo' }: Place
                   href={`https://wa.me/5491112345678?text=${encodeURIComponent(`Hola, me interesa ${event.title}`)}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-4 inline-block rounded-lg bg-emerald-600 px-5 py-2.5 font-semibold text-white hover:bg-emerald-500"
+                  className="mt-4 inline-block rounded-lg bg-accent px-5 py-2.5 font-semibold text-bg hover:bg-accent-hover"
                 >
                   Contactar por WhatsApp
                 </a>

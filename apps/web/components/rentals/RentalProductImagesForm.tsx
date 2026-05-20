@@ -12,6 +12,8 @@ export type RentalProductImagesValue = {
 export type RentalProductImagesFormProps = {
   value: RentalProductImagesValue;
   onChange: (value: RentalProductImagesValue) => void;
+  /** When true, only the multi-image gallery is shown (no separate header field). */
+  galleryOnly?: boolean;
 };
 
 function readImageFilesAsDataUrls(files: File[]): Promise<string[]> {
@@ -31,7 +33,11 @@ function readImageFilesAsDataUrls(files: File[]): Promise<string[]> {
   );
 }
 
-export function RentalProductImagesForm({ value, onChange }: RentalProductImagesFormProps) {
+export function RentalProductImagesForm({
+  value,
+  onChange,
+  galleryOnly = false,
+}: RentalProductImagesFormProps) {
   const [galleryUrlDraft, setGalleryUrlDraft] = useState('');
 
   const setHeader = (headerImageUrl: string) => onChange({ ...value, headerImageUrl });
@@ -75,7 +81,8 @@ export function RentalProductImagesForm({ value, onChange }: RentalProductImages
 
   return (
     <div>
-      <div>
+      {!galleryOnly && (
+        <div>
         <label className="mb-1.5 block text-sm font-medium text-text">Imagen de encabezado</label>
         <p className="mb-2 text-xs text-text-muted">
           Imagen principal del producto: fondo del encabezado en el detalle y vista en tarjetas.
@@ -91,12 +98,17 @@ export function RentalProductImagesForm({ value, onChange }: RentalProductImages
           <input type="file" accept="image/*" onChange={handleHeaderFile} className="text-sm" />
         </label>
         <ImageUrlPreview url={value.headerImageUrl} />
-      </div>
+        </div>
+      )}
 
-      <div className="mt-6">
-        <label className="mb-1.5 block text-sm font-medium text-text">Galería</label>
+      <div className={galleryOnly ? '' : 'mt-6'}>
+        <label className="mb-1.5 block text-sm font-medium text-text">
+          {galleryOnly ? 'Imágenes del ticket' : 'Galería'}
+        </label>
         <p className="mb-3 text-xs text-text-muted">
-          Imágenes adicionales del producto. Podés seleccionar varias a la vez.
+          {galleryOnly
+            ? 'Podés subir varias imágenes. Administración elegirá cuáles publicar y cuál será la de cabecera.'
+            : 'Imágenes adicionales del producto. Podés seleccionar varias a la vez.'}
         </p>
 
         {value.galleryImageUrls.length > 0 ? (

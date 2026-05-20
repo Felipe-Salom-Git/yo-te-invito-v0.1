@@ -19,7 +19,8 @@
     "demo:seed-subcategories": "tsx scripts/demo-seed-subcategories.ts",
     "demo:load": "tsx scripts/demo-load.ts",
     "smoke": "tsx scripts/smoke-api.ts",
-    "db:cleanup-demo": "tsx prisma/scripts/cleanup-demo.ts"
+    "db:cleanup-demo": "tsx prisma/scripts/cleanup-demo.ts",
+    "demo:enable-test-user-profiles": "tsx scripts/enable-test-user-profiles.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",

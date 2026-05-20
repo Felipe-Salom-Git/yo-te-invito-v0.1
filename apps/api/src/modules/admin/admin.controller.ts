@@ -32,7 +32,39 @@ import {
   type AdminConfigPatch,
   type AdminInboxListQuery,
   type AdminResolveInboxBody,
+  adminProducersListQuerySchema,
+  adminProducerIdParamsSchema,
+  adminProducerEventIdParamsSchema,
+  eventModerationReasonSchema,
+  type AdminProducersListQuery,
+  type AdminProducerIdParams,
+  type AdminProducerEventIdParams,
+  type EventModerationReason,
+  generalPublicationsListQuerySchema,
+  createGeneralPublicationBodySchema,
+  type GeneralPublicationsListQuery,
+  type CreateGeneralPublicationBody,
+  adminGastroLocationsListQuerySchema,
+  adminGastroPendingDiscountsQuerySchema,
+  adminGastroProfileIdParamsSchema,
+  adminGastroDiscountIdParamsSchema,
+  adminGastroDiscountPublicationSchema,
+  adminGastroDiscountActionNoteSchema,
+  adminGastroDiscountRejectSchema,
+  adminGastroDiscountCancelSchema,
+  type AdminGastroLocationsListQuery,
+  type AdminGastroPendingDiscountsQuery,
+  type AdminGastroProfileIdParams,
+  ErrorCode,
+  type AdminGastroDiscountIdParams,
+  type AdminGastroDiscountPublication,
+  type AdminGastroDiscountActionNote,
+  type AdminGastroDiscountReject,
+  type AdminGastroDiscountCancel,
 } from '@yo-te-invito/shared';
+import { AdminGastroService } from './admin-gastro.service';
+import { AdminProducersService } from './admin-producers.service';
+import { AdminGeneralPublicationsService } from './admin-general-publications.service';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { JwtOrDevAuthGuard } from '../../auth/jwt-or-dev-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -65,7 +97,158 @@ export class AdminController {
     private readonly profiles: AdminProfilesService,
     private readonly referrals: ReferralsService,
     private readonly inbox: InboxService,
+    private readonly adminProducers: AdminProducersService,
+    private readonly generalPublications: AdminGeneralPublicationsService,
+    private readonly adminGastro: AdminGastroService,
   ) {}
+
+  @Get('general-publications')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async listGeneralPublications(
+    @CurrentUser() user: { tenantId: string },
+    @Query(new ZodValidationPipe(generalPublicationsListQuerySchema))
+    query: GeneralPublicationsListQuery,
+  ) {
+    return this.generalPublications.list(user.tenantId, query);
+  }
+
+  @Post('general-publications')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async createGeneralPublication(
+    @CurrentUser() user: { id: string; tenantId: string },
+    @Body(new ZodValidationPipe(createGeneralPublicationBodySchema))
+    body: CreateGeneralPublicationBody,
+  ) {
+    return this.generalPublications.create(user.tenantId, user.id, body);
+  }
+
+  @Get('producers')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async listProducers(
+    @CurrentUser() user: { tenantId: string },
+    @Query(new ZodValidationPipe(adminProducersListQuerySchema))
+    query: AdminProducersListQuery,
+  ) {
+    return this.adminProducers.list(user.tenantId, query);
+  }
+
+  @Get('producers/:producerId')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async getProducer(
+    @CurrentUser() user: { tenantId: string },
+    @Param(new ZodValidationPipe(adminProducerIdParamsSchema))
+    params: AdminProducerIdParams,
+  ) {
+    return this.adminProducers.getDetail(user.tenantId, params.producerId);
+  }
+
+  @Get('producers/:producerId/events')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async listProducerEvents(
+    @CurrentUser() user: { tenantId: string },
+    @Param(new ZodValidationPipe(adminProducerIdParamsSchema))
+    params: AdminProducerIdParams,
+  ) {
+    return this.adminProducers.listEvents(user.tenantId, params.producerId);
+  }
+
+  @Get('producers/:producerId/events/:eventId/metrics')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async getProducerEventMetrics(
+    @CurrentUser() user: { tenantId: string },
+    @Param(new ZodValidationPipe(adminProducerEventIdParamsSchema))
+    params: AdminProducerEventIdParams,
+  ) {
+    return this.adminProducers.getEventMetrics(
+      user.tenantId,
+      params.producerId,
+      params.eventId,
+    );
+  }
+
+  @Post('producers/:producerId/events/:eventId/approve')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async approveProducerEvent(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param(new ZodValidationPipe(adminProducerEventIdParamsSchema))
+    params: AdminProducerEventIdParams,
+  ) {
+    return this.adminProducers.approveProducerEvent(
+      user.tenantId,
+      user.id,
+      user.role,
+      params.producerId,
+      params.eventId,
+    );
+  }
+
+  @Post('producers/:producerId/events/:eventId/reject')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async rejectProducerEvent(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param(new ZodValidationPipe(adminProducerEventIdParamsSchema))
+    params: AdminProducerEventIdParams,
+    @Body(new ZodValidationPipe(eventModerationReasonSchema))
+    body: EventModerationReason,
+  ) {
+    return this.adminProducers.rejectProducerEvent(
+      user.tenantId,
+      user.id,
+      user.role,
+      params.producerId,
+      params.eventId,
+      body.reason,
+    );
+  }
+
+  @Post('producers/:producerId/events/:eventId/postpone')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async postponeProducerEvent(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param(new ZodValidationPipe(adminProducerEventIdParamsSchema))
+    params: AdminProducerEventIdParams,
+    @Body(new ZodValidationPipe(eventModerationReasonSchema))
+    body: EventModerationReason,
+  ) {
+    return this.adminProducers.postponeProducerEvent(
+      user.tenantId,
+      user.id,
+      user.role,
+      params.producerId,
+      params.eventId,
+      body.reason,
+      body.newStartAt,
+    );
+  }
+
+  @Post('producers/:producerId/events/:eventId/cancel')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async cancelProducerEvent(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param(new ZodValidationPipe(adminProducerEventIdParamsSchema))
+    params: AdminProducerEventIdParams,
+    @Body(new ZodValidationPipe(eventModerationReasonSchema))
+    body: EventModerationReason,
+  ) {
+    return this.adminProducers.cancelProducerEvent(
+      user.tenantId,
+      user.id,
+      user.role,
+      params.producerId,
+      params.eventId,
+      body.reason,
+    );
+  }
 
   @Get('events')
   @UseGuards(JwtOrDevAuthGuard, RolesGuard)
@@ -309,6 +492,456 @@ export class AdminController {
     @Body(new ZodValidationPipe(adminResolveInboxBodySchema)) body: AdminResolveInboxBody,
   ) {
     return this.inbox.resolve(user.tenantId, user.id, inboxItemId, body);
+  }
+
+  @Get('gastronomicos/pending-discounts')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async listPendingGastroDiscounts(
+    @CurrentUser() user: { tenantId: string },
+    @Query(new ZodValidationPipe(adminGastroPendingDiscountsQuerySchema))
+    query: AdminGastroPendingDiscountsQuery,
+  ) {
+    if (query.discountId) {
+      const profileId =
+        query.profileId ??
+        (await this.adminGastro.resolveProfileIdForDiscount(
+          user.tenantId,
+          query.discountId,
+        ));
+      if (!profileId) {
+        throw new NotFoundException({
+          code: ErrorCode.NOT_FOUND,
+          message: 'Discount not found',
+        });
+      }
+      return this.adminGastro.getDiscountDetail(
+        user.tenantId,
+        profileId,
+        query.discountId,
+      );
+    }
+    if (query.profileId && query.includeAllStatuses) {
+      return this.adminGastro.listLocationDiscounts(user.tenantId, query.profileId);
+    }
+    if (query.profileId) {
+      const all = await this.adminGastro.listLocationDiscounts(
+        user.tenantId,
+        query.profileId,
+      );
+      const pendingStatuses = new Set([
+        'PENDING_REVIEW',
+        'COMMISSION_NEGOTIATION',
+        'APPROVED',
+      ]);
+      return {
+        data: all.data
+          .filter((d) => pendingStatuses.has(d.status))
+          .map((d) => ({
+            ...d,
+            profileId: query.profileId!,
+            profileName: '',
+          })),
+      };
+    }
+    return this.adminGastro.listPendingDiscounts(user.tenantId);
+  }
+
+  /** Rutas planas (evitan conflicto de enrutado con /gastronomicos/:profileId/...) */
+  @Get('gastro-discount-tickets')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async listGastroDiscountTickets(
+    @CurrentUser() user: { tenantId: string },
+    @Query('profileId') profileId: string,
+  ) {
+    if (!profileId?.trim()) {
+      throw new NotFoundException({
+        code: ErrorCode.VALIDATION_FAILED,
+        message: 'profileId query param is required',
+      });
+    }
+    return this.adminGastro.listLocationDiscounts(user.tenantId, profileId.trim());
+  }
+
+  @Get('gastro-discount-tickets/:discountId')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async getGastroDiscountTicket(
+    @CurrentUser() user: { tenantId: string },
+    @Param('discountId') discountId: string,
+    @Query('profileId') profileId?: string,
+  ) {
+    const resolvedProfileId =
+      profileId?.trim() ??
+      (await this.adminGastro.resolveProfileIdForDiscount(user.tenantId, discountId));
+    if (!resolvedProfileId) {
+      throw new NotFoundException({
+        code: ErrorCode.NOT_FOUND,
+        message: 'Discount not found',
+      });
+    }
+    return this.adminGastro.getDiscountDetail(
+      user.tenantId,
+      resolvedProfileId,
+      discountId,
+    );
+  }
+
+  @Get('gastro-discount-tickets/:discountId/metrics')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async getGastroDiscountTicketMetrics(
+    @CurrentUser() user: { tenantId: string },
+    @Param('discountId') discountId: string,
+    @Query('profileId') profileId?: string,
+  ) {
+    const resolvedProfileId =
+      profileId?.trim() ??
+      (await this.adminGastro.resolveProfileIdForDiscount(user.tenantId, discountId));
+    if (!resolvedProfileId) {
+      throw new NotFoundException({
+        code: ErrorCode.NOT_FOUND,
+        message: 'Discount not found',
+      });
+    }
+    return this.adminGastro.getDiscountMetrics(
+      user.tenantId,
+      resolvedProfileId,
+      discountId,
+    );
+  }
+
+  @Patch('gastro-discount-tickets/:discountId/publication')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async updateGastroDiscountTicketPublication(
+    @CurrentUser() user: { tenantId: string },
+    @Param('discountId') discountId: string,
+    @Query('profileId') profileId: string,
+    @Body(new ZodValidationPipe(adminGastroDiscountPublicationSchema))
+    body: AdminGastroDiscountPublication,
+  ) {
+    const resolvedProfileId =
+      profileId?.trim() ??
+      (await this.adminGastro.resolveProfileIdForDiscount(user.tenantId, discountId));
+    if (!resolvedProfileId) {
+      throw new NotFoundException({
+        code: ErrorCode.NOT_FOUND,
+        message: 'Discount not found',
+      });
+    }
+    return this.adminGastro.updatePublication(
+      user.tenantId,
+      resolvedProfileId,
+      discountId,
+      body,
+    );
+  }
+
+  @Post('gastro-discount-tickets/:discountId/mark-commission-negotiation')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async markGastroDiscountTicketCommissionNegotiation(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param('discountId') discountId: string,
+    @Query('profileId') profileId: string,
+    @Body(new ZodValidationPipe(adminGastroDiscountActionNoteSchema))
+    body: AdminGastroDiscountActionNote,
+  ) {
+    const resolvedProfileId =
+      profileId?.trim() ??
+      (await this.adminGastro.resolveProfileIdForDiscount(user.tenantId, discountId));
+    if (!resolvedProfileId) {
+      throw new NotFoundException({
+        code: ErrorCode.NOT_FOUND,
+        message: 'Discount not found',
+      });
+    }
+    return this.adminGastro.markCommissionNegotiation(
+      user.tenantId,
+      user.id,
+      user.role,
+      resolvedProfileId,
+      discountId,
+      body.note,
+    );
+  }
+
+  @Post('gastro-discount-tickets/:discountId/approve')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async approveGastroDiscountTicket(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param('discountId') discountId: string,
+    @Query('profileId') profileId: string,
+  ) {
+    const resolvedProfileId =
+      profileId?.trim() ??
+      (await this.adminGastro.resolveProfileIdForDiscount(user.tenantId, discountId));
+    if (!resolvedProfileId) {
+      throw new NotFoundException({
+        code: ErrorCode.NOT_FOUND,
+        message: 'Discount not found',
+      });
+    }
+    return this.adminGastro.approve(
+      user.tenantId,
+      user.id,
+      user.role,
+      resolvedProfileId,
+      discountId,
+    );
+  }
+
+  @Post('gastro-discount-tickets/:discountId/reject')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async rejectGastroDiscountTicket(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param('discountId') discountId: string,
+    @Query('profileId') profileId: string,
+    @Body(new ZodValidationPipe(adminGastroDiscountRejectSchema)) body: AdminGastroDiscountReject,
+  ) {
+    const resolvedProfileId =
+      profileId?.trim() ??
+      (await this.adminGastro.resolveProfileIdForDiscount(user.tenantId, discountId));
+    if (!resolvedProfileId) {
+      throw new NotFoundException({
+        code: ErrorCode.NOT_FOUND,
+        message: 'Discount not found',
+      });
+    }
+    return this.adminGastro.reject(
+      user.tenantId,
+      user.id,
+      user.role,
+      resolvedProfileId,
+      discountId,
+      body.reason,
+      body.note,
+    );
+  }
+
+  @Post('gastro-discount-tickets/:discountId/cancel')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async cancelGastroDiscountTicket(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param('discountId') discountId: string,
+    @Query('profileId') profileId: string,
+    @Body(new ZodValidationPipe(adminGastroDiscountCancelSchema)) body: AdminGastroDiscountCancel,
+  ) {
+    const resolvedProfileId =
+      profileId?.trim() ??
+      (await this.adminGastro.resolveProfileIdForDiscount(user.tenantId, discountId));
+    if (!resolvedProfileId) {
+      throw new NotFoundException({
+        code: ErrorCode.NOT_FOUND,
+        message: 'Discount not found',
+      });
+    }
+    return this.adminGastro.cancel(
+      user.tenantId,
+      user.id,
+      user.role,
+      resolvedProfileId,
+      discountId,
+      body.reason,
+      body.note,
+    );
+  }
+
+  @Post('gastro-discount-tickets/:discountId/send-qr-email')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async sendGastroDiscountTicketQrEmail(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param('discountId') discountId: string,
+    @Query('profileId') profileId: string,
+  ) {
+    const resolvedProfileId =
+      profileId?.trim() ??
+      (await this.adminGastro.resolveProfileIdForDiscount(user.tenantId, discountId));
+    if (!resolvedProfileId) {
+      throw new NotFoundException({
+        code: ErrorCode.NOT_FOUND,
+        message: 'Discount not found',
+      });
+    }
+    return this.adminGastro.sendQrEmail(
+      user.tenantId,
+      user.id,
+      user.role,
+      resolvedProfileId,
+      discountId,
+    );
+  }
+
+  @Get('gastronomicos')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async listGastroLocations(
+    @CurrentUser() user: { tenantId: string },
+    @Query(new ZodValidationPipe(adminGastroLocationsListQuerySchema))
+    query: AdminGastroLocationsListQuery,
+  ) {
+    return this.adminGastro.listLocations(user.tenantId, query);
+  }
+
+  @Get('gastronomicos/:profileId')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async getGastroLocation(
+    @CurrentUser() user: { tenantId: string },
+    @Param(new ZodValidationPipe(adminGastroProfileIdParamsSchema)) params: AdminGastroProfileIdParams,
+  ) {
+    return this.adminGastro.getLocation(user.tenantId, params.profileId);
+  }
+
+  @Get('gastronomicos/:profileId/discuentos')
+  @Get('gastronomicos/:profileId/discounts')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async listGastroLocationDiscounts(
+    @CurrentUser() user: { tenantId: string },
+    @Param(new ZodValidationPipe(adminGastroProfileIdParamsSchema)) params: AdminGastroProfileIdParams,
+  ) {
+    return this.adminGastro.listLocationDiscounts(user.tenantId, params.profileId);
+  }
+
+  @Get('gastronomicos/:profileId/discuentos/:discountId')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async getGastroLocationDiscount(
+    @CurrentUser() user: { tenantId: string },
+    @Param(new ZodValidationPipe(adminGastroDiscountIdParamsSchema)) params: AdminGastroDiscountIdParams,
+  ) {
+    return this.adminGastro.getDiscountDetail(
+      user.tenantId,
+      params.profileId,
+      params.discountId,
+    );
+  }
+
+  @Get('gastronomicos/:profileId/discuentos/:discountId/metrics')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async getGastroLocationDiscountMetrics(
+    @CurrentUser() user: { tenantId: string },
+    @Param(new ZodValidationPipe(adminGastroDiscountIdParamsSchema)) params: AdminGastroDiscountIdParams,
+  ) {
+    return this.adminGastro.getDiscountMetrics(
+      user.tenantId,
+      params.profileId,
+      params.discountId,
+    );
+  }
+
+  @Patch('gastronomicos/:profileId/discuentos/:discountId/publication')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async updateGastroDiscountPublication(
+    @CurrentUser() user: { tenantId: string },
+    @Param(new ZodValidationPipe(adminGastroDiscountIdParamsSchema)) params: AdminGastroDiscountIdParams,
+    @Body(new ZodValidationPipe(adminGastroDiscountPublicationSchema))
+    body: AdminGastroDiscountPublication,
+  ) {
+    return this.adminGastro.updatePublication(
+      user.tenantId,
+      params.profileId,
+      params.discountId,
+      body,
+    );
+  }
+
+  @Post('gastronomicos/:profileId/discuentos/:discountId/mark-commission-negotiation')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async markGastroDiscountCommissionNegotiation(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param(new ZodValidationPipe(adminGastroDiscountIdParamsSchema)) params: AdminGastroDiscountIdParams,
+    @Body(new ZodValidationPipe(adminGastroDiscountActionNoteSchema))
+    body: AdminGastroDiscountActionNote,
+  ) {
+    return this.adminGastro.markCommissionNegotiation(
+      user.tenantId,
+      user.id,
+      user.role,
+      params.profileId,
+      params.discountId,
+      body.note,
+    );
+  }
+
+  @Post('gastronomicos/:profileId/discuentos/:discountId/approve')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async approveGastroDiscount(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param(new ZodValidationPipe(adminGastroDiscountIdParamsSchema)) params: AdminGastroDiscountIdParams,
+  ) {
+    return this.adminGastro.approve(
+      user.tenantId,
+      user.id,
+      user.role,
+      params.profileId,
+      params.discountId,
+    );
+  }
+
+  @Post('gastronomicos/:profileId/discuentos/:discountId/reject')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async rejectGastroDiscount(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param(new ZodValidationPipe(adminGastroDiscountIdParamsSchema)) params: AdminGastroDiscountIdParams,
+    @Body(new ZodValidationPipe(adminGastroDiscountRejectSchema)) body: AdminGastroDiscountReject,
+  ) {
+    return this.adminGastro.reject(
+      user.tenantId,
+      user.id,
+      user.role,
+      params.profileId,
+      params.discountId,
+      body.reason,
+      body.note,
+    );
+  }
+
+  @Post('gastronomicos/:profileId/discuentos/:discountId/cancel')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async cancelGastroDiscount(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param(new ZodValidationPipe(adminGastroDiscountIdParamsSchema)) params: AdminGastroDiscountIdParams,
+    @Body(new ZodValidationPipe(adminGastroDiscountCancelSchema)) body: AdminGastroDiscountCancel,
+  ) {
+    return this.adminGastro.cancel(
+      user.tenantId,
+      user.id,
+      user.role,
+      params.profileId,
+      params.discountId,
+      body.reason,
+      body.note,
+    );
+  }
+
+  @Post('gastronomicos/:profileId/discuentos/:discountId/send-qr-email')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async sendGastroDiscountQrEmail(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param(new ZodValidationPipe(adminGastroDiscountIdParamsSchema)) params: AdminGastroDiscountIdParams,
+  ) {
+    return this.adminGastro.sendQrEmail(
+      user.tenantId,
+      user.id,
+      user.role,
+      params.profileId,
+      params.discountId,
+    );
   }
 
   @Post('commissions/:id/confirm')

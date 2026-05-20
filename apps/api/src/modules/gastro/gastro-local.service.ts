@@ -1,0 +1,328 @@
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { Prisma, type GastroProfile } from '@prisma/client';
+import {
+  ErrorCode,
+  parseRentalOpeningHours,
+  rentalOpeningHoursSchema,
+  type GastroLocalCreateInput,
+  type GastroLocalResponse,
+  type GastroLocalUpdateInput,
+} from '@yo-te-invito/shared';
+import { PrismaService } from '../../prisma/prisma.service';
+import { ProfilesAuthorizationService } from '../../common/profiles-authorization.service';
+import { SubcategoriesService } from '../subcategories/subcategories.service';
+
+@Injectable()
+export class GastroLocalService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly profiles: ProfilesAuthorizationService,
+    private readonly subcategories: SubcategoriesService,
+  ) {}
+
+  private normalizeSummary(value: string | null | undefined): string | null {
+    if (value == null) return null;
+    const t = value.trim();
+    if (!t) return null;
+    return t.slice(0, 220);
+  }
+
+  private readGallery(row: GastroProfile): string[] | null {
+    if (!row.galleryUrls || !Array.isArray(row.galleryUrls)) return null;
+    return (row.galleryUrls as string[]).filter((u) => typeof u === 'string');
+  }
+
+  private toResponse(
+    row: GastroProfile & { subcategory?: { name: string } | null },
+  ): GastroLocalResponse {
+    return {
+      id: row.id,
+      tenantId: row.tenantId,
+      displayName: row.displayName,
+      legalName: row.legalName,
+      summary: row.summary,
+      detail: row.detail,
+      description: row.description,
+      logoUrl: row.logoUrl,
+      bannerUrl: row.bannerUrl,
+      galleryUrls: this.readGallery(row),
+      province: row.province,
+      city: row.city,
+      address: row.address,
+      geoLat: row.geoLat,
+      geoLng: row.geoLng,
+      openingHours: parseRentalOpeningHours(row.openingHours),
+      openingHoursNote: row.openingHoursNote,
+      contactPhone: row.contactPhone,
+      contactEmail: row.contactEmail,
+      menuUrl: row.menuUrl,
+      websiteUrl: row.websiteUrl,
+      subcategoryId: row.subcategoryId,
+      publicEventId: row.publicEventId,
+      status: row.status as GastroLocalResponse['status'],
+      createdAt: row.createdAt.toISOString(),
+      updatedAt: row.updatedAt.toISOString(),
+    };
+  }
+
+  private async assertGastroUser(tenantId: string, userId: string, _userRole: string) {
+    const has = await this.profiles.hasGastroAccess(tenantId, userId);
+    if (!has) {
+      throw new ForbiddenException({
+        code: ErrorCode.FORBIDDEN,
+        message: 'Necesitás un perfil gastronómico activo para gestionar tu local',
+      });
+    }
+  }
+
+  private async getOwnedProfile(tenantId: string, userId: string) {
+    const membership = await this.prisma.userGastroMembership.findFirst({
+      where: {
+        tenantId,
+        userId,
+        status: 'ACTIVE',
+        profile: { status: 'ACTIVE' },
+      },
+      include: { profile: true },
+      orderBy: { profile: { updatedAt: 'desc' } },
+    });
+    if (!membership) {
+      throw new NotFoundException({
+        code: ErrorCode.NOT_FOUND,
+        message: 'No tenés un perfil gastronómico activo',
+      });
+    }
+    return membership.profile;
+  }
+
+  private writeOpeningHours(
+    value: GastroLocalCreateInput['openingHours'] | undefined,
+  ): Prisma.InputJsonValue | typeof Prisma.JsonNull | undefined {
+    if (value === undefined) return undefined;
+    if (value == null) return Prisma.JsonNull;
+    return rentalOpeningHoursSchema.parse(value) as Prisma.InputJsonValue;
+  }
+
+  private async syncPublicEvent(
+    profile: GastroProfile,
+    userId: string,
+    galleryUrls: string[] | null,
+  ): Promise<string> {
+    const now = new Date();
+    const eventData = {
+      tenantId: profile.tenantId,
+      producerId: userId,
+      category: 'gastro',
+      subcategoryId: profile.subcategoryId,
+      title: profile.displayName,
+      summary: profile.summary,
+      description: profile.detail ?? profile.description,
+      startAt: now,
+      endAt: null as Date | null,
+      city: profile.city,
+      venueName: profile.displayName,
+      venueAddress: profile.address,
+      geoLat: profile.geoLat,
+      geoLng: profile.geoLng,
+      coverImageUrl: profile.bannerUrl,
+      status: 'APPROVED' as const,
+      isTicketingEnabled: false,
+      publishedAt: now,
+    };
+
+    let eventId = profile.publicEventId;
+    if (eventId) {
+      await this.prisma.event.update({
+        where: { id: eventId },
+        data: eventData,
+      });
+    } else {
+      const created = await this.prisma.event.create({ data: eventData });
+      eventId = created.id;
+      await this.prisma.gastroProfile.update({
+        where: { id: profile.id },
+        data: { publicEventId: eventId },
+      });
+    }
+
+    if (galleryUrls) {
+      await this.prisma.eventMedia.updateMany({
+        where: { eventId, deletedAt: null },
+        data: { deletedAt: now },
+      });
+      if (galleryUrls.length > 0) {
+        await this.prisma.eventMedia.createMany({
+          data: galleryUrls.map((url, i) => ({
+            eventId,
+            type: 'IMAGE',
+            url,
+            sortOrder: i,
+          })),
+        });
+      }
+    }
+
+    return eventId;
+  }
+
+  async getMyLocal(
+    tenantId: string,
+    userId: string,
+    userRole: string,
+  ): Promise<GastroLocalResponse | null> {
+    await this.assertGastroUser(tenantId, userId, userRole);
+    try {
+      const profile = await this.getOwnedProfile(tenantId, userId);
+      return this.toResponse(profile);
+    } catch (e) {
+      if (e instanceof NotFoundException) return null;
+      throw e;
+    }
+  }
+
+  async createMyLocal(
+    tenantId: string,
+    userId: string,
+    userRole: string,
+    body: GastroLocalCreateInput,
+  ): Promise<GastroLocalResponse> {
+    await this.assertGastroUser(tenantId, userId, userRole);
+    const existing = await this.prisma.userGastroMembership.findFirst({
+      where: { tenantId, userId, status: 'ACTIVE', profile: { status: 'ACTIVE' } },
+      include: { profile: true },
+    });
+    if (existing?.profile.publicEventId) {
+      throw new ConflictException({
+        code: 'CONFLICT',
+        message: 'Ya tenés un local configurado. Usá editar para actualizarlo.',
+      });
+    }
+    if (!existing) {
+      throw new NotFoundException({
+        code: ErrorCode.NOT_FOUND,
+        message: 'No tenés un perfil gastronómico activo',
+      });
+    }
+
+    const subcategoryId = await this.subcategories.resolveSubcategoryForEvent(
+      tenantId,
+      'gastro',
+      body.subcategoryId ?? null,
+    );
+
+    const gallery = body.galleryUrls?.filter(Boolean) ?? null;
+    const profile = await this.prisma.gastroProfile.update({
+      where: { id: existing.profile.id },
+      data: {
+        displayName: body.displayName.trim(),
+        summary: this.normalizeSummary(body.summary),
+        detail: body.detail?.trim() || null,
+        subcategoryId,
+        bannerUrl: body.bannerUrl ?? null,
+        galleryUrls: gallery?.length ? gallery : Prisma.JsonNull,
+        province: body.location.province.trim(),
+        city: body.location.city.trim(),
+        address: body.location.address.trim(),
+        geoLat: body.location.lat,
+        geoLng: body.location.lng,
+        openingHours: this.writeOpeningHours(body.openingHours),
+        openingHoursNote: body.openingHoursNote?.trim() || null,
+        contactPhone: body.contactPhone?.trim() || null,
+        contactEmail: body.contactEmail.trim(),
+        menuUrl: body.menuUrl ?? null,
+        websiteUrl: body.websiteUrl ?? null,
+      },
+    });
+
+    await this.syncPublicEvent(profile, userId, gallery);
+    const refreshed = await this.prisma.gastroProfile.findUniqueOrThrow({
+      where: { id: profile.id },
+    });
+    return this.toResponse(refreshed);
+  }
+
+  async updateMyLocal(
+    tenantId: string,
+    userId: string,
+    userRole: string,
+    body: GastroLocalUpdateInput,
+  ): Promise<GastroLocalResponse> {
+    await this.assertGastroUser(tenantId, userId, userRole);
+    const profile = await this.getOwnedProfile(tenantId, userId);
+
+    let subcategoryId: string | null | undefined = undefined;
+    if (body.subcategoryId !== undefined) {
+      subcategoryId = await this.subcategories.resolveSubcategoryForEvent(
+        tenantId,
+        'gastro',
+        body.subcategoryId,
+      );
+    }
+
+    const gallery =
+      body.galleryUrls !== undefined
+        ? (body.galleryUrls?.filter(Boolean) ?? [])
+        : undefined;
+
+    const updated = await this.prisma.gastroProfile.update({
+      where: { id: profile.id },
+      data: {
+        ...(body.displayName !== undefined && { displayName: body.displayName.trim() }),
+        ...(body.summary !== undefined && {
+          summary: this.normalizeSummary(body.summary),
+        }),
+        ...(body.detail !== undefined && { detail: body.detail?.trim() || null }),
+        ...(subcategoryId !== undefined && { subcategoryId }),
+        ...(body.bannerUrl !== undefined && { bannerUrl: body.bannerUrl }),
+        ...(gallery !== undefined && {
+          galleryUrls: gallery.length ? gallery : Prisma.JsonNull,
+        }),
+        ...(body.location && {
+          province: body.location.province.trim(),
+          city: body.location.city.trim(),
+          address: body.location.address.trim(),
+          geoLat: body.location.lat,
+          geoLng: body.location.lng,
+        }),
+        ...(body.openingHours !== undefined && {
+          openingHours: this.writeOpeningHours(body.openingHours),
+        }),
+        ...(body.openingHoursNote !== undefined && {
+          openingHoursNote: body.openingHoursNote?.trim() || null,
+        }),
+        ...(body.contactPhone !== undefined && {
+          contactPhone: body.contactPhone?.trim() || null,
+        }),
+        ...(body.contactEmail !== undefined && {
+          contactEmail: body.contactEmail.trim(),
+        }),
+        ...(body.menuUrl !== undefined && { menuUrl: body.menuUrl }),
+        ...(body.websiteUrl !== undefined && { websiteUrl: body.websiteUrl }),
+      },
+    });
+
+    if (
+      body.displayName !== undefined ||
+      body.summary !== undefined ||
+      body.detail !== undefined ||
+      body.bannerUrl !== undefined ||
+      body.location !== undefined ||
+      gallery !== undefined ||
+      subcategoryId !== undefined
+    ) {
+      await this.syncPublicEvent(
+        updated,
+        userId,
+        gallery !== undefined ? gallery : this.readGallery(updated),
+      );
+    }
+
+    return this.toResponse(updated);
+  }
+}

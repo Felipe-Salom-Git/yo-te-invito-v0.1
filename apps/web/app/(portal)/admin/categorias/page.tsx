@@ -9,6 +9,7 @@ import { useRepositories } from '@/repositories/context';
 import { subcategoriesKeys } from '@/lib/query/keys';
 import type { ContentCategory, ContentMainCategory } from '@/repositories/interfaces';
 import { getErrorMessage } from '@/lib/errors';
+import { AdminCategoryBannerPanel } from '@/components/categories/AdminCategoryBannerPanel';
 
 const TABS: { id: ContentCategory; label: string }[] = [
   { id: 'event', label: 'Eventos' },
@@ -18,8 +19,11 @@ const TABS: { id: ContentCategory; label: string }[] = [
   { id: 'hotel', label: 'Hoteles' },
 ];
 
+type AdminSection = 'subcategories' | 'banner';
+
 export default function AdminCategoriasPage() {
   const [tab, setTab] = useState<ContentCategory>('event');
+  const [section, setSection] = useState<AdminSection>('subcategories');
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [sortOrder, setSortOrder] = useState('0');
@@ -75,7 +79,10 @@ export default function AdminCategoriasPage() {
           <button
             key={t.id}
             type="button"
-            onClick={() => setTab(t.id)}
+            onClick={() => {
+              setTab(t.id);
+              if (t.id === 'hotel') setSection('subcategories');
+            }}
             className={`rounded-lg px-3 py-2 text-sm font-medium ${
               tab === t.id ? 'bg-accent text-bg' : 'border border-border text-text-muted hover:text-text'
             }`}
@@ -85,6 +92,33 @@ export default function AdminCategoriasPage() {
         ))}
       </div>
 
+      {!comingSoon && tab !== 'hotel' && (
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setSection('subcategories')}
+            className={`rounded-lg px-3 py-2 text-sm ${
+              section === 'subcategories'
+                ? 'border border-accent text-accent'
+                : 'border border-border text-text-muted hover:text-text'
+            }`}
+          >
+            Subcategorías
+          </button>
+          <button
+            type="button"
+            onClick={() => setSection('banner')}
+            className={`rounded-lg px-3 py-2 text-sm ${
+              section === 'banner'
+                ? 'border border-accent text-accent'
+                : 'border border-border text-text-muted hover:text-text'
+            }`}
+          >
+            Banner de categoría
+          </button>
+        </div>
+      )}
+
       {comingSoon ? (
         <div className="mt-8 rounded-xl border border-border bg-bg-muted p-6">
           <p className="text-lg font-semibold text-text">Próximamente</p>
@@ -92,6 +126,8 @@ export default function AdminCategoriasPage() {
             Las subcategorías de hoteles se habilitarán en una próxima etapa.
           </p>
         </div>
+      ) : section === 'banner' && tab !== 'hotel' ? (
+        <AdminCategoryBannerPanel category={tab as ContentMainCategory} />
       ) : (
         <>
           <form

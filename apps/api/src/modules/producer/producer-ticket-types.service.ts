@@ -37,7 +37,13 @@ export class ProducerTicketTypesService {
   ) {
     const event = await this.prisma.event.findFirst({
       where: { id: eventId, tenantId, deletedAt: null },
-      select: { id: true, producerId: true, isTicketingEnabled: true, tenantId: true },
+      select: {
+        id: true,
+        producerId: true,
+        isTicketingEnabled: true,
+        isGeneralPublication: true,
+        tenantId: true,
+      },
     });
     if (!event) {
       throw new NotFoundException({
@@ -159,6 +165,16 @@ export class ProducerTicketTypesService {
     return types.map((row) => this.toResponse(row, row.batches, now));
   }
 
+  private assertTicketedEvent(event: { isGeneralPublication: boolean }): void {
+    if (event.isGeneralPublication) {
+      throw new BadRequestException({
+        code: ErrorCode.VALIDATION_FAILED,
+        message:
+          'Este evento fue creado como Solo Publicidad y no permite cargar entradas.',
+      });
+    }
+  }
+
   async create(
     tenantId: string,
     eventId: string,
@@ -167,6 +183,7 @@ export class ProducerTicketTypesService {
     body: CreateTicketTypeDto,
   ): Promise<TicketTypeResponse> {
     const event = await this.assertEventOwnedByUser(eventId, tenantId, userId, userRole);
+    this.assertTicketedEvent(event);
     const now = new Date();
 
     if (body.batches?.length) {
@@ -220,7 +237,7 @@ export class ProducerTicketTypesService {
 
       await this.prisma.event.update({
         where: { id: eventId },
-        data: { isTicketingEnabled: true },
+        data: { isTicketingEnabled: true, isGeneralPublication: false },
       });
 
       return this.toResponse(ticketType, ticketType.batches, now);
@@ -269,7 +286,7 @@ export class ProducerTicketTypesService {
 
     await this.prisma.event.update({
       where: { id: eventId },
-      data: { isTicketingEnabled: true },
+      data: { isTicketingEnabled: true, isGeneralPublication: false },
     });
 
     return this.toResponse(ticketType, ticketType.batches, now);

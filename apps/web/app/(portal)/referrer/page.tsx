@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
 import { useRepositories } from '@/repositories/context';
 import { PageContainer, Button, useToast } from '@/components';
+import { CommercialReviewPanel } from '@/components/portal/CommercialReviewPanel';
 import { getErrorMessage } from '@/lib/errors';
 
 const PRODUCER_INITIATED_ORIGINS = new Set([
@@ -289,13 +290,18 @@ export default function ReferrerPortalPage() {
               Cuando aceptes una invitación o la productora acepte tu solicitud, aparecerán aquí.
             </p>
           ) : (
-            <ul className="mt-4 flex flex-wrap gap-2">
+            <ul className="mt-4 space-y-4">
               {activeRelationships.map((rel) => (
                 <li
                   key={rel.id}
-                  className="rounded-full border border-accent/30 bg-bg-muted/80 px-4 py-2 text-sm text-text"
+                  className="rounded-xl border border-accent/30 bg-bg-muted/80 p-4"
                 >
-                  {rel.producerProfile.displayName}
+                  <p className="font-medium text-text">{rel.producerProfile.displayName}</p>
+                  <CommercialReviewPanel
+                    mode="referrer"
+                    counterpartyId={rel.producerProfileId}
+                    counterpartyLabel={rel.producerProfile.displayName}
+                  />
                 </li>
               ))}
             </ul>

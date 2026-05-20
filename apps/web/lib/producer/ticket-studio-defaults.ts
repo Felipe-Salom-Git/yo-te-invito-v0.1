@@ -59,7 +59,7 @@ export function defaultTicketStudioState(eventTitle: string, ticketTypeName: str
         content: ticketTypeName || 'Tipo de entrada',
         style: {
           fontSize: 14,
-          color: '#22c55e',
+          color: '#16a34a',
           textAlign: 'center',
           fontWeight: '600',
         },

@@ -29,7 +29,7 @@ export function Tabs({ tabs, defaultValue, className = '' }: TabsProps) {
               className={`
                 px-4 py-2 text-sm font-medium transition-colors
                 ${activeId === tab.id
-                  ? 'border-b-2 border-accent text-accent'
+                  ? 'border-b-2 border-accent-muted text-accent-soft'
                   : 'text-text-muted hover:text-text'
                 }
               `}

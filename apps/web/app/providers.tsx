@@ -8,10 +8,20 @@ import { RepositoriesProvider } from '@/repositories/context';
 import { CartProvider } from '@/context/CartContext';
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  const [queryClient] = useState(() => new QueryClient());
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            staleTime: 30_000,
+            refetchOnWindowFocus: false,
+          },
+        },
+      }),
+  );
 
   return (
-    <SessionProvider>
+    <SessionProvider refetchOnWindowFocus={false}>
       <QueryClientProvider client={queryClient}>
         <RepositoriesProvider>
           <CartProvider>

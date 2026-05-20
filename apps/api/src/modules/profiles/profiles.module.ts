@@ -1,12 +1,20 @@
 import { Module } from '@nestjs/common';
-import { AuthModule } from '../../auth/auth.module';
+import { JwtModule } from '@nestjs/jwt';
 import { ReferrerModule } from '../referrer/referrer.module';
+import { JwtOrDevAuthGuard } from '../../auth/jwt-or-dev-auth.guard';
 import { ProfilesController } from './profiles.controller';
 import { ProfilesService } from './profiles.service';
 
 @Module({
-  imports: [AuthModule, ReferrerModule],
+  imports: [
+    ReferrerModule,
+    JwtModule.register({
+      secret: process.env.JWT_SECRET ?? 'dev-secret-change-in-production',
+      signOptions: { expiresIn: '7d' },
+    }),
+  ],
   controllers: [ProfilesController],
-  providers: [ProfilesService],
+  providers: [ProfilesService, JwtOrDevAuthGuard],
+  exports: [ProfilesService],
 })
 export class ProfilesModule {}

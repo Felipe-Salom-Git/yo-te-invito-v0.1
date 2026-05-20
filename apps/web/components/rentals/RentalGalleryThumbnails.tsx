@@ -7,6 +7,8 @@ type RentalGalleryThumbnailsProps = {
   images: RentalGalleryImage[];
 };
 
+const THUMB_SIZE = 'w-28 shrink-0 snap-start sm:w-32';
+
 export function RentalGalleryThumbnails({ images }: RentalGalleryThumbnailsProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -47,9 +49,12 @@ export function RentalGalleryThumbnails({ images }: RentalGalleryThumbnailsProps
 
   return (
     <>
-      <ul className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5">
+      <ul
+        className="flex gap-3 overflow-x-auto pb-2 scroll-smooth snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:thin]"
+        aria-label="Galería de imágenes"
+      >
         {images.map((img, index) => (
-          <li key={img.id}>
+          <li key={img.id} className={THUMB_SIZE}>
             <button
               type="button"
               onClick={() => openAt(index)}

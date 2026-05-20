@@ -10,12 +10,12 @@ interface ProfileStatusBadgeProps {
 const LABELS: Record<ProfileStatus, string> = {
   available: 'Disponible',
   pending: 'Pendiente de aprobación',
-  unavailable: 'No disponible',
+  unavailable: 'Sin perfil',
 };
 
 const STYLES: Record<ProfileStatus, string> = {
   available:
-    'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+    'bg-accent-surface/70 text-accent-soft border-accent-muted',
   pending:
     'bg-amber-500/20 text-amber-300 border-amber-500/40',
   unavailable:

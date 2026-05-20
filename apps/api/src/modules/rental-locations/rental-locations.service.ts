@@ -28,6 +28,16 @@ export class RentalLocationsService {
     private readonly subcategories: SubcategoriesService,
   ) {}
 
+  /** Trim rental product summary; empty string → null */
+  private normalizeSummary(
+    value: string | null | undefined,
+  ): string | null | undefined {
+    if (value === undefined) return undefined;
+    if (value == null) return null;
+    const t = value.trim();
+    return t === '' ? null : t.slice(0, 220);
+  }
+
   private toPrismaEventStatus(status?: string): EventStatus {
     const key = (status ?? 'approved').toLowerCase();
     const map: Record<string, EventStatus> = {
@@ -92,6 +102,7 @@ export class RentalLocationsService {
       category: event.category,
       subcategoryId: event.subcategoryId,
       description: event.description,
+      summary: event.summary,
     };
   }
 
@@ -224,6 +235,7 @@ export class RentalLocationsService {
         rentalLocationId: location.id,
         subcategoryId,
         title: body.title.trim(),
+        summary: this.normalizeSummary(body.summary) ?? null,
         description: body.description?.trim() || null,
         startAt: now,
         endAt: null,
@@ -290,6 +302,9 @@ export class RentalLocationsService {
       where: { id: productId },
       data: {
         ...(body.title !== undefined && { title: body.title.trim() }),
+        ...(body.summary !== undefined && {
+          summary: this.normalizeSummary(body.summary) ?? null,
+        }),
         ...(body.description !== undefined && {
           description: body.description?.trim() || null,
         }),

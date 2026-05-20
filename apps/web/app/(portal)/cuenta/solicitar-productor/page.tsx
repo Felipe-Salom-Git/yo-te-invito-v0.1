@@ -46,9 +46,9 @@ export default function SolicitarProductorPage() {
       <Link href="/profiles" className="mb-4 inline-block text-sm text-text-muted hover:text-text">
         ← Volver a perfiles
       </Link>
-      <SectionTitle>Solicitar perfil de productor</SectionTitle>
+      <SectionTitle>Crear perfil de productor</SectionTitle>
       <p className="mt-2 text-text-muted">
-        Completá el formulario para solicitar ser productor de eventos. Un administrador revisará tu solicitud.
+        Completá el formulario para activar tu panel de productor al instante.
       </p>
       <Card className="mt-6">
         <CardContent>
@@ -93,7 +93,7 @@ export default function SolicitarProductorPage() {
             </div>
             <div className="flex gap-2 pt-2">
               <Button type="submit" disabled={mutation.isPending}>
-                {mutation.isPending ? 'Enviando…' : 'Enviar solicitud'}
+                {mutation.isPending ? 'Creando…' : 'Crear perfil'}
               </Button>
               <Link href="/profiles">
                 <Button variant="outline" type="button">

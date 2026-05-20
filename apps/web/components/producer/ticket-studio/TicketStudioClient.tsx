@@ -50,7 +50,7 @@ type Props = {
 const PLACEHOLDER_LOGO_SVG =
   'data:image/svg+xml,' +
   encodeURIComponent(
-    '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="48"><rect fill="#171717" width="120" height="48" rx="4"/><text x="60" y="30" text-anchor="middle" fill="#22c55e" font-size="11" font-family="system-ui">Logo</text></svg>',
+    '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="48"><rect fill="#171717" width="120" height="48" rx="4"/><text x="60" y="30" text-anchor="middle" fill="#16a34a" font-size="11" font-family="system-ui">Logo</text></svg>',
   );
 
 function newImageElement(isLogo: boolean): TicketTemplateElement {

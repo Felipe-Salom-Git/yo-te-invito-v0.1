@@ -11,6 +11,7 @@ export interface EventHighlightsSectionProps {
   capacityTotal?: number | null;
   /** Optional duration in minutes; not in EventDetail, omit if unavailable */
   durationMinutes?: number | null;
+  className?: string;
 }
 
 export function EventHighlightsSection({
@@ -20,6 +21,7 @@ export function EventHighlightsSection({
   startAt,
   endAt,
   capacityTotal,
+  className = 'mt-10',
 }: EventHighlightsSectionProps) {
   const items: Array<{ icon: string; label: string }> = [];
 
@@ -68,7 +70,7 @@ export function EventHighlightsSection({
   if (items.length === 0) return null;
 
   return (
-    <section className="mt-10">
+    <section className={className}>
       <h2 className="text-lg font-semibold text-white mb-3">Lo que incluye</h2>
       <div className="flex flex-wrap gap-2">
         {items.map((item, i) => (

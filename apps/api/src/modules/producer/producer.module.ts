@@ -5,6 +5,7 @@ import { AuthModule } from '../../auth/auth.module';
 import { TicketingModule } from '../../ticketing/ticketing.module';
 import { ReferralsModule } from '../referrals/referrals.module';
 import { ReviewsModule } from '../reviews/reviews.module';
+import { CommercialReviewsModule } from '../commercial-reviews/commercial-reviews.module';
 import { ProfilesAuthorizationService } from '../../common/profiles-authorization.service';
 import { ProducerEventsController } from './producer-events.controller';
 import { ProducerReferrersController } from './producer-referrers.controller';
@@ -24,6 +25,7 @@ import { ProducerProfileService } from './producer-profile.service';
     ReferralsModule,
     TicketingModule,
     ReviewsModule,
+    CommercialReviewsModule,
     SubcategoriesModule,
     RentalLocationsModule,
   ],
@@ -43,5 +45,6 @@ import { ProducerProfileService } from './producer-profile.service';
     ProducerTicketTemplateService,
     ProducerProfileService,
   ],
+  exports: [EventMetricsService],
 })
 export class ProducerModule { }

@@ -1,16 +1,18 @@
 'use client';
 
 import { useMemo, useState, useCallback } from 'react';
-import Link from 'next/link';
 import type { CategoryGatewayId } from '@/lib/home/categoryGatewayConfig';
-import { CATEGORY_LANDING_META } from '@/lib/categories/categoryLandingConfig';
-import { usePublicSubcategories } from '@/lib/query/subcategories';
-import { useCategoryLandingRails } from '@/lib/query/categoryLanding';
+import { useCategoryCarousels } from '@/lib/query/useCategoryCarousels';
 import { ContentRail } from '@/components/home/ContentRail';
 import type { ContentCardItem } from '@/components/home/ContentCard';
 import { ContentPreviewModal } from '@/components/home/ContentPreviewModal';
 import { SubcategoryRail } from './SubcategoryRail';
 import { CrossCategoryRails } from './CrossCategoryRails';
+import { CategoryHeroBanner } from './CategoryHeroBanner';
+import { useCategoryBanner } from '@/lib/query/useCategoryBanner';
+import { toContentMainCategory } from '@/lib/categories/categoryLandingConfig';
+import { GastroDiscountsRail } from '@/components/gastro/GastroDiscountsRail';
+import { EventDiscoveryContent } from '@/components/events/discovery/EventDiscoveryContent';
 
 export interface CategoryLandingPageProps {
   category: CategoryGatewayId;
@@ -18,9 +20,25 @@ export interface CategoryLandingPageProps {
 }
 
 export function CategoryLandingPage({ category, subcategorySlug }: CategoryLandingPageProps) {
-  const meta = CATEGORY_LANDING_META[category];
-  const { data: subcategories = [], isLoading: subLoading } = usePublicSubcategories(category);
-  const rails = useCategoryLandingRails(category, subcategorySlug);
+  if (category === 'event') {
+    return <EventDiscoveryContent subcategorySlug={subcategorySlug} />;
+  }
+
+  const {
+    sections,
+    isEmpty,
+    filterMode,
+    activeSubcategory,
+    subcategories,
+    subcategoriesLoading,
+    discountsSubcategoryMode,
+    publishedDiscounts,
+    publishedDiscountsLoading,
+  } = useCategoryCarousels(category, subcategorySlug);
+
+  const { data: bannerData, isLoading: bannerLoading } = useCategoryBanner(
+    toContentMainCategory(category),
+  );
 
   const [previewItem, setPreviewItem] = useState<ContentCardItem | null>(null);
   const openPreview = useCallback((item: ContentCardItem) => setPreviewItem(item), []);
@@ -29,9 +47,9 @@ export function CategoryLandingPage({ category, subcategorySlug }: CategoryLandi
   const similarItems = useMemo(() => {
     if (!previewItem) return [];
     const all: ContentCardItem[] = [];
-    rails.forEach((r) => r.items.forEach((i) => all.push(i as ContentCardItem)));
+    sections.forEach((s) => s.items.forEach((i) => all.push(i as ContentCardItem)));
     return all.filter((i) => i.category === previewItem.category);
-  }, [previewItem, rails]);
+  }, [previewItem, sections]);
 
   const handleCardClick = useCallback(
     (item: ContentCardItem) => openPreview(item),
@@ -40,41 +58,73 @@ export function CategoryLandingPage({ category, subcategorySlug }: CategoryLandi
 
   return (
     <div className="min-h-screen bg-black pb-12 text-white">
-      <header className="border-b border-white/10 px-4 pb-6 pt-8 sm:px-6 md:px-10">
-        <Link href="/" className="text-xs font-medium uppercase tracking-widest text-white/50 hover:text-accent">
-          &larr; Inicio
-        </Link>
-        <h1 className="gateway-poster-title mt-4 text-3xl sm:text-4xl md:text-5xl">{meta.title}</h1>
-        <p className="mt-2 max-w-xl text-sm text-white/70 sm:text-base">{meta.subtitle}</p>
-        {subcategorySlug && (
-          <p className="mt-2 text-xs font-bold uppercase tracking-wider text-accent">
-            Filtrando: {subcategories.find((s) => s.slug === subcategorySlug)?.name ?? subcategorySlug}
-          </p>
-        )}
-      </header>
+      <CategoryHeroBanner
+        category={category}
+        items={bannerData?.data ?? []}
+        isLoading={bannerLoading}
+      />
+
+      {filterMode && activeSubcategory && (
+        <p className="border-b border-white/10 px-4 py-2 text-center text-xs font-bold uppercase tracking-wider text-accent sm:px-6 md:px-10">
+          Filtrando: {activeSubcategory.name}
+        </p>
+      )}
 
       <SubcategoryRail
         category={category}
         items={subcategories}
         activeSlug={subcategorySlug}
-        isLoading={subLoading}
+        isLoading={subcategoriesLoading}
       />
 
-      <div className="mt-8 w-full overflow-visible">
-        {rails.map((rail) => (
-          <ContentRail
-            key={rail.id}
-            sectionId={`rail-${rail.id}`}
-            title={rail.title}
-            subtitle={rail.subtitle}
-            items={rail.items}
-            isLoading={rail.isLoading}
-            onCardClick={handleCardClick}
+      <div id="category-content" className="mt-4 w-full overflow-visible sm:mt-5">
+        {discountsSubcategoryMode ? (
+          <GastroDiscountsRail
+            title="Descuentos"
+            subtitle="Reclamá tu código QR gratis y usalo en el local"
+            discounts={publishedDiscounts}
+            isLoading={publishedDiscountsLoading}
           />
-        ))}
+        ) : null}
+
+        {!discountsSubcategoryMode &&
+        category === 'gastro' &&
+        (publishedDiscountsLoading || publishedDiscounts.length > 0) ? (
+          <GastroDiscountsRail
+            title="Descuentos disponibles"
+            subtitle="Beneficios gratis — reclamá tu QR por email"
+            discounts={publishedDiscounts}
+            isLoading={publishedDiscountsLoading}
+          />
+        ) : null}
+
+        {discountsSubcategoryMode && !publishedDiscountsLoading && publishedDiscounts.length === 0 ? (
+          <p className="px-4 text-center text-sm text-white/60 sm:px-6">
+            No hay descuentos publicados por ahora.
+          </p>
+        ) : null}
+
+        {discountsSubcategoryMode ? null : isEmpty ? (
+          <p className="px-4 text-center text-sm text-white/60 sm:px-6">
+            No hay contenido disponible en esta categoría por ahora.
+          </p>
+        ) : (
+          sections.map((section) => (
+            <ContentRail
+              key={section.id}
+              sectionId={`rail-${section.id}`}
+              title={section.title}
+              subtitle={section.subtitle}
+              items={section.items}
+              isLoading={section.isLoading}
+              onCardClick={handleCardClick}
+              headingVariant="category"
+            />
+          ))
+        )}
       </div>
 
-      <CrossCategoryRails selectedCategory={category} onCardClick={handleCardClick} />
+      {!filterMode && <CrossCategoryRails selectedCategory={category} onCardClick={handleCardClick} />}
 
       <ContentPreviewModal
         isOpen={previewItem !== null}

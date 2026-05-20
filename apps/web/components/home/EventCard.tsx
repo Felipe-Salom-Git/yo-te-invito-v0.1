@@ -29,7 +29,7 @@ export function EventCard({ event }: EventCardProps) {
   return (
     <Link
       href={getDetailHref(event)}
-      className="group relative flex-shrink-0 w-[260px] h-[380px] overflow-hidden rounded-lg border border-border bg-bg-muted transition-all duration-300 ease-out hover:z-20 hover:scale-[1.08] hover:border-accent hover:shadow-xl hover:shadow-emerald-900/30"
+      className="group relative flex-shrink-0 w-[260px] h-[380px] overflow-hidden rounded-lg border border-border bg-bg-muted transition-all duration-300 ease-out hover:z-20 hover:scale-[1.08] hover:border-accent-muted hover:shadow-xl hover:shadow-accent-glow"
     >
       {/* Image + gradient overlay */}
       <div className="absolute inset-0">

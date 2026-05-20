@@ -104,7 +104,7 @@ function HeroCTAGroup({
     <div className="mt-8 flex flex-wrap gap-3 sm:gap-4">
       <Link
         href={model.detailHref}
-        className="rounded-lg bg-accent px-5 py-2.5 font-semibold text-bg shadow-lg shadow-accent/25 transition-all hover:bg-accent-hover hover:shadow-accent/40 sm:px-6 sm:py-3"
+        className="rounded-lg bg-accent px-5 py-2.5 font-semibold text-bg shadow-lg shadow-accent-glow transition-all hover:bg-accent-hover sm:px-6 sm:py-3"
       >
         {model.primaryCtaLabel}
       </Link>

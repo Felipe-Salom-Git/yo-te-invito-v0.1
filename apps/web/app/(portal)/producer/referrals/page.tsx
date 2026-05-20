@@ -8,6 +8,7 @@ import { useRepositories } from '@/repositories/context';
 import { useTenant } from '@/hooks/useTenant';
 import { useProducerId } from '@/hooks/useProducerId';
 import { PageContainer, SectionTitle, Button, Input, useToast } from '@/components';
+import { CommercialReviewPanel } from '@/components/portal/CommercialReviewPanel';
 import { getErrorMessage } from '@/lib/errors';
 import type {
   FreelanceReferrersSort,
@@ -36,7 +37,7 @@ function statusLabel(s: string): string {
 function StatusBadge({ status }: { status: string }) {
   const colors: Record<string, string> = {
     PENDING: 'bg-amber-500/15 text-amber-400 border-amber-500/25',
-    ACTIVE: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25',
+    ACTIVE: 'bg-accent-surface/70 text-accent-soft border border-accent-muted',
     REJECTED: 'bg-zinc-500/15 text-zinc-400 border-zinc-500/25',
     BLOCKED: 'bg-red-500/15 text-red-400 border-red-500/25',
   };
@@ -136,14 +137,21 @@ function RelationshipCard({
       )}
 
       {rel.status === 'ACTIVE' && (
-        <Button
-          size="sm"
-          variant="outline"
-          disabled={statusBusy}
-          onClick={() => onStatusChange(rel.referrerProfileId, 'BLOCKED')}
-        >
-          Bloquear relación
-        </Button>
+        <>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={statusBusy}
+            onClick={() => onStatusChange(rel.referrerProfileId, 'BLOCKED')}
+          >
+            Bloquear relación
+          </Button>
+          <CommercialReviewPanel
+            mode="producer"
+            counterpartyId={rel.referrerProfileId}
+            counterpartyLabel={rel.referrerProfile.displayName}
+          />
+        </>
       )}
 
       {(rel.status === 'REJECTED' || rel.status === 'BLOCKED') && (

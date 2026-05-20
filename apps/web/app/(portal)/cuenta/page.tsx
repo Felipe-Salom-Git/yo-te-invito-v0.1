@@ -60,11 +60,11 @@ export default function CuentaPage() {
           <CardContent>
             <h3 className="font-medium text-text">¿Sos productor de eventos?</h3>
             <p className="mt-2 text-sm text-text-muted">
-              Solicitá un perfil de productor para crear y gestionar tus eventos.
+              Creá tu perfil de productor para publicar eventos al instante.
             </p>
             <Link href="/cuenta/solicitar-productor" className="mt-4 inline-block">
               <span className="rounded border border-accent px-4 py-2 text-sm font-medium text-accent hover:bg-accent/10 transition-colors">
-                Solicitar perfil productor
+                Crear perfil productor
               </span>
             </Link>
           </CardContent>

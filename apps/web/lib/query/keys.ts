@@ -89,10 +89,41 @@ export const subcategoriesKeys = {
   admin: (category: string) => [...subcategoriesKeys.all, 'admin', category] as const,
 };
 
+export const generalPublicationsKeys = {
+  all: ['general-publications'] as const,
+  list: (filters: string) => [...generalPublicationsKeys.all, 'list', filters] as const,
+};
+
+export const adminProducersKeys = {
+  all: ['admin-producers'] as const,
+  list: (filters: string) => [...adminProducersKeys.all, 'list', filters] as const,
+  detail: (producerId: string) => [...adminProducersKeys.all, 'detail', producerId] as const,
+  events: (producerId: string) => [...adminProducersKeys.all, 'events', producerId] as const,
+  eventMetrics: (producerId: string, eventId: string) =>
+    [...adminProducersKeys.all, 'metrics', producerId, eventId] as const,
+};
+
+export const excursionOperatorsKeys = {
+  all: ['excursion-operators'] as const,
+  adminList: (tenantId: string) =>
+    [...excursionOperatorsKeys.all, 'admin', tenantId] as const,
+  adminDetail: (operatorId: string) =>
+    [...excursionOperatorsKeys.all, 'admin', operatorId] as const,
+};
+
+export const categoryBannersKeys = {
+  all: ['categoryBanners'] as const,
+  public: (tenantId: string, category: string) =>
+    [...categoryBannersKeys.all, 'public', tenantId, category] as const,
+  admin: (category: string) => [...categoryBannersKeys.all, 'admin', category] as const,
+};
+
 export const categoryLandingKeys = {
   all: ['categoryLanding'] as const,
   rails: (tenantId: string, category: string, subcategorySlug?: string) =>
     [...categoryLandingKeys.all, tenantId, category, subcategorySlug ?? ''] as const,
+  carousel: (tenantId: string, category: string, kind: string, slug: string) =>
+    [...categoryLandingKeys.all, 'carousel', tenantId, category, kind, slug] as const,
   crossCategory: (tenantId: string, selected: string, other: string) =>
     [...categoryLandingKeys.all, 'cross', tenantId, selected, other] as const,
 };
@@ -102,6 +133,19 @@ export const categoryLandingKeys = {
 export const producersKeys = {
   all: ['producers'] as const,
   detail: (id: string) => ['producer', id] as const,
+  myProfile: () => ['producer', 'my-profile'] as const,
+};
+
+export const producerReviewsKeys = {
+  all: ['producer', 'reviews'] as const,
+  summary: () => [...producerReviewsKeys.all, 'summary'] as const,
+  list: (filtersKey: string) => [...producerReviewsKeys.all, 'list', filtersKey] as const,
+};
+
+export const adminReviewDisputesKeys = {
+  all: ['admin', 'review-disputes'] as const,
+  list: (filtersKey: string) => [...adminReviewDisputesKeys.all, 'list', filtersKey] as const,
+  detail: (id: string) => [...adminReviewDisputesKeys.all, 'detail', id] as const,
 };
 
 // ─── Metrics / Admin ───────────────────────────────────────────────────────
@@ -130,4 +174,37 @@ export const referralsKeys = {
 export const meKeys = {
   all: ['me'] as const,
   detail: (userId: string) => [...meKeys.all, userId] as const,
+};
+
+// ─── Gastro portal ─────────────────────────────────────────────────────────
+
+export const publicGastroKeys = {
+  all: ['public', 'gastro-locations'] as const,
+  list: (tenantId: string, city?: string) =>
+    [...publicGastroKeys.all, 'list', tenantId, city ?? ''] as const,
+  detail: (id: string, tenantId: string) =>
+    [...publicGastroKeys.all, 'detail', id, tenantId] as const,
+  byEvent: (eventId: string, tenantId: string) =>
+    [...publicGastroKeys.all, 'by-event', eventId, tenantId] as const,
+  discounts: (locationId: string, tenantId: string) =>
+    [...publicGastroKeys.all, 'discounts', locationId, tenantId] as const,
+};
+
+export const gastroKeys = {
+  all: ['gastro'] as const,
+  local: () => [...gastroKeys.all, 'local'] as const,
+  discounts: () => [...gastroKeys.all, 'discounts'] as const,
+  discount: (id: string) => [...gastroKeys.all, 'discount', id] as const,
+};
+
+export const adminGastroKeys = {
+  all: ['admin', 'gastronomicos'] as const,
+  pendingDiscounts: () => [...adminGastroKeys.all, 'pending-discounts'] as const,
+  list: (filters: string) => [...adminGastroKeys.all, 'list', filters] as const,
+  detail: (profileId: string) => [...adminGastroKeys.all, 'detail', profileId] as const,
+  discounts: (profileId: string) => [...adminGastroKeys.all, 'discounts', profileId] as const,
+  discount: (profileId: string, discountId: string) =>
+    [...adminGastroKeys.all, 'discount', profileId, discountId] as const,
+  metrics: (profileId: string, discountId: string) =>
+    [...adminGastroKeys.all, 'metrics', profileId, discountId] as const,
 };

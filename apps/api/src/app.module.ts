@@ -22,6 +22,7 @@ import { HotelModule } from './modules/hotel/hotel.module';
 import { ResaleModule } from './modules/resale/resale.module';
 import { ProfilesModule } from './modules/profiles/profiles.module';
 import { ReferrerModule } from './modules/referrer/referrer.module';
+import { ReviewDisputesModule } from './modules/review-disputes/review-disputes.module';
 import { AuthModule } from './auth/auth.module';
 import { EmailModule } from './email/email.module';
 
@@ -52,6 +53,7 @@ import { EmailModule } from './email/email.module';
     ResaleModule,
     ProfilesModule,
     ReferrerModule,
+    ReviewDisputesModule,
   ],
 })
 export class AppModule {}

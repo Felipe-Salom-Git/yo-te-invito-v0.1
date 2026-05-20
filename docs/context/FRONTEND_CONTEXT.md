@@ -69,6 +69,9 @@ ApiClient → HTTP (NEXT_PUBLIC_API_BASE_URL)
 | ReferralsRepo, CourtesiesRepo, PayoutsRepo | ✓ | |
 | TicketTemplatesRepo | ✓ | Canvas studio per ticket type |
 | InboxRepo, GastroRepo, HotelRepo | ✓ | |
+| **ProducersRepo** | ✓ | público + `getMyProfile` / `createMyProfile` / `updateMyProfile*` + reviews agregadas |
+| **producerReviews** / **adminReviewDisputes** | ✓ | comentarios productora + cola admin disputas |
+| **commercialReviews** | ✓ | valoraciones privadas productora↔referidor |
 | ProfilesRepo, ApplicationsRepo, PlatformConfigRepo | ✓ | |
 
 **Category routing**: `gastro` → `/restaurants`, `excursion` → `/excursiones`, `rental` → `/rentals`, `hotel` → `/hoteles`, default → `/events`.
@@ -81,8 +84,8 @@ ApiClient → HTTP (NEXT_PUBLIC_API_BASE_URL)
 |------|--------|
 | Public | `/`, `/home`, `/explore`, `/events/[id]`, `/restaurants/[id]`, `/excursiones/[id]`, **`/rentals/[id]`**, `/hoteles/[id]`, checkout, `/me/tickets`, `/referrers`, `/r/[code]` |
 | Account | `/login`, `/register`, `/cuenta/*` |
-| Admin | `/admin/*`, **`/admin/rentals`**, **`/admin/rentals/locales/...`**, inbox, perfiles, config |
-| Producer | `/producer/events`, ticket studio, referidos, payouts |
+| Admin | `/admin/*`, **`/admin/rentals`**, **`/admin/rentals/locales/...`**, **`/admin/review-disputes`**, inbox, perfiles, config |
+| Producer | `/producer`, `/producer/events`, ticket studio, **`/producer/profile`** (dashboard por bloques), **`/producer/profile/create`**, **`/producer/profile/identity`**, **`/producer/profile/images`**, **`/producer/profile/contact`**, **`/producer/comments`** (reseñas de eventos + solicitud revisión), referidos, payouts |
 | Gastro / Hotel / Referrer | `/gastro/*`, `/hotel`, `/referrer`, `/cuenta/solicitar-referrer` |
 
 ### Rental public detail (`/rentals/[id]`)

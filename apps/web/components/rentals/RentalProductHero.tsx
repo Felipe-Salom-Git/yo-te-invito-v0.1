@@ -1,10 +1,12 @@
 'use client';
 
 import { getCategoryLabel } from '@/lib/home/contentRoutes';
+import { getRentalHeroSummaryText } from '@/lib/rentals/rentalSummary';
 
 type RentalProductHeroProps = {
   coverImageUrl?: string | null;
   title: string;
+  summary?: string | null;
   description?: string | null;
   subcategoryName?: string | null;
   localName?: string | null;
@@ -14,11 +16,14 @@ type RentalProductHeroProps = {
 export function RentalProductHero({
   coverImageUrl,
   title,
+  summary,
   description,
   subcategoryName,
   localName,
   children,
 }: RentalProductHeroProps) {
+  const heroSummary = getRentalHeroSummaryText(summary, description);
+
   const chips: string[] = [getCategoryLabel('rental')];
   if (subcategoryName?.trim()) chips.push(subcategoryName.trim());
   if (localName?.trim()) chips.push(localName.trim());
@@ -45,9 +50,9 @@ export function RentalProductHero({
         <h1 className="text-3xl font-bold leading-tight text-white drop-shadow-lg sm:text-4xl md:text-5xl">
           {title}
         </h1>
-        {description?.trim() && (
-          <p className="mt-2 max-w-2xl text-base leading-relaxed text-white/85 drop-shadow sm:text-lg">
-            {description.trim()}
+        {heroSummary && (
+          <p className="mt-2 max-w-2xl text-base leading-relaxed text-white/75 drop-shadow sm:text-lg">
+            {heroSummary}
           </p>
         )}
         {chips.length > 0 && (

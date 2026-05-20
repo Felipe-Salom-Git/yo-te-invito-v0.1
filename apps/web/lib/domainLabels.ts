@@ -13,8 +13,11 @@ export const TICKET_STATUS_LABELS: Record<TicketStatus, string> = {
   REVOKED: 'Revocado',
 };
 
+const SUCCESS_BADGE =
+  'bg-accent-surface/70 text-accent-soft border border-accent-muted';
+
 export const TICKET_STATUS_STYLES: Record<TicketStatus, string> = {
-  VALID: 'bg-emerald-500/20 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400',
+  VALID: SUCCESS_BADGE,
   USED: 'bg-amber-500/20 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400',
   REVOKED: 'bg-red-500/20 text-red-600 dark:bg-red-500/20 dark:text-red-400',
 };
@@ -33,8 +36,8 @@ export const ORDER_STATUS_LABELS: Record<string, string> = {
 
 export const ORDER_STATUS_STYLES: Record<string, string> = {
   PENDING_PAYMENT: 'bg-amber-500/20 text-amber-600',
-  PAID: 'bg-emerald-500/20 text-emerald-600',
-  paid: 'bg-emerald-500/20 text-emerald-600',
+  PAID: SUCCESS_BADGE,
+  paid: SUCCESS_BADGE,
   CANCELLED: 'bg-red-500/20 text-red-600',
   REFUNDED: 'bg-border text-text-muted',
 };
@@ -51,7 +54,7 @@ export const SCAN_RESULT_LABELS: Record<ScanResult, string> = {
 };
 
 export const SCAN_RESULT_STYLES: Record<ScanResult, string> = {
-  OK: 'bg-emerald-500/20 text-emerald-600',
+  OK: SUCCESS_BADGE,
   ALREADY_USED: 'bg-amber-500/20 text-amber-600',
   REVOKED: 'bg-red-500/20 text-red-600',
   INVALID: 'bg-red-500/20 text-red-600',

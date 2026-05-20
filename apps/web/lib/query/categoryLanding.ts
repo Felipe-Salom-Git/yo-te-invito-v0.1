@@ -3,14 +3,11 @@
 import { useQueries } from '@tanstack/react-query';
 import type { CategoryGatewayId } from '@/lib/home/categoryGatewayConfig';
 import {
-  CATEGORY_LANDING_RAILS,
   getCrossCategoryRails,
-  type CategoryLandingRailConfig,
   type CrossCategoryRailMeta,
 } from '@/lib/categories/categoryLandingConfig';
-import type { EventSummary } from '@/repositories/interfaces';
+import type { EventSummary, Repositories } from '@/repositories/interfaces';
 import { useRepositories } from '@/repositories/context';
-import type { Repositories } from '@/repositories/interfaces';
 import { useTenant } from '@/hooks/useTenant';
 import { categoryLandingKeys } from './keys';
 
@@ -20,62 +17,6 @@ function matchCategory(item: EventSummary, category: CategoryGatewayId): boolean
   const cat = item.category ?? 'event';
   if (category === 'event') return cat === 'event' || !item.category;
   return cat === category;
-}
-
-async function fetchRailItems(
-  repos: Repositories,
-  tenantId: string,
-  category: CategoryGatewayId,
-  subcategorySlug: string | undefined,
-  rail: CategoryLandingRailConfig,
-): Promise<EventSummary[]> {
-  if (rail.source === 'trending') {
-    const trending = await repos.events.trending(tenantId, 24);
-    return trending.filter((e) => matchCategory(e, category)).slice(0, 8);
-  }
-  if (rail.source === 'new') {
-    const now = new Date().toISOString().slice(0, 10);
-    const res = await repos.events.list({
-      tenantId,
-      category,
-      subcategorySlug,
-      dateFrom: now,
-      limit: 8,
-    });
-    return res.data;
-  }
-  const res = await repos.events.list({
-    tenantId,
-    category,
-    subcategorySlug,
-    limit: 8,
-  });
-  return res.data;
-}
-
-export function useCategoryLandingRails(
-  category: CategoryGatewayId,
-  subcategorySlug?: string | null,
-) {
-  const repos = useRepositories();
-  const { tenantId } = useTenant();
-  const t = tenantId || TENANT_ID;
-  const slug = subcategorySlug?.trim() || undefined;
-  const rails = CATEGORY_LANDING_RAILS[category];
-
-  const results = useQueries({
-    queries: rails.map((rail) => ({
-      queryKey: categoryLandingKeys.rails(t, category, `${slug ?? ''}:${rail.id}`),
-      queryFn: () => fetchRailItems(repos, t, category, slug, rail),
-      enabled: !!t,
-    })),
-  });
-
-  return rails.map((rail, i) => ({
-    ...rail,
-    items: results[i]?.data ?? [],
-    isLoading: results[i]?.isLoading ?? true,
-  }));
 }
 
 const CROSS_CATEGORY_LIMIT = 8;
@@ -94,6 +35,7 @@ async function fetchCrossCategoryItems(
   return res.data;
 }
 
+/** Discovery rails for other categories at the bottom of a category landing page. */
 export function useCrossCategoryRails(selectedCategory: CategoryGatewayId) {
   const repos = useRepositories();
   const { tenantId } = useTenant();
@@ -114,3 +56,5 @@ export function useCrossCategoryRails(selectedCategory: CategoryGatewayId) {
     isLoading: results[i]?.isLoading ?? true,
   }));
 }
+
+export { useCategoryCarousels } from './useCategoryCarousels';

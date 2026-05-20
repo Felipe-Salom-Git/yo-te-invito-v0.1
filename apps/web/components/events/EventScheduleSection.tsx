@@ -3,9 +3,14 @@
 export interface EventScheduleSectionProps {
   startAt?: string | null;
   endAt?: string | null;
+  className?: string;
 }
 
-export function EventScheduleSection({ startAt, endAt }: EventScheduleSectionProps) {
+export function EventScheduleSection({
+  startAt,
+  endAt,
+  className = 'mt-10',
+}: EventScheduleSectionProps) {
   if (!startAt) return null;
 
   const start = new Date(startAt);
@@ -29,7 +34,7 @@ export function EventScheduleSection({ startAt, endAt }: EventScheduleSectionPro
   }
 
   return (
-    <section className="mt-10">
+    <section className={className}>
       <h2 className="text-lg font-semibold text-white mb-3">Horarios</h2>
       <div className="rounded-xl border border-border bg-bg-muted/50 p-5">
         <div className="flex items-start gap-3">

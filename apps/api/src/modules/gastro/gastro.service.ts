@@ -76,7 +76,7 @@ export class GastroService {
       value: d.value,
       validFrom: d.validFrom?.toISOString() ?? null,
       validTo: d.validTo?.toISOString() ?? null,
-      status: d.status as 'ACTIVE' | 'INACTIVE' | 'EXPIRED',
+      status: d.status,
       createdAt: d.createdAt.toISOString(),
     };
   }
@@ -129,7 +129,7 @@ export class GastroService {
         value: input.value,
         validFrom: input.validFrom ? new Date(input.validFrom) : null,
         validTo: input.validTo ? new Date(input.validTo) : null,
-        status: 'ACTIVE',
+        status: 'PENDING_REVIEW',
       },
     });
     return this.mapDiscount(created);
@@ -141,7 +141,7 @@ export class GastroService {
     userRole: string,
     discountId: string,
     patch: Partial<{
-      status: 'ACTIVE' | 'INACTIVE' | 'EXPIRED';
+      status: 'ACTIVE' | 'CANCELLED' | 'EXPIRED' | 'PENDING_REVIEW';
       validFrom: string | null;
       validTo: string | null;
       value: number;
@@ -248,6 +248,12 @@ export class GastroService {
       });
     }
     await this.assertGastroEvent(tenantId, userId, userRole, d.eventId);
+    if (d.status !== 'ACTIVE') {
+      throw new BadRequestException({
+        code: ErrorCode.VALIDATION_FAILED,
+        message: 'Discount is not active',
+      });
+    }
     const v = await this.prisma.gastroDiscountValidation.create({
       data: {
         discountId,

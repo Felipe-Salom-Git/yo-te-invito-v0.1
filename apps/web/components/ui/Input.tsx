@@ -34,7 +34,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           aria-describedby={errorId}
           className={`
             w-full rounded border bg-bg text-text placeholder:text-text-muted
-            focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent
+            focus:border-accent-muted focus:outline-none focus:ring-1 focus:ring-accent-muted
             disabled:cursor-not-allowed disabled:opacity-50
             border-border
             ${dense ? 'px-2 py-1 text-xs leading-tight min-h-[1.75rem]' : 'px-3 py-2'}

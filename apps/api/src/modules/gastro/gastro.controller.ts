@@ -1,16 +1,84 @@
 import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  gastroDiscountCreateSchema,
+  gastroDiscountUpdateSchema,
+  gastroLocalCreateSchema,
+  gastroLocalUpdateSchema,
+  Role,
+  type GastroDiscountCreateInput,
+  type GastroDiscountUpdateInput,
+  type GastroLocalCreateInput,
+  type GastroLocalUpdateInput,
+} from '@yo-te-invito/shared';
 import { JwtOrDevAuthGuard } from '../../auth/jwt-or-dev-auth.guard';
 import { GastroRolesGuard } from '../../common/guards/gastro-roles.guard';
 import { RequireRole } from '../../common/decorators/require-role.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { Role } from '@yo-te-invito/shared';
+import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { GastroService } from './gastro.service';
+import { GastroLocalService } from './gastro-local.service';
+import { GastroPortalDiscountsService } from './gastro-portal-discounts.service';
 
 @Controller('gastro')
 @UseGuards(JwtOrDevAuthGuard, GastroRolesGuard)
 @RequireRole(Role.ADMIN, Role.GASTRO_OWNER)
 export class GastroController {
-  constructor(private readonly service: GastroService) {}
+  constructor(
+    private readonly service: GastroService,
+    private readonly localService: GastroLocalService,
+    private readonly portalDiscounts: GastroPortalDiscountsService,
+  ) {}
+
+  @Get('local')
+  async getMyLocal(@CurrentUser() user: { id: string; tenantId: string; role: string }) {
+    return this.localService.getMyLocal(user.tenantId, user.id, user.role);
+  }
+
+  @Post('local')
+  async createMyLocal(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Body(new ZodValidationPipe(gastroLocalCreateSchema)) body: GastroLocalCreateInput,
+  ) {
+    return this.localService.createMyLocal(user.tenantId, user.id, user.role, body);
+  }
+
+  @Patch('local')
+  async updateMyLocal(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Body(new ZodValidationPipe(gastroLocalUpdateSchema)) body: GastroLocalUpdateInput,
+  ) {
+    return this.localService.updateMyLocal(user.tenantId, user.id, user.role, body);
+  }
+
+  @Get('discounts')
+  async listMyDiscounts(@CurrentUser() user: { id: string; tenantId: string; role: string }) {
+    return this.portalDiscounts.listMyDiscounts(user.tenantId, user.id, user.role);
+  }
+
+  @Get('discounts/:id')
+  async getMyDiscount(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param('id') id: string,
+  ) {
+    return this.portalDiscounts.getMyDiscount(user.tenantId, user.id, user.role, id);
+  }
+
+  @Post('discounts')
+  async createMyDiscount(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Body(new ZodValidationPipe(gastroDiscountCreateSchema)) body: GastroDiscountCreateInput,
+  ) {
+    return this.portalDiscounts.createMyDiscount(user.tenantId, user.id, user.role, body);
+  }
+
+  @Patch('discounts/:id')
+  async updateMyDiscount(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(gastroDiscountUpdateSchema)) body: GastroDiscountUpdateInput,
+  ) {
+    return this.portalDiscounts.updateMyDiscount(user.tenantId, user.id, user.role, id, body);
+  }
 
   @Get('events/:eventId/content')
   async listContent(@Param('eventId') eventId: string) {
@@ -57,7 +125,7 @@ export class GastroController {
     @Param('id') id: string,
     @Body()
     body: Partial<{
-      status: 'ACTIVE' | 'INACTIVE' | 'EXPIRED';
+      status: 'ACTIVE' | 'CANCELLED' | 'EXPIRED' | 'PENDING_REVIEW';
       validFrom: string | null;
       validTo: string | null;
       value: number;

@@ -105,8 +105,15 @@ export const rentalProductGalleryImageSchema = z.object({
   type: z.nativeEnum(EventMediaType).optional(),
 });
 
+export const rentalProductSummarySchema = z
+  .string()
+  .max(220, 'El resumen no puede superar 220 caracteres')
+  .optional()
+  .nullable();
+
 export const createRentalProductBodySchema = z.object({
   title: z.string().min(1),
+  summary: rentalProductSummarySchema,
   description: z.string().nullish(),
   subcategoryId: z.string().nullish(),
   headerImageUrl: z.string().nullish(),
@@ -119,5 +126,16 @@ export const createRentalProductBodySchema = z.object({
 });
 export type CreateRentalProductBody = z.infer<typeof createRentalProductBodySchema>;
 
-export const updateRentalProductBodySchema = createRentalProductBodySchema.partial();
+/** Explicit partial schema — avoids Zod .partial() quirks with transformed fields */
+export const updateRentalProductBodySchema = z.object({
+  title: z.string().min(1).optional(),
+  summary: rentalProductSummarySchema,
+  description: z.string().nullish(),
+  subcategoryId: z.string().nullish(),
+  headerImageUrl: z.string().nullish(),
+  galleryImages: z.array(rentalProductGalleryImageSchema).optional(),
+  coverImageUrl: z.string().nullish(),
+  media: z.array(eventMediaSchema).optional(),
+  status: z.nativeEnum(EventStatus).optional(),
+});
 export type UpdateRentalProductBody = z.infer<typeof updateRentalProductBodySchema>;

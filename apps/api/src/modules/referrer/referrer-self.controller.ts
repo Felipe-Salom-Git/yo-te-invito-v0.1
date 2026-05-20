@@ -13,6 +13,11 @@ import {
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { ReferrerProfilesService } from './referrer-profiles.service';
 import { ReferralsService } from '../referrals/referrals.service';
+import { CommercialReviewsService } from '../commercial-reviews/commercial-reviews.service';
+import {
+  commercialRelationshipReviewSubmitSchema,
+  type CommercialRelationshipReviewSubmitInput,
+} from '@yo-te-invito/shared';
 
 @Controller('referrer')
 @UseGuards(JwtOrDevAuthGuard, ReferrerRolesGuard)
@@ -21,7 +26,38 @@ export class ReferrerSelfController {
   constructor(
     private readonly referrers: ReferrerProfilesService,
     private readonly referrals: ReferralsService,
+    private readonly commercialReviews: CommercialReviewsService,
   ) {}
+
+  @Get('me/producer-relationships/:producerProfileId/commercial-reviews')
+  async listCommercialReviews(
+    @CurrentUser() user: { id: string; tenantId: string },
+    @Param('producerProfileId') producerProfileId: string,
+  ) {
+    const profile = await this.referrers.getMyProfile(user.tenantId, user.id);
+    return this.commercialReviews.listForReferrerProducer(
+      user.tenantId,
+      user.id,
+      profile.id,
+      producerProfileId,
+    );
+  }
+
+  @Post('me/producer-relationships/:producerProfileId/commercial-reviews')
+  async createCommercialReview(
+    @CurrentUser() user: { id: string; tenantId: string },
+    @Param('producerProfileId') producerProfileId: string,
+    @Body(new ZodValidationPipe(commercialRelationshipReviewSubmitSchema))
+    body: CommercialRelationshipReviewSubmitInput,
+  ) {
+    const profile = await this.referrers.getMyProfile(user.tenantId, user.id);
+    return this.commercialReviews.createAsReferrer(user.tenantId, user.id, {
+      ...body,
+      producerProfileId,
+      referrerProfileId: profile.id,
+      targetType: 'PRODUCER',
+    });
+  }
 
   @Get('me')
   async getMe(@CurrentUser() user: { id: string; tenantId: string }) {

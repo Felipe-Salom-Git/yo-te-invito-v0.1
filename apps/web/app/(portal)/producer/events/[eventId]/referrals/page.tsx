@@ -235,7 +235,7 @@ export default function EventReferralsPage() {
                     <div>
                       <p className="font-medium text-text">{rel.referrerProfile.displayName}</p>
                       <p className="text-xs text-text-muted">
-                        Asociado (general): <span className="text-emerald-400/90">sí</span>
+                        Asociado (general): <span className="text-accent-soft">sí</span>
                         {' · '}
                         Asignado (este evento):{' '}
                         {operationalHere ? (

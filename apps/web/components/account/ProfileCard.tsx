@@ -46,11 +46,11 @@ function getPrimaryCtaLabel(status: ProfileStatusInfo['status'], option: Profile
     case 'available':
       return 'Entrar';
     case 'pending':
-      return 'Ver estado';
+      return 'Crear perfil';
     case 'unavailable':
-      return 'Solicitar acceso';
+      return 'Crear perfil';
     default:
-      return 'Solicitar acceso';
+      return 'Crear perfil';
   }
 }
 

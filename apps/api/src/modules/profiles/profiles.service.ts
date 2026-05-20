@@ -42,7 +42,7 @@ export class ProfilesService {
         city: body.city ?? null,
         country: body.country ?? null,
         createdByUserId: userId,
-        status: 'PENDING',
+        status: 'ACTIVE',
       },
     });
 
@@ -52,7 +52,7 @@ export class ProfilesService {
         userId,
         profileId: profile.id,
         membershipRole: 'OWNER',
-        status: 'PENDING',
+        status: 'ACTIVE',
       },
     });
 
@@ -60,7 +60,7 @@ export class ProfilesService {
       id: profile.id,
       displayName: profile.displayName,
       status: profile.status,
-      message: 'Solicitud enviada. Serás notificado cuando sea aprobada.',
+      message: 'Tu perfil de productor está activo. Ya podés entrar al panel.',
     };
   }
 
@@ -89,7 +89,7 @@ export class ProfilesService {
         city: body.city ?? null,
         contactPhone: body.contactPhone ?? null,
         createdByUserId: userId,
-        status: 'PENDING',
+        status: 'ACTIVE',
       },
     });
 
@@ -99,7 +99,7 @@ export class ProfilesService {
         userId,
         profileId: profile.id,
         membershipRole: 'OWNER',
-        status: 'PENDING',
+        status: 'ACTIVE',
       },
     });
 
@@ -107,7 +107,7 @@ export class ProfilesService {
       id: profile.id,
       displayName: profile.displayName,
       status: profile.status,
-      message: 'Solicitud enviada. Serás notificado cuando sea aprobada.',
+      message: 'Tu perfil gastronómico está activo. Ya podés gestionar tu local.',
     };
   }
 
@@ -150,7 +150,7 @@ export class ProfilesService {
         bookingUrl: body.bookingUrl?.trim() || null,
         socialLinks: social ?? undefined,
         createdByUserId: userId,
-        status: 'PENDING',
+        status: 'ACTIVE',
       },
     });
 
@@ -160,7 +160,7 @@ export class ProfilesService {
         userId,
         profileId: profile.id,
         membershipRole: 'OWNER',
-        status: 'PENDING',
+        status: 'ACTIVE',
       },
     });
 
@@ -168,7 +168,7 @@ export class ProfilesService {
       id: profile.id,
       displayName: profile.displayName,
       status: profile.status,
-      message: 'Solicitud enviada. Serás notificado cuando sea aprobada.',
+      message: 'Tu perfil de hotel está activo. Ya podés entrar al panel.',
     };
   }
 

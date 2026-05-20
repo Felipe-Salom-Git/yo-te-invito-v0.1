@@ -11,7 +11,9 @@ import type {
   AuthRegisterResponse,
   AuthApplyRoleRequest,
   AuthGoogleRequest,
+  RegistrationProfileType,
 } from '@yo-te-invito/shared';
+import { ProfileRegistrationService } from './profile-registration.service';
 
 const DEFAULT_TENANT_ID = 'tenant-demo';
 
@@ -37,6 +39,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly emailQueue: EmailQueueService,
+    private readonly profileRegistration: ProfileRegistrationService,
   ) {}
 
   async login(body: AuthLoginRequest): Promise<AuthLoginResponse> {
@@ -103,16 +106,38 @@ export class AuthService {
       });
     }
     const passwordHash = hashPassword(body.password);
-    const user = await this.prisma.user.create({
-      data: {
-        tenantId,
-        email,
-        passwordHash,
-        firstName: body.firstName.trim(),
-        lastName: body.lastName.trim(),
-        role: 'USER',
-        status: 'ACTIVE',
-      },
+    const profileType: RegistrationProfileType = body.profileType ?? 'USER';
+    if (profileType !== 'USER' && body.profileData == null) {
+      throw new BadRequestException({
+        code: 'VALIDATION_FAILED',
+        message: 'profileData es requerido para el tipo de perfil seleccionado',
+      });
+    }
+
+    const user = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.user.create({
+        data: {
+          tenantId,
+          email,
+          passwordHash,
+          firstName: body.firstName.trim(),
+          lastName: body.lastName.trim(),
+          role: 'USER',
+          status: 'ACTIVE',
+        },
+      });
+
+      if (profileType !== 'USER') {
+        await this.profileRegistration.createProfileForRegistration(
+          tenantId,
+          created.id,
+          profileType,
+          body.profileData,
+          tx,
+        );
+      }
+
+      return created;
     });
 
     const verificationToken = crypto.randomBytes(32).toString('hex');

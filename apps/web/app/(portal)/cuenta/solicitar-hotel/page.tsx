@@ -88,10 +88,10 @@ export default function SolicitarHotelPage() {
       <Link href="/profiles" className="mb-4 inline-block text-sm text-text-muted hover:text-text">
         ← Volver a perfiles
       </Link>
-      <SectionTitle>Solicitar perfil hotel / alojamiento</SectionTitle>
+      <SectionTitle>Crear perfil hotel / alojamiento</SectionTitle>
       <p className="mt-2 text-text-muted">
         El sitio web del establecimiento es obligatorio (con <code className="text-xs">https://</code> o{' '}
-        <code className="text-xs">http://</code>). Un administrador revisará tu solicitud.
+        <code className="text-xs">http://</code>). Tu perfil queda activo al enviar el formulario.
       </p>
       <Card className="mt-6">
         <CardContent>
@@ -241,7 +241,7 @@ export default function SolicitarHotelPage() {
             </div>
             <div className="flex gap-2 pt-2">
               <Button type="submit" disabled={mutation.isPending}>
-                {mutation.isPending ? 'Enviando…' : 'Enviar solicitud'}
+                {mutation.isPending ? 'Creando…' : 'Crear perfil'}
               </Button>
               <Link href="/profiles">
                 <Button variant="outline" type="button">

@@ -5,6 +5,7 @@
 import { ApiClient, ApiClientError } from '@/lib/api/client';
 import type {
   Repositories,
+  AuthRepo,
   ApplicationsRepo,
   ProfilesRepo,
   HotelRepo,
@@ -65,6 +66,15 @@ import type {
   GastroContent,
   GastroDiscount,
   GastroDiscountValidation,
+  GastroLocal,
+  GastroPortalDiscount,
+  PublicGastroLocation,
+  PublicGastroLocationDiscount,
+  PublicGastroDiscountListItem,
+  PublicGastroDiscountDetail,
+  PublicGastroDiscountClaimResult,
+  PublicGastroDiscountClaimView,
+  PublicGastroLocationsRepo,
   ResaleListing,
   CreateReferrerInput,
   ReferrerOwnProfile,
@@ -81,9 +91,26 @@ import type {
   CreatePaymentResult,
   PaymentStatusResult,
   SubcategoriesRepo,
+  CategoryBannersRepo,
   RentalLocationsRepo,
   RentalLocationSummary,
   RentalLocationDetail,
+  ExcursionOperatorsRepo,
+  ExcursionOperatorSummary,
+  ExcursionOperatorDetail,
+  GeneralPublicationsRepo,
+  AdminProducersRepo,
+  AdminProducerDetail,
+  AdminProducerListItem,
+  AdminProducerEventListItem,
+  AdminProducerEventMetrics,
+  AdminGastroRepo,
+  AdminGastroLocationListItem,
+  AdminGastroLocationDetail,
+  AdminGastroDiscountListItem,
+  AdminGastroDiscountDetail,
+  AdminGastroDiscountMetrics,
+  AdminGastroPendingDiscountItem,
   PublicSubcategorySummary,
   SubcategoryAdmin,
   ContentMainCategory,
@@ -186,10 +213,23 @@ export class ApiRepository implements Repositories {
           category: query.category,
           subcategoryId: query.subcategoryId,
           subcategorySlug: query.subcategorySlug,
+          sort: query.sort,
+          ...(query.hasTicketing !== undefined ? { hasTicketing: query.hasTicketing } : {}),
+          ...(query.excludeGeneralPublications !== undefined
+            ? { excludeGeneralPublications: query.excludeGeneralPublications }
+            : {}),
         },
       );
       return raw;
     },
+    listCalendarMonth: async (query) =>
+      this.client.get<{ data: EventSummary[] }>('/public/events/calendar', {
+        tenantId: query.tenantId,
+        month: query.month,
+        ...(query.category ? { category: query.category } : {}),
+        ...(query.subcategorySlug ? { subcategorySlug: query.subcategorySlug } : {}),
+        ...(query.subcategoryId ? { subcategoryId: query.subcategoryId } : {}),
+      }),
     search: async (query: EventsSearchQuery) => {
       const t = query.tenantId ?? this.defaultTenantId;
       return this.client.get<EventsPaginatedResponse>('/public/events/search', {
@@ -259,6 +299,7 @@ export class ApiRepository implements Repositories {
         geoLng: input.geoLng ?? null,
         category: input.category ?? 'event',
         subcategoryId: (input as { subcategoryId?: string | null }).subcategoryId ?? null,
+        eventMode: (input as { eventMode?: 'PUBLICITY_ONLY' | 'TICKETED' }).eventMode ?? 'TICKETED',
       };
       return this.client.post<EventDetail>('/producer/events', body) as Promise<EventDetail>;
     },
@@ -303,6 +344,127 @@ export class ApiRepository implements Repositories {
       ),
   };
 
+  generalPublications: GeneralPublicationsRepo = {
+    list: async (params) =>
+      this.client.get<{
+        data: EventSummary[];
+        meta: { page: number; limit: number; total: number; totalPages: number };
+      }>('/admin/general-publications', {
+        ...(params?.status ? { status: params.status } : {}),
+        ...(params?.category ? { category: params.category } : {}),
+        ...(params?.page ? { page: params.page } : {}),
+        ...(params?.limit ? { limit: params.limit } : {}),
+      }),
+    create: async (input) =>
+      this.client.post<{ id: string; title: string; category: string | null; status: string }>(
+        '/admin/general-publications',
+        input,
+      ),
+  };
+
+  adminProducers: AdminProducersRepo = {
+    listProducers: async (params) =>
+      this.client.get<{
+        data: AdminProducerListItem[];
+        meta: { page: number; limit: number; total: number; totalPages: number };
+      }>('/admin/producers', {
+        ...(params?.search ? { search: params.search } : {}),
+        ...(params?.status ? { status: params.status } : {}),
+        ...(params?.hasPendingEvents ? { hasPendingEvents: true } : {}),
+        ...(params?.page ? { page: params.page } : {}),
+        ...(params?.limit ? { limit: params.limit } : {}),
+      }),
+    getProducer: async (producerId) =>
+      this.client.get<AdminProducerDetail>(
+        `/admin/producers/${encodeURIComponent(producerId)}`,
+      ),
+    listProducerEvents: async (producerId) =>
+      this.client.get<{ data: AdminProducerEventListItem[] }>(
+        `/admin/producers/${encodeURIComponent(producerId)}/events`,
+      ),
+    getProducerEventMetrics: async (producerId, eventId) =>
+      this.client.get<AdminProducerEventMetrics>(
+        `/admin/producers/${encodeURIComponent(producerId)}/events/${encodeURIComponent(eventId)}/metrics`,
+      ),
+    approveProducerEvent: async (producerId, eventId) =>
+      this.client.post<{ id: string; status: string }>(
+        `/admin/producers/${encodeURIComponent(producerId)}/events/${encodeURIComponent(eventId)}/approve`,
+        {},
+      ),
+    rejectProducerEvent: async (producerId, eventId, reason) =>
+      this.client.post<{ id: string; status: string }>(
+        `/admin/producers/${encodeURIComponent(producerId)}/events/${encodeURIComponent(eventId)}/reject`,
+        { reason },
+      ),
+    postponeProducerEvent: async (producerId, eventId, reason, newStartAt) =>
+      this.client.post<{ id: string; status: string }>(
+        `/admin/producers/${encodeURIComponent(producerId)}/events/${encodeURIComponent(eventId)}/postpone`,
+        { reason, ...(newStartAt ? { newStartAt } : {}) },
+      ),
+    cancelProducerEvent: async (producerId, eventId, reason) =>
+      this.client.post<{ id: string; status: string }>(
+        `/admin/producers/${encodeURIComponent(producerId)}/events/${encodeURIComponent(eventId)}/cancel`,
+        { reason },
+      ),
+  };
+
+  excursionOperators: ExcursionOperatorsRepo = {
+    listAdmin: async (query) =>
+      this.client.get<{ data: ExcursionOperatorSummary[] }>('/admin/excursion-operators', {
+        ...(query?.tenantId ? { tenantId: query.tenantId } : {}),
+        ...(query?.includeInactive ? { includeInactive: true } : {}),
+      }),
+    getAdmin: async (id) =>
+      this.client.get<ExcursionOperatorDetail>(
+        `/admin/excursion-operators/${encodeURIComponent(id)}`,
+      ),
+    create: async (input) =>
+      this.client.post<ExcursionOperatorSummary>('/admin/excursion-operators', input),
+    update: async (id, patch) =>
+      this.client.patch<ExcursionOperatorSummary>(
+        `/admin/excursion-operators/${encodeURIComponent(id)}`,
+        patch,
+      ),
+    remove: async (id) =>
+      this.client.delete<{ ok: true }>(
+        `/admin/excursion-operators/${encodeURIComponent(id)}`,
+      ),
+    createExcursion: async (operatorId, input) =>
+      this.client.post<{ id: string; title: string }>(
+        `/admin/excursion-operators/${encodeURIComponent(operatorId)}/excursions`,
+        input,
+      ),
+    updateExcursion: async (operatorId, excursionId, patch) =>
+      this.client.patch<{ id: string; title: string }>(
+        `/admin/excursion-operators/${encodeURIComponent(operatorId)}/excursions/${encodeURIComponent(excursionId)}`,
+        patch,
+      ),
+  };
+
+  categoryBanners: CategoryBannersRepo = {
+    getPublic: async (tenantId, category) => {
+      const t = tenantId || this.defaultTenantId;
+      return this.client.get<{ mode: 'automatic' | 'manual'; data: import('./interfaces').CategoryBannerResolvedItem[] }>(
+        '/public/category-banners',
+        { tenantId: t, category },
+      );
+    },
+    getAdmin: async (category) =>
+      this.client.get<{ mode: 'automatic' | 'manual'; items: import('./interfaces').CategoryBannerAdminItem[] }>(
+        '/admin/category-banners',
+        { category },
+      ),
+    updateAdmin: async (category, items) =>
+      this.client.put<{ mode: 'automatic' | 'manual'; items: import('./interfaces').CategoryBannerAdminItem[] }>(
+        `/admin/category-banners/${encodeURIComponent(category)}`,
+        { items },
+      ),
+    removeAdminItem: async (category, itemId) =>
+      this.client.delete<{ mode: 'automatic' | 'manual'; items: import('./interfaces').CategoryBannerAdminItem[] }>(
+        `/admin/category-banners/${encodeURIComponent(category)}/${encodeURIComponent(itemId)}`,
+      ),
+  };
+
   subcategories: SubcategoriesRepo = {
     listPublic: async (tenantId: string, category: ContentMainCategory) => {
       const raw = await this.client.get<{ data: PublicSubcategorySummary[] }>(
@@ -322,6 +484,10 @@ export class ApiRepository implements Repositories {
       this.client.patch<SubcategoryAdmin>(`/admin/subcategories/${encodeURIComponent(id)}`, patch),
     deactivate: async (id) =>
       this.client.delete<SubcategoryAdmin>(`/admin/subcategories/${encodeURIComponent(id)}`),
+  };
+
+  auth: AuthRepo = {
+    register: async (body) => this.client.post('/auth/register', body),
   };
 
   applications: ApplicationsRepo = {
@@ -888,10 +1054,100 @@ export class ApiRepository implements Repositories {
       return this.client.get<{ producers: ProducerSummary[]; total: number }>('/public/producers', query);
     },
     getMyProfile: async () => {
-      return this.client.get<ProducerDetail | null>('/producer/profile');
+      try {
+        return await this.client.get<ProducerDetail | null>('/producer/profile');
+      } catch (e) {
+        if (e instanceof ApiClientError && e.status === 404) return null;
+        throw e;
+      }
     },
-    updateMyProfile: async (data: any) => {
+    createMyProfile: async (data) => {
+      return this.client.post<ProducerDetail>('/producer/profile', data);
+    },
+    updateMyProfile: async (data: import('@yo-te-invito/shared').UpdateProducerProfileInput) => {
       return this.client.patch<ProducerDetail>('/producer/profile', data);
+    },
+    updateMyProfileIdentity: async (data) => {
+      return this.client.patch<ProducerDetail>('/producer/profile', data);
+    },
+    updateMyProfileImages: async (data) => {
+      return this.client.patch<ProducerDetail>('/producer/profile', data);
+    },
+    updateMyProfileContact: async (data) => {
+      return this.client.patch<ProducerDetail>('/producer/profile', data);
+    },
+    getReviewsSummary: async (idOrSlug: string) => {
+      return this.client.get<import('./interfaces').ProducerReviewsSummary>(
+        `/public/producers/${encodeURIComponent(idOrSlug)}/reviews-summary`,
+      );
+    },
+    listReviews: async (idOrSlug, query) => {
+      return this.client.get<{
+        reviews: import('./interfaces').ProducerReviewListItem[];
+        page: number;
+        total: number;
+      }>(`/public/producers/${encodeURIComponent(idOrSlug)}/reviews`, query);
+    },
+  };
+
+  producerReviews: import('./interfaces').ProducerReviewsRepo = {
+    getSummary: async () => {
+      return this.client.get('/producer/reviews/summary');
+    },
+    listReviews: async (params) => {
+      return this.client.get('/producer/reviews', params);
+    },
+    createDispute: async (reviewId, payload) => {
+      return this.client.post(`/producer/reviews/${encodeURIComponent(reviewId)}/dispute`, payload);
+    },
+    getDispute: async (id) => {
+      return this.client.get(`/producer/review-disputes/${encodeURIComponent(id)}`);
+    },
+  };
+
+  adminReviewDisputes: import('./interfaces').AdminReviewDisputesRepo = {
+    list: async (params) => {
+      return this.client.get('/admin/review-disputes', params);
+    },
+    get: async (id) => {
+      return this.client.get(`/admin/review-disputes/${encodeURIComponent(id)}`);
+    },
+    markInReview: async (id, body) => {
+      return this.client.post(`/admin/review-disputes/${encodeURIComponent(id)}/mark-in-review`, body ?? {});
+    },
+    accept: async (id, body) => {
+      return this.client.post(`/admin/review-disputes/${encodeURIComponent(id)}/accept`, body ?? {});
+    },
+    reject: async (id, body) => {
+      return this.client.post(`/admin/review-disputes/${encodeURIComponent(id)}/reject`, body ?? {});
+    },
+    resolve: async (id, body) => {
+      return this.client.post(`/admin/review-disputes/${encodeURIComponent(id)}/resolve`, body ?? {});
+    },
+  };
+
+  commercialReviews: import('./interfaces').CommercialReviewsRepo = {
+    listForProducerReferrer: async (referrerProfileId) => {
+      return this.client.get(
+        `/producer/referrers/${encodeURIComponent(referrerProfileId)}/commercial-reviews`,
+      );
+    },
+    createAsProducer: async (referrerProfileId, payload) => {
+      return this.client.post(
+        `/producer/referrers/${encodeURIComponent(referrerProfileId)}/commercial-reviews`,
+        { rating: payload.rating, comment: payload.comment, targetType: 'REFERRER' },
+      );
+    },
+    listForReferrerProducer: async (producerProfileId) => {
+      return this.client.get(
+        `/referrer/me/producer-relationships/${encodeURIComponent(producerProfileId)}/commercial-reviews`,
+      );
+    },
+    createAsReferrer: async (producerProfileId, payload) => {
+      return this.client.post(
+        `/referrer/me/producer-relationships/${encodeURIComponent(producerProfileId)}/commercial-reviews`,
+        { rating: payload.rating, comment: payload.comment, targetType: 'PRODUCER' },
+      );
     },
   };
 
@@ -983,6 +1239,151 @@ export class ApiRepository implements Repositories {
         orderId: orderId ?? null,
       });
     },
+    getMyLocal: async () => this.client.get<GastroLocal | null>('/gastro/local'),
+    createMyLocal: async (payload) => this.client.post<GastroLocal>('/gastro/local', payload),
+    updateMyLocal: async (payload) => this.client.patch<GastroLocal>('/gastro/local', payload),
+    listMyDiscounts: async () =>
+      this.client.get<{ data: GastroPortalDiscount[] }>('/gastro/discounts'),
+    getMyDiscount: async (id) =>
+      this.client.get<GastroPortalDiscount>(`/gastro/discounts/${encodeURIComponent(id)}`),
+    createMyDiscount: async (payload) =>
+      this.client.post<GastroPortalDiscount>('/gastro/discounts', payload),
+    updateMyDiscount: async (id, payload) =>
+      this.client.patch<GastroPortalDiscount>(
+        `/gastro/discounts/${encodeURIComponent(id)}`,
+        payload,
+      ),
+  };
+
+  publicGastro: PublicGastroLocationsRepo = {
+    getById: async (locationId, tenantId) =>
+      this.client.get<PublicGastroLocation>(
+        `/public/gastro-locations/${encodeURIComponent(locationId)}`,
+        { tenantId },
+      ),
+    getByPublicEventId: async (eventId, tenantId) =>
+      this.client.get<PublicGastroLocation>(
+        `/public/gastro-locations/by-event/${encodeURIComponent(eventId)}`,
+        { tenantId },
+      ),
+    listDiscounts: async (locationId, tenantId) =>
+      this.client.get<{ discounts: PublicGastroLocationDiscount[] }>(
+        `/public/gastro-locations/${encodeURIComponent(locationId)}/discounts`,
+        { tenantId },
+      ),
+    list: async (params) =>
+      this.client.get<{
+        data: Array<{
+          id: string;
+          publicEventId: string | null;
+          displayName: string;
+          summary: string | null;
+          city: string | null;
+          province: string | null;
+          bannerUrl: string | null;
+          subcategoryName: string | null;
+        }>;
+      }>('/public/gastro-locations', {
+        tenantId: params.tenantId,
+        ...(params.city ? { city: params.city } : {}),
+        ...(params.limit ? { limit: params.limit } : {}),
+      }),
+    countPublishedDiscounts: async (tenantId) =>
+      this.client.get<{ count: number }>('/public/gastro-discounts/count', { tenantId }),
+    listPublishedDiscounts: async (params) =>
+      this.client.get<{ data: PublicGastroDiscountListItem[] }>('/public/gastro-discounts', {
+        tenantId: params.tenantId,
+        ...(params.subcategorySlug ? { subcategorySlug: params.subcategorySlug } : {}),
+        ...(params.limit ? { limit: params.limit } : {}),
+      }),
+    getPublishedDiscount: async (discountId, tenantId) =>
+      this.client.get<PublicGastroDiscountDetail>(
+        `/public/gastro-discounts/${encodeURIComponent(discountId)}`,
+        { tenantId },
+      ),
+    claimDiscount: async (discountId, body) =>
+      this.client.post<PublicGastroDiscountClaimResult>(
+        `/public/gastro-discounts/${encodeURIComponent(discountId)}/claim`,
+        body,
+      ),
+    getDiscountClaim: async (claimId, params) =>
+      this.client.get<PublicGastroDiscountClaimView>(
+        `/public/gastro-discounts/claims/${encodeURIComponent(claimId)}`,
+        params,
+      ),
+  };
+
+  adminGastro: AdminGastroRepo = {
+    listPendingDiscounts: async () =>
+      this.client.get<{ data: AdminGastroPendingDiscountItem[] }>(
+        '/admin/gastronomicos/pending-discounts',
+      ),
+    listLocations: async (params) =>
+      this.client.get<{
+        data: AdminGastroLocationListItem[];
+        meta: { page: number; limit: number; total: number; totalPages: number };
+      }>('/admin/gastronomicos', {
+        ...(params?.search ? { search: params.search } : {}),
+        ...(params?.status ? { status: params.status } : {}),
+        ...(params?.hasPendingDiscounts ? { hasPendingDiscounts: true } : {}),
+        ...(params?.page ? { page: params.page } : {}),
+        ...(params?.limit ? { limit: params.limit } : {}),
+      }),
+    getLocation: async (profileId) =>
+      this.client.get<AdminGastroLocationDetail>(
+        `/admin/gastronomicos/${encodeURIComponent(profileId)}`,
+      ),
+    listLocationDiscounts: async (profileId) =>
+      this.client.get<{ data: AdminGastroDiscountListItem[] }>(
+        '/admin/gastro-discount-tickets',
+        { profileId },
+      ),
+    getDiscount: async (profileId, discountId) =>
+      this.client.get<AdminGastroDiscountDetail>(
+        `/admin/gastro-discount-tickets/${encodeURIComponent(discountId)}`,
+        { profileId },
+      ),
+    getDiscountMetrics: async (profileId, discountId) =>
+      this.client.get<AdminGastroDiscountMetrics>(
+        `/admin/gastro-discount-tickets/${encodeURIComponent(discountId)}/metrics`,
+        { profileId },
+      ),
+    updatePublication: async (profileId, discountId, body) =>
+      this.client.patch<AdminGastroDiscountDetail>(
+        `/admin/gastro-discount-tickets/${encodeURIComponent(discountId)}/publication`,
+        body,
+        { profileId },
+      ),
+    markCommissionNegotiation: async (profileId, discountId, note) =>
+      this.client.post<AdminGastroDiscountDetail>(
+        `/admin/gastro-discount-tickets/${encodeURIComponent(discountId)}/mark-commission-negotiation`,
+        { note: note ?? null },
+        { profileId },
+      ),
+    approve: async (profileId, discountId) =>
+      this.client.post<AdminGastroDiscountDetail>(
+        `/admin/gastro-discount-tickets/${encodeURIComponent(discountId)}/approve`,
+        {},
+        { profileId },
+      ),
+    reject: async (profileId, discountId, reason, note) =>
+      this.client.post<AdminGastroDiscountDetail>(
+        `/admin/gastro-discount-tickets/${encodeURIComponent(discountId)}/reject`,
+        { reason, note: note ?? null },
+        { profileId },
+      ),
+    cancel: async (profileId, discountId, reason, note) =>
+      this.client.post<AdminGastroDiscountDetail>(
+        `/admin/gastro-discount-tickets/${encodeURIComponent(discountId)}/cancel`,
+        { reason, note: note ?? null },
+        { profileId },
+      ),
+    sendQrEmail: async (profileId, discountId) =>
+      this.client.post<AdminGastroDiscountDetail>(
+        `/admin/gastro-discount-tickets/${encodeURIComponent(discountId)}/send-qr-email`,
+        {},
+        { profileId },
+      ),
   };
 
   resale: ResaleRepo = {

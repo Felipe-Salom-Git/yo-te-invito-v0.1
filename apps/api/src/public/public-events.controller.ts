@@ -3,10 +3,12 @@ import {
   eventsListQuerySchema,
   eventsSearchQuerySchema,
   eventsTrendingQuerySchema,
+  eventsCalendarMonthQuerySchema,
   eventDetailQuerySchema,
   type EventsListQuery,
   type EventsSearchQuery,
   type EventsTrendingQuery,
+  type EventsCalendarMonthQuery,
   type EventDetailQuery,
 } from '@yo-te-invito/shared';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
@@ -35,6 +37,13 @@ export class PublicEventsController {
     @Query(new ZodValidationPipe(eventsTrendingQuerySchema)) query: EventsTrendingQuery,
   ) {
     return this.service.trending(query);
+  }
+
+  @Get('calendar')
+  async calendar(
+    @Query(new ZodValidationPipe(eventsCalendarMonthQuerySchema)) query: EventsCalendarMonthQuery,
+  ) {
+    return { data: await this.service.listCalendarMonth(query) };
   }
 
   /** Public active gastro promos for an approved event (empty if not gastro). */

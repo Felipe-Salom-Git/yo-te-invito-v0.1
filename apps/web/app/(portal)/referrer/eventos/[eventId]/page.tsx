@@ -107,7 +107,9 @@ export default function ReferrerEventoDetailPage() {
                     Copiar link
                   </Button>
                   {comm?.status === 'PAID' ? (
-                    <span className="rounded bg-green-500/20 px-2 py-0.5 text-sm text-green-600">Cobrado</span>
+                    <span className="rounded border border-accent-muted bg-accent-surface/70 px-2 py-0.5 text-sm text-accent-soft">
+                      Cobrado
+                    </span>
                   ) : comm?.status === 'REQUESTED' ? (
                     <span className="rounded bg-amber-500/20 px-2 py-0.5 text-sm text-amber-600">Solicitado</span>
                   ) : (
@@ -137,7 +139,9 @@ export default function ReferrerEventoDetailPage() {
                 <span>${(c.amountCents / 100).toLocaleString('es-AR')}</span>
                 <span
                   className={`rounded px-2 py-0.5 text-sm ${
-                    c.status === 'PAID' ? 'bg-green-500/20 text-green-600' : 'bg-amber-500/20 text-amber-600'
+                    c.status === 'PAID'
+                      ? 'bg-accent-surface/70 text-accent-soft border border-accent-muted'
+                      : 'bg-amber-500/20 text-amber-600'
                   }`}
                 >
                   {c.status === 'PAID' ? 'Cobrado' : 'Pendiente de confirmación'}

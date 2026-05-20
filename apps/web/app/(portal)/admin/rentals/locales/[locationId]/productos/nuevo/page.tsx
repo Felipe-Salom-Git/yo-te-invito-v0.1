@@ -13,6 +13,7 @@ import {
   rentalProductImagesToPayload,
   type RentalProductImagesValue,
 } from '@/components/rentals/RentalProductImagesForm';
+import { RentalSummaryField } from '@/components/rentals/RentalSummaryField';
 
 const emptyImages: RentalProductImagesValue = {
   headerImageUrl: '',
@@ -27,6 +28,7 @@ export default function AdminRentalProductoNuevoPage() {
   const { addToast } = useToast();
 
   const [title, setTitle] = useState('');
+  const [summary, setSummary] = useState('');
   const [description, setDescription] = useState('');
   const [subcategoryId, setSubcategoryId] = useState('');
   const [images, setImages] = useState<RentalProductImagesValue>(emptyImages);
@@ -35,6 +37,7 @@ export default function AdminRentalProductoNuevoPage() {
     mutationFn: () =>
       repos.rentalLocations.createProduct(locationId, {
         title: title.trim(),
+        summary: summary.trim() || null,
         description: description.trim() || null,
         subcategoryId: subcategoryId || null,
         ...rentalProductImagesToPayload(images),
@@ -65,8 +68,9 @@ export default function AdminRentalProductoNuevoPage() {
 
       <form onSubmit={handleSubmit} className="mt-6 max-w-xl space-y-4">
         <Input label="Nombre" value={title} onChange={(e) => setTitle(e.target.value)} required />
+        <RentalSummaryField value={summary} onChange={setSummary} />
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-text">Descripción</label>
+          <label className="mb-1.5 block text-sm font-medium text-text">Descripción / Detalle</label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}

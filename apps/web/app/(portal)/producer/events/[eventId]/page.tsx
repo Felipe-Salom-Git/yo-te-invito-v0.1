@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRepositories } from '@/repositories/context';
 import { PageContainer, SectionTitle, Button, Badge, Input, useToast } from '@/components';
+import { EventModeBadge } from '@/components/producer/events/EventModeBadge';
+import { deriveEventModeFromEvent } from '@/lib/producer/event-mode';
 import { getErrorMessage } from '@/lib/errors';
 import { TicketTypesEditor } from '@/components/producer/ticket-types/TicketTypesEditor';
 import type { ProducerReviewRow } from '@/repositories/interfaces';
@@ -83,6 +85,10 @@ export default function ProducerEventManagePage() {
       </Link>
       <div className="flex flex-wrap items-center gap-2">
         <SectionTitle>{event.title}</SectionTitle>
+        <EventModeBadge
+          mode={deriveEventModeFromEvent(event)}
+          hasActiveTicketing={event.isTicketingEnabled}
+        />
         <Badge variant={event.status === 'APPROVED' ? 'accent' : event.status === 'PENDING' ? 'default' : 'muted'}>
           {event.status ?? 'DRAFT'}
         </Badge>
@@ -91,7 +97,14 @@ export default function ProducerEventManagePage() {
         {event.venueName ?? event.city ?? '—'} · {new Date(event.startAt).toLocaleDateString('es-AR')}
       </p>
 
-      <TicketTypesEditor eventId={eventId} />
+      {event.isGeneralPublication ? (
+        <div className="mt-8 rounded-lg border border-border bg-bg-muted p-4 text-sm text-text-muted">
+          Este evento fue creado como <span className="font-medium text-text">Solo publicidad</span>. No
+          incluye venta de entradas ni gestión de ticketera.
+        </div>
+      ) : (
+        <TicketTypesEditor eventId={eventId} />
+      )}
 
       <section className="mt-12 border-t border-border pt-8">
         <h2 className="font-semibold text-text">Reseñas</h2>
@@ -129,6 +142,7 @@ export default function ProducerEventManagePage() {
         )}
       </section>
 
+      {!event.isGeneralPublication ? (
       <section className="mt-12 border-t border-border pt-8">
         <h2 className="font-semibold text-text">Tickets vendidos</h2>
         <div className="mt-2 flex gap-2">
@@ -161,6 +175,7 @@ export default function ProducerEventManagePage() {
           <p className="mt-4 text-text-muted">Sin tickets</p>
         )}
       </section>
+      ) : null}
 
       <p className="mt-6 max-w-2xl text-sm text-text-muted">
         <span className="font-medium text-text">Referidos del evento</span>: asignación comercial por evento (link de
