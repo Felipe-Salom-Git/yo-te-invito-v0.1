@@ -14,6 +14,8 @@ import { MeExpectedEventsController } from './me-expected-events.controller';
 import { MeTicketTransferController } from './me-ticket-transfer.controller';
 import { MeNotificationsController } from './me-notifications.controller';
 import { MeProducerFollowsController } from './me-producer-follows.controller';
+import { MeGastroFollowsController } from './me-gastro-follows.controller';
+import { MePushSubscriptionsController } from './me-push-subscriptions.controller';
 import { MeRecommendationsController } from './me-recommendations.controller';
 import { MeService } from './me.service';
 import { MeDashboardService } from './me-dashboard.service';
@@ -25,6 +27,8 @@ import { UserExpectedEventsService } from './user-expected-events.service';
 import { TicketTransferOfferService } from './ticket-transfer-offer.service';
 import { TicketTransferSchedulerService } from './ticket-transfer-scheduler.service';
 import { UserProducerFollowsService } from './user-producer-follows.service';
+import { UserGastroFollowsService } from './user-gastro-follows.service';
+import { UserPushSubscriptionsService } from './user-push-subscriptions.service';
 import { MeRecommendationsService } from './me-recommendations.service';
 
 @Module({
@@ -38,6 +42,8 @@ import { MeRecommendationsService } from './me-recommendations.service';
     MeTicketTransferController,
     MeNotificationsController,
     MeProducerFollowsController,
+    MeGastroFollowsController,
+    MePushSubscriptionsController,
     MeRecommendationsController,
   ],
   providers: [
@@ -53,6 +59,8 @@ import { MeRecommendationsService } from './me-recommendations.service';
     TicketTransferOfferService,
     TicketTransferSchedulerService,
     UserProducerFollowsService,
+    UserGastroFollowsService,
+    UserPushSubscriptionsService,
     MeRecommendationsService,
   ],
 })

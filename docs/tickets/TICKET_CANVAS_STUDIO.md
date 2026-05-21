@@ -1,6 +1,6 @@
 # Ticket Canvas Studio (plantilla visual por tipo de ticket)
 
-Documento de contexto para el **editor de diseño** del ticket digital: metadatos persistidos por `TicketType`, preview en el portal productor, validación en API. **No** sustituye aún el render final del ticket en app comprador/emisión; el QR y el flujo de scanner no cambian.
+Documento de contexto para el **editor de diseño** del ticket digital: metadatos persistidos por `TicketType`, preview en el portal productor, validación en API. El **render comprador** en `/me/tickets/[ticketId]` consume la misma plantilla vía `GET /me/tickets/:id` → `ticketTemplate` (V2.2). El **payload QR** (`Ticket.qrPayload`, formato `yti:v1:…`) y el scanner no cambian.
 
 ---
 
@@ -82,6 +82,25 @@ Tras cambiar el esquema, ejecutar **`pnpm --filter @yo-te-invito/shared build`**
 
 ---
 
-## 7. Recordatorio de producto
+## 7. Render comprador (V2.2)
 
-Hasta que un **renderizador server-side o cliente** consuma `TicketTemplate`, los tickets en **Mis tickets** / QR pueden seguir el diseño previo. El estudio **sí** persiste y valida el JSON para uso futuro.
+| Pieza | Ubicación |
+|-------|-----------|
+| API | `MeService.getMyTicketDetail` incluye `ticketTemplate` cuando el tipo de ticket tiene plantilla |
+| Visual | `components/tickets/BuyerTicketVisual.tsx` → `TicketTemplateRenderer` o `DefaultBuyerTicket` |
+| QR | `Ticket.qrPayload` (`yti:v1:<hex>`) → imagen vía `lib/tickets/qr-image-url.ts` (mismo string que scanner) |
+| Tamaño QR | Mín. 200px (`MIN_QR_DISPLAY_PX`); zona plantilla con `clampQrZone` + `qrPixelSizeFromZone` |
+| Estados | Overlay en pantalla + `TicketEntryStatusBanner` visible también en impresión si no es válido |
+| Impresión | «Imprimir ticket» + `@media print` en `styles/globals.css` (oculta nav/sidebar; QR ~72mm) |
+
+Sin plantilla o plantilla inválida → fallback premium. Si capas intersectan la zona QR, el comprador ve aviso (el guardado en estudio sigue validando en API).
+
+### QA ticket + scanner
+
+1. Diseñar plantilla en estudio (vertical/horizontal).
+2. Comprar ticket demo → `/me/tickets/[id]`.
+3. Verificar QR grande, fondo blanco, imprimir (solo ticket + metadatos).
+4. Escanear con scanner PWA (`POST /scanner/validate` o `/scanner/scan`).
+5. Probar estados: `TRANSFER_PENDING` rechazado (smoke portal); `USED`/`REVOKED` manual o `pnpm --filter api run test:door-scan`.
+
+**Pendiente staging físico:** validar impresión en papel y lectura con lector hardware en producción.

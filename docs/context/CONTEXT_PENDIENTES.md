@@ -19,7 +19,8 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 - [ ] Ejecutar migraciones Prisma en cada entorno (`prisma migrate deploy`) y `prisma generate` tras cambios de schema
 - [ ] Confirmar cliente Prisma alineado con DB (hotel, inbox, **RentalLocation**, opening hours JSON, etc.)
 - [ ] Rate limiting y hardening en producción
-- [ ] Variables de entorno documentadas por app
+- [x] Variables Web Push documentadas (`USER_PORTAL.md`, `AI_ENTRYPOINT.md`, `BACKEND_CONTEXT.md`)
+- [ ] Variables de entorno documentadas por app (resto de apps/servicios)
 
 ---
 
@@ -69,7 +70,8 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 ## G. Frontend — UX y calidad
 
 - [x] Compresión JPEG al subir galería/header (`RentalProductImagesForm` + `lib/image-compress.ts`) — evita error Zod `galleryUrls` > 2M chars
-- [ ] Empty / loading / error consistentes
+- [x] Empty / loading / error consistentes en portal `/me/*` (QueryError, EmptyState, skeletons)
+- [ ] Empty / loading / error consistentes (resto del sitio)
 - [ ] `next/image` + dominios remotos
 - [ ] SEO metadata por ficha pública
 - [ ] Sidebar móvil para portales
@@ -90,8 +92,11 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 
 ## I. Tickets y Canvas
 
-- [ ] Render del ticket comprador desde `TicketTemplate`
-- [ ] Pruebas impresión / QR en plantillas reales
+- [x] Render del ticket comprador desde `TicketTemplate` (`BuyerTicketVisual`, `/me/tickets/[ticketId]`)
+- [x] QR comprador production-ready (mín. 200px, quiet zone, `yti:v1:` sin transformar)
+- [x] Impresión ticket (`@media print`, metadatos, estado visible en print)
+- [x] Compatibilidad scanner documentada + smoke `qrPayload` / `TRANSFER_PENDING` rechazado
+- [ ] Validación final en staging con dispositivo físico (papel + lector en puerta)
 
 ---
 
@@ -140,6 +145,13 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 - [x] Detalle ticket portal (`/me/tickets/:id`) + transferencia V1 (crear/cancelar/aceptar)
 - [x] Smoke tests API: `pnpm --filter api run smoke:user-portal` — ver `docs/guides/SMOKE_TESTS_GUIDE.md`
 - [x] V2: notificaciones reales (cron 24h, email Resend, bandeja `/me/notifications`)
+- [x] V2.1.3: push Web/Mobile base (`UserPushSubscription`, `/me/push-subscriptions`, `push-sw.js`, panel `/me/notifications`)
+- [x] V2.1.2: reorden UX portal (inicio alertas/recomendados, Mi Carro, preferencias intereses/productoras/ciudad)
+- [x] V2.1.4: alertas inteligentes — preferencias push, `deliver()` + canal `PUSH`, transferencias, reviews cron, CTA inicio
+- [x] V2.1.4: hook publicación → seguidores productora (`EventPublicationAlertsService` + `FOLLOWED_PRODUCER_NEW_EVENT`)
+- [x] V2.1.4: matching ciudad/categoría/subcategoría (`FAVORITE_INTEREST_NEW_CONTENT` + throttling simple por hora)
+- [x] UI: preferencias de alertas push en desplegable (`InterestsDisclosure` en `/me/notifications`)
+- [ ] V2.2: ticket final comprador + QR production-ready (siguiente slice planificado)
 - [x] V2: seguir productoras + recomendaciones (`UserProducerFollow`, `/me/producer-follows`, `/me/recommendations`)
 - [x] Etapa 3 portal: pulido transferencia (email receptor, rechazo, cron expiración, textos legales)
 
@@ -161,7 +173,7 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 - [x] Portal `/me/*` como hub único; redirects `/cuenta/*` → `/me/*`
 - [x] Carrito API + checkout autenticado; `EventEngagementRow` en API
 - [x] Transferencia personal V1 (`TicketTransferOffer`); sin marketplace reventa
-- [x] Notificaciones `/me/notifications` + cron; follows `/me/producer-follows`
+- [x] Notificaciones `/me/notifications` + cron + push Web/Mobile (V2.1.3–V2.1.4); follows `/me/producer-follows`
 - [x] Eliminados: `demo:seed*`, `demo:load`, LocalDB web, `/dev/seed`, `/reventa`, módulo `resale` API
 - [x] Eliminados: Next.js `app/api/auth/*` y `app/api/admin/*` (solo NestJS)
 - [x] Scripts: `user:*`, `smoke:*` con cleanup; `db:cleanup-content`, `db:reset-dangerous`
@@ -185,6 +197,6 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 | `legacy/guides/` | Histórico archivado |
 | `docs/guides/DEMO_REMOVAL.md` | Regla pago demo / no datos demo |
 | `docs/reviews/REVIEWS_V2.md` | Comentarios y valoraciones V2 |
-| `docs/user/USER_PORTAL.md` | Portal usuario final V1 |
+| `docs/user/USER_PORTAL.md` | Portal usuario + § Push notifications (V2.1.3–V2.1.4) |
 | `docs/user/USER_PORTAL_PRISMA_PROPOSAL.md` | Diff modelo (pre-migrate) |
 

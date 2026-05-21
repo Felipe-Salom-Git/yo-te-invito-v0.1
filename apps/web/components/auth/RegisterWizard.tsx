@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { signIn } from 'next-auth/react';
 import { z } from 'zod';
 import { Button, Input, Card, CardHeader, CardContent } from '@/components';
+import { PreferredCitySelect } from '@/components/me/PreferredCitySelect';
 import { Logo } from '@/components/brand/Logo';
 import { useRepositories } from '@/repositories/context';
 import { getErrorMessage } from '@/lib/errors';
@@ -18,6 +19,7 @@ const accountSchema = z
     confirmPassword: z.string(),
     firstName: z.string().min(1, 'Nombre requerido'),
     lastName: z.string().min(1, 'Apellido requerido'),
+    city: z.string().min(1, 'Elegí tu ciudad'),
   })
   .refine((d) => d.password === d.confirmPassword, {
     message: 'Las contraseñas no coinciden',
@@ -82,6 +84,7 @@ export function RegisterWizard() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<string, string>>>({});
+  const [regCity, setRegCity] = useState('Bariloche');
 
   const handleAccountSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -93,6 +96,7 @@ export function RegisterWizard() {
       confirmPassword: String(fd.get('confirmPassword') ?? ''),
       firstName: String(fd.get('firstName') ?? ''),
       lastName: String(fd.get('lastName') ?? ''),
+      city: regCity,
     };
     const parsed = accountSchema.safeParse(raw);
     if (!parsed.success) {
@@ -162,6 +166,7 @@ export function RegisterWizard() {
         password: account.password,
         firstName: account.firstName,
         lastName: account.lastName,
+        city: account.city,
         tenantId: 'tenant-demo',
         profileType,
         profileData: profileType === 'USER' ? undefined : data,
@@ -198,6 +203,7 @@ export function RegisterWizard() {
         password: account.password,
         firstName: account.firstName,
         lastName: account.lastName,
+        city: account.city,
         tenantId: 'tenant-demo',
         profileType: 'USER',
       });
@@ -253,6 +259,14 @@ export function RegisterWizard() {
                 required
                 error={fieldErrors.confirmPassword}
               />
+              <PreferredCitySelect
+                label="Ciudad"
+                value={regCity}
+                onChange={setRegCity}
+              />
+              {fieldErrors.city && (
+                <p className="text-sm text-red-400">{fieldErrors.city}</p>
+              )}
               {error && <p className="text-sm text-red-400">{error}</p>}
               <Button type="submit" className="w-full">
                 Continuar

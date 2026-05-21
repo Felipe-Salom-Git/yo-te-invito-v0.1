@@ -1,31 +1,65 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import {
   PageContainer,
   SectionTitle,
   Button,
-  Input,
+  PageLoader,
+  EmptyState,
   useToast,
 } from '@/components';
+import { PortalTabNav } from '@/components/me/portal-ui';
+import { MePreferencesInterests } from '@/components/me/MePreferencesInterests';
+import { MePreferencesProducers } from '@/components/me/MePreferencesProducers';
+import { MePreferencesGastro } from '@/components/me/MePreferencesGastro';
 import {
-  usePortalPreferences,
-  usePatchPortalPreferences,
   useMeFavorites,
   useMeFavoriteMutations,
   useMeExpectedEvents,
   useMeExpectedMutations,
+  usePortalPreferences,
+  usePatchPortalPreferences,
 } from '@/lib/query/me-portal';
 import { getErrorMessage } from '@/lib/errors';
 import type { UserFavorite, UserExpectedEvent } from '@yo-te-invito/shared';
+import { useEffect, useState } from 'react';
 
-type Tab = 'settings' | 'favorites' | 'expected';
+type Tab = 'interests' | 'producers' | 'gastro' | 'favorites' | 'expected' | 'settings';
+
+const TAB_LINKS: { tab: Tab; href: string; label: string }[] = [
+  { tab: 'interests', href: '/me/preferences?tab=interests', label: 'Intereses' },
+  { tab: 'producers', href: '/me/preferences?tab=producers', label: 'Productoras' },
+  { tab: 'gastro', href: '/me/preferences?tab=gastro', label: 'Gastronomía' },
+  { tab: 'favorites', href: '/me/preferences?tab=favorites', label: 'Favoritos' },
+  { tab: 'expected', href: '/me/preferences?tab=expected', label: 'Eventos esperados' },
+  { tab: 'settings', href: '/me/preferences?tab=settings', label: 'Notificaciones' },
+];
+
+function resolveTab(param: string | null): Tab {
+  if (
+    param === 'producers' ||
+    param === 'gastro' ||
+    param === 'favorites' ||
+    param === 'expected' ||
+    param === 'settings'
+  ) {
+    return param;
+  }
+  return 'interests';
+}
 
 export default function MePreferencesPage() {
   return (
-    <Suspense fallback={<p className="text-text-muted">Cargando…</p>}>
+    <Suspense
+      fallback={
+        <PageContainer>
+          <PageLoader message="Cargando preferencias…" />
+        </PageContainer>
+      }
+    >
       <MePreferencesContent />
     </Suspense>
   );
@@ -33,55 +67,48 @@ export default function MePreferencesPage() {
 
 function MePreferencesContent() {
   const searchParams = useSearchParams();
-  const tabParam = searchParams.get('tab');
-  const tab: Tab =
-    tabParam === 'favorites' ? 'favorites' : tabParam === 'expected' ? 'expected' : 'settings';
+  const tab = resolveTab(searchParams.get('tab'));
 
   return (
     <PageContainer>
       <SectionTitle>Preferencias</SectionTitle>
-      <nav className="mt-4 flex flex-wrap gap-2 border-b border-border pb-4">
-        <TabLink href="/me/preferences" active={tab === 'settings'} label="General" />
-        <TabLink href="/me/preferences?tab=favorites" active={tab === 'favorites'} label="Favoritos" />
-        <TabLink href="/me/preferences?tab=expected" active={tab === 'expected'} label="Eventos esperados" />
-      </nav>
+      <p className="mt-1 text-sm text-text-muted">
+        Favoritos, productoras, locales gastronómicos, intereses y alertas.
+      </p>
+      <PortalTabNav
+        tabs={TAB_LINKS.map((t) => ({
+          href: t.href,
+          label: t.label,
+          active: tab === t.tab,
+        }))}
+      />
       <div className="mt-6">
-        {tab === 'settings' && <SettingsTab />}
+        {tab === 'interests' && <MePreferencesInterests />}
+        {tab === 'producers' && <MePreferencesProducers />}
+        {tab === 'gastro' && <MePreferencesGastro />}
         {tab === 'favorites' && <FavoritesTab />}
         {tab === 'expected' && <ExpectedTab />}
+        {tab === 'settings' && <NotificationsTab />}
       </div>
     </PageContainer>
   );
 }
 
-function TabLink({ href, active, label }: { href: string; active: boolean; label: string }) {
-  return (
-    <Link
-      href={href}
-      className={`rounded px-3 py-1.5 text-sm ${
-        active ? 'bg-accent text-bg' : 'text-text-muted hover:bg-bg-muted hover:text-text'
-      }`}
-    >
-      {label}
-    </Link>
-  );
-}
-
-function SettingsTab() {
+function NotificationsTab() {
   const { addToast } = useToast();
-  const { data: prefs } = usePortalPreferences();
+  const { data: prefs, isLoading } = usePortalPreferences();
   const patch = usePatchPortalPreferences();
-  const [city, setCity] = useState('');
   const [webNotif, setWebNotif] = useState(true);
   const [emailNotif, setEmailNotif] = useState(true);
   const [reminder24h, setReminder24h] = useState(true);
+  const [expectedAlerts, setExpectedAlerts] = useState(true);
 
   useEffect(() => {
     if (prefs) {
-      setCity(prefs.preferredCity ?? '');
       setWebNotif(prefs.webNotificationsEnabled);
       setEmailNotif(prefs.emailNotificationsEnabled);
       setReminder24h(prefs.ticketReminder24hEnabled);
+      setExpectedAlerts(prefs.expectedEventNotificationsEnabled);
     }
   }, [prefs]);
 
@@ -89,10 +116,10 @@ function SettingsTab() {
     e.preventDefault();
     patch.mutate(
       {
-        preferredCity: city.trim() || null,
         webNotificationsEnabled: webNotif,
         emailNotificationsEnabled: emailNotif,
         ticketReminder24hEnabled: reminder24h,
+        expectedEventNotificationsEnabled: expectedAlerts,
       },
       {
         onSuccess: () => addToast('Preferencias guardadas', 'success'),
@@ -101,17 +128,38 @@ function SettingsTab() {
     );
   };
 
+  if (isLoading) {
+    return <PageLoader message="Cargando preferencias…" />;
+  }
+
   return (
     <form onSubmit={handleSubmit} className="max-w-md space-y-4">
-      <Input
-        label="Ciudad preferida"
-        value={city}
-        onChange={(e) => setCity(e.target.value)}
-        placeholder="Buenos Aires"
+      <p className="text-sm text-text-muted">
+        Alertas globales del portal. Las alertas por categorías se configuran en{' '}
+        <Link href="/me/preferences?tab=interests" className="text-accent hover:underline">
+          Intereses
+        </Link>
+        .
+      </p>
+      <PrefCheckbox id="web" checked={webNotif} onChange={setWebNotif} label="Notificaciones en la web" />
+      <PrefCheckbox
+        id="email"
+        checked={emailNotif}
+        onChange={setEmailNotif}
+        label="Notificaciones por email"
       />
-      <Checkbox id="web" checked={webNotif} onChange={setWebNotif} label="Notificaciones en la web" />
-      <Checkbox id="email" checked={emailNotif} onChange={setEmailNotif} label="Notificaciones por email" />
-      <Checkbox id="reminder" checked={reminder24h} onChange={setReminder24h} label="Recordatorio 24h antes del evento" />
+      <PrefCheckbox
+        id="reminder"
+        checked={reminder24h}
+        onChange={setReminder24h}
+        label="Recordatorio 24h antes del evento"
+      />
+      <PrefCheckbox
+        id="expected"
+        checked={expectedAlerts}
+        onChange={setExpectedAlerts}
+        label="Alertas de eventos que esperás"
+      />
       <Button type="submit" disabled={patch.isPending}>
         {patch.isPending ? 'Guardando…' : 'Guardar'}
       </Button>
@@ -119,7 +167,7 @@ function SettingsTab() {
   );
 }
 
-function Checkbox({
+function PrefCheckbox({
   id,
   checked,
   onChange,
@@ -137,7 +185,7 @@ function Checkbox({
         id={id}
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
-        className="rounded border-border"
+        className="rounded border-border accent-accent"
       />
       <label htmlFor={id} className="text-sm text-text">
         {label}
@@ -151,9 +199,16 @@ function FavoritesTab() {
   const { remove } = useMeFavoriteMutations();
   const favorites = data?.favorites ?? [];
 
-  if (isLoading) return <p className="text-text-muted">Cargando favoritos…</p>;
+  if (isLoading) return <PageLoader message="Cargando favoritos…" />;
   if (favorites.length === 0) {
-    return <p className="text-text-muted">No tenés favoritos guardados.</p>;
+    return (
+      <EmptyState
+        title="No tenés favoritos guardados"
+        description="Marcá eventos, locales o productos desde su ficha para verlos acá."
+        actionLabel="Explorar"
+        actionHref="/explore"
+      />
+    );
   }
 
   return (
@@ -175,8 +230,8 @@ function FavoriteRow({
   removing: boolean;
 }) {
   return (
-    <li className="flex items-center justify-between rounded-lg border border-border p-4">
-      <div>
+    <li className="flex flex-col gap-3 rounded-lg border border-border p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="min-w-0">
         <Link href={item.href ?? '#'} className="font-medium text-text hover:text-accent">
           {item.title ?? item.entityId}
         </Link>
@@ -194,9 +249,16 @@ function ExpectedTab() {
   const { remove } = useMeExpectedMutations();
   const list = data?.expectedEvents ?? [];
 
-  if (isLoading) return <p className="text-text-muted">Cargando…</p>;
+  if (isLoading) return <PageLoader message="Cargando eventos esperados…" />;
   if (list.length === 0) {
-    return <p className="text-text-muted">No marcaste eventos como esperados.</p>;
+    return (
+      <EmptyState
+        title="No marcaste eventos como esperados"
+        description="Usá «Lo espero» en la ficha de un evento para seguirlo desde acá."
+        actionLabel="Explorar eventos"
+        actionHref="/explore"
+      />
+    );
   }
 
   return (
@@ -224,7 +286,7 @@ function ExpectedRow({
 }) {
   const title = item.event?.title ?? item.eventId;
   return (
-    <li className="flex items-center justify-between rounded-lg border border-border p-4">
+    <li className="flex flex-col gap-3 rounded-lg border border-border p-4 sm:flex-row sm:items-center sm:justify-between">
       <Link href={`/events/${item.eventId}`} className="font-medium text-text hover:text-accent">
         {title}
       </Link>

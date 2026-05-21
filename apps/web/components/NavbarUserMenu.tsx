@@ -53,7 +53,7 @@ export function NavbarUserMenu() {
         href={cartHref}
         className="relative rounded border border-border bg-bg-muted px-3 py-1.5 text-sm text-text hover:bg-border transition-colors"
       >
-        Carrito
+        Mi Carro
         {totalItems > 0 && (
           <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-accent text-xs text-bg">
             {totalItems}
@@ -103,14 +103,14 @@ export function NavbarUserMenu() {
                 className="block px-3 py-2 text-sm text-text hover:bg-bg-muted"
                 onClick={() => setOpen(false)}
               >
-                Mi espacio
+                Inicio
               </Link>
               <Link
                 href="/me/cart"
                 className="block px-3 py-2 text-sm text-text hover:bg-bg-muted"
                 onClick={() => setOpen(false)}
               >
-                Carrito
+                Mi Carro
               </Link>
               <Link
                 href="/me/tickets"

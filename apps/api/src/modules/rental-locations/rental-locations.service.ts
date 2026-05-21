@@ -18,6 +18,7 @@ import {
   type UpdateRentalProductBody,
 } from '@yo-te-invito/shared';
 import { PrismaService } from '../../prisma/prisma.service';
+import { EventPublicationAlertsService } from '../notifications/event-publication-alerts.service';
 import { SubcategoriesService } from '../subcategories/subcategories.service';
 import { normalizeRentalProductImages } from './rental-product-images.util';
 
@@ -26,6 +27,7 @@ export class RentalLocationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly subcategories: SubcategoriesService,
+    private readonly publicationAlerts: EventPublicationAlertsService,
   ) {}
 
   /** Trim rental product summary; empty string → null */
@@ -261,6 +263,9 @@ export class RentalLocationsService {
         media: { where: { deletedAt: null }, orderBy: { sortOrder: 'asc' } },
       },
     });
+    if (event.status === 'APPROVED') {
+      this.publicationAlerts.handleEventBecameApproved(tenantId, event.id);
+    }
     return this.eventToSummary(event);
   }
 
@@ -298,6 +303,7 @@ export class RentalLocationsService {
 
     const { headerImageUrl, galleryMedia } = normalizeRentalProductImages(body);
 
+    const previousStatus = existing.status;
     const event = await this.prisma.event.update({
       where: { id: productId },
       data: {
@@ -315,6 +321,10 @@ export class RentalLocationsService {
         ...(subcategoryId !== undefined && { subcategoryId }),
       },
     });
+
+    if (event.status === 'APPROVED') {
+      this.publicationAlerts.handleEventBecameApproved(tenantId, event.id, previousStatus);
+    }
 
     if (galleryMedia !== undefined) {
       await this.prisma.eventMedia.updateMany({

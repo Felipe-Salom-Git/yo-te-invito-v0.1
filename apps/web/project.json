@@ -9,14 +9,14 @@
       "executor": "nx:run-commands",
       "outputs": ["{projectRoot}/.next"],
       "options": {
-        "command": "next build",
+        "command": "pnpm exec next build",
         "cwd": "apps/web"
       }
     },
     "dev": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "next dev -p 3000",
+        "command": "pnpm exec next dev -p 3000",
         "cwd": "apps/web"
       }
     },

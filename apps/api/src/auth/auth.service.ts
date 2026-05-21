@@ -114,6 +114,7 @@ export class AuthService {
       });
     }
 
+    const cityTrimmed = body.city?.trim() || null;
     const user = await this.prisma.$transaction(async (tx) => {
       const created = await tx.user.create({
         data: {
@@ -124,6 +125,15 @@ export class AuthService {
           lastName: body.lastName.trim(),
           role: 'USER',
           status: 'ACTIVE',
+          ...(cityTrimmed
+            ? {
+                preferences: {
+                  city: cityTrimmed,
+                  preferredCity: cityTrimmed,
+                  preferredCities: [cityTrimmed],
+                },
+              }
+            : {}),
         },
       });
 

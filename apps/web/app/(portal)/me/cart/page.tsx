@@ -9,8 +9,10 @@ import {
   Button,
   PageLoader,
   EmptyState,
+  QueryError,
   useToast,
 } from '@/components';
+import { MeCartItemRow } from '@/components/me/MeCartItemRow';
 import { PendingOrdersList } from '@/components/me/PendingOrdersList';
 import {
   useMeCart,
@@ -26,8 +28,20 @@ function MeCartContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { addToast } = useToast();
-  const { data: cart, isLoading: cartLoading } = useMeCart();
-  const { data: pending, isLoading: pendingLoading, refetch: refetchPending } = useMePendingOrders();
+  const {
+    data: cart,
+    isLoading: cartLoading,
+    isError: cartError,
+    error: cartErr,
+    refetch: refetchCart,
+  } = useMeCart();
+  const {
+    data: pending,
+    isLoading: pendingLoading,
+    isError: pendingError,
+    error: pendingErr,
+    refetch: refetchPending,
+  } = useMePendingOrders();
   const { patchItem, removeItem, checkout } = useMeCartMutations();
 
   const createdCount = searchParams.get('created');
@@ -35,9 +49,13 @@ function MeCartContent() {
 
   useEffect(() => {
     if (showCreatedBanner) {
-      refetchPending();
+      void refetchPending();
     }
   }, [showCreatedBanner, refetchPending]);
+
+  const cartMutationHandlers = {
+    onError: (err: unknown) => addToast(getErrorMessage(err), 'error'),
+  };
 
   const handleCheckout = () => {
     if (!tenantId) return;
@@ -79,18 +97,46 @@ function MeCartContent() {
     );
   }
 
+  if (cartError || pendingError) {
+    return (
+      <PageContainer>
+        <SectionTitle>Mi Carro</SectionTitle>
+        <QueryError
+          className="mt-6"
+          message={getErrorMessage(cartErr ?? pendingErr)}
+          onRetry={() => {
+            void refetchCart();
+            void refetchPending();
+          }}
+        />
+      </PageContainer>
+    );
+  }
+
   const items = cart?.items ?? [];
   const pendingOrders = pending?.orders ?? [];
+  const currency = cart?.currency ?? 'ARS';
 
   return (
     <PageContainer>
-      <SectionTitle>Carrito</SectionTitle>
+      <SectionTitle>Mi Carro</SectionTitle>
+      <p className="mt-1 text-sm text-text-muted">
+        Tus entradas se guardan en la cuenta. Al confirmar, creamos un pedido por evento para pagar con
+        checkout demo.{' '}
+        <Link href="/me/orders" className="text-accent hover:underline">
+          Ver historial de pedidos
+        </Link>
+        .
+      </p>
 
       {showCreatedBanner && (
-        <div className="mt-4 rounded-lg border border-accent/40 bg-accent/10 px-4 py-3 text-sm text-text">
+        <div
+          className="mt-4 rounded-lg border border-accent/40 bg-accent/10 px-4 py-3 text-sm text-text"
+          role="status"
+        >
           {Number(createdCount) === 1
-            ? 'Tu pedido está listo. Completá el pago en la sección de abajo o desde el enlace que te mostramos.'
-            : `Creaste ${createdCount} pedidos (uno por evento). Pagá cada uno en «Pagos pendientes» — podés hacerlo en cualquier orden.`}
+            ? 'Tu pedido está listo. Completá el pago en «Pagos pendientes» o desde el enlace del checkout.'
+            : `Creaste ${createdCount} pedidos (uno por evento). Pagá cada uno en «Pagos pendientes» — en cualquier orden.`}
         </div>
       )}
 
@@ -98,67 +144,55 @@ function MeCartContent() {
         <div className="mt-6">
           <EmptyState
             title="Tu carrito está vacío"
-            description="Agregá entradas desde la página del evento."
+            description="Agregá entradas desde la página del evento. Si tenés sesión iniciada, el carrito se sincroniza acá."
             actionLabel="Explorar eventos"
             actionHref="/explore"
           />
         </div>
       ) : (
-        <ul className="mt-6 space-y-4">
-          {items.map((item) => (
-            <li
-              key={item.id}
-              className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border p-4"
-            >
-              <div>
-                <p className="font-medium text-text">{item.eventTitle ?? item.eventId}</p>
-                <p className="text-sm text-text-muted">
-                  {item.ticketTypeName ?? item.ticketTypeId} · ${item.unitPrice} × {item.quantity}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={patchItem.isPending || item.quantity <= 1}
-                  onClick={() =>
-                    patchItem.mutate({ itemId: item.id, body: { quantity: item.quantity - 1 } })
-                  }
-                >
-                  −
-                </Button>
-                <span className="w-8 text-center text-sm">{item.quantity}</span>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={patchItem.isPending}
-                  onClick={() =>
-                    patchItem.mutate({ itemId: item.id, body: { quantity: item.quantity + 1 } })
-                  }
-                >
-                  +
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={removeItem.isPending}
-                  onClick={() => removeItem.mutate(item.id)}
-                >
-                  Quitar
-                </Button>
-              </div>
-            </li>
-          ))}
-          <p className="text-right font-medium text-text">
-            Subtotal: {cart?.currency ?? 'ARS'} {cart?.subtotal}
-          </p>
-          <p className="text-right text-xs text-text-muted">
-            Si hay entradas de varios eventos, se creará un pedido por evento al confirmar.
-          </p>
-          <Button onClick={handleCheckout} disabled={checkout.isPending || !tenantId}>
-            {checkout.isPending ? 'Procesando…' : 'Confirmar y crear pedidos'}
-          </Button>
-        </ul>
+        <>
+          <ul className="mt-6 space-y-4">
+            {items.map((item) => (
+              <MeCartItemRow
+                key={item.id}
+                item={item}
+                currency={currency}
+                busy={patchItem.isPending || removeItem.isPending}
+                onDecrease={() =>
+                  patchItem.mutate(
+                    { itemId: item.id, body: { quantity: item.quantity - 1 } },
+                    cartMutationHandlers,
+                  )
+                }
+                onIncrease={() =>
+                  patchItem.mutate(
+                    { itemId: item.id, body: { quantity: item.quantity + 1 } },
+                    cartMutationHandlers,
+                  )
+                }
+                onRemove={() => removeItem.mutate(item.id, cartMutationHandlers)}
+              />
+            ))}
+          </ul>
+          <div className="mt-6 rounded-lg border border-border bg-bg-muted/50 p-4">
+            <p className="text-right text-lg font-semibold text-text">
+              Total estimado: {currency} {cart?.subtotal}
+            </p>
+            <p className="mt-2 text-right text-xs text-text-muted">
+              Si hay entradas de varios eventos, se creará un pedido por evento al confirmar. Si no hay
+              stock, verás el error al cambiar cantidad o al confirmar.
+            </p>
+            <div className="mt-4 flex justify-end">
+              <Button
+                className="w-full sm:w-auto"
+                onClick={handleCheckout}
+                disabled={checkout.isPending || !tenantId}
+              >
+                {checkout.isPending ? 'Procesando…' : 'Confirmar y crear pedidos'}
+              </Button>
+            </div>
+          </div>
+        </>
       )}
 
       <SectionTitle className="mt-12">Pagos pendientes</SectionTitle>
@@ -170,7 +204,14 @@ function MeCartContent() {
         .
       </p>
       <div className="mt-4">
-        <PendingOrdersList orders={pendingOrders} tenantId={tenantId} />
+        {pendingOrders.length === 0 ? (
+          <EmptyState
+            title="Sin pagos pendientes"
+            description="Cuando confirmes el carrito, tus pedidos aparecerán acá para completar el pago demo."
+          />
+        ) : (
+          <PendingOrdersList orders={pendingOrders} tenantId={tenantId} />
+        )}
       </div>
     </PageContainer>
   );
@@ -178,11 +219,13 @@ function MeCartContent() {
 
 export default function MeCartPage() {
   return (
-    <Suspense fallback={
-      <PageContainer>
-        <PageLoader message="Cargando carrito…" />
-      </PageContainer>
-    }>
+    <Suspense
+      fallback={
+        <PageContainer>
+          <PageLoader message="Cargando carrito…" />
+        </PageContainer>
+      }
+    >
       <MeCartContent />
     </Suspense>
   );

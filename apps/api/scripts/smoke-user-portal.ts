@@ -381,6 +381,7 @@ async function main() {
       const r = await call(`/me/tickets/${sourceTicketId}`);
       const d = r.data as {
         ticketId?: string;
+        qrPayload?: string;
         canTransfer?: boolean;
         reminderEnabled?: boolean;
       };
@@ -388,7 +389,9 @@ async function main() {
         fail('GET /me/tickets/:id', `status=${r.status}`);
       } else if (typeof d.canTransfer !== 'boolean') {
         fail('GET /me/tickets/:id', 'missing canTransfer');
-      } else pass('GET /me/tickets/:id (portal detail)');
+      } else if (!d.qrPayload?.startsWith('yti:v1:')) {
+        fail('GET /me/tickets/:id', 'qrPayload missing or invalid format');
+      } else pass('GET /me/tickets/:id (portal detail + qrPayload)');
     } catch (e) {
       fail('GET /me/tickets/:id', String(e));
     }

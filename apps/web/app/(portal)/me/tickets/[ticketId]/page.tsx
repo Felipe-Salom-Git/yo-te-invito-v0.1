@@ -2,13 +2,13 @@
 
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { PageContainer, SectionTitle, PageLoader } from '@/components';
-import { TicketQrCard } from '@/components/me/TicketQrCard';
+import { PageContainer, SectionTitle, PageLoader, QueryError, EmptyState } from '@/components';
+import { StatusBadge } from '@/components/domain/StatusBadge';
+import { MeBuyerTicketPanel } from '@/components/me/MeBuyerTicketPanel';
 import { TicketTransferPanel } from '@/components/me/TicketTransferPanel';
 import { TicketReminderToggle } from '@/components/me/TicketReminderToggle';
 import { useMeTicketDetail } from '@/lib/query/me-portal';
-
-const TENANT_ID = 'tenant-demo';
+import { getErrorMessage } from '@/lib/errors';
 
 const SOURCE_LABELS: Record<string, string> = {
   ORDER: 'Compra',
@@ -16,10 +16,18 @@ const SOURCE_LABELS: Record<string, string> = {
   TRANSFER: 'Transferencia recibida',
 };
 
+const STATUS_HINTS: Record<string, string> = {
+  USED: 'Este ticket ya se usó para ingresar. No podés reutilizarlo.',
+  REVOKED: 'Este ticket fue revocado por la productora o el sistema. Contactá soporte si creés que es un error.',
+  TRANSFERRED: 'Transferiste esta entrada. El receptor tiene un ticket nuevo con otro QR.',
+  TRANSFER_PENDING:
+    'Hay una transferencia personal en curso. El QR de arriba no habilita ingreso hasta completar o cancelar.',
+};
+
 export default function TicketDetailPage() {
   const params = useParams();
   const ticketId = (params?.ticketId as string) ?? '';
-  const { data: ticket, isLoading, isError } = useMeTicketDetail(ticketId);
+  const { data: ticket, isLoading, isError, error, refetch } = useMeTicketDetail(ticketId);
 
   if (isLoading) {
     return (
@@ -29,57 +37,71 @@ export default function TicketDetailPage() {
     );
   }
 
-  if (isError || !ticket) {
+  if (isError) {
     return (
       <PageContainer>
-        <p className="text-red-400">Ticket no encontrado</p>
-        <Link href="/me/tickets" className="mt-4 block text-accent hover:underline">
-          ← Volver a mis tickets
+        <Link
+          href="/me/tickets"
+          className="portal-chrome mb-4 inline-block text-sm text-text-muted hover:text-text"
+        >
+          ← Mis tickets
         </Link>
+        <QueryError message={getErrorMessage(error)} onRetry={() => void refetch()} />
+      </PageContainer>
+    );
+  }
+
+  if (!ticket) {
+    return (
+      <PageContainer>
+        <EmptyState
+          title="Ticket no encontrado"
+          description="Puede haber sido transferido, revocado o no pertenece a tu cuenta."
+          actionLabel="Volver a mis tickets"
+          actionHref="/me/tickets"
+        />
       </PageContainer>
     );
   }
 
   const event = ticket.event;
-  const showReminder =
-    ticket.status === 'VALID' || ticket.status === 'TRANSFER_PENDING';
+  const showReminder = ticket.status === 'VALID' || ticket.status === 'TRANSFER_PENDING';
+  const statusHint = STATUS_HINTS[ticket.status];
 
   return (
     <PageContainer>
-      <Link href="/me/tickets" className="mb-4 inline-block text-sm text-text-muted hover:text-text">
+      <Link
+        href="/me/tickets"
+        className="portal-chrome mb-4 inline-block text-sm text-text-muted hover:text-text"
+      >
         ← Mis tickets
       </Link>
-      <SectionTitle>{event.title}</SectionTitle>
+
+      <div className="portal-chrome flex flex-wrap items-center gap-3">
+        <SectionTitle className="!mb-0">{event.title}</SectionTitle>
+        <StatusBadge status={ticket.status} kind="ticket" />
+      </div>
       {ticket.ticketType?.name && (
-        <p className="mt-1 text-sm text-text-muted">{ticket.ticketType.name}</p>
+        <p className="portal-chrome mt-1 text-sm text-text-muted">{ticket.ticketType.name}</p>
       )}
       {ticket.source && (
-        <p className="mt-1 text-xs text-text-muted">
+        <p className="portal-chrome mt-1 text-xs text-text-muted">
           Origen: {SOURCE_LABELS[ticket.source] ?? ticket.source}
+          {ticket.ticketTemplate ? ' · Diseño personalizado' : ''}
+        </p>
+      )}
+      {statusHint && (
+        <p className="portal-chrome mt-3 max-w-lg rounded-lg border border-border bg-bg-muted/50 px-3 py-2 text-sm text-text-muted">
+          {statusHint}
         </p>
       )}
 
-      <div className="mt-8 flex flex-col items-center gap-6 lg:flex-row lg:items-start lg:justify-center">
-        <TicketQrCard qrPayload={ticket.qrPayload} status={ticket.status} />
+      <div className="mt-8 flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-center">
+        <div className="w-full min-w-0 flex-1 lg:max-w-md">
+          <MeBuyerTicketPanel ticket={ticket} />
+        </div>
 
-        <div className="w-full max-w-sm space-y-4">
-          <div className="rounded-lg border border-border p-4 text-sm">
-            <p className="text-text-muted">
-              {event.venueName && <span>{event.venueName} · </span>}
-              {new Date(event.startAt).toLocaleString('es-AR', {
-                dateStyle: 'medium',
-                timeStyle: 'short',
-              })}
-            </p>
-            <Link
-              href={`/events/${event.id}?tenantId=${TENANT_ID}`}
-              className="mt-2 inline-block text-accent hover:underline"
-            >
-              Ver evento →
-            </Link>
-            <p className="mt-3 text-xs text-text-muted break-all">ID ticket: {ticket.ticketId}</p>
-          </div>
-
+        <div className="portal-chrome w-full max-w-sm shrink-0 space-y-4">
           {showReminder && (
             <TicketReminderToggle
               ticketId={ticket.ticketId}

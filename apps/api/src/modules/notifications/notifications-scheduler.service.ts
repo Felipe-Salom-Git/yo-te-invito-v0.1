@@ -34,10 +34,11 @@ export class NotificationsSchedulerService {
       const ticket = await this.processTicketReminders();
       const fav = await this.processFavoriteEventsSoon();
       const exp = await this.processExpectedEventsSoon();
-      const total = ticket.sent + fav.sent + exp.sent;
+      const reviews = await this.processPendingReviewReminders();
+      const total = ticket.sent + fav.sent + exp.sent + reviews.sent;
       if (total > 0) {
         this.logger.log(
-          `Notifications sent: tickets=${ticket.sent} favorites=${fav.sent} expected=${exp.sent}`,
+          `Notifications sent: tickets=${ticket.sent} favorites=${fav.sent} expected=${exp.sent} reviews=${reviews.sent}`,
         );
       }
     } catch (err) {
@@ -50,11 +51,13 @@ export class NotificationsSchedulerService {
     ticketReminders: { sent: number };
     favoriteSoon: { sent: number };
     expectedSoon: { sent: number };
+    reviewPending: { sent: number };
   }> {
     const ticketReminders = await this.processTicketReminders();
     const favoriteSoon = await this.processFavoriteEventsSoon();
     const expectedSoon = await this.processExpectedEventsSoon();
-    return { ticketReminders, favoriteSoon, expectedSoon };
+    const reviewPending = await this.processPendingReviewReminders();
+    return { ticketReminders, favoriteSoon, expectedSoon, reviewPending };
   }
 
   private async processTicketReminders(): Promise<{ sent: number }> {
@@ -102,7 +105,7 @@ export class NotificationsSchedulerService {
         sendInApp: prefs.webNotificationsEnabled,
         sendEmail: prefs.emailNotificationsEnabled,
       });
-      if (result.inApp || result.email) sent += 1;
+      if (result.inApp || result.email || result.push) sent += 1;
     }
 
     return { sent };
@@ -154,7 +157,7 @@ export class NotificationsSchedulerService {
         sendInApp: fav.webNotificationsEnabled && prefs.webNotificationsEnabled,
         sendEmail: fav.emailNotificationsEnabled && prefs.emailNotificationsEnabled,
       });
-      if (result.inApp || result.email) sent += 1;
+      if (result.inApp || result.email || result.push) sent += 1;
     }
 
     return { sent };
@@ -200,7 +203,68 @@ export class NotificationsSchedulerService {
         sendInApp: row.webNotificationsEnabled && prefs.webNotificationsEnabled,
         sendEmail: row.emailNotificationsEnabled && prefs.emailNotificationsEnabled,
       });
-      if (result.inApp || result.email) sent += 1;
+      if (result.inApp || result.email || result.push) sent += 1;
+    }
+
+    return { sent };
+  }
+
+  private async processPendingReviewReminders(): Promise<{ sent: number }> {
+    let sent = 0;
+    const users = await this.prisma.user.findMany({
+      where: { deletedAt: null, status: 'ACTIVE' },
+      select: {
+        id: true,
+        tenantId: true,
+        email: true,
+        preferences: true,
+      },
+      take: 500,
+    });
+
+    for (const user of users) {
+      const prefs = readPortalPreferences(user.id, user.preferences);
+      if (!prefs.notifyPendingReviews) continue;
+
+      const tickets = await this.prisma.ticket.findMany({
+        where: {
+          event: { tenantId: user.tenantId },
+          status: 'USED',
+          ownerUserId: user.id,
+        },
+        include: {
+          event: { select: { id: true, title: true, deletedAt: true } },
+        },
+        take: 50,
+      });
+
+      const reviewed = await this.prisma.review.findMany({
+        where: { tenantId: user.tenantId, userId: user.id },
+        select: { eventId: true },
+      });
+      const reviewedIds = new Set(reviewed.map((r) => r.eventId));
+
+      const seen = new Set<string>();
+      for (const t of tickets) {
+        if (!t.event || t.event.deletedAt) continue;
+        if (reviewedIds.has(t.eventId) || seen.has(t.eventId)) continue;
+        seen.add(t.eventId);
+
+        const result = await this.notifications.deliver({
+          tenantId: user.tenantId,
+          userId: user.id,
+          userEmail: user.email,
+          kind: NotificationKind.REVIEW_PENDING,
+          referenceKey: `review-pending:${t.eventId}`,
+          title: 'Tenés una experiencia para calificar',
+          body: `Podés valorar «${t.event.title}».`,
+          href: `/events/${t.event.id}`,
+          sendInApp: prefs.webNotificationsEnabled,
+          sendEmail: false,
+          preferences: prefs,
+        });
+        if (result.inApp || result.email || result.push) sent += 1;
+      }
     }
 
     return { sent };

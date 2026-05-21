@@ -14,6 +14,7 @@ Current state of `apps/api` as verified from the repository.
 | Zod | Validation (`packages/shared`) |
 | BullMQ + Redis | Jobs (email) |
 | Resend | Email |
+| web-push | Web Push (VAPID; opcional si faltan keys) |
 
 ---
 
@@ -85,7 +86,12 @@ See previous full endpoint tables in git history; key groups:
 - **Scanner**: validate, scan, logs; tickets en transferencia (`TRANSFER_PENDING`, `TRANSFERRED`) → inválidos.
 - **Gastro**: content, discounts, validations.
 - **Transferencia personal**: `TicketTransferOffer` — sin marketplace `/resale/*` (eliminado `20260605120000_remove_resale_marketplace`).
-- **Notificaciones usuario**: `GET/PATCH /me/notifications` (`UserNotificationsService`, cron 24h, Resend).
+- **Notificaciones usuario**: `GET/PATCH /me/notifications`, `POST .../mark-all-read` (`UserNotificationsService`, `NotificationsSchedulerService`, Resend email).
+  - **Entrega unificada** `deliver()`: canales `IN_APP`, `EMAIL`, `PUSH` (log idempotente `NotificationDeliveryLog`).
+  - **Kinds:** `TICKET_REMINDER_24H`, `FAVORITE_EVENT_SOON`, `EXPECTED_EVENT_SOON`, `TRANSFER_OFFER_PENDING`, `REVIEW_PENDING`.
+  - **Push:** `WebPushService` (`web-push`, VAPID); `GET/POST/DELETE /me/push-subscriptions`, `GET /config`, `POST /test` (`UserPushSubscriptionsService`).
+  - **Preferencias push** en `User.preferences` (portal): `pushAlertsEnabled`, `notifyUpcomingEvents`, `notifyTransferOffers`, etc. — ver `user-portal-preferences.util.ts` + `shouldSendPushForKind`.
+  - **Alertas inteligentes:** transfer al crear oferta; cron reviews; publicación evento → `EventPublicationAlertsService` (approve admin, publicaciones generales, rental/excursion APPROVED); kinds `FOLLOWED_PRODUCER_NEW_EVENT`, `FAVORITE_INTEREST_NEW_CONTENT`; throttling `SMART_ALERTS_MAX_PER_USER_HOUR` (default 5).
 - **Seguir productoras**: `GET/POST/DELETE/PATCH /me/producer-follows*`, `GET /me/recommendations`.
 
 ### Scripts eliminados (2026)
@@ -106,7 +112,8 @@ See previous full endpoint tables in git history; key groups:
 - **Event**, **EventMedia**, **ContentSubcategory**
 - **RentalLocation** → rental products
 - **TicketType**, **TicketTemplate**, **TicketBatch**, **Order**, **OrderItem**, **Payment**, **Ticket** (`TRANSFER_PENDING`, `TRANSFERRED`; **TicketTransferOffer**)
-- **UserCart**, **UserCartItem**, **UserFavorite**, **UserExpectedEvent**
+- **UserCart**, **UserCartItem**, **UserFavorite**, **UserExpectedEvent**, **UserPushSubscription**
+- **UserNotification**, **NotificationDeliveryLog** (`NotificationChannel`: `IN_APP`, `EMAIL`, `PUSH`)
 - **ReferrerProfile**, **ProducerReferrerRelationship**, **ReferralLink**, **ReferralAttribution**, **ReferralCommission**
 - **GastroDiscount**, **GastroDiscountValidation**, **InboxItem** (kind incl. `REVIEW_DISPUTE_REQUEST`)
 - **HotelProfile**, memberships, **ProducerProfile**, **GastroProfile**
@@ -148,6 +155,20 @@ Requieren API `:3001` + **`SMOKE_USER_EMAIL`** + **`SMOKE_USER_PASSWORD`** (sin 
 **Cleanup smoke:** tras cada smoke (salvo `SMOKE_SKIP_CLEANUP=1`); manual: `pnpm --filter api run smoke:cleanup` / `-- --confirm`. Implementación: `scripts/lib/smoke-cleanup.ts`.
 
 **Destructivo (opcional):** `SMOKE_ALLOW_DESTRUCTIVE=1` en `smoke:user-portal` para test de aceptar transferencia (mueve ticket del usuario principal).
+
+### Variables Web Push (API)
+
+| Variable | Uso |
+|----------|-----|
+| `WEB_PUSH_VAPID_PUBLIC_KEY` | Clave pública VAPID |
+| `WEB_PUSH_VAPID_PRIVATE_KEY` | Clave privada VAPID |
+| `WEB_PUSH_CONTACT_EMAIL` | `mailto:` para `web-push.setVapidDetails` |
+
+Opcional cron: `NOTIFICATIONS_CRON_ENABLED=false`, `NOTIFICATION_REMINDER_HOURS`, `NOTIFICATION_REMINDER_TOLERANCE_HOURS`.
+
+| Variable | Uso |
+|----------|-----|
+| `SMART_ALERTS_MAX_PER_USER_HOUR` | Máx. alertas de publicación (productora + intereses) por usuario/hora (default `5`) |
 
 ### Base de datos (raíz / prisma)
 

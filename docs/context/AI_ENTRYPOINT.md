@@ -13,7 +13,7 @@ Read this file **before generating or modifying code**.
 | **Datos demo automáticos no** | Sin `demo:seed`, `demo:load`, LocalDB, usuarios `@demo.local` por defecto |
 | **Usuario maestro** | `felipe.e.salom@gmail.com` — preservado por `db:cleanup-content`; no borrar en scripts |
 | **Fuente de datos** | API + PostgreSQL únicamente en web (`ApiRepository`) |
-| **Usuario estándar** | Portal unificado **`/me/*`** (carrito API, favoritos, transferencias, notificaciones). `/cuenta/*` solo redirects temporales |
+| **Usuario estándar** | Portal unificado **`/me/*`** (carrito API, favoritos, transferencias, bandeja + **push Web/Mobile**). `/cuenta/*` solo redirects temporales |
 | **Inventario scripts** | `docs/guides/DEVELOPER_SCRIPTS_GUIDE.md` + `docs/dev/SCRIPTS.md` |
 
 Detalle histórico demo: [guides/DEMO_REMOVAL.md](../guides/DEMO_REMOVAL.md). Portal: [user/USER_PORTAL.md](../user/USER_PORTAL.md).
@@ -64,7 +64,7 @@ Controllers: HTTP + Zod only. Services: business logic. Prisma: persistence only
 
 **Reviews V2:** `docs/reviews/REVIEWS_V2.md` — smoke `smoke:reviews`.
 
-**Portal usuario (`/me/*`):** `docs/user/USER_PORTAL.md`.
+**Portal usuario (`/me/*`):** `docs/user/USER_PORTAL.md` (incl. **Push notifications** V2.1.3–V2.1.4).
 
 **Guías developer (leer primero para scripts/QA):**
 
@@ -159,7 +159,7 @@ SMOKE_USER_EMAIL=felipe.e.salom@gmail.com SMOKE_USER_PASSWORD=<pass> \
 |---------|--------|
 | `smoke:api` | Health endpoints |
 | `smoke:reviews` | Reviews V2; roles opcionales `SMOKE_PRODUCER_EMAIL`, etc. |
-| `smoke:notifications` | Bandeja + seed-demo admin |
+| `smoke:notifications` | Bandeja in-app + seed-demo admin (push requiere VAPID + navegador) |
 | `smoke:producer-follows` | Follows (cleanup follow al final) |
 | `smoke:cleanup` | Dry-run / `--confirm` — artefactos smoke en BD |
 
@@ -176,6 +176,17 @@ Sin credenciales → skip en tests con login. `E2E_SEED=1` ignorado.
 ### Utilidades usuario
 
 `user:inspect`, `user:reset-password`, `user:verify-email`, `user:test-login`, `debug:gastro-discounts`, `debug:admin-api`.
+
+### Web Push (API + web, opcional en dev)
+
+```env
+WEB_PUSH_VAPID_PUBLIC_KEY=
+WEB_PUSH_VAPID_PRIVATE_KEY=
+WEB_PUSH_CONTACT_EMAIL=mailto:soporte@ejemplo.com
+NEXT_PUBLIC_WEB_PUSH_VAPID_PUBLIC_KEY=   # opcional si se usa GET /me/push-subscriptions/config
+```
+
+Sin VAPID: la API arranca; registro de dispositivo OK; envío de prueba/alertas push falla con mensaje controlado.
 
 ---
 
@@ -198,9 +209,11 @@ Al agregar scripts nuevos: documentar en `DEVELOPER_SCRIPTS_GUIDE.md` y `SCRIPTS
 
 ### Portal usuario (`/me/*`)
 
-- **Hub:** `/me` (dashboard), `/me/cart`, `/me/tickets`, `/me/preferences`, `/me/activity`, `/me/account`, `/me/notifications`, `/me/producer-follows`, `/me/recommendations`.
-- **Datos:** API `MePortalController` + servicios (`me-account`, `me-cart`, `me-favorites`, `me-expected-events`, transfer offers, notificaciones).
-- **Frontend:** `repositories/mePortal` + hooks `lib/query/me-portal.ts`; layout `UserPortalLayout`.
+- **Hub:** `/me` (dashboard con alertas + CTA push), `/me/cart` (**Mi Carro**), `/me/tickets`, `/me/preferences`, `/me/activity`, `/me/account`, `/me/notifications`, `/me/producer-follows`, `/me/recommendations` (redirect `/me/recommendations` → `/me`).
+- **V2.1.2 UX:** Inicio con alertas/recomendados; productoras en preferencias; ciudad/categorías favoritas en `User.preferences` JSON.
+- **V2.1.3–V2.1.4 notificaciones:** bandeja in-app + **PUSH**; publicación evento → seguidores + matching intereses (`EventPublicationAlertsService`, kinds `FOLLOWED_PRODUCER_NEW_EVENT`, `FAVORITE_INTEREST_NEW_CONTENT`); throttling `SMART_ALERTS_MAX_PER_USER_HOUR`.
+- **Datos:** API `MePortalController` + `UserNotificationsService`, `WebPushService`, `EventPublicationAlertsService`; SW `push-sw.js`; UI push en `/me/notifications`.
+- **Frontend:** `repositories/mePortal` + hooks `lib/query/me-portal.ts`; `lib/push/registerPush.ts`; layout `UserPortalLayout`.
 - **Redirects:** `/cuenta/*` → rutas `/me/*` (temporal; no duplicar lógica en páginas `/cuenta`).
 - **Checkout:** usuario autenticado usa carrito API (`POST /me/cart/checkout`); invitado mantiene flujo público.
 - **Transferencia:** solo personal (`TicketTransferOffer`); marketplace `/reventa` y módulo API `resale` **eliminados**.

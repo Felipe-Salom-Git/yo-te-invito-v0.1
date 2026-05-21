@@ -100,7 +100,11 @@ export class ApiClient {
     return this.request<T>('PATCH', path, { body, query });
   }
 
-  async delete<T>(path: string, query?: Record<string, string | number | boolean | undefined>): Promise<T> {
-    return this.request<T>('DELETE', path, { query });
+  async delete<T>(
+    path: string,
+    query?: Record<string, string | number | boolean | undefined>,
+    body?: unknown,
+  ): Promise<T> {
+    return this.request<T>('DELETE', path, { query, body });
   }
 }

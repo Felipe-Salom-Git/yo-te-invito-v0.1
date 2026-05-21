@@ -4,6 +4,10 @@ export const notificationKindSchema = z.enum([
   'TICKET_REMINDER_24H',
   'FAVORITE_EVENT_SOON',
   'EXPECTED_EVENT_SOON',
+  'TRANSFER_OFFER_PENDING',
+  'REVIEW_PENDING',
+  'FOLLOWED_PRODUCER_NEW_EVENT',
+  'FAVORITE_INTEREST_NEW_CONTENT',
 ]);
 export type NotificationKind = z.infer<typeof notificationKindSchema>;
 

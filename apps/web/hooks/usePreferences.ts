@@ -28,8 +28,15 @@ export function usePreferences() {
 /** Adapter for homeStrategy (city + categories; favorites via API list). */
 export function portalPrefsToHomeStrategy(prefs: UserPortalPreferences | null) {
   if (!prefs) return null;
+  const cities =
+    prefs.preferredCities?.length > 0
+      ? prefs.preferredCities
+      : prefs.preferredCity
+        ? [prefs.preferredCity]
+        : [];
   return {
-    preferredCity: prefs.preferredCity,
+    preferredCity: cities[0] ?? prefs.preferredCity,
+    preferredCities: cities.length > 0 ? cities : null,
     preferredCategories: prefs.favoriteCategories?.length ? prefs.favoriteCategories : null,
     favoriteEventIds: null as string[] | null,
   };

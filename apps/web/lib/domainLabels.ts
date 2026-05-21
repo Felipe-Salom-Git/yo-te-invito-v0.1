@@ -41,13 +41,20 @@ export const TRANSFER_OFFER_STATUS_LABELS: Record<string, string> = {
 
 // ─── Order status ─────────────────────────────────────────────────────────
 
-export type OrderStatus = 'PENDING_PAYMENT' | 'PAID' | 'paid' | 'CANCELLED' | 'REFUNDED';
+export type OrderStatus =
+  | 'PENDING_PAYMENT'
+  | 'PAID'
+  | 'paid'
+  | 'CANCELLED'
+  | 'EXPIRED'
+  | 'REFUNDED';
 
 export const ORDER_STATUS_LABELS: Record<string, string> = {
   PENDING_PAYMENT: 'Pendiente de pago',
   PAID: 'Pagado',
   paid: 'Pagado',
   CANCELLED: 'Cancelado',
+  EXPIRED: 'Expirada',
   REFUNDED: 'Reembolsado',
 };
 
@@ -56,7 +63,17 @@ export const ORDER_STATUS_STYLES: Record<string, string> = {
   PAID: SUCCESS_BADGE,
   paid: SUCCESS_BADGE,
   CANCELLED: 'bg-red-500/20 text-red-600',
+  EXPIRED: 'bg-border text-text-muted',
   REFUNDED: 'bg-border text-text-muted',
+};
+
+export const PAYMENT_STATUS_LABELS: Record<string, string> = {
+  PENDING: 'Pago pendiente',
+  APPROVED: 'Pago aprobado',
+  PAID: 'Pago completado',
+  REJECTED: 'Pago rechazado',
+  CANCELLED: 'Pago cancelado',
+  EXPIRED: 'Pago expirado',
 };
 
 // ─── Scan result ──────────────────────────────────────────────────────────

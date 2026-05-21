@@ -15,6 +15,21 @@ export function useOrderDetail(orderId: string, tenantId: string, options?: { en
   });
 }
 
+/** Optional; 404 when no payment row exists yet (e.g. fresh PENDING_PAYMENT). */
+export function useOrderPaymentStatus(
+  orderId: string,
+  tenantId: string,
+  options?: { enabled?: boolean },
+) {
+  const repos = useRepositories();
+  return useQuery({
+    queryKey: ordersKeys.paymentStatus(orderId),
+    queryFn: () => repos.orders.getOrderPaymentStatus(orderId, tenantId),
+    enabled: (options?.enabled ?? true) && !!orderId && !!tenantId,
+    retry: false,
+  });
+}
+
 export function useMyOrders(userId: string, tenantId?: string) {
   const repos = useRepositories();
   const t = tenantId ?? 'tenant-demo';

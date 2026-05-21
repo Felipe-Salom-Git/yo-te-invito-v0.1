@@ -23,6 +23,7 @@ import {
   type UpdateExcursionProductBody,
 } from '@yo-te-invito/shared';
 import { PrismaService } from '../../prisma/prisma.service';
+import { EventPublicationAlertsService } from '../notifications/event-publication-alerts.service';
 import { SubcategoriesService } from '../subcategories/subcategories.service';
 import { normalizeRentalProductImages } from '../rental-locations/rental-product-images.util';
 
@@ -31,6 +32,7 @@ export class ExcursionOperatorsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly subcategories: SubcategoriesService,
+    private readonly publicationAlerts: EventPublicationAlertsService,
   ) {}
 
   private normalizeSummary(
@@ -261,6 +263,9 @@ export class ExcursionOperatorsService {
         media: { where: { deletedAt: null }, orderBy: { sortOrder: 'asc' } },
       },
     });
+    if (event.status === 'APPROVED') {
+      this.publicationAlerts.handleEventBecameApproved(tenantId, event.id);
+    }
     return this.eventToSummary(event);
   }
 
@@ -298,6 +303,7 @@ export class ExcursionOperatorsService {
 
     const { headerImageUrl, galleryMedia } = normalizeRentalProductImages(body);
 
+    const previousStatus = existing.status;
     const event = await this.prisma.event.update({
       where: { id: excursionId },
       data: {
@@ -315,6 +321,10 @@ export class ExcursionOperatorsService {
         ...(subcategoryId !== undefined && { subcategoryId }),
       },
     });
+
+    if (event.status === 'APPROVED') {
+      this.publicationAlerts.handleEventBecameApproved(tenantId, event.id, previousStatus);
+    }
 
     if (galleryMedia !== undefined) {
       await this.prisma.eventMedia.updateMany({

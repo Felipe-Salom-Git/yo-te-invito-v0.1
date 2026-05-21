@@ -2,8 +2,8 @@
 
 ## Alcance
 
-- El **canvas studio** persiste solo metadatos de diseño (`TicketTemplate`). No altera `qrPayload` / `qrHash` ni el flujo de emisión ni el scanner.
-- Hasta que exista un renderizador que consuma la plantilla, los tickets siguen mostrándose con la UI/diseño actual.
+- El **canvas studio** persiste solo metadatos de diseño (`TicketTemplate`). No altera `qrPayload` ni el flujo del scanner.
+- El **render comprador** (`TicketTemplateRenderer` en `/me/tickets/[ticketId]`) consume la misma plantilla y coloca el QR en `qrZoneJson` con tamaño mínimo garantizado.
 
 ## Reglas (API + editor)
 

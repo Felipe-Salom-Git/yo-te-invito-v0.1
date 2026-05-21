@@ -3,12 +3,27 @@ import { AuthModule } from '../../auth/auth.module';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { NotificationsAdminController } from './notifications-admin.controller';
 import { NotificationsSchedulerService } from './notifications-scheduler.service';
+import { EventPublicationAlertsService } from './event-publication-alerts.service';
+import { SmartAlertsPreparedService } from './smart-alerts-prepared.service';
 import { UserNotificationsService } from './user-notifications.service';
+import { WebPushService } from './web-push.service';
 
 @Module({
   imports: [AuthModule, PrismaModule],
   controllers: [NotificationsAdminController],
-  providers: [UserNotificationsService, NotificationsSchedulerService],
-  exports: [UserNotificationsService, NotificationsSchedulerService],
+  providers: [
+    WebPushService,
+    UserNotificationsService,
+    NotificationsSchedulerService,
+    SmartAlertsPreparedService,
+    EventPublicationAlertsService,
+  ],
+  exports: [
+    WebPushService,
+    UserNotificationsService,
+    NotificationsSchedulerService,
+    SmartAlertsPreparedService,
+    EventPublicationAlertsService,
+  ],
 })
 export class NotificationsModule {}

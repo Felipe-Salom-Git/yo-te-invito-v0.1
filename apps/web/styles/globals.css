@@ -61,3 +61,71 @@ body {
   letter-spacing: -0.04em;
   font-stretch: condensed;
 }
+
+/* Buyer ticket print — hide portal chrome, print ticket only */
+@media print {
+  @page {
+    margin: 12mm;
+    size: auto;
+  }
+
+  header,
+  footer,
+  nav[aria-label='Menú del portal'],
+  .portal-chrome,
+  .ticket-status-overlay {
+    display: none !important;
+  }
+
+  body,
+  main {
+    background: #fff !important;
+    color: #111 !important;
+  }
+
+  .ticket-print-area {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .ticket-template-canvas,
+  .ticket-print-area article {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .ticket-qr-image {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .ticket-qr-image img {
+    width: 72mm !important;
+    height: 72mm !important;
+    min-width: 72mm !important;
+    min-height: 72mm !important;
+    max-width: none !important;
+    filter: none !important;
+    opacity: 1 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .ticket-print-area img:not(.ticket-qr-image img) {
+    max-width: 100% !important;
+    filter: none !important;
+    opacity: 1 !important;
+  }
+
+  .ticket-entry-status-banner {
+    display: block !important;
+    break-inside: avoid;
+    color: #78350f !important;
+    border-color: #d97706 !important;
+    background: #fffbeb !important;
+  }
+}

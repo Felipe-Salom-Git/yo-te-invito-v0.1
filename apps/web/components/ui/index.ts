@@ -9,6 +9,7 @@ export { ToastProvider, useToast } from './Toast';
 export { PageLoader } from './PageLoader';
 export { Skeleton, EventCardSkeleton, TicketCardSkeleton, OrderCardSkeleton } from './Skeleton';
 export { EmptyState } from './EmptyState';
+export { QueryError } from './QueryError';
 export { Breadcrumbs } from './Breadcrumbs';
 export type { BreadcrumbItem } from './Breadcrumbs';
 export { SideSheet } from './SideSheet';

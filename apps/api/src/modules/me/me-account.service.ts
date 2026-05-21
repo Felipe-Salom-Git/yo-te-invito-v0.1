@@ -89,7 +89,11 @@ export class MeAccountService {
 
     const prev = (user.preferences as Record<string, unknown> | null) ?? {};
     const nextPrefs = { ...prev };
-    if (body.city !== undefined) nextPrefs.city = body.city;
+    if (body.city !== undefined) {
+      nextPrefs.city = body.city;
+      nextPrefs.preferredCity = body.city;
+      nextPrefs.preferredCities = body.city ? [body.city] : [];
+    }
     if (body.avatarUrl !== undefined) nextPrefs.avatarUrl = body.avatarUrl;
     if (body.dateOfBirth !== undefined) nextPrefs.dateOfBirth = body.dateOfBirth;
 

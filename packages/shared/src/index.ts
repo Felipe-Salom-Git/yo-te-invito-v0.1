@@ -40,3 +40,4 @@ export * from './schemas/admin-gastro';
 export * from './schemas/user-portal';
 export * from './schemas/ticket-transfer-offer';
 export * from './schemas/notifications';
+export * from './schemas/push-notifications';

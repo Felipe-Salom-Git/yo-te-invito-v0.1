@@ -1,3 +1,4 @@
+import type { NotificationKind } from '@prisma/client';
 import type { Prisma } from '@prisma/client';
 import type {
   UserPortalPreferences,
@@ -6,6 +7,26 @@ import type {
 import { contentMainCategorySchema } from '@yo-te-invito/shared';
 
 const MAX_SUBCATEGORY_IDS = 200;
+const MAX_PREFERRED_CITIES = 6;
+
+function readPreferredCitiesRaw(prev: Record<string, unknown>): string[] {
+  const cities: string[] = [];
+  if (Array.isArray(prev.preferredCities)) {
+    for (const c of prev.preferredCities) {
+      if (typeof c === 'string' && c.trim()) {
+        const t = c.trim();
+        if (!cities.includes(t)) {
+          cities.push(t);
+          if (cities.length >= MAX_PREFERRED_CITIES) break;
+        }
+      }
+    }
+  }
+  if (cities.length === 0 && typeof prev.preferredCity === 'string' && prev.preferredCity.trim()) {
+    cities.push(prev.preferredCity.trim());
+  }
+  return cities;
+}
 
 export function readPortalPreferences(
   userId: string,
@@ -46,10 +67,13 @@ export function readPortalPreferences(
     }
   }
 
+  const preferredCities = readPreferredCitiesRaw(prev);
+  const preferredCity = preferredCities[0] ?? null;
+
   return {
     userId,
-    preferredCity:
-      typeof prev.preferredCity === 'string' ? prev.preferredCity : null,
+    preferredCity,
+    preferredCities,
     favoriteCategories,
     favoriteSubcategoryIds,
     webNotificationsEnabled:
@@ -72,18 +96,105 @@ export function readPortalPreferences(
       typeof prev.expectedEventNotificationsEnabled === 'boolean'
         ? prev.expectedEventNotificationsEnabled
         : true,
+    pushAlertsEnabled:
+      typeof prev.pushAlertsEnabled === 'boolean' ? prev.pushAlertsEnabled : true,
+    notifyUpcomingEvents:
+      typeof prev.notifyUpcomingEvents === 'boolean'
+        ? prev.notifyUpcomingEvents
+        : typeof prev.ticketReminder24hEnabled === 'boolean'
+          ? prev.ticketReminder24hEnabled
+          : notifyReminders,
+    notifyTransferOffers:
+      typeof prev.notifyTransferOffers === 'boolean' ? prev.notifyTransferOffers : true,
+    notifyPendingReviews:
+      typeof prev.notifyPendingReviews === 'boolean' ? prev.notifyPendingReviews : true,
+    notifyFollowedProducers:
+      typeof prev.notifyFollowedProducers === 'boolean' ? prev.notifyFollowedProducers : true,
+    notifyFavoriteCategories:
+      typeof prev.notifyFavoriteCategories === 'boolean'
+        ? prev.notifyFavoriteCategories
+        : typeof prev.favoriteEntityNotificationsEnabled === 'boolean'
+          ? prev.favoriteEntityNotificationsEnabled
+          : true,
+    notifyFavoriteSubcategories:
+      typeof prev.notifyFavoriteSubcategories === 'boolean'
+        ? prev.notifyFavoriteSubcategories
+        : true,
+    notifyRecommendations:
+      typeof prev.notifyRecommendations === 'boolean' ? prev.notifyRecommendations : false,
+    notifyUnreadNotifications:
+      typeof prev.notifyUnreadNotifications === 'boolean'
+        ? prev.notifyUnreadNotifications
+        : true,
     ticketReminderOverrides,
   };
+}
+
+export function shouldSendPushForKind(
+  prefs: UserPortalPreferences,
+  kind: NotificationKind,
+): boolean {
+  if (!prefs.pushAlertsEnabled) return false;
+  switch (kind) {
+    case 'TICKET_REMINDER_24H':
+      return prefs.notifyUpcomingEvents;
+    case 'FAVORITE_EVENT_SOON':
+      return prefs.notifyFavoriteCategories;
+    case 'EXPECTED_EVENT_SOON':
+      return prefs.expectedEventNotificationsEnabled;
+    case 'TRANSFER_OFFER_PENDING':
+      return prefs.notifyTransferOffers;
+    case 'REVIEW_PENDING':
+      return prefs.notifyPendingReviews;
+    case 'FOLLOWED_PRODUCER_NEW_EVENT':
+      return prefs.notifyFollowedProducers;
+    case 'FAVORITE_INTEREST_NEW_CONTENT':
+      return prefs.notifyRecommendations || prefs.notifyFavoriteCategories || prefs.notifyFavoriteSubcategories;
+    default:
+      return prefs.notifyUnreadNotifications;
+  }
+}
+
+export function pushTypeForKind(kind: NotificationKind): string {
+  switch (kind) {
+    case 'TICKET_REMINDER_24H':
+      return 'UPCOMING_EVENT';
+    case 'FAVORITE_EVENT_SOON':
+      return 'FAVORITE_CATEGORY';
+    case 'EXPECTED_EVENT_SOON':
+      return 'EXPECTED_EVENT';
+    case 'TRANSFER_OFFER_PENDING':
+      return 'TRANSFER_OFFER';
+    case 'REVIEW_PENDING':
+      return 'REVIEW_PENDING';
+    case 'FOLLOWED_PRODUCER_NEW_EVENT':
+      return 'FOLLOWED_PRODUCER';
+    case 'FAVORITE_INTEREST_NEW_CONTENT':
+      return 'FAVORITE_INTEREST';
+    default:
+      return 'PORTAL_ALERT';
+  }
 }
 
 export function mergePortalPreferencesPatch(
   prev: Prisma.JsonValue | null,
   patch: UserPortalPreferencesPatch,
 ): Prisma.InputJsonValue {
+  const prevRaw = (prev as Record<string, unknown> | null) ?? {};
   const base = readPortalPreferences('', prev);
-  const next = {
-    preferredCity:
-      patch.preferredCity !== undefined ? patch.preferredCity : base.preferredCity,
+  const preferredCities =
+    patch.preferredCities !== undefined
+      ? patch.preferredCities
+      : patch.preferredCity !== undefined
+        ? patch.preferredCity
+          ? [patch.preferredCity]
+          : []
+        : base.preferredCities;
+  const preferredCity = preferredCities[0] ?? null;
+  const next: Record<string, unknown> = {
+    ...prevRaw,
+    preferredCity,
+    preferredCities,
     favoriteCategories:
       patch.favoriteCategories !== undefined
         ? patch.favoriteCategories
@@ -112,11 +223,54 @@ export function mergePortalPreferencesPatch(
       patch.expectedEventNotificationsEnabled !== undefined
         ? patch.expectedEventNotificationsEnabled
         : base.expectedEventNotificationsEnabled,
+    pushAlertsEnabled:
+      patch.pushAlertsEnabled !== undefined ? patch.pushAlertsEnabled : base.pushAlertsEnabled,
+    notifyUpcomingEvents:
+      patch.notifyUpcomingEvents !== undefined
+        ? patch.notifyUpcomingEvents
+        : base.notifyUpcomingEvents,
+    notifyTransferOffers:
+      patch.notifyTransferOffers !== undefined
+        ? patch.notifyTransferOffers
+        : base.notifyTransferOffers,
+    notifyPendingReviews:
+      patch.notifyPendingReviews !== undefined
+        ? patch.notifyPendingReviews
+        : base.notifyPendingReviews,
+    notifyFollowedProducers:
+      patch.notifyFollowedProducers !== undefined
+        ? patch.notifyFollowedProducers
+        : base.notifyFollowedProducers,
+    notifyFavoriteCategories:
+      patch.notifyFavoriteCategories !== undefined
+        ? patch.notifyFavoriteCategories
+        : base.notifyFavoriteCategories,
+    notifyFavoriteSubcategories:
+      patch.notifyFavoriteSubcategories !== undefined
+        ? patch.notifyFavoriteSubcategories
+        : base.notifyFavoriteSubcategories,
+    notifyRecommendations:
+      patch.notifyRecommendations !== undefined
+        ? patch.notifyRecommendations
+        : base.notifyRecommendations,
+    notifyUnreadNotifications:
+      patch.notifyUnreadNotifications !== undefined
+        ? patch.notifyUnreadNotifications
+        : base.notifyUnreadNotifications,
     ticketReminderOverrides:
       patch.ticketReminderOverrides !== undefined
         ? { ...base.ticketReminderOverrides, ...patch.ticketReminderOverrides }
         : base.ticketReminderOverrides,
   };
+  if (patch.preferredCities !== undefined || patch.preferredCity !== undefined) {
+    next.city = preferredCity;
+  }
+  if (patch.notifyUpcomingEvents !== undefined) {
+    next.ticketReminder24hEnabled = patch.notifyUpcomingEvents;
+  }
+  if (patch.ticketReminder24hEnabled !== undefined) {
+    next.notifyUpcomingEvents = patch.ticketReminder24hEnabled;
+  }
   return next as Prisma.InputJsonValue;
 }
 

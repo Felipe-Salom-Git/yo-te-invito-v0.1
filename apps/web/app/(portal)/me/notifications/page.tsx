@@ -1,20 +1,34 @@
 'use client';
 
 import Link from 'next/link';
-import { PageContainer, SectionTitle, Button, PageLoader } from '@/components';
+import {
+  PageContainer,
+  SectionTitle,
+  Button,
+  PageLoader,
+  EmptyState,
+  QueryError,
+} from '@/components';
+import { MePushAlertPreferences } from '@/components/me/MePushAlertPreferences';
+import { MePushNotificationsPanel } from '@/components/me/MePushNotificationsPanel';
 import {
   useMeNotifications,
   useNotificationMutations,
 } from '@/lib/query/me-portal';
+import { getErrorMessage } from '@/lib/errors';
 
 const KIND_LABELS: Record<string, string> = {
   TICKET_REMINDER_24H: 'Recordatorio de ticket',
   FAVORITE_EVENT_SOON: 'Favorito — evento pronto',
   EXPECTED_EVENT_SOON: 'Evento esperado',
+  TRANSFER_OFFER_PENDING: 'Transferencia pendiente',
+  REVIEW_PENDING: 'Calificación pendiente',
+  FOLLOWED_PRODUCER_NEW_EVENT: 'Productora que seguís',
+  FAVORITE_INTEREST_NEW_CONTENT: 'Nuevo para tus intereses',
 };
 
 export default function MeNotificationsPage() {
-  const { data, isLoading } = useMeNotifications();
+  const { data, isLoading, isError, error, refetch } = useMeNotifications();
   const { markRead, markAllRead } = useNotificationMutations();
 
   if (isLoading) {
@@ -25,22 +39,30 @@ export default function MeNotificationsPage() {
     );
   }
 
+  if (isError) {
+    return (
+      <PageContainer>
+        <SectionTitle>Notificaciones</SectionTitle>
+        <QueryError
+          className="mt-6"
+          message={getErrorMessage(error)}
+          onRetry={() => void refetch()}
+        />
+      </PageContainer>
+    );
+  }
+
   const items = data?.items ?? [];
   const unread = data?.unreadCount ?? 0;
 
   return (
     <PageContainer>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <SectionTitle>Notificaciones</SectionTitle>
+        <SectionTitle className="!mb-0">Notificaciones</SectionTitle>
         {unread > 0 && (
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={markAllRead.isPending}
-            onClick={() => markAllRead.mutate()}
-          >
-            {markAllRead.isPending ? '…' : 'Marcar todas como leídas'}
-          </Button>
+          <span className="rounded-full bg-accent/20 px-2.5 py-0.5 text-xs font-medium text-accent">
+            {unread} sin leer
+          </span>
         )}
       </div>
       <p className="mt-1 text-sm text-text-muted">
@@ -51,35 +73,61 @@ export default function MeNotificationsPage() {
         .
       </p>
 
-      <ul className="mt-6 space-y-3">
-        {items.length === 0 ? (
-          <li className="rounded-lg border border-border p-6 text-center text-text-muted">
-            No tenés notificaciones todavía.
-          </li>
-        ) : (
-          items.map((n) => (
+      <MePushNotificationsPanel />
+      <MePushAlertPreferences />
+
+      {unread > 0 && (
+        <div className="mt-6">
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={markAllRead.isPending}
+            onClick={() => markAllRead.mutate()}
+          >
+            {markAllRead.isPending ? '…' : 'Marcar todas como leídas'}
+          </Button>
+        </div>
+      )}
+
+      {items.length === 0 ? (
+        <div className="mt-6">
+          <EmptyState
+            title="No tenés notificaciones todavía"
+            description="Cuando haya recordatorios o novedades de favoritos y eventos esperados, aparecerán acá."
+            actionLabel="Configurar preferencias"
+            actionHref="/me/preferences"
+          />
+        </div>
+      ) : (
+        <ul className="mt-6 space-y-3">
+          {items.map((n) => (
             <li
               key={n.id}
-              className={`rounded-lg border p-4 ${
-                n.readAt ? 'border-border bg-bg-muted/30' : 'border-accent/40 bg-accent/5'
+              className={`rounded-lg border p-4 transition-colors ${
+                n.readAt
+                  ? 'border-border bg-bg-muted/30'
+                  : 'border-accent/40 bg-accent/5'
               }`}
             >
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <div className="min-w-0">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0 flex-1">
                   <p className="text-xs text-text-muted">
                     {KIND_LABELS[n.kind] ?? n.kind} ·{' '}
                     {new Date(n.createdAt).toLocaleString('es-AR')}
+                    {!n.readAt && (
+                      <span className="ml-2 font-medium text-accent">· Nueva</span>
+                    )}
                   </p>
                   <p className="mt-1 font-medium text-text">{n.title}</p>
                   <p className="mt-1 text-sm text-text-muted">{n.body}</p>
                 </div>
-                <div className="flex shrink-0 flex-col gap-2">
+                <div className="flex shrink-0 flex-wrap gap-2 sm:flex-col sm:items-end">
                   {n.href && (
                     <Link
                       href={n.href}
-                      className="text-sm text-accent hover:underline"
+                      className="inline-flex rounded border border-border px-3 py-1.5 text-sm text-accent hover:bg-bg-muted"
                     >
-                      Ver →
+                      Ver contenido
                     </Link>
                   )}
                   {!n.readAt && (
@@ -89,15 +137,15 @@ export default function MeNotificationsPage() {
                       disabled={markRead.isPending}
                       onClick={() => markRead.mutate(n.id)}
                     >
-                      Leída
+                      Marcar leída
                     </Button>
                   )}
                 </div>
               </div>
             </li>
-          ))
-        )}
-      </ul>
+          ))}
+        </ul>
+      )}
     </PageContainer>
   );
 }

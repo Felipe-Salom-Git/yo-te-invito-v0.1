@@ -9,8 +9,11 @@ import {
   Button,
   Input,
   PageLoader,
+  QueryError,
   useToast,
 } from '@/components';
+import { PreferredCitySelect } from '@/components/me/PreferredCitySelect';
+import { MeAccountProfiles } from '@/components/me/MeAccountProfiles';
 import { useMeAccount, usePatchMeAccount, useChangePassword } from '@/lib/query/me-portal';
 import { useRepositories } from '@/repositories/context';
 import { getErrorMessage } from '@/lib/errors';
@@ -18,11 +21,11 @@ import { getErrorMessage } from '@/lib/errors';
 export default function MeAccountPage() {
   const { addToast } = useToast();
   const repos = useRepositories();
-  const { data: account, isLoading } = useMeAccount();
+  const { data: account, isLoading, isError, error, refetch } = useMeAccount();
   const patchAccount = usePatchMeAccount();
   const changePassword = useChangePassword();
 
-  const { data: meUser } = useQuery({
+  const { data: meUser, isLoading: meLoading } = useQuery({
     queryKey: ['me', 'profile'],
     queryFn: () => repos.users.getMe(''),
   });
@@ -47,10 +50,23 @@ export default function MeAccountPage() {
   const hasProducerProfiles = (meUser?.availableProfiles?.producer?.profiles?.length ?? 0) > 0;
   const canRequestProducer = !producerAccess && !hasProducerProfiles;
 
-  if (isLoading) {
+  if (isLoading || meLoading) {
     return (
       <PageContainer>
         <PageLoader message="Cargando cuenta…" />
+      </PageContainer>
+    );
+  }
+
+  if (isError) {
+    return (
+      <PageContainer>
+        <SectionTitle>Mi cuenta</SectionTitle>
+        <QueryError
+          className="mt-6"
+          message={getErrorMessage(error)}
+          onRetry={() => void refetch()}
+        />
       </PageContainer>
     );
   }
@@ -89,16 +105,14 @@ export default function MeAccountPage() {
   return (
     <PageContainer>
       <SectionTitle>Mi cuenta</SectionTitle>
-      {account && (
-        <p className="mt-1 text-sm text-text-muted">{account.email}</p>
-      )}
+      {account && <p className="mt-1 text-sm text-text-muted">{account.email}</p>}
 
       <form onSubmit={saveProfile} className="mt-8 max-w-md space-y-4">
         <h3 className="font-medium text-text">Datos personales</h3>
         <Input label="Nombre" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
         <Input label="Apellido" value={lastName} onChange={(e) => setLastName(e.target.value)} />
         <Input label="Teléfono" value={phone} onChange={(e) => setPhone(e.target.value)} />
-        <Input label="Ciudad" value={city} onChange={(e) => setCity(e.target.value)} />
+        <PreferredCitySelect label="Ciudad" value={city} onChange={setCity} />
         <Button type="submit" disabled={patchAccount.isPending}>
           {patchAccount.isPending ? 'Guardando…' : 'Guardar perfil'}
         </Button>
@@ -111,17 +125,21 @@ export default function MeAccountPage() {
           type="password"
           value={currentPassword}
           onChange={(e) => setCurrentPassword(e.target.value)}
+          autoComplete="current-password"
         />
         <Input
           label="Nueva contraseña"
           type="password"
           value={newPassword}
           onChange={(e) => setNewPassword(e.target.value)}
+          autoComplete="new-password"
         />
         <Button type="submit" disabled={changePassword.isPending}>
           {changePassword.isPending ? 'Guardando…' : 'Actualizar contraseña'}
         </Button>
       </form>
+
+      <MeAccountProfiles profiles={meUser?.availableProfiles} />
 
       {canRequestProducer && (
         <div className="mt-10 rounded-lg border border-border p-4">
@@ -129,7 +147,10 @@ export default function MeAccountPage() {
           <p className="mt-2 text-sm text-text-muted">
             Creá tu perfil de productor para publicar eventos.
           </p>
-          <Link href="/cuenta/solicitar-productor" className="mt-4 inline-block text-sm text-accent hover:underline">
+          <Link
+            href="/cuenta/solicitar-productor"
+            className="mt-4 inline-block text-sm text-accent hover:underline"
+          >
             Solicitar perfil productor
           </Link>
         </div>

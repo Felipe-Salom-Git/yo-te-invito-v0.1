@@ -21,6 +21,7 @@ import { AdminProducersService } from './admin-producers.service';
 import { AdminGeneralPublicationsService } from './admin-general-publications.service';
 import { EmailModule } from '../../email/email.module';
 import { AdminGastroService } from './admin-gastro.service';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { AdminGastroService } from './admin-gastro.service';
     CategoryBannersModule,
     ProducerModule,
     EmailModule,
+    NotificationsModule,
   ],
   controllers: [AdminController],
   providers: [

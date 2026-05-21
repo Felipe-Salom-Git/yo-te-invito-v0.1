@@ -72,7 +72,7 @@ ApiClient → HTTP (NEXT_PUBLIC_API_BASE_URL)
 | **ProducersRepo** | ✓ | público + `getMyProfile` / `createMyProfile` / `updateMyProfile*` + reviews agregadas |
 | **producerReviews** / **adminReviewDisputes** | ✓ | comentarios productora + cola admin disputas |
 | **commercialReviews** | ✓ | valoraciones privadas productora↔referidor |
-| **MePortalRepo** | ✓ | dashboard, cart, favorites, expected-events, activity, account, transfer offers, notifications prefs |
+| **MePortalRepo** | ✓ | dashboard, cart, favorites, expected-events, activity, account, transfer offers, notifications, **push subscriptions** |
 | ProfilesRepo, ApplicationsRepo, PlatformConfigRepo | ✓ | |
 
 **Category routing**: `gastro` → `/restaurants`, `excursion` → `/excursiones`, `rental` → `/rentals`, `hotel` → `/hoteles`, default → `/events`.
@@ -119,17 +119,20 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`):
 
 | Ruta | Uso |
 |------|-----|
-| `/me` | Dashboard |
-| `/me/cart` | Carrito API + checkout unificado |
+| `/me` | Dashboard (alertas, recomendados, **MeDashboardPushCta**) |
+| `/me/cart` | **Mi Carro** — carrito API + checkout |
 | `/me/tickets`, `/me/tickets/[ticketId]` | Tickets + transferencia personal |
-| `/me/preferences` | Tabs favoritos / eventos esperados / prefs |
+| `/me/preferences` | Tabs: intereses, productoras, gastro, favoritos, esperados, notificaciones globales |
 | `/me/activity` | Asistidos, reviews, transfers |
 | `/me/account` | Perfil, contraseña, solicitudes de rol |
-| `/me/notifications` | Bandeja |
-| `/me/orders` | Historial órdenes |
+| `/me/notifications` | Bandeja in-app + **push** (`MePushNotificationsPanel`) + preferencias alertas (`MePushAlertPreferences` en `InterestsDisclosure`) |
+| `/me/orders` | Historial órdenes (fuera del menú principal; ruta viva) |
+| `/me/following` | Redirect → `/me/preferences?tab=producers` |
 
-- Hooks: `lib/query/me-portal.ts`, keys `mePortalKeys` en `lib/query/keys.ts`.
-- Layout: `UserPortalLayout` bajo `app/(portal)/me/`.
+- Hooks: `lib/query/me-portal.ts` (incl. `usePushSubscriptions*`, `useRegisterPushSubscription`, `useSendTestPushNotification`); keys `mePortalKeys` en `lib/query/keys.ts`.
+- Push cliente: `lib/push/registerPush.ts`; service worker `public/push-sw.js` (registro `/push-sw.js`).
+- Layout: `UserPortalLayout` bajo `app/(portal)/me/` (menú: Inicio, Mis tickets, Mi Carro, Preferencias, Actividad, Notificaciones, Mi cuenta).
+- Componentes portal: `MeDashboardAlerts`, `MeRecommendationsSection`, `MePreferencesInterests` + **`InterestsDisclosure`** (acordeones reutilizables).
 - Engagement en fichas: `EventEngagementRow` → API favoritos / expected-events.
 - Checkout autenticado: redirige a `/me/cart`; invitado usa `/checkout` público.
 
@@ -155,6 +158,7 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`):
 | Reviews V2 (público + portales) | `components/reviews/` (`ReviewForm`, `ReviewCard`, `ReviewSummary`, `ManagedReviewsCommentsPage`, `ReviewReplyModal`) |
 | Comentarios productora | `components/producer/comments/` (`ProducerCommentsPage` → `ManagedReviewsCommentsPage`) |
 | Valoración B2B | `CommercialReviewPanel`, `CommercialAspectBreakdown` |
+| Portal usuario push | `components/me/MePushNotificationsPanel`, `MePushAlertPreferences`, `MeDashboardPushCta`, `InterestsDisclosure` |
 
 ---
 

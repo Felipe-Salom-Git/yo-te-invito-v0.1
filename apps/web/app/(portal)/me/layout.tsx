@@ -4,16 +4,15 @@ import { useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import { PageLoader } from '@/components';
 import { PortalSidebar } from '@/components/layout/PortalSidebar';
 
+/** Portal V2 polish: mobile nav, EmptyState/QueryError, ticket groups, cart UX — see task plan in PR. */
 const NAV = [
   { href: '/me', label: 'Inicio' },
   { href: '/me/tickets', label: 'Mis tickets' },
-  { href: '/me/orders', label: 'Mis pedidos' },
-  { href: '/me/cart', label: 'Carrito' },
+  { href: '/me/cart', label: 'Mi Carro' },
   { href: '/me/preferences', label: 'Preferencias' },
-  { href: '/me/following', label: 'Productoras' },
-  { href: '/me/recommendations', label: 'Recomendados' },
   { href: '/me/activity', label: 'Actividad' },
   { href: '/me/notifications', label: 'Notificaciones' },
   { href: '/me/account', label: 'Mi cuenta' },
@@ -33,7 +32,7 @@ export default function MePortalLayout({ children }: { children: React.ReactNode
   if (status === 'loading') {
     return (
       <div className="mx-auto max-w-7xl px-4 py-12">
-        <p className="text-text-muted">Cargando…</p>
+        <PageLoader message="Cargando tu espacio…" />
       </div>
     );
   }

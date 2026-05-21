@@ -116,27 +116,76 @@ import type {
   ContentCategory,
 } from './interfaces';
 
+type RawOrderTicket = {
+  id: string;
+  qrPayload: string;
+  status: string;
+  ticketTypeName?: string | null;
+};
+
+type RawOrderLineItem = {
+  id: string;
+  ticketTypeId: string;
+  ticketTypeName?: string;
+  quantity: number;
+  unitPrice: string;
+  subtotal: string;
+  tickets?: RawOrderTicket[];
+};
+
+function mapOrderTicket(t: RawOrderTicket) {
+  return {
+    id: t.id,
+    qrPayload: t.qrPayload,
+    status: t.status,
+    ticketTypeName: t.ticketTypeName ?? null,
+  };
+}
+
+function mapOrderLineItem(oi: RawOrderLineItem) {
+  return {
+    id: oi.id,
+    ticketTypeId: oi.ticketTypeId,
+    ticketTypeName: oi.ticketTypeName ?? 'Entrada',
+    quantity: oi.quantity,
+    unitPrice: oi.unitPrice,
+    subtotal: oi.subtotal,
+    tickets: oi.tickets?.map(mapOrderTicket),
+  };
+}
+
 function mapOrderResponse(raw: {
   id: string;
   tenantId: string;
   status: string;
   buyerEmail: string;
   totalAmount: string;
-  orderItems?: Array<{ tickets?: Array<{ id: string; qrPayload: string; status: string }> }>;
-  tickets?: Array<{ id: string; qrPayload: string; status: string }>;
+  eventId?: string;
+  currency?: string;
+  createdAt?: string;
+  buyerFirstName?: string;
+  buyerLastName?: string;
+  orderItems?: RawOrderLineItem[];
+  tickets?: RawOrderTicket[];
   [k: string]: unknown;
 }): Order {
-  const tickets =
-    raw.tickets ??
-    raw.orderItems?.flatMap((oi) => oi.tickets ?? []) ??
-    [];
+  const orderItems = raw.orderItems?.map(mapOrderLineItem);
+  const tickets = (raw.tickets ?? orderItems?.flatMap((oi) => oi.tickets ?? []) ?? []).map(
+    mapOrderTicket,
+  );
   return {
-    ...raw,
-    eventId: (raw as { eventId?: string }).eventId ?? '',
+    id: raw.id,
+    tenantId: raw.tenantId,
+    eventId: raw.eventId ?? '',
     status: raw.status,
     buyerEmail: raw.buyerEmail,
     totalAmount: raw.totalAmount,
-    tickets: tickets.map((t) => ({ id: t.id, qrPayload: t.qrPayload, status: t.status })),
+    currency: raw.currency,
+    createdAt: raw.createdAt,
+    buyerFirstName: raw.buyerFirstName,
+    buyerLastName: raw.buyerLastName,
+    orderItems,
+    tickets,
   };
 }
 
@@ -159,6 +208,8 @@ function mapMeTicketToTicket(item: MeTicketApiRow): Ticket {
     usedAt: item.usedAt ?? undefined,
     revokedAt: item.revokedAt ?? undefined,
     eventTitle: item.event.title,
+    eventStartAt: item.event.startAt,
+    eventVenueName: item.event.venueName ?? undefined,
     ticketTypeName: item.ticketType?.name,
   };
 }
@@ -1561,6 +1612,22 @@ export class ApiRepository implements Repositories {
     deleteProducerFollow: async (id) => {
       await this.client.delete(`/me/producer-follows/${encodeURIComponent(id)}`);
     },
+    listGastroFollows: async () => this.client.get('/me/gastro-follows'),
+    getGastroFollowStatus: async (gastroProfileId) =>
+      this.client.get('/me/gastro-follows/status', { gastroProfileId }),
+    createGastroFollow: async (body) => this.client.post('/me/gastro-follows', body),
+    deleteGastroFollow: async (id) => {
+      await this.client.delete(`/me/gastro-follows/${encodeURIComponent(id)}`);
+    },
+    getPushSubscriptionsConfig: async () =>
+      this.client.get('/me/push-subscriptions/config'),
+    listPushSubscriptions: async () => this.client.get('/me/push-subscriptions'),
+    registerPushSubscription: async (body) =>
+      this.client.post('/me/push-subscriptions', body),
+    deactivatePushSubscription: async (body) =>
+      this.client.delete('/me/push-subscriptions/current', undefined, body),
+    sendTestPushNotification: async (body = {}) =>
+      this.client.post('/me/push-subscriptions/test', body),
     getRecommendations: async (limit = 12) =>
       this.client.get('/me/recommendations', { limit: String(limit) }),
   };

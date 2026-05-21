@@ -24,6 +24,7 @@ import { useSession } from 'next-auth/react';
 import type { PublicReviewItemV2 } from '@yo-te-invito/shared';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { EventEngagementRow } from '@/components/events/EventEngagementRow';
+import { GastroFollowButton } from '@/components/me/GastroFollowButton';
 import { useToast } from '@/components';
 import { getErrorMessage } from '@/lib/errors';
 import type { EventSummary, PublicGastroLocation } from '@/repositories/interfaces';
@@ -222,7 +223,13 @@ function GastroLocationDetailContent({
         city={location.city}
         province={location.province}
       >
-        {reviewEventId ? <EventEngagementRow eventId={reviewEventId} /> : null}
+        <div className="flex flex-wrap items-center gap-3">
+          <GastroFollowButton
+            gastroProfileId={location.id}
+            displayName={location.displayName}
+          />
+          {reviewEventId ? <EventEngagementRow eventId={reviewEventId} /> : null}
+        </div>
       </GastroLocationHero>
 
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 md:px-8">

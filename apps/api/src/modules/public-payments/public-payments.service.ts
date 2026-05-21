@@ -586,6 +586,7 @@ export class PublicPaymentsService {
   private mapOrderToResponse(order: {
     id: string;
     tenantId: string;
+    eventId: string;
     status: string;
     buyerEmail: string;
     buyerFirstName: string;
@@ -654,6 +655,7 @@ export class PublicPaymentsService {
     return {
       id: order.id,
       tenantId: order.tenantId,
+      eventId: order.eventId,
       status: order.status as OrderResponse['status'],
       buyerEmail: order.buyerEmail,
       buyerFirstName: order.buyerFirstName,

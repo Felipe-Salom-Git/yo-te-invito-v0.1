@@ -100,6 +100,11 @@ export const mePortalKeys = {
   producerFollows: () => [...mePortalKeys.all, 'producerFollows'] as const,
   producerFollowStatus: (producerProfileId: string) =>
     [...mePortalKeys.all, 'producerFollowStatus', producerProfileId] as const,
+  gastroFollows: () => [...mePortalKeys.all, 'gastroFollows'] as const,
+  gastroFollowStatus: (gastroProfileId: string) =>
+    [...mePortalKeys.all, 'gastroFollowStatus', gastroProfileId] as const,
+  pushConfig: () => [...mePortalKeys.all, 'pushConfig'] as const,
+  pushSubscriptions: () => [...mePortalKeys.all, 'pushSubscriptions'] as const,
   recommendations: (limit?: number) =>
     [...mePortalKeys.all, 'recommendations', limit ?? 12] as const,
 };
@@ -109,6 +114,7 @@ export const mePortalKeys = {
 export const ordersKeys = {
   all: ['orders'] as const,
   detail: (orderId: string) => [...ordersKeys.all, orderId] as const,
+  paymentStatus: (orderId: string) => [...ordersKeys.all, orderId, 'payment-status'] as const,
   byBuyer: (userId: string) => [...ordersKeys.all, 'buyer', userId] as const,
 };
 

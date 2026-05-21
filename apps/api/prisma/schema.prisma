@@ -156,6 +156,8 @@ model Tenant {
   userFavorites                 UserFavorite[]
   userExpectedEvents            UserExpectedEvent[]
   userProducerFollows           UserProducerFollow[]
+  userGastroFollows             UserGastroFollow[]
+  userPushSubscriptions         UserPushSubscription[]
   ticketTransferOffers          TicketTransferOffer[]
   userNotifications             UserNotification[]
   notificationDeliveryLogs      NotificationDeliveryLog[]
@@ -282,6 +284,7 @@ model GastroProfile {
   publicEvent     Event?                  @relation("GastroPublicEvent", fields: [publicEventId], references: [id], onDelete: SetNull)
   memberships     UserGastroMembership[]
   gastroDiscounts GastroDiscount[]
+  followers       UserGastroFollow[]
 
   @@index([tenantId])
   @@index([tenantId, status])
@@ -627,6 +630,8 @@ model User {
   favorites                     UserFavorite[]
   expectedEvents                UserExpectedEvent[]
   producerFollows               UserProducerFollow[]
+  gastroFollows                 UserGastroFollow[]
+  pushSubscriptions             UserPushSubscription[]
   notifications                 UserNotification[]
   notificationDeliveries      NotificationDeliveryLog[]
 
@@ -795,11 +800,16 @@ enum NotificationKind {
   TICKET_REMINDER_24H
   FAVORITE_EVENT_SOON
   EXPECTED_EVENT_SOON
+  TRANSFER_OFFER_PENDING
+  REVIEW_PENDING
+  FOLLOWED_PRODUCER_NEW_EVENT
+  FAVORITE_INTEREST_NEW_CONTENT
 }
 
 enum NotificationChannel {
   IN_APP
   EMAIL
+  PUSH
 }
 
 enum TicketTransferOfferStatus {
@@ -1242,6 +1252,50 @@ model UserProducerFollow {
   @@unique([tenantId, userId, producerProfileId])
   @@index([tenantId, userId])
   @@index([tenantId, producerProfileId])
+}
+
+/// Usuario final sigue un local gastronómico (novedades / recomendaciones).
+model UserGastroFollow {
+  id                        String   @id @default(cuid())
+  tenantId                  String
+  userId                    String
+  gastroProfileId           String
+  webNotificationsEnabled   Boolean  @default(true)
+  emailNotificationsEnabled Boolean  @default(true)
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  tenant        Tenant        @relation(fields: [tenantId], references: [id])
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gastroProfile GastroProfile @relation(fields: [gastroProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, userId, gastroProfileId])
+  @@index([tenantId, userId])
+  @@index([tenantId, gastroProfileId])
+}
+
+/// Suscripción Web Push del usuario (navegador / PWA).
+model UserPushSubscription {
+  id         String    @id @default(cuid())
+  tenantId   String
+  userId     String
+  endpoint   String    @unique
+  p256dh     String
+  auth       String
+  userAgent  String?
+  deviceName String?
+  platform   String?
+  isActive   Boolean   @default(true)
+  lastUsedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tenantId, userId])
+  @@index([isActive])
 }
 
 model TicketScan {

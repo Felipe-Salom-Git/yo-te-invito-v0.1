@@ -5,7 +5,7 @@ import {
   ConflictException,
   BadRequestException,
 } from '@nestjs/common';
-import { AuditAction, Prisma } from '@prisma/client';
+import { AuditAction, NotificationKind, Prisma } from '@prisma/client';
 import { randomBytes } from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { generateTicketQrPayload } from '../../common/utils/ticket-qr.util';
@@ -20,6 +20,8 @@ import {
   type TicketTransferOfferSummary,
 } from '@yo-te-invito/shared';
 import { ErrorCode } from '@yo-te-invito/shared';
+import { readPortalPreferences } from './user-portal-preferences.util';
+import { UserNotificationsService } from '../notifications/user-notifications.service';
 
 const DEFAULT_EXPIRY_HOURS = 72;
 
@@ -52,7 +54,10 @@ type OfferRow = {
 
 @Injectable()
 export class TicketTransferOfferService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: UserNotificationsService,
+  ) {}
 
   private mapOffer(row: OfferRow): TicketTransferOfferSummary {
     return {
@@ -316,6 +321,33 @@ export class TicketTransferOfferService {
         expiresAt: offer.expiresAt.toISOString(),
       },
     );
+
+    if (buyerUserId) {
+      const buyer = await this.prisma.user.findFirst({
+        where: { id: buyerUserId, tenantId },
+        select: { id: true, tenantId: true, email: true, preferences: true },
+      });
+      if (buyer) {
+        const prefs = readPortalPreferences(buyer.id, buyer.preferences);
+        const eventTitle = offer.sourceTicket?.event?.title;
+        await this.notifications.deliver({
+          tenantId: buyer.tenantId,
+          userId: buyer.id,
+          userEmail: buyer.email,
+          kind: NotificationKind.TRANSFER_OFFER_PENDING,
+          referenceKey: `transfer:${offer.id}`,
+          title: 'Tenés una transferencia pendiente',
+          body: eventTitle
+            ? `Te enviaron un ticket para «${eventTitle}».`
+            : 'Te enviaron un ticket para transferir.',
+          href: `/me/ticket-transfer/${offer.acceptToken}`,
+          sendInApp: prefs.webNotificationsEnabled,
+          sendEmail: prefs.emailNotificationsEnabled,
+          preferences: prefs,
+        });
+      }
+    }
+
     return {
       offer: this.mapOffer(offer),
       acceptPath: `/me/ticket-transfer/${offer.acceptToken}`,

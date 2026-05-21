@@ -112,6 +112,8 @@ SMOKE_USER_EMAIL=felipe.e.salom@gmail.com SMOKE_USER_PASSWORD=<pass> pnpm --filt
 |------|--------|
 | Carrito / checkout | Crea orden `PENDING_PAYMENT` |
 | Pago demo | `demo-confirm` → tickets |
+| Detalle ticket | `GET /me/tickets/:id` — `qrPayload` debe ser `yti:v1:…` |
+| Scanner | Con `SMOKE_SCANNER_*`: `POST /scanner/validate` rechaza QR en `TRANSFER_PENDING` |
 | Transferencias | Ticket `VALID`; segundo usuario (`SMOKE_SECOND_USER_EMAIL` o registro `@smoke.yo-te-invito.test`) |
 | Aceptar transferencia | Solo con `SMOKE_ALLOW_DESTRUCTIVE=1` |
 

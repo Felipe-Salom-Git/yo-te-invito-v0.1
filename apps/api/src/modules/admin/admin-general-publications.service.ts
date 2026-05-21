@@ -7,6 +7,7 @@ import type {
   GeneralPublicationsListQuery,
 } from '@yo-te-invito/shared';
 import { PrismaService } from '../../prisma/prisma.service';
+import { EventPublicationAlertsService } from '../notifications/event-publication-alerts.service';
 import { SubcategoriesService } from '../subcategories/subcategories.service';
 import { normalizeRentalProductImages } from '../rental-locations/rental-product-images.util';
 
@@ -15,6 +16,7 @@ export class AdminGeneralPublicationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly subcategories: SubcategoriesService,
+    private readonly publicationAlerts: EventPublicationAlertsService,
   ) {}
 
   async list(
@@ -152,6 +154,10 @@ export class AdminGeneralPublicationsService {
         media: { where: { deletedAt: null }, orderBy: { sortOrder: 'asc' } },
       },
     });
+
+    if (status === 'APPROVED') {
+      this.publicationAlerts.handleEventBecameApproved(tenantId, event.id);
+    }
 
     return {
       id: event.id,

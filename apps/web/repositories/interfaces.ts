@@ -575,13 +575,33 @@ export interface Ticket {
   id: string;
   eventId: string;
   qrPayload: string;
-  status: 'VALID' | 'USED' | 'REVOKED';
+  status: 'VALID' | 'USED' | 'REVOKED' | 'TRANSFER_PENDING' | 'TRANSFERRED';
   ownerUserId?: string | null;
   usedAt?: string | null;
+  revokedAt?: string | null;
   /** From GET /me/tickets when API includes nested event */
   eventTitle?: string;
+  eventStartAt?: string;
+  eventVenueName?: string | null;
   ticketTypeName?: string;
   [k: string]: unknown;
+}
+
+export interface OrderTicketSummary {
+  id: string;
+  qrPayload: string;
+  status: string;
+  ticketTypeName?: string | null;
+}
+
+export interface OrderLineItem {
+  id: string;
+  ticketTypeId: string;
+  ticketTypeName: string;
+  quantity: number;
+  unitPrice: string;
+  subtotal: string;
+  tickets?: OrderTicketSummary[];
 }
 
 export interface Order {
@@ -590,7 +610,12 @@ export interface Order {
   status: string;
   buyerEmail: string;
   totalAmount: string | number;
-  tickets?: Array<{ id: string; qrPayload: string; status: string }>;
+  currency?: string;
+  createdAt?: string;
+  buyerFirstName?: string;
+  buyerLastName?: string;
+  orderItems?: OrderLineItem[];
+  tickets?: OrderTicketSummary[];
   [k: string]: unknown;
 }
 
@@ -1258,15 +1283,7 @@ export interface ApplyReferrerBody {
 }
 
 export interface AuthRepo {
-  register(body: {
-    email: string;
-    password: string;
-    firstName: string;
-    lastName: string;
-    tenantId?: string;
-    profileType?: 'USER' | 'PRODUCER' | 'GASTRO' | 'HOTEL' | 'REFERRER';
-    profileData?: unknown;
-  }): Promise<{
+  register(body: import('@yo-te-invito/shared').AuthRegisterRequest): Promise<{
     token: string;
     user: {
       id: string;
@@ -1406,6 +1423,25 @@ export interface MePortalRepo {
     body: import('@yo-te-invito/shared').CreateUserProducerFollowBody,
   ): Promise<import('@yo-te-invito/shared').UserProducerFollow>;
   deleteProducerFollow(id: string): Promise<void>;
+  listGastroFollows(): Promise<import('@yo-te-invito/shared').MeGastroFollowsResponse>;
+  getGastroFollowStatus(
+    gastroProfileId: string,
+  ): Promise<import('@yo-te-invito/shared').GastroFollowStatus>;
+  createGastroFollow(
+    body: import('@yo-te-invito/shared').CreateUserGastroFollowBody,
+  ): Promise<import('@yo-te-invito/shared').UserGastroFollow>;
+  deleteGastroFollow(id: string): Promise<void>;
+  getPushSubscriptionsConfig(): Promise<import('@yo-te-invito/shared').PushSubscriptionsConfig>;
+  listPushSubscriptions(): Promise<import('@yo-te-invito/shared').MePushSubscriptionsResponse>;
+  registerPushSubscription(
+    body: import('@yo-te-invito/shared').RegisterPushSubscriptionBody,
+  ): Promise<import('@yo-te-invito/shared').PushSubscription>;
+  deactivatePushSubscription(
+    body: import('@yo-te-invito/shared').DeactivatePushSubscriptionBody,
+  ): Promise<{ deactivated: boolean }>;
+  sendTestPushNotification(
+    body?: import('@yo-te-invito/shared').SendTestPushBody,
+  ): Promise<import('@yo-te-invito/shared').SendTestPushResponse>;
   getRecommendations(
     limit?: number,
   ): Promise<import('@yo-te-invito/shared').MeRecommendationsResponse>;

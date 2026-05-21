@@ -12,6 +12,7 @@ import type {
   UserPortalPreferencesPatch,
   PatchTicketReminderBody,
   TicketTransferOfferSummary,
+  TicketTemplateResponse,
 } from '@yo-te-invito/shared';
 import {
   readPortalPreferences,
@@ -49,7 +50,13 @@ export class MeService {
     usedAt: Date | null;
     revokedAt: Date | null;
     ticketBatchId: string | null;
-    event: { id: string; title: string; startAt: Date; venueName: string | null };
+    event: {
+      id: string;
+      title: string;
+      startAt: Date;
+      venueName: string | null;
+      city?: string | null;
+    };
     ticketType: { id: string; name: string } | null;
   }): MeTicketItem {
     return {
@@ -63,6 +70,7 @@ export class MeService {
         title: t.event.title,
         startAt: t.event.startAt.toISOString(),
         venueName: t.event.venueName,
+        city: t.event.city ?? null,
       },
       ticketType: {
         id: t.ticketType?.id ?? '',
@@ -199,7 +207,9 @@ export class MeService {
         ],
       },
       include: {
-        event: { select: { id: true, title: true, startAt: true, venueName: true } },
+        event: {
+          select: { id: true, title: true, startAt: true, venueName: true, city: true },
+        },
         ticketType: { select: { id: true, name: true } },
       },
       orderBy: { createdAt: 'desc' },
@@ -233,7 +243,9 @@ export class MeService {
         ],
       },
       include: {
-        event: { select: { id: true, title: true, startAt: true, venueName: true } },
+        event: {
+          select: { id: true, title: true, startAt: true, venueName: true, city: true },
+        },
         ticketType: { select: { id: true, name: true } },
       },
     });
@@ -338,40 +350,113 @@ export class MeService {
     };
   }
 
+  private mapTicketTemplateForBuyer(
+    row: {
+      id: string;
+      tenantId: string;
+      name: string;
+      canvasWidth: number;
+      canvasHeight: number;
+      backgroundType: string;
+      backgroundValue: string;
+      elementsJson: unknown;
+      qrZoneJson: unknown;
+      version: number;
+      createdAt: Date;
+      updatedAt: Date;
+    },
+    ticketTypeId: string,
+  ): TicketTemplateResponse {
+    return {
+      id: row.id,
+      tenantId: row.tenantId,
+      ticketTypeId,
+      name: row.name,
+      canvasWidth: row.canvasWidth,
+      canvasHeight: row.canvasHeight,
+      backgroundType: row.backgroundType,
+      backgroundValue: row.backgroundValue,
+      elementsJson: Array.isArray(row.elementsJson) ? row.elementsJson : [],
+      qrZoneJson: row.qrZoneJson,
+      version: row.version,
+      createdAt: row.createdAt.toISOString(),
+      updatedAt: row.updatedAt.toISOString(),
+    };
+  }
+
   async getMyTicketDetail(
     tenantId: string,
     userId: string,
     ticketId: string,
   ): Promise<MeTicketDetail> {
-    const base = await this.getMyTicketById(tenantId, userId, ticketId);
-    const user = await this.requireUser(tenantId, userId, { preferences: true });
+    const user = await this.requireUser(tenantId, userId, {
+      email: true,
+      firstName: true,
+      lastName: true,
+      preferences: true,
+    });
     const prefs = readPortalPreferences(userId, user.preferences);
 
     const ticket = await this.prisma.ticket.findFirst({
-      where: { id: ticketId },
-      select: {
-        source: true,
-        status: true,
-        usedAt: true,
-        revokedAt: true,
+      where: {
+        id: ticketId,
+        event: { deletedAt: null, tenantId },
+        OR: [
+          { ownerUserId: userId },
+          {
+            ownerUserId: null,
+            order: {
+              tenantId,
+              status: 'PAID',
+              buyerEmail: { equals: user.email, mode: 'insensitive' },
+            },
+          },
+        ],
+      },
+      include: {
+        event: {
+          select: {
+            id: true,
+            title: true,
+            startAt: true,
+            venueName: true,
+            city: true,
+            category: true,
+            endAt: true,
+          },
+        },
+        ticketType: {
+          select: {
+            id: true,
+            name: true,
+            ticketTemplate: true,
+          },
+        },
+        ticketBatch: { select: { name: true } },
+        order: { select: { id: true } },
+        ownerUser: { select: { firstName: true, lastName: true } },
         activeTransferOffer: true,
-        event: { select: { category: true, startAt: true, endAt: true } },
       },
     });
 
-    const eventEnd = ticket?.event
-      ? (ticket.event.endAt ?? ticket.event.startAt)
-      : null;
-    const eventNotPast = eventEnd ? eventEnd >= new Date() : false;
+    if (!ticket) {
+      throw new NotFoundException({
+        code: ErrorCode.TICKET_NOT_FOUND,
+        message: 'Ticket not found',
+      });
+    }
+
+    const eventEnd = ticket.event.endAt ?? ticket.event.startAt;
+    const eventNotPast = eventEnd >= new Date();
 
     const canTransfer =
-      ticket?.status === 'VALID' &&
+      ticket.status === 'VALID' &&
       !ticket.usedAt &&
       !ticket.revokedAt &&
       !ticket.activeTransferOffer &&
       eventNotPast;
 
-    const transferOffer: TicketTransferOfferSummary | null = ticket?.activeTransferOffer
+    const transferOffer: TicketTransferOfferSummary | null = ticket.activeTransferOffer
       ? {
           id: ticket.activeTransferOffer.id,
           status: ticket.activeTransferOffer.status as TicketTransferOfferSummary['status'],
@@ -389,13 +474,26 @@ export class MeService {
         }
       : null;
 
+    const holderFromOwner = ticket.ownerUser
+      ? `${ticket.ownerUser.firstName} ${ticket.ownerUser.lastName}`.trim()
+      : null;
+
+    const templateRow = ticket.ticketType?.ticketTemplate;
+    const ticketTemplate = templateRow
+      ? this.mapTicketTemplateForBuyer(templateRow, ticket.ticketType!.id)
+      : null;
+
     return {
-      ...base,
-      source: ticket?.source,
+      ...this.mapTicketRow(ticket),
+      source: ticket.source,
       reminderEnabled: isTicketReminderEnabled(prefs, ticketId),
       canTransfer,
       transferOffer,
-      category: ticket?.event.category ?? undefined,
+      category: ticket.event.category ?? undefined,
+      orderId: ticket.orderId ?? ticket.order?.id ?? null,
+      holderName: holderFromOwner || `${user.firstName} ${user.lastName}`.trim() || null,
+      batchName: ticket.ticketBatch?.name ?? null,
+      ticketTemplate,
     };
   }
 }

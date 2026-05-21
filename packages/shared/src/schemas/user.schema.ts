@@ -73,6 +73,7 @@ export const meTicketItemSchema = z.object({
     title: z.string(),
     startAt: z.string().datetime(),
     venueName: z.string().nullable(),
+    city: z.string().nullable().optional(),
   }),
   ticketType: z.object({
     id: z.string(),
@@ -144,6 +145,7 @@ export const authRegisterRequestSchema = z.object({
   password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
   firstName: z.string().min(1, 'Nombre requerido'),
   lastName: z.string().min(1, 'Apellido requerido'),
+  city: z.string().max(120).optional(),
   tenantId: z.string().optional(),
   profileType: registrationProfileTypeSchema.optional().default('USER'),
   profileData: z.unknown().optional(),

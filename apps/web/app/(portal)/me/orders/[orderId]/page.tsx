@@ -3,37 +3,50 @@
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { useOrderDetail } from '@/lib/query/orders';
+import { useOrderDetail, useOrderPaymentStatus } from '@/lib/query/orders';
 import { useEventDetail } from '@/lib/query/events';
-import { useQuery } from '@tanstack/react-query';
-import { useRepositories } from '@/repositories/context';
-import { PageContainer, SectionTitle } from '@/components';
-import { StatusBadge } from '@/components/domain/StatusBadge';
+import {
+  PageContainer,
+  SectionTitle,
+  PageLoader,
+  QueryError,
+  EmptyState,
+} from '@/components';
+import { PortalListSection } from '@/components/me/portal-ui';
+import { MeOrderDetailSummary } from '@/components/me/MeOrderDetailSummary';
+import { MeOrderItemRow } from '@/components/me/MeOrderItemRow';
+import { MeOrderTicketsList } from '@/components/me/MeOrderTicketsList';
+import { MeOrderDetailActions } from '@/components/me/MeOrderDetailActions';
+import { getErrorMessage } from '@/lib/errors';
+import { isOrderPaid } from '@/lib/me/order-detail';
 
 const TENANT_ID = 'tenant-demo';
 
 export default function OrderDetailPage() {
   const params = useParams();
-  const { data: session, status } = useSession();
-  const repos = useRepositories();
+  const { data: session, status: sessionStatus } = useSession();
   const orderId = (params?.orderId as string) ?? '';
 
-  const { data: order, isLoading, error } = useOrderDetail(orderId, TENANT_ID);
-  const { data: event } = useEventDetail(order?.eventId ?? '', TENANT_ID);
-  const { data: tickets } = useQuery({
-    queryKey: ['tickets', 'order', orderId],
-    queryFn: () => repos.tickets.listByEvent(order!.eventId),
-    enabled: !!order?.eventId,
+  const {
+    data: order,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useOrderDetail(orderId, TENANT_ID, {
+    enabled: sessionStatus === 'authenticated' && !!orderId,
   });
 
-  const myTickets = (tickets ?? []).filter(
-    (t) => (t as { orderId?: string }).orderId === orderId
-  );
+  const { data: payment } = useOrderPaymentStatus(orderId, TENANT_ID, {
+    enabled: sessionStatus === 'authenticated' && !!orderId && !!order,
+  });
 
-  if (status === 'loading') {
+  const { data: event } = useEventDetail(order?.eventId ?? '', TENANT_ID);
+
+  if (sessionStatus === 'loading') {
     return (
       <PageContainer>
-        <p className="text-text-muted">Cargando…</p>
+        <PageLoader message="Cargando sesión…" />
       </PageContainer>
     );
   }
@@ -41,7 +54,7 @@ export default function OrderDetailPage() {
   if (!session?.user) {
     return (
       <PageContainer>
-        <p className="text-text-muted">Debés iniciar sesión.</p>
+        <p className="text-text-muted">Debés iniciar sesión para ver este pedido.</p>
         <Link href="/login" className="mt-4 inline-block text-accent hover:underline">
           Iniciar sesión
         </Link>
@@ -49,74 +62,110 @@ export default function OrderDetailPage() {
     );
   }
 
-  if (isLoading || !orderId) {
+  if (!orderId) {
     return (
       <PageContainer>
-        <p className="text-text-muted">Cargando…</p>
+        <EmptyState
+          title="Pedido no válido"
+          description="El enlace no incluye un identificador de pedido."
+          actionLabel="Mis pedidos"
+          actionHref="/me/orders"
+        />
       </PageContainer>
     );
   }
 
-  if (error || !order) {
+  if (isLoading) {
     return (
       <PageContainer>
-        <p className="text-red-400">Pedido no encontrado</p>
-        <Link href="/me/orders" className="mt-4 block text-accent hover:underline">
-          ← Volver a mis pedidos
-        </Link>
+        <PageLoader message="Cargando pedido…" />
       </PageContainer>
     );
   }
+
+  if (isError) {
+    return (
+      <PageContainer>
+        <Link
+          href="/me/orders"
+          className="mb-4 inline-block text-sm text-text-muted hover:text-text"
+        >
+          ← Mis pedidos
+        </Link>
+        <QueryError message={getErrorMessage(error)} onRetry={() => void refetch()} />
+      </PageContainer>
+    );
+  }
+
+  if (!order) {
+    return (
+      <PageContainer>
+        <EmptyState
+          title="Pedido no encontrado"
+          description="No existe o no tenés permiso para verlo."
+          actionLabel="Volver a mis pedidos"
+          actionHref="/me/orders"
+        />
+      </PageContainer>
+    );
+  }
+
+  const currency = order.currency ?? 'ARS';
+  const lineItems = order.orderItems ?? [];
+  const tickets = order.tickets ?? [];
+  const paid = isOrderPaid(order.status);
 
   return (
     <PageContainer>
-      <Link href="/me/orders" className="mb-4 inline-block text-sm text-text-muted hover:text-text">
-        ← Volver a mis pedidos
+      <Link
+        href="/me/orders"
+        className="mb-4 inline-block text-sm text-text-muted hover:text-text"
+      >
+        ← Mis pedidos
       </Link>
-      <SectionTitle>Pedido {order.id}</SectionTitle>
 
-      <div className="mt-6 space-y-6">
-        <div className="rounded-lg border border-border bg-bg-muted p-4">
-          <h2 className="text-lg font-semibold text-text">
-            {event?.title ?? `Evento ${order.eventId}`}
-          </h2>
-          <div className="mt-2 flex items-center gap-4 text-sm text-text-muted">
-            <StatusBadge status={order.status} kind="order" />
-            <span>
-              ${typeof order.totalAmount === 'string' ? order.totalAmount : order.totalAmount}
-            </span>
-            <span>{order.buyerEmail}</span>
-          </div>
-        </div>
+      <SectionTitle>Detalle del pedido</SectionTitle>
+      <p className="mt-1 text-sm text-text-muted">
+        {paid
+          ? 'Compra confirmada. Tus entradas están en Mis tickets.'
+          : 'Revisá el estado y completá el pago si el pedido sigue pendiente.'}
+      </p>
 
-        {myTickets.length > 0 && (
-          <section>
-            <h3 className="text-base font-semibold text-text">Tickets emitidos</h3>
-            <ul className="mt-3 space-y-2">
-              {myTickets.map((t) => (
-                <li key={t.id} className="flex items-center justify-between rounded border border-border bg-bg-muted p-3">
-                  <span className="text-sm text-text">Ticket {t.id}</span>
-                  <div className="flex items-center gap-2">
-                    <StatusBadge status={t.status} kind="ticket" />
-                    <Link
-                      href={`/me/tickets/${t.id}`}
-                      className="text-sm text-accent hover:underline"
-                    >
-                      Ver QR
-                    </Link>
-                  </div>
-                </li>
+      <div className="mt-6 space-y-8">
+        <MeOrderDetailSummary
+          order={order}
+          event={
+            event
+              ? {
+                  title: event.title,
+                  startAt: event.startAt,
+                  venueName: event.venueName,
+                }
+              : null
+          }
+          paymentStatus={payment?.status ?? null}
+        />
+
+        <MeOrderDetailActions order={order} tenantId={TENANT_ID} />
+
+        {lineItems.length > 0 ? (
+          <PortalListSection title="Ítems del pedido" description={`${lineItems.length} línea(s)`}>
+            <ul className="space-y-3">
+              {lineItems.map((item) => (
+                <MeOrderItemRow key={item.id} item={item} currency={currency} />
               ))}
             </ul>
-          </section>
+          </PortalListSection>
+        ) : (
+          <EmptyState
+            title="Sin ítems en el pedido"
+            description="Este pedido no tiene líneas de compra registradas."
+            actionLabel="Mis pedidos"
+            actionHref="/me/orders"
+          />
         )}
 
-        <Link
-          href="/me/tickets"
-          className="inline-block rounded bg-accent px-4 py-2 text-bg hover:bg-accent-hover"
-        >
-          Ver mis tickets
-        </Link>
+        {paid && <MeOrderTicketsList tickets={tickets} />}
       </div>
     </PageContainer>
   );

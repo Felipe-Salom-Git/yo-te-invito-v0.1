@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { EventStatus, Prisma, AuditAction } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { EventPublicationAlertsService } from '../notifications/event-publication-alerts.service';
 import { ErrorCode } from '@yo-te-invito/shared';
 import type { EventsPaginatedResponse, EventSummary } from '@yo-te-invito/shared';
 
@@ -16,7 +17,10 @@ type ModerationAuditAction =
 
 @Injectable()
 export class AdminEventsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly publicationAlerts: EventPublicationAlertsService,
+  ) {}
 
   async list(
     tenantId: string,
@@ -94,7 +98,8 @@ export class AdminEventsService {
       });
     }
 
-    const before = { status: event.status };
+    const previousStatus = event.status;
+    const before = { status: previousStatus };
     const now = new Date();
     const after = { status: 'APPROVED' as const, publishedAt: now.toISOString() };
 
@@ -117,6 +122,8 @@ export class AdminEventsService {
         },
       });
     });
+
+    this.publicationAlerts.handleEventBecameApproved(tenantId, eventId, previousStatus);
 
     return { id: eventId, status: 'approved' };
   }

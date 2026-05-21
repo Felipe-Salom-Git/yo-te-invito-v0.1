@@ -1,8 +1,8 @@
 import { expect, type Page } from '@playwright/test';
 
 const PAGE_LOADER: Partial<Record<string, RegExp>> = {
-  'Mi espacio': /Cargando tu panel/i,
-  Carrito: /Cargando carrito/i,
+  Inicio: /Cargando tu panel/i,
+  'Mi Carro': /Cargando carrito/i,
   Actividad: /Cargando actividad/i,
   'Mi cuenta': /Cargando cuenta/i,
 };

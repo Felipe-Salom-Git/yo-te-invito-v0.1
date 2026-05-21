@@ -48,9 +48,9 @@ export function PendingOrdersList({
           </div>
           <Link
             href={`/checkout/${o.eventId}?tenantId=${encodeURIComponent(t)}&orderId=${encodeURIComponent(o.id)}`}
-            className="shrink-0 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-bg hover:bg-accent-hover transition-colors"
+            className="inline-flex w-full shrink-0 items-center justify-center rounded-lg bg-accent px-4 py-2 text-sm font-medium text-bg transition-colors hover:bg-accent-hover sm:w-auto"
           >
-            Pagar
+            Completar pago
           </Link>
         </li>
       ))}

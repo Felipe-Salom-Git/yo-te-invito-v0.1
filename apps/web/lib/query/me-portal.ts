@@ -6,6 +6,10 @@ import type {
   CreateUserExpectedEventBody,
   CreateUserFavoriteBody,
   CreateUserProducerFollowBody,
+  CreateUserGastroFollowBody,
+  DeactivatePushSubscriptionBody,
+  RegisterPushSubscriptionBody,
+  SendTestPushBody,
   CreateTicketTransferOfferBody,
   MeCartCheckoutBody,
   MeTicketTransferOffersQuery,
@@ -47,6 +51,7 @@ export function usePatchPortalPreferences() {
     mutationFn: (patch: UserPortalPreferencesPatch) => repos.mePortal.patchPreferences(patch),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: mePortalKeys.preferences() });
+      queryClient.invalidateQueries({ queryKey: mePortalKeys.account() });
       queryClient.invalidateQueries({ queryKey: mePortalKeys.dashboard() });
       queryClient.invalidateQueries({ queryKey: ['home'] });
       queryClient.invalidateQueries({ queryKey: ['userPreferences'] });
@@ -193,6 +198,8 @@ export function usePatchMeAccount() {
     mutationFn: (body: PatchMeAccountBody) => repos.mePortal.patchAccount(body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: mePortalKeys.account() });
+      queryClient.invalidateQueries({ queryKey: mePortalKeys.preferences() });
+      queryClient.invalidateQueries({ queryKey: mePortalKeys.dashboard() });
       queryClient.invalidateQueries({ queryKey: ['me'] });
       queryClient.invalidateQueries({ queryKey: ['user'] });
     },
@@ -371,6 +378,99 @@ export function useProducerFollowMutations() {
     onSuccess: (_d, vars) => invalidate(vars.producerProfileId),
   });
   return { follow, unfollow };
+}
+
+export function useMeGastroFollows(enabled = true) {
+  const repos = useRepositories();
+  return useQuery({
+    queryKey: mePortalKeys.gastroFollows(),
+    queryFn: () => repos.mePortal.listGastroFollows(),
+    enabled,
+  });
+}
+
+export function useGastroFollowStatus(gastroProfileId: string, enabled = true) {
+  const repos = useRepositories();
+  return useQuery({
+    queryKey: mePortalKeys.gastroFollowStatus(gastroProfileId),
+    queryFn: () => repos.mePortal.getGastroFollowStatus(gastroProfileId),
+    enabled: enabled && !!gastroProfileId,
+  });
+}
+
+export function useGastroFollowMutations() {
+  const repos = useRepositories();
+  const queryClient = useQueryClient();
+  const invalidate = (gastroProfileId?: string) => {
+    queryClient.invalidateQueries({ queryKey: mePortalKeys.gastroFollows() });
+    queryClient.invalidateQueries({ queryKey: mePortalKeys.dashboard() });
+    queryClient.invalidateQueries({ queryKey: mePortalKeys.recommendations() });
+    if (gastroProfileId) {
+      queryClient.invalidateQueries({
+        queryKey: mePortalKeys.gastroFollowStatus(gastroProfileId),
+      });
+    }
+  };
+  const follow = useMutation({
+    mutationFn: (body: CreateUserGastroFollowBody) => repos.mePortal.createGastroFollow(body),
+    onSuccess: (_d, vars) => invalidate(vars.gastroProfileId),
+  });
+  const unfollow = useMutation({
+    mutationFn: ({ id, gastroProfileId }: { id: string; gastroProfileId: string }) =>
+      repos.mePortal.deleteGastroFollow(id),
+    onSuccess: (_d, vars) => invalidate(vars.gastroProfileId),
+  });
+  return { follow, unfollow };
+}
+
+export function usePushSubscriptionsConfig(enabled = true) {
+  const repos = useRepositories();
+  return useQuery({
+    queryKey: mePortalKeys.pushConfig(),
+    queryFn: () => repos.mePortal.getPushSubscriptionsConfig(),
+    enabled,
+    staleTime: 60_000,
+  });
+}
+
+export function usePushSubscriptions(enabled = true) {
+  const repos = useRepositories();
+  return useQuery({
+    queryKey: mePortalKeys.pushSubscriptions(),
+    queryFn: () => repos.mePortal.listPushSubscriptions(),
+    enabled,
+  });
+}
+
+export function useRegisterPushSubscription() {
+  const repos = useRepositories();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: RegisterPushSubscriptionBody) =>
+      repos.mePortal.registerPushSubscription(body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: mePortalKeys.pushSubscriptions() });
+    },
+  });
+}
+
+export function useDeactivatePushSubscription() {
+  const repos = useRepositories();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: DeactivatePushSubscriptionBody) =>
+      repos.mePortal.deactivatePushSubscription(body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: mePortalKeys.pushSubscriptions() });
+    },
+  });
+}
+
+export function useSendTestPushNotification() {
+  const repos = useRepositories();
+  return useMutation({
+    mutationFn: (body: SendTestPushBody = {}) => repos.mePortal.sendTestPushNotification(body),
+  });
 }
 
 export function useMeRecommendations(limit = 12, enabled = true) {

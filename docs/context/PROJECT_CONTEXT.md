@@ -18,7 +18,7 @@ High-level project-wide summary. **Current state as verified from the repository
 
 **Maturity**: Flujos productivos contra API + PostgreSQL (contenido manual; pago **demo** en checkout). Portales producer, admin, gastro, hotel, referrer, **portal usuario estándar `/me/*`**. Smokes/E2E con credenciales explícitas — sin seeds masivos ni `@demo.local`.
 
-**Usuario estándar (2026-05):** comprador autenticado opera en `/me` (carrito, tickets, favoritos, eventos esperados, actividad, cuenta, notificaciones, seguir productoras). Rutas `/cuenta/*` redirigen a `/me`. Sin LocalDB ni usuarios demo automáticos.
+**Usuario estándar (2026-05):** comprador autenticado opera en `/me` (carrito, tickets, favoritos, eventos esperados, actividad, cuenta, **bandeja + push notifications**, seguir productoras). Rutas `/cuenta/*` redirigen a `/me`. Sin LocalDB ni usuarios demo automáticos.
 
 ---
 
@@ -71,10 +71,12 @@ yo-te-invito-v0.1/
 
 ### Portal usuario (`/me/*`)
 
-- Migraciones: `user_portal_v1`, notificaciones, producer follows; reventa marketplace **removida** (`remove_resale_marketplace`).
-- Carrito persistido (`UserCart`), favoritos, eventos esperados, transferencias personales (`TicketTransferOffer`), bandeja notificaciones, recomendaciones por follows.
+- Migraciones: `user_portal_v1`, notificaciones, producer follows, **`UserPushSubscription`**; reventa marketplace **removida** (`remove_resale_marketplace`).
+- Carrito persistido (`UserCart`), favoritos, eventos esperados, transferencias personales (`TicketTransferOffer`), bandeja notificaciones + **Web Push** (canal adicional, no reemplaza la bandeja).
+- **V2.1.2:** inicio con alertas/recomendados; **Mi Carro**; preferencias (ciudad, categorías, productoras seguidas).
+- **V2.1.3–V2.1.4:** activar push desde `/me/notifications`, preferencias por tipo de alerta, `deliver()` con deduplicación `PUSH`; transferencias y cron de reviews disparan push si corresponde.
 - Smokes: `smoke:user-portal`, `smoke:notifications`, `smoke:producer-follows` + cleanup automático post-run.
-- Doc detallada: `docs/user/USER_PORTAL.md`, `docs/user/TICKET_TRANSFER.md`.
+- Doc detallada: `docs/user/USER_PORTAL.md` (§ Push notifications), `docs/user/TICKET_TRANSFER.md`.
 
 ### Backend highlights
 

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { NotificationChannel, NotificationKind, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EmailQueueService } from '../../email/email-queue.service';
@@ -6,8 +6,16 @@ import type {
   MeNotificationsResponse,
   MeNotificationsUnread,
   UserNotification,
+  UserPortalPreferences,
+  WebPushPayload,
 } from '@yo-te-invito/shared';
 import { ErrorCode } from '@yo-te-invito/shared';
+import {
+  pushTypeForKind,
+  readPortalPreferences,
+  shouldSendPushForKind,
+} from '../me/user-portal-preferences.util';
+import { WebPushService } from './web-push.service';
 
 export type DeliverNotificationInput = {
   tenantId: string;
@@ -20,13 +28,19 @@ export type DeliverNotificationInput = {
   href?: string | null;
   sendInApp: boolean;
   sendEmail: boolean;
+  /** Si se omite, se calcula desde preferencias del usuario. */
+  sendPush?: boolean;
+  preferences?: UserPortalPreferences;
 };
 
 @Injectable()
 export class UserNotificationsService {
+  private readonly logger = new Logger(UserNotificationsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly emailQueue: EmailQueueService,
+    private readonly webPush: WebPushService,
   ) {}
 
   private map(row: {
@@ -98,12 +112,28 @@ export class UserNotificationsService {
     return { updated: result.count };
   }
 
+  private async resolvePreferences(
+    userId: string,
+    provided?: UserPortalPreferences,
+  ): Promise<UserPortalPreferences | null> {
+    if (provided) return provided;
+    const user = await this.prisma.user.findFirst({
+      where: { id: userId },
+      select: { preferences: true },
+    });
+    if (!user) return null;
+    return readPortalPreferences(userId, user.preferences);
+  }
+
   /**
    * Idempotent delivery: skips channels already logged for (user, kind, referenceKey).
    */
-  async deliver(input: DeliverNotificationInput): Promise<{ inApp: boolean; email: boolean }> {
+  async deliver(
+    input: DeliverNotificationInput,
+  ): Promise<{ inApp: boolean; email: boolean; push: boolean }> {
     let inApp = false;
     let email = false;
+    let push = false;
 
     if (input.sendInApp) {
       const already = await this.prisma.notificationDeliveryLog.findUnique({
@@ -188,14 +218,104 @@ export class UserNotificationsService {
       }
     }
 
-    return { inApp, email };
+    const prefs = await this.resolvePreferences(input.userId, input.preferences);
+    const wantsPush =
+      input.sendPush ?? (prefs != null && shouldSendPushForKind(prefs, input.kind));
+
+    if (wantsPush && prefs) {
+      push = await this.deliverPushChannel(input, prefs);
+    }
+
+    return { inApp, email, push };
+  }
+
+  private async deliverPushChannel(
+    input: DeliverNotificationInput,
+    prefs: UserPortalPreferences,
+  ): Promise<boolean> {
+    if (!this.webPush.isEnabled()) return false;
+    if (!shouldSendPushForKind(prefs, input.kind)) return false;
+
+    const already = await this.prisma.notificationDeliveryLog.findUnique({
+      where: {
+        userId_kind_referenceKey_channel: {
+          userId: input.userId,
+          kind: input.kind,
+          referenceKey: input.referenceKey,
+          channel: NotificationChannel.PUSH,
+        },
+      },
+    });
+    if (already) return false;
+
+    const subs = await this.prisma.userPushSubscription.findMany({
+      where: { tenantId: input.tenantId, userId: input.userId, isActive: true },
+    });
+    if (subs.length === 0) return false;
+
+    const payload: WebPushPayload = {
+      title: input.title,
+      body: input.body,
+      url: input.href ?? '/me/notifications',
+      type: pushTypeForKind(input.kind),
+    };
+
+    const result = await this.webPush.sendToTargets(
+      subs.map((s) => ({
+        id: s.id,
+        endpoint: s.endpoint,
+        p256dh: s.p256dh,
+        auth: s.auth,
+      })),
+      payload,
+    );
+
+    if (result.deactivatedIds.length > 0) {
+      await this.prisma.userPushSubscription.updateMany({
+        where: { id: { in: result.deactivatedIds } },
+        data: { isActive: false },
+      });
+    }
+
+    if (result.sent > 0) {
+      const now = new Date();
+      await this.prisma.notificationDeliveryLog.create({
+        data: {
+          tenantId: input.tenantId,
+          userId: input.userId,
+          kind: input.kind,
+          referenceKey: input.referenceKey,
+          channel: NotificationChannel.PUSH,
+        },
+      });
+      await this.prisma.userPushSubscription.updateMany({
+        where: {
+          userId: input.userId,
+          isActive: true,
+          endpoint: {
+            in: subs
+              .filter((s) => !result.deactivatedIds.includes(s.id))
+              .map((s) => s.endpoint),
+          },
+        },
+        data: { lastUsedAt: now },
+      });
+      return true;
+    }
+
+    if (result.failed > 0) {
+      this.logger.debug(
+        `Push delivery failed for user=${input.userId} kind=${input.kind} ref=${input.referenceKey}`,
+      );
+    }
+    return false;
   }
 
   /** Notificación determinística para smoke/E2E (admin). */
   async seedE2eDemo(tenantId: string, userId: string) {
     const user = await this.prisma.user.findFirst({
       where: { id: userId, tenantId },
-      select: { email: true },
+      select: { email: true, preferences: true },
     });
     if (!user) {
       throw new NotFoundException({
@@ -203,6 +323,7 @@ export class UserNotificationsService {
         message: 'User not found',
       });
     }
+    const prefs = readPortalPreferences(userId, user.preferences);
     const referenceKey = `e2e-demo:${Date.now()}`;
     await this.deliver({
       tenantId,
@@ -215,6 +336,7 @@ export class UserNotificationsService {
       href: '/me/tickets',
       sendInApp: true,
       sendEmail: false,
+      preferences: prefs,
     });
     const row = await this.prisma.userNotification.findFirst({
       where: { userId, kind: NotificationKind.TICKET_REMINDER_24H, referenceKey },

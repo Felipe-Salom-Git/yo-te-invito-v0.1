@@ -2,16 +2,20 @@ import { z } from 'zod';
 import { contentCategorySchema, contentMainCategorySchema } from './subcategories';
 import { meTicketItemSchema, meOrderItemSchema } from './user.schema';
 import { ticketTransferOfferSummarySchema } from './ticket-transfer-offer';
+import { ticketTemplateResponseSchema } from './ticket-template.schema';
 import { publicReviewCategorySchema } from './review-aspects';
 import { eventSummarySchema } from './events';
 
 // ─── Preferences (portal V1 — no favoriteEventIds / expectedEventIds) ────────
 
 const subcategoryIdListSchema = z.array(z.string().min(1)).max(200);
+const preferredCitiesListSchema = z.array(z.string().min(1).max(120)).max(6);
 
 export const userPortalPreferencesSchema = z.object({
   userId: z.string(),
+  /** Primera ciudad de `preferredCities` (compatibilidad con home y APIs legacy). */
   preferredCity: z.string().nullable(),
+  preferredCities: preferredCitiesListSchema.default([]),
   favoriteCategories: z.array(contentMainCategorySchema).default([]),
   favoriteSubcategoryIds: subcategoryIdListSchema.default([]),
   webNotificationsEnabled: z.boolean(),
@@ -19,6 +23,17 @@ export const userPortalPreferencesSchema = z.object({
   ticketReminder24hEnabled: z.boolean(),
   favoriteEntityNotificationsEnabled: z.boolean(),
   expectedEventNotificationsEnabled: z.boolean(),
+  /** Master toggle for Web Push alertas (dispositivo registrado por separado). */
+  pushAlertsEnabled: z.boolean(),
+  notifyUpcomingEvents: z.boolean(),
+  notifyTransferOffers: z.boolean(),
+  notifyPendingReviews: z.boolean(),
+  notifyFollowedProducers: z.boolean(),
+  notifyFavoriteCategories: z.boolean(),
+  notifyFavoriteSubcategories: z.boolean(),
+  notifyRecommendations: z.boolean(),
+  /** Push al crear notificación interna importante. */
+  notifyUnreadNotifications: z.boolean(),
   /** Per-ticket opt-out when global reminder is on */
   ticketReminderOverrides: z.record(z.string(), z.boolean()).default({}),
 });
@@ -26,6 +41,7 @@ export type UserPortalPreferences = z.infer<typeof userPortalPreferencesSchema>;
 
 export const userPortalPreferencesPatchSchema = z.object({
   preferredCity: z.string().nullable().optional(),
+  preferredCities: preferredCitiesListSchema.optional(),
   favoriteCategories: z.array(contentMainCategorySchema).optional(),
   favoriteSubcategoryIds: subcategoryIdListSchema.optional(),
   webNotificationsEnabled: z.boolean().optional(),
@@ -33,6 +49,15 @@ export const userPortalPreferencesPatchSchema = z.object({
   ticketReminder24hEnabled: z.boolean().optional(),
   favoriteEntityNotificationsEnabled: z.boolean().optional(),
   expectedEventNotificationsEnabled: z.boolean().optional(),
+  pushAlertsEnabled: z.boolean().optional(),
+  notifyUpcomingEvents: z.boolean().optional(),
+  notifyTransferOffers: z.boolean().optional(),
+  notifyPendingReviews: z.boolean().optional(),
+  notifyFollowedProducers: z.boolean().optional(),
+  notifyFavoriteCategories: z.boolean().optional(),
+  notifyFavoriteSubcategories: z.boolean().optional(),
+  notifyRecommendations: z.boolean().optional(),
+  notifyUnreadNotifications: z.boolean().optional(),
   ticketReminderOverrides: z.record(z.string(), z.boolean()).optional(),
 });
 export type UserPortalPreferencesPatch = z.infer<typeof userPortalPreferencesPatchSchema>;
@@ -188,6 +213,55 @@ export const producerFollowStatusSchema = z.object({
 });
 export type ProducerFollowStatus = z.infer<typeof producerFollowStatusSchema>;
 
+// ─── Gastro follows ────────────────────────────────────────────────────────
+
+export const userGastroFollowSchema = z.object({
+  id: z.string(),
+  gastroProfileId: z.string(),
+  webNotificationsEnabled: z.boolean(),
+  emailNotificationsEnabled: z.boolean(),
+  createdAt: z.string().datetime(),
+  gastro: z
+    .object({
+      id: z.string(),
+      displayName: z.string(),
+      logoUrl: z.string().nullable().optional(),
+      bannerUrl: z.string().nullable().optional(),
+      city: z.string().nullable().optional(),
+      province: z.string().nullable().optional(),
+      publicEventId: z.string().nullable().optional(),
+    })
+    .optional(),
+});
+export type UserGastroFollow = z.infer<typeof userGastroFollowSchema>;
+
+export const createUserGastroFollowBodySchema = z.object({
+  gastroProfileId: z.string().min(1),
+  tenantId: z.string().min(1),
+  webNotificationsEnabled: z.boolean().optional(),
+  emailNotificationsEnabled: z.boolean().optional(),
+});
+export type CreateUserGastroFollowBody = z.infer<typeof createUserGastroFollowBodySchema>;
+
+export const patchUserGastroFollowNotificationsSchema = z.object({
+  webNotificationsEnabled: z.boolean().optional(),
+  emailNotificationsEnabled: z.boolean().optional(),
+});
+export type PatchUserGastroFollowNotifications = z.infer<
+  typeof patchUserGastroFollowNotificationsSchema
+>;
+
+export const meGastroFollowsResponseSchema = z.object({
+  follows: z.array(userGastroFollowSchema),
+});
+export type MeGastroFollowsResponse = z.infer<typeof meGastroFollowsResponseSchema>;
+
+export const gastroFollowStatusSchema = z.object({
+  following: z.boolean(),
+  followId: z.string().nullable(),
+});
+export type GastroFollowStatus = z.infer<typeof gastroFollowStatusSchema>;
+
 export const meRecommendationsQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(24).default(12),
 });
@@ -334,6 +408,11 @@ export const meTicketDetailSchema = meTicketItemSchema.extend({
   transferOffer: ticketTransferOfferSummarySchema.nullable().optional(),
   canTransfer: z.boolean(),
   category: z.string().optional(),
+  orderId: z.string().nullable().optional(),
+  holderName: z.string().nullable().optional(),
+  batchName: z.string().nullable().optional(),
+  /** Producer canvas template when linked to ticket type; null if none. */
+  ticketTemplate: ticketTemplateResponseSchema.nullable().optional(),
 });
 export type MeTicketDetail = z.infer<typeof meTicketDetailSchema>;
 

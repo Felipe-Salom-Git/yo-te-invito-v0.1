@@ -127,7 +127,10 @@ export function TicketTransferPanel({ ticket, offer, canTransfer }: Props) {
 
   return (
     <section className="mt-8 w-full max-w-sm rounded-lg border border-border p-4">
-      <h3 className="font-medium text-text">Transferir ticket</h3>
+      <h3 className="font-medium text-text">Transferencia personal</h3>
+      <p className="mt-1 text-xs text-text-muted">
+        Regalo o cesión a otra persona con cuenta — no es reventa ni marketplace.
+      </p>
       <p className="mt-2 text-sm text-text-muted">{TICKET_TRANSFER_CREATE_HINT}</p>
       <p className="mt-3 rounded border border-border/80 bg-bg-muted p-3 text-xs text-text-muted">
         {TICKET_TRANSFER_LEGAL_NOTICE}

@@ -272,6 +272,7 @@ export type RevokeTicketResponse = z.infer<typeof revokeTicketResponseSchema>;
 
 export const orderResponseSchema = z.object({
   id: z.string(),
+  eventId: z.string(),
   tenantId: z.string(),
   status: z.nativeEnum(OrderStatusApi),
   buyerEmail: z.string(),

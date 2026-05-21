@@ -6,11 +6,20 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useRepositories } from '@/repositories/context';
 import { ticketsKeys } from '@/lib/query/keys';
-import { PageContainer, SectionTitle, Button, useToast, PageLoader, TicketCardSkeleton, EmptyState } from '@/components';
+import {
+  PageContainer,
+  SectionTitle,
+  useToast,
+  PageLoader,
+  TicketCardSkeleton,
+  EmptyState,
+  QueryError,
+} from '@/components';
+import { MeTicketListCard } from '@/components/me/MeTicketListCard';
+import { PortalListSection } from '@/components/me/portal-ui';
+import { groupPortalTickets } from '@/lib/me/ticket-groups';
 import { getErrorMessage } from '@/lib/errors';
-import { StatusBadge } from '@/components/domain/StatusBadge';
 import type { Ticket } from '@/repositories/interfaces';
-
 
 function groupTicketsByEvent(tickets: Ticket[]) {
   const map = new Map<string, Ticket[]>();
@@ -22,41 +31,69 @@ function groupTicketsByEvent(tickets: Ticket[]) {
   return map;
 }
 
-function TicketCard({
-  ticket,
-  eventTitle,
+function EventTicketGroup({
+  eventId,
+  eventTickets,
+  scanningId,
   onSimulateScan,
-  isScanning,
 }: {
-  ticket: Ticket;
-  eventTitle: string;
-  onSimulateScan: () => void;
-  isScanning: boolean;
+  eventId: string;
+  eventTickets: Ticket[];
+  scanningId: string | null;
+  onSimulateScan: (t: Ticket) => void;
 }) {
+  const title = eventTickets[0]?.eventTitle ?? `Evento ${eventId}`;
   return (
-    <div className="flex items-center justify-between rounded-lg border border-border bg-bg-muted p-4">
-      <div>
-        <p className="font-medium text-text">{eventTitle}</p>
-        {ticket.ticketTypeName ? (
-          <p className="text-xs text-text-muted">{ticket.ticketTypeName}</p>
-        ) : null}
-        <p className="text-xs text-text-muted truncate max-w-[200px]">ID: {ticket.id}</p>
-      </div>
-      <StatusBadge status={ticket.status} kind="ticket" />
-      <div className="flex gap-2">
-        <Link
-          href={`/me/tickets/${ticket.id}`}
-          className="rounded border border-border px-2 py-1 text-sm hover:bg-border"
-        >
-          Ver detalle
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-baseline gap-2">
+        <h3 className="font-medium text-text">{title}</h3>
+        <Link href={`/events/${eventId}`} className="text-sm text-accent hover:underline">
+          Ver evento
         </Link>
-        {ticket.status === 'VALID' && (
-          <Button size="sm" onClick={onSimulateScan} disabled={isScanning}>
-            {isScanning ? '…' : 'Simular scan'}
-          </Button>
-        )}
       </div>
+      <ul className="space-y-3">
+        {eventTickets.map((t) => (
+          <li key={t.id}>
+            <MeTicketListCard
+              ticket={t}
+              eventTitle={title}
+              onSimulateScan={() => onSimulateScan(t)}
+              isScanning={scanningId === t.id}
+            />
+          </li>
+        ))}
+      </ul>
     </div>
+  );
+}
+
+function TicketBucket({
+  title,
+  description,
+  tickets,
+  scanningId,
+  onSimulateScan,
+}: {
+  title: string;
+  description?: string;
+  tickets: Ticket[];
+  scanningId: string | null;
+  onSimulateScan: (t: Ticket) => void;
+}) {
+  if (tickets.length === 0) return null;
+  const byEvent = groupTicketsByEvent(tickets);
+  return (
+    <PortalListSection title={title} description={description} className="space-y-6">
+      {Array.from(byEvent.entries()).map(([eventId, eventTickets]) => (
+        <EventTicketGroup
+          key={eventId}
+          eventId={eventId}
+          eventTickets={eventTickets}
+          scanningId={scanningId}
+          onSimulateScan={onSimulateScan}
+        />
+      ))}
+    </PortalListSection>
   );
 }
 
@@ -65,11 +102,14 @@ export default function MyTicketsPage() {
   const repos = useRepositories();
   const queryClient = useQueryClient();
   const { addToast } = useToast();
-  const userId = (session?.user as { userId?: string })?.userId ?? (session?.user as { id?: string })?.id ?? '';
+  const userId =
+    (session?.user as { userId?: string })?.userId ??
+    (session?.user as { id?: string })?.id ??
+    '';
 
   const [scanningId, setScanningId] = useState<string | null>(null);
 
-  const { data: tickets, isLoading } = useQuery({
+  const { data: tickets, isLoading, isError, error, refetch } = useQuery({
     queryKey: ticketsKeys.me(userId),
     queryFn: () => repos.tickets.listByOwner(userId),
     enabled: !!userId && status === 'authenticated',
@@ -81,6 +121,7 @@ export default function MyTicketsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ticketsKeys.me(userId) });
       setScanningId(null);
+      addToast('Escaneo simulado correctamente', 'success');
     },
     onError: (err) => {
       setScanningId(null);
@@ -93,9 +134,6 @@ export default function MyTicketsPage() {
     scanMutation.mutate({ qrPayload: ticket.qrPayload, eventId: ticket.eventId });
   };
 
-  const list = tickets ?? [];
-  const byEvent = groupTicketsByEvent(list);
-
   if (status === 'loading') {
     return (
       <PageContainer>
@@ -107,7 +145,7 @@ export default function MyTicketsPage() {
   if (!session?.user) {
     return (
       <PageContainer>
-        <p className="text-text-muted">Debes iniciar sesión para ver tus tickets.</p>
+        <p className="text-text-muted">Debés iniciar sesión para ver tus tickets.</p>
         <Link href="/login" className="mt-4 inline-block text-accent hover:underline">
           Iniciar sesión
         </Link>
@@ -115,51 +153,70 @@ export default function MyTicketsPage() {
     );
   }
 
+  const list = tickets ?? [];
+  const buckets = groupPortalTickets(list);
+
   return (
     <PageContainer>
-      <Link href="/home" className="mb-4 inline-block text-sm text-text-muted hover:text-text">
-        ← Volver
-      </Link>
       <SectionTitle>Mis tickets</SectionTitle>
+      <p className="mt-1 text-sm text-text-muted">
+        Entradas activas, usadas o transferidas. La transferencia es personal entre usuarios — no es
+        reventa.
+      </p>
+
       {isLoading && (
         <div className="mt-6 space-y-3">
-          {Array.from({ length: 3 }).map((_, i) => <TicketCardSkeleton key={i} />)}
+          {Array.from({ length: 3 }).map((_, i) => (
+            <TicketCardSkeleton key={i} />
+          ))}
         </div>
       )}
-      {!isLoading && list.length === 0 && (
+
+      {isError && (
+        <QueryError className="mt-6" message={getErrorMessage(error)} onRetry={() => void refetch()} />
+      )}
+
+      {!isLoading && !isError && list.length === 0 && (
         <div className="mt-6">
           <EmptyState
             title="No tenés tickets aún"
-            description="Comprá entradas en eventos y aparecerán aquí."
+            description="Comprá entradas en eventos y aparecerán acá con tu código QR."
             actionLabel="Explorar eventos"
             actionHref="/explore"
           />
         </div>
       )}
-      {!isLoading && list.length > 0 && (
-        <div className="mt-6 space-y-8">
-          {Array.from(byEvent.entries()).map(([eventId, eventTickets]) => (
-            <section key={eventId}>
-              <h2 className="text-lg font-semibold text-text mb-4">
-                {eventTickets[0]?.eventTitle ?? `Evento ${eventId}`}
-                <Link href={`/events/${eventId}`} className="ml-2 text-sm text-accent hover:underline">
-                  Ver evento
-                </Link>
-              </h2>
-              <ul className="space-y-3">
-                {eventTickets.map((t) => (
-                  <li key={t.id}>
-                    <TicketCard
-                      ticket={t}
-                      eventTitle={t.eventTitle ?? `Evento ${eventId}`}
-                      onSimulateScan={() => handleSimulateScan(t)}
-                      isScanning={scanningId === t.id}
-                    />
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ))}
+
+      {!isLoading && !isError && list.length > 0 && (
+        <div className="mt-6 space-y-10">
+          <TicketBucket
+            title="Próximos y activos"
+            description="Entradas válidas o con transferencia en curso."
+            tickets={[...buckets.upcoming]}
+            scanningId={scanningId}
+            onSimulateScan={handleSimulateScan}
+          />
+          <TicketBucket
+            title="Eventos pasados (entrada aún válida)"
+            description="El evento ya ocurrió; el estado del ticket puede seguir siendo válido hasta el cierre operativo."
+            tickets={buckets.pastActive}
+            scanningId={scanningId}
+            onSimulateScan={handleSimulateScan}
+          />
+          <TicketBucket
+            title="Usados"
+            description="Ya se registró el ingreso con este ticket."
+            tickets={buckets.used}
+            scanningId={scanningId}
+            onSimulateScan={handleSimulateScan}
+          />
+          <TicketBucket
+            title="Transferidos o revocados"
+            description="No podés ingresar con estos códigos. Si transferiste, el receptor tiene un ticket nuevo."
+            tickets={buckets.inactive}
+            scanningId={scanningId}
+            onSimulateScan={handleSimulateScan}
+          />
         </div>
       )}
     </PageContainer>

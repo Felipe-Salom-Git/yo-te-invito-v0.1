@@ -23,9 +23,9 @@ test.describe('User portal (/me)', () => {
       await loginAsPortalUser(page);
     });
 
-    test('dashboard shows Mi espacio', async ({ page }) => {
-      await expectSection(page, 'Mi espacio');
-      await expect(page.getByText(/Tickets, carrito, favoritos/i)).toBeVisible();
+    test('dashboard shows Inicio', async ({ page }) => {
+      await expectSection(page, 'Inicio');
+      await expect(page.getByText(/Alertas, recomendaciones/i)).toBeVisible();
     });
 
     test('legacy /cuenta redirects to /me', async ({ page }) => {
@@ -42,9 +42,9 @@ test.describe('User portal (/me)', () => {
     test('sidebar navigates portal sections', async ({ page }) => {
       const nav = page.getByRole('navigation', { name: 'Menú del portal' });
 
-      await nav.getByRole('link', { name: 'Carrito' }).click();
+      await nav.getByRole('link', { name: 'Mi Carro' }).click();
       await expect(page).toHaveURL(/\/me\/cart/);
-      await expectSection(page, 'Carrito');
+      await expectSection(page, 'Mi Carro');
 
       await nav.getByRole('link', { name: 'Preferencias' }).click();
       await expect(page).toHaveURL(/\/me\/preferences/);
@@ -67,7 +67,8 @@ test.describe('User portal (/me)', () => {
 
     test('preferences tabs render', async ({ page }) => {
       await page.goto('/me/preferences');
-      await expect(page.getByRole('link', { name: 'General' })).toBeVisible();
+      await expect(page.getByRole('link', { name: 'Intereses' })).toBeVisible();
+      await expect(page.getByRole('link', { name: 'Productoras' })).toBeVisible();
       await expect(page.getByRole('link', { name: 'Favoritos' })).toBeVisible();
       await expect(page.getByRole('link', { name: 'Eventos esperados' })).toBeVisible();
 
@@ -90,7 +91,7 @@ test.describe('User portal (/me)', () => {
     test('authenticated /checkout redirects to /me/cart', async ({ page }) => {
       await page.goto('/checkout');
       await expect(page).toHaveURL(/\/me\/cart/, { timeout: 15_000 });
-      await expectSection(page, 'Carrito');
+      await expectSection(page, 'Mi Carro');
     });
 
     test('favorite toggle on event page', async ({ page }) => {
@@ -113,9 +114,9 @@ test.describe('User portal (/me)', () => {
 
       await addFirstTicketToCart(page);
       await page.goto('/me/cart');
-      await expectSection(page, 'Carrito');
+      await expectSection(page, 'Mi Carro');
 
-      const empty = page.getByText('Tu carrito está vacío');
+      const empty = page.getByText(/carrito está vacío|Mi Carro está vacío/i);
       const hasItem = page.locator('ul').filter({ has: page.getByRole('button', { name: 'Quitar' }) });
       await expect(empty.or(hasItem.first())).toBeVisible({ timeout: 12_000 });
       test.skip(await empty.isVisible(), 'Carrito vacío tras agregar (revisar API / tenant)');

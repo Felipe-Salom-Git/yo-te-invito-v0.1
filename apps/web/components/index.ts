@@ -21,6 +21,7 @@ export {
   TicketCardSkeleton,
   OrderCardSkeleton,
   EmptyState,
+  QueryError,
   Breadcrumbs,
   SideSheet,
 } from './ui';
