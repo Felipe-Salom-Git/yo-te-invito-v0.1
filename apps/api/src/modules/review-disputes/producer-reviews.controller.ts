@@ -19,13 +19,21 @@ import {
   type CreateReviewDisputeInput,
   type ProducerManagedReviewListQuery,
 } from '@yo-te-invito/shared';
+import {
+  reviewReplyBodySchema,
+  type ReviewReplyBody,
+} from '@yo-te-invito/shared';
 import { ReviewDisputesService } from './review-disputes.service';
+import { PublicReviewsService } from '../reviews/public-reviews.service';
 
 @Controller('producer')
 @UseGuards(JwtOrDevAuthGuard, ProducerRolesGuard)
 @RequireRole(Role.ADMIN, Role.PRODUCER_OWNER, Role.PRODUCER_STAFF)
 export class ProducerReviewsController {
-  constructor(private readonly reviewDisputes: ReviewDisputesService) {}
+  constructor(
+    private readonly reviewDisputes: ReviewDisputesService,
+    private readonly publicReviews: PublicReviewsService,
+  ) {}
 
   @Get('reviews/summary')
   getSummary(@CurrentUser() user: { id: string; tenantId: string }) {
@@ -38,6 +46,22 @@ export class ProducerReviewsController {
     @Query(new ZodValidationPipe(producerManagedReviewListQuerySchema)) query: ProducerManagedReviewListQuery,
   ) {
     return this.reviewDisputes.listProducerReviews(user.tenantId, user.id, query);
+  }
+
+  @Post('reviews/:reviewId/reply')
+  reply(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param('reviewId') reviewId: string,
+    @Body(new ZodValidationPipe(reviewReplyBodySchema)) body: ReviewReplyBody,
+  ) {
+    return this.publicReviews.replyAsManager(
+      user.tenantId,
+      user.id,
+      user.role,
+      reviewId,
+      body,
+      'PRODUCER',
+    );
   }
 
   @Post('reviews/:reviewId/dispute')

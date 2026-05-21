@@ -29,8 +29,18 @@ export const eventsListQuerySchema = z
     dateTo: z.string().datetime().optional(),
     /** Public list ordering — category landing carousels */
     sort: z
-      .enum(['recent', 'featured_rating', 'featured_event', 'upcoming', 'dateAsc'])
+      .enum([
+        'recent',
+        'featured_rating',
+        'featured_event',
+        'recommended',
+        'top_rated',
+        'upcoming',
+        'dateAsc',
+      ])
       .optional(),
+    /** Used with sort=recommended|top_rated — minimum visible reviews (default 10) */
+    minValidReviews: z.coerce.number().int().min(0).max(100).optional(),
     hasTicketing: z.coerce.boolean().optional(),
     excludeGeneralPublications: z.coerce.boolean().optional(),
   })
@@ -345,6 +355,18 @@ export const eventsTrendingQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(50).default(10),
 });
 export type EventsTrendingQuery = z.infer<typeof eventsTrendingQuerySchema>;
+
+/** Query for GET /public/events/recommended */
+export const eventsRecommendedQuerySchema = z.object({
+  tenantId: z.string().min(1, 'tenantId is required'),
+  category: z.string().optional(),
+  subcategorySlug: z.string().optional(),
+  limit: z.coerce.number().int().min(1).max(50).default(12),
+  minValidReviews: z.coerce.number().int().min(0).max(100).default(10),
+  /** recommended = rankingScore; top_rated = averageRating */
+  mode: z.enum(['recommended', 'top_rated']).default('recommended'),
+});
+export type EventsRecommendedQuery = z.infer<typeof eventsRecommendedQuerySchema>;
 
 /** Params for POST /events/:eventId/courtesies */
 export const createCourtesyParamsSchema = z.object({

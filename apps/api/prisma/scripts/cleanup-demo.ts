@@ -6,9 +6,11 @@
  *   pnpm db:cleanup-demo -- --confirm
  *   pnpm db:cleanup-demo -- --confirm --include-subcategories
  *   pnpm db:cleanup-demo -- --confirm --make-preserved-user-admin
+ *     (also restores ADMIN + all portal profiles for preserved user)
  */
 
 import { PrismaClient, Role } from '@prisma/client';
+import { enableMasterUserProfiles } from '../../scripts/lib/enable-master-user-profiles';
 
 const PRESERVED_EMAIL = 'felipe.e.salom@gmail.com';
 
@@ -430,6 +432,15 @@ async function main() {
       data: { role: Role.ADMIN },
     });
     console.log(`\nUpdated ${PRESERVED_EMAIL} role to ADMIN.`);
+  }
+
+  if (makePreservedUserAdmin) {
+    console.log('\nRestoring master account profiles (ADMIN + all portals)…');
+    await enableMasterUserProfiles(prisma, {
+      tenantId: tenant.id,
+      userId: preservedUser.id,
+      email: preservedUser.email,
+    });
   }
 
   const afterCounts = await collectCounts(tenant.id, preservedUser.id);

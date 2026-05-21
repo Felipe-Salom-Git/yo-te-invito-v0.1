@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRepositories } from '@/repositories/context';
 import { publicGastroKeys, reviewsKeys } from '@/lib/query/keys';
+import { usePublicEntityReviews } from '@/lib/query/reviews';
 import { eventsKeys } from '@/lib/query/events';
 import { getCategoryLabel, getRelatedSectionTitle } from '@/lib/home/contentRoutes';
 import { buildGastroGalleryImages, buildGastroWhatsAppHref } from '@/lib/gastro/gallery';
@@ -18,7 +19,9 @@ import { RentalDescriptionBlock } from '@/components/rentals/RentalDescriptionBl
 import { EventLocationModal } from '@/components/events/EventLocationModal';
 import { EventReviewsSection } from '@/components/events/EventReviewsSection';
 import { RelatedEventsSection } from '@/components/events/RelatedEventsSection';
-import { ReviewForm } from '@/components/reviews/ReviewForm';
+import { ReviewForm, type ReviewFormSubmitPayload } from '@/components/reviews/ReviewForm';
+import { useSession } from 'next-auth/react';
+import type { PublicReviewItemV2 } from '@yo-te-invito/shared';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { EventEngagementRow } from '@/components/events/EventEngagementRow';
 import { useToast } from '@/components';
@@ -63,11 +66,12 @@ export function GastroLocationDetailView({
     enabled: !!resolvedLocationId,
   });
 
-  const { data: reviewsData } = useQuery({
-    queryKey: reviewsKeys.byEvent(reviewEventId ?? '', tenantId, reviewPage),
-    queryFn: () => repos.reviews.list(reviewEventId!, tenantId, reviewPage, 10),
-    enabled: !!reviewEventId,
-  });
+  const { data: reviewsData, isLoading: reviewsLoading } = usePublicEntityReviews(
+    'gastro',
+    reviewEventId ?? '',
+    tenantId,
+    reviewPage,
+  );
 
   const { data: relatedData } = useQuery({
     queryKey: ['events', 'related', tenantId, 'gastro'],
@@ -80,12 +84,15 @@ export function GastroLocationDetailView({
     enabled: !!location,
   });
 
+  const { data: session } = useSession();
+
   const createMutation = useMutation({
-    mutationFn: (payload: { score: number; comment?: string; guestName?: string }) =>
-      repos.reviews.create(reviewEventId!, {
-        score: payload.score,
+    mutationFn: (payload: ReviewFormSubmitPayload) =>
+      repos.reviews.createPublic({
+        eventId: reviewEventId!,
+        overallRating: payload.overallRating,
+        aspectRatings: payload.aspectRatings,
         comment: payload.comment,
-        guestName: payload.guestName,
       }),
     onError: (err) => addToast(getErrorMessage(err), 'error'),
     onSuccess: () => {
@@ -93,7 +100,9 @@ export function GastroLocationDetailView({
       setReviewFormKey((k) => k + 1);
       if (reviewEventId) {
         queryClient.invalidateQueries({ queryKey: eventsKeys.detail(reviewEventId, tenantId) });
-        queryClient.invalidateQueries({ queryKey: reviewsKeys.byEvent(reviewEventId, tenantId) });
+        queryClient.invalidateQueries({
+          queryKey: reviewsKeys.publicV2Entity('gastro', reviewEventId, tenantId),
+        });
       }
     },
   });
@@ -128,12 +137,21 @@ export function GastroLocationDetailView({
       discounts={discountsData?.discounts ?? []}
       reviews={reviewsData?.reviews ?? []}
       reviewsTotal={reviewsData?.total ?? 0}
+      reviewsSummary={
+        reviewsData?.summary ?? {
+          averageRating: null,
+          validReviewCount: 0,
+          aspectAverages: null,
+        }
+      }
+      reviewsLoading={reviewsLoading}
       reviewPage={reviewPage}
       onReviewPageChange={setReviewPage}
       relatedEvents={relatedData?.data ?? []}
       reviewFormKey={reviewFormKey}
       isSubmittingReview={createMutation.isPending}
       onSubmitReview={(values) => createMutation.mutate(values)}
+      canSubmitReview={!!session?.user}
       isLocationModalOpen={isLocationModalOpen}
       onLocationModalOpen={() => setIsLocationModalOpen(true)}
       onLocationModalClose={() => setIsLocationModalOpen(false)}
@@ -145,14 +163,21 @@ type GastroLocationDetailContentProps = {
   location: PublicGastroLocation;
   tenantId: string;
   discounts: import('@/repositories/interfaces').PublicGastroLocationDiscount[];
-  reviews: import('@/repositories/interfaces').ReviewItem[];
+  reviews: PublicReviewItemV2[];
   reviewsTotal: number;
+  reviewsSummary: {
+    averageRating: number | null;
+    validReviewCount: number;
+    aspectAverages: Record<string, number> | null;
+  };
+  reviewsLoading?: boolean;
   reviewPage: number;
   onReviewPageChange: (page: number) => void;
   relatedEvents: EventSummary[];
   reviewFormKey: number;
   isSubmittingReview: boolean;
-  onSubmitReview: (values: { score: number; comment?: string; guestName?: string }) => void;
+  onSubmitReview: (values: ReviewFormSubmitPayload) => void;
+  canSubmitReview?: boolean;
   isLocationModalOpen: boolean;
   onLocationModalOpen: () => void;
   onLocationModalClose: () => void;
@@ -164,12 +189,15 @@ function GastroLocationDetailContent({
   discounts,
   reviews,
   reviewsTotal,
+  reviewsSummary,
+  reviewsLoading = false,
   reviewPage,
   onReviewPageChange,
   relatedEvents,
   reviewFormKey,
   isSubmittingReview,
   onSubmitReview,
+  canSubmitReview = true,
   isLocationModalOpen,
   onLocationModalOpen,
   onLocationModalClose,
@@ -251,6 +279,7 @@ function GastroLocationDetailContent({
               <EventReviewsSection
                 eventId={reviewEventId}
                 tenantId={tenantId}
+                category="gastro"
                 entityType="restaurant"
                 reviews={reviews}
                 total={reviewsTotal}
@@ -258,7 +287,17 @@ function GastroLocationDetailContent({
                 onPageChange={onReviewPageChange}
                 onSubmitReview={onSubmitReview}
                 isSubmittingReview={isSubmittingReview}
-                ratingAvg={location.ratingAvg ?? null}
+                canSubmitReview={canSubmitReview}
+                isLoading={reviewsLoading}
+                summary={{
+                  ...reviewsSummary,
+                  averageRating:
+                    reviewsSummary.averageRating ?? location.ratingAvg ?? null,
+                  validReviewCount:
+                    reviewsSummary.validReviewCount > 0
+                      ? reviewsSummary.validReviewCount
+                      : (location.ratingCount ?? 0),
+                }}
                 hideForm
               />
             </div>
@@ -269,6 +308,7 @@ function GastroLocationDetailContent({
                 entityId={reviewEventId}
                 onSubmit={onSubmitReview}
                 isSubmitting={isSubmittingReview}
+                canSubmit={canSubmitReview}
               />
             </div>
           </>

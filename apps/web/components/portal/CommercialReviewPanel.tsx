@@ -1,10 +1,22 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  COMMERCIAL_PRODUCER_ASPECT_LABELS_ES,
+  COMMERCIAL_REFERRER_ASPECT_LABELS_ES,
+  averageCommercialAspectScores,
+  commercialProducerAspectKeys,
+  commercialReferrerAspectKeys,
+  legacyCommercialRatingFromOverall,
+  type CommercialReviewTarget,
+} from '@yo-te-invito/shared';
 import { useRepositories } from '@/repositories/context';
+import { useMe } from '@/hooks/useMe';
 import { Button, Input, useToast } from '@/components';
+import { RatingInput } from '@/components/reviews/RatingInput';
 import { getErrorMessage } from '@/lib/errors';
+import { CommercialAspectBreakdown } from './CommercialAspectBreakdown';
 
 type Props = {
   mode: 'producer' | 'referrer';
@@ -12,35 +24,38 @@ type Props = {
   counterpartyLabel: string;
 };
 
-function StarPicker({
-  value,
-  onChange,
-}: {
-  value: number;
-  onChange: (n: number) => void;
-}) {
-  return (
-    <div className="flex gap-1" role="group" aria-label="Puntuación">
-      {[1, 2, 3, 4, 5].map((n) => (
-        <button
-          key={n}
-          type="button"
-          onClick={() => onChange(n)}
-          className={`text-lg ${n <= value ? 'text-amber-400' : 'text-text-muted'}`}
-          aria-label={`${n} estrellas`}
-        >
-          {n <= value ? '★' : '☆'}
-        </button>
-      ))}
-    </div>
-  );
+const DEFAULT_SCORE = 8;
+
+function buildInitialScores(
+  targetType: CommercialReviewTarget,
+  existing?: Record<string, number> | null,
+): Record<string, number> {
+  const keys =
+    targetType === 'REFERRER'
+      ? [...commercialReferrerAspectKeys]
+      : [...commercialProducerAspectKeys];
+  const out: Record<string, number> = {};
+  for (const key of keys) {
+    out[key] = existing?.[key] ?? DEFAULT_SCORE;
+  }
+  return out;
 }
 
 export function CommercialReviewPanel({ mode, counterpartyId, counterpartyLabel }: Props) {
   const repos = useRepositories();
   const queryClient = useQueryClient();
   const { addToast } = useToast();
-  const [rating, setRating] = useState(5);
+  const { userId } = useMe();
+
+  const targetType: CommercialReviewTarget = mode === 'producer' ? 'REFERRER' : 'PRODUCER';
+  const aspectLabels =
+    targetType === 'REFERRER'
+      ? COMMERCIAL_REFERRER_ASPECT_LABELS_ES
+      : COMMERCIAL_PRODUCER_ASPECT_LABELS_ES;
+
+  const [scores, setScores] = useState<Record<string, number>>(() =>
+    buildInitialScores(targetType),
+  );
   const [comment, setComment] = useState('');
 
   const queryKey =
@@ -56,17 +71,43 @@ export function CommercialReviewPanel({ mode, counterpartyId, counterpartyLabel 
         : repos.commercialReviews.listForReferrerProducer(counterpartyId),
   });
 
+  const aboutCounterparty = mode === 'producer' ? data?.aboutReferrer : data?.aboutProducer;
+  const summaryCounterparty =
+    mode === 'producer' ? data?.summaryAboutReferrer : data?.summaryAboutProducer;
+
+  const myReview = useMemo(
+    () => aboutCounterparty?.find((r) => r.reviewerUserId === userId),
+    [aboutCounterparty, userId],
+  );
+
+  useEffect(() => {
+    if (!myReview) return;
+    if (myReview.aspectRatings && Object.keys(myReview.aspectRatings).length > 0) {
+      setScores(buildInitialScores(targetType, myReview.aspectRatings));
+    }
+    setComment(myReview.comment ?? '');
+  }, [myReview, targetType]);
+
+  const overallPreview = useMemo(
+    () => averageCommercialAspectScores(scores),
+    [scores],
+  );
+
   const saveMutation = useMutation({
-    mutationFn: () =>
-      mode === 'producer'
-        ? repos.commercialReviews.createAsProducer(counterpartyId, {
-            rating,
-            comment: comment.trim() || undefined,
-          })
-        : repos.commercialReviews.createAsReferrer(counterpartyId, {
-            rating,
-            comment: comment.trim() || undefined,
-          }),
+    mutationFn: () => {
+      const overallRating = overallPreview;
+      const aspectRatings = { ...scores };
+      const rating = legacyCommercialRatingFromOverall(overallRating);
+      const payload = {
+        overallRating,
+        aspectRatings,
+        rating,
+        comment: comment.trim() || undefined,
+      };
+      return mode === 'producer'
+        ? repos.commercialReviews.createAsProducer(counterpartyId, payload)
+        : repos.commercialReviews.createAsReferrer(counterpartyId, payload);
+    },
     onSuccess: () => {
       addToast('Valoración guardada', 'success');
       queryClient.invalidateQueries({ queryKey });
@@ -74,18 +115,14 @@ export function CommercialReviewPanel({ mode, counterpartyId, counterpartyLabel 
     onError: (e) => addToast(getErrorMessage(e), 'error'),
   });
 
-  const aboutCounterparty = mode === 'producer' ? data?.aboutReferrer : data?.aboutProducer;
-  const summaryCounterparty =
-    mode === 'producer' ? data?.summaryAboutReferrer : data?.summaryAboutProducer;
-
   return (
     <div className="mt-4 border-t border-border pt-4">
       <p className="text-xs font-medium uppercase tracking-wide text-text-muted">
         Valoración comercial (privada)
       </p>
       <p className="mt-1 text-xs text-text-muted leading-relaxed">
-        Solo visible para tu productora y {counterpartyLabel}. No aparece en perfiles públicos ni
-        en reseñas de eventos.
+        Solo visible para tu {mode === 'producer' ? 'productora' : 'perfil'} y {counterpartyLabel}.
+        No aparece en perfiles públicos ni en reseñas de eventos.
       </p>
 
       {isLoading ? (
@@ -95,8 +132,9 @@ export function CommercialReviewPanel({ mode, counterpartyId, counterpartyLabel 
           {summaryCounterparty && summaryCounterparty.totalReviews > 0 ? (
             <p className="mt-3 text-sm text-text">
               Promedio sobre {counterpartyLabel}:{' '}
-              <span className="font-semibold text-amber-400">
-                {summaryCounterparty.averageRating?.toFixed(1)} ★
+              <span className="font-semibold text-accent">
+                {summaryCounterparty.averageRating?.toFixed(1)}
+                <span className="font-normal text-text-muted"> /10</span>
               </span>{' '}
               ({summaryCounterparty.totalReviews} valoración
               {summaryCounterparty.totalReviews === 1 ? '' : 'es'})
@@ -104,12 +142,24 @@ export function CommercialReviewPanel({ mode, counterpartyId, counterpartyLabel 
           ) : null}
 
           {aboutCounterparty && aboutCounterparty.length > 0 ? (
-            <ul className="mt-2 space-y-2">
+            <ul className="mt-2 space-y-3">
               {aboutCounterparty.slice(0, 3).map((r) => (
-                <li key={r.id} className="rounded-lg border border-border/60 bg-bg px-3 py-2 text-xs">
-                  <span className="text-amber-400">★ {r.rating}</span>
+                <li
+                  key={r.id}
+                  className="rounded-lg border border-border/60 bg-bg px-3 py-2 text-xs"
+                >
+                  <span className="font-medium text-accent">
+                    {r.overallRating ?? r.rating * 2}
+                    <span className="font-normal text-text-muted"> /10</span>
+                  </span>
+                  {r.aspectRatings ? (
+                    <CommercialAspectBreakdown
+                      targetType={r.targetType}
+                      aspectRatings={r.aspectRatings}
+                    />
+                  ) : null}
                   {r.comment ? (
-                    <p className="mt-1 text-text-muted">{r.comment}</p>
+                    <p className="mt-2 text-text-muted">{r.comment}</p>
                   ) : null}
                 </li>
               ))}
@@ -118,8 +168,29 @@ export function CommercialReviewPanel({ mode, counterpartyId, counterpartyLabel 
         </>
       )}
 
-      <div className="mt-4 space-y-3">
-        <StarPicker value={rating} onChange={setRating} />
+      <div className="mt-4 space-y-4">
+        <p className="text-sm font-medium text-text">
+          Valorá cuatro aspectos (1–10)
+          {myReview ? (
+            <span className="ml-2 font-normal text-text-muted">· editando tu valoración</span>
+          ) : null}
+        </p>
+        <p className="text-xs text-text-muted">
+          Puntaje general estimado:{' '}
+          <span className="font-semibold text-accent">{overallPreview}/10</span>
+        </p>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          {Object.entries(aspectLabels).map(([key, label]) => (
+            <RatingInput
+              key={key}
+              label={label}
+              value={scores[key] ?? DEFAULT_SCORE}
+              onChange={(v) => setScores((p) => ({ ...p, [key]: v }))}
+            />
+          ))}
+        </div>
+
         <Input
           label="Comentario (opcional)"
           value={comment}
@@ -131,7 +202,7 @@ export function CommercialReviewPanel({ mode, counterpartyId, counterpartyLabel 
           disabled={saveMutation.isPending}
           onClick={() => saveMutation.mutate()}
         >
-          {saveMutation.isPending ? 'Guardando…' : 'Guardar valoración'}
+          {saveMutation.isPending ? 'Guardando…' : myReview ? 'Actualizar valoración' : 'Guardar valoración'}
         </Button>
       </div>
     </div>

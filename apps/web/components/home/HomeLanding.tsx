@@ -40,6 +40,7 @@ export function HomeLanding({ initialCategory = null }: HomeLandingProps) {
 
   const {
     trending,
+    recommendedGlobal,
     nearYou,
     newEvents,
     gastro,
@@ -80,6 +81,7 @@ export function HomeLanding({ initialCategory = null }: HomeLandingProps) {
         preferences,
         highlights,
         trending,
+        recommendedGlobal,
         nearYou,
         newEvents,
         gastro,
@@ -96,6 +98,7 @@ export function HomeLanding({ initialCategory = null }: HomeLandingProps) {
       preferences,
       highlights,
       trending,
+      recommendedGlobal,
       nearYou,
       newEvents,
       gastro,

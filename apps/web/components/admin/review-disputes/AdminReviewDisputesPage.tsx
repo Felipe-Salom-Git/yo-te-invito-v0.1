@@ -33,6 +33,7 @@ function DisputeDetailPanel({
   const queryClient = useQueryClient();
   const { addToast } = useToast();
   const [adminNote, setAdminNote] = useState(dispute.adminNote ?? '');
+  const [platformReply, setPlatformReply] = useState('');
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: adminReviewDisputesKeys.list(filtersKey) });
@@ -75,8 +76,23 @@ function DisputeDetailPanel({
     onError,
   });
 
+  const replyMut = useMutation({
+    mutationFn: () =>
+      repos.adminReviews.reply(dispute.reviewId, { body: platformReply.trim() }),
+    onSuccess: () => {
+      addToast('Respuesta de plataforma publicada', 'success');
+      setPlatformReply('');
+      invalidate();
+    },
+    onError,
+  });
+
   const busy =
-    inReviewMut.isPending || acceptMut.isPending || rejectMut.isPending || resolveMut.isPending;
+    inReviewMut.isPending ||
+    acceptMut.isPending ||
+    rejectMut.isPending ||
+    resolveMut.isPending ||
+    replyMut.isPending;
   const terminal = ['ACCEPTED', 'REJECTED', 'RESOLVED', 'CANCELLED'].includes(dispute.status);
 
   return (
@@ -133,6 +149,30 @@ function DisputeDetailPanel({
         disabled={terminal}
         maxLength={1000}
       />
+
+      <label className="mt-6 block text-sm font-medium text-text">
+        Respuesta pública de plataforma
+      </label>
+      <p className="mt-1 text-xs text-text-muted">
+        Visible bajo la reseña (no reemplaza la nota interna de resolución).
+      </p>
+      <textarea
+        className="mt-2 w-full min-h-[80px] rounded-lg border border-border bg-bg px-3 py-2 text-sm"
+        value={platformReply}
+        onChange={(e) => setPlatformReply(e.target.value)}
+        placeholder="Mensaje oficial de Yo Te Invito…"
+        maxLength={2000}
+      />
+      <div className="mt-2">
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={busy || platformReply.trim().length < 1}
+          onClick={() => replyMut.mutate()}
+        >
+          Publicar respuesta de plataforma
+        </Button>
+      </div>
 
       {!terminal ? (
         <footer className="mt-4 flex flex-wrap gap-2">

@@ -1,9 +1,12 @@
 'use client';
 
-import type { ReviewItem } from '@/repositories/interfaces';
+import Link from 'next/link';
+import type { PublicReviewItemV2 } from '@yo-te-invito/shared';
+import { UserReviewBadge } from './UserReviewBadge';
+import { ReviewReply } from './ReviewReply';
 
 export interface ReviewCardProps {
-  review: ReviewItem;
+  review: PublicReviewItemV2;
 }
 
 export function ReviewCard({ review }: ReviewCardProps) {
@@ -16,10 +19,25 @@ export function ReviewCard({ review }: ReviewCardProps) {
   return (
     <article className="rounded-xl border border-border/80 bg-bg-muted/50 p-5">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="font-medium text-accent">★ {review.score}</span>
-        <span className="text-sm text-text-muted">{review.userName}</span>
+        <span className="font-semibold text-accent">
+          {review.overallRating}
+          <span className="text-sm font-normal text-text-muted"> /10</span>
+        </span>
+        {review.isVerified && (
+          <span className="rounded-full bg-accent/15 px-2 py-0.5 text-xs text-accent">
+            Verificada
+          </span>
+        )}
+        <Link
+          href={`/users/${review.author.userId}`}
+          className="text-sm text-white hover:text-accent transition-colors"
+        >
+          {review.author.displayName}
+        </Link>
+        <UserReviewBadge tier={review.author.reviewerTier} />
         <span className="text-xs text-text-muted/70">{dateLabel}</span>
       </div>
+
       {review.title && (
         <p className="mt-2 font-medium text-white">{review.title}</p>
       )}
@@ -28,12 +46,8 @@ export function ReviewCard({ review }: ReviewCardProps) {
           {review.comment}
         </p>
       )}
-      {review.officialReply && (
-        <p className="mt-3 border-l-2 border-accent pl-3 text-sm text-text">
-          <span className="font-medium text-accent">Organizador</span>
-          <span className="mt-1 block text-text-muted">{review.officialReply}</span>
-        </p>
-      )}
+
+      {review.reply && <ReviewReply reply={review.reply} />}
     </article>
   );
 }

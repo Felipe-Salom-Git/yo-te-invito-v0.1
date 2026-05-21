@@ -9,6 +9,7 @@ import { PublicProducersController } from './public-producers.controller';
 import { PublicProducersService } from './public-producers.service';
 import { PublicReferralController } from './public-referral.controller';
 import { PublicReviewsController } from './public-reviews.controller';
+import { PublicReviewsV2Controller } from './public-reviews-v2.controller';
 import { PublicGastroLocationsController } from './public-gastro-locations.controller';
 import { PublicGastroLocationsService } from './public-gastro-locations.service';
 import { PublicGastroDiscountsController } from './public-gastro-discounts.controller';
@@ -42,6 +43,7 @@ import { CategoryBannersModule } from '../modules/category-banners/category-bann
     PublicReferralController,
     PublicReferrersController,
     PublicReviewsController,
+    PublicReviewsV2Controller,
     PublicGastroLocationsController,
     PublicGastroDiscountsController,
   ],

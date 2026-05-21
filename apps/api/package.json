@@ -19,6 +19,7 @@
     "demo:seed-subcategories": "tsx scripts/demo-seed-subcategories.ts",
     "demo:load": "tsx scripts/demo-load.ts",
     "smoke": "tsx scripts/smoke-api.ts",
+    "smoke:reviews-v2": "tsx scripts/smoke-reviews-v2.ts",
     "db:cleanup-demo": "tsx prisma/scripts/cleanup-demo.ts",
     "demo:enable-test-user-profiles": "tsx scripts/enable-test-user-profiles.ts"
   },

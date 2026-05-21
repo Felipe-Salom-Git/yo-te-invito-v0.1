@@ -8,6 +8,9 @@ import { useRepositories } from '@/repositories/context';
 import { useCart } from '@/context/CartContext';
 import { useEventDetail, eventsKeys } from '@/lib/query/events';
 import { reviewsKeys } from '@/lib/query/keys';
+import { usePublicEntityReviews } from '@/lib/query/reviews';
+import type { PublicReviewCategory } from '@yo-te-invito/shared';
+import { entityTypeToReviewCategory } from '@/lib/schemas/review';
 import { getPlaceHeroCtaLabel, getRelatedSectionTitle } from '@/lib/home/contentRoutes';
 import { EventHeroPremium } from '@/components/events/EventHeroPremium';
 import { EventGallerySection } from '@/components/events/EventGallerySection';
@@ -17,7 +20,8 @@ import { EventLocationSection } from '@/components/events/EventLocationSection';
 import { EventLocationModal } from '@/components/events/EventLocationModal';
 import { EventPurchaseCard } from '@/components/events/EventPurchaseCard';
 import { EventReviewsSection } from '@/components/events/EventReviewsSection';
-import { ReviewForm } from '@/components/reviews/ReviewForm';
+import { ReviewForm, type ReviewFormSubmitPayload } from '@/components/reviews/ReviewForm';
+import { useSession } from 'next-auth/react';
 import { RelatedEventsSection } from '@/components/events/RelatedEventsSection';
 import { GastroPromosSection } from '@/components/events/GastroPromosSection';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
@@ -29,7 +33,7 @@ import type { EntityType } from '@/lib/schemas/review';
 
 export type PlaceVariant = 'restaurant' | 'excursion' | 'rental' | 'hotel';
 
-const VARIANT_TO_CATEGORY: Record<PlaceVariant, string> = {
+const VARIANT_TO_CATEGORY: Record<PlaceVariant, PublicReviewCategory> = {
   restaurant: 'gastro',
   excursion: 'excursion',
   rental: 'rental',
@@ -68,11 +72,11 @@ export function PlaceDetailView({ id, variant, tenantId = 'tenant-demo' }: Place
     enabled: !!id && !!event?.isTicketingEnabled,
   });
 
-  const { data: reviewsData } = useQuery({
-    queryKey: reviewsKeys.byEvent(id, tenantId, reviewPage),
-    queryFn: () => repos.reviews.list(id, tenantId, reviewPage, 10),
-    enabled: !!id && !!tenantId,
-  });
+  const reviewCategory = entityTypeToReviewCategory(CATEGORY_TO_ENTITY[variant]);
+  const {
+    data: reviewsData,
+    isLoading: reviewsLoading,
+  } = usePublicEntityReviews(reviewCategory, id, tenantId, reviewPage);
 
   const { data: relatedData } = useQuery({
     queryKey: ['events', 'related', tenantId, category],
@@ -91,19 +95,24 @@ export function PlaceDetailView({ id, variant, tenantId = 'tenant-demo' }: Place
     enabled: !!id && !!tenantId && !!event && variant === 'restaurant',
   });
 
+  const { data: session } = useSession();
+
   const createMutation = useMutation({
-    mutationFn: (payload: { score: number; comment?: string; guestName?: string }) =>
-      repos.reviews.create(id, {
-        score: payload.score,
+    mutationFn: (payload: ReviewFormSubmitPayload) =>
+      repos.reviews.createPublic({
+        eventId: id,
+        overallRating: payload.overallRating,
+        aspectRatings: payload.aspectRatings,
         comment: payload.comment,
-        guestName: payload.guestName,
       }),
     onError: (err) => addToast(getErrorMessage(err), 'error'),
     onSuccess: () => {
       addToast('Valoración publicada', 'success');
       setReviewFormKey((k) => k + 1);
       queryClient.invalidateQueries({ queryKey: eventsKeys.detail(id, tenantId) });
-      queryClient.invalidateQueries({ queryKey: reviewsKeys.byEvent(id, tenantId) });
+      queryClient.invalidateQueries({
+        queryKey: reviewsKeys.publicV2Entity(reviewCategory, id, tenantId),
+      });
     },
   });
 
@@ -136,11 +145,7 @@ export function PlaceDetailView({ id, variant, tenantId = 'tenant-demo' }: Place
     setQtyByType((p) => ({ ...p, [tt.id]: 0 }));
   };
 
-  const handleSubmitReview = (values: {
-    score: number;
-    comment?: string;
-    guestName?: string;
-  }) => {
+  const handleSubmitReview = (values: ReviewFormSubmitPayload) => {
     createMutation.mutate(values);
   };
 
@@ -274,6 +279,7 @@ export function PlaceDetailView({ id, variant, tenantId = 'tenant-demo' }: Place
             <EventReviewsSection
               eventId={id}
               tenantId={tenantId}
+              category={reviewCategory}
               entityType={entityType}
               reviews={reviewsData?.reviews ?? []}
               total={reviewsData?.total ?? 0}
@@ -281,7 +287,15 @@ export function PlaceDetailView({ id, variant, tenantId = 'tenant-demo' }: Place
               onPageChange={setReviewPage}
               onSubmitReview={handleSubmitReview}
               isSubmittingReview={createMutation.isPending}
-              ratingAvg={event.ratingAvg}
+              canSubmitReview={!!session?.user}
+              isLoading={reviewsLoading}
+              summary={
+                reviewsData?.summary ?? {
+                  averageRating: event.ratingAvg ?? null,
+                  validReviewCount: event.ratingCount ?? 0,
+                  aspectAverages: null,
+                }
+              }
               hideForm
             />
           </div>
@@ -305,6 +319,7 @@ export function PlaceDetailView({ id, variant, tenantId = 'tenant-demo' }: Place
             entityId={id}
             onSubmit={handleSubmitReview}
             isSubmitting={createMutation.isPending}
+            canSubmit={!!session?.user}
           />
         </div>
 

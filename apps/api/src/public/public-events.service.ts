@@ -11,7 +11,12 @@ import type {
   EventsCalendarMonthQuery,
   PublicGastroDiscountsResponse,
 } from '@yo-te-invito/shared';
-import { ErrorCode, parseRentalOpeningHours } from '@yo-te-invito/shared';
+import {
+  ErrorCode,
+  RECOMMENDED_LIST_MIN_VALID_REVIEWS,
+  parseRentalOpeningHours,
+  type EventsRecommendedQuery,
+} from '@yo-te-invito/shared';
 import { mergePublicEventVisibility } from '../common/utils/event-public-visibility.util';
 
 @Injectable()
@@ -29,6 +34,15 @@ export class PublicEventsService {
       case 'recent':
         return { createdAt: 'desc' };
       case 'featured_rating':
+        return [{ ratingAvg: 'desc' }, { ratingCount: 'desc' }, { startAt: 'asc' }];
+      case 'recommended':
+        return [
+          { rankingScore: 'desc' },
+          { ratingCount: 'desc' },
+          { ratingAvg: 'desc' },
+          { startAt: 'asc' },
+        ];
+      case 'top_rated':
         return [{ ratingAvg: 'desc' }, { ratingCount: 'desc' }, { startAt: 'asc' }];
       case 'featured_event':
         return [
@@ -151,6 +165,15 @@ export class PublicEventsService {
     }
 
     const where = this.publicWhere(base);
+
+    const minReviews =
+      query.minValidReviews ??
+      (query.sort === 'recommended' || query.sort === 'top_rated'
+        ? RECOMMENDED_LIST_MIN_VALID_REVIEWS
+        : 0);
+    if (minReviews > 0) {
+      where.ratingCount = { gte: minReviews };
+    }
 
     const now = new Date();
     const gastroList = (query.category ?? '').toLowerCase() === 'gastro';
@@ -389,6 +412,20 @@ export class PublicEventsService {
         totalPages: Math.ceil(total / query.limit) || 1,
       },
     };
+  }
+
+  async recommended(query: EventsRecommendedQuery): Promise<EventSummary[]> {
+    const sort = query.mode === 'top_rated' ? 'top_rated' : 'recommended';
+    const result = await this.list({
+      tenantId: query.tenantId,
+      category: query.category,
+      subcategorySlug: query.subcategorySlug,
+      sort,
+      minValidReviews: query.minValidReviews,
+      page: 1,
+      limit: query.limit,
+    });
+    return result.data;
   }
 
   async trending(query: EventsTrendingQuery): Promise<EventSummary[]> {

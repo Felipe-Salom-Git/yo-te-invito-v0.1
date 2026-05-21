@@ -47,6 +47,8 @@ Controllers: HTTP + Zod only. Services: business logic. Prisma: persistence only
 
 **Portal productor (perfil por bloques, reseñas públicas, disputas, valoraciones comerciales B2B):** detalle en `PROJECT_CONTEXT.md`, API en `BACKEND_CONTEXT.md`, rutas/repos en `FRONTEND_CONTEXT.md`, seguimiento en `CONTEXT_PENDIENTES.md` § K.
 
+**Reviews V2 (comentarios y valoraciones):** `docs/reviews/REVIEWS_V2.md` — aspectos 1–10, ranking, réplicas gastro/hotel/admin, smoke `pnpm --filter api run smoke:reviews-v2`, guía `docs/guides/REVIEWS_V2_SMOKE_TESTS.md`.
+
 **Ticket studio:** `docs/tickets/TICKET_CANVAS_STUDIO.md`
 
 **Rules:** `docs/rules/PROJECT_RULES.md`, `AI_WORKFLOW_RULES.md`, `AI_CODE_REVIEW_RULES.md`, `ARCHITECTURE_GUARDRAILS.md`

@@ -30,20 +30,28 @@ export class JwtOrDevAuthGuard implements CanActivate {
         : undefined;
 
     if (bearerToken) {
+      let payload: JwtPayload;
       try {
-        const payload = this.jwtService.verify<JwtPayload>(bearerToken);
-        request.user = {
-          id: payload.sub,
-          tenantId: payload.tenantId,
-          role: payload.role,
-        };
-        return true;
+        payload = this.jwtService.verify<JwtPayload>(bearerToken);
       } catch {
         throw new UnauthorizedException({
           code: ErrorCode.UNAUTHORIZED,
           message: 'Invalid or expired token',
         });
       }
+
+      const user = await this.prisma.user.findFirst({
+        where: { id: payload.sub, deletedAt: null },
+        select: { id: true, tenantId: true, role: true },
+      });
+      if (!user) {
+        throw new UnauthorizedException({
+          code: ErrorCode.UNAUTHORIZED,
+          message: 'Session invalid — user no longer exists. Sign in again.',
+        });
+      }
+      request.user = user;
+      return true;
     }
 
     /** Strict `NODE_ENV === 'development'` fallaba en entornos locales sin variable o con otro valor: no había Bearer ni fallback X-Dev-User-Id. */

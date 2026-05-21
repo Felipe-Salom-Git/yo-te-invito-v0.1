@@ -63,7 +63,7 @@ yo-te-invito-v0.1/
 
 ### Producer / Admin / Gastro / Hotel / Referrer
 
-- **Producer (productoras / “Proveedores v2”)**: events, ticket types, **Ticket Canvas Studio**, courtesies, referidos, payouts; **perfil público** (`ProducerProfile`) con página `/producers/[id|slug]`, portal por **bloques** en `/producer/profile` (+ `/create`, `/identity`, `/images`, `/contact`); **comentarios y disputas** de reseñas de eventos (`/producer/comments`, flujo admin `/admin/review-disputes`); valoraciones **comerciales** privadas productora↔referidor (separadas de reseñas públicas).
+- **Producer (productoras / “Proveedores v2”)**: events, ticket types, **Ticket Canvas Studio**, courtesies, referidos, payouts; **perfil público** (`ProducerProfile`) con página `/producers/[id|slug]`, portal por **bloques** en `/producer/profile`; **comentarios y valoraciones V2** (aspectos 1–10, réplica, disputas `/producer/comments`, admin `/admin/review-disputes`); valoraciones **comerciales** B2B (4 aspectos 1–10). Gastro/hotel: portales `/gastro/valoraciones`, `/hotel/valoraciones`.
 - Admin: users, event approval, inbox (gastro promos, review moderation, **solicitudes de disputa de reseñas**), profiles (incl. hotel), config, **rentals locales/products**, audit.
 - Gastro / Hotel / Referrer portals as documented in backend/frontend context.
 
@@ -71,7 +71,8 @@ yo-te-invito-v0.1/
 
 - Referrer ↔ producer relationships (`ProducerReferrerRelationship`).
 - Inbox → gastro discounts / review moderation / **cola de disputas de reseñas** (`REVIEW_DISPUTE_REQUEST` + modelo `ReviewDisputeRequest`).
-- Reseñas públicas de eventos (`Review`); disputas con auditoría (`AuditLog`); ocultar del público al aceptar disputa (sin borrar reseña por defecto).
+- **Reviews V2**: reseñas públicas (`Review` con `overallRating` + aspectos JSON, estados moderación, réplicas por rol); ranking en `Event.rankingScore` / carruseles `GET /public/events/recommended`; perfil comentarista; smoke `smoke:reviews-v2`. Ver `docs/reviews/REVIEWS_V2.md`.
+- Disputas con auditoría; ocultar del público al aceptar disputa (sin borrar reseña por defecto).
 - Valoraciones B2B (`CommercialRelationshipReview`) — no mezclar con reseñas de eventos.
 - Ticket templates (visual design JSON + QR zone rules).
 

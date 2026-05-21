@@ -35,6 +35,7 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 
 - [ ] Usuario demo `hotel@demo.local` en Prisma si aplica
 - [ ] Edición de ficha desde portal `/hotel`
+- [x] Portal `/hotel/valoraciones` — listado + réplica (`POST /hotel/reviews/:id/reply`)
 - [ ] E2E: apply → admin aprueba → home carrusel `hotel`
 
 ---
@@ -44,6 +45,7 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 - [ ] Scanner PWA: payload `yti:gastro-discount|…` y validación API
 - [ ] Persistencia real de contenido gastro (stubs → Prisma)
 - [ ] Storage para imágenes (salir de data-URL)
+- [x] Portal `/gastro/valoraciones` — listado + réplica (`POST /gastro/reviews/:id/reply`)
 
 ---
 
@@ -66,6 +68,7 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 
 ## G. Frontend — UX y calidad
 
+- [x] Compresión JPEG al subir galería/header (`RentalProductImagesForm` + `lib/image-compress.ts`) — evita error Zod `galleryUrls` > 2M chars
 - [ ] Empty / loading / error consistentes
 - [ ] `next/image` + dominios remotos
 - [ ] SEO metadata por ficha pública
@@ -77,6 +80,8 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 
 ## H. Home y descubrimiento
 
+- [x] Home global: carruseles por `rankingScore` («más recomendados» / «mejor puntuados») vía `GET /public/events/recommended` + `useCategoryCarousels`
+- [x] Landing por categoría: mismos carruseles en `/categoria/[category]`
 - [ ] Tabs de categoría en hero anónimo (Path A en `FRONTEND_CONTEXT.md`)
 - [ ] `fromPrice` / `producerName` en listados API
 - [ ] “Guardar para después” persistido
@@ -106,6 +111,16 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 - [x] Portal: `/producer/comments` — reseñas de eventos + solicitud de revisión (disputa) vía inbox
 - [x] Admin: cola `/admin/review-disputes` para resolver disputas de reseñas
 - [x] Reseñas B2B (`CommercialRelationshipReview`): API + UI portal (valoración comercial privada)
+- [x] Reviews V2 base: aspectos 1–10 por categoría, estados moderación, ranking/reputación servicios, `POST /me/reviews`, `GET /public/reviews*`, perfil `/users/[userId]` (ver `docs/reviews/REVIEWS_V2.md`)
+- [x] UI pública: listados con desglose aspectos vía `listPublicV2` en fichas detalle (eventos, gastro, rental, excursión, hotel)
+- [x] Carruseles «más recomendados» / «mejor puntuados» por `rankingScore` en landing por categoría y home global
+- [x] Portal productora: aspectos, réplica, filtros 1–10 en `/producer/comments`
+- [x] Réplica gastro/hotel/admin por rutas dedicadas (`/gastro|hotel|admin/reviews/:id/reply`)
+- [x] Formularios B2B con 4 aspectos comerciales (productora ↔ referido)
+- [x] Smoke tests Reviews V2 — `pnpm --filter api run smoke:reviews-v2` + guía `docs/guides/REVIEWS_V2_SMOKE_TESTS.md`
+- [x] Perfil público comentarista `/users/[userId]` + badge reputación
+- [x] Auth: JWT huérfano tras `demo:seed` → 401 en guard + `me.service` (logout/login; no spam `NotFoundError`)
+- [ ] Trending real (`viewCount` / `recentScore` en ranking)
 - [ ] Moderación avanzada / notificaciones email para disputas (si aplica)
 - [ ] Export o reporting de disputas y reseñas comerciales
 
@@ -120,4 +135,5 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 | `BACKEND_CONTEXT.md` | API + Prisma + scripts |
 | `FRONTEND_CONTEXT.md` | Web + rentals UI |
 | `FRONTEND_DEMO_NOTES.md` | Histórico demo |
+| `docs/reviews/REVIEWS_V2.md` | Comentarios y valoraciones V2 |
 

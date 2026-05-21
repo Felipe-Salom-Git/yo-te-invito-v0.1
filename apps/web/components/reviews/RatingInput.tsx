@@ -4,7 +4,7 @@ export interface RatingInputProps {
   value: number;
   onChange: (value: number) => void;
   label?: string;
-  /** 1-5 scale */
+  /** 1–10 scale (public reviews V2) */
   max?: number;
 }
 
@@ -12,7 +12,7 @@ export function RatingInput({
   value,
   onChange,
   label,
-  max = 5,
+  max = 10,
 }: RatingInputProps) {
   const stars = Array.from({ length: max }, (_, i) => i + 1);
   return (

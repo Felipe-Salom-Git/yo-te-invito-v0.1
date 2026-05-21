@@ -35,6 +35,7 @@ export interface HomeViewModelInput {
   preferences: HomeStrategyPreferences | null;
   highlights: EventSummary[];
   trending: EventSummary[];
+  recommendedGlobal: EventSummary[];
   nearYou: EventSummary[];
   newEvents: EventSummary[];
   gastro: EventSummary[];
@@ -90,13 +91,14 @@ function buildHeroItemsByCategory(input: HomeViewModelInput): Record<string, Eve
 
 const DEFAULT_RAILS: Omit<HomeRail, 'items' | 'isLoading'>[] = [
   { id: 'highlights', title: 'Destacados', subtitle: 'Los más populares esta semana' },
+  { id: 'recommended', title: 'Más recomendados', subtitle: 'Mayor confianza según valoraciones verificadas' },
   { id: 'trending', title: 'Trending', subtitle: 'Lo que está sonando' },
   { id: 'nearYou', title: 'Cerca de ti', subtitle: 'En Buenos Aires' },
   { id: 'newEvents', title: 'Nuevos', subtitle: 'Recién agregados' },
-  { id: 'gastro', title: 'Gastronomía', subtitle: 'Restaurantes y experiencias' },
-  { id: 'hotel', title: 'Hoteles', subtitle: 'Alojamiento y hospedaje' },
-  { id: 'excursion', title: 'Excursiones', subtitle: 'Salidas y tours' },
-  { id: 'rental', title: 'Alquileres', subtitle: 'Autos, equipos y movilidad para tu aventura' },
+  { id: 'gastro', title: 'Gastronomía', subtitle: 'Más recomendados en gastronomía' },
+  { id: 'hotel', title: 'Hoteles', subtitle: 'Más recomendados en alojamiento' },
+  { id: 'excursion', title: 'Excursiones', subtitle: 'Más recomendados en excursiones' },
+  { id: 'rental', title: 'Alquileres', subtitle: 'Más recomendados en alquileres' },
 ];
 
 function favoritesRail(input: HomeViewModelInput): HomeRail[] {
@@ -178,6 +180,8 @@ function getRailItems(input: HomeViewModelInput, id: string): EventSummary[] {
       return input.highlights;
     case 'trending':
       return input.trending;
+    case 'recommended':
+      return input.recommendedGlobal;
     case 'nearYou':
       return input.nearYou;
     case 'newEvents':

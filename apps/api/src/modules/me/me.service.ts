@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import type {
@@ -32,6 +32,24 @@ function normalizeEventIdList(v: unknown): string[] {
 export class MeService {
   constructor(private readonly prisma: PrismaService) {}
 
+  private async requireUser<T extends Prisma.UserSelect>(
+    tenantId: string,
+    userId: string,
+    select: T,
+  ) {
+    const user = await this.prisma.user.findFirst({
+      where: { id: userId, tenantId, deletedAt: null },
+      select,
+    });
+    if (!user) {
+      throw new UnauthorizedException({
+        code: ErrorCode.UNAUTHORIZED,
+        message: 'Session invalid — user not found',
+      });
+    }
+    return user;
+  }
+
   private mapTicketRow(t: {
     id: string;
     status: string;
@@ -63,20 +81,18 @@ export class MeService {
   }
 
   async getMe(tenantId: string, userId: string): Promise<MeResponse> {
-    const [user, producerMemberships, gastroMemberships, hotelMemberships, referrerMemberships] =
+    const user = await this.requireUser(tenantId, userId, {
+      id: true,
+      tenantId: true,
+      email: true,
+      role: true,
+      status: true,
+      firstName: true,
+      lastName: true,
+    });
+
+    const [producerMemberships, gastroMemberships, hotelMemberships, referrerMemberships] =
       await Promise.all([
-        this.prisma.user.findFirstOrThrow({
-          where: { id: userId, tenantId, deletedAt: null },
-          select: {
-            id: true,
-            tenantId: true,
-            email: true,
-            role: true,
-            status: true,
-            firstName: true,
-            lastName: true,
-          },
-        }),
         this.prisma.userProducerMembership.findMany({
           where: {
             userId,
@@ -173,10 +189,7 @@ export class MeService {
   }
 
   async getMyTickets(tenantId: string, userId: string): Promise<MeTicketsResponse> {
-    const user = await this.prisma.user.findFirstOrThrow({
-      where: { id: userId, tenantId, deletedAt: null },
-      select: { email: true },
-    });
+    const user = await this.requireUser(tenantId, userId, { email: true });
 
     const tickets = await this.prisma.ticket.findMany({
       where: {
@@ -209,10 +222,7 @@ export class MeService {
     userId: string,
     ticketId: string,
   ): Promise<MeTicketItem> {
-    const user = await this.prisma.user.findFirstOrThrow({
-      where: { id: userId, tenantId, deletedAt: null },
-      select: { email: true },
-    });
+    const user = await this.requireUser(tenantId, userId, { email: true });
 
     const ticket = await this.prisma.ticket.findFirst({
       where: {
@@ -251,10 +261,7 @@ export class MeService {
     userId: string,
     query: MeOrdersQuery,
   ): Promise<MeOrdersResponse> {
-    const user = await this.prisma.user.findFirstOrThrow({
-      where: { id: userId, tenantId, deletedAt: null },
-      select: { email: true },
-    });
+    const user = await this.requireUser(tenantId, userId, { email: true });
 
     const orders = await this.prisma.order.findMany({
       where: {
@@ -292,10 +299,7 @@ export class MeService {
     tenantId: string,
     userId: string,
   ): Promise<UserPreferences> {
-    const user = await this.prisma.user.findFirstOrThrow({
-      where: { id: userId, tenantId, deletedAt: null },
-      select: { id: true, preferences: true },
-    });
+    const user = await this.requireUser(tenantId, userId, { id: true, preferences: true });
     const prefs = (user.preferences as Record<string, unknown> | null) ?? {};
     return {
       userId: user.id,
@@ -315,10 +319,7 @@ export class MeService {
     userId: string,
     patch: UserPreferencesPatch,
   ): Promise<UserPreferences> {
-    const user = await this.prisma.user.findFirstOrThrow({
-      where: { id: userId, tenantId, deletedAt: null },
-      select: { preferences: true },
-    });
+    const user = await this.requireUser(tenantId, userId, { preferences: true });
     const prev = (user.preferences as Record<string, unknown> | null) ?? {};
     const next: Record<string, unknown> = { ...prev };
 

@@ -51,6 +51,21 @@ enum ReviewDisputeStatus {
   CANCELLED
 }
 
+enum ReviewPublicStatus {
+  VISIBLE
+  IN_REVIEW
+  HIDDEN
+  REPORT_REJECTED
+  DELETED_BY_USER
+}
+
+enum ReviewReplyAuthorType {
+  PRODUCER
+  GASTRO_OWNER
+  HOTEL_OWNER
+  PLATFORM_ADMIN
+}
+
 enum InboxItemStatus {
   PENDING
   APPROVED
@@ -383,6 +398,8 @@ model CommercialRelationshipReview {
   reviewerRole       CommercialReviewerRole
   targetType         CommercialReviewTarget
   rating             Int
+  overallRating      Int?
+  aspectRatings      Json?
   comment            String?
   createdAt          DateTime               @default(now())
   updatedAt          DateTime               @updatedAt
@@ -591,6 +608,7 @@ model User {
   inboxItemsCreated   InboxItem[]            @relation("InboxItemCreator")
   inboxItemsResolved  InboxItem[]            @relation("InboxItemResolver")
   reviewsModerated    Review[]               @relation("ReviewModerator")
+  reviewsHidden       Review[]               @relation("ReviewHiddenBy")
   gastroDiscountClaims GastroDiscountClaim[]
   commercialRelationshipReviews CommercialRelationshipReview[]
   reviewDisputesRequested       ReviewDisputeRequest[]         @relation("ReviewDisputeRequester")
@@ -681,6 +699,9 @@ model Event {
   isGeneralPublication Boolean   @default(false)
   ratingAvg         Float?
   ratingCount       Int          @default(0)
+  /// Internal sort metric — never expose on public API responses
+  bayesianRating    Float?
+  rankingScore      Float?
   publishedAt       DateTime?
   createdAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
@@ -1213,6 +1234,9 @@ enum AuditAction {
   REVIEW_DISPUTE_ACCEPTED
   REVIEW_DISPUTE_REJECTED
   REVIEW_DISPUTE_RESOLVED
+  REVIEW_HIDDEN
+  REVIEW_RESTORED
+  REVIEW_REPLY_UPDATED
 }
 
 model AuditLog {
@@ -1239,13 +1263,27 @@ model Review {
   tenantId           String
   eventId            String
   userId             String?
+  /// Legacy 1–5 score; kept for backward compatibility. New reviews sync from overallRating.
   score              Int
+  /// V2 overall score 1–10
+  overallRating      Int?
+  /// V2 per-aspect scores keyed by aspect id (JSON)
+  aspectRatings      Json?
   title              String?
   comment            String?
   /// Display name when userId is null (valoración sin cuenta)
   guestName          String?
+  status             ReviewPublicStatus @default(VISIBLE)
   hiddenFromPublic   Boolean   @default(false)
+  isVerified         Boolean   @default(false)
+  hiddenReason       String?
+  hiddenAt           DateTime?
+  hiddenByUserId     String?
   officialReply      String?
+  replyAuthorType    ReviewReplyAuthorType?
+  replyAuthorId      String?
+  replyCreatedAt     DateTime?
+  replyUpdatedAt     DateTime?
   moderatedAt        DateTime?
   moderatedByUserId  String?
   createdAt          DateTime  @default(now())
@@ -1254,11 +1292,14 @@ model Review {
   event       Event  @relation(fields: [eventId], references: [id])
   user        User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
   moderatedBy User?  @relation("ReviewModerator", fields: [moderatedByUserId], references: [id], onDelete: SetNull)
+  hiddenBy    User?  @relation("ReviewHiddenBy", fields: [hiddenByUserId], references: [id], onDelete: SetNull)
   disputeRequests ReviewDisputeRequest[]
 
   @@unique([eventId, userId])
   @@index([tenantId])
   @@index([eventId])
+  @@index([eventId, status])
+  @@index([userId, status])
   @@index([moderatedByUserId])
 }
 

@@ -8,6 +8,16 @@ export const FEATURED_SECTION = {
   subtitle: 'Lo mejor de la categoría',
 } as const;
 
+export const RECOMMENDED_SECTION = {
+  title: 'Más recomendados',
+  subtitle: 'Mayor confianza según valoraciones verificadas',
+} as const;
+
+export const TOP_RATED_SECTION = {
+  title: 'Mejor puntuados',
+  subtitle: 'Promedio más alto con suficientes reseñas',
+} as const;
+
 export const EVENT_FEATURED_SECTION = {
   title: 'Destacados',
   subtitle: 'Eventos con ticketera — comprá entradas en la plataforma',
@@ -71,4 +81,11 @@ export function featuredSortForCategory(
   category: CategoryGatewayId,
 ): 'featured_event' | 'featured_rating' {
   return category === 'event' ? 'featured_event' : 'featured_rating';
+}
+
+/** Ranking-based carousel for verticals with public reviews */
+export function recommendedSortForCategory(
+  category: CategoryGatewayId,
+): 'recommended' | 'featured_event' {
+  return category === 'event' ? 'featured_event' : 'recommended';
 }

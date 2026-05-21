@@ -12,6 +12,7 @@ import { ReviewsService } from '../reviews/reviews.service';
 import { AuditService } from '../audit/audit.service';
 import {
   ErrorCode,
+  emptyReviewScoreDistribution,
   type AdminReviewDisputeActionInput,
   type AdminReviewDisputeListQuery,
   type CreateReviewDisputeInput,
@@ -20,6 +21,11 @@ import {
   type ProducerManagedReviewSummary,
   type ReviewDisputeResponse,
 } from '@yo-te-invito/shared';
+import {
+  eventCategoryToReviewCategory,
+  readAspectRatings,
+  readOverallRating,
+} from '../reviews/review-public.util';
 
 const OPEN_DISPUTE_STATUSES: ReviewDisputeStatus[] = ['PENDING', 'IN_REVIEW'];
 
@@ -104,20 +110,21 @@ export class ReviewDisputesService {
       return {
         averageRating: null,
         totalReviews: 0,
-        distribution: { '1': 0, '2': 0, '3': 0, '4': 0, '5': 0 },
+        distribution: emptyReviewScoreDistribution(),
       };
     }
 
     const rows = await this.prisma.review.findMany({
-      where: { tenantId, eventId: { in: eventIds }, hiddenFromPublic: false },
-      select: { score: true },
+      where: { tenantId, eventId: { in: eventIds } },
+      select: { overallRating: true, score: true },
     });
 
-    const distribution = { '1': 0, '2': 0, '3': 0, '4': 0, '5': 0 };
+    const distribution = emptyReviewScoreDistribution();
     let sum = 0;
     for (const r of rows) {
-      sum += r.score;
-      const key = String(r.score) as keyof typeof distribution;
+      const overall = readOverallRating(r);
+      sum += overall;
+      const key = String(overall) as keyof typeof distribution;
       if (key in distribution) distribution[key] += 1;
     }
 
@@ -166,8 +173,16 @@ export class ReviewDisputesService {
     const where: Prisma.ReviewWhereInput = {
       tenantId,
       eventId: { in: eventIds },
-      ...(query.rating ? { score: query.rating } : {}),
     };
+
+    if (query.overallRating) {
+      where.OR = [
+        { overallRating: query.overallRating },
+        { overallRating: null, score: Math.min(5, Math.max(1, Math.round(query.overallRating / 2))) },
+      ];
+    } else if (query.rating) {
+      where.score = query.rating;
+    }
 
     if (query.disputeStatus && query.disputeStatus !== 'ALL') {
       const allReviews = await this.prisma.review.findMany({
@@ -194,7 +209,7 @@ export class ReviewDisputesService {
     const rows = await this.prisma.review.findMany({
       where,
       include: {
-        event: { select: { title: true } },
+        event: { select: { title: true, category: true } },
         user: { select: { firstName: true, lastName: true } },
       },
       orderBy: { createdAt: query.sort === 'oldest' ? 'asc' : 'desc' },
@@ -205,15 +220,26 @@ export class ReviewDisputesService {
     return {
       reviews: rows.map((r) => {
         const d = latestDisputeByReview.get(r.id);
+        const category = eventCategoryToReviewCategory(r.event.category);
         return {
           id: r.id,
           eventId: r.eventId,
           eventTitle: r.event.title,
+          eventCategory: category,
+          overallRating: readOverallRating(r),
           score: r.score,
+          aspectRatings: (() => {
+            const aspects = readAspectRatings(r);
+            return Object.keys(aspects).length > 0 ? aspects : null;
+          })(),
           title: r.title,
           comment: r.comment,
           userDisplayName: reviewUserName(r),
           hiddenFromPublic: r.hiddenFromPublic,
+          status: r.status,
+          officialReply: r.officialReply,
+          replyAuthorType: r.replyAuthorType as ProducerManagedReviewListResponse['reviews'][0]['replyAuthorType'],
+          replyUpdatedAt: r.replyUpdatedAt?.toISOString() ?? null,
           createdAt: r.createdAt.toISOString(),
           dispute: d
             ? {
@@ -276,6 +302,11 @@ export class ReviewDisputesService {
     }
 
     const dispute = await this.prisma.$transaction(async (tx) => {
+      await tx.review.update({
+        where: { id: reviewId },
+        data: { status: 'IN_REVIEW' },
+      });
+
       const inbox = await tx.inboxItem.create({
         data: {
           tenantId,
@@ -507,7 +538,10 @@ export class ReviewDisputesService {
       await tx.review.update({
         where: { id: row.reviewId },
         data: {
+          status: 'HIDDEN',
           hiddenFromPublic: true,
+          hiddenAt: new Date(),
+          hiddenByUserId: adminUserId,
           moderatedAt: new Date(),
           moderatedByUserId: adminUserId,
         },
@@ -561,6 +595,10 @@ export class ReviewDisputesService {
     }
 
     const updated = await this.prisma.$transaction(async (tx) => {
+      await tx.review.update({
+        where: { id: row.reviewId },
+        data: { status: 'REPORT_REJECTED', hiddenFromPublic: false },
+      });
       await this.syncInboxResolved(tx, row.inboxItemId, adminUserId, 'REJECTED', body.adminNote);
       return tx.reviewDisputeRequest.update({
         where: { id: disputeId },
@@ -636,5 +674,264 @@ export class ReviewDisputesService {
     });
 
     return mapDispute(updated);
+  }
+
+  private async gastroPublicEventScope(
+    tenantId: string,
+    userId: string,
+    userRole: string,
+  ): Promise<{ eventIds: string[]; events: Array<{ id: string; title: string }> }> {
+    if (userRole === 'ADMIN') {
+      const rows = await this.prisma.event.findMany({
+        where: { tenantId, category: 'gastro', deletedAt: null },
+        select: { id: true, title: true },
+        orderBy: { title: 'asc' },
+        take: 50,
+      });
+      return { eventIds: rows.map((e) => e.id), events: rows };
+    }
+
+    const membership = await this.prisma.userGastroMembership.findFirst({
+      where: {
+        tenantId,
+        userId,
+        status: 'ACTIVE',
+        profile: { status: 'ACTIVE' },
+      },
+      include: { profile: { select: { publicEventId: true } } },
+      orderBy: { profile: { updatedAt: 'desc' } },
+    });
+    const eventId = membership?.profile.publicEventId;
+    if (!eventId) {
+      return { eventIds: [], events: [] };
+    }
+    const event = await this.prisma.event.findFirst({
+      where: { id: eventId, tenantId, deletedAt: null },
+      select: { id: true, title: true },
+    });
+    if (!event) {
+      return { eventIds: [], events: [] };
+    }
+    return { eventIds: [event.id], events: [{ id: event.id, title: event.title }] };
+  }
+
+  private async hotelReviewEventScope(
+    tenantId: string,
+    userId: string,
+    userRole: string,
+  ): Promise<{ eventIds: string[]; events: Array<{ id: string; title: string }> }> {
+    if (userRole === 'ADMIN') {
+      const rows = await this.prisma.event.findMany({
+        where: { tenantId, category: 'hotel', deletedAt: null },
+        select: { id: true, title: true },
+        orderBy: { title: 'asc' },
+        take: 50,
+      });
+      return { eventIds: rows.map((e) => e.id), events: rows };
+    }
+
+    const rows = await this.prisma.event.findMany({
+      where: { tenantId, category: 'hotel', deletedAt: null, producerId: userId },
+      select: { id: true, title: true },
+      orderBy: { title: 'asc' },
+    });
+    return { eventIds: rows.map((e) => e.id), events: rows };
+  }
+
+  private async managedReviewsSummary(
+    tenantId: string,
+    eventIds: string[],
+  ): Promise<ProducerManagedReviewSummary> {
+    if (eventIds.length === 0) {
+      return {
+        averageRating: null,
+        totalReviews: 0,
+        distribution: emptyReviewScoreDistribution(),
+      };
+    }
+
+    const rows = await this.prisma.review.findMany({
+      where: { tenantId, eventId: { in: eventIds } },
+      select: { overallRating: true, score: true },
+    });
+
+    const distribution = emptyReviewScoreDistribution();
+    let sum = 0;
+    for (const r of rows) {
+      const overall = readOverallRating(r);
+      sum += overall;
+      const key = String(overall) as keyof typeof distribution;
+      if (key in distribution) distribution[key] += 1;
+    }
+
+    return {
+      averageRating:
+        rows.length > 0 ? Math.round((sum / rows.length) * 10) / 10 : null,
+      totalReviews: rows.length,
+      distribution,
+    };
+  }
+
+  private async listManagedReviewsForEvents(
+    tenantId: string,
+    scope: { eventIds: string[]; events: Array<{ id: string; title: string }> },
+    query: ProducerManagedReviewListQuery,
+    disputeProducerProfileId: string | null,
+  ): Promise<ProducerManagedReviewListResponse> {
+    let eventIds = scope.eventIds;
+    if (query.eventId) {
+      if (!eventIds.includes(query.eventId)) {
+        throw new ForbiddenException({
+          code: ErrorCode.FORBIDDEN,
+          message: 'Event not in your scope',
+        });
+      }
+      eventIds = [query.eventId];
+    }
+
+    if (eventIds.length === 0) {
+      return { reviews: [], page: query.page, total: 0, events: scope.events };
+    }
+
+    const latestDisputeByReview = new Map<string, { id: string; status: string; reasonType: string; adminNote: string | null; createdAt: Date }>();
+    if (disputeProducerProfileId) {
+      const disputes = await this.prisma.reviewDisputeRequest.findMany({
+        where: { tenantId, producerProfileId: disputeProducerProfileId },
+        orderBy: { createdAt: 'desc' },
+      });
+      for (const d of disputes) {
+        if (!latestDisputeByReview.has(d.reviewId)) {
+          latestDisputeByReview.set(d.reviewId, d);
+        }
+      }
+    }
+
+    const where: Prisma.ReviewWhereInput = {
+      tenantId,
+      eventId: { in: eventIds },
+    };
+
+    if (query.overallRating) {
+      where.OR = [
+        { overallRating: query.overallRating },
+        {
+          overallRating: null,
+          score: Math.min(5, Math.max(1, Math.round(query.overallRating / 2))),
+        },
+      ];
+    } else if (query.rating) {
+      where.score = query.rating;
+    }
+
+    if (query.disputeStatus && query.disputeStatus !== 'ALL' && disputeProducerProfileId) {
+      const allReviews = await this.prisma.review.findMany({
+        where,
+        select: { id: true },
+      });
+      const matchingReviewIds: string[] = [];
+      for (const r of allReviews) {
+        const d = latestDisputeByReview.get(r.id);
+        if (query.disputeStatus === 'NONE') {
+          if (!d || !OPEN_DISPUTE_STATUSES.includes(d.status as ReviewDisputeStatus)) {
+            matchingReviewIds.push(r.id);
+          }
+        } else if (d?.status === query.disputeStatus) {
+          matchingReviewIds.push(r.id);
+        }
+      }
+      where.id = { in: matchingReviewIds.length ? matchingReviewIds : ['__none__'] };
+    }
+
+    const total = await this.prisma.review.count({ where });
+    const skip = (query.page - 1) * query.limit;
+
+    const rows = await this.prisma.review.findMany({
+      where,
+      include: {
+        event: { select: { title: true, category: true } },
+        user: { select: { firstName: true, lastName: true } },
+      },
+      orderBy: { createdAt: query.sort === 'oldest' ? 'asc' : 'desc' },
+      skip,
+      take: query.limit,
+    });
+
+    return {
+      reviews: rows.map((r) => {
+        const d = latestDisputeByReview.get(r.id);
+        const category = eventCategoryToReviewCategory(r.event.category);
+        return {
+          id: r.id,
+          eventId: r.eventId,
+          eventTitle: r.event.title,
+          eventCategory: category,
+          overallRating: readOverallRating(r),
+          score: r.score,
+          aspectRatings: (() => {
+            const aspects = readAspectRatings(r);
+            return Object.keys(aspects).length > 0 ? aspects : null;
+          })(),
+          title: r.title,
+          comment: r.comment,
+          userDisplayName: reviewUserName(r),
+          hiddenFromPublic: r.hiddenFromPublic,
+          status: r.status,
+          officialReply: r.officialReply,
+          replyAuthorType: r.replyAuthorType as ProducerManagedReviewListResponse['reviews'][0]['replyAuthorType'],
+          replyUpdatedAt: r.replyUpdatedAt?.toISOString() ?? null,
+          createdAt: r.createdAt.toISOString(),
+          dispute: d
+            ? {
+                id: d.id,
+                status: d.status as ReviewDisputeResponse['status'],
+                reasonType: d.reasonType as ReviewDisputeResponse['reasonType'],
+                adminNote: d.adminNote,
+                createdAt: d.createdAt.toISOString(),
+              }
+            : null,
+        };
+      }),
+      page: query.page,
+      total,
+      events: scope.events,
+    };
+  }
+
+  async getGastroSummary(
+    tenantId: string,
+    userId: string,
+    userRole: string,
+  ): Promise<ProducerManagedReviewSummary> {
+    const scope = await this.gastroPublicEventScope(tenantId, userId, userRole);
+    return this.managedReviewsSummary(tenantId, scope.eventIds);
+  }
+
+  async listGastroReviews(
+    tenantId: string,
+    userId: string,
+    userRole: string,
+    query: ProducerManagedReviewListQuery,
+  ): Promise<ProducerManagedReviewListResponse> {
+    const scope = await this.gastroPublicEventScope(tenantId, userId, userRole);
+    return this.listManagedReviewsForEvents(tenantId, scope, query, null);
+  }
+
+  async getHotelSummary(
+    tenantId: string,
+    userId: string,
+    userRole: string,
+  ): Promise<ProducerManagedReviewSummary> {
+    const scope = await this.hotelReviewEventScope(tenantId, userId, userRole);
+    return this.managedReviewsSummary(tenantId, scope.eventIds);
+  }
+
+  async listHotelReviews(
+    tenantId: string,
+    userId: string,
+    userRole: string,
+    query: ProducerManagedReviewListQuery,
+  ): Promise<ProducerManagedReviewListResponse> {
+    const scope = await this.hotelReviewEventScope(tenantId, userId, userRole);
+    return this.listManagedReviewsForEvents(tenantId, scope, query, null);
   }
 }

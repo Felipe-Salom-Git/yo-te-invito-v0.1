@@ -253,6 +253,16 @@ export class ApiRepository implements Repositories {
         limit,
       });
     },
+    recommended: async (query) => {
+      const t = query.tenantId ?? this.defaultTenantId;
+      return this.client.get<EventSummary[]>('/public/events/recommended', {
+        tenantId: t,
+        category: query.category,
+        limit: query.limit,
+        minValidReviews: query.minValidReviews,
+        mode: query.mode ?? 'recommended',
+      });
+    },
     getDetail: async (eventId: string, tenantId: string) => {
       const t = tenantId ?? this.defaultTenantId;
       const raw = await this.client.get<EventDetail | null>('/public/events/' + encodeURIComponent(eventId), {
@@ -862,6 +872,37 @@ export class ApiRepository implements Repositories {
         ...(body.guestName?.trim() ? { guestName: body.guestName.trim() } : {}),
       });
     },
+    createPublic: async (body) => {
+      return this.client.post<{ id: string }>('/me/reviews', body);
+    },
+    getSummary: async (category, entityId, tenantId) => {
+      return this.client.get('/public/reviews/summary', {
+        tenantId,
+        category,
+        entityId,
+      });
+    },
+    listPublicV2: async (category, entityId, tenantId, page = 1, limit = 20) => {
+      return this.client.get('/public/reviews', {
+        tenantId,
+        category,
+        entityId,
+        page,
+        limit,
+      });
+    },
+    getUserReviewProfile: async (userId, tenantId) => {
+      return this.client.get(
+        `/public/users/${encodeURIComponent(userId)}/review-profile`,
+        { tenantId },
+      );
+    },
+    listUserPublicReviews: async (userId, tenantId, page = 1, limit = 20) => {
+      return this.client.get(
+        `/public/users/${encodeURIComponent(userId)}/reviews`,
+        { tenantId, page, limit },
+      );
+    },
     listForProducer: async (eventId: string) => {
       return this.client.get<{ reviews: ProducerReviewRow[] }>(
         `/producer/events/${encodeURIComponent(eventId)}/reviews`,
@@ -1091,17 +1132,71 @@ export class ApiRepository implements Repositories {
   };
 
   producerReviews: import('./interfaces').ProducerReviewsRepo = {
+    reply: async (reviewId, payload) => {
+      return this.client.post(
+        `/producer/reviews/${encodeURIComponent(reviewId)}/reply`,
+        payload,
+      );
+    },
     getSummary: async () => {
       return this.client.get('/producer/reviews/summary');
     },
     listReviews: async (params) => {
-      return this.client.get('/producer/reviews', params);
+      return this.client.get<import('@yo-te-invito/shared').ProducerManagedReviewListResponse>(
+        '/producer/reviews',
+        params,
+      );
     },
     createDispute: async (reviewId, payload) => {
       return this.client.post(`/producer/reviews/${encodeURIComponent(reviewId)}/dispute`, payload);
     },
     getDispute: async (id) => {
       return this.client.get(`/producer/review-disputes/${encodeURIComponent(id)}`);
+    },
+  };
+
+  gastroReviews: import('./interfaces').ManagedVenueReviewsRepo = {
+    reply: async (reviewId, payload) => {
+      return this.client.post(
+        `/gastro/reviews/${encodeURIComponent(reviewId)}/reply`,
+        payload,
+      );
+    },
+    getSummary: async () => {
+      return this.client.get('/gastro/reviews/summary');
+    },
+    listReviews: async (params) => {
+      return this.client.get<import('@yo-te-invito/shared').ProducerManagedReviewListResponse>(
+        '/gastro/reviews',
+        params,
+      );
+    },
+  };
+
+  hotelReviews: import('./interfaces').ManagedVenueReviewsRepo = {
+    reply: async (reviewId, payload) => {
+      return this.client.post(
+        `/hotel/reviews/${encodeURIComponent(reviewId)}/reply`,
+        payload,
+      );
+    },
+    getSummary: async () => {
+      return this.client.get('/hotel/reviews/summary');
+    },
+    listReviews: async (params) => {
+      return this.client.get<import('@yo-te-invito/shared').ProducerManagedReviewListResponse>(
+        '/hotel/reviews',
+        params,
+      );
+    },
+  };
+
+  adminReviews: import('./interfaces').AdminReviewsRepo = {
+    reply: async (reviewId, payload) => {
+      return this.client.post(
+        `/admin/reviews/${encodeURIComponent(reviewId)}/reply`,
+        payload,
+      );
     },
   };
 
@@ -1135,7 +1230,7 @@ export class ApiRepository implements Repositories {
     createAsProducer: async (referrerProfileId, payload) => {
       return this.client.post(
         `/producer/referrers/${encodeURIComponent(referrerProfileId)}/commercial-reviews`,
-        { rating: payload.rating, comment: payload.comment, targetType: 'REFERRER' },
+        payload,
       );
     },
     listForReferrerProducer: async (producerProfileId) => {
@@ -1146,7 +1241,7 @@ export class ApiRepository implements Repositories {
     createAsReferrer: async (producerProfileId, payload) => {
       return this.client.post(
         `/referrer/me/producer-relationships/${encodeURIComponent(producerProfileId)}/commercial-reviews`,
-        { rating: payload.rating, comment: payload.comment, targetType: 'PRODUCER' },
+        payload,
       );
     },
   };

@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { publicReviewCategorySchema } from './review-aspects';
+import { reviewPublicStatusSchema, reviewReplyAuthorTypeSchema } from './review-moderation';
 
 export const reviewDisputeReasonTypeSchema = z.enum([
   'UNFAIR_RATING',
@@ -30,8 +32,31 @@ export const producerReviewDisputeFilterSchema = z.enum([
 ]);
 export type ProducerReviewDisputeFilter = z.infer<typeof producerReviewDisputeFilterSchema>;
 
+const reviewScoreDistributionShape = {
+  '1': z.number().int().nonnegative(),
+  '2': z.number().int().nonnegative(),
+  '3': z.number().int().nonnegative(),
+  '4': z.number().int().nonnegative(),
+  '5': z.number().int().nonnegative(),
+  '6': z.number().int().nonnegative(),
+  '7': z.number().int().nonnegative(),
+  '8': z.number().int().nonnegative(),
+  '9': z.number().int().nonnegative(),
+  '10': z.number().int().nonnegative(),
+} as const;
+
+export function emptyReviewScoreDistribution(): Record<
+  keyof typeof reviewScoreDistributionShape,
+  number
+> {
+  return { '1': 0, '2': 0, '3': 0, '4': 0, '5': 0, '6': 0, '7': 0, '8': 0, '9': 0, '10': 0 };
+}
+
 export const producerManagedReviewListQuerySchema = z.object({
   eventId: z.string().min(1).optional(),
+  /** Filter by overall score 1–10 (V2) */
+  overallRating: z.coerce.number().int().min(1).max(10).optional(),
+  /** @deprecated legacy 1–5 — use overallRating */
   rating: z.coerce.number().int().min(1).max(5).optional(),
   disputeStatus: producerReviewDisputeFilterSchema.optional().default('ALL'),
   sort: z.enum(['newest', 'oldest']).optional().default('newest'),
@@ -43,13 +68,7 @@ export type ProducerManagedReviewListQuery = z.infer<typeof producerManagedRevie
 export const producerManagedReviewSummarySchema = z.object({
   averageRating: z.number().nullable(),
   totalReviews: z.number(),
-  distribution: z.object({
-    '1': z.number(),
-    '2': z.number(),
-    '3': z.number(),
-    '4': z.number(),
-    '5': z.number(),
-  }),
+  distribution: z.object(reviewScoreDistributionShape),
 });
 export type ProducerManagedReviewSummary = z.infer<typeof producerManagedReviewSummarySchema>;
 
@@ -57,11 +76,19 @@ export const producerManagedReviewListItemSchema = z.object({
   id: z.string(),
   eventId: z.string(),
   eventTitle: z.string(),
-  score: z.number(),
+  eventCategory: publicReviewCategorySchema,
+  overallRating: z.number().int().min(1).max(10),
+  /** Legacy 1–5 */
+  score: z.number().int().min(1).max(5),
+  aspectRatings: z.record(z.string(), z.number()).nullable(),
   title: z.string().nullable(),
   comment: z.string().nullable(),
   userDisplayName: z.string(),
   hiddenFromPublic: z.boolean(),
+  status: reviewPublicStatusSchema,
+  officialReply: z.string().nullable(),
+  replyAuthorType: reviewReplyAuthorTypeSchema.nullable().optional(),
+  replyUpdatedAt: z.string().datetime().nullable(),
   createdAt: z.string().datetime(),
   dispute: z
     .object({

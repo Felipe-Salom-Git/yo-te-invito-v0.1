@@ -6,11 +6,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRepositories } from '@/repositories/context';
 import { useEventDetail, eventsKeys } from '@/lib/query/events';
 import { reviewsKeys } from '@/lib/query/keys';
+import { usePublicEntityReviews } from '@/lib/query/reviews';
 import { getCategoryLabel, getRelatedSectionTitle } from '@/lib/home/contentRoutes';
 import { EventLocationModal } from '@/components/events/EventLocationModal';
 import { EventReviewsSection } from '@/components/events/EventReviewsSection';
 import { RelatedEventsSection } from '@/components/events/RelatedEventsSection';
-import { ReviewForm } from '@/components/reviews/ReviewForm';
+import { ReviewForm, type ReviewFormSubmitPayload } from '@/components/reviews/ReviewForm';
+import { useSession } from 'next-auth/react';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { useToast } from '@/components';
 import { EventEngagementRow } from '@/components/events/EventEngagementRow';
@@ -62,11 +64,12 @@ export function RentalProductDetailContent({
     enabled: !!tenantId && !!event,
   });
 
-  const { data: reviewsData } = useQuery({
-    queryKey: reviewsKeys.byEvent(id, tenantId, reviewPage),
-    queryFn: () => repos.reviews.list(id, tenantId, reviewPage, 10),
-    enabled: !!id && !!tenantId,
-  });
+  const { data: reviewsData, isLoading: reviewsLoading } = usePublicEntityReviews(
+    'rental',
+    id,
+    tenantId,
+    reviewPage,
+  );
 
   const { data: relatedData } = useQuery({
     queryKey: ['events', 'related', tenantId, 'rental'],
@@ -79,27 +82,28 @@ export function RentalProductDetailContent({
     enabled: !!tenantId && !!event,
   });
 
+  const { data: session } = useSession();
+
   const createMutation = useMutation({
-    mutationFn: (payload: { score: number; comment?: string; guestName?: string }) =>
-      repos.reviews.create(id, {
-        score: payload.score,
+    mutationFn: (payload: ReviewFormSubmitPayload) =>
+      repos.reviews.createPublic({
+        eventId: id,
+        overallRating: payload.overallRating,
+        aspectRatings: payload.aspectRatings,
         comment: payload.comment,
-        guestName: payload.guestName,
       }),
     onError: (err) => addToast(getErrorMessage(err), 'error'),
     onSuccess: () => {
       addToast('Valoración publicada', 'success');
       setReviewFormKey((k) => k + 1);
       queryClient.invalidateQueries({ queryKey: eventsKeys.detail(id, tenantId) });
-      queryClient.invalidateQueries({ queryKey: reviewsKeys.byEvent(id, tenantId) });
+      queryClient.invalidateQueries({
+        queryKey: reviewsKeys.publicV2Entity('rental', id, tenantId),
+      });
     },
   });
 
-  const handleSubmitReview = (values: {
-    score: number;
-    comment?: string;
-    guestName?: string;
-  }) => {
+  const handleSubmitReview = (values: ReviewFormSubmitPayload) => {
     createMutation.mutate(values);
   };
 
@@ -207,6 +211,7 @@ export function RentalProductDetailContent({
           <EventReviewsSection
             eventId={id}
             tenantId={tenantId}
+            category="rental"
             entityType="rental"
             reviews={reviewsData?.reviews ?? []}
             total={reviewsData?.total ?? 0}
@@ -214,7 +219,15 @@ export function RentalProductDetailContent({
             onPageChange={setReviewPage}
             onSubmitReview={handleSubmitReview}
             isSubmittingReview={createMutation.isPending}
-            ratingAvg={event.ratingAvg}
+            canSubmitReview={!!session?.user}
+            isLoading={reviewsLoading}
+            summary={
+              reviewsData?.summary ?? {
+                averageRating: event.ratingAvg ?? null,
+                validReviewCount: event.ratingCount ?? 0,
+                aspectAverages: null,
+              }
+            }
             hideForm
           />
         </div>
@@ -226,6 +239,7 @@ export function RentalProductDetailContent({
             entityId={id}
             onSubmit={handleSubmitReview}
             isSubmitting={createMutation.isPending}
+            canSubmit={!!session?.user}
           />
         </div>
 

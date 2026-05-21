@@ -24,7 +24,7 @@ HTTP → Controller (thin) → ZodValidationPipe → Service → Prisma → Post
 ```
 
 - Errors: `AllExceptionsFilter` (`statusCode`, `code`, `message`, `details`, …).
-- Auth: JWT; dev `X-Dev-User-Id` when `NODE_ENV=development` or `DEV_AUTH_ENABLED=true`.
+- Auth: JWT; dev `X-Dev-User-Id` when `NODE_ENV=development` or `DEV_AUTH_ENABLED=true`. Tras validar JWT, `JwtOrDevAuthGuard` comprueba que el usuario exista en BD (401 si fue borrado por `demo:seed`).
 - RBAC: `RolesGuard` + `@RequireRole()`.
 
 ---
@@ -59,8 +59,11 @@ HTTP → Controller (thin) → ZodValidationPipe → Service → Prisma → Post
 
 | Path | Purpose |
 |------|---------|
-| `GET /public/events` | List (tenantId, category, city, dates, …) |
+| `GET /public/events` | List (tenantId, category, city, dates, `sort=recommended\|top_rated`, `minValidReviews`) |
+| `GET /public/events/recommended` | Carrusel ranking (recommended / top_rated) |
 | `GET /public/events/search`, `/trending`, `/:id` | |
+| `GET /public/reviews/summary`, `GET /public/reviews` | Resumen + listado V2 por entidad |
+| `GET /public/users/:userId/review-profile`, `…/reviews` | Perfil comentarista |
 | `GET /public/events/:id/discounts` | Active gastro discounts |
 | `GET /public/events/:eventId/ticket-types` | |
 | `POST /public/orders`, payments, demo-confirm | |
@@ -73,9 +76,11 @@ HTTP → Controller (thin) → ZodValidationPipe → Service → Prisma → Post
 See previous full endpoint tables in git history; key groups:
 
 - **Me**: tickets, orders, preferences, inbox create, commissions.
-- **Producer**: events CRUD, metrics, ticket types, **ticket-template** PUT/GET/DELETE, referrers (associated, freelance, association link); **profile** `GET/POST/PATCH /producer/profile` (GET puede devolver `null`); **reseñas del productor** `GET /producer/reviews`, `GET /producer/reviews/summary`, `POST /producer/reviews/:reviewId/dispute`, `GET /producer/review-disputes*`; valoraciones comerciales `commercial-reviews` (productora↔referidor).
-- **Admin**: event approval, users, applications, inbox resolve, config, payouts, hotel/referrer profile approval; **disputas de reseñas** `GET/POST /admin/review-disputes/:id` (`mark-in-review`, `accept`, `reject`, `resolve`).
-- **Hotel**: `GET /hotel/me`, `POST /profiles/hotel/apply`.
+- **Producer**: events CRUD, metrics, ticket types, **ticket-template** PUT/GET/DELETE, referrers (associated, freelance, association link); **profile** `GET/POST/PATCH /producer/profile` (GET puede devolver `null`); **reseñas** `GET /producer/reviews`, `GET /producer/reviews/summary`, `POST /producer/reviews/:id/reply`, `POST /producer/reviews/:id/dispute`, `GET /producer/review-disputes*`; valoraciones comerciales `commercial-reviews` (4 aspectos 1–10).
+- **Admin**: event approval, users, applications, inbox resolve, config, payouts, hotel/referrer profile approval; **disputas** `GET/POST /admin/review-disputes/:id`; **reseñas** `POST /admin/reviews/:id/reply|hide|restore`.
+- **Gastro**: `GET/POST /gastro/reviews*`, `POST /gastro/reviews/:id/reply` (requiere `ReviewsModule` import en `GastroModule`).
+- **Hotel**: `GET /hotel/me`, `POST /profiles/hotel/apply`; `GET /hotel/reviews*`, `POST /hotel/reviews/:id/reply`.
+- **Me**: `POST /me/reviews` (crear review V2 autenticado).
 - **Scanner**: validate, scan, logs.
 - **Gastro / Resale**: content, discounts, validations, listings.
 
@@ -90,7 +95,8 @@ See previous full endpoint tables in git history; key groups:
 - **ReferrerProfile**, **ProducerReferrerRelationship**, **ReferralLink**, **ReferralAttribution**, **ReferralCommission**
 - **GastroDiscount**, **GastroDiscountValidation**, **InboxItem** (kind incl. `REVIEW_DISPUTE_REQUEST`)
 - **HotelProfile**, memberships, **ProducerProfile**, **GastroProfile**
-- **Review**, **ReviewDisputeRequest** (motivo, estado, vínculo inbox opcional), **CommercialRelationshipReview**
+- **Review** (V2: `overallRating`, `aspectRatings` JSON, `publicStatus`, `officialReply`, `replyAuthorType`), **ReviewDisputeRequest**, **CommercialRelationshipReview** (aspectos B2B JSON)
+- **Event**: `bayesianRating`, `rankingScore` (cache; `ReviewRankingService` al crear/ocultar/restaurar reviews)
 - **CourtesyGrant**, **TicketScanLog**, **FraudSignal**, **Payout**, **AuditLog** (acciones review-dispute), **PlatformConfig**
 
 ---
@@ -102,6 +108,7 @@ See previous full endpoint tables in git history; key groups:
 | Base seed | `pnpm --filter api run demo:seed` |
 | Curated content | `pnpm --filter api run demo:seed-curated` |
 | Subcategories | `pnpm --filter api run demo:seed-subcategories` |
+| **Smoke Reviews V2** | `pnpm --filter api run smoke:reviews-v2` |
 | **Cleanup demo** | `pnpm db:cleanup-demo` (dry-run default) |
 | | `pnpm db:cleanup-demo -- --confirm` |
 | | Optional: `--include-subcategories`, `--make-preserved-user-admin` |
@@ -117,7 +124,7 @@ See previous full endpoint tables in git history; key groups:
 ## 8. Debt / risks
 
 - Payments: demo only.
-- Image uploads often data-URL in forms — no object storage yet.
+- Image uploads often data-URL in forms (límite Zod ~2M chars por URL); web comprime en `RentalProductImagesForm` — object storage pendiente.
 - `fromPrice` / `producerName` may be missing from base list API.
 - Run `prisma migrate deploy` + `prisma generate` after schema changes.
 
@@ -139,3 +146,5 @@ See previous full endpoint tables in git history; key groups:
 - `docs/api/ENDPOINTS.md`
 - `docs/tickets/TICKET_CANVAS_STUDIO.md`
 - `apps/api/prisma/schema.prisma`
+- `docs/reviews/REVIEWS_V2.md`
+- `docs/guides/REVIEWS_V2_SMOKE_TESTS.md`

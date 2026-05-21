@@ -3,6 +3,8 @@ import {
   eventsListQuerySchema,
   eventsSearchQuerySchema,
   eventsTrendingQuerySchema,
+  eventsRecommendedQuerySchema,
+  type EventsRecommendedQuery,
   eventsCalendarMonthQuerySchema,
   eventDetailQuerySchema,
   type EventsListQuery,
@@ -30,6 +32,13 @@ export class PublicEventsController {
     @Query(new ZodValidationPipe(eventsSearchQuerySchema)) query: EventsSearchQuery,
   ) {
     return this.service.search(query);
+  }
+
+  @Get('recommended')
+  async recommended(
+    @Query(new ZodValidationPipe(eventsRecommendedQuerySchema)) query: EventsRecommendedQuery,
+  ) {
+    return this.service.recommended(query);
   }
 
   @Get('trending')

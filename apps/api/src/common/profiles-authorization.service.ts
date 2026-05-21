@@ -141,6 +141,60 @@ export class ProfilesAuthorizationService {
   }
 
   /**
+   * Gastro owner may reply only on their public listing event (GastroProfile.publicEventId).
+   */
+  async canManageGastroPublicEvent(
+    tenantId: string,
+    userId: string,
+    userRole: string,
+    eventId: string,
+  ): Promise<boolean> {
+    const event = await this.prisma.event.findFirst({
+      where: { id: eventId, tenantId, deletedAt: null, category: 'gastro' },
+      select: { id: true },
+    });
+    if (!event) return false;
+    if (userRole === 'ADMIN') return true;
+
+    const membership = await this.prisma.userGastroMembership.findFirst({
+      where: {
+        tenantId,
+        userId,
+        status: 'ACTIVE',
+        profile: { status: 'ACTIVE', publicEventId: eventId },
+      },
+      select: { id: true },
+    });
+    return !!membership;
+  }
+
+  /**
+   * Hotel owner may reply on hotel-category events they own (producerId = owner user).
+   */
+  async canManageHotelReviewEvent(
+    tenantId: string,
+    userId: string,
+    userRole: string,
+    event: { id: string; category: string | null; producerId: string },
+  ): Promise<boolean> {
+    if (event.category !== 'hotel') return false;
+    if (userRole === 'ADMIN') return true;
+    if (!(await this.hasHotelAccess(tenantId, userId))) return false;
+    if (event.producerId === userId) return true;
+
+    const membership = await this.prisma.userHotelMembership.findFirst({
+      where: {
+        tenantId,
+        userId,
+        status: 'ACTIVE',
+        profile: { status: 'ACTIVE' },
+      },
+      include: { profile: { select: { createdByUserId: true } } },
+    });
+    return membership?.profile.createdByUserId === event.producerId;
+  }
+
+  /**
    * Get first active producer profile id for user (for create flows).
    */
   async getDefaultProducerProfileId(

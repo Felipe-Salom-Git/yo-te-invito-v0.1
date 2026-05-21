@@ -65,7 +65,7 @@ ApiClient → HTTP (NEXT_PUBLIC_API_BASE_URL)
 | EventsRepo | ✓ | list, search, trending, detail, ticket types, public discounts |
 | **RentalLocationsRepo** | ✓ | Admin CRUD locales + productos (`/admin/rental-locations`) |
 | SubcategoriesRepo | ✓ | `listPublic`, admin CRUD |
-| OrdersRepo, TicketsRepo, ReviewsRepo | ✓ | |
+| OrdersRepo, TicketsRepo, ReviewsRepo | ✓ | V2: `listPublicV2`, `getPublicSummary`, `createMyReview`, replies |
 | ReferralsRepo, CourtesiesRepo, PayoutsRepo | ✓ | |
 | TicketTemplatesRepo | ✓ | Canvas studio per ticket type |
 | InboxRepo, GastroRepo, HotelRepo | ✓ | |
@@ -82,11 +82,11 @@ ApiClient → HTTP (NEXT_PUBLIC_API_BASE_URL)
 
 | Area | Routes |
 |------|--------|
-| Public | `/`, `/home`, `/explore`, `/events/[id]`, `/restaurants/[id]`, `/excursiones/[id]`, **`/rentals/[id]`**, `/hoteles/[id]`, checkout, `/me/tickets`, `/referrers`, `/r/[code]` |
+| Public | `/`, `/home`, `/explore`, `/events/[id]`, `/restaurants/[id]`, `/excursiones/[id]`, **`/rentals/[id]`**, `/hoteles/[id]`, **`/users/[userId]`** (perfil comentarista), checkout, `/me/tickets`, `/referrers`, `/r/[code]` |
 | Account | `/login`, `/register`, `/cuenta/*` |
 | Admin | `/admin/*`, **`/admin/rentals`**, **`/admin/rentals/locales/...`**, **`/admin/review-disputes`**, inbox, perfiles, config |
 | Producer | `/producer`, `/producer/events`, ticket studio, **`/producer/profile`** (dashboard por bloques), **`/producer/profile/create`**, **`/producer/profile/identity`**, **`/producer/profile/images`**, **`/producer/profile/contact`**, **`/producer/comments`** (reseñas de eventos + solicitud revisión), referidos, payouts |
-| Gastro / Hotel / Referrer | `/gastro/*`, `/hotel`, `/referrer`, `/cuenta/solicitar-referrer` |
+| Gastro / Hotel / Referrer | `/gastro/*`, **`/gastro/valoraciones`**, `/hotel`, **`/hotel/valoraciones`**, `/referrer`, `/cuenta/solicitar-referrer` |
 
 ### Rental public detail (`/rentals/[id]`)
 
@@ -95,7 +95,7 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`):
 - **`RentalProductHero`**: cover image as full-width background behind title, description, chips (Alquiler / subcategoría / local). No date/time chips.
 - **Galería**: only **additional** images (`event.media`), thumbnails grid; click opens modal carousel (`RentalGalleryThumbnails`). Header/cover image is **not** duplicated in gallery.
 - **Sidebar**: `RentalContactCard` (WhatsApp), `RentalLocalCard` (address, structured opening hours, “Ver ubicación”).
-- Reviews + related products below.
+- Reviews V2 (`usePublicEntityReviews`, `ReviewAspectBreakdown`) + related products below.
 - Favorites / “Lo espero” via `EventEngagementRow`.
 
 ### Rental admin
@@ -109,7 +109,7 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`):
 | `/admin/rentals/locales/[locationId]/productos/nuevo` | New product |
 | `/admin/rentals/locales/[locationId]/productos/[productId]/editar` | Edit product + images |
 
-**Forms**: `OpeningHoursEditor` (weekday / saturday / sunday + exceptions), `RentalProductImagesForm` (header image + multi-select gallery with thumbnails).
+**Forms**: `OpeningHoursEditor` (weekday / saturday / sunday + exceptions), `RentalProductImagesForm` (header + galería multi-upload; comprime JPEG vía `lib/image-compress.ts` antes de enviar data-URL).
 
 ### Other place details
 
@@ -128,12 +128,15 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`):
 | PlaceDetailView | `components/places/` (non-rental) |
 | TicketStudioClient | `components/producer/ticket-studio/` |
 | OpeningHoursEditor, RentalProductImagesForm | `components/forms/`, `components/rentals/` |
+| Reviews V2 (público + portales) | `components/reviews/` (`ReviewForm`, `ReviewCard`, `ReviewSummary`, `ManagedReviewsCommentsPage`, `ReviewReplyModal`) |
+| Comentarios productora | `components/producer/comments/` (`ProducerCommentsPage` → `ManagedReviewsCommentsPage`) |
+| Valoración B2B | `CommercialReviewPanel`, `CommercialAspectBreakdown` |
 
 ---
 
 ## 8. Home / Landing
 
-- `HomeLanding` + `useHomeCarousels` (trending, nearYou, gastro, excursion, rental, hotel).
+- `HomeLanding` + `useHomeCarousels` / `useCategoryCarousels`: trending, nearYou, categorías, más **recommended** / **top_rated** por `rankingScore` (`lib/query/home.ts`, `category-carousel.logic.ts`).
 - Path A (anonymous): category tabs in hero — **pending** (`CONTEXT_PENDIENTES.md`).
 - Path B (logged-in + preferences): “Para vos” rail, reordered categories.
 
@@ -169,5 +172,6 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`):
 - `docs/context/PROJECT_CONTEXT.md`
 - `docs/context/BACKEND_CONTEXT.md`
 - `docs/context/CONTEXT_PENDIENTES.md`
+- `docs/reviews/REVIEWS_V2.md`
 - `docs/tickets/TICKET_CANVAS_STUDIO.md`
 - `docs/frontend/FRONTEND_CONVENTIONS.md`

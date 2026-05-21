@@ -16,12 +16,18 @@ import type {
 } from '@yo-te-invito/shared';
 import { ErrorCode } from '@yo-te-invito/shared';
 import { mergePublicEventVisibility } from '../../common/utils/event-public-visibility.util';
+import {
+  publicReviewVisibleWhere,
+  readOverallRating,
+} from './review-public.util';
+import { ReviewRankingService } from './review-ranking.service';
 
 @Injectable()
 export class ReviewsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly profiles: ProfilesAuthorizationService,
+    private readonly ranking: ReviewRankingService,
   ) {}
 
   async create(
@@ -85,22 +91,27 @@ export class ReviewsService {
         },
       });
 
-      const agg = await tx.review.aggregate({
-        where: { eventId, hiddenFromPublic: false },
-        _avg: { score: true },
-        _count: true,
+      const visible = await tx.review.findMany({
+        where: { eventId, ...publicReviewVisibleWhere },
+        select: { overallRating: true, score: true },
       });
+      const ratingAvg =
+        visible.length > 0
+          ? visible.reduce((s, r) => s + readOverallRating(r), 0) / visible.length
+          : null;
 
       await tx.event.update({
         where: { id: eventId },
         data: {
-          ratingAvg: agg._avg.score ?? null,
-          ratingCount: agg._count,
+          ratingAvg,
+          ratingCount: visible.length,
         },
       });
 
       return created;
     });
+
+    await this.ranking.refreshEventRankingCache(tenantId, eventId);
 
     return { id: review.id };
   }
@@ -128,13 +139,13 @@ export class ReviewsService {
 
     const [reviews, total] = await Promise.all([
       this.prisma.review.findMany({
-        where: { eventId, hiddenFromPublic: false },
+        where: { eventId, ...publicReviewVisibleWhere },
         include: { user: true },
         orderBy: { createdAt: 'desc' },
         skip: (query.page - 1) * query.limit,
         take: query.limit,
       }),
-      this.prisma.review.count({ where: { eventId, hiddenFromPublic: false } }),
+      this.prisma.review.count({ where: { eventId, ...publicReviewVisibleWhere } }),
     ]);
 
     const items: ReviewItem[] = reviews.map((r) => ({
@@ -157,18 +168,12 @@ export class ReviewsService {
   }
 
   async recomputeEventRating(eventId: string): Promise<void> {
-    const agg = await this.prisma.review.aggregate({
-      where: { eventId, hiddenFromPublic: false },
-      _avg: { score: true },
-      _count: true,
-    });
-    await this.prisma.event.update({
+    const event = await this.prisma.event.findFirst({
       where: { id: eventId },
-      data: {
-        ratingAvg: agg._avg.score ?? null,
-        ratingCount: agg._count,
-      },
+      select: { tenantId: true },
     });
+    if (!event) return;
+    await this.ranking.refreshEventRankingCache(event.tenantId, eventId);
   }
 
   async listForProducer(

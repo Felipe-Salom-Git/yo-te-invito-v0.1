@@ -1,8 +1,9 @@
 'use client';
 
 import { useCallback, useState } from 'react';
-import { Input } from '@/components';
+import { Input, useToast } from '@/components';
 import { ImageUrlPreview } from '@/components/admin/ImageUrlPreview';
+import { compressImageFileToDataUrl, compressImageFilesToDataUrls } from '@/lib/image-compress';
 
 export type RentalProductImagesValue = {
   headerImageUrl: string;
@@ -16,28 +17,12 @@ export type RentalProductImagesFormProps = {
   galleryOnly?: boolean;
 };
 
-function readImageFilesAsDataUrls(files: File[]): Promise<string[]> {
-  const imageFiles = files.filter((f) => f.type.startsWith('image/'));
-  if (imageFiles.length === 0) return Promise.resolve([]);
-
-  return Promise.all(
-    imageFiles.map(
-      (file) =>
-        new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string);
-          reader.onerror = () => reject(reader.error);
-          reader.readAsDataURL(file);
-        }),
-    ),
-  );
-}
-
 export function RentalProductImagesForm({
   value,
   onChange,
   galleryOnly = false,
 }: RentalProductImagesFormProps) {
+  const { addToast } = useToast();
   const [galleryUrlDraft, setGalleryUrlDraft] = useState('');
 
   const setHeader = (headerImageUrl: string) => onChange({ ...value, headerImageUrl });
@@ -53,23 +38,44 @@ export function RentalProductImagesForm({
     onChange({ ...value, galleryImageUrls: [...value.galleryImageUrls, ...urls] });
   };
 
-  const handleHeaderFile = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file?.type.startsWith('image/')) return;
-    const reader = new FileReader();
-    reader.onload = () => setHeader(reader.result as string);
-    reader.readAsDataURL(file);
-  }, [value]);
+  const handleHeaderFile = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      e.target.value = '';
+      if (!file?.type.startsWith('image/')) return;
+      try {
+        setHeader(await compressImageFileToDataUrl(file));
+      } catch (err) {
+        addToast(
+          err instanceof Error ? err.message : 'No se pudo procesar la imagen',
+          'error',
+        );
+      }
+    },
+    [addToast, value],
+  );
 
   const handleGalleryFiles = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
       const files = Array.from(e.target.files ?? []);
       e.target.value = '';
-      const dataUrls = await readImageFilesAsDataUrls(files);
-      appendGalleryUrls(dataUrls);
+      if (files.length === 0) return;
+      const imageFiles = files.filter((f) => f.type.startsWith('image/'));
+      if (imageFiles.length === 0) {
+        addToast('Seleccioná archivos de imagen válidos', 'error');
+        return;
+      }
+      try {
+        const dataUrls = await compressImageFilesToDataUrls(imageFiles);
+        appendGalleryUrls(dataUrls);
+      } catch (err) {
+        addToast(
+          err instanceof Error ? err.message : 'No se pudo procesar una imagen',
+          'error',
+        );
+      }
     },
-    [value],
+    [addToast, value],
   );
 
   const addGalleryUrl = () => {

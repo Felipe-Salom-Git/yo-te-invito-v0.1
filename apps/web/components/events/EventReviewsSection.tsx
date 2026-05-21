@@ -1,31 +1,37 @@
 'use client';
 
-import type { ReviewItem } from '@/repositories/interfaces';
-import { ReviewForm } from '@/components/reviews/ReviewForm';
+import type { PublicReviewCategory, PublicReviewItemV2 } from '@yo-te-invito/shared';
+import { ReviewForm, type ReviewFormSubmitPayload } from '@/components/reviews/ReviewForm';
 import { ReviewSummary } from '@/components/reviews/ReviewSummary';
 import { ReviewEmptyState } from '@/components/reviews/ReviewEmptyState';
 import { ReviewCard } from '@/components/reviews/ReviewCard';
 import type { EntityType } from '@/lib/schemas/review';
+import { publicReviewsPageSize } from '@/lib/query/reviews';
 
 export interface EventReviewsSectionProps {
   eventId: string;
   tenantId: string;
+  category: PublicReviewCategory;
   entityType: EntityType;
-  reviews: ReviewItem[];
+  reviews: PublicReviewItemV2[];
   total: number;
   page: number;
   onPageChange: (page: number) => void;
-  onSubmitReview: (values: { score: number; comment?: string; guestName?: string }) => void;
+  onSubmitReview: (values: ReviewFormSubmitPayload) => void;
+  canSubmitReview?: boolean;
   isSubmittingReview: boolean;
-  /** Optional rating average from event for summary display */
-  ratingAvg?: number | null;
-  /** When true, hide the review form (e.g. when form is rendered full-width below) */
+  summary: {
+    averageRating: number | null;
+    validReviewCount: number;
+    aspectAverages: Record<string, number> | null;
+  };
+  isLoading?: boolean;
   hideForm?: boolean;
 }
 
 export function EventReviewsSection({
   eventId,
-  tenantId,
+  category,
   entityType,
   reviews,
   total,
@@ -33,16 +39,25 @@ export function EventReviewsSection({
   onPageChange,
   onSubmitReview,
   isSubmittingReview,
-  ratingAvg,
+  summary,
+  isLoading = false,
   hideForm = false,
+  canSubmitReview = true,
 }: EventReviewsSectionProps) {
-  const totalPages = Math.ceil(total / 10);
+  const totalPages = Math.ceil(total / publicReviewsPageSize);
 
   return (
     <section id="reviews" className="scroll-mt-24">
-      <ReviewSummary ratingAvg={ratingAvg} total={total} />
+      <ReviewSummary
+        averageRating={summary.averageRating}
+        validReviewCount={summary.validReviewCount}
+        aspectAverages={summary.aspectAverages}
+        category={category}
+      />
 
-      {reviews.length === 0 ? (
+      {isLoading ? (
+        <div className="mt-6 h-24 animate-pulse rounded-xl bg-bg-muted" />
+      ) : reviews.length === 0 ? (
         <div className="mt-6">
           <ReviewEmptyState />
         </div>
@@ -67,7 +82,7 @@ export function EventReviewsSection({
           <button
             type="button"
             onClick={() => onPageChange(page + 1)}
-            disabled={page * 10 >= total}
+            disabled={page * publicReviewsPageSize >= total}
             className="rounded-lg border border-border bg-bg-muted px-4 py-2 text-sm text-text-muted transition-colors hover:bg-border disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Siguiente
@@ -82,6 +97,7 @@ export function EventReviewsSection({
             entityId={eventId}
             onSubmit={onSubmitReview}
             isSubmitting={isSubmittingReview}
+            canSubmit={canSubmitReview}
           />
         </div>
       )}

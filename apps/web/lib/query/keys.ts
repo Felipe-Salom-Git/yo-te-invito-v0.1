@@ -25,12 +25,15 @@ export const eventsKeys = {
 export const homeKeys = {
   all: ['home'] as const,
   trending: (tenantId: string) => [...homeKeys.all, 'trending', tenantId] as const,
+  recommended: (tenantId: string) => [...homeKeys.all, 'recommended', tenantId] as const,
   nearYou: (tenantId: string, city: string) =>
     [...homeKeys.all, 'nearYou', tenantId, city] as const,
   new: (tenantId: string, dateFrom: string) =>
     [...homeKeys.all, 'new', tenantId, dateFrom] as const,
   category: (tenantId: string, category: string) =>
     [...homeKeys.all, category, tenantId] as const,
+  categoryRecommended: (tenantId: string, category: string) =>
+    [...homeKeys.all, 'category-recommended', tenantId, category] as const,
 };
 
 // ─── Tickets ───────────────────────────────────────────────────────────────
@@ -63,6 +66,15 @@ export const reviewsKeys = {
   all: ['reviews'] as const,
   byEvent: (eventId: string, tenantId: string, page?: number) =>
     [...reviewsKeys.all, eventId, tenantId, page] as const,
+  publicV2: (
+    category: string,
+    entityId: string,
+    tenantId: string,
+    page?: number,
+  ) => [...reviewsKeys.all, 'v2', category, entityId, tenantId, page] as const,
+  /** Invalidate all pages for an entity's public reviews */
+  publicV2Entity: (category: string, entityId: string, tenantId: string) =>
+    [...reviewsKeys.all, 'v2', category, entityId, tenantId] as const,
 };
 
 // ─── Orders / Checkout ─────────────────────────────────────────────────────
@@ -140,6 +152,18 @@ export const producerReviewsKeys = {
   all: ['producer', 'reviews'] as const,
   summary: () => [...producerReviewsKeys.all, 'summary'] as const,
   list: (filtersKey: string) => [...producerReviewsKeys.all, 'list', filtersKey] as const,
+};
+
+export const gastroReviewsKeys = {
+  all: ['gastro', 'reviews'] as const,
+  summary: () => [...gastroReviewsKeys.all, 'summary'] as const,
+  list: (filtersKey: string) => [...gastroReviewsKeys.all, 'list', filtersKey] as const,
+};
+
+export const hotelReviewsKeys = {
+  all: ['hotel', 'reviews'] as const,
+  summary: () => [...hotelReviewsKeys.all, 'summary'] as const,
+  list: (filtersKey: string) => [...hotelReviewsKeys.all, 'list', filtersKey] as const,
 };
 
 export const adminReviewDisputesKeys = {

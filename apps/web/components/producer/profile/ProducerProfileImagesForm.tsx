@@ -2,6 +2,7 @@
 
 import { RentalProductImagesForm } from '@/components/rentals/RentalProductImagesForm';
 import { ImageUrlPreview } from '@/components/admin/ImageUrlPreview';
+import { compressImageFileToDataUrl } from '@/lib/image-compress';
 
 type Props = {
   logoUrl: string;
@@ -11,13 +12,18 @@ type Props = {
   onImagesChange: (value: { headerImageUrl: string; galleryImageUrls: string[] }) => void;
 };
 
-function readLogoFile(e: React.ChangeEvent<HTMLInputElement>, onLogoChange: (url: string) => void) {
+async function readLogoFile(
+  e: React.ChangeEvent<HTMLInputElement>,
+  onLogoChange: (url: string) => void,
+) {
   const file = e.target.files?.[0];
   e.target.value = '';
   if (!file?.type.startsWith('image/')) return;
-  const reader = new FileReader();
-  reader.onload = () => onLogoChange(reader.result as string);
-  reader.readAsDataURL(file);
+  try {
+    onLogoChange(await compressImageFileToDataUrl(file, 800, 0.85));
+  } catch {
+    onLogoChange('');
+  }
 }
 
 export function ProducerProfileImagesForm({

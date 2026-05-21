@@ -9,7 +9,10 @@ import { useRepositories } from '@/repositories/context';
 import { useCart } from '@/context/CartContext';
 import { getErrorMessage } from '@/lib/errors';
 import { reviewsKeys } from '@/lib/query/keys';
+import { usePublicEntityReviews } from '@/lib/query/reviews';
 import type { EntityType } from '@/lib/schemas/review';
+import { entityTypeToReviewCategory } from '@/lib/schemas/review';
+import type { PublicReviewCategory } from '@yo-te-invito/shared';
 import type { TicketTypeResponse } from '@/repositories/interfaces';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { getCategoryLabel, getPlaceHeroCtaLabel } from '@/lib/home/contentRoutes';
@@ -20,7 +23,8 @@ import { EventLocationSection } from '@/components/events/EventLocationSection';
 import { EventLocationModal } from '@/components/events/EventLocationModal';
 import { EventPurchaseCard } from '@/components/events/EventPurchaseCard';
 import { EventReviewsSection } from '@/components/events/EventReviewsSection';
-import { ReviewForm } from '@/components/reviews/ReviewForm';
+import { ReviewForm, type ReviewFormSubmitPayload } from '@/components/reviews/ReviewForm';
+import { useSession } from 'next-auth/react';
 import { RelatedEventsSection } from '@/components/events/RelatedEventsSection';
 import { EventMobileStickyCta } from '@/components/events/EventMobileStickyCta';
 import { EventEngagementRow } from '@/components/events/EventEngagementRow';
@@ -62,11 +66,16 @@ export default function EventDetailPage() {
     enabled: !!eventId && !!event?.isTicketingEnabled && !event?.isGeneralPublication,
   });
 
-  const { data: reviewsData } = useQuery({
-    queryKey: reviewsKeys.byEvent(eventId, tenantId, reviewPage),
-    queryFn: () => repos.reviews.list(eventId, tenantId, reviewPage, 10),
-    enabled: !!eventId && !!tenantId,
-  });
+  const entityType =
+    CATEGORY_TO_ENTITY[event?.category ?? 'event'] ?? 'event';
+  const reviewCategory: PublicReviewCategory = entityTypeToReviewCategory(entityType);
+
+  const { data: reviewsData, isLoading: reviewsLoading } = usePublicEntityReviews(
+    reviewCategory,
+    eventId,
+    tenantId,
+    reviewPage,
+  );
 
   const { data: relatedData } = useQuery({
     queryKey: ['events', 'related', tenantId, event?.category ?? 'event'],
@@ -85,12 +94,15 @@ export default function EventDetailPage() {
     enabled: !!eventId,
   });
 
+  const { data: session } = useSession();
+
   const createMutation = useMutation({
-    mutationFn: (payload: { score: number; comment?: string; guestName?: string }) =>
-      repos.reviews.create(eventId, {
-        score: payload.score,
+    mutationFn: (payload: ReviewFormSubmitPayload) =>
+      repos.reviews.createPublic({
+        eventId,
+        overallRating: payload.overallRating,
+        aspectRatings: payload.aspectRatings,
         comment: payload.comment,
-        guestName: payload.guestName,
       }),
     onError: (err) => addToast(getErrorMessage(err), 'error'),
     onSuccess: () => {
@@ -100,19 +112,12 @@ export default function EventDetailPage() {
         queryKey: eventsKeys.detail(eventId, tenantId),
       });
       queryClient.invalidateQueries({
-        queryKey: reviewsKeys.byEvent(eventId, tenantId),
+        queryKey: reviewsKeys.publicV2Entity(reviewCategory, eventId, tenantId),
       });
     },
   });
 
-  const entityType =
-    CATEGORY_TO_ENTITY[event?.category ?? 'event'] ?? 'event';
-
-  const handleSubmitReview = (values: {
-    score: number;
-    comment?: string;
-    guestName?: string;
-  }) => {
+  const handleSubmitReview = (values: ReviewFormSubmitPayload) => {
     createMutation.mutate(values);
   };
 
@@ -299,6 +304,7 @@ export default function EventDetailPage() {
             <EventReviewsSection
               eventId={eventId}
               tenantId={tenantId}
+              category={reviewCategory}
               entityType={entityType}
               reviews={reviewsData?.reviews ?? []}
               total={reviewsData?.total ?? 0}
@@ -306,7 +312,15 @@ export default function EventDetailPage() {
               onPageChange={setReviewPage}
               onSubmitReview={handleSubmitReview}
               isSubmittingReview={createMutation.isPending}
-              ratingAvg={event.ratingAvg}
+              canSubmitReview={!!session?.user}
+              isLoading={reviewsLoading}
+              summary={
+                reviewsData?.summary ?? {
+                  averageRating: event.ratingAvg ?? null,
+                  validReviewCount: event.ratingCount ?? 0,
+                  aspectAverages: null,
+                }
+              }
               hideForm
             />
           </div>
@@ -330,6 +344,7 @@ export default function EventDetailPage() {
             entityId={eventId}
             onSubmit={handleSubmitReview}
             isSubmitting={createMutation.isPending}
+            canSubmit={!!session?.user}
           />
         </div>
 

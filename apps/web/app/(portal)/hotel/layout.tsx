@@ -4,7 +4,10 @@ import { ProfileProtectedLayout } from '@/components/auth/ProfileProtectedLayout
 import { PortalSidebar } from '@/components/layout/PortalSidebar';
 import { Role } from '@yo-te-invito/shared';
 
-const NAV = [{ href: '/hotel', label: 'Mi establecimiento' }];
+const NAV = [
+  { href: '/hotel', label: 'Mi establecimiento' },
+  { href: '/hotel/valoraciones', label: 'Valoraciones' },
+];
 
 export default function HotelLayout({ children }: { children: React.ReactNode }) {
   return (

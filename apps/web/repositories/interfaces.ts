@@ -18,7 +18,16 @@ export interface EventsListQuery {
   producerId?: string;
   status?: string;
   /** Public list sort — see packages/shared eventsListQuerySchema */
-  sort?: 'recent' | 'featured_rating' | 'featured_event' | 'upcoming' | 'dateAsc';
+  sort?:
+    | 'recent'
+    | 'featured_rating'
+    | 'featured_event'
+    | 'recommended'
+    | 'top_rated'
+    | 'upcoming'
+    | 'dateAsc';
+  /** Minimum visible reviews for recommended/top_rated sorts (default 10 on API) */
+  minValidReviews?: number;
   hasTicketing?: boolean;
   excludeGeneralPublications?: boolean;
   /** When true, use GET /admin/events (all events for approval queue) */
@@ -443,9 +452,19 @@ export interface CommercialRelationshipReview {
   reviewerRole: 'PRODUCER' | 'REFERRER';
   targetType: 'PRODUCER' | 'REFERRER';
   rating: number;
+  overallRating: number | null;
+  aspectRatings: Record<string, number> | null;
   comment: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CommercialReviewSubmitPayload {
+  /** Legacy 1–5; sent when aspectRatings omitted */
+  rating?: number;
+  overallRating?: number;
+  aspectRatings?: Record<string, number>;
+  comment?: string;
 }
 
 export interface CommercialReviewsBundle {
@@ -470,30 +489,8 @@ export type ReviewDisputeStatus =
   | 'RESOLVED'
   | 'CANCELLED';
 
-export interface ProducerManagedReviewSummary {
-  averageRating: number | null;
-  totalReviews: number;
-  distribution: Record<'1' | '2' | '3' | '4' | '5', number>;
-}
-
-export interface ProducerManagedReviewListItem {
-  id: string;
-  eventId: string;
-  eventTitle: string;
-  score: number;
-  title: string | null;
-  comment: string | null;
-  userDisplayName: string;
-  hiddenFromPublic: boolean;
-  createdAt: string;
-  dispute: {
-    id: string;
-    status: ReviewDisputeStatus;
-    reasonType: ReviewDisputeReasonType;
-    adminNote: string | null;
-    createdAt: string;
-  } | null;
-}
+export type ProducerManagedReviewSummary = import('@yo-te-invito/shared').ProducerManagedReviewSummary;
+export type ProducerManagedReviewListItem = import('@yo-te-invito/shared').ProducerManagedReviewListItem;
 
 export interface ReviewDisputeDetail {
   id: string;
@@ -514,10 +511,12 @@ export interface ReviewDisputeDetail {
   producerDisplayName?: string;
 }
 
-export interface ProducerReviewsRepo {
+export interface ManagedVenueReviewsRepo {
+  reply(reviewId: string, body: { body: string }): Promise<{ ok: true }>;
   getSummary(): Promise<ProducerManagedReviewSummary>;
   listReviews(params?: {
     eventId?: string;
+    overallRating?: number;
     rating?: number;
     disputeStatus?: string;
     sort?: 'newest' | 'oldest';
@@ -529,11 +528,18 @@ export interface ProducerReviewsRepo {
     total: number;
     events: Array<{ id: string; title: string }>;
   }>;
+}
+
+export interface ProducerReviewsRepo extends ManagedVenueReviewsRepo {
   createDispute(
     reviewId: string,
     payload: { reasonType: ReviewDisputeReasonType; message: string },
   ): Promise<ReviewDisputeDetail>;
   getDispute(id: string): Promise<ReviewDisputeDetail>;
+}
+
+export interface AdminReviewsRepo {
+  reply(reviewId: string, body: { body: string }): Promise<{ ok: true }>;
 }
 
 export interface AdminReviewDisputesRepo {
@@ -1131,6 +1137,13 @@ export interface EventsRepo {
   search(query: EventsSearchQuery): Promise<EventsPaginatedResponse>;
   listCalendarMonth(query: EventsCalendarMonthQuery): Promise<{ data: EventSummary[] }>;
   trending(tenantId: string, limit?: number): Promise<EventSummary[]>;
+  recommended(query: {
+    tenantId: string;
+    category?: string;
+    limit?: number;
+    minValidReviews?: number;
+    mode?: 'recommended' | 'top_rated';
+  }): Promise<EventSummary[]>;
   getDetail(eventId: string, tenantId: string): Promise<EventDetail | null>;
   /** GET /public/events/:id/discounts — empty discounts if event is not gastro. */
   listPublicDiscounts(eventId: string, tenantId: string): Promise<{ discounts: PublicGastroDiscountSummary[] }>;
@@ -1326,6 +1339,29 @@ export interface UsersRepo {
 export interface ReviewsRepo {
   list(eventId: string, tenantId: string, page?: number, limit?: number): Promise<ReviewsResponse>;
   create(eventId: string, body: { score: number; title?: string; comment?: string; guestName?: string }): Promise<{ id: string }>;
+  createPublic(body: import('@yo-te-invito/shared').MeCreatePublicReviewBody): Promise<{ id: string }>;
+  getSummary(
+    category: import('@yo-te-invito/shared').PublicReviewCategory,
+    entityId: string,
+    tenantId: string,
+  ): Promise<import('@yo-te-invito/shared').ReviewEntitySummary>;
+  listPublicV2(
+    category: import('@yo-te-invito/shared').PublicReviewCategory,
+    entityId: string,
+    tenantId: string,
+    page?: number,
+    limit?: number,
+  ): Promise<import('@yo-te-invito/shared').PublicReviewsListResponse>;
+  getUserReviewProfile(
+    userId: string,
+    tenantId: string,
+  ): Promise<import('@yo-te-invito/shared').UserPublicReviewProfile>;
+  listUserPublicReviews(
+    userId: string,
+    tenantId: string,
+    page?: number,
+    limit?: number,
+  ): Promise<import('@yo-te-invito/shared').UserPublicReviewsResponse>;
   listForProducer(eventId: string): Promise<{ reviews: ProducerReviewRow[] }>;
 }
 
@@ -1455,12 +1491,12 @@ export interface CommercialReviewsRepo {
   listForProducerReferrer(referrerProfileId: string): Promise<CommercialReviewsBundle>;
   createAsProducer(
     referrerProfileId: string,
-    payload: { rating: number; comment?: string },
+    payload: CommercialReviewSubmitPayload,
   ): Promise<CommercialRelationshipReview>;
   listForReferrerProducer(producerProfileId: string): Promise<CommercialReviewsBundle>;
   createAsReferrer(
     producerProfileId: string,
-    payload: { rating: number; comment?: string },
+    payload: CommercialReviewSubmitPayload,
   ): Promise<CommercialRelationshipReview>;
 }
 
@@ -2052,6 +2088,9 @@ export interface Repositories {
   producers: ProducersRepo;
   commercialReviews: CommercialReviewsRepo;
   producerReviews: ProducerReviewsRepo;
+  gastroReviews: ManagedVenueReviewsRepo;
+  hotelReviews: ManagedVenueReviewsRepo;
+  adminReviews: AdminReviewsRepo;
   adminReviewDisputes: AdminReviewDisputesRepo;
   scanner: ScannerRepo;
   payouts: PayoutsRepo;

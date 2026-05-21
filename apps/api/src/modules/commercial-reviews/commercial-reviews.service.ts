@@ -4,14 +4,21 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ProfilesAuthorizationService } from '../../common/profiles-authorization.service';
 import type {
   CommercialRelationshipReviewCreateInput,
   CommercialRelationshipReviewResponse,
   CommercialRelationshipReviewSummary,
+  CommercialReviewTarget,
 } from '@yo-te-invito/shared';
-import { ErrorCode } from '@yo-te-invito/shared';
+import {
+  ErrorCode,
+  averageCommercialAspectScores,
+  legacyCommercialRatingFromOverall,
+  parseCommercialAspectRatings,
+} from '@yo-te-invito/shared';
 
 @Injectable()
 export class CommercialReviewsService {
@@ -28,6 +35,49 @@ export class CommercialReviewsService {
     return membership?.profileId ?? null;
   }
 
+  private readOverall(row: { overallRating: number | null; rating: number }): number {
+    return row.overallRating ?? row.rating * 2;
+  }
+
+  private readAspectRatings(raw: unknown): Record<string, number> | null {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+    const out: Record<string, number> = {};
+    for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+      if (typeof v === 'number') out[k] = v;
+    }
+    return Object.keys(out).length > 0 ? out : null;
+  }
+
+  private normalizePayload(
+    body: CommercialRelationshipReviewCreateInput,
+    targetType: CommercialReviewTarget,
+  ): {
+    rating: number;
+    overallRating: number;
+    aspectRatings: Prisma.InputJsonValue | typeof Prisma.JsonNull;
+  } {
+    if (body.aspectRatings) {
+      const aspectRatings = parseCommercialAspectRatings(targetType, body.aspectRatings);
+      const overallRating =
+        body.overallRating ?? averageCommercialAspectScores(aspectRatings);
+      const rating = legacyCommercialRatingFromOverall(overallRating);
+      return {
+        rating,
+        overallRating,
+        aspectRatings: aspectRatings as Prisma.InputJsonValue,
+      };
+    }
+    if (body.rating == null) {
+      throw new BadRequestException({
+        code: ErrorCode.VALIDATION_FAILED,
+        message: 'rating or aspectRatings required',
+      });
+    }
+    const rating = body.rating;
+    const overallRating = body.overallRating ?? Math.min(10, Math.max(1, rating * 2));
+    return { rating, overallRating, aspectRatings: Prisma.JsonNull };
+  }
+
   private mapRow(row: {
     id: string;
     producerProfileId: string;
@@ -37,6 +87,8 @@ export class CommercialReviewsService {
     reviewerRole: 'PRODUCER' | 'REFERRER';
     targetType: 'PRODUCER' | 'REFERRER';
     rating: number;
+    overallRating: number | null;
+    aspectRatings: unknown;
     comment: string | null;
     createdAt: Date;
     updatedAt: Date;
@@ -50,6 +102,8 @@ export class CommercialReviewsService {
       reviewerRole: row.reviewerRole,
       targetType: row.targetType,
       rating: row.rating,
+      overallRating: row.overallRating,
+      aspectRatings: this.readAspectRatings(row.aspectRatings),
       comment: row.comment,
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
@@ -77,6 +131,17 @@ export class CommercialReviewsService {
       });
     }
     return rel;
+  }
+
+  private summaryFromRows(
+    rows: Array<{ overallRating: number | null; rating: number }>,
+  ): CommercialRelationshipReviewSummary {
+    if (rows.length === 0) return { averageRating: null, totalReviews: 0 };
+    const sum = rows.reduce((a, b) => a + this.readOverall(b), 0);
+    return {
+      averageRating: Math.round((sum / rows.length) * 10) / 10,
+      totalReviews: rows.length,
+    };
   }
 
   async listForProducerReferrer(
@@ -108,20 +173,15 @@ export class CommercialReviewsService {
       .filter((r) => r.targetType === 'PRODUCER')
       .map((r) => this.mapRow(r));
 
-    const avg = (items: { rating: number }[]) => {
-      if (items.length === 0) return { averageRating: null, totalReviews: 0 };
-      const sum = items.reduce((a, b) => a + b.rating, 0);
-      return {
-        averageRating: Math.round((sum / items.length) * 10) / 10,
-        totalReviews: items.length,
-      };
-    };
-
     return {
       aboutReferrer,
       aboutProducer,
-      summaryAboutReferrer: avg(aboutReferrer),
-      summaryAboutProducer: avg(aboutProducer),
+      summaryAboutReferrer: this.summaryFromRows(
+        rows.filter((r) => r.targetType === 'REFERRER'),
+      ),
+      summaryAboutProducer: this.summaryFromRows(
+        rows.filter((r) => r.targetType === 'PRODUCER'),
+      ),
     };
   }
 
@@ -149,20 +209,15 @@ export class CommercialReviewsService {
       .filter((r) => r.targetType === 'PRODUCER')
       .map((r) => this.mapRow(r));
 
-    const avg = (items: { rating: number }[]) => {
-      if (items.length === 0) return { averageRating: null, totalReviews: 0 };
-      const sum = items.reduce((a, b) => a + b.rating, 0);
-      return {
-        averageRating: Math.round((sum / items.length) * 10) / 10,
-        totalReviews: items.length,
-      };
-    };
-
     return {
       aboutReferrer,
       aboutProducer,
-      summaryAboutReferrer: avg(aboutReferrer),
-      summaryAboutProducer: avg(aboutProducer),
+      summaryAboutReferrer: this.summaryFromRows(
+        rows.filter((r) => r.targetType === 'REFERRER'),
+      ),
+      summaryAboutProducer: this.summaryFromRows(
+        rows.filter((r) => r.targetType === 'PRODUCER'),
+      ),
     };
   }
 
@@ -184,6 +239,8 @@ export class CommercialReviewsService {
       body.referrerProfileId,
     );
 
+    const normalized = this.normalizePayload(body, 'REFERRER');
+
     const row = await this.prisma.commercialRelationshipReview.upsert({
       where: {
         relationshipId_reviewerUserId_targetType: {
@@ -200,11 +257,15 @@ export class CommercialReviewsService {
         reviewerUserId: userId,
         reviewerRole: 'PRODUCER',
         targetType: 'REFERRER',
-        rating: body.rating,
+        rating: normalized.rating,
+        overallRating: normalized.overallRating,
+        aspectRatings: normalized.aspectRatings,
         comment: body.comment?.trim() || null,
       },
       update: {
-        rating: body.rating,
+        rating: normalized.rating,
+        overallRating: normalized.overallRating,
+        aspectRatings: normalized.aspectRatings,
         comment: body.comment?.trim() || null,
       },
     });
@@ -229,6 +290,8 @@ export class CommercialReviewsService {
       body.referrerProfileId,
     );
 
+    const normalized = this.normalizePayload(body, 'PRODUCER');
+
     const row = await this.prisma.commercialRelationshipReview.upsert({
       where: {
         relationshipId_reviewerUserId_targetType: {
@@ -245,11 +308,15 @@ export class CommercialReviewsService {
         reviewerUserId: userId,
         reviewerRole: 'REFERRER',
         targetType: 'PRODUCER',
-        rating: body.rating,
+        rating: normalized.rating,
+        overallRating: normalized.overallRating,
+        aspectRatings: normalized.aspectRatings,
         comment: body.comment?.trim() || null,
       },
       update: {
-        rating: body.rating,
+        rating: normalized.rating,
+        overallRating: normalized.overallRating,
+        aspectRatings: normalized.aspectRatings,
         comment: body.comment?.trim() || null,
       },
     });

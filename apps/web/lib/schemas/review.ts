@@ -1,58 +1,55 @@
 import { z } from 'zod';
+import {
+  REVIEW_ASPECT_LABELS_ES,
+  REVIEW_RATING_MAX,
+  REVIEW_RATING_MIN,
+  type PublicReviewCategory,
+} from '@yo-te-invito/shared';
 
-const score1to5 = z.number().min(1).max(5);
+const score1to10 = z.number().int().min(REVIEW_RATING_MIN).max(REVIEW_RATING_MAX);
 
-/** Restaurant & Producer */
-export const reviewRestaurantProducerSchema = z.object({
-  servicioBrindado: score1to5,
-  atencion: score1to5,
-  localEstetica: score1to5,
-  comment: z.string().max(500).optional(),
-});
+export type EntityType =
+  | 'restaurant'
+  | 'producer'
+  | 'excursion'
+  | 'rental'
+  | 'hotel'
+  | 'event';
 
-/** Excursion & Rental */
-export const reviewExcursionRentalSchema = z.object({
-  servicio: score1to5,
-  atencionBrindada: score1to5,
-  comment: z.string().max(500).optional(),
-});
+const ENTITY_TO_CATEGORY: Record<EntityType, PublicReviewCategory> = {
+  restaurant: 'gastro',
+  producer: 'event',
+  excursion: 'excursion',
+  rental: 'rental',
+  hotel: 'hotel',
+  event: 'event',
+};
 
-/** Generic event (fallback) */
-export const reviewGenericSchema = z.object({
-  score: score1to5,
-  comment: z.string().max(500).optional(),
-});
-
-export type ReviewRestaurantProducer = z.infer<typeof reviewRestaurantProducerSchema>;
-export type ReviewExcursionRental = z.infer<typeof reviewExcursionRentalSchema>;
-export type ReviewGeneric = z.infer<typeof reviewGenericSchema>;
-
-export type EntityType = 'restaurant' | 'producer' | 'excursion' | 'rental' | 'hotel' | 'event';
+export function entityTypeToReviewCategory(entityType: EntityType): PublicReviewCategory {
+  return ENTITY_TO_CATEGORY[entityType] ?? 'event';
+}
 
 export function getReviewSchema(entityType: EntityType) {
-  switch (entityType) {
-    case 'restaurant':
-    case 'producer':
-      return reviewRestaurantProducerSchema;
-    case 'excursion':
-    case 'rental':
-    case 'hotel':
-      return reviewExcursionRentalSchema;
-    default:
-      return reviewGenericSchema;
+  const category = entityTypeToReviewCategory(entityType);
+  const labels = getDimensionLabels(entityType);
+  const shape: Record<string, typeof score1to10> = {};
+  for (const key of Object.keys(labels)) {
+    shape[key] = score1to10;
   }
+  return z.object({
+    ...shape,
+    comment: z.string().min(10).max(2000),
+    overallRating: score1to10.optional(),
+  });
 }
 
 export function getDimensionLabels(entityType: EntityType): Record<string, string> {
-  switch (entityType) {
-    case 'restaurant':
-    case 'producer':
-      return { servicioBrindado: 'Servicio brindado', atencion: 'Atención', localEstetica: 'Local / estética' };
-    case 'excursion':
-    case 'rental':
-    case 'hotel':
-      return { servicio: 'Servicio', atencionBrindada: 'Atención brindada' };
-    default:
-      return { score: 'Puntaje general' };
-  }
+  const category = entityTypeToReviewCategory(entityType);
+  return REVIEW_ASPECT_LABELS_ES[category] ?? { score: 'Puntaje general' };
 }
+
+/** Legacy generic 1–5 — events without aspect breakdown in old UI */
+export const reviewGenericSchema = z.object({
+  score: z.number().min(1).max(5),
+  comment: z.string().max(500).optional(),
+});
