@@ -7,7 +7,8 @@ import { ContentRail } from '@/components/home/ContentRail';
 import { HomeHero } from '@/components/home/HomeHero';
 import type { ContentCardItem } from '@/components/home/ContentCard';
 import { useMe } from '@/hooks/useMe';
-import { usePreferences } from '@/hooks/usePreferences';
+import { usePreferences, portalPrefsToHomeStrategy } from '@/hooks/usePreferences';
+import { useMeFavorites } from '@/lib/query/me-portal';
 import { useTenant } from '@/hooks/useTenant';
 import {
   getHomeRailIdForCategory,
@@ -50,22 +51,39 @@ export function HomeLanding({ initialCategory = null }: HomeLandingProps) {
     isLoading: carouselsLoading,
   } = useHomeCarousels({ preferredCity });
 
-  const favoriteIds = preferences?.favoriteEventIds ?? [];
-  const { data: favoriteEvents = [], isLoading: favoritesLoading } = useQuery({
-    queryKey: ['home', 'favorites', t, favoriteIds.join('|')],
+  const { data: favoritesData, isLoading: favoritesLoading } = useMeFavorites(isAuthenticated);
+  const favoriteEventIds = (favoritesData?.favorites ?? [])
+    .filter((f) => f.entityType === 'event')
+    .map((f) => f.entityId);
+  const { data: favoriteEvents = [] } = useQuery({
+    queryKey: ['home', 'favorites', t, favoriteEventIds.join('|')],
     queryFn: async () => {
-      const capped = favoriteIds.slice(0, 24);
+      const capped = favoriteEventIds.slice(0, 24);
       const results = await Promise.all(
         capped.map((id) => repos.events.getDetail(id, t)),
       );
       return results.filter((e): e is NonNullable<typeof e> => !!e);
     },
-    enabled: isAuthenticated && favoriteIds.length > 0,
+    enabled: isAuthenticated && favoriteEventIds.length > 0,
   });
 
+  const strategyPrefs = useMemo(
+    () => portalPrefsToHomeStrategy(preferences),
+    [preferences],
+  );
   const strategy = useMemo(
-    () => resolveHomeStrategy({ isAuthenticated, preferences }),
-    [isAuthenticated, preferences]
+    () =>
+      resolveHomeStrategy({
+        isAuthenticated,
+        preferences: strategyPrefs
+          ? {
+              ...strategyPrefs,
+              favoriteEventIds:
+                favoriteEventIds.length > 0 ? favoriteEventIds : null,
+            }
+          : null,
+      }),
+    [isAuthenticated, strategyPrefs, favoriteEventIds],
   );
 
   const [previewItem, setPreviewItem] = useState<ContentCardItem | null>(null);

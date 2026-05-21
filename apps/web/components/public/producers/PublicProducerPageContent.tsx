@@ -11,6 +11,7 @@ import { PublicProducerGallery } from './PublicProducerGallery';
 import { PublicProducerEventsSection } from './PublicProducerEventsSection';
 import { ProducerRatingSummary } from './ProducerRatingSummary';
 import { ProducerPublicCommentsSection } from './ProducerPublicCommentsSection';
+import { ProducerFollowButton } from '@/components/me/ProducerFollowButton';
 
 type Props = {
   producer: ProducerDetail;
@@ -39,6 +40,13 @@ export function PublicProducerPageContent({ producer, tenantId }: Props) {
       </Link>
 
       <PublicProducerHero producer={producer} onScrollToEvents={scrollToEvents} />
+
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <ProducerFollowButton
+          producerProfileId={producer.id}
+          displayName={producer.displayName}
+        />
+      </div>
 
       {description ? (
         <section className="mt-10">

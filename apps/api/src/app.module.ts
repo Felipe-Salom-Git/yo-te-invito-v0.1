@@ -19,17 +19,18 @@ import { MeModule } from './modules/me/me.module';
 import { PayoutsModule } from './modules/payouts/payouts.module';
 import { GastroModule } from './modules/gastro/gastro.module';
 import { HotelModule } from './modules/hotel/hotel.module';
-import { ResaleModule } from './modules/resale/resale.module';
 import { ProfilesModule } from './modules/profiles/profiles.module';
 import { ReferrerModule } from './modules/referrer/referrer.module';
 import { ReviewDisputesModule } from './modules/review-disputes/review-disputes.module';
 import { AuthModule } from './auth/auth.module';
 import { EmailModule } from './email/email.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 
 @Module({
   imports: [
     AuthModule,
     EmailModule,
+    NotificationsModule,
     ScheduleModule.forRoot(),
     PrismaModule,
     HealthModule,
@@ -50,7 +51,6 @@ import { EmailModule } from './email/email.module';
     PayoutsModule,
     GastroModule,
     HotelModule,
-    ResaleModule,
     ProfilesModule,
     ReferrerModule,
     ReviewDisputesModule,

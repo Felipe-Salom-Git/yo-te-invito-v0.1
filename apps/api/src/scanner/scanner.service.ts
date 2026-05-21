@@ -117,6 +117,21 @@ export class ScannerService {
       return { result: 'REVOKED', ticketId: ticket.id, ticketTypeName: ticket.ticketType?.name };
     }
 
+    if (ticket.status === 'TRANSFER_PENDING' || ticket.status === 'TRANSFERRED') {
+      await this.prisma.ticketScanLog.create({
+        data: {
+          tenantId,
+          eventId,
+          qrPayload,
+          deviceId: deviceId ?? null,
+          scannerId,
+          ticketId: ticket.id,
+          result: 'INVALID',
+        },
+      });
+      return { result: 'INVALID', ticketId: ticket.id, ticketTypeName: ticket.ticketType?.name };
+    }
+
     const now = new Date();
     const { count } = await this.prisma.ticket.updateMany({
       where: { id: ticket.id, status: 'VALID' },
@@ -262,6 +277,27 @@ export class ScannerService {
         code: ErrorCode.CONFLICT,
         message: 'Ticket already used',
       });
+    }
+
+    if (ticket.status === 'TRANSFER_PENDING' || ticket.status === 'TRANSFERRED') {
+      await this.prisma.ticketScan.create({
+        data: {
+          tenantId,
+          eventId,
+          qrPayload,
+          deviceId: deviceId ?? null,
+          ...scanMeta,
+          ticketId: ticket.id,
+          isValid: false,
+          reason: 'INVALID',
+        },
+      });
+      return {
+        isValid: false,
+        ticketId: ticket.id,
+        ticketTypeName: ticket.ticketType?.name ?? undefined,
+        message: 'invalid',
+      };
     }
 
     // 4) VALID: atomic update to prevent race / double-scan

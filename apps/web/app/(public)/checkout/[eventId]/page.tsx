@@ -1,15 +1,17 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useParams, useSearchParams, useRouter } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRepositories } from '@/repositories/context';
 import { ticketsKeys } from '@/lib/query/keys';
 import { useEventDetail } from '@/lib/query/events';
+import { useMeAccount } from '@/lib/query/me-portal';
 import { checkoutFormSchema, type CheckoutFormData } from '@/lib/schemas/checkout';
-import { PageContainer, SectionTitle, Button, Input, useToast } from '@/components';
+import { PageContainer, SectionTitle, Button, Input, useToast, PageLoader } from '@/components';
+import { CheckoutPaymentPanel } from '@/components/checkout/CheckoutPaymentPanel';
 import { getErrorMessage } from '@/lib/errors';
 import { getReferralCode, setReferralCodeCookie } from '@/lib/referral-cookie';
 import type { TicketTypeResponse } from '@/repositories/interfaces';
@@ -19,16 +21,16 @@ const DEFAULT_TENANT_ID = 'tenant-demo';
 export default function CheckoutEventPage() {
   const params = useParams();
   const searchParams = useSearchParams();
-  const router = useRouter();
   const eventId = (params?.eventId as string) ?? '';
   const tenantId = searchParams?.get('tenantId') ?? DEFAULT_TENANT_ID;
+  const existingOrderId = searchParams?.get('orderId')?.trim() ?? '';
   const refFromUrl = useMemo(() => searchParams?.get('ref')?.trim() ?? '', [searchParams]);
 
-  const { data: session } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
   const repos = useRepositories();
   const queryClient = useQueryClient();
   const { addToast } = useToast();
-  const userId = (session?.user as { userId?: string })?.userId ?? (session?.user as { id?: string })?.id ?? 'guest-demo';
+  const isAuthenticated = sessionStatus === 'authenticated' && !!session?.user;
 
   const [qtyByType, setQtyByType] = useState<Record<string, number>>({});
   const [form, setForm] = useState<CheckoutFormData>({
@@ -38,18 +40,57 @@ export default function CheckoutEventPage() {
     phone: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [step, setStep] = useState<'select' | 'form' | 'pay' | 'done'>('select');
-  const [orderId, setOrderId] = useState<string | null>(null);
+  const [step, setStep] = useState<'select' | 'form' | 'pay' | 'done'>(
+    existingOrderId ? 'pay' : 'select',
+  );
+  const [orderId, setOrderId] = useState<string | null>(existingOrderId || null);
+  const [resumeTotal, setResumeTotal] = useState<string | null>(null);
+
+  const { data: account } = useMeAccount(isAuthenticated);
 
   useEffect(() => {
     if (refFromUrl) setReferralCodeCookie(refFromUrl);
   }, [refFromUrl]);
 
+  useEffect(() => {
+    if (account) {
+      setForm((f) => ({
+        ...f,
+        email: account.email,
+        firstName: account.firstName,
+        lastName: account.lastName,
+        phone: account.phone ?? f.phone,
+      }));
+    }
+  }, [account]);
+
+  const { data: pendingOrder, isLoading: pendingOrderLoading } = useQuery({
+    queryKey: ['checkout', 'order', existingOrderId, tenantId],
+    queryFn: () => repos.orders.get(existingOrderId, tenantId),
+    enabled: !!existingOrderId,
+  });
+
+  useEffect(() => {
+    if (!pendingOrder) return;
+    if (pendingOrder.eventId && pendingOrder.eventId !== eventId) {
+      addToast('La orden no corresponde a este evento', 'error');
+      return;
+    }
+    if (pendingOrder.status === 'PENDING_PAYMENT' || pendingOrder.status === 'pending_payment') {
+      setOrderId(pendingOrder.id);
+      setResumeTotal(String(pendingOrder.totalAmount ?? ''));
+      setStep('pay');
+    } else if (pendingOrder.status === 'PAID' || pendingOrder.status === 'paid') {
+      setOrderId(pendingOrder.id);
+      setStep('done');
+    }
+  }, [pendingOrder, eventId, addToast]);
+
   const { data: event, isLoading: eventLoading } = useEventDetail(eventId, tenantId);
   const { data: ticketTypes, isLoading: typesLoading } = useQuery({
     queryKey: ['ticketTypes', eventId],
     queryFn: () => repos.events.getTicketTypes(eventId),
-    enabled: !!eventId && !!event?.isTicketingEnabled,
+    enabled: !!eventId && !!event?.isTicketingEnabled && !existingOrderId,
   });
 
   const createMutation = useMutation({
@@ -61,13 +102,13 @@ export default function CheckoutEventPage() {
           const price = typeof tt.price === 'string' ? parseFloat(tt.price) : tt.price;
           return { ticketTypeId: ttId, quantity: q, unitPrice: price };
         });
-      if (items.length === 0) throw new Error('Selecciona al menos un ticket');
+      if (items.length === 0) throw new Error('Seleccioná al menos un ticket');
       return repos.orders.create({
         tenantId,
         eventId,
         buyerEmail: form.email.trim(),
-        buyerName: `${form.firstName} ${form.lastName}`,
-        ...(userId && userId !== 'guest-demo' ? { buyerUserId: userId } : {}),
+        buyerName: `${form.firstName} ${form.lastName}`.trim(),
+        ...(account?.id ? { buyerUserId: account.id } : {}),
         items,
         referralCode: refFromUrl || getReferralCode() || undefined,
       });
@@ -75,6 +116,7 @@ export default function CheckoutEventPage() {
     onError: (err) => addToast(getErrorMessage(err), 'error'),
     onSuccess: (order) => {
       setOrderId(order.id);
+      setResumeTotal(String(order.totalAmount ?? ''));
       setStep('pay');
     },
   });
@@ -84,6 +126,7 @@ export default function CheckoutEventPage() {
     onError: (err) => addToast(getErrorMessage(err), 'error'),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ticketsKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['mePortal'] });
       setStep('done');
     },
   });
@@ -108,14 +151,19 @@ export default function CheckoutEventPage() {
     return sum + price * q;
   }, 0);
 
+  const payTotalLabel =
+    resumeTotal != null && resumeTotal !== ''
+      ? `Total: $${resumeTotal}`
+      : `Total: $${totalCents}`;
+
   const handleSubmitForm = (e: React.FormEvent) => {
     e.preventDefault();
     const parsed = checkoutFormSchema.safeParse(form);
     if (!parsed.success) {
       const errs: Record<string, string> = {};
-      parsed.error.errors.forEach((e) => {
-        const path = e.path[0] as string;
-        if (path) errs[path] = e.message;
+      parsed.error.errors.forEach((err) => {
+        const path = err.path[0] as string;
+        if (path) errs[path] = err.message;
       });
       setErrors(errs);
       return;
@@ -124,10 +172,10 @@ export default function CheckoutEventPage() {
     createMutation.mutate();
   };
 
-  if (eventLoading || !eventId) {
+  if (eventLoading || !eventId || (existingOrderId && pendingOrderLoading)) {
     return (
       <PageContainer>
-        <p className="text-text-muted">Cargando…</p>
+        <PageLoader message="Cargando checkout…" />
       </PageContainer>
     );
   }
@@ -143,11 +191,14 @@ export default function CheckoutEventPage() {
     );
   }
 
-  if (!event.isTicketingEnabled || !ticketTypes?.length) {
+  if (!existingOrderId && (!event.isTicketingEnabled || !ticketTypes?.length)) {
     return (
       <PageContainer>
         <p className="text-text-muted">Este evento no tiene venta de entradas.</p>
-        <Link href={`/events/${eventId}?tenantId=${tenantId}`} className="mt-4 block text-accent hover:underline">
+        <Link
+          href={`/events/${eventId}?tenantId=${tenantId}`}
+          className="mt-4 block text-accent hover:underline"
+        >
           ← Volver al evento
         </Link>
       </PageContainer>
@@ -156,20 +207,34 @@ export default function CheckoutEventPage() {
 
   return (
     <PageContainer>
-      <Link href={`/events/${eventId}?tenantId=${tenantId}`} className="mb-4 inline-block text-sm text-text-muted hover:text-text">
-        ← Volver al evento
+      <Link
+        href={isAuthenticated ? '/me/cart' : `/events/${eventId}?tenantId=${tenantId}`}
+        className="mb-4 inline-block text-sm text-text-muted hover:text-text"
+      >
+        {existingOrderId ? '← Carrito / pedidos' : '← Volver al evento'}
       </Link>
-      <SectionTitle>Checkout — {event.title}</SectionTitle>
+      <SectionTitle>
+        {existingOrderId ? 'Completar pago' : 'Checkout'} — {event.title}
+      </SectionTitle>
 
-      {step === 'select' && (
+      {step === 'select' && !existingOrderId && (
         <>
+          {isAuthenticated && (
+            <p className="mt-2 text-sm text-text-muted">
+              Tip: podés agregar entradas al{' '}
+              <Link href="/me/cart" className="text-accent hover:underline">
+                carrito en tu cuenta
+              </Link>{' '}
+              y pagar varios eventos juntos.
+            </p>
+          )}
           <div className="mt-8 space-y-4">
             <h2 className="font-semibold text-text">Seleccionar entradas</h2>
             {typesLoading ? (
               <p className="text-text-muted">Cargando…</p>
             ) : (
               <div className="grid gap-4 sm:grid-cols-2">
-                {ticketTypes.map((tt: TicketTypeResponse) => (
+                {ticketTypes!.map((tt: TicketTypeResponse) => (
                   <div
                     key={tt.id}
                     className="flex items-center justify-between rounded-lg border border-border bg-bg-muted p-4"
@@ -205,19 +270,25 @@ export default function CheckoutEventPage() {
             <p className="font-semibold text-text">
               Total: ${totalCents} ({totalQty} entradas)
             </p>
-            <Button
-              onClick={() => totalQty > 0 && setStep('form')}
-              disabled={totalQty < 1}
-            >
+            <Button onClick={() => totalQty > 0 && setStep('form')} disabled={totalQty < 1}>
               Continuar
             </Button>
           </div>
         </>
       )}
 
-      {step === 'form' && (
-        <form onSubmit={handleSubmitForm} className="mt-8 space-y-4 rounded-xl border border-border bg-bg-muted p-4 sm:p-6" role="form" aria-label="Datos del comprador">
+      {step === 'form' && !existingOrderId && (
+        <form
+          onSubmit={handleSubmitForm}
+          className="mt-8 space-y-4 rounded-xl border border-border bg-bg-muted p-4 sm:p-6"
+          aria-label="Datos del comprador"
+        >
           <h2 className="font-semibold text-text">Datos del comprador</h2>
+          {isAuthenticated && (
+            <p className="text-xs text-text-muted">
+              Datos tomados de tu cuenta. Podés editarlos antes de crear la orden.
+            </p>
+          )}
           <Input
             label="Email"
             name="email"
@@ -261,44 +332,24 @@ export default function CheckoutEventPage() {
       )}
 
       {step === 'pay' && orderId && (
-        <div className="mt-8 rounded-xl border border-border bg-bg-muted p-6">
-          <h2 className="font-semibold text-text">Forma de pago</h2>
-          <p className="mt-2 text-text-muted">
-            Orden {orderId} — Total: ${totalCents}
-          </p>
-          <div className="mt-4 flex flex-wrap gap-3">
-            <Button
-              onClick={() => payDemoMutation.mutate()}
-              disabled={payDemoMutation.isPending || payGetnetMutation.isPending}
-            >
-              {payDemoMutation.isPending ? 'Procesando…' : 'Pagar (demo)'}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => payGetnetMutation.mutate()}
-              disabled={payDemoMutation.isPending || payGetnetMutation.isPending}
-              title="Probar integración Getnet — requiere credenciales en backend"
-            >
-              {payGetnetMutation.isPending ? 'Redirigiendo…' : 'Probar Getnet'}
-            </Button>
-          </div>
-          <p className="mt-3 text-xs text-text-muted">
-            Demo: simula pago sin pasarela. Getnet: te redirige al checkout real (preprod).
-          </p>
-          {(payDemoMutation.error || payGetnetMutation.error) && (
-            <p className="mt-2 text-sm text-red-400">
-              {getErrorMessage(payDemoMutation.error ?? payGetnetMutation.error)}
-            </p>
-          )}
-        </div>
+        <CheckoutPaymentPanel
+          orderId={orderId}
+          totalLabel={payTotalLabel}
+          tenantId={tenantId}
+          onPayDemo={() => payDemoMutation.mutate()}
+          onPayGetnet={() => payGetnetMutation.mutate()}
+          demoPending={payDemoMutation.isPending}
+          getnetPending={payGetnetMutation.isPending}
+          error={payDemoMutation.error ?? payGetnetMutation.error}
+          backHref={isAuthenticated ? '/me/cart' : `/events/${eventId}?tenantId=${tenantId}`}
+          backLabel={isAuthenticated ? '← Volver al carrito' : '← Volver al evento'}
+        />
       )}
 
       {step === 'done' && (
         <div className="mt-8 rounded-lg border border-accent/50 bg-accent/10 p-6">
           <h2 className="text-lg font-semibold text-accent">¡Pago confirmado!</h2>
-          <p className="mt-2 text-text">
-            Tus tickets fueron emitidos correctamente.
-          </p>
+          <p className="mt-2 text-text">Tus tickets fueron emitidos correctamente.</p>
           <Link
             href="/me/tickets"
             className="mt-6 inline-block rounded bg-accent px-6 py-3 font-medium text-bg hover:bg-accent-hover"

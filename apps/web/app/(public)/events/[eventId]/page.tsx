@@ -6,7 +6,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useEventDetail, eventsKeys } from '@/lib/query/events';
 import { useRepositories } from '@/repositories/context';
-import { useCart } from '@/context/CartContext';
+import { useSession } from 'next-auth/react';
+import { useAddToCart } from '@/hooks/useAddToCart';
 import { getErrorMessage } from '@/lib/errors';
 import { reviewsKeys } from '@/lib/query/keys';
 import { usePublicEntityReviews } from '@/lib/query/reviews';
@@ -24,7 +25,6 @@ import { EventLocationModal } from '@/components/events/EventLocationModal';
 import { EventPurchaseCard } from '@/components/events/EventPurchaseCard';
 import { EventReviewsSection } from '@/components/events/EventReviewsSection';
 import { ReviewForm, type ReviewFormSubmitPayload } from '@/components/reviews/ReviewForm';
-import { useSession } from 'next-auth/react';
 import { RelatedEventsSection } from '@/components/events/RelatedEventsSection';
 import { EventMobileStickyCta } from '@/components/events/EventMobileStickyCta';
 import { EventEngagementRow } from '@/components/events/EventEngagementRow';
@@ -55,7 +55,8 @@ export default function EventDetailPage() {
 
   const repos = useRepositories();
   const queryClient = useQueryClient();
-  const { addItem } = useCart();
+  const { data: session } = useSession();
+  const { addToCart } = useAddToCart();
   const { addToast } = useToast();
 
   const { data: event, isLoading, error } = useEventDetail(eventId, tenantId);
@@ -87,14 +88,6 @@ export default function EventDetailPage() {
       }),
     enabled: !!tenantId && !!event,
   });
-
-  const { data: resaleListings } = useQuery({
-    queryKey: ['resale', 'byEvent', eventId],
-    queryFn: () => repos.resale.listByEvent(eventId),
-    enabled: !!eventId,
-  });
-
-  const { data: session } = useSession();
 
   const createMutation = useMutation({
     mutationFn: (payload: ReviewFormSubmitPayload) =>
@@ -133,24 +126,20 @@ export default function EventDetailPage() {
     });
   }, []);
 
-  const handleAddToCart = (
-    tt: TicketTypeResponse,
-    qty: number
-  ) => {
+  const handleAddToCart = (tt: TicketTypeResponse, qty: number) => {
     if (qty < 1) return;
-    addItem({
-      eventId,
-      eventTitle: event?.title ?? 'Event',
-      ticketTypeId: tt.id,
-      ticketTypeName: tt.name,
-      price:
-        typeof tt.price === 'string'
-          ? parseFloat(tt.price)
-          : tt.price,
-      quantity: qty,
-      maxPerOrder: Math.min(10, tt.capacityAvailable ?? 0),
-    });
-    setQtyByType((p) => ({ ...p, [tt.id]: 0 }));
+    addToCart(
+      {
+        eventId,
+        ticketTypeId: tt.id,
+        quantity: qty,
+        eventTitle: event?.title ?? 'Event',
+        ticketTypeName: tt.name,
+        price: typeof tt.price === 'string' ? parseFloat(tt.price) : tt.price,
+        maxPerOrder: Math.min(10, tt.capacityAvailable ?? 0),
+      },
+      { onSuccess: () => setQtyByType((p) => ({ ...p, [tt.id]: 0 })) },
+    );
   };
 
   if (isLoading || !eventId) {
@@ -185,7 +174,6 @@ export default function EventDetailPage() {
       : `/events/${eventId}?tenantId=${tenantId}`;
 
   const primaryCtaLabel = getPlaceHeroCtaLabel(event.category);
-  const hasResale = (resaleListings?.length ?? 0) > 0;
   const fromPrice =
     ticketTypes && ticketTypes.length > 0
       ? Math.min(
@@ -281,7 +269,6 @@ export default function EventDetailPage() {
                 onAddToCart={handleAddToCart}
                 ratingAvg={event.ratingAvg}
                 ratingCount={event.ratingCount}
-                hasResale={hasResale}
               />
             ) : null}
             {event.isGeneralPublication ? (

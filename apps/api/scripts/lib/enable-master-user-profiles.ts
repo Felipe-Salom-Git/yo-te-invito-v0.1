@@ -1,6 +1,6 @@
 /**
  * Idempotent: ADMIN + active producer/gastro/hotel/referrer profiles + memberships.
- * Used by demo:enable-test-user-profiles and db:cleanup-demo (--make-preserved-user-admin).
+ * Used by user:restore-master and db:cleanup-content (--make-preserved-user-admin).
  */
 
 import type { PrismaClient } from '@prisma/client';

@@ -1,145 +1,115 @@
 # Guía de pruebas — Flujos y API
 
-Esta guía explica cómo probar el frontend contra la API real y cómo validar los flujos principales.
+Cómo probar el frontend contra la API real. Ver [DEMO_REMOVAL.md](./DEMO_REMOVAL.md).
 
 ---
 
 ## 1. Requisitos previos
 
 - Node.js y pnpm
-- PostgreSQL (Docker: `pnpm db:up`)
-- Variables de entorno configuradas (ver [apps/web/.env.example](../../apps/web/.env.example))
+- PostgreSQL (`pnpm db:up`)
+- `apps/web/.env` con `NEXT_PUBLIC_API_BASE_URL`, `NEXTAUTH_*` (ver [apps/web/.env.example](../../apps/web/.env.example))
 
 ---
 
-## 2. Preparar el entorno API
-
-### 2.1 Base de datos
+## 2. Preparar entorno
 
 ```bash
-# Levantar PostgreSQL (si usas Docker)
 pnpm db:up
-
-# Aplicar migraciones
 pnpm db:migrate
-
-# Cargar datos demo (usuarios con password "demo", evento, tipos de entrada)
-cd apps/api && pnpm run demo:seed
 ```
 
-**Login:** Con USE_API=true, NextAuth llama a `POST /auth/login`; el token JWT se guarda y se envía en las peticiones.
+**Usuarios:** registrarse en `/register` o usar cuenta existente (p. ej. `felipe.e.salom@gmail.com`). No ejecutar `demo:seed`.
 
-### 2.2 Variables de entorno
+Opcional — limpiar contenido de prueba sin borrar la cuenta maestra:
 
-En `apps/web/.env.local` (o `.env`):
-
-```env
-NEXT_PUBLIC_API_BASE_URL=http://localhost:3001
-NEXT_PUBLIC_USE_API=true
+```bash
+pnpm db:cleanup-content              # dry-run
+pnpm db:cleanup-content -- --confirm
 ```
+
+Login: NextAuth → `POST /auth/login` → JWT en `Authorization: Bearer`.
 
 ---
 
 ## 3. Levantar servicios
 
 ```bash
-# API (puerto 3001) + web (puerto 3000)
-pnpm dev
-```
-
-O por separado:
-
-```bash
-pnpm dev:api   # API en 3001
-pnpm dev:web   # Web en 3000
+pnpm run -w dev
+# o
+pnpm dev:api && pnpm dev:web
 ```
 
 ---
 
 ## 4. Smoke tests (API)
 
-Para verificar que la API responde correctamente:
-
 ```bash
-cd apps/api
-pnpm run smoke
+pnpm --filter api run smoke:api
+pnpm --filter api run smoke:api:user-portal
 ```
 
-Comprueba: `events.list`, `events.getDetail`, `me`, `me/orders`, `me/tickets` con header `X-Dev-User-Id: user-admin`.
+Variables:
 
-Variables opcionales:
-
-- `API_BASE_URL` o `NEXT_PUBLIC_API_BASE_URL` — URL de la API (default: http://localhost:3001)
-- `SMOKE_DEV_USER_ID` — ID de usuario para auth (default: user-admin)
+- `API_BASE_URL` / `NEXT_PUBLIC_API_BASE_URL` — default `http://localhost:3001`
+- `SMOKE_USER_EMAIL`, `SMOKE_USER_PASSWORD` — cuenta en BD
+- `SMOKE_DEV_USER_ID` — fallback dev header (default `user-admin`)
 
 ---
 
 ## 5. Flujos a probar
 
-Usuarios demo (ver [DEVELOPER_USERS.md](./DEVELOPER_USERS.md)) — contraseña: `demo`.
+Usar cuentas reales con el rol necesario (ver [DEVELOPER_USERS.md](./DEVELOPER_USERS.md)).
 
-| Flujo | Usuario | Rutas / pasos |
-|-------|---------|----------------|
-| **Home y listado** | Cualquiera | `/home`, `/explore` — ver eventos |
-| **Detalle evento** | Cualquiera | `/events/[id]` — ver evento, tipos de entrada |
-| **Checkout y compra** | `user@demo.local` | `/checkout` → agregar al carrito → crear orden → `/checkout/success` → "Pay DEMO" |
-| **Mis tickets** | `user@demo.local` | `/me/tickets` — ver tickets tras compra |
-| **Mis órdenes** | `user@demo.local` | `/me/orders` |
-| **Admin** | `admin@demo.local` | `/admin`, `/admin/eventos`, `/admin/usuarios`, `/admin/payouts` |
-| **Producer** | `producer@demo.local` | `/producer`, `/producer/events`, crear evento, agregar ticket types |
-| **Gastro** | `gastro@demo.local` | `/gastro`, `/gastro/contenido`, `/gastro/descuentos` |
-| **Referrer** | `referrer@demo.local` | `/referrer`, `/referrer/eventos/[id]` |
-| **Scanner** | `scanner@demo.local` | `/dev/scanner-sim` — validar QR de un ticket |
+| Flujo | Rol típico | Pasos |
+|-------|------------|--------|
+| Home / explore | USER | `/home`, `/explore` |
+| Detalle + compra | USER | Evento → checkout → **Pagar demo** → `/me/tickets` |
+| Portal | USER | `/me`, carrito, favoritos, transferencias |
+| Admin | ADMIN | `/admin/*` |
+| Productor | PRODUCER_OWNER | `/producer/events` |
+| Gastro | GASTRO_OWNER | `/gastro/*` |
+| Scanner | SCANNER | `/dev/scanner-sim` o app scanner |
 
 ---
 
 ## 6. Probar API con curl
 
-### Auth (X-Dev-User-Id en desarrollo)
+### Público
 
 ```bash
-# Listar eventos
 curl -s "http://localhost:3001/public/events?tenantId=tenant-demo&limit=5"
-
-# Perfil del usuario autenticado
-curl -s -H "X-Dev-User-Id: user-admin" http://localhost:3001/me
-
-# Órdenes del comprador
-curl -s -H "X-Dev-User-Id: user-buyer" http://localhost:3001/me/orders
 ```
 
-### Login real (JWT)
+### Login JWT
 
 ```bash
 TOKEN=$(curl -s -X POST http://localhost:3001/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@demo.local","password":"demo"}' \
+  -d '{"email":"felipe.e.salom@gmail.com","password":"<PASSWORD>","tenantId":"tenant-demo"}' \
   | jq -r '.token')
 
 curl -s -H "Authorization: Bearer $TOKEN" http://localhost:3001/me
 ```
 
+### Dev header (solo desarrollo)
+
+```bash
+curl -s -H "X-Dev-User-Id: <user-uuid>" http://localhost:3001/me
+```
+
+El `user-uuid` debe existir en BD (no hay IDs fijos `user-admin` salvo que los hayas creado).
+
 ---
 
-## 7. Conmutar entre Local y API
+## 7. Pago demo (checkout)
 
-| Variable | Comportamiento |
-|----------|----------------|
-| `NEXT_PUBLIC_USE_API=false` | LocalRepository (IndexedDB) — no requiere API |
-| `NEXT_PUBLIC_USE_API=true` | ApiRepository — requiere API en ejecución |
+1. Crear orden en checkout.
+2. Crear pago con provider `DEMO`.
+3. `POST /public/payments/:paymentId/demo-confirm`.
+4. Ver ticket en `/me/tickets` con QR.
 
-Para modo LocalStorage:
-
-1. En `.env.local`: `NEXT_PUBLIC_USE_API=false`
-2. Ir a `/dev/seed` y ejecutar "Seed demo data"
-3. Iniciar sesión y probar flujos
-
-Para modo API:
-
-1. Configurar BD, migraciones y demo-seed (ver §2)
-2. En `.env.local`: `NEXT_PUBLIC_USE_API=true`, `NEXT_PUBLIC_API_BASE_URL=http://localhost:3001`
-3. Levantar API y web
-4. Iniciar sesión con los mismos usuarios (NextAuth usa demo-users; el userId se envía como `X-Dev-User-Id`)
+Integración Getnet real: [getnet-payment-integration.md](../modules/getnet-payment-integration.md).
 
 ---
 
@@ -147,7 +117,17 @@ Para modo API:
 
 | Problema | Solución |
 |----------|----------|
-| "User not found" con X-Dev-User-Id | Ejecutar `pnpm run demo:seed` en `apps/api`. Si la DB ya tenía usuarios con UUID, hacer `pnpm db:reset` y luego `pnpm run demo:seed` para obtener ids: user-admin, user-producer, etc. |
-| CORS | Verificar que la API acepte el origen del frontend (p. ej. http://localhost:3000) |
-| Smoke tests fallan | Comprobar que la API está en ejecución y que la BD tiene el demo-seed aplicado |
-| Eventos vacíos | El demo-seed crea un evento "Demo Concert". Si no aparece, verificar tenantId=tenant-demo |
+| Login falla | Verificar usuario en BD; `reset-password.ts` si hace falta |
+| 401 tras login | Token huérfano si el usuario fue borrado — volver a iniciar sesión |
+| Sin eventos | Publicar desde productor/admin; no hay seed automático |
+| Smoke skip | `SMOKE_USER_EMAIL` + eventos/tickets en BD |
+| CORS | API debe aceptar origen `http://localhost:3000` |
+
+---
+
+## Referencias
+
+- [DEVELOPER_USERS.md](./DEVELOPER_USERS.md)
+- [SMOKE_TESTS_GUIDE.md](./SMOKE_TESTS_GUIDE.md)
+- [DEVELOPER_SCRIPTS_GUIDE.md](./DEVELOPER_SCRIPTS_GUIDE.md)
+- [DEMO_CURL_FLOW.md](./DEMO_CURL_FLOW.md)

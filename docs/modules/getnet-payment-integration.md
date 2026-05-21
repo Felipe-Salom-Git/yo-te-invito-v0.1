@@ -12,15 +12,24 @@ Integración de Getnet Checkout para pagos reales en Yo Te Invito.
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `GETNET_AUTH_BASE_URL` | No | OAuth server. Default preprod: `https://auth.preprod.geopagos.com` |
-| `GETNET_CHECKOUT_BASE_URL` | No | Checkout API. Default preprod: `https://api-santander.preprod.geopagos.com` |
+| `GETNET_ENV` | No | `staging` (default) or `production` — elige URLs oficiales si no definís base URLs |
+| `GETNET_AUTH_BASE_URL` | No | OAuth server (override). Staging default: `https://auth.stg.geopagos.io` |
+| `GETNET_CHECKOUT_BASE_URL` | No | Checkout API (override). Staging: `https://api-mpos-santander.stg.geopagos.io` |
 | `GETNET_CLIENT_ID` | Yes (for Getnet) | OAuth client ID |
 | `GETNET_CLIENT_SECRET` | Yes (for Getnet) | OAuth client secret |
+| `GETNET_SCOPE` | No | `*` (default) o `api_orders_post` |
+
+**Probar credenciales:** `pnpm --filter api run test:getnet-auth` (debe responder `OK: token obtenido`). Si devuelve **401**, las claves no son válidas para ese ambiente — pedir nuevas a Getnet/Santander (`support@santander.com.ar`).
 | `NEXT_PUBLIC_PAYMENT_PROVIDER_DEFAULT` | No | Frontend default: `DEMO` or `GETNET` |
 
-**Production URLs:**
-- Auth: `https://auth.geopagos.com`
-- Checkout: `https://api.globalgetnet.com.ar`
+**URLs oficiales** ([Ambientes Getnet](https://developers-sdk-documentation-site-santander.preprod.geopagos.com/page/environments)):
+
+| Ambiente | Auth | Checkout |
+|----------|------|----------|
+| Staging | `https://auth.stg.geopagos.io` | `https://api-mpos-santander.stg.geopagos.io` |
+| Production | `https://auth.prd.geopagos.io` | `https://api.globalgetnet.com.ar` |
+
+No usar hosts `*.preprod.geopagos.com` / `api-santander.preprod.geopagos.com` — responden **404**.
 
 ## GETNET_WEB_CHECKOUT_* Credentials
 

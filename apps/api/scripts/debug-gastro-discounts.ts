@@ -1,3 +1,8 @@
+/**
+ * List latest gastro discounts and profile linkage (read-only).
+ * Run: pnpm --filter api run debug:gastro-discounts
+ */
+
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();

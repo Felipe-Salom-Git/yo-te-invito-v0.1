@@ -44,7 +44,7 @@ Data: repositorio, seed, mocks. Backend/DB fuera de alcance.
 | `/referrer` | Portal referrer (shell) |
 | `/gastro` | Portal gastro (shell) |
 | `/login`, `/logout` | Auth |
-| `/dev/local-db`, `/dev/scanner-sim`, `/dev/seed` | Dev tools |
+| `/dev/scanner-sim` | Dev tool (QR sim; seed/local-db removed) |
 
 ---
 

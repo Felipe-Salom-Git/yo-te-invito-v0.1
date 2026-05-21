@@ -5,28 +5,20 @@ import type {
   MeResponse,
   MeTicketsResponse,
   MeTicketItem,
+  MeTicketDetail,
   MeOrdersResponse,
   MeOrdersQuery,
-  UserPreferences,
-  UserPreferencesPatch,
+  UserPortalPreferences,
+  UserPortalPreferencesPatch,
+  PatchTicketReminderBody,
+  TicketTransferOfferSummary,
 } from '@yo-te-invito/shared';
+import {
+  readPortalPreferences,
+  mergePortalPreferencesPatch,
+  isTicketReminderEnabled,
+} from './user-portal-preferences.util';
 import { ErrorCode } from '@yo-te-invito/shared';
-
-const MAX_SAVED_EVENT_IDS = 100;
-
-function normalizeEventIdList(v: unknown): string[] {
-  if (!Array.isArray(v)) return [];
-  const out: string[] = [];
-  const seen = new Set<string>();
-  for (const x of v) {
-    if (typeof x !== 'string' || !x.trim()) continue;
-    if (seen.has(x)) continue;
-    seen.add(x);
-    out.push(x);
-    if (out.length >= MAX_SAVED_EVENT_IDS) break;
-  }
-  return out;
-}
 
 @Injectable()
 export class MeService {
@@ -266,7 +258,7 @@ export class MeService {
     const orders = await this.prisma.order.findMany({
       where: {
         tenantId,
-        buyerEmail: user.email,
+        OR: [{ buyerUserId: userId }, { buyerEmail: user.email }],
       },
       select: {
         id: true,
@@ -298,51 +290,112 @@ export class MeService {
   async getPreferences(
     tenantId: string,
     userId: string,
-  ): Promise<UserPreferences> {
+  ): Promise<UserPortalPreferences> {
     const user = await this.requireUser(tenantId, userId, { id: true, preferences: true });
-    const prefs = (user.preferences as Record<string, unknown> | null) ?? {};
-    return {
-      userId: user.id,
-      preferredCity:
-        typeof prefs.preferredCity === 'string' ? prefs.preferredCity : null,
-      notifyNewEvents:
-        typeof prefs.notifyNewEvents === 'boolean' ? prefs.notifyNewEvents : true,
-      notifyReminders:
-        typeof prefs.notifyReminders === 'boolean' ? prefs.notifyReminders : true,
-      favoriteEventIds: normalizeEventIdList(prefs.favoriteEventIds),
-      expectedEventIds: normalizeEventIdList(prefs.expectedEventIds),
-    };
+    return readPortalPreferences(user.id, user.preferences);
   }
 
   async updatePreferences(
     tenantId: string,
     userId: string,
-    patch: UserPreferencesPatch,
-  ): Promise<UserPreferences> {
+    patch: UserPortalPreferencesPatch,
+  ): Promise<UserPortalPreferences> {
     const user = await this.requireUser(tenantId, userId, { preferences: true });
-    const prev = (user.preferences as Record<string, unknown> | null) ?? {};
-    const next: Record<string, unknown> = { ...prev };
-
-    if (patch.preferredCity !== undefined) {
-      next.preferredCity = patch.preferredCity;
-    }
-    if (patch.notifyNewEvents !== undefined) {
-      next.notifyNewEvents = patch.notifyNewEvents;
-    }
-    if (patch.notifyReminders !== undefined) {
-      next.notifyReminders = patch.notifyReminders;
-    }
-    if (patch.favoriteEventIds !== undefined) {
-      next.favoriteEventIds = normalizeEventIdList(patch.favoriteEventIds);
-    }
-    if (patch.expectedEventIds !== undefined) {
-      next.expectedEventIds = normalizeEventIdList(patch.expectedEventIds);
-    }
-
+    const merged = mergePortalPreferencesPatch(user.preferences, patch);
     await this.prisma.user.update({
       where: { id: userId },
-      data: { preferences: next as Prisma.InputJsonValue },
+      data: { preferences: merged },
     });
     return this.getPreferences(tenantId, userId);
+  }
+
+  async patchTicketReminder(
+    tenantId: string,
+    userId: string,
+    ticketId: string,
+    body: PatchTicketReminderBody,
+  ): Promise<{ ticketId: string; reminderEnabled: boolean }> {
+    await this.getMyTicketById(tenantId, userId, ticketId);
+    const user = await this.requireUser(tenantId, userId, { preferences: true });
+    const prefs = readPortalPreferences(userId, user.preferences);
+    const overrides = { ...prefs.ticketReminderOverrides };
+    if (body.enabled) {
+      delete overrides[ticketId];
+    } else {
+      overrides[ticketId] = false;
+    }
+    const merged = mergePortalPreferencesPatch(user.preferences, {
+      ticketReminderOverrides: overrides,
+    });
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { preferences: merged },
+    });
+    const next = readPortalPreferences(userId, merged as Prisma.JsonValue);
+    return {
+      ticketId,
+      reminderEnabled: isTicketReminderEnabled(next, ticketId),
+    };
+  }
+
+  async getMyTicketDetail(
+    tenantId: string,
+    userId: string,
+    ticketId: string,
+  ): Promise<MeTicketDetail> {
+    const base = await this.getMyTicketById(tenantId, userId, ticketId);
+    const user = await this.requireUser(tenantId, userId, { preferences: true });
+    const prefs = readPortalPreferences(userId, user.preferences);
+
+    const ticket = await this.prisma.ticket.findFirst({
+      where: { id: ticketId },
+      select: {
+        source: true,
+        status: true,
+        usedAt: true,
+        revokedAt: true,
+        activeTransferOffer: true,
+        event: { select: { category: true, startAt: true, endAt: true } },
+      },
+    });
+
+    const eventEnd = ticket?.event
+      ? (ticket.event.endAt ?? ticket.event.startAt)
+      : null;
+    const eventNotPast = eventEnd ? eventEnd >= new Date() : false;
+
+    const canTransfer =
+      ticket?.status === 'VALID' &&
+      !ticket.usedAt &&
+      !ticket.revokedAt &&
+      !ticket.activeTransferOffer &&
+      eventNotPast;
+
+    const transferOffer: TicketTransferOfferSummary | null = ticket?.activeTransferOffer
+      ? {
+          id: ticket.activeTransferOffer.id,
+          status: ticket.activeTransferOffer.status as TicketTransferOfferSummary['status'],
+          sourceTicketId: ticket.activeTransferOffer.sourceTicketId,
+          destinationTicketId: ticket.activeTransferOffer.destinationTicketId,
+          sellerUserId: ticket.activeTransferOffer.sellerUserId,
+          buyerUserId: ticket.activeTransferOffer.buyerUserId,
+          acceptToken: ticket.activeTransferOffer.acceptToken,
+          expiresAt: ticket.activeTransferOffer.expiresAt.toISOString(),
+          completedAt: ticket.activeTransferOffer.completedAt?.toISOString() ?? null,
+          cancelledAt: ticket.activeTransferOffer.cancelledAt?.toISOString() ?? null,
+          rejectedAt: ticket.activeTransferOffer.rejectedAt?.toISOString() ?? null,
+          message: ticket.activeTransferOffer.message ?? null,
+          createdAt: ticket.activeTransferOffer.createdAt.toISOString(),
+        }
+      : null;
+
+    return {
+      ...base,
+      source: ticket?.source,
+      reminderEnabled: isTicketReminderEnabled(prefs, ticketId),
+      canTransfer,
+      transferOffer,
+      category: ticket?.event.category ?? undefined,
+    };
   }
 }

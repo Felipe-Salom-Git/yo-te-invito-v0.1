@@ -76,7 +76,7 @@ pnpm --filter api exec prisma generate
 
 ## Bloque Reviews V2 — cerrado (smoke)
 
-Automatizado: `pnpm --filter api run smoke:reviews-v2` (ver guía). Pendiente fuera de alcance: trending `viewCount`, emails disputas.
+Automatizado: `pnpm --filter api run smoke:reviews` (ver guía). Pendiente fuera de alcance: trending `viewCount`, emails disputas.
 
 ## Pendiente documentado
 
@@ -89,10 +89,10 @@ Automatizado: `pnpm --filter api run smoke:reviews-v2` (ver guía). Pendiente fu
 
 ## Smoke tests
 
-Guía completa: [`docs/guides/REVIEWS_V2_SMOKE_TESTS.md`](../guides/REVIEWS_V2_SMOKE_TESTS.md)
+Guía completa: [`docs/guides/SMOKE_TESTS_GUIDE.md`](../guides/SMOKE_TESTS_GUIDE.md)
 
 ```bash
-pnpm --filter api run smoke:reviews-v2
+pnpm --filter api run smoke:reviews
 ```
 
 Checklist manual resumido: reseña gastro V2, perfil `/users/[userId]`, `/producer/comments` + disputa, réplicas gastro/hotel, carruseles ranking, B2B en `/producer/referrals` (separado de público).

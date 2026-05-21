@@ -9,7 +9,7 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 - [x] Registro con elección de perfil + formulario específico (`POST /auth/register` con `profileType` / `profileData`)
 - [x] Perfiles comerciales activos al crear (sin cola admin de perfiles)
 - [x] Admin: ocultar «Perfiles pendientes» (`/admin/perfiles` redirige a `/admin`)
-- [x] Script test user: `pnpm --filter api run demo:enable-test-user-profiles` (`felipe.e.salom@gmail.com`)
+- [x] Script test user: `pnpm --filter api run user:restore-master` (`felipe.e.salom@gmail.com`)
 - [ ] Deprecar/eliminar endpoints legacy `RoleApplication` y `/admin/applications` (opcional)
 
 ---
@@ -33,7 +33,7 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 
 ## C. Vertical hotel
 
-- [ ] Usuario demo `hotel@demo.local` en Prisma si aplica
+- [ ] Usuario hotel de prueba en Prisma (registro manual; sin `demo:seed`)
 - [ ] Edición de ficha desde portal `/hotel`
 - [x] Portal `/hotel/valoraciones` — listado + réplica (`POST /hotel/reviews/:id/reply`)
 - [ ] E2E: apply → admin aprueba → home carrusel `hotel`
@@ -97,7 +97,7 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 
 ## J. Referidos y documentación
 
-- [ ] Reventa E2E si se prioriza
+- [x] Marketplace reventa eliminado — solo transferencia personal (`20260605120000_remove_resale_marketplace`)
 - [ ] Comisiones referidores — reglas definitivas
 - [x] Unificar docs context (`PROJECT_CONTEXT`, `FRONTEND_CONTEXT`, `BACKEND_CONTEXT` sin sufijos V1/V2/V3)
 - [ ] Mantener este archivo al cerrar slices
@@ -117,12 +117,55 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 - [x] Portal productora: aspectos, réplica, filtros 1–10 en `/producer/comments`
 - [x] Réplica gastro/hotel/admin por rutas dedicadas (`/gastro|hotel|admin/reviews/:id/reply`)
 - [x] Formularios B2B con 4 aspectos comerciales (productora ↔ referido)
-- [x] Smoke tests Reviews V2 — `pnpm --filter api run smoke:reviews-v2` + guía `docs/guides/REVIEWS_V2_SMOKE_TESTS.md`
+- [x] Smoke tests Reviews V2 — `pnpm --filter api run smoke:reviews` + guía `docs/guides/SMOKE_TESTS_GUIDE.md`
 - [x] Perfil público comentarista `/users/[userId]` + badge reputación
-- [x] Auth: JWT huérfano tras `demo:seed` → 401 en guard + `me.service` (logout/login; no spam `NotFoundError`)
+- [x] Auth: JWT huérfano si usuario borrado → 401 en guard + `me.service` (logout/login; no spam `NotFoundError`)
 - [ ] Trending real (`viewCount` / `recentScore` en ranking)
 - [ ] Moderación avanzada / notificaciones email para disputas (si aplica)
 - [ ] Export o reporting de disputas y reseñas comerciales
+
+---
+
+## L. Portal usuario final (`/me/*`)
+
+- [x] Etapa 0–1: docs + shared schemas + propuesta Prisma
+- [x] Migración Prisma `20260601120000_user_portal_v1` (`UserCart`, `UserFavorite`, `UserExpectedEvent`, `TicketTransferOffer`, `TicketStatus` transfer)
+- [x] Script migración `pnpm --filter api run migrate:user-portal-preferences` (dry-run / `--confirm`)
+- [x] Backend: dashboard, cart, favorites, expected, activity, account, transfer offers; scanner rechaza `TRANSFER_PENDING`/`TRANSFERRED`
+- [x] Backend: verificación manual / smoke script portal
+- [x] Frontend: repos/hooks `mePortal`, `UserPortalLayout` `/me`, redirects `/cuenta/*` → `/me/*`
+- [x] Carrito API para usuarios autenticados (evento + navbar); invitados siguen con `CartContext`
+- [x] `EventEngagementRow` → `/me/favorites` y `/me/expected-events`
+- [x] Migrar checkout público: `/checkout` → `/me/cart` si hay sesión; carrito API al agregar; `?orderId=` en checkout por evento
+- [x] Detalle ticket portal (`/me/tickets/:id`) + transferencia V1 (crear/cancelar/aceptar)
+- [x] Smoke tests API: `pnpm --filter api run smoke:user-portal` — ver `docs/guides/SMOKE_TESTS_GUIDE.md`
+- [x] V2: notificaciones reales (cron 24h, email Resend, bandeja `/me/notifications`)
+- [x] V2: seguir productoras + recomendaciones (`UserProducerFollow`, `/me/producer-follows`, `/me/recommendations`)
+- [x] Etapa 3 portal: pulido transferencia (email receptor, rechazo, cron expiración, textos legales)
+
+---
+
+## M. Scripts developer — auditoría npm (2026)
+
+- [x] **A** Renombres: `seed:subcategories`, `user:restore-master`, `db:reset-dangerous`, `smoke:api`, `smoke:reviews` + `docs/dev/SCRIPTS.md`
+- [x] **B** Smokes/E2E sin `@demo.local`; variables `SMOKE_*` / `E2E_*` obligatorias
+- [x] **C** `user:inspect`, `user:test-login`, `debug:gastro-discounts`, `debug:admin-api`; scripts legacy fusionados/eliminados
+- [x] **D** Cleanup post-smoke + `smoke:cleanup`; usuarios `*@smoke.yo-te-invito.test`; marcador `[smoke-test]` en reviews
+- [x] **E** Context docs alineados (`AI_ENTRYPOINT`, `PROJECT_*`, `BACKEND_*`, `FRONTEND_*`, § M)
+- [x] **Limpieza documental** `docs/guides/` → vigentes + `docs/legacy/guides/` + `DEVELOPER_SCRIPTS_GUIDE.md` + `SMOKE_TESTS_GUIDE.md`
+
+---
+
+## N. Usuario estándar + limpieza demo (2026-05)
+
+- [x] Portal `/me/*` como hub único; redirects `/cuenta/*` → `/me/*`
+- [x] Carrito API + checkout autenticado; `EventEngagementRow` en API
+- [x] Transferencia personal V1 (`TicketTransferOffer`); sin marketplace reventa
+- [x] Notificaciones `/me/notifications` + cron; follows `/me/producer-follows`
+- [x] Eliminados: `demo:seed*`, `demo:load`, LocalDB web, `/dev/seed`, `/reventa`, módulo `resale` API
+- [x] Eliminados: Next.js `app/api/auth/*` y `app/api/admin/*` (solo NestJS)
+- [x] Scripts: `user:*`, `smoke:*` con cleanup; `db:cleanup-content`, `db:reset-dangerous`
+- [x] Context + guías developer alineados (`§ M`, `§ N`, `DEVELOPER_USERS.md`)
 
 ---
 
@@ -130,10 +173,18 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 
 | Documento | Uso |
 |-----------|-----|
-| `AI_ENTRYPOINT.md` | Índice IA |
+| `AI_ENTRYPOINT.md` | Índice IA + dev/QA rápido |
 | `PROJECT_CONTEXT.md` | Visión + monorepo |
 | `BACKEND_CONTEXT.md` | API + Prisma + scripts |
-| `FRONTEND_CONTEXT.md` | Web + rentals UI |
+| `FRONTEND_CONTEXT.md` | Web + rentals UI + E2E |
 | `FRONTEND_DEMO_NOTES.md` | Histórico demo |
+| `guides/DEVELOPER_SCRIPTS_GUIDE.md` | Manual comandos npm |
+| `guides/SMOKE_TESTS_GUIDE.md` | Smokes + E2E |
+| `guides/README.md` | Índice guías vigentes |
+| `docs/dev/SCRIPTS.md` | Referencia técnica IA |
+| `legacy/guides/` | Histórico archivado |
+| `docs/guides/DEMO_REMOVAL.md` | Regla pago demo / no datos demo |
 | `docs/reviews/REVIEWS_V2.md` | Comentarios y valoraciones V2 |
+| `docs/user/USER_PORTAL.md` | Portal usuario final V1 |
+| `docs/user/USER_PORTAL_PRISMA_PROPOSAL.md` | Diff modelo (pre-migrate) |
 

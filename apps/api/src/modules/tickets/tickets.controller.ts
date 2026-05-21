@@ -1,10 +1,4 @@
-import {
-  Body,
-  Controller,
-  Param,
-  Post,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, GoneException, Param, Post, UseGuards } from '@nestjs/common';
 import {
   transferTicketParamsSchema,
   transferTicketBodySchema,
@@ -14,26 +8,23 @@ import {
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { JwtOrDevAuthGuard } from '../../auth/jwt-or-dev-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { TicketTransferService } from './ticket-transfer.service';
 
 @Controller('tickets')
 export class TicketsController {
-  constructor(private readonly transferService: TicketTransferService) {}
-
+  /** @deprecated Use POST /me/tickets/:ticketId/transfer-offers */
   @Post(':ticketId/transfer')
   @UseGuards(JwtOrDevAuthGuard)
-  async transfer(
-    @CurrentUser() user: { id: string; tenantId: string },
+  transfer(
+    @CurrentUser() _user: { id: string; tenantId: string },
     @Param(new ZodValidationPipe(transferTicketParamsSchema))
-    params: TransferTicketParams,
+    _params: TransferTicketParams,
     @Body(new ZodValidationPipe(transferTicketBodySchema))
-    body: TransferTicketBody,
+    _body: TransferTicketBody,
   ) {
-    return this.transferService.transfer(
-      user.id,
-      user.tenantId,
-      params.ticketId,
-      body,
-    );
+    throw new GoneException({
+      message:
+        'Direct ticket transfer was removed. Use POST /me/tickets/:ticketId/transfer-offers to start a transfer offer.',
+      replacement: '/me/tickets/:ticketId/transfer-offers',
+    });
   }
 }

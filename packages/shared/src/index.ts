@@ -4,6 +4,7 @@
  */
 
 export * from './enums';
+export * from './constants/ticket-transfer';
 export * from './schemas/events';
 export * from './schemas/scanner';
 export * from './schemas/foundation-test.schema';
@@ -36,3 +37,6 @@ export * from './schemas/general-publications';
 export * from './schemas/gastro-locations';
 export * from './schemas/gastro-discounts';
 export * from './schemas/admin-gastro';
+export * from './schemas/user-portal';
+export * from './schemas/ticket-transfer-offer';
+export * from './schemas/notifications';

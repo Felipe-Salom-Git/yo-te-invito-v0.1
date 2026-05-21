@@ -54,7 +54,7 @@ export default function MyOrdersPage() {
 
   return (
     <PageContainer>
-      <Link href="/cuenta" className="mb-4 inline-block text-sm text-text-muted hover:text-text">
+      <Link href="/me" className="mb-4 inline-block text-sm text-text-muted hover:text-text">
         ← Volver a cuenta
       </Link>
       <SectionTitle>Mis pedidos</SectionTitle>

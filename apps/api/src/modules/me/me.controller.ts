@@ -5,13 +5,13 @@ import { Role } from '@yo-te-invito/shared';
 import {
   meTicketsQuerySchema,
   meOrdersQuerySchema,
-  userPreferencesPatchSchema,
+  patchTicketReminderBodySchema,
   requestCommissionBodySchema,
   createGastroPromotionRequestBodySchema,
   createReviewModerationRequestBodySchema,
   type MeTicketsQuery,
   type MeOrdersQuery,
-  type UserPreferencesPatch,
+  type PatchTicketReminderBody,
   type RequestCommissionBody,
   type CreateGastroPromotionRequestBody,
   type CreateReviewModerationRequestBody,
@@ -44,7 +44,17 @@ export class MeController {
     @CurrentUser() user: { id: string; tenantId: string },
     @Param('ticketId') ticketId: string,
   ) {
-    return this.meService.getMyTicketById(user.tenantId, user.id, ticketId);
+    return this.meService.getMyTicketDetail(user.tenantId, user.id, ticketId);
+  }
+
+  @Patch('tickets/:ticketId/reminder')
+  async patchTicketReminder(
+    @CurrentUser() user: { id: string; tenantId: string },
+    @Param('ticketId') ticketId: string,
+    @Body(new ZodValidationPipe(patchTicketReminderBodySchema))
+    body: PatchTicketReminderBody,
+  ) {
+    return this.meService.patchTicketReminder(user.tenantId, user.id, ticketId, body);
   }
 
   @Get('tickets')
@@ -61,21 +71,6 @@ export class MeController {
     @Query(new ZodValidationPipe(meOrdersQuerySchema)) query: MeOrdersQuery,
   ) {
     return this.meService.getMyOrders(user.tenantId, user.id, query);
-  }
-
-  @Get('preferences')
-  async getPreferences(
-    @CurrentUser() user: { id: string; tenantId: string },
-  ) {
-    return this.meService.getPreferences(user.tenantId, user.id);
-  }
-
-  @Patch('preferences')
-  async updatePreferences(
-    @CurrentUser() user: { id: string; tenantId: string },
-    @Body(new ZodValidationPipe(userPreferencesPatchSchema)) body: UserPreferencesPatch,
-  ) {
-    return this.meService.updatePreferences(user.tenantId, user.id, body);
   }
 
   @Get('referral-links')

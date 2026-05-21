@@ -16,14 +16,14 @@
     "serve": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "nest start --watch",
+        "command": "nest build && nest start --watch",
         "cwd": "apps/api"
       }
     },
     "dev": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "nest start --watch",
+        "command": "nest build && nest start --watch",
         "cwd": "apps/api"
       }
     },
@@ -69,10 +69,10 @@
         "cwd": "apps/api"
       }
     },
-    "prisma-reset": {
+    "prisma-reset-dangerous": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "prisma migrate reset --force",
+        "command": "pnpm run prisma-reset-dangerous",
         "cwd": "apps/api"
       }
     }

@@ -16,7 +16,9 @@ High-level project-wide summary. **Current state as verified from the repository
 | **Rentals** | `rental` | **Locales** (`RentalLocation`) + **products** (events linked to a local) |
 | Hotels | `hotel` | `HotelProfile`, portal `/hotel` |
 
-**Maturity**: E2E demo flows (discovery → demo checkout → tickets → scan). Portals for producer, admin, gastro, hotel, referrer. Payments are demo-only.
+**Maturity**: Flujos productivos contra API + PostgreSQL (contenido manual; pago **demo** en checkout). Portales producer, admin, gastro, hotel, referrer, **portal usuario estándar `/me/*`**. Smokes/E2E con credenciales explícitas — sin seeds masivos ni `@demo.local`.
+
+**Usuario estándar (2026-05):** comprador autenticado opera en `/me` (carrito, tickets, favoritos, eventos esperados, actividad, cuenta, notificaciones, seguir productoras). Rutas `/cuenta/*` redirigen a `/me`. Sin LocalDB ni usuarios demo automáticos.
 
 ---
 
@@ -67,11 +69,18 @@ yo-te-invito-v0.1/
 - Admin: users, event approval, inbox (gastro promos, review moderation, **solicitudes de disputa de reseñas**), profiles (incl. hotel), config, **rentals locales/products**, audit.
 - Gastro / Hotel / Referrer portals as documented in backend/frontend context.
 
+### Portal usuario (`/me/*`)
+
+- Migraciones: `user_portal_v1`, notificaciones, producer follows; reventa marketplace **removida** (`remove_resale_marketplace`).
+- Carrito persistido (`UserCart`), favoritos, eventos esperados, transferencias personales (`TicketTransferOffer`), bandeja notificaciones, recomendaciones por follows.
+- Smokes: `smoke:user-portal`, `smoke:notifications`, `smoke:producer-follows` + cleanup automático post-run.
+- Doc detallada: `docs/user/USER_PORTAL.md`, `docs/user/TICKET_TRANSFER.md`.
+
 ### Backend highlights
 
 - Referrer ↔ producer relationships (`ProducerReferrerRelationship`).
 - Inbox → gastro discounts / review moderation / **cola de disputas de reseñas** (`REVIEW_DISPUTE_REQUEST` + modelo `ReviewDisputeRequest`).
-- **Reviews V2**: reseñas públicas (`Review` con `overallRating` + aspectos JSON, estados moderación, réplicas por rol); ranking en `Event.rankingScore` / carruseles `GET /public/events/recommended`; perfil comentarista; smoke `smoke:reviews-v2`. Ver `docs/reviews/REVIEWS_V2.md`.
+- **Reviews V2**: reseñas públicas (`Review` con `overallRating` + aspectos JSON, estados moderación, réplicas por rol); ranking en `Event.rankingScore` / carruseles `GET /public/events/recommended`; perfil comentarista; smoke `smoke:reviews`. Ver `docs/reviews/REVIEWS_V2.md`.
 - Disputas con auditoría; ocultar del público al aceptar disputa (sin borrar reseña por defecto).
 - Valoraciones B2B (`CommercialRelationshipReview`) — no mezclar con reseñas de eventos.
 - Ticket templates (visual design JSON + QR zone rules).
@@ -93,16 +102,20 @@ Summary: real payments, gastro scanner QR, image storage (vs data-URL), ticket r
 
 ---
 
-## 7. Demo database cleanup
+## 7. Dev database & QA
 
-Script: `apps/api/prisma/scripts/cleanup-demo.ts`
+| Acción | Comando |
+|--------|---------|
+| Limpiar contenido tenant (conserva Felipe) | `pnpm db:cleanup-content` / `-- --confirm` |
+| Reset BD completo (peligroso) | `pnpm db:reset-dangerous -- --confirm` |
+| Limpiar artefactos smokes | `pnpm --filter api run smoke:cleanup` / `-- --confirm` |
+| Inventario scripts | `docs/dev/SCRIPTS.md` |
 
-```bash
-pnpm db:cleanup-demo              # dry-run
-pnpm db:cleanup-demo -- --confirm # destructive (dev only)
-```
+Script cleanup: `apps/api/prisma/scripts/cleanup-content.ts` (preserva `felipe.e.salom@gmail.com`). Reset total: `db:reset-dangerous -- --confirm`.
 
-Keeps one user (`felipe.e.salom@gmail.com`), tenant, `PlatformConfig`, subcategories (optional delete flag). Removes all events, rental locales, orders, profiles, etc.
+**Limpieza demo (hecho):** eliminados seeds masivos, LocalDB web, rutas `/dev/seed`, marketplace reventa, Next.js API routes locales de auth/admin. Scripts unificados bajo prefijos `user:*`, `smoke:*`, `seed:subcategories`.
+
+Guías: `docs/guides/README.md`, `DEVELOPER_SCRIPTS_GUIDE.md`, `SMOKE_TESTS_GUIDE.md`, `DEMO_REMOVAL.md`. Histórico: `docs/legacy/guides/`.
 
 ---
 

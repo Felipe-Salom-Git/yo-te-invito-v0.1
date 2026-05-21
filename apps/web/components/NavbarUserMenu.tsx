@@ -4,10 +4,18 @@ import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRole } from '@/hooks/useRole';
 import { useCart } from '@/context/CartContext';
+import { useMeCart, useMeNotificationsUnread } from '@/lib/query/me-portal';
 
 export function NavbarUserMenu() {
   const { session, status, isAuthenticated } = useRole();
-  const { totalItems } = useCart();
+  const { totalItems: localCartItems } = useCart();
+  const { data: apiCart } = useMeCart(isAuthenticated);
+  const { data: unreadData } = useMeNotificationsUnread(isAuthenticated);
+  const unreadNotifications = unreadData?.unreadCount ?? 0;
+  const totalItems = isAuthenticated
+    ? (apiCart?.itemCount ?? 0)
+    : localCartItems;
+  const cartHref = isAuthenticated ? '/me/cart' : '/checkout';
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -27,8 +35,22 @@ export function NavbarUserMenu() {
 
   return (
     <div className="flex items-center gap-3">
+      {isAuthenticated && (
+        <Link
+          href="/me/notifications"
+          className="relative rounded border border-border bg-bg-muted px-3 py-1.5 text-sm text-text hover:bg-border transition-colors"
+          aria-label="Notificaciones"
+        >
+          Notificaciones
+          {unreadNotifications > 0 && (
+            <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-xs text-bg">
+              {unreadNotifications > 9 ? '9+' : unreadNotifications}
+            </span>
+          )}
+        </Link>
+      )}
       <Link
-        href="/checkout"
+        href={cartHref}
         className="relative rounded border border-border bg-bg-muted px-3 py-1.5 text-sm text-text hover:bg-border transition-colors"
       >
         Carrito
@@ -77,11 +99,18 @@ export function NavbarUserMenu() {
                 Cambiar perfil
               </Link>
               <Link
-                href="/cuenta"
+                href="/me"
                 className="block px-3 py-2 text-sm text-text hover:bg-bg-muted"
                 onClick={() => setOpen(false)}
               >
-                Mi cuenta
+                Mi espacio
+              </Link>
+              <Link
+                href="/me/cart"
+                className="block px-3 py-2 text-sm text-text hover:bg-bg-muted"
+                onClick={() => setOpen(false)}
+              >
+                Carrito
               </Link>
               <Link
                 href="/me/tickets"

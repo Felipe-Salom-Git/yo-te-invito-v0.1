@@ -29,7 +29,7 @@ function LoginForm() {
     });
 
     if (res?.error) {
-      setError('Email o contraseña incorrectos. Probá con demo / demo.');
+      setError('Email o contraseña incorrectos.');
       return;
     }
 
@@ -44,9 +44,7 @@ function LoginForm() {
       <Card className="w-full max-w-md">
         <CardHeader>
           <h1 className="text-xl font-semibold text-text">Iniciar sesión</h1>
-          <p className="text-sm text-text-muted">
-            Demo: user@demo.local, admin@demo.local, producer@demo.local… / demo
-          </p>
+          <p className="text-sm text-text-muted">Ingresá con el email y la contraseña de tu cuenta.</p>
         </CardHeader>
         <CardContent>
           {registered && (

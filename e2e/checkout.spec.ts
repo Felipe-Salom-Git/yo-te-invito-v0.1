@@ -1,15 +1,15 @@
 import { test, expect } from '@playwright/test';
+import { loginAsPortalUser } from './helpers/auth';
+import { e2eCredentialsHelp, hasE2eCredentials, isApiAvailable } from './helpers/env';
 
 test.describe('Checkout', () => {
+  test.beforeEach(({ page: _page }, testInfo) => {
+    test.skip(!isApiAvailable(), 'API en :3001 no disponible (pnpm dev:api)');
+    test.skip(!hasE2eCredentials(), e2eCredentialsHelp());
+  });
+
   test.beforeEach(async ({ page }) => {
-    await page.goto('/dev/seed');
-    await page.getByRole('button', { name: 'Seed' }).click().catch(() => {});
-    await page.waitForTimeout(500);
-    await page.goto('/login');
-    await page.getByLabel(/email/i).fill('user@demo.local');
-    await page.getByLabel(/password/i).fill('demo');
-    await page.getByRole('button', { name: /sign in|iniciar/i }).click();
-    await expect(page).toHaveURL(/\/(home|cuenta|admin|producer|gastro|referrer)/);
+    await loginAsPortalUser(page);
   });
 
   test('checkout page loads when event has tickets', async ({ page }) => {
@@ -24,6 +24,8 @@ test.describe('Checkout', () => {
     if ((await buyLink.count()) === 0) test.skip();
     await buyLink.first().click();
     await page.waitForURL(/\/checkout\//);
-    await expect(page.locator('h1, h2').filter({ hasText: /checkout|entradas|seleccionar/i })).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('h1, h2').filter({ hasText: /checkout|entradas|seleccionar/i })).toBeVisible({
+      timeout: 5000,
+    });
   });
 });

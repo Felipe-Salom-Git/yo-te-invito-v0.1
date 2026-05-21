@@ -1,51 +1,40 @@
-# Revisión Login y Conectividad — Yo Te Invito
+# Revisión login y conectividad
 
-## Resumen de correcciones aplicadas
+Ver [DEMO_REMOVAL.md](./DEMO_REMOVAL.md).
 
-### 1. Auth / Login
+## Estado actual
 
-- **producer-events-crud.service.ts**: Corregido error TypeScript en el filtro `status` (EventStatus vs string).
-- **check-credentials**: Actualizado para llamar a la API cuando `NEXT_PUBLIC_USE_API=true`, permitiendo validar usuarios creados por la API (no solo demo).
-- **login/page.tsx**: Obtiene el rol primero desde la sesión (tras signIn) y usa check-credentials como fallback.
+- **Datos:** solo API (`ApiRepository` + PostgreSQL).
+- **Login:** NextAuth Credentials → `POST /auth/login` en NestJS; JWT en sesión.
+- **Sin** `demo-users`, `/dev/seed`, `NEXT_PUBLIC_USE_API` ni `check-credentials` en Next.js.
 
-### 2. Conectividad API ↔ Frontend
+## Checklist local
 
-- **API login**: Verificado que `POST /auth/login` funciona correctamente con usuarios demo (admin, producer, gastro, user).
-- **Smoke tests**: Actualizados para usar Bearer token (obtenido vía login) en lugar de X-Dev-User-Id, para que funcionen sin depender de NODE_ENV=development.
+1. PostgreSQL: `pnpm db:up && pnpm db:migrate`
+2. API: `pnpm dev:api` → `http://localhost:3001/health`
+3. Web `.env`: `NEXT_PUBLIC_API_BASE_URL`, `NEXTAUTH_URL`, `NEXTAUTH_SECRET`
+4. Usuario en BD (registro o cuenta maestra)
+5. Login en `/login` → redirección a `/profiles`
 
-### 3. Prerrequisitos para que el login funcione
+## Variables web
 
-1. **API corriendo**: `pnpm dev:api` (o `pnpm dev` para todo)
-2. **DB migrada y con seed**: `pnpm db:migrate` y `cd apps/api && pnpm run demo:seed`
-3. **NEXTAUTH_SECRET en apps/web/.env**:
-   ```env
-   NEXTAUTH_URL=http://localhost:3000
-   NEXTAUTH_SECRET=<generar con: openssl rand -base64 32>
-   NEXT_PUBLIC_API_BASE_URL=http://localhost:3001
-   NEXT_PUBLIC_USE_API=true
-   ```
+```env
+NEXT_PUBLIC_API_BASE_URL=http://localhost:3001
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=<openssl rand -base64 32>
+```
 
-   Sin `NEXTAUTH_SECRET` aparecen errores como `JWT_SESSION_ERROR: decryption operation failed`.
+## Flujo post-login
 
-### 4. Usuarios demo (contraseña: `demo`)
+1. `signIn('credentials')` → `authorize` en `lib/auth/config.ts` → API login
+2. JWT en sesión (`accessToken`, `userId`, `role`)
+3. `router.push('/profiles')`
 
-| Rol           | Email              | Dashboard  |
-|---------------|--------------------|------------|
-| ADMIN         | admin@demo.local   | /admin     |
-| PRODUCER_OWNER| producer@demo.local| /producer  |
-| GASTRO_OWNER  | gastro@demo.local  | /gastro    |
-| USER          | user@demo.local    | /cuenta    |
+## JWT huérfano
 
-### 5. Scripts de verificación
+Si el usuario fue eliminado de BD, el guard devuelve 401 — cerrar sesión y volver a entrar (no relacionado con seeds; ver cleanup solo con `db:cleanup-content`).
 
-- **Login API**: `cd apps/api && pnpm exec tsx scripts/test-login-api.ts`
-- **Smoke tests**: `cd apps/api && pnpm run smoke`
-- **Demo seed**: `cd apps/api && pnpm run demo:seed`
+## Referencias
 
-### 6. Flujo de login (modo API)
-
-1. Usuario ingresa email/password en `/login`
-2. NextAuth `authorize` llama `POST /auth/login` en la API
-3. Si OK, la API devuelve `{ token, user }`; NextAuth guarda en sesión JWT
-4. Se obtiene el rol (sesión o check-credentials) para redirigir al dashboard
-5. RepositoriesProvider usa `session.user.accessToken` para las llamadas API autenticadas
+- [GUIA_PRUEBAS_FLUJOS_Y_API.md](./GUIA_PRUEBAS_FLUJOS_Y_API.md)
+- [DEVELOPER_USERS.md](./DEVELOPER_USERS.md)

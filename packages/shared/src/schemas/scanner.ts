@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ticketStatusWithTransferSchema } from './ticket-transfer-offer';
 import { ScanResult } from '../enums';
 
 /**
@@ -64,7 +65,7 @@ export type EventTicketsParams = z.infer<typeof eventTicketsParamsSchema>;
 export const offlineTicketSchema = z.object({
   ticketId: z.string(),
   qrPayload: z.string(),
-  status: z.enum(['VALID', 'USED', 'REVOKED']),
+  status: ticketStatusWithTransferSchema,
 });
 export type OfflineTicket = z.infer<typeof offlineTicketSchema>;
 

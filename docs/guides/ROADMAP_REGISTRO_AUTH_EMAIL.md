@@ -1,5 +1,7 @@
 # Roadmap — Registro, Auth Social y Emails
 
+> Registro y login vía API (`POST /auth/register`, NextAuth). Sin modo LocalStorage. Ver [DEMO_REMOVAL.md](./DEMO_REMOVAL.md).
+
 **Fecha:** 2025-03-06  
 **Objetivo:** Formularios de registro (usuarios, productoras, gastro), login con Google, y servicio de emails para la aplicación.
 
@@ -36,7 +38,7 @@
 - Formulario: email, contraseña, confirmar contraseña, nombre, apellido
 - Validación con Zod, mensajes en español
 - Con USE_API: POST a `/auth/register`
-- Con LocalStorage: crear en dynamic-users (o LocalDB si aplica)
+- Fuente vigente: API + PostgreSQL (`POST /auth/register`). LocalDB / LocalStorage ya no aplican.
 - Redirección a login con mensaje "Cuenta creada. Iniciá sesión."
 
 ### Slice 1.3 — Links y flujo

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import type { TicketTypeResponse } from '@/repositories/interfaces';
 import { Button } from '@/components';
+import { useAddToCart } from '@/hooks/useAddToCart';
 
 const TRUST_BULLETS = [
   'Tickets digitales con QR',
@@ -20,8 +21,6 @@ export interface EventPurchaseCardProps {
   /** Optional: show popularity badge when ratingAvg >= 4.5 and ratingCount >= 10 */
   ratingAvg?: number | null;
   ratingCount?: number;
-  /** Optional: show resale trust bullet */
-  hasResale?: boolean;
 }
 
 export function EventPurchaseCard({
@@ -34,8 +33,9 @@ export function EventPurchaseCard({
   onAddToCart,
   ratingAvg,
   ratingCount,
-  hasResale,
 }: EventPurchaseCardProps) {
+  const { cartHref } = useAddToCart();
+
   if (ticketTypes.length === 0) return null;
 
   const totalAvailable = ticketTypes.reduce(
@@ -44,10 +44,6 @@ export function EventPurchaseCard({
   );
   const showScarcity = totalAvailable > 0 && totalAvailable <= 30;
   const showPopular = ratingAvg != null && ratingAvg >= 4.5 && (ratingCount ?? 0) >= 10;
-  const trustBullets = hasResale
-    ? [...TRUST_BULLETS, 'Reventa segura disponible']
-    : TRUST_BULLETS;
-
   return (
     <div
       id="comprar"
@@ -113,7 +109,7 @@ export function EventPurchaseCard({
       </div>
       <div className="mt-4 flex flex-col gap-3 sm:flex-row">
         <Link
-          href="/checkout"
+          href={cartHref}
           className="inline-flex items-center justify-center rounded-lg border border-accent px-4 py-2.5 font-medium text-accent transition-colors hover:bg-accent/10"
         >
           Ir al carrito
@@ -126,7 +122,7 @@ export function EventPurchaseCard({
         </Link>
       </div>
       <ul className="mt-4 space-y-2 border-t border-border pt-4">
-        {trustBullets.map((b, i) => (
+        {TRUST_BULLETS.map((b, i) => (
           <li key={i} className="flex items-center gap-2 text-sm text-text-muted">
             <span className="text-accent" aria-hidden>✔</span>
             {b}

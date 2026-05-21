@@ -77,6 +77,33 @@ export const reviewsKeys = {
     [...reviewsKeys.all, 'v2', category, entityId, tenantId] as const,
 };
 
+// ─── Me portal (usuario final) ─────────────────────────────────────────────
+
+export const mePortalKeys = {
+  all: ['mePortal'] as const,
+  dashboard: () => [...mePortalKeys.all, 'dashboard'] as const,
+  preferences: () => [...mePortalKeys.all, 'preferences'] as const,
+  favorites: () => [...mePortalKeys.all, 'favorites'] as const,
+  expectedEvents: () => [...mePortalKeys.all, 'expectedEvents'] as const,
+  cart: () => [...mePortalKeys.all, 'cart'] as const,
+  pendingOrders: () => [...mePortalKeys.all, 'pendingOrders'] as const,
+  activity: () => [...mePortalKeys.all, 'activity'] as const,
+  account: () => [...mePortalKeys.all, 'account'] as const,
+  ticketDetail: (ticketId: string) => [...mePortalKeys.all, 'ticket', ticketId] as const,
+  transferOffers: (role?: string, status?: string) =>
+    [...mePortalKeys.all, 'transferOffers', role ?? 'all', status ?? ''] as const,
+  transferLookup: (token: string) =>
+    [...mePortalKeys.all, 'transferLookup', token] as const,
+  transferAccept: (token: string) => [...mePortalKeys.all, 'transferAccept', token] as const,
+  notifications: () => [...mePortalKeys.all, 'notifications'] as const,
+  notificationsUnread: () => [...mePortalKeys.all, 'notificationsUnread'] as const,
+  producerFollows: () => [...mePortalKeys.all, 'producerFollows'] as const,
+  producerFollowStatus: (producerProfileId: string) =>
+    [...mePortalKeys.all, 'producerFollowStatus', producerProfileId] as const,
+  recommendations: (limit?: number) =>
+    [...mePortalKeys.all, 'recommendations', limit ?? 12] as const,
+};
+
 // ─── Orders / Checkout ─────────────────────────────────────────────────────
 
 export const ordersKeys = {

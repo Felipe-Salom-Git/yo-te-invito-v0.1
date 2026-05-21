@@ -49,7 +49,7 @@ export class GetnetAuthService {
       grant_type: 'client_credentials',
       client_id: config.clientId,
       client_secret: config.clientSecret,
-      scope: '*',
+      scope: config.scope || '*',
     });
 
     let lastError: Error | null = null;
@@ -89,11 +89,14 @@ export class GetnetAuthService {
       } catch {
         const preview = text.slice(0, 120).replace(/\s+/g, ' ').trim();
         this.logger.warn(`Getnet auth: non-JSON response status=${res.status} body="${preview}"`);
-        const hint = res.status === 401
-          ? ' Credenciales inválidas o no autorizadas.'
-          : res.status >= 400
-            ? ` Servidor respondió ${res.status}.`
-            : '';
+        const hint =
+          res.status === 401
+            ? ' Credenciales inválidas o no autorizadas.'
+            : res.status === 404
+              ? ' URL de auth incorrecta (staging: https://auth.stg.geopagos.io). Revisá GETNET_AUTH_BASE_URL o quitá URLs viejas preprod.geopagos.com del .env.'
+              : res.status >= 400
+                ? ` Servidor respondió ${res.status}.`
+                : '';
         throw new Error(
           `Getnet auth: respuesta inválida (${res.status}). Verifica credenciales y URLs.${hint}`,
         );
@@ -101,6 +104,13 @@ export class GetnetAuthService {
 
       if (!res.ok) {
         this.logger.warn(`Getnet token request failed: status=${res.status}, body=${text.slice(0, 200)}`);
+        if (res.status === 401) {
+          throw new Error(
+            'Getnet auth failed: 401 (client_id / client_secret inválidos o no habilitados para este ambiente). ' +
+              'Pedí credenciales de staging a Getnet/Santander o usá GETNET_ENV=production si son de producción. ' +
+              'Soporte: support@santander.com.ar',
+          );
+        }
         throw new Error(`Getnet auth failed: ${res.status}`);
       }
 

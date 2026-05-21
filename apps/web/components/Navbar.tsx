@@ -31,9 +31,6 @@ export function Navbar() {
           <Link href="/referrers" className="text-text-muted hover:text-accent transition-colors">
             Referidores
           </Link>
-          <Link href="/reventa" className="text-text-muted hover:text-accent transition-colors">
-            Reventa
-          </Link>
           {role === 'ADMIN' && (
             <Link href="/admin" className="text-text-muted hover:text-accent transition-colors">
               Admin

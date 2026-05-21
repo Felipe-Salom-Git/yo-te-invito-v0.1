@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRepositories } from '@/repositories/context';
-import { useCart } from '@/context/CartContext';
+import { useAddToCart } from '@/hooks/useAddToCart';
 import { useEventDetail, eventsKeys } from '@/lib/query/events';
 import { reviewsKeys } from '@/lib/query/keys';
 import { usePublicEntityReviews } from '@/lib/query/reviews';
@@ -56,7 +56,7 @@ export type PlaceDetailViewProps = {
 export function PlaceDetailView({ id, variant, tenantId = 'tenant-demo' }: PlaceDetailViewProps) {
   const repos = useRepositories();
   const queryClient = useQueryClient();
-  const { addItem } = useCart();
+  const { addToCart } = useAddToCart();
   const { addToast } = useToast();
   const [reviewPage, setReviewPage] = useState(1);
   const [reviewFormKey, setReviewFormKey] = useState(0);
@@ -133,16 +133,18 @@ export function PlaceDetailView({ id, variant, tenantId = 'tenant-demo' }: Place
     qty: number
   ) => {
     if (qty < 1 || !event) return;
-    addItem({
-      eventId: id,
-      eventTitle: event.title ?? 'Event',
-      ticketTypeId: tt.id,
-      ticketTypeName: tt.name,
-      price: typeof tt.price === 'string' ? parseFloat(tt.price) : tt.price,
-      quantity: qty,
-      maxPerOrder: Math.min(10, tt.capacityAvailable ?? 0),
-    });
-    setQtyByType((p) => ({ ...p, [tt.id]: 0 }));
+    addToCart(
+      {
+        eventId: id,
+        ticketTypeId: tt.id,
+        quantity: qty,
+        eventTitle: event.title ?? 'Event',
+        ticketTypeName: tt.name,
+        price: typeof tt.price === 'string' ? parseFloat(tt.price) : tt.price,
+        maxPerOrder: Math.min(10, tt.capacityAvailable ?? 0),
+      },
+      { onSuccess: () => setQtyByType((p) => ({ ...p, [tt.id]: 0 })) },
+    );
   };
 
   const handleSubmitReview = (values: ReviewFormSubmitPayload) => {

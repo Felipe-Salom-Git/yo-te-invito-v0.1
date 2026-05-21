@@ -21,6 +21,6 @@ export function getDashboardForRole(role: string | undefined): string {
     case 'SCANNER':
       return '/dev/scanner-sim';
     default:
-      return '/cuenta';
+      return '/me';
   }
 }

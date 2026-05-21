@@ -1,6 +1,6 @@
 /**
  * Manually verify a user's email (bypass email link).
- * Run: cd apps/api && npx tsx scripts/verify-user-email.ts <email>
+ * Run: pnpm --filter api run user:verify-email -- <email>
  */
 
 import { PrismaClient } from '@prisma/client';
@@ -10,7 +10,7 @@ const prisma = new PrismaClient();
 async function main() {
   const email = process.argv[2]?.trim()?.toLowerCase();
   if (!email) {
-    console.log('Usage: npx tsx scripts/verify-user-email.ts <email>');
+    console.log('Usage: pnpm --filter api run user:verify-email -- <email>');
     process.exit(1);
   }
 

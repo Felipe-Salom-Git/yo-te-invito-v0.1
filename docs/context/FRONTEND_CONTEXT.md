@@ -72,9 +72,12 @@ ApiClient → HTTP (NEXT_PUBLIC_API_BASE_URL)
 | **ProducersRepo** | ✓ | público + `getMyProfile` / `createMyProfile` / `updateMyProfile*` + reviews agregadas |
 | **producerReviews** / **adminReviewDisputes** | ✓ | comentarios productora + cola admin disputas |
 | **commercialReviews** | ✓ | valoraciones privadas productora↔referidor |
+| **MePortalRepo** | ✓ | dashboard, cart, favorites, expected-events, activity, account, transfer offers, notifications prefs |
 | ProfilesRepo, ApplicationsRepo, PlatformConfigRepo | ✓ | |
 
 **Category routing**: `gastro` → `/restaurants`, `excursion` → `/excursiones`, `rental` → `/rentals`, `hotel` → `/hoteles`, default → `/events`.
+
+**Auth:** solo NextAuth + API NestJS. Eliminados `app/api/auth/*`, `app/api/admin/*`, `demo-users`, `dynamic-users`, `validate.ts` local.
 
 ---
 
@@ -83,7 +86,8 @@ ApiClient → HTTP (NEXT_PUBLIC_API_BASE_URL)
 | Area | Routes |
 |------|--------|
 | Public | `/`, `/home`, `/explore`, `/events/[id]`, `/restaurants/[id]`, `/excursiones/[id]`, **`/rentals/[id]`**, `/hoteles/[id]`, **`/users/[userId]`** (perfil comentarista), checkout, `/me/tickets`, `/referrers`, `/r/[code]` |
-| Account | `/login`, `/register`, `/cuenta/*` |
+| Account | `/login`, `/register`, **`/me/*`** (portal usuario estándar) |
+| Cuenta (legacy) | `/cuenta/*` → **redirects** a `/me/*` (no mantener lógica duplicada) |
 | Admin | `/admin/*`, **`/admin/rentals`**, **`/admin/rentals/locales/...`**, **`/admin/review-disputes`**, inbox, perfiles, config |
 | Producer | `/producer`, `/producer/events`, ticket studio, **`/producer/profile`** (dashboard por bloques), **`/producer/profile/create`**, **`/producer/profile/identity`**, **`/producer/profile/images`**, **`/producer/profile/contact`**, **`/producer/comments`** (reseñas de eventos + solicitud revisión), referidos, payouts |
 | Gastro / Hotel / Referrer | `/gastro/*`, **`/gastro/valoraciones`**, `/hotel`, **`/hotel/valoraciones`**, `/referrer`, `/cuenta/solicitar-referrer` |
@@ -110,6 +114,26 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`):
 | `/admin/rentals/locales/[locationId]/productos/[productId]/editar` | Edit product + images |
 
 **Forms**: `OpeningHoursEditor` (weekday / saturday / sunday + exceptions), `RentalProductImagesForm` (header + galería multi-upload; comprime JPEG vía `lib/image-compress.ts` antes de enviar data-URL).
+
+### Portal usuario (`/me/*`)
+
+| Ruta | Uso |
+|------|-----|
+| `/me` | Dashboard |
+| `/me/cart` | Carrito API + checkout unificado |
+| `/me/tickets`, `/me/tickets/[ticketId]` | Tickets + transferencia personal |
+| `/me/preferences` | Tabs favoritos / eventos esperados / prefs |
+| `/me/activity` | Asistidos, reviews, transfers |
+| `/me/account` | Perfil, contraseña, solicitudes de rol |
+| `/me/notifications` | Bandeja |
+| `/me/orders` | Historial órdenes |
+
+- Hooks: `lib/query/me-portal.ts`, keys `mePortalKeys` en `lib/query/keys.ts`.
+- Layout: `UserPortalLayout` bajo `app/(portal)/me/`.
+- Engagement en fichas: `EventEngagementRow` → API favoritos / expected-events.
+- Checkout autenticado: redirige a `/me/cart`; invitado usa `/checkout` público.
+
+**Eliminado:** `/reventa`, `/dev/seed`, `/dev/local-db`, `lib/local-db/*`.
 
 ### Other place details
 
@@ -149,11 +173,31 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`):
 
 ---
 
-## 10. Demo / Seed
+## 10. Dev, E2E y datos
 
-- API seeds: `pnpm --filter api run demo:seed`, `demo:seed-curated`, `demo:seed-subcategories`.
-- **Demo cleanup**: `pnpm db:cleanup-demo` (dry-run) / `pnpm db:cleanup-demo -- --confirm` — see `apps/api/prisma/scripts/cleanup-demo.ts`.
-- Dev docs: `/dev/seed`, `/dev/local-db`.
+- **Persistencia:** solo API — no `lib/local-db`, no `/dev/seed`, no `/dev/local-db`.
+- **Subcategorías (estructura):** `pnpm --filter api run seed:subcategories`.
+- **Cleanup contenido:** `pnpm db:cleanup-content` (preserva `felipe.e.salom@gmail.com`).
+- **Dev UI:** `/dev/scanner-sim` (simulación escaneo QR).
+- **Login:** NextAuth → `POST /auth/login`; sin hints `@demo.local` en formulario.
+
+### E2E Playwright (`e2e/`)
+
+| Comando | Spec |
+|---------|------|
+| `pnpm e2e:portal` | `user-portal.spec.ts`, `checkout.spec.ts` |
+| `pnpm e2e:notifications` | `notifications.spec.ts` |
+| `pnpm e2e` | Suite completa |
+
+**Requerido:** `E2E_USER_EMAIL` + `E2E_USER_PASSWORD` (cuenta real en BD). Sin credenciales → skip en tests con login.
+
+`E2E_SEED=1` ignorado (`e2e/global-setup.ts`). Guía: `docs/guides/SMOKE_TESTS_GUIDE.md`.
+
+### Smokes (contrato API, no navegador)
+
+Usar `SMOKE_USER_EMAIL` / `SMOKE_USER_PASSWORD` — ver `docs/guides/SMOKE_TESTS_GUIDE.md`, `docs/guides/DEVELOPER_SCRIPTS_GUIDE.md`.
+
+Ver: `docs/guides/README.md`, `docs/guides/DEVELOPER_SCRIPTS_GUIDE.md`, `docs/guides/SMOKE_TESTS_GUIDE.md`, `docs/guides/DEMO_REMOVAL.md`, `docs/guides/DEVELOPER_USERS.md`.
 
 ---
 

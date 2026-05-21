@@ -25,7 +25,10 @@ export function RepositoriesProvider({
       baseUrl: API_BASE,
       getAuth: async () => ({
         token: (session?.user as { accessToken?: string })?.accessToken ?? null,
-        userId: (session?.user as { id?: string })?.id ?? null,
+        userId:
+          (session?.user as { userId?: string })?.userId ??
+          (session?.user as { id?: string })?.id ??
+          null,
       }),
     });
     return new ApiRepository({ client, defaultTenantId: 'tenant-demo' });

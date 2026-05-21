@@ -1,26 +1,35 @@
 /**
  * Getnet Checkout configuration — read from environment variables.
- * / Integración Getnet Checkout — configuración desde variables de entorno.
+ * Official env URLs: https://developers-sdk-documentation-site-santander.preprod.geopagos.com/page/environments
  */
 
 export interface GetnetConfig {
-  /** Auth server base URL (e.g. https://auth.preprod.geopagos.com) */
+  /** Auth server base URL (e.g. https://auth.stg.geopagos.io) */
   authBaseUrl: string;
-  /** Checkout API base URL (e.g. https://api-santander.preprod.geopagos.com) */
+  /** Checkout API base URL (e.g. https://api-mpos-santander.stg.geopagos.io) */
   checkoutBaseUrl: string;
   clientId: string;
   clientSecret: string;
+  /** OAuth scope — `*` or `api_orders_post` per Getnet docs */
+  scope: string;
   /** Whether Getnet provider is enabled (has valid credentials) */
   enabled: boolean;
-  /** Token cache TTL buffer in seconds (refresh before expiry) */
   tokenBufferSeconds: number;
-  /** HTTP timeout in ms */
   timeoutMs: number;
-  /** Max retries for transient failures */
   maxRetries: number;
-  /** Delay between retries in ms */
   retryDelayMs: number;
 }
+
+const GETNET_URL_PRESETS = {
+  staging: {
+    authBaseUrl: 'https://auth.stg.geopagos.io',
+    checkoutBaseUrl: 'https://api-mpos-santander.stg.geopagos.io',
+  },
+  production: {
+    authBaseUrl: 'https://auth.prd.geopagos.io',
+    checkoutBaseUrl: 'https://api.globalgetnet.com.ar',
+  },
+} as const;
 
 function getEnv(name: string, defaultValue?: string): string {
   const v = process.env[name];
@@ -28,22 +37,28 @@ function getEnv(name: string, defaultValue?: string): string {
   return defaultValue ?? '';
 }
 
+function resolvePreset(): (typeof GETNET_URL_PRESETS)[keyof typeof GETNET_URL_PRESETS] {
+  const raw = getEnv('GETNET_ENV', 'staging').toLowerCase();
+  return raw === 'production' || raw === 'prod'
+    ? GETNET_URL_PRESETS.production
+    : GETNET_URL_PRESETS.staging;
+}
+
 export function loadGetnetConfig(): GetnetConfig {
-  const authBaseUrl =
-    getEnv('GETNET_AUTH_BASE_URL') || 'https://auth.preprod.geopagos.com';
-  const checkoutBaseUrl =
-    getEnv('GETNET_CHECKOUT_BASE_URL') || 'https://api-santander.preprod.geopagos.com';
+  const preset = resolvePreset();
+  const authBaseUrl = getEnv('GETNET_AUTH_BASE_URL') || preset.authBaseUrl;
+  const checkoutBaseUrl = getEnv('GETNET_CHECKOUT_BASE_URL') || preset.checkoutBaseUrl;
   const clientId = getEnv('GETNET_CLIENT_ID');
   const clientSecret = getEnv('GETNET_CLIENT_SECRET');
-
-  const hasCredentials = Boolean(clientId && clientSecret);
+  const scope = getEnv('GETNET_SCOPE', '*');
 
   return {
     authBaseUrl,
     checkoutBaseUrl,
     clientId,
     clientSecret,
-    enabled: hasCredentials,
+    scope,
+    enabled: Boolean(clientId && clientSecret),
     tokenBufferSeconds: 60,
     timeoutMs: 15000,
     maxRetries: 2,

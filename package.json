@@ -16,11 +16,15 @@
     "db:down": "docker compose down",
     "db:migrate": "nx run api:prisma-migrate",
     "db:seed": "nx run api:prisma-seed",
-    "db:reset": "nx run api:prisma-reset",
+    "db:reset-dangerous": "nx run api:prisma-reset-dangerous",
     "db:studio": "nx run api:prisma-studio",
-    "db:cleanup-demo": "pnpm --filter api run db:cleanup-demo",
+    "db:cleanup-content": "pnpm --filter api run db:cleanup-content",
     "e2e": "playwright test",
-    "e2e:ui": "playwright test --ui"
+    "e2e:ui": "playwright test --ui",
+    "e2e:portal": "playwright test e2e/user-portal.spec.ts",
+    "e2e:portal:ui": "playwright test e2e/user-portal.spec.ts --ui",
+    "e2e:notifications": "playwright test e2e/notifications.spec.ts",
+    "e2e:notifications:ui": "playwright test e2e/notifications.spec.ts --ui"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",

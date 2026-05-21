@@ -22,8 +22,8 @@ export const PROFILE_OPTIONS: ProfileOption[] = [
     title: 'Mis Tickets',
     description:
       'Entrá a tu experiencia personal: tus entradas, eventos asistidos, actividad y preferencias.',
-    dashboardRoute: '/cuenta',
-    setupRoute: '/cuenta',
+    dashboardRoute: '/me',
+    setupRoute: '/me',
   },
   {
     id: 'producer',

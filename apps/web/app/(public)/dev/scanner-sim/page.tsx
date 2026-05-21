@@ -28,7 +28,7 @@ export default function ScannerSimPage() {
 
   return (
     <PageContainer>
-      <Link href="/dev/seed" className="mb-4 inline-block text-sm text-text-muted hover:text-text">← Dev tools</Link>
+      <Link href="/home" className="mb-4 inline-block text-sm text-text-muted hover:text-text">← Inicio</Link>
       <SectionTitle>Scanner simulado</SectionTitle>
       <p className="mt-2 text-sm text-text-muted">Ingresá un qrPayload para validar. Resultado: OK, ALREADY_USED, REVOKED, INVALID.</p>
 

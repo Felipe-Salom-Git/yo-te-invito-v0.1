@@ -1,11 +1,13 @@
 # Backend Domain Refactor — Single User + Operational Profiles
 
+> `demo:seed` / `demo-seed.ts` eliminados. Ver [guides/DEMO_REMOVAL.md](../guides/DEMO_REMOVAL.md).
+
 ## Summary
 
 Migration from role-centric user model to **single user + operational profiles**. A person has one account; access to producer/gastro/referrer experiences is via **memberships** on business profiles.
 
 ### Slice 2 updates (continuación)
-- **Seed**: Solo admin; elimina resto de usuarios y datos asociados al ejecutar demo:seed.
+- **Seed histórico:** el antiguo `demo:seed` ya no existe; no ejecutar seeds masivos.
 - **ProducerRolesGuard**: Permite acceso por membership además de rol legacy.
 - **POST /profiles/producer/apply**: Usuario autenticado solicita perfil productor (PENDING).
 - **Event create**: Asigna `producerProfileId` cuando el usuario tiene membership activo.
@@ -66,14 +68,13 @@ Migration from role-centric user model to **single user + operational profiles**
 
 - Migration `20260310170433_add_profiles_and_memberships` is additive.
 - New columns are nullable; existing rows unchanged.
-- Run `pnpm run demo:seed` after migration to create profiles and memberships for demo users.
+- Tras migrar: crear perfiles/memberships **manualmente** (admin UI o SQL) o con `user:restore-master` + flujos de aplicación de perfil. No hay `demo:seed`.
 
 ---
 
-## 5. Seed / Demo Updates
+## 5. Seed / Demo (histórico)
 
-- **demo-seed.ts**: Creates ProducerProfile, GastroProfile, ReferrerProfile and memberships for producer, gastro, referrer users. Sets `producerProfileId` on demo event.
-- **demo-seed-curated.ts**: Sets `producerProfileId` on new events when a profile exists.
+Los scripts `demo-seed.ts` / `demo-seed-curated.ts` fueron **eliminados**. Ver [guides/DEMO_REMOVAL.md](../guides/DEMO_REMOVAL.md).
 
 ---
 

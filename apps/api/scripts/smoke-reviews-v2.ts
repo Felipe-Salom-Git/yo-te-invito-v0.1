@@ -1,13 +1,42 @@
 /**
  * Smoke tests — Reviews V2 (public, disputes, ranking, B2B).
- * Run: pnpm --filter api run smoke:reviews-v2
- * Requires: API on :3001, DB migrated, curated/demo data (pnpm demo:seed-curated or demo:load).
+ * Run: pnpm --filter api run smoke:reviews
+ * Requires: API on :3001, DB migrated, SMOKE_USER_EMAIL + SMOKE_USER_PASSWORD.
+ * Optional role-specific: SMOKE_PRODUCER_EMAIL, SMOKE_GASTRO_EMAIL, SMOKE_REFERRER_EMAIL, SMOKE_ADMIN_EMAIL
  */
 
-const BASE = process.env.API_BASE_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001';
-const TENANT = 'tenant-demo';
-/** Fallback when demo passwords are not seeded (pnpm demo:seed creates user-admin only). */
-const DEV_ADMIN_ID = process.env.SMOKE_DEV_USER_ID ?? 'user-admin';
+import {
+  getSmokeCredentials,
+  login,
+  smokeApiBase,
+  smokeCredentialsHelp,
+} from './lib/smoke-auth';
+import { smokeTestComment } from './lib/smoke-constants';
+import { runSmokeScript } from './lib/smoke-runner';
+
+const BASE = smokeApiBase();
+const TENANT = process.env.SMOKE_TENANT_ID ?? 'tenant-demo';
+
+const ROLE_EMAIL_ENV: Record<string, string> = {
+  user: 'SMOKE_USER_EMAIL',
+  producer: 'SMOKE_PRODUCER_EMAIL',
+  gastro: 'SMOKE_GASTRO_EMAIL',
+  referrer: 'SMOKE_REFERRER_EMAIL',
+  admin: 'SMOKE_ADMIN_EMAIL',
+};
+
+async function loginForRole(
+  role: keyof typeof ROLE_EMAIL_ENV,
+): Promise<{ token: string; userId: string } | null> {
+  const envKey = ROLE_EMAIL_ENV[role];
+  const email =
+    process.env[envKey]?.trim().toLowerCase() ??
+    (role === 'user' || role === 'admin' ? getSmokeCredentials()?.email : undefined);
+  const password =
+    process.env[`SMOKE_${role.toUpperCase()}_PASSWORD`] ?? process.env.SMOKE_USER_PASSWORD;
+  if (!email || !password) return null;
+  return login(email, password);
+}
 
 type Result = { name: string; ok: boolean; skip?: boolean; err?: string };
 
@@ -23,24 +52,6 @@ function fail(name: string, err: string) {
 
 function skip(name: string, reason: string) {
   results.push({ name, ok: true, skip: true, err: reason });
-}
-
-async function login(email: string, password: string): Promise<{ token: string; userId: string; role: string } | null> {
-  try {
-    const res = await fetch(`${BASE}/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, tenantId: TENANT }),
-    });
-    const data = (await res.json()) as {
-      token?: string;
-      user?: { id?: string; role?: string };
-    };
-    if (!res.ok || !data.token || !data.user?.id) return null;
-    return { token: data.token, userId: data.user.id, role: data.user.role ?? 'USER' };
-  } catch {
-    return null;
-  }
 }
 
 async function api(
@@ -84,6 +95,11 @@ const gastroAspects = {
 };
 
 async function main() {
+  if (!getSmokeCredentials()) {
+    console.error(smokeCredentialsHelp());
+    process.exit(1);
+  }
+
   console.log('Reviews V2 smoke —', BASE);
 
   // ── Public: gastro event + summary + list ─────────────────────────────
@@ -98,7 +114,7 @@ async function main() {
     if (!list.ok) {
       fail('public/events (gastro)', `status=${list.status}`);
     } else if (!gastroEventId) {
-      skip('public/events (gastro)', 'no events — run pnpm --filter api run demo:seed-curated');
+      skip('public/events (gastro)', 'no gastro events in DB — create content or set SMOKE_USER_EMAIL');
     } else if (leaksRanking) {
       fail('public/events no rankingScore leak', 'rankingScore in list payload');
     } else {
@@ -162,10 +178,10 @@ async function main() {
     skip('public/reviews/* (gastro)', 'no gastro event');
   }
 
-  // ── Authenticated: create public review (user@demo.local) ─────────────
-  const endUser = await login('user@demo.local', 'demo');
+  // ── Authenticated: create public review (SMOKE_USER_EMAIL) ─────────────
+  const endUser = await loginForRole('user');
   if (!endUser) {
-    skip('POST /me/reviews', 'user@demo.local not in DB — register or demo:load');
+    skip('POST /me/reviews', 'reviewer user not in DB — register or set SMOKE_USER_EMAIL');
   } else if (!gastroEventId) {
     skip('POST /me/reviews', 'no gastro event');
   } else {
@@ -178,7 +194,7 @@ async function main() {
           eventId: gastroEventId,
           overallRating: overall,
           aspectRatings: gastroAspects,
-          comment: 'Smoke test Reviews V2 — experiencia de prueba automatizada.',
+          comment: smokeTestComment('Reviews V2 — experiencia de prueba automatizada.'),
         },
       });
       if (create.ok) {
@@ -212,10 +228,10 @@ async function main() {
     }
   }
 
-  // ── Producer portal + dispute (producer@demo.local) ─────────────────────
-  const producer = await login('producer@demo.local', 'demo');
+  // ── Producer portal + dispute (SMOKE_PRODUCER_EMAIL) ────────────────────
+  const producer = await loginForRole('producer');
   if (!producer) {
-    skip('producer/reviews*', 'producer@demo.local not in DB');
+    skip('producer/reviews*', 'set SMOKE_PRODUCER_EMAIL + password (producer role in DB)');
   } else {
     try {
       const summary = await api('/producer/reviews/summary', { token: producer.token });
@@ -235,7 +251,7 @@ async function main() {
         const reply = await api(`/producer/reviews/${reviewId}/reply`, {
           method: 'POST',
           token: producer.token,
-          body: { body: 'Respuesta smoke test productora — gracias por tu comentario.' },
+          body: { body: smokeTestComment('Respuesta productora — gracias por tu comentario.') },
         });
         if (!reply.ok) fail('POST /producer/reviews/:id/reply', `status=${reply.status}`);
         else pass('POST /producer/reviews/:id/reply');
@@ -247,10 +263,10 @@ async function main() {
     }
   }
 
-  // ── Gastro reply route (gastro@demo.local) ──────────────────────────────
-  const gastroUser = await login('gastro@demo.local', 'demo');
+  // ── Gastro reply route (SMOKE_GASTRO_EMAIL) ─────────────────────────────
+  const gastroUser = await loginForRole('gastro');
   if (!gastroUser) {
-    skip('gastro/reviews*', 'gastro@demo.local not in DB');
+    skip('gastro/reviews*', 'set SMOKE_GASTRO_EMAIL + password (gastro role in DB)');
   } else {
     try {
       const sum = await api('/gastro/reviews/summary', { token: gastroUser.token });
@@ -262,57 +278,57 @@ async function main() {
   }
 
   // ── Admin hide/restore + platform reply (admin) ───────────────────────
-  const admin = (await login('admin@demo.local', 'demo')) ?? {
-    token: null,
-    userId: DEV_ADMIN_ID,
-    role: 'ADMIN',
-  };
-  const adminAuth = admin.token ? { token: admin.token } : { devUserId: admin.userId };
-
-  if (gastroEventId) {
-    try {
-      const list = await api('/public/reviews', {
-        query: { tenantId: TENANT, category: 'gastro', entityId: gastroEventId, limit: '1' },
-      });
-      const reviewId = (list.data as { reviews?: Array<{ id: string }> })?.reviews?.[0]?.id;
-      if (!reviewId) {
-        skip('admin hide/restore', 'no public review to moderate');
-      } else {
-        const hide = await api(`/admin/reviews/${reviewId}/hide`, {
-          method: 'POST',
-          ...adminAuth,
-          body: { reason: 'Smoke test hide' },
-        });
-        if (!hide.ok) fail('POST /admin/reviews/:id/hide', `status=${hide.status}`);
-        else pass('POST /admin/reviews/:id/hide');
-
-        const restore = await api(`/admin/reviews/${reviewId}/restore`, {
-          method: 'POST',
-          ...adminAuth,
-          body: {},
-        });
-        if (!restore.ok) fail('POST /admin/reviews/:id/restore', `status=${restore.status}`);
-        else pass('POST /admin/reviews/:id/restore');
-
-        const platformReply = await api(`/admin/reviews/${reviewId}/reply`, {
-          method: 'POST',
-          ...adminAuth,
-          body: { body: 'Respuesta smoke plataforma — mensaje de prueba.' },
-        });
-        if (!platformReply.ok) fail('POST /admin/reviews/:id/reply', `status=${platformReply.status}`);
-        else pass('POST /admin/reviews/:id/reply (PLATFORM_ADMIN)');
-      }
-    } catch (e) {
-      fail('admin moderation flow', String(e));
-    }
+  const admin = await loginForRole('admin');
+  if (!admin) {
+    skip('admin/reviews*', 'set SMOKE_ADMIN_EMAIL or use master admin as SMOKE_USER_EMAIL');
   } else {
-    skip('admin/reviews*', 'no gastro event');
+    const adminAuth = { token: admin.token };
+
+    if (gastroEventId) {
+      try {
+        const list = await api('/public/reviews', {
+          query: { tenantId: TENANT, category: 'gastro', entityId: gastroEventId, limit: '1' },
+        });
+        const reviewId = (list.data as { reviews?: Array<{ id: string }> })?.reviews?.[0]?.id;
+        if (!reviewId) {
+          skip('admin hide/restore', 'no public review to moderate');
+        } else {
+          const hide = await api(`/admin/reviews/${reviewId}/hide`, {
+            method: 'POST',
+            ...adminAuth,
+            body: { reason: smokeTestComment('hide') },
+          });
+          if (!hide.ok) fail('POST /admin/reviews/:id/hide', `status=${hide.status}`);
+          else pass('POST /admin/reviews/:id/hide');
+
+          const restore = await api(`/admin/reviews/${reviewId}/restore`, {
+            method: 'POST',
+            ...adminAuth,
+            body: {},
+          });
+          if (!restore.ok) fail('POST /admin/reviews/:id/restore', `status=${restore.status}`);
+          else pass('POST /admin/reviews/:id/restore');
+
+          const platformReply = await api(`/admin/reviews/${reviewId}/reply`, {
+            method: 'POST',
+            ...adminAuth,
+            body: { body: smokeTestComment('Respuesta plataforma — mensaje de prueba.') },
+          });
+          if (!platformReply.ok) fail('POST /admin/reviews/:id/reply', `status=${platformReply.status}`);
+          else pass('POST /admin/reviews/:id/reply (PLATFORM_ADMIN)');
+        }
+      } catch (e) {
+        fail('admin moderation flow', String(e));
+      }
+    } else {
+      skip('admin/reviews*', 'no gastro event');
+    }
   }
 
   // ── B2B commercial (producer + referrer) ──────────────────────────────
-  const referrer = await login('referrer@demo.local', 'demo');
+  const referrer = await loginForRole('referrer');
   if (!producer || !referrer) {
-    skip('B2B commercial-reviews', 'producer or referrer@demo.local missing');
+    skip('B2B commercial-reviews', 'set SMOKE_PRODUCER_EMAIL and SMOKE_REFERRER_EMAIL');
   } else {
     try {
       const associated = await api('/producer/referrers/associated', { token: producer.token });
@@ -332,7 +348,7 @@ async function main() {
               agreementCompliance: 7,
               commercialReliability: 8,
             },
-            comment: 'Smoke B2B — valoración comercial de prueba.',
+            comment: smokeTestComment('B2B — valoración comercial de prueba.'),
           },
         });
         if (!b2b.ok) fail('POST commercial-reviews (producer→referrer)', `status=${b2b.status}`);
@@ -368,16 +384,14 @@ async function main() {
   console.log(
     `\n${passed.length} passed, ${skipped.length} skipped, ${failed.length} failed`,
   );
-  if (failed.length > 0) process.exit(1);
+  if (failed.length > 0) return 1;
   if (skipped.length > 0) {
     console.log(
-      '\nTip: para cobertura completa → pnpm --filter api run demo:seed-curated y usuarios demo (demo:load / registro).',
+      '\nTip: para cobertura completa → eventos publicados + SMOKE_USER_EMAIL con ticket comprado o registro manual.',
     );
   }
   console.log('\nReviews V2 smoke completed.');
+  return 0;
 }
 
-main().catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
+runSmokeScript('smoke:reviews', main);

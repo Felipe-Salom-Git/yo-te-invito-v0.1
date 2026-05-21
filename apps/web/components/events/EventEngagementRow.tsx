@@ -2,52 +2,39 @@
 
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useRepositories } from '@/repositories/context';
-import { Button } from '@/components';
-import type { UserPreferences } from '@/repositories/interfaces';
-
-function toggleId(list: string[], id: string, on: boolean): string[] {
-  const set = new Set(list);
-  if (on) set.add(id);
-  else set.delete(id);
-  return [...set];
-}
+import { Button, useToast } from '@/components';
+import { useTenant } from '@/hooks/useTenant';
+import {
+  useMeFavorites,
+  useMeFavoriteMutations,
+  useMeExpectedEvents,
+  useMeExpectedMutations,
+} from '@/lib/query/me-portal';
+import { getErrorMessage } from '@/lib/errors';
 
 type Props = {
   eventId: string;
 };
 
 /**
- * Favoritos + “Esperado” (wishlist) — persiste en GET/PATCH /me/preferences.
+ * Favoritos + “Esperado” — persiste en /me/favorites y /me/expected-events.
  */
 export function EventEngagementRow({ eventId }: Props) {
   const { data: session, status } = useSession();
-  const repos = useRepositories();
-  const queryClient = useQueryClient();
-  const userId =
-    (session?.user as { userId?: string })?.userId ??
-    (session?.user as { id?: string })?.id ??
-    '';
+  const { tenantId } = useTenant();
+  const { addToast } = useToast();
+  const t = tenantId ?? 'tenant-demo';
 
-  const { data: prefs } = useQuery({
-    queryKey: ['userPreferences', userId],
-    queryFn: () => repos.users.getPreferences(userId),
-    enabled: !!userId && status === 'authenticated',
-  });
-
-  const mut = useMutation({
-    mutationFn: (patch: Partial<UserPreferences>) => repos.users.updatePreferences(userId, patch),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['userPreferences'] });
-      queryClient.invalidateQueries({ queryKey: ['home'] });
-    },
-  });
+  const isAuthed = status === 'authenticated' && !!session?.user;
+  const { data: favData } = useMeFavorites(isAuthed);
+  const { data: expData } = useMeExpectedEvents(isAuthed);
+  const { create: createFav, remove: removeFav } = useMeFavoriteMutations();
+  const { create: createExp, remove: removeExp } = useMeExpectedMutations();
 
   if (status === 'loading') {
     return null;
   }
-  if (!session?.user || !userId) {
+  if (!isAuthed) {
     return (
       <p className="text-sm text-text-muted">
         <Link href="/login" className="text-accent hover:underline">
@@ -58,10 +45,34 @@ export function EventEngagementRow({ eventId }: Props) {
     );
   }
 
-  const favs = prefs?.favoriteEventIds ?? [];
-  const expected = prefs?.expectedEventIds ?? [];
-  const isFav = favs.includes(eventId);
-  const isExpected = expected.includes(eventId);
+  const favorite = favData?.favorites.find(
+    (f) => f.entityType === 'event' && f.entityId === eventId,
+  );
+  const expected = expData?.expectedEvents.find((e) => e.eventId === eventId);
+  const isFav = !!favorite;
+  const isExpected = !!expected;
+  const pending = createFav.isPending || removeFav.isPending || createExp.isPending || removeExp.isPending;
+
+  const onError = (err: unknown) => addToast(getErrorMessage(err), 'error');
+
+  const toggleFav = () => {
+    if (isFav && favorite) {
+      removeFav.mutate(favorite.id, { onError });
+    } else {
+      createFav.mutate(
+        { entityType: 'event', entityId: eventId, tenantId: t },
+        { onError },
+      );
+    }
+  };
+
+  const toggleExpected = () => {
+    if (isExpected && expected) {
+      removeExp.mutate(expected.id, { onError });
+    } else {
+      createExp.mutate({ eventId, tenantId: t }, { onError });
+    }
+  };
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -69,10 +80,8 @@ export function EventEngagementRow({ eventId }: Props) {
         type="button"
         size="sm"
         variant={isFav ? 'primary' : 'outline'}
-        disabled={mut.isPending}
-        onClick={() =>
-          mut.mutate({ favoriteEventIds: toggleId(favs, eventId, !isFav) })
-        }
+        disabled={pending}
+        onClick={toggleFav}
       >
         {isFav ? '★ En favoritos' : '☆ Favorito'}
       </Button>
@@ -80,14 +89,12 @@ export function EventEngagementRow({ eventId }: Props) {
         type="button"
         size="sm"
         variant={isExpected ? 'primary' : 'outline'}
-        disabled={mut.isPending}
-        onClick={() =>
-          mut.mutate({ expectedEventIds: toggleId(expected, eventId, !isExpected) })
-        }
+        disabled={pending}
+        onClick={toggleExpected}
       >
         {isExpected ? '✓ Lo espero' : 'Lo espero'}
       </Button>
-      <Link href="/cuenta/favoritos" className="text-xs text-text-muted hover:text-accent">
+      <Link href="/me/preferences?tab=favorites" className="text-xs text-text-muted hover:text-accent">
         Mis favoritos
       </Link>
     </div>

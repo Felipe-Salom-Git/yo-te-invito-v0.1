@@ -24,7 +24,7 @@ HTTP → Controller (thin) → ZodValidationPipe → Service → Prisma → Post
 ```
 
 - Errors: `AllExceptionsFilter` (`statusCode`, `code`, `message`, `details`, …).
-- Auth: JWT; dev `X-Dev-User-Id` when `NODE_ENV=development` or `DEV_AUTH_ENABLED=true`. Tras validar JWT, `JwtOrDevAuthGuard` comprueba que el usuario exista en BD (401 si fue borrado por `demo:seed`).
+- Auth: JWT; dev `X-Dev-User-Id` when `NODE_ENV=development` or `DEV_AUTH_ENABLED=true`. Tras validar JWT, `JwtOrDevAuthGuard` comprueba que el usuario exista en BD (401 si fue borrado, p. ej. tras cleanup).
 - RBAC: `RolesGuard` + `@RequireRole()`.
 
 ---
@@ -75,14 +75,28 @@ HTTP → Controller (thin) → ZodValidationPipe → Service → Prisma → Post
 
 See previous full endpoint tables in git history; key groups:
 
-- **Me**: tickets, orders, preferences, inbox create, commissions.
+- **Me (legacy)**: tickets, orders, inbox create, commissions; `GET /me/tickets/:id`, `PATCH /me/tickets/:id/reminder`.
+- **Me portal V1** (`MePortalController`, `MeCartController`, …): `GET /me/dashboard`; `GET/PATCH /me/preferences` (portal, sin `favoriteEventIds`); `GET/PATCH /me/account`, `POST /me/account/change-password`; `GET /me/activity` (+ `/attended`, `/reviews`, `/transfers`); carrito `GET/POST/PATCH/DELETE /me/cart*`, `GET /me/cart/pending-orders`, `POST /me/cart/checkout`; `GET/POST/DELETE/PATCH /me/favorites*`; `GET/POST/DELETE/PATCH /me/expected-events*`; transferencias `POST /me/tickets/:ticketId/transfer-offers` (`recipientEmail`, `message`), `GET /me/ticket-transfer-offers/lookup/:token`, `POST .../reject`, `POST .../cancel`, `POST .../accept`, `GET /me/ticket-transfer-offers`; cron expiración `TicketTransferSchedulerService`; legacy `POST /tickets/:ticketId/transfer` → 410. Schemas: `packages/shared/src/schemas/user-portal.ts`, `ticket-transfer-offer.ts`.
 - **Producer**: events CRUD, metrics, ticket types, **ticket-template** PUT/GET/DELETE, referrers (associated, freelance, association link); **profile** `GET/POST/PATCH /producer/profile` (GET puede devolver `null`); **reseñas** `GET /producer/reviews`, `GET /producer/reviews/summary`, `POST /producer/reviews/:id/reply`, `POST /producer/reviews/:id/dispute`, `GET /producer/review-disputes*`; valoraciones comerciales `commercial-reviews` (4 aspectos 1–10).
 - **Admin**: event approval, users, applications, inbox resolve, config, payouts, hotel/referrer profile approval; **disputas** `GET/POST /admin/review-disputes/:id`; **reseñas** `POST /admin/reviews/:id/reply|hide|restore`.
 - **Gastro**: `GET/POST /gastro/reviews*`, `POST /gastro/reviews/:id/reply` (requiere `ReviewsModule` import en `GastroModule`).
 - **Hotel**: `GET /hotel/me`, `POST /profiles/hotel/apply`; `GET /hotel/reviews*`, `POST /hotel/reviews/:id/reply`.
 - **Me**: `POST /me/reviews` (crear review V2 autenticado).
-- **Scanner**: validate, scan, logs.
-- **Gastro / Resale**: content, discounts, validations, listings.
+- **Scanner**: validate, scan, logs; tickets en transferencia (`TRANSFER_PENDING`, `TRANSFERRED`) → inválidos.
+- **Gastro**: content, discounts, validations.
+- **Transferencia personal**: `TicketTransferOffer` — sin marketplace `/resale/*` (eliminado `20260605120000_remove_resale_marketplace`).
+- **Notificaciones usuario**: `GET/PATCH /me/notifications` (`UserNotificationsService`, cron 24h, Resend).
+- **Seguir productoras**: `GET/POST/DELETE/PATCH /me/producer-follows*`, `GET /me/recommendations`.
+
+### Scripts eliminados (2026)
+
+| Antes | Estado |
+|-------|--------|
+| `demo:seed`, `demo:load`, `demo-seed-curated` | Archivos borrados |
+| `cleanup-demo.ts` | Reemplazado por `cleanup-content.ts` |
+| `check-user`, `debug-login`, `test-login-api` | Fusionados en `user:inspect`, `user:test-login` |
+| `db:reset` | Renombrado `db:reset-dangerous` |
+| Módulo `resale` | Eliminado del API |
 
 ---
 
@@ -91,7 +105,8 @@ See previous full endpoint tables in git history; key groups:
 - **Tenant**, **User** (roles incl. `HOTEL_OWNER`, `GASTRO_OWNER`, …)
 - **Event**, **EventMedia**, **ContentSubcategory**
 - **RentalLocation** → rental products
-- **TicketType**, **TicketTemplate**, **TicketBatch**, **Order**, **OrderItem**, **Payment**, **Ticket**
+- **TicketType**, **TicketTemplate**, **TicketBatch**, **Order**, **OrderItem**, **Payment**, **Ticket** (`TRANSFER_PENDING`, `TRANSFERRED`; **TicketTransferOffer**)
+- **UserCart**, **UserCartItem**, **UserFavorite**, **UserExpectedEvent**
 - **ReferrerProfile**, **ProducerReferrerRelationship**, **ReferralLink**, **ReferralAttribution**, **ReferralCommission**
 - **GastroDiscount**, **GastroDiscountValidation**, **InboxItem** (kind incl. `REVIEW_DISPUTE_REQUEST`)
 - **HotelProfile**, memberships, **ProducerProfile**, **GastroProfile**
@@ -101,23 +116,55 @@ See previous full endpoint tables in git history; key groups:
 
 ---
 
-## 7. Demo scripts
+## 7. Dev scripts (API)
+
+Manual de comandos: **`docs/guides/DEVELOPER_SCRIPTS_GUIDE.md`**. Inventario técnico: **`docs/dev/SCRIPTS.md`**. Smokes: **`docs/guides/SMOKE_TESTS_GUIDE.md`**. Regla: **pago demo sí, datos demo automáticos no** — ver `docs/guides/DEMO_REMOVAL.md`.
+
+### Estructura / catálogo
 
 | Script | Command |
 |--------|---------|
-| Base seed | `pnpm --filter api run demo:seed` |
-| Curated content | `pnpm --filter api run demo:seed-curated` |
-| Subcategories | `pnpm --filter api run demo:seed-subcategories` |
-| **Smoke Reviews V2** | `pnpm --filter api run smoke:reviews-v2` |
-| **Cleanup demo** | `pnpm db:cleanup-demo` (dry-run default) |
-| | `pnpm db:cleanup-demo -- --confirm` |
-| | Optional: `--include-subcategories`, `--make-preserved-user-admin` |
+| Subcategorías (idempotente, sin usuarios) | `pnpm --filter api run seed:subcategories` |
+| Restaurar ADMIN + portales maestro | `pnpm --filter api run user:restore-master` |
+| Inspeccionar cuenta | `pnpm --filter api run user:inspect -- <email> [--verify-password <pass>]` |
+| Reset / verificar email | `user:reset-password`, `user:verify-email` |
+| Probar login API | `user:test-login` (con `SMOKE_USER_EMAIL` / `SMOKE_USER_PASSWORD`) |
+| Debug gastro descuentos | `pnpm --filter api run debug:gastro-discounts` |
+| Debug admin gastro API | `pnpm --filter api run debug:admin-api -- --profile-id <id>` |
+| Migración prefs portal (one-shot) | `pnpm --filter api run migrate:user-portal-preferences` (+ `-- --confirm`) |
 
-**Cleanup** (`prisma/scripts/cleanup-demo.ts`):
+### Smokes HTTP (`apps/api/scripts/`, `lib/smoke-auth.ts`)
+
+Requieren API `:3001` + **`SMOKE_USER_EMAIL`** + **`SMOKE_USER_PASSWORD`** (sin `@demo.local`).
+
+| Script | Command | Persistencia |
+|--------|---------|--------------|
+| API health | `pnpm --filter api run smoke:api` | Mínima |
+| Reviews V2 | `pnpm --filter api run smoke:reviews` | Reviews `[smoke-test]` — cleanup auto |
+| Portal `/me` | `pnpm --filter api run smoke:user-portal` | Usuarios `@smoke.yo-te-invito.test`; cleanup auto |
+| Notificaciones | `pnpm --filter api run smoke:notifications` | `e2e-demo:*` — cleanup auto |
+| Producer follows | `pnpm --filter api run smoke:producer-follows` | Borra follow al final |
+
+**Cleanup smoke:** tras cada smoke (salvo `SMOKE_SKIP_CLEANUP=1`); manual: `pnpm --filter api run smoke:cleanup` / `-- --confirm`. Implementación: `scripts/lib/smoke-cleanup.ts`.
+
+**Destructivo (opcional):** `SMOKE_ALLOW_DESTRUCTIVE=1` en `smoke:user-portal` para test de aceptar transferencia (mueve ticket del usuario principal).
+
+### Base de datos (raíz / prisma)
+
+| Script | Command |
+|--------|---------|
+| **Cleanup tenant** | `pnpm db:cleanup-content` (dry-run) |
+| | `pnpm db:cleanup-content -- --confirm` |
+| | `--make-preserved-user-admin`, `--include-subcategories` |
+| **Reset total** | `pnpm db:reset-dangerous -- --confirm` |
+
+**Cleanup content** (`prisma/scripts/cleanup-content.ts`):
 
 - Preserves: `felipe.e.salom@gmail.com`, tenant, `PlatformConfig`, subcategories (unless flag).
-- Deletes: all events (+ media, tickets, orders, …), rental locales, demo profiles, other users, inbox, audit logs.
-- **Refuses `NODE_ENV=production`** unless `ALLOW_PRODUCTION_CLEANUP=true`.
+- Deletes: events, orders, tickets, profiles, other users, inbox, etc. Does **not** re-seed demo data.
+- Blocks `NODE_ENV=production` unless `ALLOW_PRODUCTION_CLEANUP=true`.
+
+**Eliminados (no usar):** `demo:seed`, `demo:load`, `demo:seed-curated`, `db:reset`, `smoke` (sin sufijo), `smoke:reviews-v2`.
 
 ---
 
@@ -147,4 +194,4 @@ See previous full endpoint tables in git history; key groups:
 - `docs/tickets/TICKET_CANVAS_STUDIO.md`
 - `apps/api/prisma/schema.prisma`
 - `docs/reviews/REVIEWS_V2.md`
-- `docs/guides/REVIEWS_V2_SMOKE_TESTS.md`
+- `docs/guides/SMOKE_TESTS_GUIDE.md`

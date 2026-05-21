@@ -69,7 +69,7 @@ function redirectForProfile(type: RegistrationProfileType): string {
     case 'REFERRER':
       return '/referrer';
     default:
-      return '/cuenta';
+      return '/me';
   }
 }
 
@@ -210,7 +210,7 @@ export function RegisterWizard() {
         router.push('/login?registered=1');
         return;
       }
-      router.push('/cuenta');
+      router.push('/me');
       router.refresh();
     } catch (err) {
       setError(getErrorMessage(err));

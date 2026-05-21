@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
@@ -9,35 +9,60 @@ import { useRepositories } from '@/repositories/context';
 import { useTenant } from '@/hooks/useTenant';
 import { checkoutFormSchema, type CheckoutFormData } from '@/lib/schemas/checkout';
 import { getReferralCode } from '@/lib/referral-cookie';
-import { PageContainer, SectionTitle, Button, Input } from '@/components';
+import { PageContainer, SectionTitle, Button, Input, PageLoader } from '@/components';
+import { useState } from 'react';
 
 const TENANT_ID = 'tenant-demo';
 
+/**
+ * Checkout invitado (carrito en localStorage).
+ * Usuarios autenticados usan /me/cart + API.
+ */
 export default function CheckoutPage() {
   const router = useRouter();
-  const { data: session } = useSession();
+  const { status } = useSession();
   const { items, clearCart, updateQuantity, removeItem } = useCart();
   const repos = useRepositories();
   const { tenantId } = useTenant();
   const t = tenantId || TENANT_ID;
-  const userId = (session?.user as { userId?: string })?.userId ?? (session?.user as { id?: string })?.id ?? '';
 
   const [form, setForm] = useState<CheckoutFormData>({
-    email: (session?.user?.email as string) ?? '',
+    email: '',
     firstName: '',
     lastName: '',
     phone: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (status === 'authenticated') {
+      router.replace('/me/cart');
+    }
+  }, [status, router]);
+
+  if (status === 'loading' || status === 'authenticated') {
+    return (
+      <PageContainer>
+        <PageLoader message="Redirigiendo al carrito…" />
+      </PageContainer>
+    );
+  }
+
   if (items.length === 0) {
     return (
       <PageContainer>
         <SectionTitle>Checkout</SectionTitle>
         <p className="mt-4 text-text-muted">Tu carrito está vacío.</p>
-        <Link href="/home" className="mt-4 inline-block text-accent hover:underline">
-          ← Ver eventos
+        <Link href="/explore" className="mt-4 inline-block text-accent hover:underline">
+          Explorar eventos
         </Link>
+        <p className="mt-4 text-sm text-text-muted">
+          <Link href="/login" className="text-accent hover:underline">
+            Iniciá sesión
+          </Link>{' '}
+          para guardar el carrito en tu cuenta.
+        </p>
       </PageContainer>
     );
   }
@@ -55,9 +80,9 @@ export default function CheckoutPage() {
     const parsed = checkoutFormSchema.safeParse(form);
     if (!parsed.success) {
       const errs: Record<string, string> = {};
-      parsed.error.errors.forEach((e) => {
-        const path = e.path[0] as string;
-        if (path) errs[path] = e.message;
+      parsed.error.errors.forEach((err) => {
+        const path = err.path[0] as string;
+        if (path) errs[path] = err.message;
       });
       setErrors(errs);
       return;
@@ -65,16 +90,14 @@ export default function CheckoutPage() {
     setErrors({});
     setLoading(true);
     try {
-      const eventIds = Object.keys(byEvent);
       const orderIds: string[] = [];
-      for (const eventId of eventIds) {
+      for (const eventId of Object.keys(byEvent)) {
         const eventItems = byEvent[eventId]!;
         const order = await repos.orders.create({
           tenantId: t,
           eventId,
           buyerEmail: parsed.data.email,
           buyerName: `${parsed.data.firstName} ${parsed.data.lastName}`,
-          buyerUserId: userId || undefined,
           items: eventItems.map((i) => ({
             ticketTypeId: i.ticketTypeId,
             quantity: i.quantity,
@@ -99,16 +122,30 @@ export default function CheckoutPage() {
         ← Volver
       </Link>
       <SectionTitle>Checkout</SectionTitle>
+      <p className="mt-1 text-sm text-text-muted">
+        Compra como invitado.{' '}
+        <Link href="/login" className="text-accent hover:underline">
+          Iniciá sesión
+        </Link>{' '}
+        para usar el carrito guardado en tu cuenta.
+      </p>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-2">
         <div>
           <h2 className="font-semibold text-text">Resumen</h2>
           <ul className="mt-4 space-y-3">
             {items.map((i) => (
-              <li key={i.ticketTypeId} className="flex items-center justify-between rounded border border-border bg-bg-muted p-3">
+              <li
+                key={i.ticketTypeId}
+                className="flex items-center justify-between rounded border border-border bg-bg-muted p-3"
+              >
                 <div>
-                  <p className="font-medium text-text">{i.eventTitle} — {i.ticketTypeName}</p>
-                  <p className="text-sm text-text-muted">${i.price} x {i.quantity}</p>
+                  <p className="font-medium text-text">
+                    {i.eventTitle} — {i.ticketTypeName}
+                  </p>
+                  <p className="text-sm text-text-muted">
+                    ${i.price} x {i.quantity}
+                  </p>
                 </div>
                 <div className="flex items-center gap-2">
                   <input
@@ -116,7 +153,9 @@ export default function CheckoutPage() {
                     min={0}
                     max={i.maxPerOrder ?? 10}
                     value={i.quantity}
-                    onChange={(e) => updateQuantity(i.ticketTypeId, parseInt(e.target.value, 10) || 0)}
+                    onChange={(e) =>
+                      updateQuantity(i.ticketTypeId, parseInt(e.target.value, 10) || 0)
+                    }
                     className="w-14 rounded border border-border bg-bg px-2 py-1 text-text"
                   />
                   <button
@@ -133,7 +172,10 @@ export default function CheckoutPage() {
           <p className="mt-4 font-semibold text-text">Total: ${total}</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-border bg-bg-muted p-6">
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-4 rounded-xl border border-border bg-bg-muted p-6"
+        >
           <h2 className="font-semibold text-text">Datos del comprador</h2>
           <Input
             label="Email"
@@ -168,7 +210,7 @@ export default function CheckoutPage() {
           />
           {errors.form && <p className="text-sm text-red-400">{errors.form}</p>}
           <Button type="submit" disabled={loading} className="w-full">
-            {loading ? 'Creando…' : 'Crear orden (PENDING_PAYMENT)'}
+            {loading ? 'Creando…' : 'Crear orden y pagar'}
           </Button>
         </form>
       </div>

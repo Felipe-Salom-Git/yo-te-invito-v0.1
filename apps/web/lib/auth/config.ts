@@ -88,12 +88,23 @@ export const authOptions: NextAuthOptions = {
       }
       return true;
     },
-    async jwt({ token, user, account }) {
+    async jwt({ token, user }) {
       if (user) {
         token.userId = (user as { id?: string }).id ?? user.id ?? token.sub;
         token.role = (user as { role?: Role }).role;
         token.tenantId = (user as { tenantId?: string }).tenantId ?? TENANT_ID;
         token.accessToken = (user as { accessToken?: string }).accessToken;
+      }
+      const accessToken = token.accessToken as string | undefined;
+      if (accessToken?.includes('.')) {
+        try {
+          const payload = JSON.parse(
+            Buffer.from(accessToken.split('.')[1]!, 'base64url').toString('utf8'),
+          ) as { sub?: string };
+          if (payload.sub) token.userId = payload.sub;
+        } catch {
+          /* keep existing userId */
+        }
       }
       return token;
     },

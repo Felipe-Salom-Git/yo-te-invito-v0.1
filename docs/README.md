@@ -54,6 +54,17 @@ docs/context/
 - CONTEXT_PENDIENTES.md — backlog checklist
 - FRONTEND_DEMO_NOTES.md — legacy demo mapping (not current persistence)
 
+## Guides (dev & QA)
+
+- [guides/README.md](guides/README.md) — **índice de guías vigentes**
+- [guides/DEVELOPER_SCRIPTS_GUIDE.md](guides/DEVELOPER_SCRIPTS_GUIDE.md) — **manual de comandos npm (español)**
+- [guides/SMOKE_TESTS_GUIDE.md](guides/SMOKE_TESTS_GUIDE.md) — smokes API + E2E Playwright
+- [dev/SCRIPTS.md](dev/SCRIPTS.md) — referencia técnica breve (IA)
+- [guides/DEMO_REMOVAL.md](guides/DEMO_REMOVAL.md) — qué se quitó de seeds/demo (pago demo sí)
+- [guides/DEVELOPER_USERS.md](guides/DEVELOPER_USERS.md) — cuentas, roles, entorno local
+- [guides/GUIA_PRUEBAS_FLUJOS_Y_API.md](guides/GUIA_PRUEBAS_FLUJOS_Y_API.md) — flujos contra API
+- [legacy/guides/](legacy/guides/README.md) — **histórico — no usar para implementar**
+
 ---
 
 ## Rules

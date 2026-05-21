@@ -1212,6 +1212,7 @@ export interface CreateReferrerInput {
   lastName: string;
 }
 
+/** @deprecated Prefer MePortalRepo + UserPortalPreferences from shared */
 export interface UserPreferences {
   userId: string;
   preferredCity: string | null;
@@ -1326,11 +1327,97 @@ export interface ProfilesRepo {
   approveReferrerProfile(profileId: string): Promise<{ id: string; status: string; message: string }>;
 }
 
+export interface MePortalRepo {
+  getDashboard(): Promise<import('@yo-te-invito/shared').MeDashboardResponse>;
+  getPreferences(): Promise<import('@yo-te-invito/shared').UserPortalPreferences>;
+  patchPreferences(
+    patch: import('@yo-te-invito/shared').UserPortalPreferencesPatch,
+  ): Promise<import('@yo-te-invito/shared').UserPortalPreferences>;
+  listFavorites(): Promise<import('@yo-te-invito/shared').MeFavoritesResponse>;
+  createFavorite(
+    body: import('@yo-te-invito/shared').CreateUserFavoriteBody,
+  ): Promise<import('@yo-te-invito/shared').UserFavorite>;
+  deleteFavorite(id: string): Promise<void>;
+  patchFavoriteNotifications(
+    id: string,
+    body: import('@yo-te-invito/shared').PatchUserFavoriteNotifications,
+  ): Promise<import('@yo-te-invito/shared').UserFavorite>;
+  listExpectedEvents(): Promise<import('@yo-te-invito/shared').MeExpectedEventsResponse>;
+  createExpectedEvent(
+    body: import('@yo-te-invito/shared').CreateUserExpectedEventBody,
+  ): Promise<import('@yo-te-invito/shared').UserExpectedEvent>;
+  deleteExpectedEvent(id: string): Promise<void>;
+  patchExpectedEventNotifications(
+    id: string,
+    body: import('@yo-te-invito/shared').PatchUserExpectedEventNotifications,
+  ): Promise<import('@yo-te-invito/shared').UserExpectedEvent>;
+  getCart(): Promise<import('@yo-te-invito/shared').MeCartResponse>;
+  addCartItem(
+    body: import('@yo-te-invito/shared').AddUserCartItemBody,
+  ): Promise<import('@yo-te-invito/shared').MeCartResponse>;
+  patchCartItem(
+    itemId: string,
+    body: import('@yo-te-invito/shared').PatchUserCartItemBody,
+  ): Promise<import('@yo-te-invito/shared').MeCartResponse>;
+  removeCartItem(itemId: string): Promise<import('@yo-te-invito/shared').MeCartResponse>;
+  getPendingOrders(): Promise<import('@yo-te-invito/shared').MePendingOrdersResponse>;
+  checkout(
+    body: import('@yo-te-invito/shared').MeCartCheckoutBody,
+  ): Promise<import('@yo-te-invito/shared').MeCartCheckoutResponse>;
+  getActivity(): Promise<import('@yo-te-invito/shared').MeActivityResponse>;
+  getAccount(): Promise<import('@yo-te-invito/shared').MeAccount>;
+  patchAccount(
+    body: import('@yo-te-invito/shared').PatchMeAccountBody,
+  ): Promise<import('@yo-te-invito/shared').MeAccount>;
+  changePassword(
+    body: import('@yo-te-invito/shared').ChangePasswordBody,
+  ): Promise<import('@yo-te-invito/shared').ChangePasswordResponse>;
+  getTicketDetail(ticketId: string): Promise<import('@yo-te-invito/shared').MeTicketDetail>;
+  patchTicketReminder(
+    ticketId: string,
+    body: import('@yo-te-invito/shared').PatchTicketReminderBody,
+  ): Promise<{ ticketId: string; reminderEnabled: boolean }>;
+  listTransferOffers(
+    query?: import('@yo-te-invito/shared').MeTicketTransferOffersQuery,
+  ): Promise<import('@yo-te-invito/shared').MeTicketTransferOffersResponse>;
+  createTransferOffer(
+    ticketId: string,
+    body: import('@yo-te-invito/shared').CreateTicketTransferOfferBody,
+  ): Promise<import('@yo-te-invito/shared').CreateTicketTransferOfferResponse>;
+  cancelTransferOffer(offerId: string): Promise<import('@yo-te-invito/shared').TicketTransferOfferSummary>;
+  acceptTransferOffer(
+    token: string,
+  ): Promise<import('@yo-te-invito/shared').AcceptTicketTransferOfferResponse>;
+  lookupTransferOffer(
+    token: string,
+  ): Promise<import('@yo-te-invito/shared').TicketTransferLookupResponse>;
+  rejectTransferOffer(
+    offerId: string,
+  ): Promise<import('@yo-te-invito/shared').TicketTransferOfferSummary>;
+  listNotifications(): Promise<import('@yo-te-invito/shared').MeNotificationsResponse>;
+  getNotificationsUnreadCount(): Promise<import('@yo-te-invito/shared').MeNotificationsUnread>;
+  markNotificationRead(notificationId: string): Promise<import('@yo-te-invito/shared').UserNotification>;
+  markAllNotificationsRead(): Promise<{ updated: number }>;
+  listProducerFollows(): Promise<import('@yo-te-invito/shared').MeProducerFollowsResponse>;
+  getProducerFollowStatus(
+    producerProfileId: string,
+  ): Promise<import('@yo-te-invito/shared').ProducerFollowStatus>;
+  createProducerFollow(
+    body: import('@yo-te-invito/shared').CreateUserProducerFollowBody,
+  ): Promise<import('@yo-te-invito/shared').UserProducerFollow>;
+  deleteProducerFollow(id: string): Promise<void>;
+  getRecommendations(
+    limit?: number,
+  ): Promise<import('@yo-te-invito/shared').MeRecommendationsResponse>;
+}
+
 export interface UsersRepo {
   getMe(userId: string): Promise<User | null>;
   getMyTickets(userId: string): Promise<Ticket[]>;
   createReferrer(input: CreateReferrerInput): Promise<User>;
+  /** @deprecated Prefer mePortal.getPreferences */
   getPreferences(userId: string): Promise<UserPreferences | null>;
+  /** @deprecated Prefer mePortal.patchPreferences */
   updatePreferences(userId: string, patch: Partial<UserPreferences>): Promise<UserPreferences>;
   list(tenantId?: string): Promise<User[]>;
   updateRole(userId: string, role: string): Promise<User | null>;
@@ -1516,18 +1603,6 @@ export interface ScannerRepo {
   /** eventId required when using API (scanner validates in event context) */
   scan(qrPayload: string, eventId?: string): Promise<{ result: ScanResult; ticket?: Ticket | null }>;
   listScanLogs(eventId?: string, limit?: number): Promise<TicketScanLogItem[]>;
-}
-
-export type ResaleStatus = 'ACTIVE' | 'SOLD' | 'CANCELLED';
-
-export interface ResaleListing {
-  id: string;
-  ticketId: string;
-  eventId: string;
-  sellerUserId: string;
-  askingPriceCents: number;
-  status: ResaleStatus;
-  createdAt: string;
 }
 
 export interface GastroContent {
@@ -1889,19 +1964,6 @@ export interface PlatformConfigRepo {
   update(tenantId: string, patch: { contact?: PlatformConfig['contact']; categories?: PlatformConfig['categories'] }): Promise<PlatformConfig>;
 }
 
-export interface ResaleRepo {
-  get(listingId: string): Promise<ResaleListing | null>;
-  listActive(): Promise<ResaleListing[]>;
-  listByEvent(eventId: string): Promise<ResaleListing[]>;
-  create(input: {
-    ticketId: string;
-    eventId: string;
-    sellerUserId: string;
-    askingPriceCents: number;
-  }): Promise<ResaleListing>;
-  purchase(listingId: string, buyerUserId: string): Promise<ResaleListing>;
-}
-
 export interface HotelProfileSummary {
   id: string;
   displayName: string;
@@ -2081,6 +2143,7 @@ export interface Repositories {
   tickets: TicketsRepo;
   orders: OrdersRepo;
   users: UsersRepo;
+  mePortal: MePortalRepo;
   reviews: ReviewsRepo;
   referrals: ReferralsRepo;
   courtesies: CourtesiesRepo;
@@ -2094,6 +2157,5 @@ export interface Repositories {
   adminReviewDisputes: AdminReviewDisputesRepo;
   scanner: ScannerRepo;
   payouts: PayoutsRepo;
-  resale: ResaleRepo;
   platformConfig: PlatformConfigRepo;
 }

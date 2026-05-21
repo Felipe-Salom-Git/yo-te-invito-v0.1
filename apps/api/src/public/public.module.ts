@@ -55,5 +55,6 @@ import { CategoryBannersModule } from '../modules/category-banners/category-bann
     PublicGastroLocationsService,
     PublicGastroDiscountsService,
   ],
+  exports: [PublicOrdersService],
 })
 export class PublicModule {}

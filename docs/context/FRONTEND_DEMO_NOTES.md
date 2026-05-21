@@ -1,5 +1,7 @@
 # FRONTEND_DEMO_NOTES.md
 
+> **Histórico:** LocalDB/LocalRepository, `/dev/seed`, `/reventa`, `app/api/auth/*`, `app/api/admin/*` y usuarios `@demo.local` eliminados (2026-05). Ver [guides/DEMO_REMOVAL.md](../guides/DEMO_REMOVAL.md). Portal actual: [user/USER_PORTAL.md](../user/USER_PORTAL.md).
+
 ## Scope
 
 **Legacy / mapping doc.** Compares an older **Yo-Te-Invito (Demo)** tree to structural ideas in **`apps/web`**. It is **not** the source of truth for how data is loaded today.

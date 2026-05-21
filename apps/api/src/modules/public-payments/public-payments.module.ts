@@ -3,16 +3,17 @@ import { PublicOrderPaymentsController } from './public-order-payments.controlle
 import { PublicPaymentsDemoController } from './public-payments-demo.controller';
 import { PublicPaymentsRefreshController } from './public-payments-refresh.controller';
 import { PublicPaymentsService } from './public-payments.service';
-import { GetnetModule } from './providers/getnet/getnet.module';
+import { GetnetAuthService } from './providers/getnet/getnet-auth.service';
+import { GetnetCheckoutService } from './providers/getnet/getnet-checkout.service';
 import { TicketingModule } from '../../ticketing/ticketing.module';
 
 @Module({
-  imports: [GetnetModule, TicketingModule],
+  imports: [TicketingModule],
   controllers: [
     PublicOrderPaymentsController,
     PublicPaymentsDemoController,
     PublicPaymentsRefreshController,
   ],
-  providers: [PublicPaymentsService],
+  providers: [PublicPaymentsService, GetnetAuthService, GetnetCheckoutService],
 })
 export class PublicPaymentsModule {}

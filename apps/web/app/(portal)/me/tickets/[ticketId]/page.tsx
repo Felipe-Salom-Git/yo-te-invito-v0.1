@@ -1,47 +1,35 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 import Link from 'next/link';
-import { useQuery } from '@tanstack/react-query';
-import { useRepositories } from '@/repositories/context';
-import { useTicketById } from '@/lib/query/tickets';
-import { useEventDetail } from '@/lib/query/events';
-import { PageContainer, SectionTitle } from '@/components';
-import { StatusBadge } from '@/components/domain/StatusBadge';
+import { PageContainer, SectionTitle, PageLoader } from '@/components';
+import { TicketQrCard } from '@/components/me/TicketQrCard';
+import { TicketTransferPanel } from '@/components/me/TicketTransferPanel';
+import { TicketReminderToggle } from '@/components/me/TicketReminderToggle';
+import { useMeTicketDetail } from '@/lib/query/me-portal';
 
-const QR_API = 'https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=';
 const TENANT_ID = 'tenant-demo';
+
+const SOURCE_LABELS: Record<string, string> = {
+  ORDER: 'Compra',
+  COURTESY: 'Cortesía',
+  TRANSFER: 'Transferencia recibida',
+};
 
 export default function TicketDetailPage() {
   const params = useParams();
   const ticketId = (params?.ticketId as string) ?? '';
-  const { data: session, status } = useSession();
-  const userId = (session?.user as { userId?: string })?.userId ?? (session?.user as { id?: string })?.id ?? '';
+  const { data: ticket, isLoading, isError } = useMeTicketDetail(ticketId);
 
-  const { data: ticket, isLoading: ticketLoading } = useTicketById(ticketId, !!userId && status === 'authenticated');
-  const { data: event } = useEventDetail(ticket?.eventId ?? '', TENANT_ID);
-
-  if (status === 'loading' || ticketLoading) {
+  if (isLoading) {
     return (
       <PageContainer>
-        <p className="text-text-muted">Cargando…</p>
+        <PageLoader message="Cargando ticket…" />
       </PageContainer>
     );
   }
 
-  if (!session?.user) {
-    return (
-      <PageContainer>
-        <p className="text-text-muted">Debes iniciar sesión para ver tus tickets.</p>
-        <Link href="/login" className="mt-4 block text-accent hover:underline">
-          Iniciar sesión
-        </Link>
-      </PageContainer>
-    );
-  }
-
-  if (!ticket) {
+  if (isError || !ticket) {
     return (
       <PageContainer>
         <p className="text-red-400">Ticket no encontrado</p>
@@ -52,47 +40,58 @@ export default function TicketDetailPage() {
     );
   }
 
+  const event = ticket.event;
+  const showReminder =
+    ticket.status === 'VALID' || ticket.status === 'TRANSFER_PENDING';
+
   return (
     <PageContainer>
       <Link href="/me/tickets" className="mb-4 inline-block text-sm text-text-muted hover:text-text">
-        ← Volver a mis tickets
+        ← Mis tickets
       </Link>
-      <SectionTitle>Ticket</SectionTitle>
+      <SectionTitle>{event.title}</SectionTitle>
+      {ticket.ticketType?.name && (
+        <p className="mt-1 text-sm text-text-muted">{ticket.ticketType.name}</p>
+      )}
+      {ticket.source && (
+        <p className="mt-1 text-xs text-text-muted">
+          Origen: {SOURCE_LABELS[ticket.source] ?? ticket.source}
+        </p>
+      )}
 
-      <div className="mt-8 flex flex-col items-center gap-6">
-        <div className="w-full max-w-sm rounded-xl border border-border bg-bg-muted p-6 text-center">
-          <img
-            src={`${QR_API}${encodeURIComponent(ticket.qrPayload)}`}
-            alt="Código QR del ticket"
-            width={280}
-            height={280}
-            className="mx-auto rounded-lg border border-border"
-          />
-          <StatusBadge status={ticket.status} kind="ticket" className="mt-4" />
-        </div>
+      <div className="mt-8 flex flex-col items-center gap-6 lg:flex-row lg:items-start lg:justify-center">
+        <TicketQrCard qrPayload={ticket.qrPayload} status={ticket.status} />
 
-        <div className="w-full max-w-sm space-y-2 text-left">
-          {(event || ticket.eventTitle) && (
-            <>
-              <p className="font-semibold text-text">{event?.title ?? ticket.eventTitle}</p>
-              {ticket.ticketTypeName ? (
-                <p className="text-sm text-text-muted">{ticket.ticketTypeName}</p>
-              ) : null}
-              {event ? (
-                <p className="text-sm text-text-muted">
-                  {event.venueName && `${event.venueName} · `}
-                  {event.city ?? '—'} · {new Date(event.startAt).toLocaleDateString('es-AR')}
-                </p>
-              ) : null}
-              <Link
-                href={`/events/${ticket.eventId}?tenantId=${TENANT_ID}`}
-                className="inline-block text-sm text-accent hover:underline"
-              >
-                Ver evento →
-              </Link>
-            </>
+        <div className="w-full max-w-sm space-y-4">
+          <div className="rounded-lg border border-border p-4 text-sm">
+            <p className="text-text-muted">
+              {event.venueName && <span>{event.venueName} · </span>}
+              {new Date(event.startAt).toLocaleString('es-AR', {
+                dateStyle: 'medium',
+                timeStyle: 'short',
+              })}
+            </p>
+            <Link
+              href={`/events/${event.id}?tenantId=${TENANT_ID}`}
+              className="mt-2 inline-block text-accent hover:underline"
+            >
+              Ver evento →
+            </Link>
+            <p className="mt-3 text-xs text-text-muted break-all">ID ticket: {ticket.ticketId}</p>
+          </div>
+
+          {showReminder && (
+            <TicketReminderToggle
+              ticketId={ticket.ticketId}
+              reminderEnabled={ticket.reminderEnabled}
+            />
           )}
-          <p className="pt-2 text-xs text-text-muted break-all">ID: {ticket.id}</p>
+
+          <TicketTransferPanel
+            ticket={ticket}
+            offer={ticket.transferOffer}
+            canTransfer={ticket.canTransfer}
+          />
         </div>
       </div>
     </PageContainer>

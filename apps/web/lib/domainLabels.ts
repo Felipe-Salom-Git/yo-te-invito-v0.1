@@ -5,21 +5,38 @@
 
 // ─── Ticket status ────────────────────────────────────────────────────────
 
-export type TicketStatus = 'VALID' | 'USED' | 'REVOKED';
+export type TicketStatus =
+  | 'VALID'
+  | 'USED'
+  | 'REVOKED'
+  | 'TRANSFER_PENDING'
+  | 'TRANSFERRED';
 
-export const TICKET_STATUS_LABELS: Record<TicketStatus, string> = {
+export const TICKET_STATUS_LABELS: Record<string, string> = {
   VALID: 'Válido',
   USED: 'Usado',
   REVOKED: 'Revocado',
+  TRANSFER_PENDING: 'Transferencia pendiente',
+  TRANSFERRED: 'Transferido',
 };
 
 const SUCCESS_BADGE =
   'bg-accent-surface/70 text-accent-soft border border-accent-muted';
 
-export const TICKET_STATUS_STYLES: Record<TicketStatus, string> = {
+export const TICKET_STATUS_STYLES: Record<string, string> = {
   VALID: SUCCESS_BADGE,
   USED: 'bg-amber-500/20 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400',
   REVOKED: 'bg-red-500/20 text-red-600 dark:bg-red-500/20 dark:text-red-400',
+  TRANSFER_PENDING: 'bg-sky-500/20 text-sky-700 dark:text-sky-300',
+  TRANSFERRED: 'bg-border text-text-muted',
+};
+
+export const TRANSFER_OFFER_STATUS_LABELS: Record<string, string> = {
+  AVAILABLE: 'Pendiente',
+  RESERVED: 'Reservada',
+  COMPLETED: 'Completada',
+  CANCELLED: 'Cancelada',
+  EXPIRED: 'Expirada',
 };
 
 // ─── Order status ─────────────────────────────────────────────────────────

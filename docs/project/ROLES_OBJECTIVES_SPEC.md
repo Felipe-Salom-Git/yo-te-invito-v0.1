@@ -207,7 +207,7 @@ Siguiendo `docs/rules/PROJECT_RULES.md`: plan antes de implementar, cambios mín
 
 # 9. Referencias
 
-- **`docs/guides/EXECUTION_PLAN_PRODUCER_PHASE.md`** — Plan de ejecución Fase Productora (payouts, tandas, referidos)
+- **`docs/legacy/guides/execution-plans/EXECUTION_PLAN_PRODUCER_PHASE.md`** — Plan histórico Fase Productora (payouts, tandas, referidos)
 - `docs/frontend/ROADMAP_FRONTEND_MAQUETA.md`
 - `docs/context/FRONTEND_CONTEXT.md`
 - `docs/guides/DEVELOPER_USERS.md`

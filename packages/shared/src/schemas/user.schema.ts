@@ -174,19 +174,24 @@ export type MeOrdersResponse = z.infer<typeof meOrdersResponseSchema>;
 
 const idListSchema = z.array(z.string().min(1)).max(100);
 
-/** User preferences (GET /me/preferences, PATCH /me/preferences) */
+/**
+ * Legacy preferences (GET/PATCH /me/preferences).
+ * @deprecated Use `userPortalPreferencesSchema` + `UserFavorite` / `UserExpectedEvent` tables.
+ * `favoriteEventIds` / `expectedEventIds` remain readable during migration only.
+ */
 export const userPreferencesSchema = z.object({
   userId: z.string(),
   preferredCity: z.string().nullable(),
   notifyNewEvents: z.boolean(),
   notifyReminders: z.boolean(),
-  /** Saved events (any category id in Event table) */
+  /** @deprecated Migrar a UserFavorite — no escribir en código nuevo */
   favoriteEventIds: idListSchema.default([]),
-  /** Wishlist / “voy a ir” independent of ticket ownership */
+  /** @deprecated Migrar a UserExpectedEvent — no escribir en código nuevo */
   expectedEventIds: idListSchema.default([]),
 });
 export type UserPreferences = z.infer<typeof userPreferencesSchema>;
 
+/** @deprecated Prefer `userPortalPreferencesPatchSchema` for portal V1 */
 export const userPreferencesPatchSchema = z.object({
   preferredCity: z.string().nullable().optional(),
   notifyNewEvents: z.boolean().optional(),

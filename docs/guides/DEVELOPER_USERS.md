@@ -1,115 +1,119 @@
-# Guía de Usuarios Developer — Yo Te Invito
+# Guía de usuarios y pruebas — Yo Te Invito
 
-Usuarios mock para probar todas las funcionalidades del frontend en modo LocalStorage (sin base de datos).
+La aplicación usa **API + PostgreSQL** como única fuente de datos. No hay modo LocalStorage ni usuarios demo precargados automáticamente.
 
-**Password para todos**: `demo`
-
----
-
-## Usuarios por rol
-
-| Rol | Email | Funcionalidades a probar |
-|-----|-------|--------------------------|
-| **ADMIN** | `admin@demo.local` | Admin dashboard, auditoría, aprobación de eventos, intervenciones, configuración plataforma |
-| **PRODUCER_OWNER** | `producer@demo.local` | Dashboard productor, crear/editar eventos, entradas, cortesías, referidos, payouts |
-| **GASTRO_OWNER** | `gastro@demo.local` | Portal gastro, descuentos, validaciones, contenido editorial |
-| **REFERRER** | `referrer@demo.local` | Dashboard referrer, eventos asignados, links de venta, comisiones |
-| **USER** | `user@demo.local` | Compra tickets, mis tickets, mis órdenes, cuenta, preferencias |
-| **SCANNER** | `scanner@demo.local` | Scanner UI, validación de QR, historial de scans |
+Ver también: [DEMO_REMOVAL.md](./DEMO_REMOVAL.md).
 
 ---
 
-## Detalle por usuario
+## Cuenta maestra preservada
 
-### Admin
-- **Email:** `admin@demo.local`
-- **Password:** `demo`
-- **Rutas:** `/admin`, `/admin/eventos`, `/admin/excursiones`, `/admin/rentals`, `/admin/productoras`, `/admin/tickets`, `/admin/payouts`, `/admin/configuracion`, `/admin/audit`
-- **Nota:** Dashboard muestra payouts pendientes. Publicidad eliminada. Configuración (`/admin/configuracion`): datos de contacto y categorías; con USE_API=true persiste en la API; con LocalStorage persiste en localStorage.
+El script de cleanup conserva siempre:
 
-### Productor
-- **Email:** `producer@demo.local`
-- **Password:** `demo`
-- **Rutas:** `/producer`, `/producer/events`, `/producer/events/[id]`, cortesías, referidos
-- **Nota:** Tiene productora asociada (`producer-demo`)
+| Email | Uso |
+|-------|-----|
+| `felipe.e.salom@gmail.com` | Cuenta principal de desarrollo; no se borra con `db:cleanup-content` |
 
-### Gastro
-- **Email:** `gastro@demo.local`
-- **Password:** `demo`
-- **Rutas:** `/gastro`, `/gastro/contenido`, `/gastro/descuentos`, `/gastro/validaciones` (Resumen descuentos), `/gastro/valoraciones`
-- **Nota:** Dashboard con botón PWA Scanner; CRUD contenido y descuentos; valoraciones de clientes.
+Restaurar perfiles de portales tras cleanup:
 
-### Referrer
-- **Email:** `referrer@demo.local`
-- **Password:** `demo`
-- **Rutas:** `/referrer`
+```bash
+pnpm db:cleanup-content -- --confirm --make-preserved-user-admin
+# o
+pnpm --filter api run user:restore-master
+```
 
-### Usuario (comprador)
-- **Email:** `user@demo.local`
-- **Password:** `demo`
-- **Rutas:** `/home`, `/explore`, `/events/[id]`, `/checkout`, `/me/tickets`, `/me/orders`, `/cuenta`
-- **Nota:** Mis tickets / Mis pedidos y Cuenta están en el menú de usuario (dropdown) cuando está logueado. Cuenta usa barra horizontal 5px debajo del navbar.
+---
 
-### Scanner
-- **Email:** `scanner@demo.local`
-- **Password:** `demo`
-- **Rutas:** `/dev/scanner-sim` o ruta dedicada de scanner
-- **Nota:** Rol para validar tickets en puerta
+## Crear usuarios para probar roles
+
+1. **Registro web:** `/register` (comprador, productor, gastro, hotel, referrer según wizard).
+2. **Admin API:** usuarios y roles vía panel `/admin/usuarios` (sesión ADMIN).
+3. **Scripts:** `pnpm --filter api run user:inspect`, `user:reset-password`, `user:verify-email`, `user:test-login`.
+
+No usar `demo:seed` ni `@demo.local` — esos scripts fueron eliminados.
+
+---
+
+## Rutas por rol (referencia)
+
+| Rol | Rutas principales |
+|-----|-------------------|
+| **ADMIN** | `/admin`, `/admin/eventos`, `/admin/usuarios`, `/admin/aplicaciones`, `/admin/configuracion` |
+| **PRODUCER_OWNER** | `/producer`, `/producer/events` |
+| **GASTRO_OWNER** | `/gastro`, `/gastro/contenido`, `/gastro/descuentos` |
+| **REFERRER** | `/referrer` |
+| **USER** | `/home`, `/explore`, `/checkout`, `/me/*` |
+| **SCANNER** | App scanner o `/dev/scanner-sim` (validación QR contra API) |
+
+Redirección post-login: `/profiles` → elegir portal.
+
+---
+
+## Entorno local
+
+```bash
+pnpm db:up
+pnpm db:migrate
+pnpm run -w dev    # API :3001 + web :3000
+```
+
+`apps/web/.env`:
+
+```env
+NEXT_PUBLIC_API_BASE_URL=http://localhost:3001
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=<generar con openssl rand -base64 32>
+```
+
+Login: NextAuth Credentials → `POST /auth/login` (JWT en sesión).
+
+Guía de flujos: [GUIA_PRUEBAS_FLUJOS_Y_API.md](./GUIA_PRUEBAS_FLUJOS_Y_API.md).
 
 ---
 
 ## E2E (Playwright)
 
-- **Ejecutar:** `pnpm e2e` (arranca web y corre tests)
-- **UI:** `pnpm e2e:ui` para modo interactivo
-- **Tests:** home, login, checkout (requiere seed en /dev/seed con LocalStorage)
-- **Modo:** Usa LocalStorage por defecto; con USE_API=true hace falta API + demo:seed
+```bash
+pnpm e2e:portal
+pnpm e2e:notifications
+pnpm e2e:ui
+```
 
-## Mejoras recientes
+Requisitos: API en `:3001`, web en `:3000`, **usuario real en BD**:
 
-- **Validación:** Formularios muestran errores por campo (Input con prop `error`).
-- **Accesibilidad:** ARIA, focus visible, labels en botones.
-- **SEO:** Metadatos por ruta (explore, checkout). Template de título en layout.
-- **PWA:** `manifest.json` básico para instalación como app.
+```bash
+E2E_USER_EMAIL=felipe.e.salom@gmail.com E2E_USER_PASSWORD=<password> pnpm e2e:portal
+```
 
-## Config de plataforma
-
-- **Footer:** Muestra email, teléfono y dirección si están configurados en `/admin/configuracion`.
-- **Explore:** Las categorías del filtro provienen de la config (localStorage o API según `USE_API`).
-
-## Modo API (NEXT_PUBLIC_USE_API=true)
-
-Con `NEXT_PUBLIC_USE_API=true` y `NEXT_PUBLIC_API_BASE_URL=http://localhost:3001`:
-- **Login:** NextAuth Credentials llama a `POST /auth/login`; el token JWT se guarda en sesión y se envía en `Authorization: Bearer`.
-- **Requisitos:** API en ejecución (`pnpm dev:api`), DB migrada (`pnpm db:migrate`), demo-seed (`cd apps/api && pnpm run demo:seed`).
-- **Usuarios:** Mismos emails que arriba; contraseña `demo`. Ver [GUIA_PRUEBAS_FLUJOS_Y_API.md](./GUIA_PRUEBAS_FLUJOS_Y_API.md).
-- **NextAuth:** Crear `apps/web/.env` con `NEXTAUTH_SECRET` (ej: `openssl rand -base64 32`) y `NEXTAUTH_URL=http://localhost:3000`. Sin esto el login puede fallar con JWT decryption error.
-
-## Flujo de inicio rápido (modo LocalStorage)
-
-1. Ir a `/dev/seed` y ejecutar **Seed demo data**
-2. Ir a `/login`
-3. Iniciar sesión con el email/password del rol deseado
-4. Navegar a las rutas correspondientes
+Detalle: [SMOKE_TESTS_GUIDE.md](./SMOKE_TESTS_GUIDE.md) (E2E). `E2E_SEED=1` está desactivado (no borra ni recrea datos).
 
 ---
 
-## Cómo agregar un usuario
+## Pago demo (simulador)
 
-Para agregar usuarios en el seed:
+Checkout con provider **DEMO**: crea pago y confirma vía `demo-confirm` sin Getnet/Mercado Pago. Ver [GUIA_PRUEBAS_FLUJOS_Y_API.md](./GUIA_PRUEBAS_FLUJOS_Y_API.md) y [getnet-payment-integration.md](../modules/getnet-payment-integration.md).
 
-- `apps/web/lib/local-db/seed.ts` — agrega entrada en `users`
-- `apps/web/lib/auth/demo-users.ts` — agrega entrada en `DEMO_USERS`
+---
 
-Ambos deben usar el mismo `id` y `email`.
+## Herramientas de mantenimiento
+
+| Comando | Descripción |
+|---------|-------------|
+| `pnpm db:cleanup-content` | Dry-run: qué se borraría del tenant (preserva cuenta maestra) |
+| `pnpm db:cleanup-content -- --confirm` | Ejecutar limpieza de contenido |
+| `pnpm --filter api run seed:subcategories` | Catálogo de subcategorías (sin usuarios) |
+| `pnpm --filter api run user:inspect -- <email>` | Inspeccionar cuenta |
+| `pnpm --filter api run user:reset-password -- <email> <pass>` | Cambiar contraseña |
+| `pnpm --filter api run user:verify-email -- <email>` | Verificar email manualmente |
+| `pnpm --filter api run user:inspect -- <email>` | Ver cuenta y probar contraseña (`--verify-password`) |
+| `pnpm --filter api run user:test-login` | Probar `POST /auth/login` con credenciales env |
+| [DEVELOPER_SCRIPTS_GUIDE.md](./DEVELOPER_SCRIPTS_GUIDE.md) | Manual de comandos npm |
+| [SMOKE_TESTS_GUIDE.md](./SMOKE_TESTS_GUIDE.md) | Smokes + E2E (`SMOKE_*`, `E2E_*`) |
 
 ---
 
 ## Roadmaps
 
-- [ROADMAP_REGISTRO_AUTH_EMAIL.md](./ROADMAP_REGISTRO_AUTH_EMAIL.md) — Registro (users, productoras, gastro), Google OAuth, emails
-- [ROADMAP_PENDIENTES_OPCIONALES.md](./ROADMAP_PENDIENTES_OPCIONALES.md) — Backlog de mejoras opcionales
-
-## Configuración externa
-
-- [CONFIG_GOOGLE_RESEND.md](./CONFIG_GOOGLE_RESEND.md) — Google Cloud Console (OAuth), Resend (emails), Redis (cola)
+- [ROADMAP_REGISTRO_AUTH_EMAIL.md](./ROADMAP_REGISTRO_AUTH_EMAIL.md)
+- [ROADMAP_PENDIENTES_OPCIONALES.md](./ROADMAP_PENDIENTES_OPCIONALES.md)
+- [CONFIG_GOOGLE_RESEND.md](./CONFIG_GOOGLE_RESEND.md)

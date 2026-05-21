@@ -4,6 +4,7 @@ import {
   ConflictException,
   BadRequestException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventCapacityGuardService } from '../common/event-capacity-guard.service';
@@ -147,31 +148,7 @@ export class PublicOrdersService {
         }
       }
 
-      let buyerUserId: string | null = null;
-      if (dto.buyerUserId?.trim()) {
-        const buyerUser = await tx.user.findFirst({
-          where: {
-            id: dto.buyerUserId.trim(),
-            tenantId,
-            deletedAt: null,
-            status: 'ACTIVE',
-          },
-          select: { id: true, email: true },
-        });
-        if (!buyerUser) {
-          throw new BadRequestException({
-            code: ErrorCode.VALIDATION_FAILED,
-            message: 'buyerUserId is invalid for this tenant',
-          });
-        }
-        if (buyerUser.email.trim().toLowerCase() !== dto.buyer.email.trim().toLowerCase()) {
-          throw new BadRequestException({
-            code: ErrorCode.VALIDATION_FAILED,
-            message: 'buyer email must match the logged-in user',
-          });
-        }
-        buyerUserId = buyerUser.id;
-      }
+      const buyerUserId = await this.resolveOrderBuyerUserId(tx, tenantId, dto);
 
       const createdOrder = await tx.order.create({
         data: {
@@ -332,5 +309,49 @@ export class PublicOrdersService {
       tickets,
       createdAt: order.createdAt.toISOString(),
     };
+  }
+
+  /**
+   * Links order to a registered user when email matches.
+   * Ignores stale/wrong buyerUserId from the client (e.g. NextAuth token.sub).
+   */
+  private async resolveOrderBuyerUserId(
+    tx: Prisma.TransactionClient,
+    tenantId: string,
+    dto: CreateOrderDto,
+  ): Promise<string | null> {
+    const emailNorm = dto.buyer.email.trim().toLowerCase();
+
+    if (dto.buyerUserId?.trim()) {
+      const byId = await tx.user.findFirst({
+        where: {
+          id: dto.buyerUserId.trim(),
+          tenantId,
+          deletedAt: null,
+          status: 'ACTIVE',
+        },
+        select: { id: true, email: true },
+      });
+      if (byId) {
+        if (byId.email.trim().toLowerCase() !== emailNorm) {
+          throw new BadRequestException({
+            code: ErrorCode.VALIDATION_FAILED,
+            message: 'buyer email must match the logged-in user',
+          });
+        }
+        return byId.id;
+      }
+    }
+
+    const byEmail = await tx.user.findFirst({
+      where: {
+        tenantId,
+        deletedAt: null,
+        status: 'ACTIVE',
+        email: { equals: emailNorm, mode: 'insensitive' },
+      },
+      select: { id: true },
+    });
+    return byEmail?.id ?? null;
   }
 }

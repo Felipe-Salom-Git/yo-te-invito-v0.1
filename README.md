@@ -35,11 +35,11 @@ Postgres runs on host port **5433** (HOST:5433 → CONTAINER:5432).
 ```bash
 pnpm db:up       # Start Postgres (Docker)
 pnpm db:migrate  # Run Prisma migrations
-pnpm db:reset    # Reset database (optional)
+pnpm db:reset-dangerous -- --confirm  # Wipes entire DB (dangerous)
 pnpm db:studio   # Open Prisma Studio (optional)
 pnpm db:down     # Stop containers
 ```
 
 ## Slice 01 Smoke Tests
 
-See [docs/guides/BOOTSTRAP_SMOKE_TEST.md](docs/guides/BOOTSTRAP_SMOKE_TEST.md) for the full acceptance checklist.
+Checklist histórico (legacy): [docs/legacy/guides/slices-smoke/BOOTSTRAP_SMOKE_TEST.md](docs/legacy/guides/slices-smoke/BOOTSTRAP_SMOKE_TEST.md). Guías vigentes: [docs/guides/README.md](docs/guides/README.md).

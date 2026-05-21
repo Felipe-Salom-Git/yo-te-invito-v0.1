@@ -16,6 +16,7 @@ import type {
   TicketsRepo,
   OrdersRepo,
   UsersRepo,
+  MePortalRepo,
   ReviewsRepo,
   InboxRepo,
   InboxItemSummary,
@@ -25,7 +26,6 @@ import type {
   MetricsRepo,
   PayoutsRepo,
   GastroRepo,
-  ResaleRepo,
   EventsListQuery,
   EventsSearchQuery,
   EventsPaginatedResponse,
@@ -75,7 +75,6 @@ import type {
   PublicGastroDiscountClaimResult,
   PublicGastroDiscountClaimView,
   PublicGastroLocationsRepo,
-  ResaleListing,
   CreateReferrerInput,
   ReferrerOwnProfile,
   ReferrerDashboardResponse,
@@ -832,16 +831,39 @@ export class ApiRepository implements Repositories {
       });
     },
     getPreferences: async () => {
-      const raw = await this.client.get<UserPreferences | null>('/me/preferences');
-      if (!raw) return null;
+      const portal = await this.client.get<import('@yo-te-invito/shared').UserPortalPreferences>(
+        '/me/preferences',
+      );
       return {
-        ...raw,
-        favoriteEventIds: raw.favoriteEventIds ?? [],
-        expectedEventIds: raw.expectedEventIds ?? [],
+        userId: portal.userId,
+        preferredCity: portal.preferredCity,
+        notifyNewEvents: portal.webNotificationsEnabled,
+        notifyReminders: portal.ticketReminder24hEnabled,
+        favoriteEventIds: [],
+        expectedEventIds: [],
       };
     },
-    updatePreferences: async (userId: string, patch: Partial<UserPreferences>) => {
-      return this.client.patch<UserPreferences>('/me/preferences', patch);
+    updatePreferences: async (_userId: string, patch: Partial<UserPreferences>) => {
+      const portalPatch: import('@yo-te-invito/shared').UserPortalPreferencesPatch = {};
+      if (patch.preferredCity !== undefined) portalPatch.preferredCity = patch.preferredCity;
+      if (patch.notifyNewEvents !== undefined) {
+        portalPatch.webNotificationsEnabled = patch.notifyNewEvents;
+      }
+      if (patch.notifyReminders !== undefined) {
+        portalPatch.ticketReminder24hEnabled = patch.notifyReminders;
+      }
+      const portal = await this.client.patch<import('@yo-te-invito/shared').UserPortalPreferences>(
+        '/me/preferences',
+        portalPatch,
+      );
+      return {
+        userId: portal.userId,
+        preferredCity: portal.preferredCity,
+        notifyNewEvents: portal.webNotificationsEnabled,
+        notifyReminders: portal.ticketReminder24hEnabled,
+        favoriteEventIds: [],
+        expectedEventIds: [],
+      };
     },
     list: async (tenantId?: string) => {
       const raw = await this.client.get<{ users?: User[]; data?: User[] }>('/admin/users', {
@@ -1481,28 +1503,66 @@ export class ApiRepository implements Repositories {
       ),
   };
 
-  resale: ResaleRepo = {
-    get: async (listingId: string) => {
-      return this.client.get<ResaleListing | null>('/resale/listings/' + encodeURIComponent(listingId));
+  mePortal: MePortalRepo = {
+    getDashboard: async () => this.client.get('/me/dashboard'),
+    getPreferences: async () => this.client.get('/me/preferences'),
+    patchPreferences: async (patch) => this.client.patch('/me/preferences', patch),
+    listFavorites: async () => this.client.get('/me/favorites'),
+    createFavorite: async (body) => this.client.post('/me/favorites', body),
+    deleteFavorite: async (id) => {
+      await this.client.delete(`/me/favorites/${encodeURIComponent(id)}`);
     },
-    listActive: async () => {
-      const raw = await this.client.get<ResaleListing[]>('/resale/listings/active');
-      return Array.isArray(raw) ? raw : [];
+    patchFavoriteNotifications: async (id, body) =>
+      this.client.patch(`/me/favorites/${encodeURIComponent(id)}/notifications`, body),
+    listExpectedEvents: async () => this.client.get('/me/expected-events'),
+    createExpectedEvent: async (body) => this.client.post('/me/expected-events', body),
+    deleteExpectedEvent: async (id) => {
+      await this.client.delete(`/me/expected-events/${encodeURIComponent(id)}`);
     },
-    listByEvent: async (eventId: string) => {
-      const raw = await this.client.get<ResaleListing[]>(
-        `/resale/events/${encodeURIComponent(eventId)}/listings`
-      );
-      return Array.isArray(raw) ? raw : [];
+    patchExpectedEventNotifications: async (id, body) =>
+      this.client.patch(`/me/expected-events/${encodeURIComponent(id)}/notifications`, body),
+    getCart: async () => this.client.get('/me/cart'),
+    addCartItem: async (body) => this.client.post('/me/cart/items', body),
+    patchCartItem: async (itemId, body) =>
+      this.client.patch(`/me/cart/items/${encodeURIComponent(itemId)}`, body),
+    removeCartItem: async (itemId) =>
+      this.client.delete(`/me/cart/items/${encodeURIComponent(itemId)}`),
+    getPendingOrders: async () => this.client.get('/me/cart/pending-orders'),
+    checkout: async (body) => this.client.post('/me/cart/checkout', body),
+    getActivity: async () => this.client.get('/me/activity'),
+    getAccount: async () => this.client.get('/me/account'),
+    patchAccount: async (body) => this.client.patch('/me/account', body),
+    changePassword: async (body) => this.client.post('/me/account/change-password', body),
+    getTicketDetail: async (ticketId) =>
+      this.client.get(`/me/tickets/${encodeURIComponent(ticketId)}`),
+    patchTicketReminder: async (ticketId, body) =>
+      this.client.patch(`/me/tickets/${encodeURIComponent(ticketId)}/reminder`, body),
+    listTransferOffers: async (query) =>
+      this.client.get('/me/ticket-transfer-offers', query as Record<string, string>),
+    createTransferOffer: async (ticketId, body) =>
+      this.client.post(`/me/tickets/${encodeURIComponent(ticketId)}/transfer-offers`, body),
+    cancelTransferOffer: async (offerId) =>
+      this.client.post(`/me/ticket-transfer-offers/${encodeURIComponent(offerId)}/cancel`),
+    acceptTransferOffer: async (token) =>
+      this.client.post(`/me/ticket-transfer-offers/${encodeURIComponent(token)}/accept`),
+    lookupTransferOffer: async (token) =>
+      this.client.get(`/me/ticket-transfer-offers/lookup/${encodeURIComponent(token)}`),
+    rejectTransferOffer: async (offerId) =>
+      this.client.post(`/me/ticket-transfer-offers/${encodeURIComponent(offerId)}/reject`),
+    listNotifications: async () => this.client.get('/me/notifications'),
+    getNotificationsUnreadCount: async () => this.client.get('/me/notifications/unread-count'),
+    markNotificationRead: async (notificationId) =>
+      this.client.patch(`/me/notifications/${encodeURIComponent(notificationId)}/read`),
+    markAllNotificationsRead: async () => this.client.post('/me/notifications/read-all'),
+    listProducerFollows: async () => this.client.get('/me/producer-follows'),
+    getProducerFollowStatus: async (producerProfileId) =>
+      this.client.get('/me/producer-follows/status', { producerProfileId }),
+    createProducerFollow: async (body) => this.client.post('/me/producer-follows', body),
+    deleteProducerFollow: async (id) => {
+      await this.client.delete(`/me/producer-follows/${encodeURIComponent(id)}`);
     },
-    create: async (input) => {
-      return this.client.post<ResaleListing>('/resale/listings', input);
-    },
-    purchase: async (listingId: string, buyerUserId: string) => {
-      return this.client.post<ResaleListing>(`/resale/listings/${encodeURIComponent(listingId)}/purchase`, {
-        buyerUserId,
-      });
-    },
+    getRecommendations: async (limit = 12) =>
+      this.client.get('/me/recommendations', { limit: String(limit) }),
   };
 
   platformConfig: PlatformConfigRepo = {

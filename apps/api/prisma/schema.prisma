@@ -152,6 +152,13 @@ model Tenant {
   excursionOperators      ExcursionOperator[]
   commercialRelationshipReviews CommercialRelationshipReview[]
   reviewDisputeRequests         ReviewDisputeRequest[]
+  userCarts                     UserCart[]
+  userFavorites                 UserFavorite[]
+  userExpectedEvents            UserExpectedEvent[]
+  userProducerFollows           UserProducerFollow[]
+  ticketTransferOffers          TicketTransferOffer[]
+  userNotifications             UserNotification[]
+  notificationDeliveryLogs      NotificationDeliveryLog[]
 }
 
 model RentalLocation {
@@ -228,6 +235,7 @@ model ProducerProfile {
 
   tenant     Tenant                    @relation(fields: [tenantId], references: [id])
   memberships UserProducerMembership[]
+  followers   UserProducerFollow[]
   events     Event[]
   referrerRelationships ProducerReferrerRelationship[]
   eventReferrerAssignments EventReferrerAssignment[]
@@ -613,6 +621,14 @@ model User {
   commercialRelationshipReviews CommercialRelationshipReview[]
   reviewDisputesRequested       ReviewDisputeRequest[]         @relation("ReviewDisputeRequester")
   reviewDisputesResolved        ReviewDisputeRequest[]         @relation("ReviewDisputeResolver")
+  transferOffersSold            TicketTransferOffer[]          @relation("TransferOfferSeller")
+  transferOffersBought          TicketTransferOffer[]          @relation("TransferOfferBuyer")
+  userCart                      UserCart?
+  favorites                     UserFavorite[]
+  expectedEvents                UserExpectedEvent[]
+  producerFollows               UserProducerFollow[]
+  notifications                 UserNotification[]
+  notificationDeliveries      NotificationDeliveryLog[]
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -731,6 +747,8 @@ model Event {
   gastroDiscounts     GastroDiscount[]
   categoryBannerItems CategoryBannerItem[]
   gastroProfilePublic GastroProfile?       @relation("GastroPublicEvent")
+  userCartItems       UserCartItem[]
+  expectedByUsers     UserExpectedEvent[]
 
   @@index([tenantId])
   @@index([tenantId, status])
@@ -769,6 +787,45 @@ enum TicketStatus {
   VALID
   USED
   REVOKED
+  TRANSFER_PENDING
+  TRANSFERRED
+}
+
+enum NotificationKind {
+  TICKET_REMINDER_24H
+  FAVORITE_EVENT_SOON
+  EXPECTED_EVENT_SOON
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+}
+
+enum TicketTransferOfferStatus {
+  AVAILABLE
+  RESERVED
+  COMPLETED
+  CANCELLED
+  EXPIRED
+}
+
+enum FavoriteEntityType {
+  event
+  gastro
+  rental
+  excursion
+  hotel
+  discount
+}
+
+enum FavoriteProviderType {
+  producer
+  gastro
+  hotel
+  excursion_operator
+  rental_location
+  platform
 }
 
 enum PaymentProvider {
@@ -811,6 +868,7 @@ model TicketType {
   orderItems     OrderItem[]
   tickets        Ticket[]
   courtesyGrants CourtesyGrant[]
+  userCartItems  UserCartItem[]
 
   @@index([eventId, status])
   @@index([tenantId])
@@ -978,6 +1036,8 @@ model Ticket {
   revokedByUserId  String?
   revokedReason    String?
   revokedNote      String?
+  transferredFromTicketId String?
+  activeTransferOfferId   String?      @unique
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
 
@@ -987,9 +1047,14 @@ model Ticket {
   ticketBatch    TicketBatch?     @relation(fields: [ticketBatchId], references: [id])
   event          Event            @relation(fields: [eventId], references: [id])
   ownerUser      User?            @relation("TicketOwner", fields: [ownerUserId], references: [id])
+  transferredFromTicket   Ticket?  @relation("TicketTransferLineage", fields: [transferredFromTicketId], references: [id], onDelete: SetNull)
+  transferredToTickets    Ticket[] @relation("TicketTransferLineage")
+  activeTransferOffer     TicketTransferOffer? @relation("ActiveTransferOnTicket", fields: [activeTransferOfferId], references: [id], onDelete: SetNull)
+  destinationTransferOffer TicketTransferOffer? @relation("TransferOfferDestinationTicket")
   ticketScans    TicketScan[]
   ticketScanLogs TicketScanLog[]
   transfers      TicketTransfer[]
+  transferOffers TicketTransferOffer[] @relation("TransferOfferSourceTicket")
 
   @@index([eventId, status])
   @@index([orderId])
@@ -998,19 +1063,185 @@ model Ticket {
 }
 
 model TicketTransfer {
-  id             String   @id @default(cuid())
-  ticketId       String
-  fromUserId     String
-  toUserId       String
-  idempotencyKey String?
-  createdAt      DateTime @default(now())
+  id                  String   @id @default(cuid())
+  ticketId            String
+  offerId             String?
+  destinationTicketId String?
+  fromUserId          String
+  toUserId            String
+  idempotencyKey      String?
+  createdAt           DateTime @default(now())
 
-  ticket    Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  fromUser  User   @relation("TransferFromUser", fields: [fromUserId], references: [id])
-  toUser    User   @relation("TransferToUser", fields: [toUserId], references: [id])
+  ticket            Ticket              @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  offer             TicketTransferOffer? @relation(fields: [offerId], references: [id], onDelete: SetNull)
+  fromUser          User                @relation("TransferFromUser", fields: [fromUserId], references: [id])
+  toUser            User                @relation("TransferToUser", fields: [toUserId], references: [id])
 
   @@index([ticketId])
   @@index([ticketId, idempotencyKey])
+  @@index([offerId])
+}
+
+model TicketTransferOffer {
+  id                  String                    @id @default(cuid())
+  tenantId            String
+  sourceTicketId      String
+  destinationTicketId String?                   @unique
+  sellerUserId        String
+  buyerUserId         String?
+  status              TicketTransferOfferStatus @default(AVAILABLE)
+  acceptToken         String                    @unique
+  expiresAt           DateTime
+  reservedAt          DateTime?
+  completedAt         DateTime?
+  cancelledAt         DateTime?
+  rejectedAt          DateTime?
+  message             String?
+  idempotencyKey      String?
+  createdAt           DateTime                  @default(now())
+  updatedAt           DateTime                  @updatedAt
+
+  tenant            Tenant           @relation(fields: [tenantId], references: [id])
+  sourceTicket      Ticket           @relation("TransferOfferSourceTicket", fields: [sourceTicketId], references: [id], onDelete: Cascade)
+  destinationTicket Ticket?          @relation("TransferOfferDestinationTicket", fields: [destinationTicketId], references: [id], onDelete: SetNull)
+  sellerUser        User             @relation("TransferOfferSeller", fields: [sellerUserId], references: [id])
+  buyerUser         User?            @relation("TransferOfferBuyer", fields: [buyerUserId], references: [id], onDelete: SetNull)
+  activeOnTicket    Ticket?          @relation("ActiveTransferOnTicket")
+  transferLogs      TicketTransfer[]
+
+  @@index([tenantId, sellerUserId, status])
+  @@index([tenantId, buyerUserId, status])
+  @@index([sourceTicketId, status])
+  @@index([expiresAt])
+}
+
+model UserNotification {
+  id           String           @id @default(cuid())
+  tenantId     String
+  userId       String
+  kind         NotificationKind
+  referenceKey String
+  title        String
+  body         String
+  href         String?
+  readAt       DateTime?
+  createdAt    DateTime         @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, kind, referenceKey])
+  @@index([tenantId, userId, readAt])
+  @@index([userId, createdAt])
+}
+
+model NotificationDeliveryLog {
+  id           String              @id @default(cuid())
+  tenantId     String
+  userId       String
+  kind         NotificationKind
+  referenceKey String
+  channel      NotificationChannel
+  sentAt       DateTime            @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, kind, referenceKey, channel])
+  @@index([tenantId, sentAt])
+}
+
+model UserCart {
+  id        String   @id @default(cuid())
+  tenantId  String
+  userId    String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant         @relation(fields: [tenantId], references: [id])
+  user   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items  UserCartItem[]
+
+  @@unique([tenantId, userId])
+  @@index([tenantId])
+}
+
+model UserCartItem {
+  id           String   @id @default(cuid())
+  cartId       String
+  eventId      String
+  ticketTypeId String
+  quantity     Int
+  unitPrice    Decimal  @db.Decimal(12, 2)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  cart       UserCart   @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  event      Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  ticketType TicketType @relation(fields: [ticketTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([cartId, ticketTypeId])
+  @@index([cartId])
+}
+
+model UserFavorite {
+  id                        String              @id @default(cuid())
+  tenantId                  String
+  userId                    String
+  entityType                FavoriteEntityType
+  entityId                  String
+  category                  String
+  providerType              FavoriteProviderType
+  providerId                String
+  webNotificationsEnabled   Boolean             @default(true)
+  emailNotificationsEnabled Boolean             @default(true)
+  createdAt                 DateTime            @default(now())
+  updatedAt                 DateTime            @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, userId, entityType, entityId])
+  @@index([tenantId, userId])
+  @@index([tenantId, userId, entityType])
+}
+
+model UserExpectedEvent {
+  id                        String   @id @default(cuid())
+  tenantId                  String
+  userId                    String
+  eventId                   String
+  webNotificationsEnabled   Boolean  @default(true)
+  emailNotificationsEnabled Boolean  @default(true)
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event  Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, userId, eventId])
+  @@index([tenantId, userId])
+}
+
+/// Usuario final sigue una productora (novedades / recomendaciones).
+model UserProducerFollow {
+  id                        String   @id @default(cuid())
+  tenantId                  String
+  userId                    String
+  producerProfileId         String
+  webNotificationsEnabled   Boolean  @default(true)
+  emailNotificationsEnabled Boolean  @default(true)
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  tenant          Tenant          @relation(fields: [tenantId], references: [id])
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  producerProfile ProducerProfile @relation(fields: [producerProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, userId, producerProfileId])
+  @@index([tenantId, userId])
+  @@index([tenantId, producerProfileId])
 }
 
 model TicketScan {
@@ -1223,6 +1454,8 @@ enum AuditAction {
   TICKET_REVOKED
   ORDER_EXPIRED
   TICKET_TRANSFERRED
+  RESALE_LISTED
+  RESALE_SOLD
   PAYOUT_STATUS_CHANGED
   GASTRO_DISCOUNT_COMMISSION_NEGOTIATION
   GASTRO_DISCOUNT_APPROVED
