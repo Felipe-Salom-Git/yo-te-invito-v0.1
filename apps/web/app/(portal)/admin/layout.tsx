@@ -8,6 +8,7 @@ const NAV = [
   { href: '/admin', label: 'Dashboard' },
   { href: '/admin/eventos', label: 'Eventos' },
   { href: '/admin/auditoria', label: 'Auditoría' },
+  { href: '/admin/reviews', label: 'Reputación' },
   { href: '/admin/review-disputes', label: 'Reseñas (disputas)' },
   { href: '/admin/productoras', label: 'Productoras' },
   { href: '/admin/publicaciones-generales', label: 'Publicaciones Generales' },

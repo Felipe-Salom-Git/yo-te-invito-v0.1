@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import type {
   ProducerManagedReviewListItem,
@@ -15,10 +16,15 @@ import { ManagedReviewSummary } from '@/components/producer/comments/ManagedRevi
 import { ProducerCommentsHelp } from '@/components/producer/comments/ProducerCommentsHelp';
 import { ManagedReviewCard } from '@/components/producer/comments/ManagedReviewCard';
 import {
+  MANAGED_PORTAL_QUICK_FILTERS,
   PUBLIC_STATUS_FILTER_OPTIONS,
   quickFilterToListParams,
   type ManagedReviewsQuickFilter,
 } from '@/lib/producer/managed-reviews-filters';
+import {
+  buildManagedReviewsSearchParams,
+  parseManagedReviewsUrl,
+} from '@/lib/producer/managed-reviews-url';
 import {
   gastroReviewsKeys,
   hotelReviewsKeys,
@@ -77,6 +83,12 @@ type Props = {
 export function ManagedReviewsCommentsPage({ scope }: Props) {
   const repos = useRepositories();
   const copy = COPY[scope];
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const quickFilterOptions =
+    scope === 'producer' ? PRODUCER_QUICK_FILTERS : MANAGED_PORTAL_QUICK_FILTERS;
+
   const [quickFilter, setQuickFilter] = useState<ManagedReviewsQuickFilter>('all');
   const [eventId, setEventId] = useState('');
   const [overallRating, setOverallRating] = useState('');
@@ -85,6 +97,52 @@ export function ManagedReviewsCommentsPage({ scope }: Props) {
   const [publicStatus, setPublicStatus] = useState<'' | ReviewPublicStatus>('');
   const [sort, setSort] = useState<'newest' | 'oldest' | 'highest' | 'lowest'>('newest');
   const [page, setPage] = useState(1);
+  const [urlReady, setUrlReady] = useState(false);
+
+  useEffect(() => {
+    const parsed = parseManagedReviewsUrl(searchParams);
+    if (parsed.quick) setQuickFilter(parsed.quick);
+    if (parsed.eventId != null) setEventId(parsed.eventId);
+    if (parsed.overallRating != null) setOverallRating(parsed.overallRating);
+    if (parsed.disputeStatus) setDisputeStatus(parsed.disputeStatus);
+    if (parsed.replyFilter) setReplyFilter(parsed.replyFilter);
+    if (parsed.publicStatus != null) setPublicStatus(parsed.publicStatus);
+    if (parsed.sort) setSort(parsed.sort);
+    if (parsed.page) setPage(parsed.page);
+    setUrlReady(true);
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (!urlReady) return;
+    const built = buildManagedReviewsSearchParams({
+      quick: quickFilter,
+      eventId,
+      overallRating,
+      disputeStatus,
+      replyFilter,
+      publicStatus,
+      sort,
+      page,
+    });
+    const next = built.toString();
+    const current = searchParams.toString();
+    if (next !== current) {
+      router.replace(next ? `${pathname}?${next}` : pathname, { scroll: false });
+    }
+  }, [
+    urlReady,
+    quickFilter,
+    eventId,
+    overallRating,
+    disputeStatus,
+    replyFilter,
+    publicStatus,
+    sort,
+    page,
+    pathname,
+    router,
+    searchParams,
+  ]);
 
   const quickParams = quickFilterToListParams(quickFilter);
 
@@ -122,9 +180,7 @@ export function ManagedReviewsCommentsPage({ scope }: Props) {
         ? quickParams.disputeStatus ?? (disputeStatus !== 'ALL' ? disputeStatus : undefined)
         : undefined,
     replyFilter:
-      scope === 'producer'
-        ? quickParams.replyFilter ?? (replyFilter !== 'ALL' ? replyFilter : undefined)
-        : undefined,
+      quickParams.replyFilter ?? (replyFilter !== 'ALL' ? replyFilter : undefined),
     publicStatus: scope === 'producer' && publicStatus ? publicStatus : undefined,
     sort: quickParams.sort ?? sort,
     page,
@@ -242,9 +298,8 @@ export function ManagedReviewsCommentsPage({ scope }: Props) {
           ) : null}
         </div>
 
-        {scope === 'producer' ? (
-          <div className="-mx-1 mt-3 flex gap-2 overflow-x-auto px-1 pb-1">
-            {PRODUCER_QUICK_FILTERS.map((f) => (
+        <div className="-mx-1 mt-3 flex gap-2 overflow-x-auto px-1 pb-1">
+            {quickFilterOptions.map((f) => (
               <button
                 key={f.id}
                 type="button"
@@ -257,8 +312,7 @@ export function ManagedReviewsCommentsPage({ scope }: Props) {
                 {f.label}
               </button>
             ))}
-          </div>
-        ) : null}
+        </div>
 
         <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {showEventFilter ? (
@@ -319,26 +373,26 @@ export function ManagedReviewsCommentsPage({ scope }: Props) {
             </select>
           </label>
 
+          <label className="block text-xs text-text-muted">
+            Respuesta
+            <select
+              className={`${selectClass} mt-1 w-full`}
+              value={quickParams.replyFilter ?? replyFilter}
+              onChange={(e) => {
+                setReplyFilter(e.target.value as ProducerReviewReplyFilter);
+                setQuickFilter('all');
+                setPage(1);
+              }}
+              disabled={quickFilter === 'unanswered' || quickFilter === 'answered'}
+            >
+              <option value="ALL">Todas</option>
+              <option value="UNANSWERED">Sin responder</option>
+              <option value="ANSWERED">Respondidas</option>
+            </select>
+          </label>
+
           {scope === 'producer' ? (
             <>
-              <label className="block text-xs text-text-muted">
-                Respuesta
-                <select
-                  className={`${selectClass} mt-1 w-full`}
-                  value={quickParams.replyFilter ?? replyFilter}
-                  onChange={(e) => {
-                    setReplyFilter(e.target.value as ProducerReviewReplyFilter);
-                    setQuickFilter('all');
-                    setPage(1);
-                  }}
-                  disabled={quickFilter === 'unanswered' || quickFilter === 'answered'}
-                >
-                  <option value="ALL">Todas</option>
-                  <option value="UNANSWERED">Sin responder</option>
-                  <option value="ANSWERED">Respondidas</option>
-                </select>
-              </label>
-
               <label className="block text-xs text-text-muted">
                 Disputa
                 <select

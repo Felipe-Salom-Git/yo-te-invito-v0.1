@@ -10,6 +10,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { ProfilesAuthorizationService } from '../../common/profiles-authorization.service';
 import { ReviewsService } from '../reviews/reviews.service';
 import { AuditService } from '../audit/audit.service';
+import { ReviewNotificationsService } from '../notifications/review-notifications.service';
 import {
   ErrorCode,
   emptyReviewScoreDistribution,
@@ -19,6 +20,7 @@ import {
   type ProducerManagedReviewListQuery,
   type ProducerManagedReviewListResponse,
   type ProducerManagedReviewSummary,
+  type ReviewPublicStatus,
   type ReviewDisputeResponse,
 } from '@yo-te-invito/shared';
 import {
@@ -51,27 +53,57 @@ function mapDispute(row: {
   createdAt: Date;
   updatedAt: Date;
   resolvedAt: Date | null;
-  review: { score: number; comment: string | null; guestName: string | null; user: { firstName: string; lastName: string } | null };
-  event: { title: string };
+  review: {
+    score: number;
+    overallRating?: number | null;
+    comment: string | null;
+    guestName: string | null;
+    status?: string;
+    hiddenFromPublic?: boolean;
+    officialReply?: string | null;
+    user: { firstName: string; lastName: string } | null;
+  };
+  event: { title: string; category?: string | null };
 }): ReviewDisputeResponse {
+  const overall = readOverallRating({
+    overallRating: row.review.overallRating ?? null,
+    score: row.review.score,
+  });
   return {
     id: row.id,
     reviewId: row.reviewId,
     producerProfileId: row.producerProfileId,
     eventId: row.eventId,
     eventTitle: row.event.title,
+    eventCategory: eventCategoryToReviewCategory(row.event.category),
     reasonType: row.reasonType as ReviewDisputeResponse['reasonType'],
     message: row.message,
     status: row.status as ReviewDisputeResponse['status'],
     adminNote: row.adminNote,
     reviewScore: row.review.score,
+    reviewOverallRating: overall,
     reviewComment: row.review.comment,
     reviewUserDisplayName: reviewUserName(row.review),
+    reviewPublicStatus: (row.review.status ?? 'VISIBLE') as ReviewPublicStatus,
+    reviewHiddenFromPublic: row.review.hiddenFromPublic ?? false,
+    hasOfficialReply: Boolean(row.review.officialReply?.trim()),
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
     resolvedAt: row.resolvedAt?.toISOString() ?? null,
   };
 }
+
+const DISPUTE_REVIEW_INCLUDE = {
+  review: {
+    include: { user: { select: { firstName: true, lastName: true } } },
+  },
+  event: { select: { title: true, category: true, producerId: true } },
+} as const;
+
+const DISPUTE_ADMIN_INCLUDE = {
+  ...DISPUTE_REVIEW_INCLUDE,
+  producerProfile: { select: { displayName: true } },
+} as const;
 
 @Injectable()
 export class ReviewDisputesService {
@@ -80,6 +112,7 @@ export class ReviewDisputesService {
     private readonly profiles: ProfilesAuthorizationService,
     private readonly reviews: ReviewsService,
     private readonly audit: AuditService,
+    private readonly reviewNotifications: ReviewNotificationsService,
   ) {}
 
   private async requireProducerProfileId(tenantId: string, userId: string) {
@@ -394,14 +427,22 @@ export class ReviewDisputesService {
           status: 'PENDING',
           inboxItemId: inbox.id,
         },
-        include: {
-          review: {
-            include: { user: { select: { firstName: true, lastName: true } } },
-          },
-          event: { select: { title: true } },
-        },
+        include: DISPUTE_REVIEW_INCLUDE,
       });
     });
+
+    this.reviewNotifications.notifyDisputeCreated(
+      tenantId,
+      dispute.id,
+      {
+        id: review.event.id,
+        title: review.event.title,
+        category: review.event.category,
+        producerProfileId: review.event.producerProfileId,
+        producerId: review.event.producerId,
+      },
+      [userId],
+    );
 
     return mapDispute(dispute);
   }
@@ -413,12 +454,7 @@ export class ReviewDisputesService {
     const producerProfileId = await this.requireProducerProfileId(tenantId, userId);
     const rows = await this.prisma.reviewDisputeRequest.findMany({
       where: { tenantId, producerProfileId },
-      include: {
-        review: {
-          include: { user: { select: { firstName: true, lastName: true } } },
-        },
-        event: { select: { title: true } },
-      },
+      include: DISPUTE_REVIEW_INCLUDE,
       orderBy: { createdAt: 'desc' },
       take: 100,
     });
@@ -433,12 +469,7 @@ export class ReviewDisputesService {
     const producerProfileId = await this.requireProducerProfileId(tenantId, userId);
     const row = await this.prisma.reviewDisputeRequest.findFirst({
       where: { id: disputeId, tenantId, producerProfileId },
-      include: {
-        review: {
-          include: { user: { select: { firstName: true, lastName: true } } },
-        },
-        event: { select: { title: true } },
-      },
+      include: DISPUTE_REVIEW_INCLUDE,
     });
     if (!row) {
       throw new NotFoundException({ code: ErrorCode.NOT_FOUND, message: 'Dispute not found' });
@@ -447,21 +478,26 @@ export class ReviewDisputesService {
   }
 
   async listAdminDisputes(tenantId: string, query: AdminReviewDisputeListQuery) {
-    const where = {
+    const where: Prisma.ReviewDisputeRequestWhereInput = {
       tenantId,
       ...(query.status ? { status: query.status } : {}),
     };
+    if (query.category) {
+      where.event = { category: query.category };
+    }
+    if (query.q?.trim()) {
+      const q = query.q.trim();
+      where.OR = [
+        { event: { title: { contains: q, mode: 'insensitive' } } },
+        { producerProfile: { displayName: { contains: q, mode: 'insensitive' } } },
+        { message: { contains: q, mode: 'insensitive' } },
+      ];
+    }
     const total = await this.prisma.reviewDisputeRequest.count({ where });
     const skip = (query.page - 1) * query.limit;
     const rows = await this.prisma.reviewDisputeRequest.findMany({
       where,
-      include: {
-        review: {
-          include: { user: { select: { firstName: true, lastName: true } } },
-        },
-        event: { select: { title: true } },
-        producerProfile: { select: { displayName: true } },
-      },
+      include: DISPUTE_ADMIN_INCLUDE,
       orderBy: { createdAt: 'desc' },
       skip,
       take: query.limit,
@@ -480,13 +516,7 @@ export class ReviewDisputesService {
   async getAdminDispute(tenantId: string, disputeId: string) {
     const row = await this.prisma.reviewDisputeRequest.findFirst({
       where: { id: disputeId, tenantId },
-      include: {
-        review: {
-          include: { user: { select: { firstName: true, lastName: true } } },
-        },
-        event: { select: { title: true } },
-        producerProfile: { select: { displayName: true } },
-      },
+      include: DISPUTE_ADMIN_INCLUDE,
     });
     if (!row) {
       throw new NotFoundException({ code: ErrorCode.NOT_FOUND, message: 'Dispute not found' });
@@ -554,12 +584,7 @@ export class ReviewDisputesService {
           status: 'IN_REVIEW',
           adminNote: body.adminNote ?? row.adminNote,
         },
-        include: {
-          review: {
-            include: { user: { select: { firstName: true, lastName: true } } },
-          },
-          event: { select: { title: true } },
-        },
+        include: DISPUTE_REVIEW_INCLUDE,
       });
       return d;
     });
@@ -612,12 +637,7 @@ export class ReviewDisputesService {
           resolvedByUserId: adminUserId,
           resolvedAt: new Date(),
         },
-        include: {
-          review: {
-            include: { user: { select: { firstName: true, lastName: true } } },
-          },
-          event: { select: { title: true } },
-        },
+        include: DISPUTE_REVIEW_INCLUDE,
       });
     });
 
@@ -634,6 +654,20 @@ export class ReviewDisputesService {
       after: { status: 'ACCEPTED', hiddenFromPublic: true },
       metadata: { reviewId: row.reviewId },
     });
+
+    this.reviewNotifications.notifyDisputeAccepted(
+      tenantId,
+      disputeId,
+      row.reviewId,
+      {
+        id: updated.eventId,
+        title: updated.event.title,
+        category: updated.event.category,
+        producerProfileId: updated.producerProfileId,
+        producerId: updated.event.producerId,
+      },
+      row.review.userId,
+    );
 
     return mapDispute(updated);
   }
@@ -664,12 +698,7 @@ export class ReviewDisputesService {
           resolvedByUserId: adminUserId,
           resolvedAt: new Date(),
         },
-        include: {
-          review: {
-            include: { user: { select: { firstName: true, lastName: true } } },
-          },
-          event: { select: { title: true } },
-        },
+        include: DISPUTE_REVIEW_INCLUDE,
       });
     });
 
@@ -683,6 +712,19 @@ export class ReviewDisputesService {
       before: { status: row.status },
       after: { status: 'REJECTED' },
     });
+
+    this.reviewNotifications.notifyDisputeRejected(
+      tenantId,
+      disputeId,
+      {
+        id: updated.eventId,
+        title: updated.event.title,
+        category: updated.event.category,
+        producerProfileId: updated.producerProfileId,
+        producerId: updated.event.producerId,
+      },
+      [adminUserId],
+    );
 
     return mapDispute(updated);
   }
@@ -709,12 +751,7 @@ export class ReviewDisputesService {
           resolvedByUserId: adminUserId,
           resolvedAt: new Date(),
         },
-        include: {
-          review: {
-            include: { user: { select: { firstName: true, lastName: true } } },
-          },
-          event: { select: { title: true } },
-        },
+        include: DISPUTE_REVIEW_INCLUDE,
       });
     });
 

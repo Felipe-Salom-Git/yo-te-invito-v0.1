@@ -9,7 +9,7 @@ import { useAddToCart } from '@/hooks/useAddToCart';
 import { useEventDetail, eventsKeys } from '@/lib/query/events';
 import { useRecordPublicEventView } from '@/lib/query/public-engagement';
 import { reviewsKeys } from '@/lib/query/keys';
-import { usePublicEntityReviews } from '@/lib/query/reviews';
+import { usePublicEntityReviewsState } from '@/lib/query/reviews';
 import type { PublicReviewCategory } from '@yo-te-invito/shared';
 import { entityTypeToReviewCategory } from '@/lib/schemas/review';
 import { getPlaceHeroCtaLabel, getRelatedSectionTitle } from '@/lib/home/contentRoutes';
@@ -59,7 +59,6 @@ export function PlaceDetailView({ id, variant, tenantId = 'tenant-demo' }: Place
   const queryClient = useQueryClient();
   const { addToCart } = useAddToCart();
   const { addToast } = useToast();
-  const [reviewPage, setReviewPage] = useState(1);
   const [reviewFormKey, setReviewFormKey] = useState(0);
   const [qtyByType, setQtyByType] = useState<Record<string, number>>({});
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
@@ -78,7 +77,13 @@ export function PlaceDetailView({ id, variant, tenantId = 'tenant-demo' }: Place
   const {
     data: reviewsData,
     isLoading: reviewsLoading,
-  } = usePublicEntityReviews(reviewCategory, id, tenantId, reviewPage);
+    isError: reviewsError,
+    refetch: refetchReviews,
+    page: reviewPage,
+    setPage: setReviewPage,
+    filters: reviewFilters,
+    setFilters: setReviewFilters,
+  } = usePublicEntityReviewsState(reviewCategory, id, tenantId);
 
   const { data: relatedData } = useQuery({
     queryKey: ['events', 'related', tenantId, category],
@@ -289,10 +294,14 @@ export function PlaceDetailView({ id, variant, tenantId = 'tenant-demo' }: Place
               total={reviewsData?.total ?? 0}
               page={reviewPage}
               onPageChange={setReviewPage}
+              filters={reviewFilters}
+              onFiltersChange={setReviewFilters}
               onSubmitReview={handleSubmitReview}
               isSubmittingReview={createMutation.isPending}
               canSubmitReview={!!session?.user}
               isLoading={reviewsLoading}
+              isError={reviewsError}
+              onRetry={() => void refetchReviews()}
               summary={
                 reviewsData?.summary ?? {
                   averageRating: event.ratingAvg ?? null,

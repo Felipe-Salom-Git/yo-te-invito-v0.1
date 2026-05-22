@@ -35,6 +35,16 @@ export function quickFilterToListParams(
   }
 }
 
+/** Gastro/hotel — sin disputas ni estado público. */
+export const MANAGED_PORTAL_QUICK_FILTERS: { id: ManagedReviewsQuickFilter; label: string }[] =
+  [
+    { id: 'all', label: 'Todos' },
+    { id: 'unanswered', label: 'Sin responder' },
+    { id: 'answered', label: 'Respondidos' },
+    { id: 'highest', label: 'Mejores' },
+    { id: 'lowest', label: 'Menores' },
+  ];
+
 export const PUBLIC_STATUS_FILTER_OPTIONS: {
   value: '' | ReviewPublicStatus;
   label: string;

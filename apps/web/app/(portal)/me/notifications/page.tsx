@@ -25,6 +25,15 @@ const KIND_LABELS: Record<string, string> = {
   REVIEW_PENDING: 'Calificación pendiente',
   FOLLOWED_PRODUCER_NEW_EVENT: 'Productora que seguís',
   FAVORITE_INTEREST_NEW_CONTENT: 'Nuevo para tus intereses',
+  EVENT_APPROVED_BY_ADMIN: 'Evento aprobado',
+  EVENT_REJECTED_BY_ADMIN: 'Evento rechazado',
+  REVIEW_RECEIVED: 'Nueva valoración',
+  REVIEW_OFFICIAL_REPLY: 'Respuesta a tu reseña',
+  REVIEW_DISPUTE_CREATED: 'Disputa de valoración',
+  REVIEW_DISPUTE_ACCEPTED: 'Disputa aceptada',
+  REVIEW_DISPUTE_REJECTED: 'Disputa rechazada',
+  REVIEW_MODERATION_HIDDEN: 'Reseña ocultada',
+  REVIEW_MODERATION_RESTORED: 'Reseña restaurada',
 };
 
 export default function MeNotificationsPage() {
@@ -66,7 +75,7 @@ export default function MeNotificationsPage() {
         )}
       </div>
       <p className="mt-1 text-sm text-text-muted">
-        Recordatorios de tickets, favoritos y eventos que seguís. Configurá preferencias en{' '}
+        Recordatorios, valoraciones, disputas y novedades de tus eventos. Configurá preferencias en{' '}
         <Link href="/me/preferences" className="text-accent hover:underline">
           Preferencias
         </Link>

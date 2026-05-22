@@ -47,6 +47,8 @@ export function MePushAlertPreferences() {
   const [upcoming, setUpcoming] = useState(true);
   const [transfers, setTransfers] = useState(true);
   const [reviews, setReviews] = useState(true);
+  const [managedReviews, setManagedReviews] = useState(true);
+  const [reviewEngagement, setReviewEngagement] = useState(true);
   const [producers, setProducers] = useState(true);
   const [categories, setCategories] = useState(true);
   const [subcategories, setSubcategories] = useState(true);
@@ -59,6 +61,8 @@ export function MePushAlertPreferences() {
     setUpcoming(prefs.notifyUpcomingEvents);
     setTransfers(prefs.notifyTransferOffers);
     setReviews(prefs.notifyPendingReviews);
+    setManagedReviews(prefs.notifyManagedReviews);
+    setReviewEngagement(prefs.notifyReviewEngagement);
     setProducers(prefs.notifyFollowedProducers);
     setCategories(prefs.notifyFavoriteCategories);
     setSubcategories(prefs.notifyFavoriteSubcategories);
@@ -75,6 +79,8 @@ export function MePushAlertPreferences() {
         ticketReminder24hEnabled: upcoming,
         notifyTransferOffers: transfers,
         notifyPendingReviews: reviews,
+        notifyManagedReviews: managedReviews,
+        notifyReviewEngagement: reviewEngagement,
         notifyFollowedProducers: producers,
         notifyFavoriteCategories: categories,
         favoriteEntityNotificationsEnabled: categories,
@@ -95,6 +101,8 @@ export function MePushAlertPreferences() {
       upcoming,
       transfers,
       reviews,
+      managedReviews,
+      reviewEngagement,
       producers,
       categories,
       subcategories,
@@ -107,6 +115,8 @@ export function MePushAlertPreferences() {
     upcoming,
     transfers,
     reviews,
+    managedReviews,
+    reviewEngagement,
     producers,
     categories,
     subcategories,
@@ -164,6 +174,21 @@ export function MePushAlertPreferences() {
           checked={reviews}
           onChange={setReviews}
           label="Calificaciones pendientes"
+          description="Recordatorio para valorar eventos a los que asististe."
+        />
+        <AlertCheckbox
+          id="push-managed-reviews"
+          checked={managedReviews}
+          onChange={setManagedReviews}
+          label="Valoraciones en mis locales/eventos"
+          description="Nueva reseña o actualización de disputa (productor, gastro, hotel)."
+        />
+        <AlertCheckbox
+          id="push-review-engagement"
+          checked={reviewEngagement}
+          onChange={setReviewEngagement}
+          label="Respuestas y moderación de tus reseñas"
+          description="Respuesta oficial u ocultar/restaurar tu comentario público."
         />
         <AlertCheckbox
           id="push-producers"

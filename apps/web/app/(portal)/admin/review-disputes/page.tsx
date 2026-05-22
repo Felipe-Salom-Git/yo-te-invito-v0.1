@@ -1,7 +1,7 @@
 'use client';
 
-import { AdminReviewDisputesPage } from '@/components/admin/review-disputes/AdminReviewDisputesPage';
+import { AdminReviewDisputesPageClient } from '@/components/admin/review-disputes/AdminReviewDisputesPageClient';
 
 export default function AdminReviewDisputesRoutePage() {
-  return <AdminReviewDisputesPage />;
+  return <AdminReviewDisputesPageClient />;
 }

@@ -139,6 +139,10 @@ export function AdminDashboardClient() {
         {metrics?.totalReviews !== undefined ? (
           <p className="mt-3 text-xs text-text-muted">
             Reseñas en plataforma: {metrics.totalReviews}
+            {' · '}
+            <Link href="/admin/reviews" className="text-accent hover:underline">
+              Reporte de reputación
+            </Link>
             {pendingPayouts.length > 0 ? (
               <>
                 {' '}

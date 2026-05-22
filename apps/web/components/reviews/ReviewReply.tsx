@@ -11,13 +11,26 @@ const AUTHOR_LABELS: Record<PublicReviewReply['authorType'], string> = {
 
 export function ReviewReply({ reply }: { reply: PublicReviewReply }) {
   const label = AUTHOR_LABELS[reply.authorType] ?? reply.authorDisplayName;
+  const dateLabel = new Date(reply.createdAt).toLocaleDateString('es-AR', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
 
   return (
-    <div className="mt-4 rounded-lg border border-accent/20 bg-accent/5 px-4 py-3">
-      <p className="text-xs font-medium uppercase tracking-wide text-accent">
-        Respuesta · {label}
-      </p>
+    <aside
+      className="mt-4 rounded-lg border border-accent/25 border-l-4 border-l-accent bg-accent/5 px-4 py-3 sm:px-5"
+      aria-label="Respuesta oficial"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-xs font-semibold uppercase tracking-wide text-accent">
+          Respuesta oficial · {label}
+        </p>
+        <time className="text-xs text-text-muted/80" dateTime={reply.createdAt}>
+          {dateLabel}
+        </time>
+      </div>
       <p className="mt-2 text-sm leading-relaxed text-text-muted">{reply.body}</p>
-    </div>
+    </aside>
   );
 }

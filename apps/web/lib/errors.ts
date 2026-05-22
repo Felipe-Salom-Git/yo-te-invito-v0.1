@@ -14,6 +14,10 @@ const STATUS_MESSAGES: Record<number, string> = {
   500: 'Error del servidor. Intenta más tarde.',
 };
 
+export function isApiNotFoundError(err: unknown): boolean {
+  return err instanceof ApiClientError && err.status === 404;
+}
+
 export function getErrorMessage(err: unknown): string {
   if (err instanceof ApiClientError) {
     const body = err.body && typeof err.body === 'object' ? (err.body as Record<string, unknown>) : null;

@@ -76,12 +76,12 @@ _Bloque cerrado (Slices 1–5): dashboard, cola pendientes, eventos/usuarios/aud
 
 ## Reviews, reputación y moderación
 
-- [ ] Pulir UI pública de reviews.
-- [ ] Pulir perfil público de comentarista.
-- [ ] Pulir filtros de reviews.
-- [ ] Pulir cola admin de disputas.
-- [ ] Definir notificaciones/email para disputas.
-- [ ] Evaluar reporting/export de reviews y disputas.
+- [x] Pulir UI pública de reviews.
+- [x] Pulir perfil público de comentarista.
+- [x] Pulir filtros de reviews.
+- [x] Pulir cola admin de disputas.
+- [x] Definir notificaciones/email para disputas.
+- [x] Evaluar reporting/export de reviews y disputas.
 
 ## Gastro y Hoteles
 

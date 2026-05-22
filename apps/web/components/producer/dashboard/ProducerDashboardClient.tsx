@@ -29,6 +29,7 @@ import {
 import { ProducerDashboardEngagement } from './ProducerDashboardEngagement';
 import { ProducerDashboardTopEvents } from './ProducerDashboardTopEvents';
 import { ProducerDashboardEventStatusAlerts } from './ProducerDashboardEventStatusAlerts';
+import { ManagedPortalReviewAlerts } from '@/components/reviews/ManagedPortalReviewAlerts';
 
 function displayNameFromSession(user: {
   name?: string | null;
@@ -273,6 +274,7 @@ export function ProducerDashboardClient() {
           <ProducerDashboardEngagement engagement={metrics.engagement} />
 
           <ProducerDashboardEventStatusAlerts enabled={status === 'authenticated'} />
+          <ManagedPortalReviewAlerts enabled={status === 'authenticated'} />
 
           <ProducerDashboardTopEvents topEvents={metrics.topEvents} />
 

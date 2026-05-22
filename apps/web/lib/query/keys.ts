@@ -82,10 +82,13 @@ export const reviewsKeys = {
     entityId: string,
     tenantId: string,
     page?: number,
-  ) => [...reviewsKeys.all, 'v2', category, entityId, tenantId, page] as const,
+    filtersKey?: string,
+  ) => [...reviewsKeys.all, 'v2', category, entityId, tenantId, page, filtersKey] as const,
   /** Invalidate all pages for an entity's public reviews */
   publicV2Entity: (category: string, entityId: string, tenantId: string) =>
     [...reviewsKeys.all, 'v2', category, entityId, tenantId] as const,
+  userPublic: (userId: string, tenantId: string, page?: number, filtersKey?: string) =>
+    [...reviewsKeys.all, 'user', userId, tenantId, page, filtersKey] as const,
 };
 
 // ─── Me portal (usuario final) ─────────────────────────────────────────────
@@ -219,6 +222,11 @@ export const adminReviewDisputesKeys = {
   all: ['admin', 'review-disputes'] as const,
   list: (filtersKey: string) => [...adminReviewDisputesKeys.all, 'list', filtersKey] as const,
   detail: (id: string) => [...adminReviewDisputesKeys.all, 'detail', id] as const,
+};
+
+export const adminReviewsReportKeys = {
+  all: ['admin', 'reviews-report'] as const,
+  report: (filtersKey: string) => [...adminReviewsReportKeys.all, filtersKey] as const,
 };
 
 // ─── Metrics / Admin ───────────────────────────────────────────────────────

@@ -64,7 +64,7 @@ Controllers: HTTP + Zod only. Services: business logic. Prisma: persistence only
 
 **Checklist producción portal productor:** `docs/dev/Yo_Te_Invito_Checklist_V2_Produccion.md` § Portal productor — sincronizado con § K de este archivo.
 
-**Reviews V2:** `docs/reviews/REVIEWS_V2.md` — smoke `smoke:reviews`.
+**Reviews V2 (reputación y moderación):** `docs/reviews/REVIEWS_V2.md` — slices UI pública, perfil, filtros, cola admin, notificaciones, reporting (`/admin/reviews`); smoke `smoke:reviews`; checklist § Reviews en `Yo_Te_Invito_Checklist_V2_Produccion.md` cerrado.
 
 **Portal usuario (`/me/*`):** `docs/user/USER_PORTAL.md` (incl. **Push notifications** V2.1.3–V2.1.4, **ticket comprador** V2.2).
 

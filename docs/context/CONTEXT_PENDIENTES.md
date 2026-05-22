@@ -127,14 +127,20 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 
 ## K. Productoras / Proveedores (portal + reseñas)
 
+**Reviews V2 — reputación y moderación (checklist producción § Reviews):** [x] UI pública, perfil comentarista, filtros, cola admin disputas, notificaciones in-app/email/push, reporte `/admin/reviews` + export CSV. Doc: `docs/reviews/REVIEWS_V2.md`.
+
 - [x] Perfil productor por bloques: API `GET/POST/PATCH /producer/profile`, rutas `/producer/profile/*` (create, identity, images, contact)
 - [x] Slice 8: hub `/producer/profile` con completitud (frontend), preview pública liviana, bloques con estado, formularios pulidos; ficha `/producers/[id|slug]` sin cambios de contrato
 - [x] Ficha pública productor (`/producers/[id|slug]`) y reseñas públicas de eventos
 - [x] Portal: `/producer/comments` — reseñas de eventos + solicitud de revisión (disputa) vía inbox
 - [x] Admin: cola `/admin/review-disputes` para resolver disputas de reseñas
+- [x] Pulir cola admin disputas: contexto en listado (reseña, autor, entidad, productor, motivo, estado review), filtros `status`/`category`/`q`, confirmaciones en acciones, hide/restore, tabla + cards mobile, auditoría
 - [x] Reseñas B2B (`CommercialRelationshipReview`): API + UI portal (valoración comercial privada)
 - [x] Reviews V2 base: aspectos 1–10 por categoría, estados moderación, ranking/reputación servicios, `POST /me/reviews`, `GET /public/reviews*`, perfil `/users/[userId]` (ver `docs/reviews/REVIEWS_V2.md`)
 - [x] UI pública: listados con desglose aspectos vía `listPublicV2` en fichas detalle (eventos, gastro, rental, excursión, hotel)
+- [x] Slice UI pública reviews: jerarquía premium (`ReviewSummary`/`ReviewCard`), empty/loading/error (`ReviewEmptyState`, `ReviewListSkeleton`, `QueryError`), paginación unificada, productora pública y `/users/[userId]` alineados
+- [x] Perfil público comentarista `/users/[userId]`: header reputación, stats API (`averageOverallRating`, `categoriesCommented`, `reviewsWithOfficialReplyCount`), 404/empty, hook `useUserPublicReviews`, sin email en display público
+- [x] Filtros reviews: API pública `sort`/`replyFilter`/`overallRating`; UI `PublicReviewsFiltersBar` en fichas + perfil; portales managed con URL params; gastro/hotel con respuesta y orden
 - [x] Carruseles «más recomendados» / «mejor puntuados» por `rankingScore` en landing por categoría y home global
 - [x] Portal productora: aspectos, réplica, filtros 1–10 en `/producer/comments`
 - [x] Slice 1: dashboard productor hub (`/producer`) — KPIs, engagement, alertas evento, próximos eventos (sin bloque accesos rápidos; navegación en sidebar)
@@ -153,8 +159,8 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 - [x] Smoke tests Reviews V2 — `pnpm --filter api run smoke:reviews` + guía `docs/guides/SMOKE_TESTS_GUIDE.md`
 - [x] Perfil público comentarista `/users/[userId]` + badge reputación
 - [x] Auth: JWT huérfano si usuario borrado → 401 en guard + `me.service` (logout/login; no spam `NotFoundError`)
-- [ ] Moderación avanzada / notificaciones email para disputas (si aplica)
-- [ ] Export o reporting de disputas y reseñas comerciales
+- [x] Notificaciones reviews/disputas: `ReviewNotificationsService`, kinds V2, preferencias `notifyManagedReviews` / `notifyReviewEngagement`, bandeja `/me/notifications`
+- [x] Reporting admin reseñas públicas: `GET /admin/reviews/report`, vista `/admin/reviews`, export CSV (máx. 500 filas; sin B2B)
 
 _(Trending con `viewCount`: ver ítem Slice 2 arriba en § K.)_
 

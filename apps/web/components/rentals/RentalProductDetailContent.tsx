@@ -7,7 +7,7 @@ import { useRepositories } from '@/repositories/context';
 import { useEventDetail, eventsKeys } from '@/lib/query/events';
 import { useRecordPublicEventView } from '@/lib/query/public-engagement';
 import { reviewsKeys } from '@/lib/query/keys';
-import { usePublicEntityReviews } from '@/lib/query/reviews';
+import { usePublicEntityReviewsState } from '@/lib/query/reviews';
 import { getCategoryLabel, getRelatedSectionTitle } from '@/lib/home/contentRoutes';
 import { EventLocationModal } from '@/components/events/EventLocationModal';
 import { EventReviewsSection } from '@/components/events/EventReviewsSection';
@@ -55,7 +55,6 @@ export function RentalProductDetailContent({
   const repos = useRepositories();
   const queryClient = useQueryClient();
   const { addToast } = useToast();
-  const [reviewPage, setReviewPage] = useState(1);
   const [reviewFormKey, setReviewFormKey] = useState(0);
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
 
@@ -68,12 +67,16 @@ export function RentalProductDetailContent({
     enabled: !!tenantId && !!event,
   });
 
-  const { data: reviewsData, isLoading: reviewsLoading } = usePublicEntityReviews(
-    'rental',
-    id,
-    tenantId,
-    reviewPage,
-  );
+  const {
+    data: reviewsData,
+    isLoading: reviewsLoading,
+    isError: reviewsError,
+    refetch: refetchReviews,
+    page: reviewPage,
+    setPage: setReviewPage,
+    filters: reviewFilters,
+    setFilters: setReviewFilters,
+  } = usePublicEntityReviewsState('rental', id, tenantId);
 
   const { data: relatedData } = useQuery({
     queryKey: ['events', 'related', tenantId, 'rental'],
@@ -229,10 +232,14 @@ export function RentalProductDetailContent({
             total={reviewsData?.total ?? 0}
             page={reviewPage}
             onPageChange={setReviewPage}
+            filters={reviewFilters}
+            onFiltersChange={setReviewFilters}
             onSubmitReview={handleSubmitReview}
             isSubmittingReview={createMutation.isPending}
             canSubmitReview={!!session?.user}
             isLoading={reviewsLoading}
+            isError={reviewsError}
+            onRetry={() => void refetchReviews()}
             summary={
               reviewsData?.summary ?? {
                 averageRating: event.ratingAvg ?? null,

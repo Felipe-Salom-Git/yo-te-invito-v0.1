@@ -92,7 +92,7 @@ ApiClient → HTTP (NEXT_PUBLIC_API_BASE_URL)
 | Public | `/`, `/home`, **`/explore`** (filtros URL: `q`, `category`, `subcategoryId`, `city`, `from`, `to`, `page`), `/events/[id]`, `/restaurants/[id]`, `/excursiones/[id]`, **`/rentals/[id]`**, `/hoteles/[id]`, **`/users/[userId]`** (perfil comentarista), checkout, `/me/tickets`, `/referrers`, `/r/[code]` |
 | Account | `/login`, `/register`, **`/me/*`** (portal usuario estándar) |
 | Cuenta (legacy) | `/cuenta/*` → **redirects** a `/me/*` (no mantener lógica duplicada) |
-| Admin | `/admin/*` (**solo rol `ADMIN`**, `ProfileProtectedLayout` en `admin/layout.tsx`), sidebar operaciones; **`/admin`** dashboard; **`/admin/eventos`** listado filtrado; **`/admin/usuarios`** listado usuarios con filtros URL; **`/admin/categorias`** subcategorías + banners (`/admin/subcategorias` redirige); **`/admin/auditoria`** logs operativos; acceso: `/profiles`, navbar «Administración», URL directa |
+| Admin | `/admin/*` (**solo rol `ADMIN`**, `ProfileProtectedLayout` en `admin/layout.tsx`), sidebar operaciones; **`/admin`** dashboard; **`/admin/eventos`** listado filtrado; **`/admin/reviews`** reporte reputación (KPIs, CSV); **`/admin/review-disputes`** cola disputas; **`/admin/usuarios`** listado usuarios con filtros URL; **`/admin/categorias`** subcategorías + banners (`/admin/subcategorias` redirige); **`/admin/auditoria`** logs operativos; acceso: `/profiles`, navbar «Administración», URL directa |
 | Producer | `/producer` (hub: KPIs, engagement, **`ProducerDashboardEventStatusAlerts`**, eventos; nav en sidebar), `/producer/events`, ticket studio, **`/producer/profile`** (hub por bloques + completitud frontend), **`/producer/profile/create`** (solo nombre; slug en servidor), **`/producer/profile/identity|images|contact`**, **`/producer/comments`** (`ManagedReviewsCommentsPage`), referidos, payouts |
 | Gastro / Hotel / Referrer | `/gastro/*`, **`/gastro/valoraciones`**, `/hotel`, **`/hotel/valoraciones`**, `/referrer`, `/cuenta/solicitar-referrer` |
 
@@ -162,7 +162,7 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`). Shared UI tokens:
 | PlaceDetailView | `components/places/` (non-rental) |
 | TicketStudioClient | `components/producer/ticket-studio/` |
 | OpeningHoursEditor, RentalProductImagesForm | `components/forms/`, `components/rentals/` |
-| Reviews V2 (público + portales) | `components/reviews/` (`ReviewForm`, `ReviewCard`, `ReviewSummary`, `ManagedReviewsCommentsPage`, `ReviewReplyModal`) |
+| Reviews V2 (público + portales) | `components/reviews/` — filtros públicos `PublicReviewsFiltersBar` + hooks `usePublicEntityReviewsState` / `useUserPublicReviewsState`; `EventReviewsSection`; perfil `/users/[userId]`; portales `ManagedReviewsCommentsPage` (URL query en productor/gastro/hotel, chips + orden/respuesta/disputa/estado); `ReviewReplyModal` |
 | Comentarios productora | `components/producer/comments/` (`ProducerCommentsPage` → `ManagedReviewsCommentsPage`, filtros rápidos, resumen API) |
 | Perfil productor (portal) | `components/producer/profile/` (`ProducerProfilePage`, `ManagedReviewSummary`, `ProducerProfilePublicPreview`, `producer-profile-completeness.ts`) |
 | Dashboard productor | `components/producer/dashboard/` (`ProducerDashboardClient`, KPIs, engagement, alertas estado evento; **sin** `ProducerDashboardQuickLinks`) |
@@ -171,6 +171,9 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`). Shared UI tokens:
 | Dashboard admin | `components/admin/dashboard/` — `AdminDashboardClient`, KPIs, cola, accesos; hook `lib/query/admin-dashboard.ts` |
 | Eventos admin | `components/admin/events/` — `AdminEventsPageClient`, filtros URL, tabla + cards mobile |
 | Auditoría admin | `components/admin/audit/` — `AdminAuditPageClient`, `AdminAuditFilters`, tabla + cards, `AdminAuditMetadataPreview`; hook `lib/query/admin-audit.ts` |
+| Disputas admin | `components/admin/review-disputes/` — `AdminReviewDisputesPageClient`, filtros URL (`useAdminReviewDisputeUrlFilters`), tabla desktop + cards mobile, panel detalle con confirmaciones (aceptar/rechazar/marcar en revisión/ocultar/restaurar/réplica), enlace a `/admin/auditoria`; `adminReviewDisputesKeys` + `AdminReviewDisputesRepo` |
+| Alertas valoraciones | `ManagedPortalReviewAlerts` en dashboard productor y portal gastro; labels en `/me/notifications`; preferencias `notifyManagedReviews` / `notifyReviewEngagement` en `MePushAlertPreferences` |
+| Reputación admin | `/admin/reviews` — `AdminReviewsReportPageClient`, KPIs, tabla por vertical, señales problemáticas, top disputas, export CSV; hook `useAdminReviewsReport` |
 | Usuarios admin | `components/admin/users/` — `AdminUsersPageClient`, filtros URL, tabla + cards mobile, badges rol/perfiles; cambio de rol con confirmación; cuenta maestro sin selector; hook `lib/query/admin-users.ts` |
 | Subcategorías admin | `components/admin/subcategories/` — `AdminSubcategoriesPageClient`, tabs por vertical, CRUD vía `SubcategoriesRepo`, hotel `AdminHotelComingSoonPanel`; banners en `AdminCategoryBannerPanel`; hook `useAdminSubcategories` |
 | Portal usuario push | `components/me/MePushNotificationsPanel`, `MePushAlertPreferences`, `MeDashboardPushCta`, `InterestsDisclosure` |

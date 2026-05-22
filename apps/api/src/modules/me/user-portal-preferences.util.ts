@@ -130,8 +130,26 @@ export function readPortalPreferences(
       typeof prev.notifyProducerEventStatus === 'boolean'
         ? prev.notifyProducerEventStatus
         : true,
+    notifyManagedReviews:
+      typeof prev.notifyManagedReviews === 'boolean'
+        ? prev.notifyManagedReviews
+        : typeof prev.notifyPendingReviews === 'boolean'
+          ? prev.notifyPendingReviews
+          : true,
+    notifyReviewEngagement:
+      typeof prev.notifyReviewEngagement === 'boolean'
+        ? prev.notifyReviewEngagement
+        : true,
     ticketReminderOverrides,
   };
+}
+
+export function shouldSendEmailForManagedReviews(prefs: UserPortalPreferences): boolean {
+  return prefs.emailNotificationsEnabled && prefs.notifyManagedReviews;
+}
+
+export function shouldSendEmailForReviewEngagement(prefs: UserPortalPreferences): boolean {
+  return prefs.emailNotificationsEnabled && prefs.notifyReviewEngagement;
 }
 
 export function shouldSendPushForKind(
@@ -157,6 +175,15 @@ export function shouldSendPushForKind(
     case 'EVENT_APPROVED_BY_ADMIN':
     case 'EVENT_REJECTED_BY_ADMIN':
       return prefs.notifyProducerEventStatus;
+    case 'REVIEW_RECEIVED':
+    case 'REVIEW_DISPUTE_CREATED':
+    case 'REVIEW_DISPUTE_ACCEPTED':
+    case 'REVIEW_DISPUTE_REJECTED':
+      return prefs.notifyManagedReviews;
+    case 'REVIEW_OFFICIAL_REPLY':
+    case 'REVIEW_MODERATION_HIDDEN':
+    case 'REVIEW_MODERATION_RESTORED':
+      return prefs.notifyReviewEngagement;
     default:
       return prefs.notifyUnreadNotifications;
   }
@@ -188,6 +215,17 @@ export function pushTypeForKind(kind: NotificationKind): string {
       return 'PRODUCER_EVENT_APPROVED';
     case 'EVENT_REJECTED_BY_ADMIN':
       return 'PRODUCER_EVENT_REJECTED';
+    case 'REVIEW_RECEIVED':
+      return 'REVIEW_RECEIVED';
+    case 'REVIEW_OFFICIAL_REPLY':
+      return 'REVIEW_OFFICIAL_REPLY';
+    case 'REVIEW_DISPUTE_CREATED':
+    case 'REVIEW_DISPUTE_ACCEPTED':
+    case 'REVIEW_DISPUTE_REJECTED':
+      return 'REVIEW_DISPUTE';
+    case 'REVIEW_MODERATION_HIDDEN':
+    case 'REVIEW_MODERATION_RESTORED':
+      return 'REVIEW_MODERATION';
     default:
       return 'PORTAL_ALERT';
   }
@@ -278,6 +316,14 @@ export function mergePortalPreferencesPatch(
       patch.notifyProducerEventStatus !== undefined
         ? patch.notifyProducerEventStatus
         : base.notifyProducerEventStatus,
+    notifyManagedReviews:
+      patch.notifyManagedReviews !== undefined
+        ? patch.notifyManagedReviews
+        : base.notifyManagedReviews,
+    notifyReviewEngagement:
+      patch.notifyReviewEngagement !== undefined
+        ? patch.notifyReviewEngagement
+        : base.notifyReviewEngagement,
     ticketReminderOverrides:
       patch.ticketReminderOverrides !== undefined
         ? { ...base.ticketReminderOverrides, ...patch.ticketReminderOverrides }

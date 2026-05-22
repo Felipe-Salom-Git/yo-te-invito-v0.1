@@ -1,6 +1,9 @@
 import { z } from 'zod';
 import { publicReviewCategorySchema } from './review-aspects';
-import { reviewPublicStatusSchema, reviewReplyAuthorTypeSchema } from './review-moderation';
+import {
+  reviewPublicStatusSchema,
+  reviewReplyAuthorTypeSchema,
+} from './review-moderation';
 
 export const reviewDisputeReasonTypeSchema = z.enum([
   'UNFAIR_RATING',
@@ -132,13 +135,18 @@ export const reviewDisputeResponseSchema = z.object({
   producerProfileId: z.string(),
   eventId: z.string(),
   eventTitle: z.string(),
+  eventCategory: publicReviewCategorySchema,
   reasonType: reviewDisputeReasonTypeSchema,
   message: z.string(),
   status: reviewDisputeStatusSchema,
   adminNote: z.string().nullable(),
   reviewScore: z.number(),
+  reviewOverallRating: z.number().int().min(1).max(10),
   reviewComment: z.string().nullable(),
   reviewUserDisplayName: z.string(),
+  reviewPublicStatus: reviewPublicStatusSchema,
+  reviewHiddenFromPublic: z.boolean(),
+  hasOfficialReply: z.boolean(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
   resolvedAt: z.string().datetime().nullable(),
@@ -147,6 +155,8 @@ export type ReviewDisputeResponse = z.infer<typeof reviewDisputeResponseSchema>;
 
 export const adminReviewDisputeListQuerySchema = z.object({
   status: reviewDisputeStatusSchema.optional(),
+  category: publicReviewCategorySchema.optional(),
+  q: z.string().trim().min(2).max(120).optional(),
   page: z.coerce.number().int().min(1).optional().default(1),
   limit: z.coerce.number().int().min(1).max(100).optional().default(30),
 });

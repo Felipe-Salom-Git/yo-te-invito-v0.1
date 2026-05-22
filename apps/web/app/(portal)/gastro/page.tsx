@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { useRepositories } from '@/repositories/context';
 import { PageContainer, SectionTitle, Card, CardContent } from '@/components';
+import { ManagedPortalReviewAlerts } from '@/components/reviews/ManagedPortalReviewAlerts';
 
 const TENANT_ID = 'tenant-demo';
 
@@ -69,6 +70,12 @@ export default function GastroPortalPage() {
           </CardContent>
         </Card>
       </div>
+
+      <ManagedPortalReviewAlerts
+        enabled={status === 'authenticated'}
+        heading="Novedades de valoraciones"
+        defaultHref="/gastro/valoraciones"
+      />
 
       <div className="mt-6 flex flex-wrap gap-2">
         <Link href="/gastro/local" className="rounded border border-accent px-4 py-2 text-accent hover:bg-accent/10">

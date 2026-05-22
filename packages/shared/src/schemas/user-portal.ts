@@ -36,6 +36,10 @@ export const userPortalPreferencesSchema = z.object({
   notifyUnreadNotifications: z.boolean(),
   /** Aprobación/rechazo de eventos propios por administración (portal productor). */
   notifyProducerEventStatus: z.boolean(),
+  /** Nueva valoración o actualización de disputa en portales gestionados (productor/gastro/hotel). */
+  notifyManagedReviews: z.boolean(),
+  /** Respuesta oficial, ocultar/restaurar u otras novedades sobre reseñas que publicaste. */
+  notifyReviewEngagement: z.boolean(),
   /** Per-ticket opt-out when global reminder is on */
   ticketReminderOverrides: z.record(z.string(), z.boolean()).default({}),
 });
@@ -61,6 +65,8 @@ export const userPortalPreferencesPatchSchema = z.object({
   notifyRecommendations: z.boolean().optional(),
   notifyUnreadNotifications: z.boolean().optional(),
   notifyProducerEventStatus: z.boolean().optional(),
+  notifyManagedReviews: z.boolean().optional(),
+  notifyReviewEngagement: z.boolean().optional(),
   ticketReminderOverrides: z.record(z.string(), z.boolean()).optional(),
 });
 export type UserPortalPreferencesPatch = z.infer<typeof userPortalPreferencesPatchSchema>;

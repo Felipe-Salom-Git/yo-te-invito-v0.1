@@ -9,12 +9,15 @@ import type { Prisma, ReviewReplyAuthorType } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ProfilesAuthorizationService } from '../../common/profiles-authorization.service';
 import { AuditService } from '../audit/audit.service';
+import { ReviewNotificationsService } from '../notifications/review-notifications.service';
 import { ReviewRankingService } from './review-ranking.service';
 import { ReviewReputationService } from './review-reputation.service';
 import {
+  applyPublicReviewListFilters,
   buildPublicReviewItem,
   eventCategoryToReviewCategory,
   legacyScoreFromOverall,
+  publicReviewListOrderBy,
   publicReviewVisibleWhere,
   readOverallRating,
   syncHiddenFlags,
@@ -24,6 +27,7 @@ import {
   createPublicReviewBodyForCategorySchema,
   parseAspectRatingsForCategory,
   type CreatePublicReviewBody,
+  type PublicReviewCategory,
   type PublicReviewItemV2,
   type PublicReviewReply,
   type PublicReviewsListQuery,
@@ -41,6 +45,7 @@ export class PublicReviewsService {
     private readonly ranking: ReviewRankingService,
     private readonly reputation: ReviewReputationService,
     private readonly audit: AuditService,
+    private readonly reviewNotifications: ReviewNotificationsService,
   ) {}
 
   private displayName(user: {
@@ -49,6 +54,55 @@ export class PublicReviewsService {
     email: string;
   }): string {
     return `${user.firstName} ${user.lastName}`.trim() || user.email;
+  }
+
+  /** Public reviewer profile — never falls back to email. */
+  private publicDisplayName(user: { firstName: string; lastName: string }): string {
+    const name = `${user.firstName} ${user.lastName}`.trim();
+    return name || 'Comentarista';
+  }
+
+  private async buildUserPublicProfileStats(
+    tenantId: string,
+    userId: string,
+  ): Promise<{
+    averageOverallRating: number | null;
+    categoriesCommented: PublicReviewCategory[];
+    reviewsWithOfficialReplyCount: number;
+  }> {
+    const rows = await this.prisma.review.findMany({
+      where: { tenantId, userId, ...publicReviewVisibleWhere },
+      select: {
+        overallRating: true,
+        score: true,
+        officialReply: true,
+        event: { select: { category: true } },
+      },
+    });
+
+    if (rows.length === 0) {
+      return {
+        averageOverallRating: null,
+        categoriesCommented: [],
+        reviewsWithOfficialReplyCount: 0,
+      };
+    }
+
+    let ratingSum = 0;
+    let withReply = 0;
+    const categories = new Set<PublicReviewCategory>();
+
+    for (const row of rows) {
+      ratingSum += readOverallRating(row);
+      categories.add(eventCategoryToReviewCategory(row.event.category));
+      if (row.officialReply?.trim()) withReply += 1;
+    }
+
+    return {
+      averageOverallRating: Math.round((ratingSum / rows.length) * 10) / 10,
+      categoriesCommented: [...categories],
+      reviewsWithOfficialReplyCount: withReply,
+    };
   }
 
   private mapReply(review: {
@@ -145,6 +199,19 @@ export class PublicReviewsService {
 
     await this.ranking.refreshEventRankingCache(event.tenantId, eventId);
 
+    this.reviewNotifications.notifyReviewReceived(
+      event.tenantId,
+      review.id,
+      {
+        id: event.id,
+        title: event.title,
+        category: event.category,
+        producerProfileId: event.producerProfileId,
+        producerId: event.producerId,
+      },
+      user.id,
+    );
+
     return { id: review.id };
   }
 
@@ -179,10 +246,19 @@ export class PublicReviewsService {
       query.category,
     );
 
-    const where = {
-      eventId: event.id,
-      ...publicReviewVisibleWhere,
-    };
+    const where = applyPublicReviewListFilters(
+      {
+        eventId: event.id,
+        ...publicReviewVisibleWhere,
+      },
+      {
+        sort: query.sort,
+        replyFilter: query.replyFilter,
+        overallRating: query.overallRating,
+      },
+    );
+
+    const orderBy = publicReviewListOrderBy(query.sort);
 
     const [rows, total] = await Promise.all([
       this.prisma.review.findMany({
@@ -193,7 +269,7 @@ export class PublicReviewsService {
             select: { id: true, firstName: true, lastName: true, email: true },
           },
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy,
         skip: (query.page - 1) * query.limit,
         take: query.limit,
       }),
@@ -248,12 +324,14 @@ export class PublicReviewsService {
     const visibleReviewCount = await this.prisma.review.count({
       where: { tenantId, userId, ...publicReviewVisibleWhere },
     });
+    const stats = await this.buildUserPublicProfileStats(tenantId, userId);
     return {
       userId: user.id,
-      displayName: this.displayName(user),
+      displayName: this.publicDisplayName(user),
       avatarUrl: null,
       reviewerTier: tier,
       visibleReviewCount,
+      ...stats,
     };
   }
 
@@ -263,7 +341,15 @@ export class PublicReviewsService {
     query: UserPublicReviewsQuery,
   ) {
     const profile = await this.getUserPublicProfile(tenantId, userId);
-    const where = { tenantId, userId, ...publicReviewVisibleWhere };
+    const where = applyPublicReviewListFilters(
+      { tenantId, userId, ...publicReviewVisibleWhere },
+      {
+        sort: query.sort,
+        replyFilter: query.replyFilter,
+        overallRating: query.overallRating,
+      },
+    );
+    const orderBy = publicReviewListOrderBy(query.sort);
     const [rows, total] = await Promise.all([
       this.prisma.review.findMany({
         where,
@@ -273,7 +359,7 @@ export class PublicReviewsService {
             select: { id: true, firstName: true, lastName: true, email: true },
           },
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy,
         skip: (query.page - 1) * query.limit,
         take: query.limit,
       }),
@@ -381,6 +467,21 @@ export class PublicReviewsService {
       after: { replyAuthorType: authorType },
     });
 
+    if (review.userId) {
+      this.reviewNotifications.notifyOfficialReply(
+        tenantId,
+        reviewId,
+        {
+          id: review.event.id,
+          title: review.event.title,
+          category: review.event.category,
+          producerProfileId: review.event.producerProfileId,
+          producerId: review.event.producerId,
+        },
+        review.userId,
+      );
+    }
+
     return { ok: true };
   }
 
@@ -394,6 +495,7 @@ export class PublicReviewsService {
   ) {
     const review = await this.prisma.review.findFirst({
       where: { id: reviewId, tenantId },
+      include: { event: true },
     });
     if (!review) {
       throw new NotFoundException({
@@ -432,6 +534,22 @@ export class PublicReviewsService {
       metadata: { reason, adminNote },
     });
 
+    if (review.userId) {
+      this.reviewNotifications.notifyReviewHidden(
+        tenantId,
+        reviewId,
+        {
+          id: review.event.id,
+          title: review.event.title,
+          category: review.event.category,
+          producerProfileId: review.event.producerProfileId,
+          producerId: review.event.producerId,
+        },
+        review.userId,
+        'admin-hide',
+      );
+    }
+
     return { ok: true };
   }
 
@@ -443,6 +561,7 @@ export class PublicReviewsService {
   ) {
     const review = await this.prisma.review.findFirst({
       where: { id: reviewId, tenantId },
+      include: { event: true },
     });
     if (!review) {
       throw new NotFoundException({
@@ -476,6 +595,21 @@ export class PublicReviewsService {
       before: { status: review.status },
       after: { status: 'VISIBLE' },
     });
+
+    if (review.userId) {
+      this.reviewNotifications.notifyReviewRestored(
+        tenantId,
+        reviewId,
+        {
+          id: review.event.id,
+          title: review.event.title,
+          category: review.event.category,
+          producerProfileId: review.event.producerProfileId,
+          producerId: review.event.producerId,
+        },
+        review.userId,
+      );
+    }
 
     return { ok: true };
   }

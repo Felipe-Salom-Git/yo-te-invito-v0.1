@@ -20,6 +20,7 @@ import {
   publicReviewVisibleWhere,
   readOverallRating,
 } from './review-public.util';
+import { ReviewNotificationsService } from '../notifications/review-notifications.service';
 import { ReviewRankingService } from './review-ranking.service';
 
 @Injectable()
@@ -28,6 +29,7 @@ export class ReviewsService {
     private readonly prisma: PrismaService,
     private readonly profiles: ProfilesAuthorizationService,
     private readonly ranking: ReviewRankingService,
+    private readonly reviewNotifications: ReviewNotificationsService,
   ) {}
 
   async create(
@@ -112,6 +114,19 @@ export class ReviewsService {
     });
 
     await this.ranking.refreshEventRankingCache(tenantId, eventId);
+
+    this.reviewNotifications.notifyReviewReceived(
+      tenantId,
+      review.id,
+      {
+        id: event.id,
+        title: event.title,
+        category: event.category,
+        producerProfileId: event.producerProfileId,
+        producerId: event.producerId,
+      },
+      userId,
+    );
 
     return { id: review.id };
   }

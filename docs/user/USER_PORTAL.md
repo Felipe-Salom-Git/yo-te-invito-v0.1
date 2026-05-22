@@ -107,6 +107,8 @@ CTA en **Inicio** (`/me`) si el dispositivo aún no está suscripto.
 En la misma página, sección **Preferencias de alertas** (persistidas en `User.preferences`):
 
 - Eventos próximos, transferencias, calificaciones pendientes
+- **Valoraciones en mis locales/eventos** (`notifyManagedReviews`) — nueva reseña, disputas (portales gestionados)
+- **Respuestas y moderación de tus reseñas** (`notifyReviewEngagement`) — respuesta oficial, ocultar/restaurar
 - Productoras seguidas, categorías/subcategorías favoritas
 - Recomendaciones (opcional, desactivado por defecto)
 - Master **Alertas push activas** (`pushAlertsEnabled`)
@@ -124,6 +126,10 @@ Las push solo se envían si hay suscripción activa, VAPID configurado y el tipo
 | Notificación interna nueva | Sí | Sí (`notifyUnreadNotifications`) |
 | Productora publica evento → seguidores | Sí (`FOLLOWED_PRODUCER_NEW_EVENT`) | Sí (`notifyFollowedProducers`) |
 | Contenido nuevo por ciudad/categoría/subcategoría | Sí (`FAVORITE_INTEREST_NEW_CONTENT`) | Sí (prefs categoría/subcat/recomendados) |
+| Nueva valoración (productor/gastro/hotel) | Sí (`REVIEW_RECEIVED`) | Sí (`notifyManagedReviews`) |
+| Respuesta oficial a tu reseña | Sí + email | Sí (`notifyReviewEngagement`) |
+| Disputa aceptada/rechazada | Sí + email | Push solo si aceptada |
+| Reseña ocultada/restaurada (moderación) | Sí + email | No |
 
 **Disparo:** al pasar a `APPROVED` (admin approve, publicación general, rental/excursion con estado aprobado). No re-dispara si ya estaba aprobado. Sin alertas para `hotel`, borradores, rechazados ni eventos no visibles públicamente.
 

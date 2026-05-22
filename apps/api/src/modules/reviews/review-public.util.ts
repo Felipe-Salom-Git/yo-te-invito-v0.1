@@ -1,5 +1,9 @@
 import type { Prisma, Review, ReviewPublicStatus } from '@prisma/client';
 import type {
+  ProducerReviewReplyFilter,
+  PublicReviewListSort,
+} from '@yo-te-invito/shared';
+import type {
   PublicReviewCategory,
   PublicReviewItemV2,
   ReviewPublicStatus as SharedReviewPublicStatus,
@@ -98,4 +102,59 @@ export function buildPublicReviewItem(
     createdAt: review.createdAt.toISOString(),
     legacyScore: review.score,
   };
+}
+
+export type PublicReviewListQueryFilters = {
+  replyFilter?: ProducerReviewReplyFilter;
+  overallRating?: number;
+  sort?: PublicReviewListSort;
+};
+
+export function applyPublicReviewListFilters(
+  base: Prisma.ReviewWhereInput,
+  filters: PublicReviewListQueryFilters,
+): Prisma.ReviewWhereInput {
+  const where: Prisma.ReviewWhereInput = { ...base };
+  const andParts: Prisma.ReviewWhereInput[] = [];
+
+  if (filters.overallRating) {
+    andParts.push({
+      OR: [
+        { overallRating: filters.overallRating },
+        {
+          overallRating: null,
+          score: Math.min(5, Math.max(1, Math.round(filters.overallRating / 2))),
+        },
+      ],
+    });
+  }
+
+  if (filters.replyFilter === 'UNANSWERED') {
+    andParts.push({ OR: [{ officialReply: null }, { officialReply: '' }] });
+  } else if (filters.replyFilter === 'ANSWERED') {
+    andParts.push({
+      officialReply: { not: null },
+      NOT: { officialReply: '' },
+    });
+  }
+
+  if (andParts.length > 0) {
+    where.AND = [...(Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : []), ...andParts];
+  }
+
+  return where;
+}
+
+export function publicReviewListOrderBy(
+  sort: PublicReviewListSort | undefined,
+): Prisma.ReviewOrderByWithRelationInput[] {
+  switch (sort) {
+    case 'highest':
+      return [{ overallRating: 'desc' }, { createdAt: 'desc' }];
+    case 'lowest':
+      return [{ overallRating: 'asc' }, { createdAt: 'desc' }];
+    case 'newest':
+    default:
+      return [{ createdAt: 'desc' }];
+  }
 }

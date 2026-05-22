@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRepositories } from '@/repositories/context';
 import { publicGastroKeys, reviewsKeys } from '@/lib/query/keys';
-import { usePublicEntityReviews } from '@/lib/query/reviews';
+import { usePublicEntityReviewsState } from '@/lib/query/reviews';
+import type { PublicReviewListFilters } from '@yo-te-invito/shared';
 import { eventsKeys } from '@/lib/query/events';
 import { useRecordPublicEventView } from '@/lib/query/public-engagement';
 import { getCategoryLabel, getRelatedSectionTitle } from '@/lib/home/contentRoutes';
@@ -44,7 +45,6 @@ export function GastroLocationDetailView({
   const repos = useRepositories();
   const queryClient = useQueryClient();
   const { addToast } = useToast();
-  const [reviewPage, setReviewPage] = useState(1);
   const [reviewFormKey, setReviewFormKey] = useState(0);
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
 
@@ -69,12 +69,16 @@ export function GastroLocationDetailView({
     enabled: !!resolvedLocationId,
   });
 
-  const { data: reviewsData, isLoading: reviewsLoading } = usePublicEntityReviews(
-    'gastro',
-    reviewEventId ?? '',
-    tenantId,
-    reviewPage,
-  );
+  const {
+    data: reviewsData,
+    isLoading: reviewsLoading,
+    isError: reviewsError,
+    refetch: refetchReviews,
+    page: reviewPage,
+    setPage: setReviewPage,
+    filters: reviewFilters,
+    setFilters: setReviewFilters,
+  } = usePublicEntityReviewsState('gastro', reviewEventId ?? '', tenantId);
 
   const { data: relatedData } = useQuery({
     queryKey: ['events', 'related', tenantId, 'gastro'],
@@ -148,8 +152,12 @@ export function GastroLocationDetailView({
         }
       }
       reviewsLoading={reviewsLoading}
+      reviewsError={reviewsError}
+      onReviewsRetry={() => void refetchReviews()}
       reviewPage={reviewPage}
       onReviewPageChange={setReviewPage}
+      reviewFilters={reviewFilters}
+      onReviewFiltersChange={setReviewFilters}
       relatedEvents={relatedData?.data ?? []}
       reviewFormKey={reviewFormKey}
       isSubmittingReview={createMutation.isPending}
@@ -174,8 +182,12 @@ type GastroLocationDetailContentProps = {
     aspectAverages: Record<string, number> | null;
   };
   reviewsLoading?: boolean;
+  reviewsError?: boolean;
+  onReviewsRetry?: () => void;
   reviewPage: number;
   onReviewPageChange: (page: number) => void;
+  reviewFilters: PublicReviewListFilters;
+  onReviewFiltersChange: (filters: PublicReviewListFilters) => void;
   relatedEvents: EventSummary[];
   reviewFormKey: number;
   isSubmittingReview: boolean;
@@ -194,8 +206,12 @@ function GastroLocationDetailContent({
   reviewsTotal,
   reviewsSummary,
   reviewsLoading = false,
+  reviewsError = false,
+  onReviewsRetry,
   reviewPage,
   onReviewPageChange,
+  reviewFilters,
+  onReviewFiltersChange,
   relatedEvents,
   reviewFormKey,
   isSubmittingReview,
@@ -294,10 +310,14 @@ function GastroLocationDetailContent({
                 total={reviewsTotal}
                 page={reviewPage}
                 onPageChange={onReviewPageChange}
+                filters={reviewFilters}
+                onFiltersChange={onReviewFiltersChange}
                 onSubmitReview={onSubmitReview}
                 isSubmittingReview={isSubmittingReview}
                 canSubmitReview={canSubmitReview}
                 isLoading={reviewsLoading}
+                isError={reviewsError}
+                onRetry={onReviewsRetry}
                 summary={{
                   ...reviewsSummary,
                   averageRating:

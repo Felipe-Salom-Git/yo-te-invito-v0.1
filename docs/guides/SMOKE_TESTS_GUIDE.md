@@ -92,7 +92,7 @@ Lista notificaciones, `POST /admin/notifications/seed-demo`, run del job. Usuari
 SMOKE_USER_EMAIL=... SMOKE_USER_PASSWORD=... pnpm --filter api run smoke:reviews
 ```
 
-Reviews públicas, réplicas productor/gastro, moderación admin, B2B. Opcional:
+Reviews públicas, réplicas productor/gastro, moderación admin, B2B, y verificación de kinds en `GET /me/notifications` (`REVIEW_RECEIVED`, `REVIEW_OFFICIAL_REPLY`). Opcional:
 
 ```bash
 SMOKE_PRODUCER_EMAIL=... SMOKE_GASTRO_EMAIL=... SMOKE_REFERRER_EMAIL=... SMOKE_ADMIN_EMAIL=...

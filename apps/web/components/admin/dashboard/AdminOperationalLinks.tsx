@@ -45,6 +45,11 @@ const LINKS: OperationalLink[] = [
     description: 'Locales y productos de alquiler.',
   },
   {
+    href: '/admin/reviews',
+    label: 'Reputación',
+    description: 'KPIs de reseñas públicas, disputas y export CSV.',
+  },
+  {
     href: '/admin/review-disputes',
     label: 'Reseñas (disputas)',
     description: 'Cola de solicitudes de revisión de comentarios.',

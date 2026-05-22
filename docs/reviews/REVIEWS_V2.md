@@ -19,9 +19,9 @@ Evolución del sistema de valoraciones públicas y comerciales privadas.
 |--------|------|-----|
 | POST | `/me/reviews` | Crear review (auth obligatorio) |
 | GET | `/public/reviews/summary` | Resumen por `category` + `entityId` |
-| GET | `/public/reviews` | Listado V2 + resumen embebido |
-| GET | `/public/users/:userId/review-profile` | Perfil comentarista |
-| GET | `/public/users/:userId/reviews` | Reviews visibles del usuario |
+| GET | `/public/reviews` | Listado V2 + resumen; filtros `sort`, `replyFilter`, `overallRating` |
+| GET | `/public/users/:userId/review-profile` | Perfil comentarista (`reviewerTier`, `visibleReviewCount`, `averageOverallRating`, `categoriesCommented`, `reviewsWithOfficialReplyCount`; `displayName` sin email) |
+| GET | `/public/users/:userId/reviews` | Reviews visibles del usuario (paginado, embebe `profile`) |
 | GET | `/public/events/:id/reviews` | Legacy list (sigue activo) |
 | POST | `/events/:eventId/reviews` | Legacy create (guest opcional) |
 | POST | `/producer/reviews/:id/reply` | Réplica productora (`PRODUCER`) |
@@ -39,6 +39,30 @@ Evolución del sistema de valoraciones públicas y comerciales privadas.
 - Al crear disputa → review `IN_REVIEW`.
 - Aceptar → `HIDDEN` + ocultar público + recalcular promedios.
 - Rechazar → `REPORT_REJECTED` (sigue visible).
+
+### Cola admin (`/admin/review-disputes`)
+
+- Listado: reseña, autor, evento + categoría, productor, motivo, estado disputa, rating/estado review, fechas.
+- Filtros API: `status`, `category`, `q` (evento, productor, mensaje).
+- Acciones: marcar en revisión, aceptar, rechazar, resolver; ocultar/restaurar reseña (`POST /admin/reviews/:id/hide|restore`); réplica plataforma si aplica.
+- UI: confirmaciones con consecuencias; tabla desktop + cards mobile; enlace a auditoría por disputa.
+
+### Notificaciones (slice 5)
+
+| Kind | Destinatario | Canales |
+|------|--------------|---------|
+| `REVIEW_RECEIVED` | Productor / gastro / hotel (miembros activos) | IN_APP, email/push si `notifyManagedReviews` |
+| `REVIEW_OFFICIAL_REPLY` | Autor de la reseña | IN_APP, email/push si `notifyReviewEngagement` |
+| `REVIEW_DISPUTE_*` | Equipo gestionado | IN_APP; email en aceptada/rechazada; push solo aceptada |
+| `REVIEW_MODERATION_HIDDEN` / `RESTORED` | Autor | IN_APP, email; sin push |
+
+Entrega idempotente vía `UserNotificationsService.deliver` + `NotificationDeliveryLog`. Fallos email/push no bloquean la acción principal.
+
+### Reporting admin (`/admin/reviews`)
+
+- `GET /admin/reviews/report` — KPIs (públicas/ocultas, disputas abiertas/cerradas), promedio por vertical, señales (baja nota, disputa abierta, ocultadas recientes), entidades con más disputas.
+- `GET /admin/reviews/report/export?dataset=problematic|disputes` — CSV (máx. 500 filas; sin email de usuarios ni datos B2B).
+- UI: filtros `category`, `days`; enlaces a cola de disputas. Valoraciones comerciales B2B excluidas del scope.
 
 ### B2B (`CommercialRelationshipReview`)
 
@@ -64,9 +88,9 @@ pnpm --filter api exec prisma generate
 ## Frontend (slice listPublicV2)
 
 - Hook `usePublicEntityReviews` + query keys `reviewsKeys.publicV2` / `publicV2Entity`
-- Componentes: `ReviewAspectBreakdown`, `ReviewReply`, `ReviewCard` (V2), `ReviewSummary` (1–10)
-- `EventReviewsSection` consume resumen + listado V2
-- Fichas: eventos, `PlaceDetailView`, rental, excursión, gastro local
+- Componentes: `ReviewAspectBreakdown`, `ReviewReply`, `ReviewCard` (V2), `ReviewSummary` (1–10), `ReviewEmptyState`, `ReviewListSkeleton`, `ReviewPagination`
+- `EventReviewsSection` consume resumen + listado V2 (empty/loading/error unificados)
+- Fichas: eventos, `PlaceDetailView`, rental, excursión, gastro (`GastroLocationDetailView`), hotel; productora pública (`ProducerRatingSummary`, `ProducerPublicCommentsSection`); perfil `/users/[userId]` (`UserPublicReviewerPage`, stats en `GET /public/users/:id/review-profile` y listado)
 
 ## Portal productora (`/producer/comments`)
 
@@ -78,7 +102,7 @@ pnpm --filter api exec prisma generate
 
 ## Bloque Reviews V2 — cerrado (smoke)
 
-Automatizado: `pnpm --filter api run smoke:reviews` (ver guía). Pendiente fuera de alcance: trending `viewCount`, emails disputas.
+Automatizado: `pnpm --filter api run smoke:reviews` (ver guía; incluye checks de `/me/notifications` para kinds de reviews). Pendiente fuera de alcance: trending `viewCount`.
 
 ## Pendiente documentado
 
@@ -87,7 +111,7 @@ Automatizado: `pnpm --filter api run smoke:reviews` (ver guía). Pendiente fuera
 - [ ] `viewCount` / tendencia `recentScore`.
 - [x] Réplicas por rol gastro/hotel/admin en rutas dedicadas + portales `/gastro/valoraciones`, `/hotel/valoraciones`.
 - [x] Valoraciones B2B con 4 aspectos (1–10) en `/producer/referrals` y portal referido.
-- [ ] Notificaciones email disputas.
+- [x] Notificaciones in-app/email/push: nueva valoración, respuesta oficial, disputas, moderación (`ReviewNotificationsService`).
 
 ## Smoke tests
 

@@ -964,13 +964,14 @@ export class ApiRepository implements Repositories {
         entityId,
       });
     },
-    listPublicV2: async (category, entityId, tenantId, page = 1, limit = 20) => {
+    listPublicV2: async (category, entityId, tenantId, page = 1, limit = 20, filters) => {
       return this.client.get('/public/reviews', {
         tenantId,
         category,
         entityId,
         page,
         limit,
+        ...filters,
       });
     },
     getUserReviewProfile: async (userId, tenantId) => {
@@ -979,10 +980,10 @@ export class ApiRepository implements Repositories {
         { tenantId },
       );
     },
-    listUserPublicReviews: async (userId, tenantId, page = 1, limit = 20) => {
+    listUserPublicReviews: async (userId, tenantId, page = 1, limit = 20, filters) => {
       return this.client.get(
         `/public/users/${encodeURIComponent(userId)}/reviews`,
-        { tenantId, page, limit },
+        { tenantId, page, limit, ...filters },
       );
     },
     listForProducer: async (eventId: string) => {
@@ -1332,10 +1333,28 @@ export class ApiRepository implements Repositories {
   };
 
   adminReviews: import('./interfaces').AdminReviewsRepo = {
+    getReport: async (query) => {
+      return this.client.get<import('@yo-te-invito/shared').AdminReviewsReportResponse>(
+        '/admin/reviews/report',
+        query,
+      );
+    },
     reply: async (reviewId, payload) => {
       return this.client.post(
         `/admin/reviews/${encodeURIComponent(reviewId)}/reply`,
         payload,
+      );
+    },
+    hide: async (reviewId, payload) => {
+      return this.client.post(
+        `/admin/reviews/${encodeURIComponent(reviewId)}/hide`,
+        payload ?? {},
+      );
+    },
+    restore: async (reviewId, payload) => {
+      return this.client.post(
+        `/admin/reviews/${encodeURIComponent(reviewId)}/restore`,
+        payload ?? {},
       );
     },
   };

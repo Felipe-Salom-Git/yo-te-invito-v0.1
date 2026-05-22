@@ -179,6 +179,7 @@ async function main() {
   }
 
   // ── Authenticated: create public review (SMOKE_USER_EMAIL) ─────────────
+  let smokeCreatedReviewId: string | undefined;
   const endUser = await loginForRole('user');
   if (!endUser) {
     skip('POST /me/reviews', 'reviewer user not in DB — register or set SMOKE_USER_EMAIL');
@@ -199,12 +200,19 @@ async function main() {
       });
       if (create.ok) {
         pass('POST /me/reviews (create)');
+        smokeCreatedReviewId = (create.data as { id?: string })?.id;
       } else if (create.status === 409) {
         pass('POST /me/reviews (already exists — ok)');
       } else {
         fail('POST /me/reviews', `status=${create.status} ${JSON.stringify(create.data)}`);
       }
 
+      const notif = await api('/me/notifications', { token: endUser.token });
+      if (!notif.ok) {
+        fail('GET /me/notifications (reviewer)', `status=${notif.status}`);
+      } else {
+        pass('GET /me/notifications (reviewer)');
+      }
       const profile = await api(`/public/users/${endUser.userId}/review-profile`, {
         query: { tenantId: TENANT },
       });
@@ -246,6 +254,28 @@ async function main() {
       if (!list.ok) fail('GET /producer/reviews', `status=${list.status}`);
       else pass('GET /producer/reviews');
 
+      const prodNotif = await api('/me/notifications', { token: producer.token });
+      const received = (
+        (prodNotif.data as { items?: Array<{ kind: string; referenceKey: string }> })?.items ??
+        []
+      ).filter(
+        (i) =>
+          i.kind === 'REVIEW_RECEIVED' &&
+          (smokeCreatedReviewId
+            ? i.referenceKey === `review-received:${smokeCreatedReviewId}`
+            : i.referenceKey.startsWith('review-received:')),
+      );
+      if (!prodNotif.ok) {
+        fail('GET /me/notifications (producer REVIEW_RECEIVED)', `status=${prodNotif.status}`);
+      } else if (received.length === 0) {
+        skip(
+          'producer REVIEW_RECEIVED notification',
+          'no in-app item (gastro event may use gastro profile, not producer)',
+        );
+      } else {
+        pass('producer REVIEW_RECEIVED notification');
+      }
+
       const reviewId = reviews[0]?.id;
       if (reviewId) {
         const reply = await api(`/producer/reviews/${reviewId}/reply`, {
@@ -254,7 +284,25 @@ async function main() {
           body: { body: smokeTestComment('Respuesta productora — gracias por tu comentario.') },
         });
         if (!reply.ok) fail('POST /producer/reviews/:id/reply', `status=${reply.status}`);
-        else pass('POST /producer/reviews/:id/reply');
+        else {
+          pass('POST /producer/reviews/:id/reply');
+          if (endUser) {
+            const authorNotif = await api('/me/notifications', { token: endUser.token });
+            const hasReply = (
+              (authorNotif.data as { items?: Array<{ kind: string }> })?.items ?? []
+            ).some((i) => i.kind === 'REVIEW_OFFICIAL_REPLY');
+            if (!authorNotif.ok) {
+              fail('GET /me/notifications (REVIEW_OFFICIAL_REPLY)', `status=${authorNotif.status}`);
+            } else if (!hasReply) {
+              skip(
+                'reviewer REVIEW_OFFICIAL_REPLY notification',
+                'review may be guest or author differs from SMOKE_USER',
+              );
+            } else {
+              pass('reviewer REVIEW_OFFICIAL_REPLY notification');
+            }
+          }
+        }
       } else {
         skip('POST /producer/reviews/:id/reply', 'no reviews for producer events');
       }

@@ -511,13 +511,18 @@ export interface ReviewDisputeDetail {
   producerProfileId: string;
   eventId: string;
   eventTitle: string;
+  eventCategory: import('@yo-te-invito/shared').PublicReviewCategory;
   reasonType: ReviewDisputeReasonType;
   message: string;
   status: ReviewDisputeStatus;
   adminNote: string | null;
   reviewScore: number;
+  reviewOverallRating: number;
   reviewComment: string | null;
   reviewUserDisplayName: string;
+  reviewPublicStatus: import('@yo-te-invito/shared').ReviewPublicStatus;
+  reviewHiddenFromPublic: boolean;
+  hasOfficialReply: boolean;
   createdAt: string;
   updatedAt: string;
   resolvedAt: string | null;
@@ -553,12 +558,27 @@ export interface ProducerReviewsRepo extends ManagedVenueReviewsRepo {
   getDispute(id: string): Promise<ReviewDisputeDetail>;
 }
 
+export type AdminReviewsReportResponse = import('@yo-te-invito/shared').AdminReviewsReportResponse;
+export type AdminReviewsReportQuery = import('@yo-te-invito/shared').AdminReviewsReportQuery;
+
 export interface AdminReviewsRepo {
+  getReport(query?: AdminReviewsReportQuery): Promise<AdminReviewsReportResponse>;
   reply(reviewId: string, body: { body: string }): Promise<{ ok: true }>;
+  hide(
+    reviewId: string,
+    body?: { reason?: string; adminNote?: string },
+  ): Promise<{ ok: true }>;
+  restore(reviewId: string, body?: { adminNote?: string }): Promise<{ ok: true }>;
 }
 
 export interface AdminReviewDisputesRepo {
-  list(params?: { status?: ReviewDisputeStatus; page?: number; limit?: number }): Promise<{
+  list(params?: {
+    status?: ReviewDisputeStatus;
+    category?: import('@yo-te-invito/shared').PublicReviewCategory;
+    q?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{
     disputes: ReviewDisputeDetail[];
     page: number;
     total: number;
@@ -1533,6 +1553,11 @@ export interface ReviewsRepo {
     tenantId: string,
     page?: number,
     limit?: number,
+    filters?: {
+      sort?: import('@yo-te-invito/shared').PublicReviewListSort;
+      replyFilter?: import('@yo-te-invito/shared').ProducerReviewReplyFilter;
+      overallRating?: number;
+    },
   ): Promise<import('@yo-te-invito/shared').PublicReviewsListResponse>;
   getUserReviewProfile(
     userId: string,
@@ -1543,6 +1568,11 @@ export interface ReviewsRepo {
     tenantId: string,
     page?: number,
     limit?: number,
+    filters?: {
+      sort?: import('@yo-te-invito/shared').PublicReviewListSort;
+      replyFilter?: import('@yo-te-invito/shared').ProducerReviewReplyFilter;
+      overallRating?: number;
+    },
   ): Promise<import('@yo-te-invito/shared').UserPublicReviewsResponse>;
   listForProducer(eventId: string): Promise<{ reviews: ProducerReviewRow[] }>;
 }

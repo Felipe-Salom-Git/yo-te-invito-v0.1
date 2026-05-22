@@ -11,6 +11,8 @@ import {
   reviewReplyAuthorTypeSchema,
   reviewReplyBodySchema,
 } from './review-moderation';
+import { producerReviewReplyFilterSchema } from './review-disputes';
+import { publicReviewListSortSchema } from './review-list-filters';
 
 export const REVIEW_COMMENT_MIN = 10;
 export const REVIEW_COMMENT_MAX = 2000;
@@ -67,6 +69,15 @@ export const USER_REVIEWER_TIER_LABELS_ES: Record<UserReviewerTier, string> = {
   LOW_RELIABILITY: 'Baja confiabilidad',
 };
 
+/** Short public copy for reviewer profile header (no private data). */
+export const USER_REVIEWER_TIER_SUMMARY_ES: Record<UserReviewerTier, string> = {
+  NEW: 'Recién sumado a la comunidad de valoraciones.',
+  ACTIVE: 'Participa con regularidad en valoraciones públicas.',
+  TRUSTED: 'Historial consistente; sus reseñas suelen ser útiles para decidir.',
+  UNDER_OBSERVATION: 'Perfil bajo revisión por moderación de la plataforma.',
+  LOW_RELIABILITY: 'Las valoraciones pueden tener menor peso en los promedios.',
+};
+
 export const publicReviewAuthorSchema = z.object({
   userId: z.string(),
   displayName: z.string(),
@@ -112,6 +123,9 @@ export const publicReviewsListQuerySchema = z.object({
   entityId: z.string().min(1),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(50).default(20),
+  sort: publicReviewListSortSchema,
+  replyFilter: producerReviewReplyFilterSchema.optional().default('ALL'),
+  overallRating: z.coerce.number().int().min(1).max(10).optional(),
 });
 
 export type PublicReviewsListQuery = z.infer<typeof publicReviewsListQuerySchema>;
@@ -135,6 +149,9 @@ export const userPublicReviewProfileSchema = z.object({
   avatarUrl: z.string().nullable().optional(),
   reviewerTier: userReviewerTierSchema,
   visibleReviewCount: z.number().int().nonnegative(),
+  averageOverallRating: z.number().nullable(),
+  categoriesCommented: z.array(publicReviewCategorySchema),
+  reviewsWithOfficialReplyCount: z.number().int().nonnegative(),
 });
 
 export type UserPublicReviewProfile = z.infer<typeof userPublicReviewProfileSchema>;
@@ -143,6 +160,9 @@ export const userPublicReviewsQuerySchema = z.object({
   tenantId: z.string().min(1),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(50).default(20),
+  sort: publicReviewListSortSchema,
+  replyFilter: producerReviewReplyFilterSchema.optional().default('ALL'),
+  overallRating: z.coerce.number().int().min(1).max(10).optional(),
 });
 
 export type UserPublicReviewsQuery = z.infer<typeof userPublicReviewsQuerySchema>;

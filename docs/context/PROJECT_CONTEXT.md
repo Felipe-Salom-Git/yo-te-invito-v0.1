@@ -67,7 +67,7 @@ yo-te-invito-v0.1/
 ### Producer / Admin / Gastro / Hotel / Referrer
 
 - **Producer (productoras / “Proveedores v2”)**: portal pulido (slices 1–10 en checklist V2): dashboard `/producer` (métricas, engagement, alertas de aprobación/rechazo admin vía `/me/notifications`), eventos por estado, create/edit, tandas, cortesías, referidos, **perfil por bloques** (`/producer/profile` + slug **auto-único** desde nombre), **comentarios** (`/producer/comments`). Ficha pública `/producers/[id|slug]`. Valoraciones **comerciales** B2B. Navegación principal en **sidebar** del layout productor (sin duplicar accesos rápidos en dashboard).
-- **Admin**: rol `ADMIN` en `User.role`; web `/admin/*` restringido a ADMIN; aprobación/rechazo de eventos notifica a productoras (in-app + email + push según preferencias). Inbox, disputas reseñas, users, config, **rentals** locales/productos, audit. Cuenta maestro: `user:restore-master` + re-login.
+- **Admin**: rol `ADMIN` en `User.role`; web `/admin/*` restringido a ADMIN; aprobación/rechazo de eventos notifica a productoras (in-app + email + push según preferencias). Inbox, **cola disputas** (`/admin/review-disputes`), **reporte reputación** (`/admin/reviews`), users, config, **rentals** locales/productos, audit. Cuenta maestro: `user:restore-master` + re-login.
 - Gastro/hotel: portales `/gastro/valoraciones`, `/hotel/valoraciones`.
 - Gastro / Hotel / Referrer portals as documented in backend/frontend context.
 
@@ -87,7 +87,7 @@ yo-te-invito-v0.1/
 
 - Referrer ↔ producer relationships (`ProducerReferrerRelationship`).
 - Inbox → gastro discounts / review moderation / **cola de disputas de reseñas** (`REVIEW_DISPUTE_REQUEST` + modelo `ReviewDisputeRequest`).
-- **Reviews V2**: reseñas públicas (`Review` con `overallRating` + aspectos JSON, estados moderación, réplicas por rol); ranking en `Event.rankingScore` / carruseles `GET /public/events/recommended`; perfil comentarista; smoke `smoke:reviews`. Ver `docs/reviews/REVIEWS_V2.md`.
+- **Reviews V2** (checklist § Reviews cerrado): UI pública, perfil comentarista, filtros, cola admin disputas, notificaciones (`ReviewNotificationsService`), reporte admin (`GET /admin/reviews/report` + CSV). Ver `docs/reviews/REVIEWS_V2.md`; smoke `smoke:reviews`.
 - Disputas con auditoría; ocultar del público al aceptar disputa (sin borrar reseña por defecto).
 - Valoraciones B2B (`CommercialRelationshipReview`) — no mezclar con reseñas de eventos.
 - Ticket templates (visual design JSON + QR zone rules).
