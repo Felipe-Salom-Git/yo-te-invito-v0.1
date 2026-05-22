@@ -119,6 +119,54 @@ SMOKE_USER_EMAIL=felipe.e.salom@gmail.com SMOKE_USER_PASSWORD=<pass> pnpm --filt
 
 Referencias: [docs/user/USER_PORTAL.md](../user/USER_PORTAL.md), [docs/user/TICKET_TRANSFER.md](../user/TICKET_TRANSFER.md).
 
+### `test:gastro-discount-scan` (manual / CI local)
+
+Validación de descuentos gastro en puerta. Requiere API en `:3001` y `DEV_AUTH_ENABLED=true`.
+
+```bash
+pnpm --filter api run test:gastro-discount-scan
+```
+
+| Caso | Resultado esperado |
+|------|-------------------|
+| QR claim válido (1ª vez) | `VALID` |
+| Mismo QR claim | `ALREADY_USED` |
+| Token incorrecto | `INVALID` |
+| Descuento `CANCELLED` | `INACTIVE` |
+
+Doc: [docs/gastro/GASTRO_DISCOUNT_QR.md](../gastro/GASTRO_DISCOUNT_QR.md). Unit payload: `pnpm --filter api run test:gastro-discount-qr`.
+
+### Gastro Slice 7 (reviews + follows + alertas)
+
+```bash
+pnpm --filter api run smoke:reviews    # incluye rutas /gastro/reviews si hay credenciales
+pnpm --filter api run smoke:notifications
+pnpm e2e:notifications               # desde raíz del monorepo
+```
+
+Follows: `POST /me/gastro-follows` + preferencias. Alerta descuento: `FOLLOWED_GASTRO_NEW_DISCOUNT` al aprobar ticket (`admin` approve). Ver [docs/gastro/GASTRO_FOLLOWS_NOTIFICATIONS.md](../gastro/GASTRO_FOLLOWS_NOTIFICATIONS.md).
+
+### Bloque Gastro/Hoteles V2 — cierre QA (Slice 9)
+
+| Verificación | Comando / ruta | Notas |
+|--------------|----------------|--------|
+| Payload QR v1 | `pnpm --filter api run test:gastro-discount-qr` | Sin API; unit shared |
+| Scanner descuento | `pnpm --filter api run test:gastro-discount-scan` | API `:3001` + `DEV_AUTH_ENABLED=true` o dev; idempotente (limpia validaciones del fixture) |
+| Ticket puerta | `pnpm --filter api run test:door-scan` | Fixture tickets; deja datos |
+| Reviews gastro | `smoke:reviews` + `SMOKE_GASTRO_EMAIL` opcional | Credenciales obligatorias |
+| Hoteles Próximamente | Manual: `/hoteles`, `/categorias`, `/admin/categorias` | Sin smoke `hotel` |
+
+Docs gastro: [GASTRO_DISCOUNT_QR.md](../gastro/GASTRO_DISCOUNT_QR.md), [GASTRO_FOLLOWS_NOTIFICATIONS.md](../gastro/GASTRO_FOLLOWS_NOTIFICATIONS.md). Auditoría cierre: [GASTRO_HOTELES_V2_AUDIT.md](../audits/GASTRO_HOTELES_V2_AUDIT.md) § Slice 9.
+
+### E2E Hoteles (Slice 12)
+
+| Comando | Credenciales |
+|---------|----------------|
+| `pnpm e2e:hotel` | `E2E_HOTEL_EMAIL` + `E2E_HOTEL_PASSWORD`; admin opcional `E2E_ADMIN_*` |
+| `pnpm playwright test e2e/hotel.spec.ts -g "reglas públicas"` | Ninguna |
+
+Doc: [docs/hotel/HOTEL_E2E.md](../hotel/HOTEL_E2E.md). Sin `demo:seed`; tests con skip si faltan env.
+
 ---
 
 ## Cleanup de artefactos smoke
@@ -161,6 +209,7 @@ Implementación: `apps/api/scripts/test-door-scan.ts`.
 | `pnpm e2e:portal` | `e2e/user-portal.spec.ts`, `checkout.spec.ts` |
 | `pnpm e2e:notifications` | `e2e/notifications.spec.ts` |
 | `pnpm e2e` | Suite completa |
+| `pnpm e2e:hotel` | `e2e/hotel.spec.ts` — vertical hoteles |
 | `pnpm e2e:portal:ui` | UI mode portal |
 
 ### Variables E2E
@@ -169,6 +218,11 @@ Implementación: `apps/api/scripts/test-door-scan.ts`.
 |----------|-----------|---------|
 | `E2E_USER_EMAIL` | **Sí** | — |
 | `E2E_USER_PASSWORD` | **Sí** | — |
+| `E2E_HOTEL_EMAIL` | Solo `e2e:hotel` | Usuario hotel ACTIVE + ubicación en ficha |
+| `E2E_HOTEL_PASSWORD` | Solo `e2e:hotel` | |
+| `E2E_ADMIN_EMAIL` | Opcional (`e2e:hotel` admin tab) | Default = `E2E_USER_EMAIL` |
+| `E2E_ADMIN_PASSWORD` | Opcional | Default = `E2E_USER_PASSWORD` |
+| `E2E_TENANT_ID` | No | Default `tenant-demo` |
 | `E2E_API_BASE_URL` | No | `http://127.0.0.1:3001` |
 | `PLAYWRIGHT_BASE_URL` | No | `http://localhost:3000` |
 | `E2E_TENANT_ID` | No | `tenant-demo` |

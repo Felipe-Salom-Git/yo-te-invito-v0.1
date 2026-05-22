@@ -66,6 +66,8 @@ Controllers: HTTP + Zod only. Services: business logic. Prisma: persistence only
 
 **Reviews V2 (reputación y moderación):** `docs/reviews/REVIEWS_V2.md` — slices UI pública, perfil, filtros, cola admin, notificaciones, reporting (`/admin/reviews`); smoke `smoke:reviews`; checklist § Reviews en `Yo_Te_Invito_Checklist_V2_Produccion.md` cerrado.
 
+**Gastro y Hoteles V2 (cerrado 2026-05-22):** checklist § Gastro y Hoteles; auditoría `docs/audits/GASTRO_HOTELES_V2_AUDIT.md`. Gastro: QR `docs/gastro/GASTRO_DISCOUNT_QR.md`, tests `test:gastro-discount-qr` / `test:gastro-discount-scan`. Hoteles: discovery Próximamente, portal `/hotel`, ficha `/hoteles/[id]`, E2E `pnpm e2e:hotel` + `docs/hotel/HOTEL_E2E.md`.
+
 **Portal usuario (`/me/*`):** `docs/user/USER_PORTAL.md` (incl. **Push notifications** V2.1.3–V2.1.4, **ticket comprador** V2.2).
 
 **Checklist producción (V2 → prod):** `docs/dev/Yo_Te_Invito_Checklist_V2_Produccion.md` — marcar ítems al cerrar slices; alinear con `CONTEXT_PENDIENTES.md`.

@@ -14,6 +14,7 @@ import { ContentCard, type ContentCardItem } from '@/components/home/ContentCard
 import { ContentCardSkeleton } from '@/components/home/ContentCardSkeleton';
 import { PageContainer, SectionTitle, EmptyState, QueryError } from '@/components';
 import { RENTAL_EXPLORE_EMPTY_HINT, RENTAL_PUBLIC_TAGLINE } from '@/lib/rentals/publicCopy';
+import { HotelsComingSoonScreen } from '@/components/hotel/HotelsComingSoonScreen';
 import type { ContentMainCategory } from '@/repositories/interfaces';
 
 const TENANT_ID = 'tenant-demo';
@@ -121,6 +122,29 @@ export function ExplorePageContent() {
   const handleClear = useCallback(() => {
     clearFilters();
   }, [clearFilters]);
+
+  const hotelFilterActive =
+    draft.category === 'hotel' || urlFilters.category === 'hotel';
+
+  if (hotelFilterActive) {
+    return (
+      <PageContainer>
+        <header className="mb-2">
+          <SectionTitle>Explorá Bariloche</SectionTitle>
+        </header>
+        <div className="mt-6">
+          <HotelsComingSoonScreen variant="banner" />
+        </div>
+        <p className="mt-4 text-sm text-text-muted">
+          La categoría Hoteles no está disponible en el explorador. Elegí otra categoría o volvé a{' '}
+          <a href="/categorias" className="text-accent hover:underline">
+            categorías
+          </a>
+          .
+        </p>
+      </PageContainer>
+    );
+  }
 
   return (
     <PageContainer>

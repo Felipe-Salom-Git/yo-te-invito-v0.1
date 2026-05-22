@@ -6,18 +6,21 @@ type GastroLocationLinksCardProps = {
   menuUrl?: string | null;
   websiteUrl?: string | null;
   contactPhone?: string | null;
+  contactEmail?: string | null;
 };
 
 export function GastroLocationLinksCard({
   menuUrl,
   websiteUrl,
   contactPhone,
+  contactEmail,
 }: GastroLocationLinksCardProps) {
   const hasMenu = Boolean(menuUrl?.trim());
   const hasWeb = Boolean(websiteUrl?.trim());
   const hasPhone = Boolean(contactPhone?.trim());
+  const hasEmail = Boolean(contactEmail?.trim());
 
-  if (!hasMenu && !hasWeb && !hasPhone) return null;
+  if (!hasMenu && !hasWeb && !hasPhone && !hasEmail) return null;
 
   return (
     <section className={CARD_CLASS}>
@@ -53,6 +56,13 @@ export function GastroLocationLinksCard({
           <li>
             <a href={`tel:${contactPhone}`} className="text-text hover:text-accent">
               {contactPhone}
+            </a>
+          </li>
+        )}
+        {hasEmail && (
+          <li>
+            <a href={`mailto:${contactEmail}`} className="text-text hover:text-accent">
+              {contactEmail}
             </a>
           </li>
         )}

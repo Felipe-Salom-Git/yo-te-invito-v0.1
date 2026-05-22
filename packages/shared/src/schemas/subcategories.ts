@@ -21,7 +21,8 @@ export type ContentCategory = z.infer<typeof contentCategorySchema>;
 
 export const publicSubcategoriesQuerySchema = z.object({
   tenantId: z.string().min(1, 'tenantId is required'),
-  category: contentMainCategorySchema,
+  /** `hotel` accepted for Próximamente response (`comingSoon: true`, empty data). */
+  category: contentCategorySchema,
 });
 export type PublicSubcategoriesQuery = z.infer<typeof publicSubcategoriesQuerySchema>;
 
@@ -57,6 +58,7 @@ export const publicSubcategoriesListResponseSchema = z.object({
       updatedAt: true,
     }),
   ),
+  comingSoon: z.literal(true).optional(),
 });
 export type PublicSubcategoriesListResponse = z.infer<
   typeof publicSubcategoriesListResponseSchema

@@ -85,12 +85,20 @@ _Bloque cerrado (Slices 1–5): dashboard, cola pendientes, eventos/usuarios/aud
 
 ## Gastro y Hoteles
 
-- [ ] Definir alcance real de Gastro para V2.
-- [ ] Definir alcance real de Hoteles para V2.
-- [ ] Si Gastro sale en V2, cerrar scanner/QR de descuentos.
-- [ ] Si Gastro sale en V2, cerrar persistencia real de contenido.
-- [ ] Si Hoteles sale en V2, cerrar edición de ficha desde `/hotel`.
-- [ ] Si Hoteles no sale, mantenerlo como “Próximamente”.
+_Bloque cerrado Slice 9 (QA 2026-05-22): alcance documentado, checklist y smokes/scripts gastro; hoteles Próximamente._
+
+- [x] Definir alcance real de Gastro para V2 (**parcial operativo**: discovery, ficha, contenido, QR/scanner, dashboard, reviews/follows/alertas; fuera: storage CDN, `smoke:gastro-discounts` npm, unificar legacy discounts).
+- [x] Definir alcance real de Hoteles para V2 (**Próximamente** — Slice 8 hardening; sin gateway ni subcategorías activas).
+- [x] Emitir QR descuentos con payload v1 (`buildGastroDiscountQrPayload`, claim + aprobación admin).
+- [x] Scanner/QR descuentos gastro: `POST /scanner/gastro-discounts/validate` + PWA `apps/scanner` (Slice 5); QA `test:gastro-discount-qr` + `test:gastro-discount-scan` OK.
+- [x] Dashboard gastro + resumen validaciones (`/gastro`, `/gastro/validaciones`, Slice 6).
+- [x] Gastro reviews/follows/alertas descuento (Slice 7 — `GASTRO_FOLLOWS_NOTIFICATIONS.md`).
+- [x] Si Gastro sale en V2, cerrar persistencia real de contenido (`GastroContent`, portal `/gastro/contenido`, ficha pública).
+- [x] Pulir ficha pública gastro `/restaurants/[id]` (local real, descuentos, reviews V2, follow; sin compra de entradas).
+- [x] Si Hoteles sale en V2, cerrar edición de ficha desde `/hotel` (Slice 10 opcional: `PATCH /hotel/me`, `/hotel/editar`, completitud + preview).
+- [x] Ficha pública liviana `/hoteles/[id]` (Slice 11 opcional: API pública hotel, contacto real, reviews; sin booking).
+- [x] E2E mínimo hotel (`e2e/hotel.spec.ts`, Slice 12 — skip sin `E2E_HOTEL_*`).
+- [x] Si Hoteles no sale, mantenerlo como “Próximamente” (Slice 8: `/hoteles`, `/hoteles/[id]`, `/hotel`, explore `?category=hotel`, admin tab).
 
 ## Referidos
 

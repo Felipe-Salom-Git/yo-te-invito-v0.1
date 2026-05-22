@@ -1,14 +1,20 @@
 import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import {
+  gastroContentCreateSchema,
+  gastroContentUpdateSchema,
   gastroDiscountCreateSchema,
   gastroDiscountUpdateSchema,
   gastroLocalCreateSchema,
   gastroLocalUpdateSchema,
   Role,
+  type GastroContentCreateInput,
+  type GastroContentUpdateInput,
   type GastroDiscountCreateInput,
   type GastroDiscountUpdateInput,
+  gastroValidationListQuerySchema,
   type GastroLocalCreateInput,
   type GastroLocalUpdateInput,
+  type GastroValidationListQuery,
 } from '@yo-te-invito/shared';
 import { JwtOrDevAuthGuard } from '../../auth/jwt-or-dev-auth.guard';
 import { GastroRolesGuard } from '../../common/guards/gastro-roles.guard';
@@ -18,6 +24,8 @@ import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { GastroService } from './gastro.service';
 import { GastroLocalService } from './gastro-local.service';
 import { GastroPortalDiscountsService } from './gastro-portal-discounts.service';
+import { GastroContentService } from './gastro-content.service';
+import { GastroDashboardService } from './gastro-dashboard.service';
 
 @Controller('gastro')
 @UseGuards(JwtOrDevAuthGuard, GastroRolesGuard)
@@ -27,7 +35,14 @@ export class GastroController {
     private readonly service: GastroService,
     private readonly localService: GastroLocalService,
     private readonly portalDiscounts: GastroPortalDiscountsService,
+    private readonly contentService: GastroContentService,
+    private readonly dashboard: GastroDashboardService,
   ) {}
+
+  @Get('dashboard')
+  async getDashboard(@CurrentUser() user: { id: string; tenantId: string; role: string }) {
+    return this.dashboard.getDashboard(user.tenantId, user.id, user.role);
+  }
 
   @Get('local')
   async getMyLocal(@CurrentUser() user: { id: string; tenantId: string; role: string }) {
@@ -81,18 +96,29 @@ export class GastroController {
   }
 
   @Get('events/:eventId/content')
-  async listContent(@Param('eventId') eventId: string) {
-    return this.service.listContent(eventId);
+  async listContent(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param('eventId') eventId: string,
+  ) {
+    return this.contentService.listByEvent(user.tenantId, user.id, user.role, eventId);
   }
 
   @Post('events/:eventId/content')
-  async createContent(@Param('eventId') eventId: string, @Body() body: unknown) {
-    return this.service.createContent(eventId, body);
+  async createContent(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param('eventId') eventId: string,
+    @Body(new ZodValidationPipe(gastroContentCreateSchema)) body: GastroContentCreateInput,
+  ) {
+    return this.contentService.createForEvent(user.tenantId, user.id, user.role, eventId, body);
   }
 
   @Patch('content/:id')
-  async updateContent(@Param('id') id: string, @Body() body: unknown) {
-    return this.service.updateContent(id, body);
+  async updateContent(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(gastroContentUpdateSchema)) body: GastroContentUpdateInput,
+  ) {
+    return this.contentService.updateById(user.tenantId, user.id, user.role, id, body);
   }
 
   @Get('events/:eventId/discounts')
@@ -137,9 +163,10 @@ export class GastroController {
   @Get('validations')
   async listValidations(
     @CurrentUser() user: { id: string; tenantId: string; role: string },
-    @Query('discountId') discountId?: string,
+    @Query(new ZodValidationPipe(gastroValidationListQuerySchema))
+    query: GastroValidationListQuery,
   ) {
-    return this.service.listValidations(user.tenantId, user.id, user.role, discountId);
+    return this.dashboard.listValidations(user.tenantId, user.id, user.role, query);
   }
 
   @Post('validations')

@@ -2,19 +2,26 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useRepositories } from '@/repositories/context';
 import { PageContainer, SectionTitle, Button, Input, useToast } from '@/components';
 import { getErrorMessage } from '@/lib/errors';
-import type { GastroContent } from '@/repositories/interfaces';
+import type { GastroContent, GastroContentStatus } from '@/repositories/interfaces';
 import { LatLngMapPreview } from '@/components/admin/LatLngMapPreview';
 import { ImageUrlPreview } from '@/components/admin/ImageUrlPreview';
+import { gastroKeys } from '@/lib/query/keys';
+import { useGastroContentList, useGastroContentMutations } from '@/lib/query/gastro-content';
 
 const TENANT_ID = 'tenant-demo';
 
+const STATUS_LABEL: Record<GastroContentStatus, string> = {
+  draft: 'Borrador',
+  published: 'Publicado',
+  inactive: 'Inactivo',
+};
+
 export default function GastroContenidoPage() {
   const repos = useRepositories();
-  const queryClient = useQueryClient();
   const { addToast } = useToast();
   const [selectedEventId, setSelectedEventId] = useState('');
   const [showCreate, setShowCreate] = useState(false);
@@ -24,65 +31,37 @@ export default function GastroContenidoPage() {
   const [newLocation, setNewLocation] = useState('');
   const [newGeoLat, setNewGeoLat] = useState('');
   const [newGeoLng, setNewGeoLng] = useState('');
+  const [newStatus, setNewStatus] = useState<GastroContentStatus>('draft');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editPatch, setEditPatch] = useState<Partial<GastroContent>>({});
 
-  const { data: eventsData } = useQuery({
+  const { data: local, isLoading: localLoading } = useQuery({
+    queryKey: gastroKeys.local(),
+    queryFn: () => repos.gastro.getMyLocal(),
+  });
+
+  const { data: eventsData, isLoading: eventsLoading } = useQuery({
     queryKey: ['events', 'gastro', TENANT_ID],
     queryFn: () => repos.events.list({ tenantId: TENANT_ID, category: 'gastro', limit: 50 }),
   });
 
-  const { data: content = [], isLoading } = useQuery({
-    queryKey: ['gastroContent', selectedEventId],
-    queryFn: () => repos.gastro.listContent(selectedEventId),
-    enabled: !!selectedEventId,
-  });
-
-  const createMutation = useMutation({
-    mutationFn: (eventId: string) => {
-      const locLine = newLocation.trim();
-      const coordLine =
-        newGeoLat.trim() && newGeoLng.trim()
-          ? `Coordenadas (mapa): ${newGeoLat.trim()}, ${newGeoLng.trim()}`
-          : '';
-      const bodyParts = [newBody.trim(), locLine && `Ubicación: ${locLine}`, coordLine].filter(Boolean);
-      return repos.gastro.createContent(eventId, {
-        type: newImageUrl ? 'image' : 'editorial',
-        title: newTitle.trim() || undefined,
-        body: bodyParts.join('\n') || undefined,
-        imageUrl: newImageUrl.trim() || undefined,
-        sortOrder: content.length,
-      });
-    },
-    onError: (err) => addToast(getErrorMessage(err), 'error'),
-    onSuccess: (_, eventId) => {
-      queryClient.invalidateQueries({ queryKey: ['gastroContent', eventId] });
-      setShowCreate(false);
-      setNewTitle('');
-      setNewBody('');
-      setNewImageUrl('');
-      setNewLocation('');
-      setNewGeoLat('');
-      setNewGeoLng('');
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, patch }: { id: string; patch: Partial<GastroContent> }) =>
-      repos.gastro.updateContent(id, patch),
-    onError: (err) => addToast(getErrorMessage(err), 'error'),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['gastroContent', selectedEventId] });
-      setEditingId(null);
-      setEditPatch({});
-    },
-  });
-
   const events = eventsData?.data ?? [];
-  const currentEventId = selectedEventId || events[0]?.id;
+  const defaultEventId = local?.publicEventId ?? events[0]?.id;
+  const currentEventId = selectedEventId || defaultEventId;
+
+  const {
+    data: content = [],
+    isLoading: contentLoading,
+    isError: contentError,
+    error: contentQueryError,
+    refetch: refetchContent,
+  } = useGastroContentList(currentEventId);
+
+  const { createMutation, updateMutation } = useGastroContentMutations(currentEventId);
+
   useEffect(() => {
-    if (!selectedEventId && events[0]) setSelectedEventId(events[0].id);
-  }, [events, selectedEventId]);
+    if (!selectedEventId && defaultEventId) setSelectedEventId(defaultEventId);
+  }, [defaultEventId, selectedEventId]);
 
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -92,14 +71,81 @@ export default function GastroContenidoPage() {
     reader.readAsDataURL(file);
   }, []);
 
-  if (events.length === 0) {
+  const buildBodyFromFields = () => {
+    const locLine = newLocation.trim();
+    const coordLine =
+      newGeoLat.trim() && newGeoLng.trim()
+        ? `Coordenadas (mapa): ${newGeoLat.trim()}, ${newGeoLng.trim()}`
+        : '';
+    return [newBody.trim(), locLine && `Ubicación: ${locLine}`, coordLine].filter(Boolean).join('\n');
+  };
+
+  const handleCreate = () => {
+    if (!currentEventId) return;
+    const bodyText = buildBodyFromFields();
+    const hasImage = Boolean(newImageUrl.trim());
+    createMutation.mutate(
+      {
+        type: hasImage && !bodyText && !newTitle.trim() ? 'image' : 'editorial',
+        title: newTitle.trim() || undefined,
+        body: bodyText || undefined,
+        imageUrl: newImageUrl.trim() || undefined,
+        sortOrder: content.length,
+        status: newStatus,
+      },
+      {
+        onError: (err) => addToast(getErrorMessage(err), 'error'),
+        onSuccess: () => {
+          addToast('Contenido creado', 'success');
+          setShowCreate(false);
+          setNewTitle('');
+          setNewBody('');
+          setNewImageUrl('');
+          setNewLocation('');
+          setNewGeoLat('');
+          setNewGeoLng('');
+          setNewStatus('draft');
+        },
+      },
+    );
+  };
+
+  const handleUpdate = (id: string, patch: Partial<GastroContent>) => {
+    updateMutation.mutate(
+      { id, patch },
+      {
+        onError: (err) => addToast(getErrorMessage(err), 'error'),
+        onSuccess: () => {
+          addToast('Contenido actualizado', 'success');
+          setEditingId(null);
+          setEditPatch({});
+        },
+      },
+    );
+  };
+
+  if (localLoading || eventsLoading) {
+    return (
+      <PageContainer>
+        <p className="text-text-muted">Cargando…</p>
+      </PageContainer>
+    );
+  }
+
+  if (!local?.publicEventId && events.length === 0) {
     return (
       <PageContainer>
         <Link href="/gastro" className="mb-4 inline-block text-sm text-text-muted hover:text-text">
           ← Dashboard
         </Link>
         <SectionTitle>Contenido</SectionTitle>
-        <p className="mt-4 text-text-muted">No hay eventos gastro para gestionar contenido.</p>
+        <p className="mt-4 text-text-muted">
+          Configurá tu local en{' '}
+          <Link href="/gastro/local" className="text-accent hover:underline">
+            Mi local
+          </Link>{' '}
+          para vincular un evento público y gestionar contenido editorial.
+        </p>
       </PageContainer>
     );
   }
@@ -110,18 +156,26 @@ export default function GastroContenidoPage() {
         ← Dashboard
       </Link>
       <SectionTitle>Contenido editorial</SectionTitle>
-      <p className="mt-2 text-text-muted">Información del establecimiento: imágenes, descripción, ubicación.</p>
+      <p className="mt-2 text-text-muted">
+        Bloques de texto e imágenes para la ficha pública. Solo el estado{' '}
+        <span className="text-text">Publicado</span> aparece en el sitio.
+      </p>
+      <p className="mt-1 text-xs text-text-muted">
+        Imágenes: URL https o subida local (data-URL). Storage en la nube pendiente — ver checklist
+        § Storage.
+      </p>
 
       <div className="mt-6">
         <label className="block text-sm font-medium text-text">Evento / Establecimiento</label>
         <select
-          value={currentEventId}
+          value={currentEventId ?? ''}
           onChange={(e) => setSelectedEventId(e.target.value)}
           className="mt-1 rounded border border-border bg-bg px-3 py-2 text-text"
         >
           {events.map((e) => (
             <option key={e.id} value={e.id}>
               {e.title}
+              {e.id === local?.publicEventId ? ' (tu local)' : ''}
             </option>
           ))}
         </select>
@@ -145,61 +199,188 @@ export default function GastroContenidoPage() {
             </div>
             <div className="mt-3">
               <label className="mb-1.5 block text-sm font-medium text-text">Imagen</label>
-              <Input value={newImageUrl} onChange={(e) => setNewImageUrl(e.target.value)} placeholder="URL o subir abajo" />
-              <input type="file" accept="image/*" onChange={handleFileChange} className="mt-2 text-sm text-text-muted" />
+              <Input
+                value={newImageUrl}
+                onChange={(e) => setNewImageUrl(e.target.value)}
+                placeholder="URL o subir abajo"
+              />
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="mt-2 text-sm text-text-muted"
+              />
               <ImageUrlPreview url={newImageUrl} />
             </div>
-            <Input label="Ubicación (dirección o mapa)" value={newLocation} onChange={(e) => setNewLocation(e.target.value)} className="mt-3" placeholder="Dirección o link a maps" />
+            <Input
+              label="Ubicación (dirección o mapa)"
+              value={newLocation}
+              onChange={(e) => setNewLocation(e.target.value)}
+              className="mt-3"
+              placeholder="Dirección o link a maps"
+            />
             <div className="mt-3 grid grid-cols-2 gap-2">
-              <Input label="Lat (opcional)" value={newGeoLat} onChange={(e) => setNewGeoLat(e.target.value)} placeholder="-34.6" />
-              <Input label="Lng (opcional)" value={newGeoLng} onChange={(e) => setNewGeoLng(e.target.value)} placeholder="-58.4" />
+              <Input
+                label="Lat (opcional)"
+                value={newGeoLat}
+                onChange={(e) => setNewGeoLat(e.target.value)}
+                placeholder="-34.6"
+              />
+              <Input
+                label="Lng (opcional)"
+                value={newGeoLng}
+                onChange={(e) => setNewGeoLng(e.target.value)}
+                placeholder="-58.4"
+              />
             </div>
             <LatLngMapPreview lat={newGeoLat} lng={newGeoLng} />
+            <div className="mt-3">
+              <label className="block text-sm font-medium text-text">Estado</label>
+              <select
+                value={newStatus}
+                onChange={(e) => setNewStatus(e.target.value as GastroContentStatus)}
+                className="mt-1 rounded border border-border bg-bg px-3 py-2 text-text"
+              >
+                {(Object.keys(STATUS_LABEL) as GastroContentStatus[]).map((s) => (
+                  <option key={s} value={s}>
+                    {STATUS_LABEL[s]}
+                  </option>
+                ))}
+              </select>
+            </div>
             <div className="mt-3 flex gap-2">
-              <Button onClick={() => currentEventId && createMutation.mutate(currentEventId)} disabled={createMutation.isPending}>
+              <Button onClick={handleCreate} disabled={createMutation.isPending}>
                 Crear
               </Button>
-              <Button variant="outline" onClick={() => setShowCreate(false)}>Cancelar</Button>
+              <Button variant="outline" onClick={() => setShowCreate(false)}>
+                Cancelar
+              </Button>
             </div>
           </div>
         )}
       </div>
 
-      {isLoading ? (
-        <p className="mt-6 text-text-muted">Cargando…</p>
+      {contentError ? (
+        <div className="mt-6 rounded-lg border border-red-500/30 bg-red-500/10 p-4">
+          <p className="text-sm text-red-200">
+            No se pudo cargar el contenido: {getErrorMessage(contentQueryError)}
+          </p>
+          <Button size="sm" variant="outline" className="mt-3" onClick={() => refetchContent()}>
+            Reintentar
+          </Button>
+        </div>
+      ) : contentLoading ? (
+        <p className="mt-6 text-text-muted">Cargando contenido…</p>
       ) : (
         <ul className="mt-6 space-y-4">
           {content.map((c) => (
             <li key={c.id} className="rounded-lg border border-border bg-bg-muted p-4">
               {editingId === c.id ? (
                 <div>
-                  <Input label="Título" value={editPatch.title ?? c.title ?? ''} onChange={(e) => setEditPatch((p) => ({ ...p, title: e.target.value }))} />
+                  <Input
+                    label="Título"
+                    value={editPatch.title ?? c.title ?? ''}
+                    onChange={(e) => setEditPatch((p) => ({ ...p, title: e.target.value }))}
+                  />
                   <div className="mt-2">
                     <label className="block text-sm text-text-muted">Cuerpo</label>
                     <textarea
                       value={editPatch.body ?? c.body ?? ''}
                       onChange={(e) => setEditPatch((p) => ({ ...p, body: e.target.value }))}
-                      rows={2}
+                      rows={3}
                       className="w-full rounded border border-border bg-bg px-2 py-1 text-text"
                     />
                   </div>
+                  <div className="mt-2">
+                    <label className="block text-sm font-medium text-text">Estado</label>
+                    <select
+                      value={editPatch.status ?? c.status}
+                      onChange={(e) =>
+                        setEditPatch((p) => ({
+                          ...p,
+                          status: e.target.value as GastroContentStatus,
+                        }))
+                      }
+                      className="mt-1 rounded border border-border bg-bg px-3 py-2 text-text"
+                    >
+                      {(Object.keys(STATUS_LABEL) as GastroContentStatus[]).map((s) => (
+                        <option key={s} value={s}>
+                          {STATUS_LABEL[s]}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                   <div className="mt-2 flex gap-2">
-                    <Button size="sm" onClick={() => updateMutation.mutate({ id: c.id, patch: editPatch })} disabled={updateMutation.isPending}>
+                    <Button
+                      size="sm"
+                      onClick={() => handleUpdate(c.id, editPatch)}
+                      disabled={updateMutation.isPending}
+                    >
                       Guardar
                     </Button>
-                    <Button size="sm" variant="outline" onClick={() => { setEditingId(null); setEditPatch({}); }}>Cancelar</Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setEditingId(null);
+                        setEditPatch({});
+                      }}
+                    >
+                      Cancelar
+                    </Button>
                   </div>
                 </div>
               ) : (
                 <>
-                  <p className="font-medium text-text">{c.title ?? c.type}</p>
-                  {c.body && <p className="mt-2 text-sm text-text-muted whitespace-pre-wrap">{c.body}</p>}
-                  {c.imageUrl && <img src={c.imageUrl} alt="" className="mt-2 max-h-32 rounded object-cover" />}
-                  <div className="mt-2 flex items-center gap-2">
-                    <span className="rounded bg-border px-2 py-0.5 text-xs text-text-muted">{c.type}</span>
-                    <Button size="sm" variant="outline" onClick={() => { setEditingId(c.id); setEditPatch({ title: c.title ?? undefined, body: c.body ?? undefined }); }}>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-medium text-text">{c.title ?? c.type}</p>
+                    <span className="rounded bg-border px-2 py-0.5 text-xs text-text-muted">
+                      {STATUS_LABEL[c.status]}
+                    </span>
+                    <span className="rounded bg-border px-2 py-0.5 text-xs text-text-muted">
+                      {c.type}
+                    </span>
+                  </div>
+                  {c.body && (
+                    <p className="mt-2 text-sm text-text-muted whitespace-pre-wrap">{c.body}</p>
+                  )}
+                  {c.imageUrl && (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={c.imageUrl} alt="" className="mt-2 max-h-32 rounded object-cover" />
+                  )}
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setEditingId(c.id);
+                        setEditPatch({
+                          title: c.title ?? undefined,
+                          body: c.body ?? undefined,
+                          status: c.status,
+                        });
+                      }}
+                    >
                       Editar
                     </Button>
+                    {c.status !== 'published' ? (
+                      <Button
+                        size="sm"
+                        onClick={() => handleUpdate(c.id, { status: 'published' })}
+                        disabled={updateMutation.isPending}
+                      >
+                        Publicar
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleUpdate(c.id, { status: 'inactive' })}
+                        disabled={updateMutation.isPending}
+                      >
+                        Desactivar
+                      </Button>
+                    )}
                   </div>
                 </>
               )}
@@ -208,7 +389,7 @@ export default function GastroContenidoPage() {
         </ul>
       )}
 
-      {content.length === 0 && !isLoading && !showCreate && (
+      {content.length === 0 && !contentLoading && !contentError && !showCreate && (
         <p className="mt-6 text-text-muted">Sin contenido aún. Creá uno con el botón arriba.</p>
       )}
     </PageContainer>

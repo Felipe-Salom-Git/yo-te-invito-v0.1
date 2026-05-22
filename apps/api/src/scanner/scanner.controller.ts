@@ -11,11 +11,13 @@ import {
 import {
   validateTicketQuerySchema,
   validateTicketBodySchema,
+  validateGastroDiscountBodySchema,
   scanBodySchema,
   eventTicketsParamsSchema,
   scannerLogsQuerySchema,
   type ValidateTicketQuery,
   type ValidateTicketBody,
+  type ValidateGastroDiscountBody,
   type ScanBody,
   type EventTicketsParams,
   type ScannerLogsQuery,
@@ -27,10 +29,14 @@ import { RequireRole } from '../common/decorators/require-role.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Role } from '@yo-te-invito/shared';
 import { ScannerService } from './scanner.service';
+import { ScannerGastroDiscountService } from './scanner-gastro-discount.service';
 
 @Controller('scanner')
 export class ScannerController {
-  constructor(private readonly service: ScannerService) {}
+  constructor(
+    private readonly service: ScannerService,
+    private readonly gastroDiscountScanner: ScannerGastroDiscountService,
+  ) {}
 
   @Post('validate')
   async validate(
@@ -78,5 +84,21 @@ export class ScannerController {
     @Body(new ZodValidationPipe(scanBodySchema)) body: ScanBody,
   ) {
     return this.service.scan(user.tenantId, user.id, body);
+  }
+
+  @Post('gastro-discounts/validate')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.SCANNER, Role.ADMIN, Role.GASTRO_OWNER)
+  async validateGastroDiscount(
+    @CurrentUser() user: { tenantId: string; id: string; role: string },
+    @Body(new ZodValidationPipe(validateGastroDiscountBodySchema))
+    body: ValidateGastroDiscountBody,
+  ) {
+    return this.gastroDiscountScanner.validate(
+      user.tenantId,
+      user.id,
+      user.role,
+      body,
+    );
   }
 }

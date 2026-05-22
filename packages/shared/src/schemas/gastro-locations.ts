@@ -105,10 +105,13 @@ export const publicGastroLocationSummarySchema = z.object({
 });
 export type PublicGastroLocationSummary = z.infer<typeof publicGastroLocationSummarySchema>;
 
+import { publicGastroContentItemSchema } from './gastro-content';
+
 export const publicGastroLocationDetailSchema = gastroLocalResponseSchema.extend({
   subcategoryName: z.string().nullable(),
   ratingAvg: z.number().nullable().optional(),
   ratingCount: z.number().int().optional(),
+  content: z.array(publicGastroContentItemSchema).optional(),
 });
 export type PublicGastroLocationDetail = z.infer<typeof publicGastroLocationDetailSchema>;
 

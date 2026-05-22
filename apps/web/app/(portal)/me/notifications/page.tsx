@@ -24,6 +24,7 @@ const KIND_LABELS: Record<string, string> = {
   TRANSFER_OFFER_PENDING: 'Transferencia pendiente',
   REVIEW_PENDING: 'Calificación pendiente',
   FOLLOWED_PRODUCER_NEW_EVENT: 'Productora que seguís',
+  FOLLOWED_GASTRO_NEW_DISCOUNT: 'Local gastronómico que seguís',
   FAVORITE_INTEREST_NEW_CONTENT: 'Nuevo para tus intereses',
   EVENT_APPROVED_BY_ADMIN: 'Evento aprobado',
   EVENT_REJECTED_BY_ADMIN: 'Evento rechazado',

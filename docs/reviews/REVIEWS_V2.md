@@ -98,7 +98,7 @@ pnpm --filter api exec prisma generate
 - Resumen: promedio, distribución 1–10, `unansweredCount`, `openDisputeCount` (API)
 - Filtros: respuesta (`replyFilter`), disputa (`OPEN`, etc.), estado público, orden `highest`/`lowest`
 - UI: `ManagedReviewsCommentsPage` + `ManagedReviewCard`; modales `ReviewReplyModal` / `ReviewDisputeModal`
-- Gastro/hotel: mismo shell sin disputas ni filtros productor
+- Gastro/hotel: mismo shell sin disputas ni filtros productor; gastro: `/gastro/valoraciones` + `ManagedPortalReviewAlerts` (KPI `unansweredCount` en dashboard)
 
 ## Bloque Reviews V2 — cerrado (smoke)
 

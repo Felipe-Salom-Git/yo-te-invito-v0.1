@@ -6,6 +6,7 @@ import { Role } from '@yo-te-invito/shared';
 
 const NAV = [
   { href: '/hotel', label: 'Mi establecimiento' },
+  { href: '/hotel/editar', label: 'Editar ficha' },
   { href: '/hotel/valoraciones', label: 'Valoraciones' },
 ];
 

@@ -6,6 +6,7 @@ import {
 import { ProfileStatus, Prisma } from '@prisma/client';
 import { randomBytes } from 'crypto';
 import {
+  buildGastroDiscountQrPayload,
   ErrorCode,
   type AdminGastroDiscountMetrics,
   type AdminGastroDiscountPublication,
@@ -13,6 +14,7 @@ import {
 } from '@yo-te-invito/shared';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../../email/email.service';
+import { GastroFollowDiscountAlertsService } from '../notifications/gastro-follow-discount-alerts.service';
 
 function readUrls(value: unknown): string[] {
   if (value == null) return [];
@@ -48,6 +50,7 @@ export class AdminGastroService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly email: EmailService,
+    private readonly gastroFollowAlerts: GastroFollowDiscountAlertsService,
   ) {}
 
   private toProfileStatus(status: ProfileStatus) {
@@ -456,6 +459,10 @@ export class AdminGastroService {
       adminNotes: row.adminNotes,
       rejectionReason: row.rejectionReason,
       qrToken: row.qrToken,
+      qrPayload:
+        row.qrToken && ['APPROVED', 'ACTIVE'].includes(row.status)
+          ? buildGastroDiscountQrPayload(row.id, row.qrToken)
+          : null,
       emailSentAt: row.emailSentAt?.toISOString() ?? null,
       emailSendError: row.emailSendError,
       ownerEmail: gastroProfile?.contactEmail ?? null,
@@ -616,6 +623,7 @@ export class AdminGastroService {
       { status: row.status },
       { status: 'ACTIVE' },
     );
+    void this.gastroFollowAlerts.notifyFollowersOfNewActiveDiscount(tenantId, discountId);
     return this.getDiscountDetail(tenantId, profileId, discountId);
   }
 
@@ -719,7 +727,7 @@ export class AdminGastroService {
       });
     }
 
-    const payload = `yti:gastro-discount|${tenantId}|${row.eventId}|${row.id}|${row.qrToken}`;
+    const payload = buildGastroDiscountQrPayload(row.id, row.qrToken);
     const now = new Date();
     let emailSendError: string | null = null;
     let emailSentAt: Date | null = null;
@@ -756,6 +764,10 @@ export class AdminGastroService {
       { status: row.status },
       { status: 'ACTIVE', emailSentAt: emailSentAt?.toISOString() ?? null },
     );
+
+    if (row.status !== 'ACTIVE') {
+      void this.gastroFollowAlerts.notifyFollowersOfNewActiveDiscount(tenantId, discountId);
+    }
 
     return this.getDiscountDetail(tenantId, profileId, discountId);
   }

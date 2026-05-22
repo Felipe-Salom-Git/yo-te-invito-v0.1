@@ -10,6 +10,8 @@ import { GastroReviewsController } from './gastro-reviews.controller';
 import { GastroService } from './gastro.service';
 import { GastroLocalService } from './gastro-local.service';
 import { GastroPortalDiscountsService } from './gastro-portal-discounts.service';
+import { GastroContentService } from './gastro-content.service';
+import { GastroDashboardService } from './gastro-dashboard.service';
 
 @Module({
   imports: [AuthModule, SubcategoriesModule, ReviewDisputesModule, ReviewsModule],
@@ -20,7 +22,9 @@ import { GastroPortalDiscountsService } from './gastro-portal-discounts.service'
     GastroService,
     GastroLocalService,
     GastroPortalDiscountsService,
+    GastroContentService,
+    GastroDashboardService,
   ],
-  exports: [GastroPortalDiscountsService],
+  exports: [GastroPortalDiscountsService, GastroContentService],
 })
 export class GastroModule {}

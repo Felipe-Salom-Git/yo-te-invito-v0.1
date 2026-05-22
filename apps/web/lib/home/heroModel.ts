@@ -60,7 +60,7 @@ function getCtaLabels(category?: string): { primary: string; secondary: string }
     case 'gastro':
       return { primary: 'Ver detalle', secondary: 'Más información' };
     case 'hotel':
-      return { primary: 'Ver hotel', secondary: 'Reservar' };
+      return { primary: 'Ver detalle', secondary: 'Más información' };
     case 'excursion':
       return { primary: 'Explorar', secondary: 'Ver categoría' };
     case 'rental':

@@ -10,6 +10,7 @@ import { PageContainer, SectionTitle, Button, Input, useToast } from '@/componen
 import { getErrorMessage } from '@/lib/errors';
 import { AdminGastroDiscountStatusBadge } from '@/components/admin/gastro/AdminGastroDiscountStatusBadge';
 import { AdminGastroDiscountPublicationEditor } from '@/components/admin/gastro/AdminGastroDiscountPublicationEditor';
+import { AdminGastroDiscountQrPanel } from '@/components/admin/gastro/AdminGastroDiscountQrPanel';
 
 export default function AdminGastroDiscountDetailPage() {
   const params = useParams();
@@ -174,6 +175,8 @@ export default function AdminGastroDiscountDetailPage() {
           Email enviado: {new Date(item.emailSentAt).toLocaleString('es-AR')}
         </p>
       )}
+
+      <AdminGastroDiscountQrPanel qrPayload={item.qrPayload} status={item.status} />
 
       <div className="mt-8">
         <AdminGastroDiscountPublicationEditor

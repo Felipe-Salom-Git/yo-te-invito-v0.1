@@ -89,12 +89,12 @@ ApiClient → HTTP (NEXT_PUBLIC_API_BASE_URL)
 
 | Area | Routes |
 |------|--------|
-| Public | `/`, `/home`, **`/explore`** (filtros URL: `q`, `category`, `subcategoryId`, `city`, `from`, `to`, `page`), `/events/[id]`, `/restaurants/[id]`, `/excursiones/[id]`, **`/rentals/[id]`**, `/hoteles/[id]`, **`/users/[userId]`** (perfil comentarista), checkout, `/me/tickets`, `/referrers`, `/r/[code]` |
+| Public | `/`, `/home`, **`/explore`** (filtros URL: `q`, `category`, `subcategoryId`, `city`, `from`, `to`, `page`; `?category=hotel` → banner Próximamente), `/events/[id]`, **`/restaurants/[id]`** (ficha gastro `GastroPublicDetailContent`, no ticketera), `/gastronomicos/[id]`, `/excursiones/[id]`, **`/rentals/[id]`**, **`/hoteles`** + **`/hoteles/[id]`** (vertical Próximamente; ver abajo), **`/users/[userId]`** (perfil comentarista), checkout, `/me/tickets`, `/referrers`, `/r/[code]` |
 | Account | `/login`, `/register`, **`/me/*`** (portal usuario estándar) |
 | Cuenta (legacy) | `/cuenta/*` → **redirects** a `/me/*` (no mantener lógica duplicada) |
 | Admin | `/admin/*` (**solo rol `ADMIN`**, `ProfileProtectedLayout` en `admin/layout.tsx`), sidebar operaciones; **`/admin`** dashboard; **`/admin/eventos`** listado filtrado; **`/admin/reviews`** reporte reputación (KPIs, CSV); **`/admin/review-disputes`** cola disputas; **`/admin/usuarios`** listado usuarios con filtros URL; **`/admin/categorias`** subcategorías + banners (`/admin/subcategorias` redirige); **`/admin/auditoria`** logs operativos; acceso: `/profiles`, navbar «Administración», URL directa |
 | Producer | `/producer` (hub: KPIs, engagement, **`ProducerDashboardEventStatusAlerts`**, eventos; nav en sidebar), `/producer/events`, ticket studio, **`/producer/profile`** (hub por bloques + completitud frontend), **`/producer/profile/create`** (solo nombre; slug en servidor), **`/producer/profile/identity|images|contact`**, **`/producer/comments`** (`ManagedReviewsCommentsPage`), referidos, payouts |
-| Gastro / Hotel / Referrer | `/gastro/*`, **`/gastro/valoraciones`**, `/hotel`, **`/hotel/valoraciones`**, `/referrer`, `/cuenta/solicitar-referrer` |
+| Gastro / Hotel / Referrer | `/gastro/*`, **`/gastro/contenido`** (editorial Prisma), **`/gastro/valoraciones`**, `/hotel`, **`/hotel/valoraciones`**, `/referrer`, `/cuenta/solicitar-referrer` |
 
 ### Rental public detail (`/rentals/[id]`)
 
@@ -140,14 +140,17 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`). Shared UI tokens:
 - Layout: `UserPortalLayout` bajo `app/(portal)/me/` (menú: Inicio, Mis tickets, Mi Carro, Preferencias, Actividad, Notificaciones, Mi cuenta).
 - Componentes portal: `MeDashboardAlerts`, `MeRecommendationsSection`, `MePreferencesInterests` + **`InterestsDisclosure`** (acordeones reutilizables); órdenes: `MeOrderDetailSummary`, `MeOrderTicketsList`.
 - **Ticket comprador (V2.2):** `components/tickets/` (`BuyerTicketVisual`, `TicketTemplateRenderer`, `DefaultBuyerTicket`, `TicketQrImage`, `TicketEntryStatusBanner`); utilidades `lib/tickets/` (`qr-display.ts`, `qr-image-url.ts`, `ticket-status-ui.ts`); estilos impresión en `styles/globals.css` (`@media print`).
-- Engagement en fichas: `EventEngagementRow` → API favoritos / expected-events; **`GastroFollowButton`** en detalle restaurante → `/me/gastro-follows`.
+- Ficha gastro pública: `components/gastro/GastroPublicDetailContent` + hooks `lib/query/gastro-public-detail.ts`; **`GastroFollowButton`** → `/me/gastro-follows` (sin favoritos/esperados de evento en ficha restaurante).
+- Portal gastro: dashboard + validaciones (Slice 6). Valoraciones: `ManagedReviewsCommentsPage` scope `gastro` + `ManagedPortalReviewAlerts`. Follows: `GastroFollowButton`, `MePreferencesGastro` (toggles web/email por local). Notificaciones descuento: kind `FOLLOWED_GASTRO_NEW_DISCOUNT` en bandeja `/me/notifications`.
+- Engagement eventos: `EventEngagementRow` en fichas de **eventos** (favoritos / expected-events).
 - Checkout autenticado: redirige a `/me/cart`; invitado usa `/checkout` público.
+- **Hoteles (discovery Próximamente, portal + ficha pública Slice 10–11):** `/hoteles` (Próximamente), **`/hoteles/[id]`** — `HotelLocationDetailView` + `GET /public/hotel-locations/by-event/:eventId` (fallback evento hotel); contacto real (WhatsApp/tel/email); sin reservas/checkout. Portal: `/hotel`, `/hotel/editar`. Valoraciones `/hotel/valoraciones`. `/categoria/hotel` → 404.
 
 **Eliminado:** `/reventa`, `/dev/seed`, `/dev/local-db`, `lib/local-db/*`.
 
 ### Other place details
 
-`PlaceDetailView` remains for **restaurant**, **excursion**, **hotel** (event-style hero, schedule, purchase card). Do not change those when editing rental-only code.
+`PlaceDetailView` remains for **restaurant** and **excursion** (event-style hero, schedule, purchase card). **Hotel** ya no usa `PlaceDetailView`. Do not change those when editing rental-only code.
 
 ---
 
@@ -231,6 +234,16 @@ Doc: `docs/tickets/TICKET_CANVAS_STUDIO.md`, `docs/tickets/TICKET_TEMPLATE_QR_ZO
 
 Bloque checklist V2 cerrado (Slices 1–8). Resumen: gateway → categorías/home/explore; sin hotel en discovery principal; rentals sin copy de alojamiento; visibilidad eventos vencida en API. Audit: `docs/audits/PUBLIC_DISCOVERY_AUDIT.md`.
 
+## 8d. Gastro y Hoteles V2 — cerrado (2026-05-22)
+
+**Gastro V2 (operativo):** discovery (`/categoria/gastro`, explore), ficha `/restaurants/[id]` (`GastroPublicDetailContent`), portal `/gastro` (dashboard, `/gastro/contenido` Prisma, descuentos, validaciones, valoraciones), follows + `FOLLOWED_GASTRO_NEW_DISCOUNT`, QR/scanner (`test:gastro-discount-qr`, `test:gastro-discount-scan`). Sin LocalDB ni `fetch` en UI.
+
+**Hoteles V2 (liviano):** discovery **Próximamente** (sin tile en gateway 2×2, sin carrusel home, subcategorías `comingSoon`); portal operativo `/hotel` + `/hotel/editar` (`PATCH /hotel/me`, completitud); ficha pública `/hoteles/[id]` informativa (`HotelLocationDetailView`, API pública); `/hoteles` listado Próximamente. Sin reservas/checkout en plataforma.
+
+**E2E:** `pnpm e2e:hotel` — `e2e/hotel.spec.ts`; `E2E_HOTEL_*` (skip si faltan); doc `docs/hotel/HOTEL_E2E.md`.
+
+Auditoría: `docs/audits/GASTRO_HOTELES_V2_AUDIT.md` · QA/scripts: `docs/guides/SMOKE_TESTS_GUIDE.md` § Gastro/Hoteles · checklist V2 § Gastro y Hoteles.
+
 **Rentals V2 (checklist § Rentals):** WhatsApp por local, cards discovery, subcategorías, anti-alojamiento, detalle mobile — ver `CONTEXT_PENDIENTES.md` § E.
 
 ---
@@ -256,9 +269,10 @@ Bloque checklist V2 cerrado (Slices 1–8). Resumen: gateway → categorías/hom
 |---------|------|
 | `pnpm e2e:portal` | `user-portal.spec.ts`, `checkout.spec.ts` |
 | `pnpm e2e:notifications` | `notifications.spec.ts` |
+| `pnpm e2e:hotel` | `hotel.spec.ts` — `E2E_HOTEL_*`; opcional `E2E_ADMIN_*` |
 | `pnpm e2e` | Suite completa |
 
-**Requerido:** `E2E_USER_EMAIL` + `E2E_USER_PASSWORD` (cuenta real en BD). Sin credenciales → skip en tests con login.
+**Requerido:** `E2E_USER_EMAIL` + `E2E_USER_PASSWORD` (cuenta real en BD). Hotel: `E2E_HOTEL_EMAIL` + `E2E_HOTEL_PASSWORD`. Sin credenciales → skip en tests con login.
 
 `E2E_SEED=1` ignorado (`e2e/global-setup.ts`). Guía: `docs/guides/SMOKE_TESTS_GUIDE.md`.
 

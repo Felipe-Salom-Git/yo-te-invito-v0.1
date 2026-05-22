@@ -125,6 +125,14 @@ Las push solo se envían si hay suscripción activa, VAPID configurado y el tipo
 | Calificación pendiente (cron) | Sí | Sí |
 | Notificación interna nueva | Sí | Sí (`notifyUnreadNotifications`) |
 | Productora publica evento → seguidores | Sí (`FOLLOWED_PRODUCER_NEW_EVENT`) | Sí (`notifyFollowedProducers`) |
+| Local gastro activa descuento → seguidores | Sí (`FOLLOWED_GASTRO_NEW_DISCOUNT`) | Sí (si push global + toggles del follow) |
+
+### Seguir locales gastronómicos
+
+- API: `GET/POST/DELETE/PATCH /me/gastro-follows*` (`UserGastroFollow`).
+- UI: tab **Gastro** en `/me/preferences` (`MePreferencesGastro`); botón **Seguir** en ficha `/restaurants/[id]` (`GastroFollowButton`).
+- Por local: `webNotificationsEnabled` / `emailNotificationsEnabled` (PATCH `/me/gastro-follows/:id/notifications`).
+- Alerta de descuento: ver [GASTRO_FOLLOWS_NOTIFICATIONS.md](../gastro/GASTRO_FOLLOWS_NOTIFICATIONS.md).
 | Contenido nuevo por ciudad/categoría/subcategoría | Sí (`FAVORITE_INTEREST_NEW_CONTENT`) | Sí (prefs categoría/subcat/recomendados) |
 | Nueva valoración (productor/gastro/hotel) | Sí (`REVIEW_RECEIVED`) | Sí (`notifyManagedReviews`) |
 | Respuesta oficial a tu reseña | Sí + email | Sí (`notifyReviewEngagement`) |

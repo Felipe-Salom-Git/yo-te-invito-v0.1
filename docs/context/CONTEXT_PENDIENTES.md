@@ -36,17 +36,27 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 
 ## C. Vertical hotel
 
+**Gastro y Hoteles V2 (2026-05-22):** bloque checklist cerrado — discovery Próximamente, portal editable, ficha pública, E2E mínimo. Pendientes abajo son post-V2.
+
 - [ ] Usuario hotel de prueba en Prisma (registro manual; sin `demo:seed`)
-- [ ] Edición de ficha desde portal `/hotel`
+- [x] Edición de ficha desde portal `/hotel` (Slice 10: `GET/PATCH /hotel/me`, `/hotel/editar`; discovery sigue Próximamente)
 - [x] Portal `/hotel/valoraciones` — listado + réplica (`POST /hotel/reviews/:id/reply`)
-- [ ] E2E: apply → admin aprueba → home carrusel `hotel`
+- [x] Hoteles V2 «Próximamente» — rutas públicas y portal sin CTAs de reserva (Slice 8–11: `/hoteles`, `/hoteles/[id]` informativa, portal editable, API pública hotel)
+- [x] E2E mínimo hotel (`e2e/hotel.spec.ts`, `E2E_HOTEL_*`, `docs/hotel/HOTEL_E2E.md`) — portal, ficha pública, gateway, admin tab
+- [ ] E2E: apply → admin aprueba → home carrusel `hotel` (fuera de V2; discovery sin carrusel hotel)
 
 ---
 
 ## D. Gastro
 
-- [ ] Scanner PWA: payload `yti:gastro-discount|…` y validación API
-- [ ] Persistencia real de contenido gastro (stubs → Prisma)
+**Gastro y Hoteles V2 (2026-05-22):** bloque V2 operativo cerrado (QR, scanner, contenido, ficha, dashboard, reviews/follows). Pendientes: storage, `smoke:gastro-discounts` npm, E2E gastro dedicado.
+
+- [x] Payload QR descuentos v1 (`yti:gastro-discount:v1:discountId:token`) — emisión en claim/aprobación; ver `docs/gastro/GASTRO_DISCOUNT_QR.md`
+- [x] Scanner PWA: `POST /scanner/gastro-discounts/validate`, payload v1, `GastroDiscountValidation.claimId` (Slice 5)
+- [x] Persistencia real de contenido gastro (`GastroContent` Prisma + `/gastro/events/:eventId/content`; público en ficha `GET /public/gastro-locations*`)
+- [x] Ficha pública gastro pulida (`/restaurants/[id]`, `GastroPublicDetailContent`; sin ticketera; redirect `/events/:id` gastro → restaurants)
+- [x] Dashboard gastro V2 (`GET /gastro/dashboard`, KPIs reales, alertas, `/gastro/validaciones` con filtros y paginación)
+- [x] Gastro + Reviews V2 + follows + alerta `FOLLOWED_GASTRO_NEW_DISCOUNT` (Slice 7 — `docs/gastro/GASTRO_FOLLOWS_NOTIFICATIONS.md`)
 - [ ] Storage para imágenes (salir de data-URL)
 - [x] Portal `/gastro/valoraciones` — listado + réplica (`POST /gastro/reviews/:id/reply`)
 
@@ -235,5 +245,8 @@ _(Trending con `viewCount`: ver ítem Slice 2 arriba en § K.)_
 | `docs/reviews/REVIEWS_V2.md` | Comentarios y valoraciones V2 |
 | `docs/user/USER_PORTAL.md` | Portal usuario + push (V2.1.3–V2.1.4) + ticket (V2.2) |
 | `docs/dev/Yo_Te_Invito_Checklist_V2_Produccion.md` | Checklist operativo V2 → producción |
+| `docs/audits/GASTRO_HOTELES_V2_AUDIT.md` | Auditoría cierre Gastro/Hoteles V2 |
+| `docs/hotel/HOTEL_E2E.md` | E2E Playwright vertical hotel |
+| `docs/gastro/GASTRO_DISCOUNT_QR.md` | QR descuentos gastro v1 |
 | `docs/user/USER_PORTAL_PRISMA_PROPOSAL.md` | Diff modelo (pre-migrate) |
 

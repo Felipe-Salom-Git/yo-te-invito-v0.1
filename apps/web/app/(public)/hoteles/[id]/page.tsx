@@ -1,15 +1,16 @@
 'use client';
 
 import { useParams, useSearchParams } from 'next/navigation';
-import { PlaceDetailView } from '@/components/places/PlaceDetailView';
+import { HotelLocationDetailView } from '@/components/hotel/HotelLocationDetailView';
 
 const DEFAULT_TENANT_ID = 'tenant-demo';
 
+/** Ficha pública informativa — datos desde HotelProfile (+ fallback evento hotel). */
 export default function HotelDetailPage() {
   const params = useParams();
   const searchParams = useSearchParams();
-  const id = (params?.id as string) ?? '';
+  const eventId = (params?.id as string) ?? '';
   const tenantId = searchParams?.get('tenantId') ?? DEFAULT_TENANT_ID;
 
-  return <PlaceDetailView id={id} variant="hotel" tenantId={tenantId} />;
+  return <HotelLocationDetailView eventId={eventId} tenantId={tenantId} />;
 }

@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { randomBytes } from 'crypto';
-import { ErrorCode } from '@yo-te-invito/shared';
+import { buildGastroDiscountQrPayload, ErrorCode } from '@yo-te-invito/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 
@@ -140,13 +140,8 @@ export class PublicGastroDiscountsService {
     };
   }
 
-  private buildQrPayload(
-    tenantId: string,
-    eventId: string,
-    discountId: string,
-    qrToken: string,
-  ) {
-    return `yti:gastro-discount|${tenantId}|${eventId}|${discountId}|${qrToken}`;
+  private buildQrPayload(discountId: string, qrToken: string) {
+    return buildGastroDiscountQrPayload(discountId, qrToken);
   }
 
   private claimEmailHtml(opts: {
@@ -211,12 +206,7 @@ export class PublicGastroDiscountsService {
     const locationName = discount.gastroProfile.displayName;
 
     const finish = async (claim: { id: string; accessToken: string; qrToken: string }) => {
-      const qrPayload = this.buildQrPayload(
-        tenantId,
-        discount.eventId,
-        discount.id,
-        claim.qrToken,
-      );
+      const qrPayload = this.buildQrPayload(discount.id, claim.qrToken);
       const viewUrl = `${baseUrl}/descuentos/reclamo/${claim.id}?token=${claim.accessToken}&tenantId=${encodeURIComponent(tenantId)}`;
       const emailSent = await this.sendClaimEmail(
         normalizedEmail,
@@ -310,7 +300,7 @@ export class PublicGastroDiscountsService {
     return {
       claimId: claim.id,
       email: claim.email,
-      qrPayload: this.buildQrPayload(tenantId, d.eventId, d.id, claim.qrToken),
+      qrPayload: this.buildQrPayload(d.id, claim.qrToken),
       discountTitle: d.displayTitle,
       discountSummary: d.summary,
       locationName: profile.displayName,

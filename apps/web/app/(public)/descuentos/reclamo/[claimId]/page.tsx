@@ -5,6 +5,7 @@ import { useParams, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { PageContainer, SectionTitle } from '@/components';
 import { useGastroDiscountClaim } from '@/lib/query/useGastroPublishedDiscounts';
+import { isValidGastroDiscountQrPayload } from '@/lib/gastro/discount-qr';
 import { qrImageUrl } from '@/lib/qr-image';
 
 function ClaimContent() {
@@ -43,6 +44,7 @@ function ClaimContent() {
   }
 
   const title = claim.discountTitle?.trim() || 'Tu descuento';
+  const qrOk = isValidGastroDiscountQrPayload(claim.qrPayload);
 
   return (
     <PageContainer>
@@ -55,13 +57,20 @@ function ClaimContent() {
 
       <div className="mt-8 flex flex-col items-center gap-6">
         <div className="w-full max-w-sm rounded-xl border border-border bg-bg-muted p-6 text-center">
-          <img
-            src={qrImageUrl(claim.qrPayload, 280)}
-            alt="Código QR del descuento"
-            width={280}
-            height={280}
-            className="mx-auto rounded-lg border border-border"
-          />
+          {qrOk ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={qrImageUrl(claim.qrPayload, 280)}
+              alt="Código QR del descuento"
+              width={280}
+              height={280}
+              className="mx-auto rounded-lg border border-border"
+            />
+          ) : (
+            <p className="text-sm text-red-300">
+              No pudimos generar un QR válido. Contactá soporte o reclamá de nuevo el descuento.
+            </p>
+          )}
           <p className="mt-4 text-sm text-text-muted">Presentá este código en el local</p>
         </div>
 

@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "NotificationKind" ADD VALUE 'FOLLOWED_GASTRO_NEW_DISCOUNT';

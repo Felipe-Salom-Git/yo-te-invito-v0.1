@@ -24,7 +24,9 @@
     "e2e:portal": "playwright test e2e/user-portal.spec.ts",
     "e2e:portal:ui": "playwright test e2e/user-portal.spec.ts --ui",
     "e2e:notifications": "playwright test e2e/notifications.spec.ts",
-    "e2e:notifications:ui": "playwright test e2e/notifications.spec.ts --ui"
+    "e2e:notifications:ui": "playwright test e2e/notifications.spec.ts --ui",
+    "e2e:hotel": "playwright test e2e/hotel.spec.ts",
+    "e2e:hotel:ui": "playwright test e2e/hotel.spec.ts --ui"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",

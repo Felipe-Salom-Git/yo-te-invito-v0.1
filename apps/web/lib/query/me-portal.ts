@@ -7,6 +7,7 @@ import type {
   CreateUserFavoriteBody,
   CreateUserProducerFollowBody,
   CreateUserGastroFollowBody,
+  PatchUserGastroFollowNotifications,
   DeactivatePushSubscriptionBody,
   RegisterPushSubscriptionBody,
   SendTestPushBody,
@@ -420,7 +421,21 @@ export function useGastroFollowMutations() {
       repos.mePortal.deleteGastroFollow(id),
     onSuccess: (_d, vars) => invalidate(vars.gastroProfileId),
   });
-  return { follow, unfollow };
+
+  const patchNotifications = useMutation({
+    mutationFn: ({
+      id,
+      body,
+      gastroProfileId,
+    }: {
+      id: string;
+      body: PatchUserGastroFollowNotifications;
+      gastroProfileId?: string;
+    }) => repos.mePortal.patchGastroFollowNotifications(id, body),
+    onSuccess: (_d, vars) => invalidate(vars.gastroProfileId),
+  });
+
+  return { follow, unfollow, patchNotifications };
 }
 
 export function usePushSubscriptionsConfig(enabled = true) {

@@ -4,6 +4,7 @@
  */
 
 import { PrismaClient } from '@prisma/client';
+import { buildGastroDiscountQrPayload } from '@yo-te-invito/shared';
 
 const prisma = new PrismaClient();
 
@@ -41,6 +42,9 @@ async function main() {
       id: d.id,
       title: d.displayTitle,
       status: d.status,
+      qrPayloadV1: d.qrToken
+        ? buildGastroDiscountQrPayload(d.id, d.qrToken)
+        : null,
       gastroProfileId: d.gastroProfileId,
       gastroProfileName: profile?.displayName ?? null,
       eventId: d.eventId,

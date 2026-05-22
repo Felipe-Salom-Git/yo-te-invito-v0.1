@@ -9,7 +9,7 @@ import type {
   ApplicationsRepo,
   ProfilesRepo,
   HotelRepo,
-  HotelProfileSummary,
+  HotelProfile,
   PendingProducerProfile,
   RoleApplication,
   EventsRepo,
@@ -67,6 +67,8 @@ import type {
   GastroContent,
   GastroDiscount,
   GastroDiscountValidation,
+  GastroDashboardResponse,
+  GastroValidationListResponse,
   GastroLocal,
   GastroPortalDiscount,
   PublicGastroLocation,
@@ -76,6 +78,8 @@ import type {
   PublicGastroDiscountClaimResult,
   PublicGastroDiscountClaimView,
   PublicGastroLocationsRepo,
+  PublicHotelLocationsRepo,
+  PublicHotelLocation,
   CreateReferrerInput,
   ReferrerOwnProfile,
   ReferrerDashboardResponse,
@@ -633,7 +637,10 @@ export class ApiRepository implements Repositories {
 
   hotel: HotelRepo = {
     getMe: async () => {
-      return this.client.get<{ profile: HotelProfileSummary | null }>('/hotel/me');
+      return this.client.get<{ profile: HotelProfile | null }>('/hotel/me');
+    },
+    updateMe: async (input) => {
+      return this.client.patch<{ profile: HotelProfile }>('/hotel/me', input);
     },
   };
 
@@ -1467,7 +1474,7 @@ export class ApiRepository implements Repositories {
       return this.client.post<GastroContent>(`/gastro/events/${encodeURIComponent(eventId)}/content`, input);
     },
     updateContent: async (id: string, patch) => {
-      return this.client.patch<GastroContent | null>(`/gastro/content/${encodeURIComponent(id)}`, patch);
+      return this.client.patch<GastroContent>(`/gastro/content/${encodeURIComponent(id)}`, patch);
     },
     listDiscounts: async (eventId: string) => {
       const raw = await this.client.get<GastroDiscount[]>(`/gastro/events/${encodeURIComponent(eventId)}/discounts`);
@@ -1479,12 +1486,18 @@ export class ApiRepository implements Repositories {
     updateDiscount: async (id: string, patch) => {
       return this.client.patch<GastroDiscount | null>(`/gastro/discounts/${encodeURIComponent(id)}`, patch);
     },
-    listValidations: async (discountId?: string) => {
-      const raw = await this.client.get<GastroDiscountValidation[]>(
-        '/gastro/validations',
-        discountId ? { discountId } : undefined
-      );
-      return Array.isArray(raw) ? raw : [];
+    getDashboard: async () => this.client.get<GastroDashboardResponse>('/gastro/dashboard'),
+    listValidations: async (params) => {
+      const query = params
+        ? {
+            discountId: params.discountId,
+            from: params.from,
+            to: params.to,
+            page: params.page,
+            limit: params.limit,
+          }
+        : undefined;
+      return this.client.get<GastroValidationListResponse>('/gastro/validations', query);
     },
     recordValidation: async (discountId: string, userId?: string, orderId?: string) => {
       return this.client.post<GastroDiscountValidation>('/gastro/validations', {
@@ -1506,6 +1519,19 @@ export class ApiRepository implements Repositories {
       this.client.patch<GastroPortalDiscount>(
         `/gastro/discounts/${encodeURIComponent(id)}`,
         payload,
+      ),
+  };
+
+  publicHotel: PublicHotelLocationsRepo = {
+    getById: async (locationId, tenantId) =>
+      this.client.get<PublicHotelLocation>(
+        `/public/hotel-locations/${encodeURIComponent(locationId)}`,
+        { tenantId },
+      ),
+    getByPublicEventId: async (eventId, tenantId) =>
+      this.client.get<PublicHotelLocation>(
+        `/public/hotel-locations/by-event/${encodeURIComponent(eventId)}`,
+        { tenantId },
       ),
   };
 
@@ -1705,6 +1731,11 @@ export class ApiRepository implements Repositories {
     deleteGastroFollow: async (id) => {
       await this.client.delete(`/me/gastro-follows/${encodeURIComponent(id)}`);
     },
+    patchGastroFollowNotifications: async (id, body) =>
+      this.client.patch<import('@yo-te-invito/shared').UserGastroFollow>(
+        `/me/gastro-follows/${encodeURIComponent(id)}/notifications`,
+        body,
+      ),
     getPushSubscriptionsConfig: async () =>
       this.client.get('/me/push-subscriptions/config'),
     listPushSubscriptions: async () => this.client.get('/me/push-subscriptions'),

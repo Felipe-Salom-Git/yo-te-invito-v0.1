@@ -7,6 +7,7 @@ import { Role } from '@yo-te-invito/shared';
 const NAV = [
   { href: '/gastro', label: 'Dashboard' },
   { href: '/gastro/local', label: 'Mi local' },
+  { href: '/gastro/contenido', label: 'Contenido' },
   { href: '/gastro/descuentos', label: 'Descuentos' },
   { href: '/gastro/validaciones', label: 'Resumen descuentos' },
   { href: '/gastro/valoraciones', label: 'Valoraciones' },

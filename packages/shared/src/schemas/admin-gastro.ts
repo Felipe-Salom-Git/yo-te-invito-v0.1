@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { gastroDiscountStatusSchema } from './gastro-discounts';
+import { gastroDiscountQrPayloadV1Schema } from '../gastro-discount-qr';
 
 export const adminGastroProfileStatusSchema = z.enum([
   'draft',
@@ -129,6 +130,8 @@ export const adminGastroDiscountDetailSchema = z.object({
   adminNotes: z.string().nullable(),
   rejectionReason: z.string().nullable(),
   qrToken: z.string().nullable(),
+  /** Payload v1 listo para QR cuando hay qrToken y estado publicable */
+  qrPayload: gastroDiscountQrPayloadV1Schema.nullable().optional(),
   emailSentAt: z.string().datetime().nullable(),
   emailSendError: z.string().nullable(),
   ownerEmail: z.string().nullable(),

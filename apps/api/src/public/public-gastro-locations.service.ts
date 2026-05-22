@@ -5,10 +5,14 @@ import {
   type PublicGastroLocationsListQuery,
 } from '@yo-te-invito/shared';
 import { PrismaService } from '../prisma/prisma.service';
+import { GastroContentService } from '../modules/gastro/gastro-content.service';
 
 @Injectable()
 export class PublicGastroLocationsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly gastroContent: GastroContentService,
+  ) {}
 
   async list(query: PublicGastroLocationsListQuery) {
     const rows = await this.prisma.gastroProfile.findMany({
@@ -47,7 +51,7 @@ export class PublicGastroLocationsService {
         message: 'Gastro location not found',
       });
     }
-    return this.mapDetail(row);
+    return this.mapDetail(row, tenantId);
   }
 
   async getById(tenantId: string, id: string) {
@@ -61,10 +65,10 @@ export class PublicGastroLocationsService {
         message: 'Gastro location not found',
       });
     }
-    return this.mapDetail(row);
+    return this.mapDetail(row, tenantId);
   }
 
-  private mapDetail(
+  private async mapDetail(
     row: {
       id: string;
       tenantId: string;
@@ -84,6 +88,7 @@ export class PublicGastroLocationsService {
       openingHours: unknown;
       openingHoursNote: string | null;
       contactPhone: string | null;
+      contactEmail: string | null;
       menuUrl: string | null;
       websiteUrl: string | null;
       subcategoryId: string | null;
@@ -95,11 +100,13 @@ export class PublicGastroLocationsService {
       updatedAt: Date;
       subcategory: { name: string } | null;
     },
+    tenantId: string,
   ) {
     const gallery =
       row.galleryUrls && Array.isArray(row.galleryUrls)
         ? (row.galleryUrls as string[])
         : null;
+    const content = await this.gastroContent.listPublishedForProfile(tenantId, row.id);
     return {
       id: row.id,
       tenantId: row.tenantId,
@@ -119,7 +126,7 @@ export class PublicGastroLocationsService {
       openingHours: parseRentalOpeningHours(row.openingHours),
       openingHoursNote: row.openingHoursNote,
       contactPhone: row.contactPhone,
-      contactEmail: null,
+      contactEmail: row.contactEmail ?? null,
       menuUrl: row.menuUrl,
       websiteUrl: row.websiteUrl,
       subcategoryId: row.subcategoryId,
@@ -130,6 +137,7 @@ export class PublicGastroLocationsService {
       ratingCount: row.ratingCount,
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
+      content,
     };
   }
 

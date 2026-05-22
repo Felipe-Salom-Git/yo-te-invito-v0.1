@@ -54,7 +54,7 @@ export function getPlaceHeroCtaLabel(category?: string): string {
     case 'gastro':
       return 'Reservar';
     case 'hotel':
-      return 'Reservar / consultar';
+      return 'Ver detalle';
     case 'excursion':
       return 'Explorar';
     case 'rental':
@@ -85,7 +85,7 @@ export function getSecondaryCtaLabel(category?: string): string {
     case 'gastro':
       return 'Ver restaurante';
     case 'hotel':
-      return 'Ver hotel';
+      return 'Ver detalle';
     case 'excursion':
       return 'Explorar';
     case 'rental':

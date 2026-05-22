@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { gastroDiscountQrPayloadV1Schema } from '../gastro-discount-qr';
 
 export const gastroDiscountStatusSchema = z.enum([
   'PENDING_REVIEW',
@@ -30,6 +31,7 @@ export const gastroDiscountResponseSchema = z.object({
   adminNotes: z.string().nullable().optional(),
   rejectionReason: z.string().nullable().optional(),
   qrToken: z.string().nullable().optional(),
+  qrPayload: gastroDiscountQrPayloadV1Schema.nullable().optional(),
   emailSentAt: z.string().datetime().nullable().optional(),
   emailSendError: z.string().nullable().optional(),
   lastEmailAttemptAt: z.string().datetime().nullable().optional(),
@@ -137,7 +139,7 @@ export const publicGastroDiscountClaimResponseSchema = z.object({
   accessToken: z.string(),
   email: z.string().email(),
   emailSent: z.boolean(),
-  qrPayload: z.string(),
+  qrPayload: gastroDiscountQrPayloadV1Schema,
   discountTitle: z.string().nullable(),
   locationName: z.string(),
 });
@@ -145,7 +147,7 @@ export const publicGastroDiscountClaimResponseSchema = z.object({
 export const publicGastroDiscountClaimViewSchema = z.object({
   claimId: z.string(),
   email: z.string().email(),
-  qrPayload: z.string(),
+  qrPayload: gastroDiscountQrPayloadV1Schema,
   discountTitle: z.string().nullable(),
   discountSummary: z.string().nullable(),
   locationName: z.string(),

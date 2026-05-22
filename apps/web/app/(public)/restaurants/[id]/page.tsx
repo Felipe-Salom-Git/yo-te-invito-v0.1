@@ -5,7 +5,7 @@ import { GastroLocationDetailView } from '@/components/gastro/GastroLocationDeta
 
 const DEFAULT_TENANT_ID = 'tenant-demo';
 
-/** Ficha pública de local gastronómico (resuelve por evento legacy del catálogo). */
+/** Ficha pública de restaurante/local — datos desde GastroProfile (no ticketera). */
 export default function RestaurantDetailPage() {
   const params = useParams();
   const searchParams = useSearchParams();

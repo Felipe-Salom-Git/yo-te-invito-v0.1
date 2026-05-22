@@ -12,6 +12,8 @@ import { PublicReviewsController } from './public-reviews.controller';
 import { PublicReviewsV2Controller } from './public-reviews-v2.controller';
 import { PublicGastroLocationsController } from './public-gastro-locations.controller';
 import { PublicGastroLocationsService } from './public-gastro-locations.service';
+import { PublicHotelLocationsController } from './public-hotel-locations.controller';
+import { PublicHotelLocationsService } from './public-hotel-locations.service';
 import { PublicGastroDiscountsController } from './public-gastro-discounts.controller';
 import { PublicGastroDiscountsService } from './public-gastro-discounts.service';
 import { PublicEngagementService } from './public-engagement.service';
@@ -26,6 +28,7 @@ import { TicketingModule } from '../ticketing/ticketing.module';
 import { SubcategoriesModule } from '../modules/subcategories/subcategories.module';
 import { RentalLocationsModule } from '../modules/rental-locations/rental-locations.module';
 import { CategoryBannersModule } from '../modules/category-banners/category-banners.module';
+import { GastroModule } from '../modules/gastro/gastro.module';
 
 @Module({
   imports: [
@@ -37,6 +40,7 @@ import { CategoryBannersModule } from '../modules/category-banners/category-bann
     SubcategoriesModule,
     RentalLocationsModule,
     CategoryBannersModule,
+    GastroModule,
     EmailModule,
   ],
   controllers: [
@@ -50,6 +54,7 @@ import { CategoryBannersModule } from '../modules/category-banners/category-bann
     PublicReviewsV2Controller,
     PublicGastroLocationsController,
     PublicGastroDiscountsController,
+    PublicHotelLocationsController,
   ],
   providers: [
     PublicEventsService,
@@ -58,6 +63,7 @@ import { CategoryBannersModule } from '../modules/category-banners/category-bann
     PublicProducersService,
     PublicGastroLocationsService,
     PublicGastroDiscountsService,
+    PublicHotelLocationsService,
     PublicEngagementService,
     ProfilesAuthorizationService,
   ],

@@ -81,18 +81,6 @@ export class GastroService {
     };
   }
 
-  async listContent(_eventId: string) {
-    return [];
-  }
-
-  async createContent(_eventId: string, _input: unknown) {
-    return { id: 'stub', eventId: _eventId };
-  }
-
-  async updateContent(_id: string, _patch: unknown) {
-    return { id: _id };
-  }
-
   async listDiscounts(tenantId: string, userId: string, userRole: string, eventId: string) {
     await this.assertGastroEvent(tenantId, userId, userRole, eventId);
     const rows = await this.prisma.gastroDiscount.findMany({

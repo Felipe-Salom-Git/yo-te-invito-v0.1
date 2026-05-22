@@ -84,6 +84,9 @@ export class SubcategoriesService {
   }
 
   async listPublic(query: PublicSubcategoriesQuery) {
+    if (query.category === 'hotel') {
+      return { data: [], comingSoon: true as const };
+    }
     this.assertMainCategory(query.category);
     const rows = await this.prisma.contentSubcategory.findMany({
       where: {

@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useState, useCallback, useEffect } from 'react';
+import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useEventDetail, eventsKeys } from '@/lib/query/events';
@@ -46,6 +46,7 @@ const CATEGORY_TO_ENTITY: Record<string, EntityType> = {
 export default function EventDetailPage() {
   const params = useParams();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const eventId = (params?.eventId as string) ?? '';
   const tenantId = searchParams?.get('tenantId') ?? DEFAULT_TENANT_ID;
   const [reviewFormKey, setReviewFormKey] = useState(0);
@@ -61,6 +62,13 @@ export default function EventDetailPage() {
 
   const { data: event, isLoading, error } = useEventDetail(eventId, tenantId);
   useRecordPublicEventView(eventId, tenantId, !!event && event.status === 'APPROVED');
+
+  useEffect(() => {
+    if (event?.category === 'gastro' && eventId) {
+      const q = tenantId ? `?tenantId=${encodeURIComponent(tenantId)}` : '';
+      router.replace(`/restaurants/${eventId}${q}`);
+    }
+  }, [event?.category, eventId, tenantId, router]);
 
   const { data: ticketTypes } = useQuery({
     queryKey: ['ticketTypes', eventId],
@@ -169,6 +177,14 @@ export default function EventDetailPage() {
         >
           ← Volver
         </Link>
+      </div>
+    );
+  }
+
+  if (event.category === 'gastro') {
+    return (
+      <div className="min-h-screen bg-bg p-8">
+        <p className="text-text-muted">Redirigiendo al restaurante…</p>
       </div>
     );
   }

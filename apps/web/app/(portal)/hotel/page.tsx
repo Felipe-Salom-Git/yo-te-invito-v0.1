@@ -3,22 +3,21 @@
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { useRepositories } from '@/repositories/context';
-import { PageContainer, SectionTitle } from '@/components';
-
-function linkLabel(url: string): string {
-  try {
-    const u = new URL(url);
-    return u.hostname.replace(/^www\./, '');
-  } catch {
-    return url;
-  }
-}
+import { PageContainer, SectionTitle, QueryError } from '@/components';
+import { getErrorMessage } from '@/lib/errors';
+import { HotelProfilePreview } from '@/components/hotel/HotelProfilePreview';
+import { HOTELS_PORTAL_V2_NOTE } from '@/lib/hotel/hotelsComingSoonCopy';
+import {
+  getHotelProfileCompleteness,
+  hotelProfileStatusLabel,
+} from '@/lib/hotel/hotel-profile-completeness';
+import { hotelKeys } from '@/lib/query/keys';
 
 export default function HotelPortalPage() {
   const repos = useRepositories();
 
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ['hotel', 'me'],
+  const { data, isLoading, isError, error, refetch } = useQuery({
+    queryKey: hotelKeys.me(),
     queryFn: () => repos.hotel.getMe(),
   });
 
@@ -32,7 +31,15 @@ export default function HotelPortalPage() {
     );
   }
 
-  if (isError || !profile) {
+  if (isError) {
+    return (
+      <PageContainer>
+        <QueryError message={getErrorMessage(error)} onRetry={() => void refetch()} />
+      </PageContainer>
+    );
+  }
+
+  if (!profile) {
     return (
       <PageContainer>
         <Link href="/home" className="mb-4 inline-block text-sm text-text-muted hover:text-text">
@@ -40,73 +47,81 @@ export default function HotelPortalPage() {
         </Link>
         <SectionTitle>Portal hotel</SectionTitle>
         <p className="mt-4 text-text-muted">
-          No encontramos un perfil hotel activo. Si acabás de ser aprobado, actualizá la página o contactá soporte.
+          No encontramos un perfil hotel activo. Si acabás de ser aprobado, actualizá la página o
+          contactá soporte.
         </p>
+        <Link
+          href="/cuenta/solicitar-hotel"
+          className="mt-4 inline-block text-sm text-accent hover:underline"
+        >
+          Solicitar perfil hotel
+        </Link>
       </PageContainer>
     );
   }
 
-  const social = profile.socialLinks as Record<string, string> | null | undefined;
-  const socialEntries =
-    social && typeof social === 'object'
-      ? Object.entries(social).filter(([, v]) => typeof v === 'string' && v.trim())
-      : [];
+  const completeness = getHotelProfileCompleteness(profile);
 
   return (
     <PageContainer>
-      <Link href="/home" className="mb-4 inline-block text-sm text-text-muted hover:text-text">
-        ← Volver
-      </Link>
-      <SectionTitle>{profile.displayName}</SectionTitle>
-      <p className="mt-2 text-text-muted">
-        {profile.city ? `${profile.city}` : 'Tu establecimiento'}
-        {profile.starCategory != null ? ` · ${profile.starCategory}★` : ''}
-      </p>
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0 flex-1">
+          <SectionTitle>{profile.displayName}</SectionTitle>
+          <p className="mt-2 text-sm text-text-muted">
+            Estado: <span className="font-medium text-text">{hotelProfileStatusLabel(profile.status)}</span>
+            {profile.starCategory != null ? ` · ${profile.starCategory}★` : ''}
+          </p>
+          <p className="mt-4 max-w-2xl text-sm text-text-muted">{HOTELS_PORTAL_V2_NOTE}</p>
 
-      <div className="mt-8 space-y-4 rounded-xl border border-border bg-bg-muted/50 p-6">
-        <h2 className="text-sm font-semibold text-text">Enlaces públicos</h2>
-        <ul className="space-y-2 text-sm">
-          {profile.websiteUrl && (
-            <li>
-              <a
-                href={profile.websiteUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-accent hover:underline"
-              >
-                Sitio web — {linkLabel(profile.websiteUrl)}
-              </a>
-            </li>
-          )}
-          {profile.bookingUrl && (
-            <li>
-              <a
-                href={profile.bookingUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-accent hover:underline"
-              >
-                Reservas — {linkLabel(profile.bookingUrl)}
-              </a>
-            </li>
-          )}
-        </ul>
-        {socialEntries.length > 0 && (
-          <ul className="mt-4 space-y-1 border-t border-border pt-4 text-sm text-text-muted">
-            {socialEntries.map(([key, value]) => (
-              <li key={key}>
-                <span className="capitalize">{key}:</span>{' '}
-                <span className="text-text">{value}</span>
-              </li>
-            ))}
-          </ul>
-        )}
+          <div className="mt-6 rounded-xl border border-border bg-bg-muted/40 p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-sm font-semibold text-text">Completitud de la ficha</h2>
+              <span className="text-sm font-medium text-accent">{completeness.percent}%</span>
+            </div>
+            <div className="mt-3 h-2 overflow-hidden rounded-full bg-bg">
+              <div
+                className="h-full rounded-full bg-accent transition-all"
+                style={{ width: `${completeness.percent}%` }}
+              />
+            </div>
+            <ul className="mt-4 space-y-2 text-sm">
+              {completeness.items.map((item) => (
+                <li key={item.id} className="flex items-center justify-between gap-2">
+                  <span className={item.done ? 'text-text-muted line-through' : 'text-text'}>
+                    {item.label}
+                  </span>
+                  {!item.done ? (
+                    <Link href={item.editHref} className="shrink-0 text-accent hover:underline">
+                      Completar
+                    </Link>
+                  ) : (
+                    <span className="text-xs text-emerald-400/90">Listo</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+            <Link
+              href="/hotel/editar"
+              className="mt-5 inline-flex items-center justify-center rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-bg hover:bg-accent-hover"
+            >
+              Editar ficha
+            </Link>
+          </div>
+
+          <p className="mt-6 text-sm text-text-muted">
+            Valoraciones de huéspedes en{' '}
+            <Link href="/hotel/valoraciones" className="text-accent hover:underline">
+              Valoraciones
+            </Link>
+            .
+          </p>
+        </div>
+
+        <div className="w-full lg:max-w-sm lg:sticky lg:top-6">
+          <h2 className="mb-3 text-sm font-semibold text-text-muted">Vista previa</h2>
+          <HotelProfilePreview profile={profile} />
+        </div>
       </div>
-
-      <p className="mt-6 text-sm text-text-muted">
-        Tu hotel aparece en el carrusel de inicio como contenido con categoría hotel. Para cambiar datos de la ficha
-        pública, contactá al equipo (próximamente edición desde acá).
-      </p>
     </PageContainer>
   );
 }

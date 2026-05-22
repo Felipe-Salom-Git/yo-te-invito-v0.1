@@ -88,6 +88,17 @@ enum GastroDiscountStatus {
   EXPIRED
 }
 
+enum GastroContentType {
+  EDITORIAL
+  IMAGE
+}
+
+enum GastroContentStatus {
+  DRAFT
+  PUBLISHED
+  INACTIVE
+}
+
 // ─── Operational profiles (single user + profiles model) ─────────────────────
 enum ProfileStatus {
   DRAFT
@@ -146,6 +157,7 @@ model Tenant {
   inboxItems              InboxItem[]
   gastroDiscounts         GastroDiscount[]
   gastroDiscountClaims    GastroDiscountClaim[]
+  gastroContents          GastroContent[]
   contentSubcategories    ContentSubcategory[]
   categoryBannerItems     CategoryBannerItem[]
   rentalLocations         RentalLocation[]
@@ -291,9 +303,32 @@ model GastroProfile {
   memberships     UserGastroMembership[]
   gastroDiscounts GastroDiscount[]
   followers       UserGastroFollow[]
+  contentItems    GastroContent[]
 
   @@index([tenantId])
   @@index([tenantId, status])
+}
+
+model GastroContent {
+  id              String              @id @default(cuid())
+  tenantId        String
+  gastroProfileId String
+  eventId         String
+  type            GastroContentType
+  title           String?
+  body            String?
+  imageUrl        String?
+  sortOrder       Int                 @default(0)
+  status          GastroContentStatus @default(DRAFT)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  tenant        Tenant        @relation(fields: [tenantId], references: [id])
+  gastroProfile GastroProfile @relation(fields: [gastroProfileId], references: [id], onDelete: Cascade)
+  event         Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, eventId])
+  @@index([gastroProfileId, status, sortOrder])
 }
 
 model HotelProfile {
@@ -312,6 +347,12 @@ model HotelProfile {
   websiteUrl      String?
   bookingUrl      String?
   socialLinks     Json?
+  galleryUrls     Json?
+  geoLat          Float?
+  geoLng          Float?
+  whatsappPhone   String?
+  amenities       Json?
+  publicEventId   String?       @unique
   ratingAvg       Float?
   ratingCount     Int           @default(0)
   createdByUserId String?
@@ -320,6 +361,7 @@ model HotelProfile {
   updatedAt       DateTime      @updatedAt
 
   tenant      Tenant                 @relation(fields: [tenantId], references: [id])
+  publicEvent Event?                 @relation("HotelPublicEvent", fields: [publicEventId], references: [id], onDelete: SetNull)
   memberships UserHotelMembership[]
 
   @@index([tenantId])
@@ -758,8 +800,10 @@ model Event {
   payouts             Payout[]
   ticketBatches       TicketBatch[]
   gastroDiscounts     GastroDiscount[]
+  gastroContents      GastroContent[]
   categoryBannerItems CategoryBannerItem[]
   gastroProfilePublic GastroProfile?       @relation("GastroPublicEvent")
+  hotelProfilePublic  HotelProfile?        @relation("HotelPublicEvent")
   userCartItems       UserCartItem[]
   expectedByUsers     UserExpectedEvent[]
 
@@ -811,6 +855,7 @@ enum NotificationKind {
   TRANSFER_OFFER_PENDING
   REVIEW_PENDING
   FOLLOWED_PRODUCER_NEW_EVENT
+  FOLLOWED_GASTRO_NEW_DISCOUNT
   FAVORITE_INTEREST_NEW_CONTENT
   EVENT_APPROVED_BY_ADMIN
   EVENT_REJECTED_BY_ADMIN
@@ -1708,11 +1753,13 @@ model GastroDiscount {
 model GastroDiscountValidation {
   id          String   @id @default(cuid())
   discountId  String
+  claimId     String?  @unique
   validatedAt DateTime @default(now())
   userId      String?
   orderId     String?
 
-  discount GastroDiscount @relation(fields: [discountId], references: [id], onDelete: Cascade)
+  discount GastroDiscount      @relation(fields: [discountId], references: [id], onDelete: Cascade)
+  claim    GastroDiscountClaim? @relation(fields: [claimId], references: [id], onDelete: SetNull)
 
   @@index([discountId])
 }
@@ -1729,9 +1776,10 @@ model GastroDiscountClaim {
   emailSendError String?
   createdAt      DateTime  @default(now())
 
-  tenant   Tenant         @relation(fields: [tenantId], references: [id])
-  discount GastroDiscount @relation(fields: [discountId], references: [id], onDelete: Cascade)
-  user     User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  tenant       Tenant                     @relation(fields: [tenantId], references: [id])
+  discount     GastroDiscount             @relation(fields: [discountId], references: [id], onDelete: Cascade)
+  user         User?                      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  validations  GastroDiscountValidation[]
 
   @@unique([discountId, email])
   @@index([tenantId, discountId])

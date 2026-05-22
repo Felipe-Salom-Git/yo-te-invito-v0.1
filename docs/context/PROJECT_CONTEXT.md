@@ -68,8 +68,9 @@ yo-te-invito-v0.1/
 
 - **Producer (productoras / “Proveedores v2”)**: portal pulido (slices 1–10 en checklist V2): dashboard `/producer` (métricas, engagement, alertas de aprobación/rechazo admin vía `/me/notifications`), eventos por estado, create/edit, tandas, cortesías, referidos, **perfil por bloques** (`/producer/profile` + slug **auto-único** desde nombre), **comentarios** (`/producer/comments`). Ficha pública `/producers/[id|slug]`. Valoraciones **comerciales** B2B. Navegación principal en **sidebar** del layout productor (sin duplicar accesos rápidos en dashboard).
 - **Admin**: rol `ADMIN` en `User.role`; web `/admin/*` restringido a ADMIN; aprobación/rechazo de eventos notifica a productoras (in-app + email + push según preferencias). Inbox, **cola disputas** (`/admin/review-disputes`), **reporte reputación** (`/admin/reviews`), users, config, **rentals** locales/productos, audit. Cuenta maestro: `user:restore-master` + re-login.
-- Gastro/hotel: portales `/gastro/valoraciones`, `/hotel/valoraciones`.
-- Gastro / Hotel / Referrer portals as documented in backend/frontend context.
+- **Gastro V2 (cerrado):** portal `/gastro/*` (dashboard, contenido Prisma, descuentos, validaciones, valoraciones), ficha `/restaurants/[id]`, QR + scanner PWA, follows + alertas descuento. Docs: `docs/gastro/`, `docs/audits/GASTRO_HOTELES_V2_AUDIT.md`.
+- **Hoteles V2 (liviano, cerrado):** discovery Próximamente (sin gateway/carrusel); portal `/hotel` + `/hotel/editar`; ficha pública `/hoteles/[id]`; valoraciones `/hotel/valoraciones`; E2E `pnpm e2e:hotel` (`docs/hotel/HOTEL_E2E.md`).
+- Referrer portal as documented in backend/frontend context.
 
 ### Portal usuario (`/me/*`)
 
@@ -122,13 +123,22 @@ Bloque **Descubrimiento público** cerrado en checklist V2. Detalle: `docs/audit
 
 Detalle API/UI: `BACKEND_CONTEXT.md`, `FRONTEND_CONTEXT.md`, checklist V2 § Admin operativo.
 
+## 5c. Gastro y Hoteles V2 — Estado cerrado (2026-05-22)
+
+| Vertical | Discovery | Portal | Público | QA |
+|----------|-----------|--------|---------|-----|
+| Gastro | Activo (`gastro` en gateway/home/explore) | `/gastro/*` operativo | `/restaurants/[id]` | `test:gastro-discount-qr`, `test:gastro-discount-scan` |
+| Hoteles | Próximamente (sin tile gateway) | `/hotel`, `/hotel/editar` | `/hoteles/[id]` informativa | `pnpm e2e:hotel` (`E2E_HOTEL_*`, skip sin env) |
+
+Checklist V2 § Gastro y Hoteles marcado. Auditoría: `docs/audits/GASTRO_HOTELES_V2_AUDIT.md`.
+
 ---
 
 ## 6. Gaps
 
 See **`docs/context/CONTEXT_PENDIENTES.md`** (checkbox backlog).
 
-Summary: real payments, gastro scanner QR, image storage (vs data-URL), validación física ticket en staging, SEO/loading polish, E2E discovery automatizado.
+Summary: real payments, image storage (vs data-URL), validación física ticket en staging, SEO/loading polish, E2E discovery automatizado, `smoke:gastro-discounts` npm unificado.
 
 ---
 

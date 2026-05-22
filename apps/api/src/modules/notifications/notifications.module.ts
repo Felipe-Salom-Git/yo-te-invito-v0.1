@@ -8,6 +8,7 @@ import { SmartAlertsPreparedService } from './smart-alerts-prepared.service';
 import { UserNotificationsService } from './user-notifications.service';
 import { ProducerEventStatusNotificationsService } from './producer-event-status-notifications.service';
 import { ReviewNotificationsService } from './review-notifications.service';
+import { GastroFollowDiscountAlertsService } from './gastro-follow-discount-alerts.service';
 import { WebPushService } from './web-push.service';
 
 @Module({
@@ -21,6 +22,7 @@ import { WebPushService } from './web-push.service';
     EventPublicationAlertsService,
     ProducerEventStatusNotificationsService,
     ReviewNotificationsService,
+    GastroFollowDiscountAlertsService,
   ],
   exports: [
     WebPushService,
@@ -30,6 +32,7 @@ import { WebPushService } from './web-push.service';
     EventPublicationAlertsService,
     ProducerEventStatusNotificationsService,
     ReviewNotificationsService,
+    GastroFollowDiscountAlertsService,
   ],
 })
 export class NotificationsModule {}

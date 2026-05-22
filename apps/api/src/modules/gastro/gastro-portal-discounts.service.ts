@@ -7,6 +7,7 @@ import {
 import { randomBytes } from 'crypto';
 import { Prisma } from '@prisma/client';
 import {
+  buildGastroDiscountQrPayload,
   ErrorCode,
   type GastroDiscountCreateInput,
   type GastroDiscountResponse,
@@ -75,6 +76,10 @@ export class GastroPortalDiscountsService {
       adminNotes: row.adminNotes,
       rejectionReason: row.rejectionReason,
       qrToken: row.qrToken,
+      qrPayload:
+        row.qrToken && ['APPROVED', 'ACTIVE'].includes(row.status)
+          ? buildGastroDiscountQrPayload(row.id, row.qrToken)
+          : null,
       emailSentAt: row.emailSentAt?.toISOString() ?? null,
       emailSendError: row.emailSendError,
       lastEmailAttemptAt: row.lastEmailAttemptAt?.toISOString() ?? null,

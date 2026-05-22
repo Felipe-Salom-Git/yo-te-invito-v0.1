@@ -1,4 +1,4 @@
-import type { ScanResponse } from '@yo-te-invito/shared';
+import type { ScanResponse, ValidateGastroDiscountResponse } from '@yo-te-invito/shared';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001';
 
@@ -43,5 +43,25 @@ export async function scanTicket(params: ScanParams): Promise<ScanResponse> {
     }),
   });
   if (!res.ok) throw new Error('Scan request failed');
+  return res.json();
+}
+
+export async function validateGastroDiscount(params: {
+  qrPayload: string;
+  deviceId?: string;
+  devUserId: string;
+}): Promise<ValidateGastroDiscountResponse> {
+  const res = await fetch(`${API_BASE}/scanner/gastro-discounts/validate`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Dev-User-Id': params.devUserId,
+    },
+    body: JSON.stringify({
+      qrPayload: params.qrPayload,
+      deviceId: params.deviceId,
+    }),
+  });
+  if (!res.ok) throw new Error('Gastro discount validate request failed');
   return res.json();
 }

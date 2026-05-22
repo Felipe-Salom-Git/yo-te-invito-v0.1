@@ -3,6 +3,8 @@
  * Implemented by ApiRepository (backend API).
  */
 
+import type { HotelProfileResponse, HotelProfileUpdateInput } from '@yo-te-invito/shared';
+
 // ─── Shared types (minimal, align with API responses) ─────────────────────
 
 export interface EventsListQuery {
@@ -1510,6 +1512,10 @@ export interface MePortalRepo {
     body: import('@yo-te-invito/shared').CreateUserGastroFollowBody,
   ): Promise<import('@yo-te-invito/shared').UserGastroFollow>;
   deleteGastroFollow(id: string): Promise<void>;
+  patchGastroFollowNotifications(
+    id: string,
+    body: import('@yo-te-invito/shared').PatchUserGastroFollowNotifications,
+  ): Promise<import('@yo-te-invito/shared').UserGastroFollow>;
   getPushSubscriptionsConfig(): Promise<import('@yo-te-invito/shared').PushSubscriptionsConfig>;
   listPushSubscriptions(): Promise<import('@yo-te-invito/shared').MePushSubscriptionsResponse>;
   registerPushSubscription(
@@ -1746,15 +1752,23 @@ export interface ScannerRepo {
   listScanLogs(eventId?: string, limit?: number): Promise<TicketScanLogItem[]>;
 }
 
+export type GastroContentStatus = 'draft' | 'published' | 'inactive';
+
 export interface GastroContent {
   id: string;
   eventId: string;
+  gastroProfileId?: string;
   type: 'editorial' | 'image';
   title: string | null;
   body: string | null;
   imageUrl: string | null;
   sortOrder: number;
+  status: GastroContentStatus;
+  createdAt?: string;
+  updatedAt?: string;
 }
+
+export type PublicGastroContentItem = Omit<GastroContent, 'gastroProfileId'>;
 
 export type GastroDiscountStatus =
   | 'PENDING_REVIEW'
@@ -1825,6 +1839,7 @@ export interface GastroPortalDiscount {
   adminNotes?: string | null;
   rejectionReason?: string | null;
   qrToken?: string | null;
+  qrPayload?: string | null;
   emailSentAt?: string | null;
   emailSendError?: string | null;
   ownerEmail?: string | null;
@@ -1873,10 +1888,64 @@ export interface GastroDiscountValidation {
   orderId: string | null;
 }
 
+export interface GastroValidationListItem {
+  id: string;
+  discountId: string;
+  discountTitle: string;
+  discountStatus: GastroDiscountStatus;
+  validatedAt: string;
+}
+
+export interface GastroValidationListParams {
+  discountId?: string;
+  from?: string;
+  to?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface GastroValidationListResponse {
+  data: GastroValidationListItem[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export type GastroDashboardAlert =
+  | 'EXPIRED_DISCOUNTS'
+  | 'INACTIVE_DISCOUNTS'
+  | 'MISSING_PUBLIC_CONTENT'
+  | 'MISSING_MAIN_IMAGE';
+
+export interface GastroDashboardResponse {
+  profile: {
+    id: string | null;
+    displayName: string | null;
+    status: string | null;
+    publicEventId: string | null;
+    hasMainImage: boolean;
+    publishedContentCount: number;
+  };
+  kpis: {
+    activeDiscounts: number;
+    totalValidations: number;
+    validationsLast7Days: number;
+    reviewsPendingReply: number | null;
+  };
+  alerts: GastroDashboardAlert[];
+  recentValidations: Array<{
+    id: string;
+    discountId: string;
+    discountTitle: string;
+    validatedAt: string;
+  }>;
+}
+
 export interface PublicGastroLocation extends GastroLocal {
   subcategoryName: string | null;
   ratingAvg?: number | null;
   ratingCount?: number;
+  content?: PublicGastroContentItem[];
 }
 
 export interface PublicGastroLocationDiscount {
@@ -1962,12 +2031,23 @@ export interface PublicGastroLocationsRepo {
 
 export interface GastroRepo {
   listContent(eventId: string): Promise<GastroContent[]>;
-  createContent(eventId: string, input: { type: string; title?: string; body?: string; imageUrl?: string; sortOrder?: number }): Promise<GastroContent>;
-  updateContent(id: string, patch: Partial<GastroContent>): Promise<GastroContent | null>;
+  createContent(
+    eventId: string,
+    input: {
+      type: GastroContent['type'];
+      title?: string | null;
+      body?: string | null;
+      imageUrl?: string | null;
+      sortOrder?: number;
+      status?: GastroContentStatus;
+    },
+  ): Promise<GastroContent>;
+  updateContent(id: string, patch: Partial<GastroContent>): Promise<GastroContent>;
   listDiscounts(eventId: string): Promise<GastroDiscount[]>;
   createDiscount(eventId: string, input: { code: string; type: string; value: number; validFrom?: string; validTo?: string }): Promise<GastroDiscount>;
   updateDiscount(id: string, patch: Partial<GastroDiscount>): Promise<GastroDiscount | null>;
-  listValidations(discountId?: string): Promise<GastroDiscountValidation[]>;
+  getDashboard(): Promise<GastroDashboardResponse>;
+  listValidations(params?: GastroValidationListParams): Promise<GastroValidationListResponse>;
   recordValidation(discountId: string, userId?: string, orderId?: string): Promise<GastroDiscountValidation>;
   getMyLocal(): Promise<GastroLocal | null>;
   createMyLocal(payload: GastroLocalUpsertPayload): Promise<GastroLocal>;
@@ -2027,6 +2107,7 @@ export interface AdminGastroDiscountDetail {
   adminNotes: string | null;
   rejectionReason: string | null;
   qrToken: string | null;
+  qrPayload?: string | null;
   emailSentAt: string | null;
   emailSendError: string | null;
   ownerEmail: string | null;
@@ -2105,18 +2186,18 @@ export interface PlatformConfigRepo {
   update(tenantId: string, patch: { contact?: PlatformConfig['contact']; categories?: PlatformConfig['categories'] }): Promise<PlatformConfig>;
 }
 
-export interface HotelProfileSummary {
-  id: string;
-  displayName: string;
-  websiteUrl: string | null;
-  bookingUrl: string | null;
-  socialLinks: unknown;
-  city: string | null;
-  starCategory: number | null;
+export type HotelProfile = HotelProfileResponse;
+
+export type PublicHotelLocation = HotelProfile & { publicEventId: string | null };
+
+export interface PublicHotelLocationsRepo {
+  getById(locationId: string, tenantId: string): Promise<PublicHotelLocation>;
+  getByPublicEventId(eventId: string, tenantId: string): Promise<PublicHotelLocation>;
 }
 
 export interface HotelRepo {
-  getMe(): Promise<{ profile: HotelProfileSummary | null }>;
+  getMe(): Promise<{ profile: HotelProfile | null }>;
+  updateMe(input: HotelProfileUpdateInput): Promise<{ profile: HotelProfile }>;
 }
 
 export interface AdminProducerListItem {
@@ -2279,6 +2360,7 @@ export interface Repositories {
   inbox: InboxRepo;
   gastro: GastroRepo;
   publicGastro: PublicGastroLocationsRepo;
+  publicHotel: PublicHotelLocationsRepo;
   ticketTypes: TicketTypesRepo;
   ticketTemplates: TicketTemplatesRepo;
   tickets: TicketsRepo;
