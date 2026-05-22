@@ -57,10 +57,11 @@ yo-te-invito-v0.1/
 
 - Home, explore, category detail pages, checkout (demo), tickets, referrers directory, referral redirect `/r/[code]`.
 
-### Rentals (Equipos y Rentals)
+### Rentals (Equipos y Rentals) — V2 cerrado (checklist)
 
-- **Admin**: CRUD **locales** (store) with structured **opening hours** (JSON); CRUD **products** per local (header image + gallery).
-- **Public**: Product detail with hero cover, gallery thumbnails + modal, local card, WhatsApp CTA — **not** the same layout as event ticketing pages.
+- **Admin**: CRUD **locales** (store) with structured **opening hours** (JSON), contact fields (`whatsappPhone`, etc.); CRUD **products** per local (header image + gallery).
+- **Public discovery**: cards con badge «Alquiler», subcategoría/local, sin fecha/entradas; explore/home/categoría con filtros subcategoría; copy anti-alojamiento (`lib/rentals/publicCopy.ts`).
+- **Public detail**: hero cover, galería sin duplicar header, sidebar contacto/local, CTA «Consultar disponibilidad» (card + sticky mobile), horario solo en card del local — **not** event ticketing layout (`RentalProductDetailContent`, not `PlaceDetailView`).
 - Data: `RentalLocation` + `Event` (`category: rental`, `rentalLocationId`, `subcategoryId`).
 
 ### Producer / Admin / Gastro / Hotel / Referrer
@@ -107,7 +108,7 @@ Bloque **Descubrimiento público** cerrado en checklist V2. Detalle: `docs/audit
 | Visibilidad eventos vencidos | Cerrado — 1:00 AM día siguiente (AR) en `GET /public/events*` |
 | Trending | Cerrado — `viewCount` + `rankingScore` en `/public/events/trending` |
 
-**Fuera de este bloque:** pagos reales, storage imágenes, portales admin/productor, polish rentals checklist, drift TS global (`registerPush`, etc.).
+**Fuera de este bloque:** pagos reales, storage imágenes, portales admin/productor, drift TS global (`registerPush`, etc.). Rentals V2 (WhatsApp, cards, subcategorías, anti-alojamiento, detalle mobile) cerrado en checklist § Rentals.
 
 ---
 

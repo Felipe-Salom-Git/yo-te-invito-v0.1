@@ -1,6 +1,11 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import {
+  getContentCardExpandedCta,
+  getContentCardLocationLine,
+  isRentalContent,
+} from '@/lib/home/contentCardPresentation';
 import { RatingBadge } from './RatingBadge';
 import { PriceBadge } from './PriceBadge';
 import { ProducerMeta } from './ProducerMeta';
@@ -23,26 +28,15 @@ export interface ExpandedContentCardOverlayProps {
   isVisible: boolean;
 }
 
-function getQuickCtaLabel(category?: string): string {
-  switch (category) {
-    case 'gastro':
-      return 'Ver detalle';
-    case 'excursion':
-      return 'Explorar';
-    case 'rental':
-      return 'Reservar';
-    default:
-      return 'Comprar';
-  }
-}
-
 export function ExpandedContentCardOverlay({
   metadata,
   isVisible,
 }: ExpandedContentCardOverlayProps) {
   const { title, description, ratingAvg, ratingCount, fromPrice, producerName, venueName, city, category } =
     metadata;
-  const ctaLabel = getQuickCtaLabel(category);
+  const isRental = isRentalContent({ category });
+  const ctaLabel = getContentCardExpandedCta(category);
+  const locationLine = getContentCardLocationLine({ category, venueName, city });
 
   return (
     <motion.div
@@ -57,7 +51,7 @@ export function ExpandedContentCardOverlay({
       {/* Metadata row — rating, price */}
       <div className="mb-2 flex flex-wrap items-center gap-2">
         <RatingBadge ratingAvg={ratingAvg} ratingCount={ratingCount} />
-        <PriceBadge fromPrice={fromPrice} />
+        <PriceBadge fromPrice={isRental ? null : fromPrice} />
       </div>
 
       {/* Title */}
@@ -65,13 +59,13 @@ export function ExpandedContentCardOverlay({
         {title}
       </h3>
 
-      {/* Producer / venue / commerce */}
+      {/* Producer / local */}
       <div className="mt-1">
-        <ProducerMeta
-          producerName={producerName}
-          venueName={venueName}
-          city={city}
-        />
+        {isRental ? (
+          <p className="text-xs text-white/80">{locationLine}</p>
+        ) : (
+          <ProducerMeta producerName={producerName} venueName={venueName} city={city} />
+        )}
       </div>
 
       {/* Short description — max 2 lines */}

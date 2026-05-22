@@ -23,6 +23,7 @@ const SEED: Array<{ category: string; name: string; sortOrder: number }> = [
   { category: 'rental', name: 'Kayaks', sortOrder: 2 },
   { category: 'rental', name: 'Ropa de invierno', sortOrder: 3 },
   { category: 'rental', name: 'Equipos de nieve', sortOrder: 4 },
+  { category: 'rental', name: 'Movilidad turística', sortOrder: 5 },
   { category: 'excursion', name: 'Trekking', sortOrder: 0 },
   { category: 'excursion', name: 'Lagos', sortOrder: 1 },
   { category: 'excursion', name: 'Nieve', sortOrder: 2 },

@@ -2,6 +2,8 @@
  * Pure content route helpers — UI-agnostic.
  */
 
+import { RENTAL_RELATED_SECTION_TITLE } from '@/lib/rentals/publicCopy';
+
 const TENANT_ID = 'tenant-demo';
 
 export interface ContentItemForRoute {
@@ -72,7 +74,7 @@ export function getRelatedSectionTitle(category?: string): string {
     case 'excursion':
       return 'Excursiones que también te pueden gustar';
     case 'rental':
-      return 'Alquileres que también te pueden gustar';
+      return RENTAL_RELATED_SECTION_TITLE;
     default:
       return 'Eventos que también te pueden gustar';
   }
@@ -87,7 +89,7 @@ export function getSecondaryCtaLabel(category?: string): string {
     case 'excursion':
       return 'Explorar';
     case 'rental':
-      return 'Reservar';
+      return 'Consultar disponibilidad';
     default:
       return 'Comprar';
   }
@@ -103,7 +105,7 @@ export function getSecondaryCtaLabelForModal(category?: string): string {
     case 'excursion':
       return 'Explorar';
     case 'rental':
-      return 'Reservar';
+      return 'Consultar disponibilidad';
     default:
       return 'Comprar entradas';
   }

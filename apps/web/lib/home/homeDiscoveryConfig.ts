@@ -6,6 +6,7 @@ import {
   getCategoryGatewayHref,
   type CategoryGatewayId,
 } from '@/lib/home/categoryGatewayConfig';
+import { RENTAL_PUBLIC_SUBTITLE } from '@/lib/rentals/publicCopy';
 
 export const HOME_MAIN_CATEGORY_IDS: CategoryGatewayId[] = [
   'event',
@@ -87,7 +88,7 @@ export const HOME_CATEGORY_RAIL_DEFS: HomeRailDefinition[] = [
   {
     id: 'rental',
     title: 'Equipos y Rentals',
-    subtitle: 'Movilidad, equipos y aventura en la montaña',
+    subtitle: RENTAL_PUBLIC_SUBTITLE,
     seeMoreHref: getCategoryGatewayHref('rental'),
   },
   {

@@ -16,7 +16,9 @@ export function useCategorySubcategories(category: CategoryGatewayId) {
   );
 
   const subcategories = useMemo(() => {
-    const withoutHotel = base.filter((s) => s.category !== 'hotel');
+    const withoutHotel = base.filter(
+      (s) => s.category !== 'hotel' && s.category === category,
+    );
     if (category !== 'gastro' || !discountCount?.count) {
       return withoutHotel;
     }

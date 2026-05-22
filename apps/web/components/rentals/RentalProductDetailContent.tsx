@@ -26,10 +26,11 @@ import { RentalProductHero } from './RentalProductHero';
 import { RentalGalleryThumbnails } from './RentalGalleryThumbnails';
 import { RentalDescriptionBlock } from './RentalDescriptionBlock';
 import { RentalLocalCard } from './RentalLocalCard';
+import { buildRentalWhatsAppHref } from '@/lib/rentals/whatsapp';
 import { RentalContactCard } from './RentalContactCard';
+import { RentalMobileStickyCta } from './RentalMobileStickyCta';
+import { RENTAL_DETAIL_SECTION_TITLE } from '@/lib/rentals/rentalDetailUi';
 import type { RentalOpeningHours } from '@yo-te-invito/shared';
-
-const WHATSAPP_NUMBER = '5491112345678';
 
 type RentalLocationOnEvent = {
   id: string;
@@ -37,6 +38,7 @@ type RentalLocationOnEvent = {
   address?: string | null;
   openingHours?: RentalOpeningHours | null;
   openingHoursNote?: string | null;
+  whatsappPhone?: string | null;
   geoLat?: number | null;
   geoLng?: number | null;
 };
@@ -149,12 +151,14 @@ export function RentalProductDetailContent({
     Boolean(locationAddress?.trim()) ||
     (locationGeoLat != null && locationGeoLng != null);
 
-  const whatsAppHref = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
-    `Hola, me interesa ${event.title}`,
-  )}`;
+  const whatsAppHref = buildRentalWhatsAppHref(rentalLoc?.whatsappPhone, event.title);
+
+  const showLocalCard = Boolean(rentalLoc);
 
   return (
-    <div className="min-h-screen bg-bg">
+    <div
+      className={`min-h-screen bg-bg ${whatsAppHref ? 'pb-24 lg:pb-0' : ''}`}
+    >
       <RentalProductHero
         coverImageUrl={headerImageUrl}
         title={event.title}
@@ -162,39 +166,25 @@ export function RentalProductDetailContent({
         description={event.description}
         subcategoryName={subcategoryName}
         localName={rentalLoc?.name}
-      >
-        <EventEngagementRow eventId={id} />
-      </RentalProductHero>
+      />
 
-      <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 md:px-8">
+      <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 sm:py-8 md:px-8">
         <Breadcrumbs
           items={[
             { label: 'Inicio', href: '/home' },
-            { label: getCategoryLabel('rental'), href: '/explore' },
+            { label: getCategoryLabel('rental'), href: '/explore?category=rental' },
             { label: event.title },
           ]}
         />
 
-        <div className="mt-8 grid gap-8 lg:grid-cols-[1.65fr,1fr] lg:items-start lg:gap-10">
-          <div className="min-w-0 space-y-8">
-            <RentalDescriptionBlock
-              productTitle={event.title}
-              description={event.description}
-            />
+        <div className="mt-4 rounded-xl border border-border/60 bg-bg-muted/40 px-3 py-3 sm:hidden">
+          <EventEngagementRow eventId={id} />
+        </div>
 
-            {hasGallery && (
-              <section>
-                <h2 className="text-lg font-semibold text-white">Galería</h2>
-                <div className="mt-4">
-                  <RentalGalleryThumbnails images={galleryImages} />
-                </div>
-              </section>
-            )}
-          </div>
-
-          <aside className="space-y-4 lg:sticky lg:top-8">
+        <div className="mt-6 grid grid-cols-1 gap-5 lg:mt-8 lg:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)] lg:items-start lg:gap-10">
+          <aside className="order-1 space-y-4 lg:order-2 lg:sticky lg:top-8 lg:self-start">
             <RentalContactCard whatsAppHref={whatsAppHref} />
-            {rentalLoc && (
+            {showLocalCard && rentalLoc && (
               <RentalLocalCard
                 name={rentalLoc.name}
                 address={rentalLoc.address}
@@ -207,9 +197,29 @@ export function RentalProductDetailContent({
               />
             )}
           </aside>
+
+          <div className="order-2 min-w-0 space-y-6 sm:space-y-8 lg:order-1">
+            <div className="hidden sm:block">
+              <EventEngagementRow eventId={id} />
+            </div>
+
+            <RentalDescriptionBlock
+              productTitle={event.title}
+              description={event.description}
+            />
+
+            {hasGallery && (
+              <section className="min-w-0">
+                <h2 className={RENTAL_DETAIL_SECTION_TITLE}>Galería</h2>
+                <div className="mt-3 sm:mt-4">
+                  <RentalGalleryThumbnails images={galleryImages} />
+                </div>
+              </section>
+            )}
+          </div>
         </div>
 
-        <div className="mt-12" id="reviews">
+        <div className="mt-8 sm:mt-12" id="reviews">
           <EventReviewsSection
             eventId={id}
             tenantId={tenantId}
@@ -234,7 +244,7 @@ export function RentalProductDetailContent({
           />
         </div>
 
-        <div className="mt-8">
+        <div className="mt-6 sm:mt-8">
           <ReviewForm
             key={reviewFormKey}
             entityType="rental"
@@ -245,7 +255,7 @@ export function RentalProductDetailContent({
           />
         </div>
 
-        <div className="mt-12">
+        <div className="mt-8 sm:mt-12">
           <RelatedEventsSection
             events={relatedData?.data ?? []}
             currentEventId={id}
@@ -264,6 +274,8 @@ export function RentalProductDetailContent({
         geoLat={locationGeoLat}
         geoLng={locationGeoLng}
       />
+
+      {whatsAppHref ? <RentalMobileStickyCta whatsAppHref={whatsAppHref} /> : null}
     </div>
   );
 }

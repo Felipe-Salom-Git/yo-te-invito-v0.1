@@ -136,6 +136,7 @@ export const eventDetailSchema = eventSummarySchema.extend({
       address: z.string().nullable(),
       openingHours: rentalOpeningHoursSchema.nullable(),
       openingHoursNote: z.string().nullable(),
+      whatsappPhone: z.string().nullable(),
       geoLat: z.number().nullable(),
       geoLng: z.number().nullable(),
     })

@@ -3,6 +3,22 @@ import { EventStatus, EventMediaType } from '../enums';
 import { eventMediaSchema, eventSummarySchema } from './events';
 import { rentalOpeningHoursSchema } from './opening-hours';
 
+const rentalPhoneOptional = z.string().max(40).nullable().optional();
+
+const rentalUrlOptional = z
+  .string()
+  .url()
+  .max(500)
+  .nullable()
+  .optional()
+  .or(z.literal('').transform(() => null));
+
+const rentalEmailOptional = z
+  .union([z.string().email().max(200), z.literal('')])
+  .transform((v) => (v === '' ? null : v))
+  .nullable()
+  .optional();
+
 export const rentalLocationSummarySchema = z.object({
   id: z.string(),
   tenantId: z.string(),
@@ -10,6 +26,10 @@ export const rentalLocationSummarySchema = z.object({
   address: z.string().nullable(),
   openingHours: rentalOpeningHoursSchema.nullable(),
   openingHoursNote: z.string().nullable(),
+  contactPhone: z.string().nullable(),
+  whatsappPhone: z.string().nullable(),
+  contactEmail: z.string().nullable(),
+  websiteUrl: z.string().nullable(),
   geoLat: z.number().nullable(),
   geoLng: z.number().nullable(),
   isActive: z.boolean(),
@@ -31,6 +51,7 @@ export const publicRentalLocationSchema = z.object({
   address: z.string().nullable(),
   openingHours: rentalOpeningHoursSchema.nullable(),
   openingHoursNote: z.string().nullable(),
+  whatsappPhone: z.string().nullable(),
   geoLat: z.number().nullable(),
   geoLng: z.number().nullable(),
 });
@@ -58,6 +79,10 @@ export const createRentalLocationBodySchema = z.object({
   address: z.string().max(500).nullable().optional(),
   openingHours: rentalOpeningHoursSchema.nullable().optional(),
   openingHoursNote: z.string().max(500).nullable().optional(),
+  contactPhone: rentalPhoneOptional,
+  whatsappPhone: rentalPhoneOptional,
+  contactEmail: rentalEmailOptional,
+  websiteUrl: rentalUrlOptional,
   geoLat: z.number().nullish(),
   geoLng: z.number().nullish(),
   isActive: z.boolean().optional(),
@@ -70,6 +95,10 @@ export const updateRentalLocationBodySchema = z.object({
   address: z.string().max(500).nullable().optional(),
   openingHours: rentalOpeningHoursSchema.nullable().optional(),
   openingHoursNote: z.string().max(500).nullable().optional(),
+  contactPhone: rentalPhoneOptional,
+  whatsappPhone: rentalPhoneOptional,
+  contactEmail: rentalEmailOptional,
+  websiteUrl: rentalUrlOptional,
   geoLat: z.number().nullish(),
   geoLng: z.number().nullish(),
   isActive: z.boolean().optional(),

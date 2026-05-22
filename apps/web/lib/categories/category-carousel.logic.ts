@@ -1,4 +1,5 @@
 import type { CategoryGatewayId } from '@/lib/home/categoryGatewayConfig';
+import { RENTAL_PUBLIC_SUBTITLE } from '@/lib/rentals/publicCopy';
 import type { EventSummary } from '@/repositories/interfaces';
 
 export const CATEGORY_CAROUSEL_LIMIT = 12;
@@ -48,7 +49,7 @@ const CATEGORY_FEATURED_TITLES: Record<
   },
   rental: {
     title: 'Destacados en Equipos y Rentals',
-    subtitle: 'Movilidad, equipos y aventura en la montaña',
+    subtitle: RENTAL_PUBLIC_SUBTITLE,
   },
   excursion: {
     title: 'Destacados en Excursiones',

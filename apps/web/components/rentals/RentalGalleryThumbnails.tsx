@@ -7,7 +7,7 @@ type RentalGalleryThumbnailsProps = {
   images: RentalGalleryImage[];
 };
 
-const THUMB_SIZE = 'w-28 shrink-0 snap-start sm:w-32';
+const THUMB_SIZE = 'w-[7.25rem] shrink-0 snap-start sm:w-32';
 
 export function RentalGalleryThumbnails({ images }: RentalGalleryThumbnailsProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -50,7 +50,7 @@ export function RentalGalleryThumbnails({ images }: RentalGalleryThumbnailsProps
   return (
     <>
       <ul
-        className="flex gap-3 overflow-x-auto pb-2 scroll-smooth snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:thin]"
+        className="-mx-1 flex gap-2.5 overflow-x-auto px-1 pb-2 scroll-smooth snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:thin] sm:gap-3"
         aria-label="Galería de imágenes"
       >
         {images.map((img, index) => (

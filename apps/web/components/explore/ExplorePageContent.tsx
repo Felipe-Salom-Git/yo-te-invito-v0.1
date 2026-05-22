@@ -13,6 +13,7 @@ import { usePublicSubcategories } from '@/lib/query/subcategories';
 import { ContentCard, type ContentCardItem } from '@/components/home/ContentCard';
 import { ContentCardSkeleton } from '@/components/home/ContentCardSkeleton';
 import { PageContainer, SectionTitle, EmptyState, QueryError } from '@/components';
+import { RENTAL_EXPLORE_EMPTY_HINT, RENTAL_PUBLIC_TAGLINE } from '@/lib/rentals/publicCopy';
 import type { ContentMainCategory } from '@/repositories/interfaces';
 
 const TENANT_ID = 'tenant-demo';
@@ -45,10 +46,27 @@ export function ExplorePageContent() {
   }, [mainCategory, subcategories]);
 
   useEffect(() => {
-    if (!mainCategory || !urlFilters.subcategoryId || subcategoriesLoading) return;
+    if (!mainCategory || subcategoriesLoading) return;
     if (subcategoryOptions.length === 0) return;
-    if (!subcategoryOptions.some((s) => s.id === urlFilters.subcategoryId)) {
-      applyFilters({ ...urlFilters, subcategoryId: '' });
+
+    const slug = urlFilters.subcategorySlug?.trim();
+    if (slug && !urlFilters.subcategoryId) {
+      const bySlug = subcategoryOptions.find((s) => s.slug === slug);
+      if (bySlug) {
+        applyFilters({
+          ...urlFilters,
+          subcategoryId: bySlug.id,
+          subcategorySlug: '',
+        });
+        return;
+      }
+    }
+
+    if (
+      urlFilters.subcategoryId &&
+      !subcategoryOptions.some((s) => s.id === urlFilters.subcategoryId)
+    ) {
+      applyFilters({ ...urlFilters, subcategoryId: '', subcategorySlug: '' });
     }
   }, [
     mainCategory,
@@ -58,7 +76,10 @@ export function ExplorePageContent() {
     applyFilters,
   ]);
 
-  const { data, isLoading, isError, error, refetch, isFetching } = useExploreEvents(urlFilters);
+  const { data, isLoading, isError, error, refetch, isFetching } = useExploreEvents(
+    urlFilters,
+    subcategoryOptions,
+  );
 
   const events = data?.data ?? [];
   const meta = data?.meta ?? { page: 1, limit: 24, total: 0, totalPages: 0 };
@@ -75,7 +96,13 @@ export function ExplorePageContent() {
 
   const handleCategoryChange = useCallback(
     (category: string) => {
-      const next = { ...draft, category, subcategoryId: '', page: 1 };
+      const next = {
+        ...draft,
+        category,
+        subcategoryId: '',
+        subcategorySlug: '',
+        page: 1,
+      };
       setDraft(next);
       applyFilters(next);
     },
@@ -84,7 +111,7 @@ export function ExplorePageContent() {
 
   const handleSubcategoryChange = useCallback(
     (subcategoryId: string) => {
-      const next = { ...draft, subcategoryId, page: 1 };
+      const next = { ...draft, subcategoryId, subcategorySlug: '', page: 1 };
       setDraft(next);
       applyFilters(next);
     },
@@ -100,7 +127,9 @@ export function ExplorePageContent() {
       <header className="mb-2">
         <SectionTitle>Explorá Bariloche</SectionTitle>
         <p className="mt-2 max-w-2xl text-sm text-text-muted">
-          Encontrá eventos, gastronomía, equipos y rentals, y excursiones en un solo lugar.
+          {mainCategory === 'rental'
+            ? RENTAL_PUBLIC_TAGLINE
+            : 'Encontrá eventos, gastronomía, equipos y rentals, y excursiones en un solo lugar.'}
         </p>
       </header>
 
@@ -148,6 +177,11 @@ export function ExplorePageContent() {
               className="block text-sm font-medium text-text-muted"
             >
               Subcategoría
+              {mainCategory === 'rental' ? (
+                <span className="mt-0.5 block text-xs font-normal text-text-muted/80">
+                  Autos, bicis, kayaks, equipos de nieve…
+                </span>
+              ) : null}
             </label>
             <select
               id="explore-subcategory"
@@ -267,7 +301,11 @@ export function ExplorePageContent() {
           <div className="mt-8">
             <EmptyState
               title="No encontramos resultados con esos filtros"
-              description="Probá cambiar la categoría, la subcategoría, la fecha o la ciudad."
+              description={
+                urlFilters.category === 'rental'
+                  ? RENTAL_EXPLORE_EMPTY_HINT
+                  : 'Probá cambiar la categoría, la subcategoría, la fecha o la ciudad.'
+              }
             />
           </div>
         )}

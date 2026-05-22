@@ -100,7 +100,7 @@ export function useCategoryCarousels(
     queryFn: () =>
       fetchCategoryList(repos, t, category, {
         subcategorySlug: slug,
-        sort: 'upcoming',
+        sort: category === 'event' ? 'upcoming' : 'recent',
       }),
     enabled: !!t && filterMode && !!slug,
   });

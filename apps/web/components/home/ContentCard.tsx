@@ -4,7 +4,15 @@ import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import type { EventSummary } from '@/repositories/interfaces';
-import { getCategoryLabel, getContentDetailHref } from '@/lib/home/contentRoutes';
+import { getContentDetailHref } from '@/lib/home/contentRoutes';
+import {
+  getContentCardCategoryBadge,
+  getContentCardDateLabel,
+  getContentCardLocationLine,
+  getContentCardPlaceholderEmoji,
+  isRentalContent,
+  RENTAL_CARD_CTA,
+} from '@/lib/home/contentCardPresentation';
 import { ExpandedContentCardOverlay, type ContentCardMetadata } from './ExpandedContentCardOverlay';
 import { PriceBadge } from './PriceBadge';
 import { ProducerMeta } from './ProducerMeta';
@@ -33,10 +41,10 @@ export function ContentCard({ item, onClick, tenantId }: ContentCardProps) {
   const handleBlur = useCallback(() => setIsFocused(false), []);
   const handleFocus = useCallback(() => setIsFocused(true), []);
 
-  const dateLabel = item.startAt
-    ? new Date(item.startAt).toLocaleDateString('es-AR')
-    : '';
-  const locationLabel = item.city ?? item.venueName ?? '—';
+  const isRental = isRentalContent(item);
+  const dateLabel = getContentCardDateLabel(item);
+  const locationLabel = getContentCardLocationLine(item);
+  const categoryBadge = getContentCardCategoryBadge(item.category);
 
   const detailHref = getContentDetailHref(item, tenantId);
   const metadata: ContentCardMetadata = {
@@ -105,9 +113,13 @@ export function ContentCard({ item, onClick, tenantId }: ContentCardProps) {
               className="h-full w-full object-cover"
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-emerald-900/80 to-black">
+            <div
+              className={`flex h-full w-full items-center justify-center bg-gradient-to-br to-black ${
+                isRental ? 'from-slate-800/90' : 'from-emerald-900/80'
+              }`}
+            >
               <span className="text-5xl opacity-70" aria-hidden>
-                🎟️
+                {getContentCardPlaceholderEmoji(item.category)}
               </span>
             </div>
           )}
@@ -142,7 +154,7 @@ export function ContentCard({ item, onClick, tenantId }: ContentCardProps) {
           <div className="mb-1.5 flex max-w-full flex-wrap gap-1.5">
             {item.category ? (
               <span className="w-fit rounded bg-accent/90 px-2 py-0.5 text-[11px] font-medium text-bg">
-                {getCategoryLabel(item.category)}
+                {categoryBadge}
               </span>
             ) : null}
             {item.subcategoryName ? (
@@ -155,17 +167,16 @@ export function ContentCard({ item, onClick, tenantId }: ContentCardProps) {
             {item.title}
           </p>
           <div className="mt-1 flex items-center gap-3 text-[12px] text-white/80">
-            <span>{dateLabel}</span>
+            {dateLabel ? <span>{dateLabel}</span> : null}
             <span className="truncate">{locationLabel}</span>
           </div>
-          {item.producerName ? (
-            <ProducerMeta
-              producerName={item.producerName}
-              className="mt-1"
-            />
+          {isRental ? (
+            <p className="mt-1 text-[11px] font-medium text-white/70">{RENTAL_CARD_CTA}</p>
+          ) : item.producerName ? (
+            <ProducerMeta producerName={item.producerName} className="mt-1" />
           ) : null}
           <div className="mt-1 flex flex-wrap items-center gap-2">
-            <PriceBadge fromPrice={item.fromPrice} />
+            <PriceBadge fromPrice={isRental ? null : item.fromPrice} />
             {item.ratingAvg != null && item.ratingAvg > 0 ? (
               <span className="text-xs text-accent">★ {item.ratingAvg.toFixed(1)}</span>
             ) : null}

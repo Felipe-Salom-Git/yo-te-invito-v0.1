@@ -35,6 +35,22 @@ export default function AdminRentalLocalDetailPage() {
         <>
           <SectionTitle>{location.name}</SectionTitle>
           <p className="mt-2 text-text-muted">{location.address ?? 'Sin dirección'}</p>
+          {(location.whatsappPhone || location.contactPhone) && (
+            <dl className="mt-3 space-y-1 text-sm">
+              {location.contactPhone && (
+                <div>
+                  <dt className="inline text-text-muted">Teléfono: </dt>
+                  <dd className="inline text-text">{location.contactPhone}</dd>
+                </div>
+              )}
+              {location.whatsappPhone && (
+                <div>
+                  <dt className="inline text-text-muted">WhatsApp: </dt>
+                  <dd className="inline text-text">{location.whatsappPhone}</dd>
+                </div>
+              )}
+            </dl>
+          )}
           <div className="mt-3">
             <p className="text-sm font-medium text-text">Horario de atención</p>
             <RentalOpeningHoursDisplay

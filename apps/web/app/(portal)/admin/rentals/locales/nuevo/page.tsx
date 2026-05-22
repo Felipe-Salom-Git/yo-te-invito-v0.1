@@ -10,6 +10,11 @@ import { PageContainer, SectionTitle, Button, Input, useToast } from '@/componen
 import { getErrorMessage } from '@/lib/errors';
 import { OpeningHoursEditor } from '@/components/forms/OpeningHoursEditor';
 import {
+  EMPTY_RENTAL_CONTACT,
+  RentalLocationContactFields,
+  rentalContactPayload,
+} from '@/components/rentals/RentalLocationContactFields';
+import {
   EMPTY_LOCATION_VALUE,
   RentalLocationFields,
   rentalLocationPayloadFromLocationValue,
@@ -27,6 +32,7 @@ export default function AdminRentalLocalNuevoPage() {
   const [location, setLocation] = useState<LocationValue>(EMPTY_LOCATION_VALUE);
   const [openingHours, setOpeningHours] = useState(() => createEmptyRentalOpeningHours());
   const [openingHoursNote, setOpeningHoursNote] = useState('');
+  const [contact, setContact] = useState(EMPTY_RENTAL_CONTACT);
   const [locationError, setLocationError] = useState<string | null>(null);
 
   const createMutation = useMutation({
@@ -38,6 +44,7 @@ export default function AdminRentalLocalNuevoPage() {
         address: geo.address,
         openingHours,
         openingHoursNote: openingHoursNote.trim() || null,
+        ...rentalContactPayload(contact),
         geoLat: geo.geoLat,
         geoLng: geo.geoLng,
       });
@@ -83,6 +90,8 @@ export default function AdminRentalLocalNuevoPage() {
           note={openingHoursNote}
           onNoteChange={setOpeningHoursNote}
         />
+
+        <RentalLocationContactFields value={contact} onChange={setContact} />
 
         <div>
           <Button type="submit" disabled={createMutation.isPending}>

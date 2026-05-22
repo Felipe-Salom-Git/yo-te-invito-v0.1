@@ -2,6 +2,12 @@
  * Category gateway — editorial poster screen (post-splash).
  */
 
+import {
+  RENTAL_GATEWAY_DESCRIPTION,
+  RENTAL_GATEWAY_IMAGE,
+  RENTAL_GATEWAY_IMAGE_ALT,
+} from '@/lib/rentals/publicCopy';
+
 export type CategoryGatewayId = 'event' | 'gastro' | 'rental' | 'excursion';
 
 export interface CategoryGatewayOption {
@@ -41,10 +47,9 @@ export const CATEGORY_GATEWAY_OPTIONS: CategoryGatewayOption[] = [
   {
     id: 'rental',
     title: 'EQUIPOS Y RENTALS',
-    description: 'ALQUILER DE AUTOS, BICIS, KAYAKS, EQUIPOS Y MUCHO MÁS.',
-    imageSrc:
-      'https://images.unsplash.com/photo-1527004013197-933c4a06eafd?auto=format&fit=crop&w=800&q=80',
-    imageAlt: 'Kayaks y equipos de aventura en el lago',
+    description: RENTAL_GATEWAY_DESCRIPTION,
+    imageSrc: RENTAL_GATEWAY_IMAGE,
+    imageAlt: RENTAL_GATEWAY_IMAGE_ALT,
   },
   {
     id: 'excursion',

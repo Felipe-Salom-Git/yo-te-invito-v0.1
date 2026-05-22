@@ -56,8 +56,11 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 
 - [x] Admin: locales + productos por local, horarios estructurados, imágenes header/galería
 - [x] Detalle público: hero con cover, galería miniaturas + modal, tarjetas local/WhatsApp (sin layout evento)
-- [ ] WhatsApp: número real por local o config (hoy hardcoded demo)
-- [ ] Subcategorías rental en explore/home si el producto lo prioriza
+- [x] WhatsApp: número real por local (`whatsappPhone` en `RentalLocation`, CTA público sin fallback demo)
+- [x] Cards públicas discovery: badge «Alquiler», local/subcategoría, sin fecha/entradas (`contentCardPresentation.ts`)
+- [x] Subcategorías rental en explore/home/categoría (`seed:subcategories`, filtros explore, `SubcategoryRail`, cards con `subcategoryName`)
+- [x] Auditoría anti-alojamiento rentals (`lib/rentals/publicCopy.ts`, gateway Unsplash kayaks, sin 🏠 en hero)
+- [x] Detalle público mobile (`RentalProductDetailContent`, `RentalMobileStickyCta`, CTA «Consultar disponibilidad», horario solo en `RentalLocalCard`, galería sin duplicar cover)
 
 ---
 

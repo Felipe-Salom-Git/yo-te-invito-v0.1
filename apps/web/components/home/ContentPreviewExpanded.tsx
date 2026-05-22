@@ -1,7 +1,13 @@
 'use client';
 
 import type { ContentCardItem } from './ContentCard';
-import { getCategoryLabel } from '@/lib/home/contentRoutes';
+import {
+  getContentCardCategoryBadge,
+  getContentCardLocationLine,
+  getContentCardPlaceholderEmoji,
+  isRentalContent,
+  RENTAL_CARD_CTA,
+} from '@/lib/home/contentCardPresentation';
 
 export interface ContentPreviewExpandedProps {
   item: ContentCardItem;
@@ -12,15 +18,24 @@ export interface ContentPreviewExpandedProps {
 /** Highlights block — derived from available metadata (no invented claims) */
 function ContentHighlights({ item }: { item: ContentCardItem }) {
   const bullets: string[] = [];
+  const isRental = isRentalContent(item);
 
-  if (item.city) bullets.push(item.city);
-  if (item.venueName && item.venueName !== item.city) bullets.push(item.venueName);
-  if (item.startAt) {
-    const d = new Date(item.startAt);
-    bullets.push(d.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' }));
+  if (isRental) {
+    const location = getContentCardLocationLine(item);
+    if (location !== '—') bullets.push(location);
+    if (item.subcategoryName) bullets.push(item.subcategoryName);
+    bullets.push(RENTAL_CARD_CTA);
+  } else {
+    if (item.city) bullets.push(item.city);
+    if (item.venueName && item.venueName !== item.city) bullets.push(item.venueName);
+    if (item.startAt) {
+      const d = new Date(item.startAt);
+      bullets.push(d.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' }));
+    }
   }
+
   if (item.category) {
-    bullets.push(getCategoryLabel(item.category));
+    bullets.push(getContentCardCategoryBadge(item.category));
   }
   if (item.ratingAvg != null && item.ratingAvg > 0) {
     bullets.push(`★ ${item.ratingAvg.toFixed(1)}`);
@@ -46,25 +61,16 @@ function ContentHighlights({ item }: { item: ContentCardItem }) {
 }
 
 /** Location/venue summary block */
-function LocationSummary({
-  venueName,
-  city,
-}: {
-  venueName?: string | null;
-  city?: string | null;
-}) {
-  const primary = venueName ?? city ?? null;
-  if (!primary) return null;
+function LocationSummary({ item }: { item: ContentCardItem }) {
+  const line = getContentCardLocationLine(item);
+  if (line === '—') return null;
 
   return (
     <div>
       <h4 className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-white/60">
-        Ubicación
+        {isRentalContent(item) ? 'Local' : 'Ubicación'}
       </h4>
-      <p className="text-sm text-white/90">
-        {primary}
-        {city && venueName && venueName !== city ? ` · ${city}` : null}
-      </p>
+      <p className="text-sm text-white/90">{line}</p>
     </div>
   );
 }
@@ -102,7 +108,7 @@ export function ContentPreviewExpanded({
 
       {/* Two-column: Location + Reviews */}
       <div className="grid gap-4 sm:grid-cols-2">
-        <LocationSummary venueName={item.venueName} city={item.city} />
+        <LocationSummary item={item} />
         <ReviewSummary ratingAvg={item.ratingAvg} ratingCount={item.ratingCount} />
       </div>
 
@@ -129,17 +135,19 @@ export function ContentPreviewExpanded({
                     />
                   ) : (
                     <div className="flex h-full items-center justify-center bg-emerald-900/30 text-xl opacity-60">
-                      🎟️
+                      {getContentCardPlaceholderEmoji(sim.category)}
                     </div>
                   )}
                 </div>
                 <div className="p-2 text-left">
                   <p className="line-clamp-2 text-xs font-medium text-white">{sim.title}</p>
-                  {sim.fromPrice != null && Number(sim.fromPrice) > 0 && (
-                    <p className="mt-0.5 text-xs text-accent">
-                      Desde ${Number(sim.fromPrice).toLocaleString('es-AR')}
-                    </p>
-                  )}
+                  {!isRentalContent(sim) &&
+                    sim.fromPrice != null &&
+                    Number(sim.fromPrice) > 0 && (
+                      <p className="mt-0.5 text-xs text-accent">
+                        Desde ${Number(sim.fromPrice).toLocaleString('es-AR')}
+                      </p>
+                    )}
                 </div>
               </button>
             ))}

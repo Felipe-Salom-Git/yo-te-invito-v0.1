@@ -64,7 +64,7 @@ function getCtaLabels(category?: string): { primary: string; secondary: string }
     case 'excursion':
       return { primary: 'Explorar', secondary: 'Ver categoría' };
     case 'rental':
-      return { primary: 'Ver detalle', secondary: 'Más información' };
+      return { primary: 'Consultar disponibilidad', secondary: 'Ver detalle' };
     default:
       return { primary: 'Comprar entrada', secondary: 'Más información' };
   }

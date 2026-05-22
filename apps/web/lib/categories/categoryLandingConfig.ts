@@ -1,5 +1,9 @@
 import type { CategoryGatewayId } from '@/lib/home/categoryGatewayConfig';
 import { getCategoryGatewayHref } from '@/lib/home/categoryGatewayConfig';
+import {
+  RENTAL_PUBLIC_SUBTITLE,
+  RENTAL_PUBLIC_TAGLINE,
+} from '@/lib/rentals/publicCopy';
 import type { ContentMainCategory } from '@/repositories/interfaces';
 
 export const CATEGORY_GATEWAY_IDS: CategoryGatewayId[] = [
@@ -32,7 +36,7 @@ export const CROSS_CATEGORY_RAIL_META: Record<CategoryGatewayId, CrossCategoryRa
   rental: {
     category: 'rental',
     title: 'Equipos y Rentals destacados',
-    subtitle: 'Alquileres para moverte, equiparte y vivir la experiencia.',
+    subtitle: RENTAL_PUBLIC_SUBTITLE,
     href: getCategoryGatewayHref('rental'),
   },
   excursion: {
@@ -82,9 +86,8 @@ export const CATEGORY_LANDING_META: Record<CategoryGatewayId, CategoryLandingMet
   rental: {
     id: 'rental',
     title: 'EQUIPOS Y RENTALS',
-    subtitle: 'Movilidad, equipos y aventura',
-    editorialDescription:
-      'Alquiler de autos, bicis, kayaks, equipos de nieve y más — sin alojamientos.',
+    subtitle: RENTAL_PUBLIC_SUBTITLE,
+    editorialDescription: RENTAL_PUBLIC_TAGLINE,
   },
   excursion: {
     id: 'excursion',

@@ -32,7 +32,7 @@ HTTP → Controller (thin) → ZodValidationPipe → Service → Prisma → Post
 
 ## 3. Rentals module
 
-**Model `RentalLocation`**: name, address, `openingHours` (JSON), `openingHoursNote`, geo, `isActive`, products → `Event[]`.
+**Model `RentalLocation`**: name, address, `openingHours` (JSON), `openingHoursNote`, geo, `isActive`, contact (`contactPhone`, `whatsappPhone`, `contactEmail`, `websiteUrl`), products → `Event[]`.
 
 **Products**: `Event` with `category: rental`, `rentalLocationId`, `subcategoryId`, `coverImageUrl` (header), `EventMedia` (gallery).
 
@@ -50,7 +50,7 @@ HTTP → Controller (thin) → ZodValidationPipe → Service → Prisma → Post
 | POST | `/admin/rental-locations/:id/products` |
 | PATCH | `/admin/rental-locations/:id/products/:productId` |
 
-**Public event detail**: `GET /public/events/:id` includes nested `rentalLocation` (opening hours parsed via `parseRentalOpeningHours`).
+**Public event detail**: `GET /public/events/:id` includes nested `rentalLocation` (opening hours parsed via `parseRentalOpeningHours`, `whatsappPhone` for public CTA).
 
 **Service**: `RentalLocationsService` — CRUD locales, create/update products, image normalization (`rental-product-images.util.ts`).
 

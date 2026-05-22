@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { RENTAL_DETAIL_SECTION_TITLE } from '@/lib/rentals/rentalDetailUi';
 
 const PREVIEW_MAX_HEIGHT_PX = 260;
 
@@ -51,7 +52,7 @@ export function RentalDescriptionBlock({
   return (
     <>
       <section className="min-w-0">
-        <h2 className="text-lg font-semibold text-white">Detalle</h2>
+        <h2 className={RENTAL_DETAIL_SECTION_TITLE}>Detalle del producto</h2>
         <div
           ref={previewRef}
           className="mt-3 max-h-[220px] overflow-hidden text-sm leading-relaxed text-white/80 sm:max-h-[260px] sm:text-base"

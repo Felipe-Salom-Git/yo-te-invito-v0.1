@@ -2,7 +2,16 @@
 
 import { useEffect, useCallback, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getContentDetailHref, getCategoryLabel } from '@/lib/home/contentRoutes';
+import { getContentDetailHref } from '@/lib/home/contentRoutes';
+import {
+  getContentCardCategoryBadge,
+  getContentCardPlaceholderEmoji,
+  getContentPreviewDateLabel,
+  getContentPreviewLocationLabel,
+  getContentPreviewPrimaryCta,
+  getContentPreviewShortDateLabel,
+  isRentalContent,
+} from '@/lib/home/contentCardPresentation';
 import type { ContentCardItem } from './ContentCard';
 import { ContentPreviewMeta } from './ContentPreviewMeta';
 import { ContentPreviewActions } from './ContentPreviewActions';
@@ -119,26 +128,21 @@ function ContentPreviewContent({
   onSelectItem?: (item: ContentCardItem) => void;
 }) {
   const detailHref = getContentDetailHref(item);
-  const categoryLabel = getCategoryLabel(item.category);
+  const isRental = isRentalContent(item);
+  const categoryLabel = getContentCardCategoryBadge(item.category);
   const filteredSimilar = similarItems.filter((s) => s.id !== item.id);
 
-  const dateLabel = item.startAt
-    ? new Date(item.startAt).toLocaleDateString('es-AR', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-      })
-    : null;
-
-  const locationLabel = [item.city, item.venueName].filter(Boolean).join(' · ') || null;
+  const dateLabel = getContentPreviewDateLabel(item);
+  const locationLabel = getContentPreviewLocationLabel(item);
 
   const fromPrice =
-    item.fromPrice != null && Number(item.fromPrice) > 0 ? Number(item.fromPrice) : null;
+    !isRental && item.fromPrice != null && Number(item.fromPrice) > 0
+      ? Number(item.fromPrice)
+      : null;
   const priceLabel = fromPrice != null ? `Desde $${fromPrice.toLocaleString('es-AR')}` : null;
 
-  const shortDateLabel = item.startAt
-    ? new Date(item.startAt).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })
-    : null;
+  const shortDateLabel = getContentPreviewShortDateLabel(item);
+  const primaryCtaLabel = getContentPreviewPrimaryCta(item.category);
 
   const hasMeta =
     dateLabel ||
@@ -173,7 +177,7 @@ function ContentPreviewContent({
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-emerald-900/50 via-bg-muted to-black">
             <span className="text-6xl opacity-50" aria-hidden>
-              🎟️
+              {getContentCardPlaceholderEmoji(item.category)}
             </span>
           </div>
         )}
@@ -230,10 +234,12 @@ function ContentPreviewContent({
           </p>
         )}
 
-        {/* Producer/venue */}
-        {(item.producerName || item.venueName) && (
+        {/* Producer / local */}
+        {(isRental ? item.venueName : item.producerName || item.venueName) && (
           <p className="mt-2 text-sm text-white/70">
-            {[item.producerName, item.venueName].filter(Boolean).join(' · ')}
+            {isRental
+              ? [item.venueName, item.city].filter(Boolean).join(' · ')
+              : [item.producerName, item.venueName].filter(Boolean).join(' · ')}
           </p>
         )}
 
@@ -245,6 +251,7 @@ function ContentPreviewContent({
             onExpand={onExpand}
             canExpand={filteredSimilar.length > 0}
             priceLabel={priceLabel}
+            primaryCtaLabel={primaryCtaLabel}
           />
         </div>
 

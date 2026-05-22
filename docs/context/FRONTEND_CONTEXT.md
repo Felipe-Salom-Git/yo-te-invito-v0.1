@@ -94,13 +94,15 @@ ApiClient → HTTP (NEXT_PUBLIC_API_BASE_URL)
 
 ### Rental public detail (`/rentals/[id]`)
 
-Uses **`RentalProductDetailContent`** (not `PlaceDetailView`):
+Uses **`RentalProductDetailContent`** (not `PlaceDetailView`). Shared UI tokens: `lib/rentals/rentalDetailUi.ts`, copy/CTA: `lib/rentals/publicCopy.ts`, WhatsApp: `lib/rentals/whatsapp.ts`, galería: `lib/rentals/productGallery.ts`.
 
-- **`RentalProductHero`**: cover image as full-width background behind title, description, chips (Alquiler / subcategoría / local). No date/time chips.
-- **Galería**: only **additional** images (`event.media`), thumbnails grid; click opens modal carousel (`RentalGalleryThumbnails`). Header/cover image is **not** duplicated in gallery.
-- **Sidebar**: `RentalContactCard` (WhatsApp), `RentalLocalCard` (address, structured opening hours, “Ver ubicación”).
-- Reviews V2 (`usePublicEntityReviews`, `ReviewAspectBreakdown`) + related products below.
-- Favorites / “Lo espero” via `EventEngagementRow`.
+- **`RentalProductHero`**: cover as full-width background; title + summary + chips (Alquiler / subcategoría / local). Shorter hero on mobile; no date/time chips; engagement row **not** overlaid on hero.
+- **Layout**: desktop — main column (descripción, galería) + sticky sidebar (contacto, local). Mobile — aside first (Disponibilidad + Local), then descripción/galería; `EventEngagementRow` below breadcrumbs (mobile) or above descripción (`sm+`).
+- **CTA**: `RentalContactCard` + fixed **`RentalMobileStickyCta`** (`lg:hidden`) when `whatsappPhone` resolves — button **«Consultar disponibilidad»**, full-width, `min-h-[48px]`; page `pb-24` on mobile when sticky is shown. Sin fallback demo si no hay número.
+- **Galería**: only **additional** images (`buildRentalGalleryOnlyImages`); `RentalGalleryThumbnails` + modal. Cover **not** duplicated.
+- **`RentalLocalCard`**: address, **horario de atención** solo si hay datos (`hasRentalOpeningHoursContent`), “Ver ubicación” (full-width button on mobile). No event-style schedule section elsewhere.
+- **`RentalDescriptionBlock`**: «Detalle del producto»; hidden if empty (no «Lo que incluye» block on rentals).
+- Reviews V2 + related products; favorites / “Lo espero” via `EventEngagementRow`.
 
 ### Rental admin
 
@@ -152,7 +154,7 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`):
 | HomeHero, ContentRail, ContentCard | `components/home/` |
 | ContentPreviewModal | `components/home/` |
 | EventHeroPremium, EventScheduleSection | `components/events/` (events/gastro/excursion/hotel) |
-| **RentalProductDetailContent**, **RentalProductHero**, **RentalGalleryThumbnails**, **RentalLocalCard**, **RentalContactCard** | `components/rentals/` |
+| **RentalProductDetailContent**, **RentalProductHero**, **RentalGalleryThumbnails**, **RentalLocalCard**, **RentalContactCard**, **RentalMobileStickyCta**, **RentalDescriptionBlock** | `components/rentals/` |
 | PlaceDetailView | `components/places/` (non-rental) |
 | TicketStudioClient | `components/producer/ticket-studio/` |
 | OpeningHoursEditor, RentalProductImagesForm | `components/forms/`, `components/rentals/` |
@@ -216,6 +218,8 @@ Doc: `docs/tickets/TICKET_CANVAS_STUDIO.md`, `docs/tickets/TICKET_TEMPLATE_QR_ZO
 ## 8c. Descubrimiento público — cerrado
 
 Bloque checklist V2 cerrado (Slices 1–8). Resumen: gateway → categorías/home/explore; sin hotel en discovery principal; rentals sin copy de alojamiento; visibilidad eventos vencida en API. Audit: `docs/audits/PUBLIC_DISCOVERY_AUDIT.md`.
+
+**Rentals V2 (checklist § Rentals):** WhatsApp por local, cards discovery, subcategorías, anti-alojamiento, detalle mobile — ver `CONTEXT_PENDIENTES.md` § E.
 
 ---
 

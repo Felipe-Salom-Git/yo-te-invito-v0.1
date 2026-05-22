@@ -40,6 +40,33 @@ export class RentalLocationsService {
     return t === '' ? null : t.slice(0, 220);
   }
 
+  private normalizePhone(
+    value: string | null | undefined,
+  ): string | null | undefined {
+    if (value === undefined) return undefined;
+    if (value == null) return null;
+    const t = value.trim();
+    return t === '' ? null : t.slice(0, 40);
+  }
+
+  private normalizeEmail(
+    value: string | null | undefined,
+  ): string | null | undefined {
+    if (value === undefined) return undefined;
+    if (value == null) return null;
+    const t = value.trim();
+    return t === '' ? null : t.slice(0, 200);
+  }
+
+  private normalizeUrl(
+    value: string | null | undefined,
+  ): string | null | undefined {
+    if (value === undefined) return undefined;
+    if (value == null) return null;
+    const t = value.trim();
+    return t === '' ? null : t.slice(0, 500);
+  }
+
   private toPrismaEventStatus(status?: string): EventStatus {
     const key = (status ?? 'approved').toLowerCase();
     const map: Record<string, EventStatus> = {
@@ -73,6 +100,10 @@ export class RentalLocationsService {
       address: row.address,
       openingHours: this.readOpeningHours(row),
       openingHoursNote: row.openingHoursNote,
+      contactPhone: row.contactPhone,
+      whatsappPhone: row.whatsappPhone,
+      contactEmail: row.contactEmail,
+      websiteUrl: row.websiteUrl,
       geoLat: row.geoLat,
       geoLng: row.geoLng,
       isActive: row.isActive,
@@ -88,6 +119,7 @@ export class RentalLocationsService {
       address: row.address,
       openingHours: this.readOpeningHours(row),
       openingHoursNote: row.openingHoursNote,
+      whatsappPhone: row.whatsappPhone,
       geoLat: row.geoLat,
       geoLng: row.geoLng,
     };
@@ -173,6 +205,10 @@ export class RentalLocationsService {
         address: body.address?.trim() || null,
         openingHours: this.writeOpeningHours(body.openingHours ?? null),
         openingHoursNote: body.openingHoursNote?.trim() || null,
+        contactPhone: this.normalizePhone(body.contactPhone) ?? null,
+        whatsappPhone: this.normalizePhone(body.whatsappPhone) ?? null,
+        contactEmail: this.normalizeEmail(body.contactEmail) ?? null,
+        websiteUrl: this.normalizeUrl(body.websiteUrl) ?? null,
         geoLat: body.geoLat ?? null,
         geoLng: body.geoLng ?? null,
         isActive: body.isActive ?? true,
@@ -196,6 +232,18 @@ export class RentalLocationsService {
         }),
         ...(body.openingHoursNote !== undefined && {
           openingHoursNote: body.openingHoursNote?.trim() || null,
+        }),
+        ...(body.contactPhone !== undefined && {
+          contactPhone: this.normalizePhone(body.contactPhone) ?? null,
+        }),
+        ...(body.whatsappPhone !== undefined && {
+          whatsappPhone: this.normalizePhone(body.whatsappPhone) ?? null,
+        }),
+        ...(body.contactEmail !== undefined && {
+          contactEmail: this.normalizeEmail(body.contactEmail) ?? null,
+        }),
+        ...(body.websiteUrl !== undefined && {
+          websiteUrl: this.normalizeUrl(body.websiteUrl) ?? null,
         }),
         ...(body.geoLat !== undefined && { geoLat: body.geoLat ?? null }),
         ...(body.geoLng !== undefined && { geoLng: body.geoLng ?? null }),

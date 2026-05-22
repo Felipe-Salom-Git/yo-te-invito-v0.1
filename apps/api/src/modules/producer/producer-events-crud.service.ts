@@ -151,6 +151,7 @@ export class ProducerEventsCrudService {
             address: event.rentalLocation.address,
             openingHours: parseRentalOpeningHours(event.rentalLocation.openingHours),
             openingHoursNote: event.rentalLocation.openingHoursNote,
+            whatsappPhone: event.rentalLocation.whatsappPhone,
             geoLat: event.rentalLocation.geoLat,
             geoLng: event.rentalLocation.geoLng,
           }
@@ -306,6 +307,7 @@ export class ProducerEventsCrudService {
             address: event.rentalLocation.address,
             openingHours: parseRentalOpeningHours(event.rentalLocation.openingHours),
             openingHoursNote: event.rentalLocation.openingHoursNote,
+            whatsappPhone: event.rentalLocation.whatsappPhone,
             geoLat: event.rentalLocation.geoLat,
             geoLng: event.rentalLocation.geoLng,
           }
@@ -407,6 +409,7 @@ export class ProducerEventsCrudService {
             address: event.rentalLocation.address,
             openingHours: parseRentalOpeningHours(event.rentalLocation.openingHours),
             openingHoursNote: event.rentalLocation.openingHoursNote,
+            whatsappPhone: event.rentalLocation.whatsappPhone,
             geoLat: event.rentalLocation.geoLat,
             geoLng: event.rentalLocation.geoLng,
           }

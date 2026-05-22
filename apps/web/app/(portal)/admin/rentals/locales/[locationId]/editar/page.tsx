@@ -10,6 +10,12 @@ import { PageContainer, SectionTitle, Button, Input, useToast } from '@/componen
 import { getErrorMessage } from '@/lib/errors';
 import { OpeningHoursEditor } from '@/components/forms/OpeningHoursEditor';
 import {
+  EMPTY_RENTAL_CONTACT,
+  RentalLocationContactFields,
+  rentalContactFromLocation,
+  rentalContactPayload,
+} from '@/components/rentals/RentalLocationContactFields';
+import {
   RentalLocationFields,
   locationValueFromRentalLocation,
   rentalLocationPayloadFromLocationValue,
@@ -42,6 +48,7 @@ export default function AdminRentalLocalEditarPage() {
   });
   const [openingHours, setOpeningHours] = useState(() => createEmptyRentalOpeningHours());
   const [openingHoursNote, setOpeningHoursNote] = useState('');
+  const [contact, setContact] = useState(EMPTY_RENTAL_CONTACT);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
 
@@ -51,6 +58,7 @@ export default function AdminRentalLocalEditarPage() {
       setLocationValue(locationValueFromRentalLocation(location));
       setOpeningHours(location.openingHours ?? createEmptyRentalOpeningHours());
       setOpeningHoursNote(location.openingHoursNote ?? '');
+      setContact(rentalContactFromLocation(location));
       setHydrated(true);
     }
   }, [location, hydrated]);
@@ -63,6 +71,7 @@ export default function AdminRentalLocalEditarPage() {
         address: geo.address,
         openingHours,
         openingHoursNote: openingHoursNote.trim() || null,
+        ...rentalContactPayload(contact),
         geoLat: geo.geoLat,
         geoLng: geo.geoLng,
       });
@@ -119,6 +128,8 @@ export default function AdminRentalLocalEditarPage() {
           note={openingHoursNote}
           onNoteChange={setOpeningHoursNote}
         />
+
+        <RentalLocationContactFields value={contact} onChange={setContact} />
 
         <div>
           <Button type="submit" disabled={updateMutation.isPending}>

@@ -137,18 +137,39 @@ export class PublicEventsService {
     where: Prisma.EventWhereInput,
     query: { tenantId: string; category?: string; subcategoryId?: string; subcategorySlug?: string },
   ): void {
+    const category = query.category?.trim();
     if (query.subcategoryId?.trim()) {
-      where.subcategoryId = query.subcategoryId.trim();
+      const id = query.subcategoryId.trim();
+      if (category) {
+        where.subcategory = {
+          id,
+          category,
+          tenantId: query.tenantId,
+          isActive: true,
+        };
+      } else {
+        where.subcategoryId = id;
+      }
       return;
     }
-    if (query.subcategorySlug?.trim() && query.category?.trim()) {
+    if (query.subcategorySlug?.trim() && category) {
       where.subcategory = {
         slug: query.subcategorySlug.trim(),
-        category: query.category.trim(),
+        category,
         tenantId: query.tenantId,
         isActive: true,
       };
     }
+  }
+
+  private searchOrderBy(
+    category?: string,
+  ): Prisma.EventOrderByWithRelationInput | Prisma.EventOrderByWithRelationInput[] {
+    const c = category?.trim();
+    if (c && c !== 'event') {
+      return { createdAt: 'desc' };
+    }
+    return { startAt: 'asc' };
   }
 
   private applyCategoryFilter(base: Prisma.EventWhereInput, category?: string): void {
@@ -421,7 +442,7 @@ export class PublicEventsService {
       this.prisma.event.findMany({
         where,
         select: summarySelect,
-        orderBy: { startAt: 'asc' },
+        orderBy: this.searchOrderBy(query.category),
         skip: (query.page - 1) * query.limit,
         take: query.limit,
       }),
@@ -723,6 +744,7 @@ export class PublicEventsService {
             address: event.rentalLocation.address,
             openingHours: parseRentalOpeningHours(event.rentalLocation.openingHours),
             openingHoursNote: event.rentalLocation.openingHoursNote,
+            whatsappPhone: event.rentalLocation.whatsappPhone,
             geoLat: event.rentalLocation.geoLat,
             geoLng: event.rentalLocation.geoLng,
           }

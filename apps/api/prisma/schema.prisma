@@ -170,6 +170,10 @@ model RentalLocation {
   address       String?
   openingHours     Json?
   openingHoursNote String?
+  contactPhone     String?
+  whatsappPhone    String?
+  contactEmail     String?
+  websiteUrl       String?
   geoLat           Float?
   geoLng    Float?
   isActive  Boolean   @default(true)

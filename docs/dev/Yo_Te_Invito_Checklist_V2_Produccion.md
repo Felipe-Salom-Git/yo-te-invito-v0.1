@@ -56,11 +56,11 @@
 
 ## Rentals / Equipos y Rentals
 
-- [ ] Configurar WhatsApp real por local.
-- [ ] Pulir cards públicas de rentals.
-- [ ] Integrar subcategorías rental en explore/home.
-- [ ] Confirmar que rentals no use imágenes ni textos de alojamientos.
-- [ ] Revisar detalle rental final en mobile.
+- [x] Configurar WhatsApp real por local.
+- [x] Pulir cards públicas de rentals.
+- [x] Integrar subcategorías rental en explore/home.
+- [x] Confirmar que rentals no use imágenes ni textos de alojamientos.
+- [x] Revisar detalle rental final en mobile.
 
 ## Admin operativo
 

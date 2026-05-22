@@ -21,6 +21,8 @@ export interface ExploreFiltersState {
   dateTo: string;
   category: string;
   subcategoryId: string;
+  /** Slug from URL (`?subcategory=`); resolved to id when subcategories load */
+  subcategorySlug: string;
   page: number;
 }
 
@@ -31,6 +33,7 @@ export const EXPLORE_DEFAULT_FILTERS: ExploreFiltersState = {
   dateTo: '',
   category: '',
   subcategoryId: '',
+  subcategorySlug: '',
   page: 1,
 };
 
@@ -47,6 +50,8 @@ export function parseExploreSearchParams(params: URLSearchParams): ExploreFilter
     dateTo: params.get('to') ?? params.get('dateTo') ?? '',
     category: params.get('category') ?? '',
     subcategoryId: params.get('subcategoryId') ?? '',
+    subcategorySlug:
+      params.get('subcategory') ?? params.get('subcategorySlug') ?? '',
     page: Number.isFinite(pageRaw) && pageRaw >= 1 ? pageRaw : 1,
   };
 }
@@ -62,6 +67,11 @@ export function buildExploreSearchParams(filters: ExploreFiltersState): URLSearc
   if (filters.category.trim()) qs.set('category', filters.category.trim());
   if (filters.subcategoryId.trim() && isExploreMainCategory(filters.category)) {
     qs.set('subcategoryId', filters.subcategoryId.trim());
+  } else if (
+    filters.subcategorySlug.trim() &&
+    isExploreMainCategory(filters.category)
+  ) {
+    qs.set('subcategory', filters.subcategorySlug.trim());
   }
   if (filters.page > 1) qs.set('page', String(filters.page));
   return qs;

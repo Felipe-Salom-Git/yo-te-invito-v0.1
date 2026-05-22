@@ -110,6 +110,10 @@ export interface RentalLocationsRepo {
     address?: string | null;
     openingHours?: import('@yo-te-invito/shared').RentalOpeningHours | null;
     openingHoursNote?: string | null;
+    contactPhone?: string | null;
+    whatsappPhone?: string | null;
+    contactEmail?: string | null;
+    websiteUrl?: string | null;
     geoLat?: number | null;
     geoLng?: number | null;
     isActive?: boolean;
@@ -122,6 +126,10 @@ export interface RentalLocationsRepo {
       address?: string | null;
       openingHours?: import('@yo-te-invito/shared').RentalOpeningHours | null;
       openingHoursNote?: string | null;
+      contactPhone?: string | null;
+      whatsappPhone?: string | null;
+      contactEmail?: string | null;
+      websiteUrl?: string | null;
       geoLat?: number | null;
       geoLng?: number | null;
       isActive?: boolean;

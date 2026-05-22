@@ -12,6 +12,7 @@ import { CategoryHeroBanner } from './CategoryHeroBanner';
 import { CategoryLandingEditorial } from './CategoryLandingEditorial';
 import { useCategoryBanner } from '@/lib/query/useCategoryBanner';
 import { toContentMainCategory } from '@/lib/categories/categoryLandingConfig';
+import { RENTAL_CATEGORY_EMPTY_MESSAGE } from '@/lib/rentals/publicCopy';
 import { GastroDiscountsRail } from '@/components/gastro/GastroDiscountsRail';
 import { EventDiscoveryContent } from '@/components/events/discovery/EventDiscoveryContent';
 
@@ -109,7 +110,9 @@ export function CategoryLandingPage({ category, subcategorySlug }: CategoryLandi
 
         {discountsSubcategoryMode ? null : isEmpty ? (
           <p className="px-4 text-center text-sm text-white/60 sm:px-6">
-            No hay contenido disponible en esta categoría por ahora.
+            {category === 'rental'
+              ? RENTAL_CATEGORY_EMPTY_MESSAGE
+              : 'No hay contenido disponible en esta categoría por ahora.'}
           </p>
         ) : (
           sections.map((section) => (
