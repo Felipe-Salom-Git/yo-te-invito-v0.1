@@ -102,19 +102,154 @@ _Bloque cerrado Slice 9 (QA 2026-05-22): alcance documentado, checklist y smokes
 
 ## Referidos
 
-- [ ] Definir reglas definitivas de comisiones.
-- [ ] Pulir flujo productor ↔ referido.
-- [ ] Pulir métricas de referidos.
-- [ ] Definir si la liquidación será manual o automática en V2.
+_Doc e implementación V2: `docs/referrals/REFERRALS_V2.md`. QA Slice 8: `smoke:referrals`, tests util `test:referral-*`._
 
-## Responsive, SEO y GEO
+- [x] Definir reglas definitivas de comisiones (Slice 1 doc — % o fijo por entrada; comisión generada; pago externo).
+- [x] Pulir flujo productor ↔ referido (propuesta → aceptación → acuerdo → link; portales `/producer/referrals`, evento referrals, `/referrer`).
+- [x] Pulir métricas de referidos (Slice 7 — KPIs productor/referido por acuerdo y evento).
+- [x] Cálculo comisión generada por venta atribuida (Slice 3 — hook pago PAID, idempotente).
+- [x] Liquidación manual V2 (Slice 6 — solicitud de pago + registro `mark-paid`; **sin automatizar transferencias**). Definición: *Liquidación manual y externa a la plataforma. Yo Te Invito registra acuerdos, atribuciones, comisiones generadas y solicitudes de pago, pero no administra ni garantiza pagos.*
+- [x] Copy/disclaimer y glosario UX en portales (§10 `REFERRALS_V2.md`; sin lenguaje de saldo/retiro/payout en UI V2).
+
+## Navbar y navegación responsive
+
+- [ ] Auditar navbar actual en desktop, tablet y mobile.
+- [ ] Definir estructura final del navbar público.
+- [ ] Convertir el botón “Eventos” en botón compacto tipo home/casita.
+- [ ] Mantener acceso principal a Explorar.
+- [ ] Agregar selector simple de ciudad visible en navbar.
+- [ ] Agrupar ciudades por provincia en el selector.
+- [ ] Mostrar solo ciudades con contenido cargado para la categoría/vista actual.
+- [ ] Mantener botón de Carro visible.
+- [ ] Mostrar badge de cantidad de ítems en el Carro cuando corresponda.
+- [ ] Pulir menú de login / usuario.
+- [ ] Simplificar menú de usuario: Inicio del portal, Mis tickets, Mi cuenta y Cerrar sesión.
+- [ ] Crear menú mobile desplegable desde esquina derecha.
+- [ ] Mover navegación de portales a menú mobile contextual.
+- [ ] Mantener sidebar de portales en desktop.
+- [ ] Adaptar navegación mobile para `/me`, `/producer`, `/admin`, `/gastro`, `/hotel` y `/referrer`.
+- [ ] Evitar que el navbar tape contenido o genere scroll horizontal.
+- [ ] Revisar comportamiento sticky/fixed en mobile.
+- [ ] Revisar accesibilidad: foco, teclado, aria-labels y cierre al tocar fuera.
+- [ ] Smoke visual en home, explore, categorías, detalle, checkout y portales.
+
+## Footer público completo
+
+- [ ] Diseñar footer público completo para home, explore, categorías y fichas públicas.
+- [ ] Agregar enlaces legales: términos, privacidad, compra/cancelación/reembolso.
+- [ ] Agregar enlaces por vertical: eventos, gastronomía, rentals, excursiones y hoteles próximamente.
+- [ ] Agregar acceso a soporte/contacto.
+- [ ] Agregar redes sociales.
+- [ ] Agregar bloque institucional breve: qué es Yo Te Invito.
+- [ ] Agregar accesos rápidos a Explorar, Categorías y Portal de usuario.
+- [ ] Agregar copy de confianza para compra segura, tickets digitales y soporte.
+- [ ] Revisar consistencia visual con branding dark premium.
+- [ ] Revisar footer responsive mobile.
+- [ ] Verificar que no duplique información crítica del navbar.
+
+## Legal y responsabilidades por perfil
+
+- [ ] Redactar términos y condiciones generales de la plataforma.
+- [ ] Redactar política de privacidad.
+- [ ] Redactar política de compra, cancelación y reembolso.
+- [ ] Redactar condiciones para productores/productoras.
+- [ ] Redactar condiciones para gastronómicos.
+- [ ] Redactar condiciones para rentals/proveedores de equipos.
+- [ ] Redactar condiciones para hoteles.
+- [ ] Redactar condiciones para referidos.
+- [ ] Redactar condiciones de transferencia de tickets.
+- [ ] Aclarar responsabilidad de la plataforma en acuerdos productor ↔ referido.
+- [ ] Aclarar que la plataforma no interviene en pagos externos entre productor y referido si la liquidación es manual.
+- [ ] Aclarar alcance de la plataforma como portal de comunicación entre partes cuando aplique.
+- [ ] Agregar links legales en footer, registro, checkout y portales.
+- [ ] Registrar versión de términos aceptada por cada usuario.
+- [ ] Preparar procedimiento interno de soporte.
+
+## Registro y onboarding por tipo de usuario
+
+- [ ] Auditar flujo actual de registro con elección de perfil.
+- [ ] Pulir formulario de registro para usuario comprador.
+- [ ] Pulir formulario de registro para productora / productor.
+- [ ] Pulir formulario de registro para gastronómico.
+- [ ] Pulir formulario de registro para rental / proveedor de equipos.
+- [ ] Pulir formulario de registro para hotel.
+- [ ] Pulir formulario de registro para referido.
+- [ ] Definir campos obligatorios y opcionales por tipo de perfil.
+- [ ] Agregar aceptación obligatoria de términos generales.
+- [ ] Agregar aceptación obligatoria de términos específicos según tipo de perfil.
+- [ ] Agregar textos claros de responsabilidad por tipo de usuario.
+- [ ] Agregar links a condiciones legales desde cada formulario.
+- [ ] Registrar versión aceptada de términos y fecha de aceptación.
+- [ ] Agregar estado visual de completitud del registro/onboarding cuando aplique.
+- [ ] Revisar mensajes de error y validaciones visibles.
+- [ ] Revisar UX mobile de registro completo.
+
+## QA responsive global
 
 - [ ] Hacer responsive polish general.
 - [ ] Revisar mobile de home, explore, detalle, checkout y portales.
+- [ ] Revisar navbar responsive en mobile real.
+- [ ] Revisar footer responsive en mobile real.
+- [ ] Revisar home pública en mobile real.
+- [ ] Revisar gateway/categorías en mobile real.
+- [ ] Revisar explore en mobile real.
+- [ ] Revisar fichas públicas de eventos en mobile real.
+- [ ] Revisar fichas públicas de gastronomía en mobile real.
+- [ ] Revisar fichas públicas de rentals en mobile real.
+- [ ] Revisar fichas públicas de excursiones en mobile real.
+- [ ] Revisar fichas públicas de hoteles en mobile real.
+- [ ] Revisar checkout en mobile real.
+- [ ] Revisar portal usuario `/me/*` en mobile real.
+- [ ] Revisar portal productor en mobile real.
+- [ ] Revisar portal admin en mobile real.
+- [ ] Revisar portal gastro en mobile real.
+- [ ] Revisar portal hotel en mobile real.
+- [ ] Revisar portal referido en mobile real.
+- [ ] Validar que no haya scroll horizontal accidental.
+- [ ] Validar que modales, menús y dropdowns cierren correctamente.
+- [ ] Validar accesibilidad básica: foco, teclado, aria-labels y contraste.
+
+## SEO y GEO
+
 - [ ] Agregar SEO metadata por ficha pública.
 - [ ] Agregar SEO por categoría.
 - [ ] Revisar GEO/localización para ciudad preferida y descubrimiento.
 - [ ] Configurar `next/image` con dominios remotos cuando haya storage.
+
+## Sistema de emails transaccionales y operativos
+
+- [ ] Auditar sistema actual de notificaciones in-app/email/push.
+- [ ] Definir matriz completa de emails por portal y tipo de evento.
+- [ ] Crear templates base de email con branding Yo Te Invito.
+- [ ] Definir layout común de email: header, contenido, CTA, soporte y footer legal.
+- [ ] Email de bienvenida para usuario comprador.
+- [ ] Email de bienvenida para productora.
+- [ ] Email de bienvenida para gastronómico.
+- [ ] Email de bienvenida para rental.
+- [ ] Email de bienvenida para hotel.
+- [ ] Email de bienvenida para referido.
+- [ ] Email de orden creada / pago pendiente.
+- [ ] Email de pago aprobado.
+- [ ] Email de ticket emitido con ticket adjunto o link al ticket.
+- [ ] Email de evento próximo / recordatorio.
+- [ ] Email de transferencia de ticket recibida.
+- [ ] Email de transferencia de ticket aceptada/rechazada/cancelada.
+- [ ] Email de evento aprobado para productora.
+- [ ] Email de evento rechazado para productora.
+- [ ] Email de nueva reseña recibida.
+- [ ] Email de respuesta oficial a reseña.
+- [ ] Email de disputa de reseña creada o actualizada.
+- [ ] Email de referido asociado a productora.
+- [ ] Email de propuesta productor ↔ referido.
+- [ ] Email de actualización de comisión/reporte de referido.
+- [ ] Email de alerta crítica para admins.
+- [ ] Email de nuevo evento pendiente para admins.
+- [ ] Email de error operativo crítico: pago, factura, webhook o scanner.
+- [ ] Panel/preferencias para activar o desactivar emails no críticos.
+- [ ] Mantener emails críticos siempre activos cuando sean necesarios por operación/legal.
+- [ ] Registrar logs de entrega de emails y reintentos.
+- [ ] Definir estrategia de reintentos ante fallo del proveedor de email.
+- [ ] Smoke test de emails principales.
 
 ## Producción técnica
 
@@ -138,14 +273,61 @@ _Bloque cerrado Slice 9 (QA 2026-05-22): alcance documentado, checklist y smokes
 - [ ] Configurar límites de peso/formato.
 - [ ] Configurar cleanup de imágenes huérfanas.
 
-## Pagos reales
+## Pagos reales y checkout productivo
 
-- [ ] Elegir proveedor de pago.
-- [ ] Implementar checkout real.
-- [ ] Implementar webhooks.
+- [ ] Elegir proveedor de pago real.
+- [ ] Definir flujo final de checkout productivo.
+- [ ] Implementar checkout real manteniendo pago demo solo en staging/dev.
+- [ ] Implementar webhooks del proveedor de pago.
 - [ ] Reconciliar pagos con órdenes/tickets.
+- [ ] Asegurar idempotencia ante webhooks repetidos.
+- [ ] Definir estados finales de pago: pendiente, aprobado, rechazado, cancelado, expirado, reembolsado.
+- [ ] Emitir tickets automáticamente cuando el pago sea aprobado.
+- [ ] Evitar doble emisión de tickets ante reintentos o webhooks duplicados.
+- [ ] Mostrar estado de pago en detalle de orden.
+- [ ] Mostrar errores claros si el pago falla o queda pendiente.
 - [ ] Definir política de reembolsos.
-- [ ] Mantener pago demo solo para staging/dev.
+- [ ] Definir comportamiento ante cancelación de evento.
+- [ ] Registrar eventos críticos de pago en auditoría/admin.
+- [ ] Notificar al comprador cuando el pago sea aprobado, rechazado o quede pendiente.
+- [ ] Notificar a admin ante errores críticos de webhook o reconciliación.
+- [ ] Smoke test checkout real: orden → pago → webhook → tickets.
+
+## Facturación automática
+
+- [ ] Definir proveedor / integración de facturación electrónica.
+- [ ] Definir datos fiscales requeridos para compradores.
+- [ ] Agregar datos fiscales opcionales/obligatorios en checkout según corresponda.
+- [ ] Validar datos fiscales antes de emitir factura.
+- [ ] Generar factura automáticamente cuando el pago sea aprobado.
+- [ ] Asociar factura a Order / Payment.
+- [ ] Guardar número, tipo, estado y URL/archivo de la factura.
+- [ ] Enviar factura por email junto al ticket o en email separado.
+- [ ] Mostrar factura descargable en detalle de orden `/me/orders/[orderId]`.
+- [ ] Mostrar factura descargable para admins.
+- [ ] Registrar estado de facturación: pendiente, emitida, fallida, anulada.
+- [ ] Manejar reintentos si falla la emisión.
+- [ ] Notificar a admin si una factura falla.
+- [ ] Definir comportamiento ante reembolso/cancelación: nota de crédito o anulación.
+- [ ] Registrar eventos de facturación en auditoría.
+- [ ] Documentar variables de entorno y credenciales del proveedor fiscal.
+- [ ] Smoke test pago aprobado → factura emitida → ticket enviado.
+
+## Checkout final: ticket + factura + email
+
+- [ ] Al aprobarse el pago, emitir tickets reales.
+- [ ] Al aprobarse el pago, emitir factura correspondiente.
+- [ ] Enviar email al comprador con resumen de compra.
+- [ ] Adjuntar o enlazar tickets comprados.
+- [ ] Adjuntar o enlazar factura.
+- [ ] Guardar historial completo en la orden.
+- [ ] Mostrar en `/me/orders/[orderId]` tickets, factura y estado de pago.
+- [ ] Mostrar en `/me/tickets` los tickets emitidos inmediatamente después del pago aprobado.
+- [ ] Asegurar idempotencia para evitar doble ticket o doble factura.
+- [ ] Notificar a admin si falla la emisión de ticket o factura.
+- [ ] Probar flujo completo comprador: checkout → pago aprobado → email → ticket → factura.
+- [ ] Probar flujo de error: pago aprobado pero factura fallida.
+- [ ] Probar flujo de error: pago aprobado pero email fallido.
 
 ## QA final
 
@@ -163,12 +345,5 @@ _Bloque cerrado Slice 9 (QA 2026-05-22): alcance documentado, checklist y smokes
 - [ ] Probar mobile real.
 - [ ] Hacer limpieza de datos de prueba antes de producción.
 
-## Legal / operación
 
-- [ ] Agregar términos y condiciones.
-- [ ] Agregar política de privacidad.
-- [ ] Agregar política de compra/cancelación/reembolso.
-- [ ] Agregar condiciones para productores/proveedores.
-- [ ] Agregar condiciones de transferencia de tickets.
-- [ ] Preparar procedimiento interno de soporte.
 

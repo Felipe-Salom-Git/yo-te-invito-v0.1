@@ -90,6 +90,19 @@ import type {
   ProducerEventAssignmentsResponse,
   FreelanceReferrerListItem,
   ProducerFreelanceReferrersParams,
+  ReferralCommercialProposalDto,
+  ReferralCommercialProposalList,
+  CreateReferralCommercialProposalInput,
+  AcceptReferralCommercialProposalResponse,
+  ReferralPaymentRequestDto,
+  ReferralPaymentRequestList,
+  CreateReferralPaymentRequestInput,
+  RejectReferralPaymentRequestInput,
+  EligibleReferralCommissionsList,
+  ProducerReferralMetricsResponse,
+  ProducerEventReferralMetricsResponse,
+  ReferrerReferralMetricsResponse,
+  ReferrerAgreementMetricsResponse,
   PlatformConfig,
   PlatformConfigRepo,
   CreatePaymentResult,
@@ -1135,6 +1148,104 @@ export class ApiRepository implements Repositories {
     },
     confirmCommissionPayout: async (commissionId: string) => {
       return this.client.post<ReferralCommission | null>(`/admin/commissions/${encodeURIComponent(commissionId)}/confirm`);
+    },
+    listProducerReferralProposals: async () => {
+      return this.client.get<ReferralCommercialProposalList>('/producer/referrals/proposals');
+    },
+    getProducerReferralProposal: async (proposalId: string) => {
+      return this.client.get<ReferralCommercialProposalDto>(
+        `/producer/referrals/proposals/${encodeURIComponent(proposalId)}`,
+      );
+    },
+    createProducerReferralProposal: async (body: CreateReferralCommercialProposalInput) => {
+      return this.client.post<ReferralCommercialProposalDto>('/producer/referrals/proposals', body);
+    },
+    cancelProducerReferralProposal: async (proposalId: string) => {
+      return this.client.post<ReferralCommercialProposalDto>(
+        `/producer/referrals/proposals/${encodeURIComponent(proposalId)}/cancel`,
+      );
+    },
+    listReferrerProposals: async () => {
+      return this.client.get<ReferralCommercialProposalList>('/referrer/proposals');
+    },
+    getReferrerProposal: async (proposalId: string) => {
+      return this.client.get<ReferralCommercialProposalDto>(
+        `/referrer/proposals/${encodeURIComponent(proposalId)}`,
+      );
+    },
+    acceptReferrerProposal: async (proposalId: string) => {
+      return this.client.post<AcceptReferralCommercialProposalResponse>(
+        `/referrer/proposals/${encodeURIComponent(proposalId)}/accept`,
+      );
+    },
+    rejectReferrerProposal: async (proposalId: string) => {
+      return this.client.post<ReferralCommercialProposalDto>(
+        `/referrer/proposals/${encodeURIComponent(proposalId)}/reject`,
+      );
+    },
+    listReferrerEligibleCommissions: async () => {
+      return this.client.get<EligibleReferralCommissionsList>(
+        '/referrer/payment-requests/eligible-commissions',
+      );
+    },
+    listReferrerPaymentRequests: async () => {
+      return this.client.get<ReferralPaymentRequestList>('/referrer/payment-requests');
+    },
+    getReferrerPaymentRequest: async (id: string) => {
+      return this.client.get<ReferralPaymentRequestDto>(
+        `/referrer/payment-requests/${encodeURIComponent(id)}`,
+      );
+    },
+    createReferrerPaymentRequest: async (body: CreateReferralPaymentRequestInput) => {
+      return this.client.post<ReferralPaymentRequestDto>('/referrer/payment-requests', body);
+    },
+    cancelReferrerPaymentRequest: async (id: string) => {
+      return this.client.post<ReferralPaymentRequestDto>(
+        `/referrer/payment-requests/${encodeURIComponent(id)}/cancel`,
+      );
+    },
+    listProducerReferralPaymentRequests: async () => {
+      return this.client.get<ReferralPaymentRequestList>('/producer/referrals/payment-requests');
+    },
+    getProducerReferralPaymentRequest: async (id: string) => {
+      return this.client.get<ReferralPaymentRequestDto>(
+        `/producer/referrals/payment-requests/${encodeURIComponent(id)}`,
+      );
+    },
+    markProducerReferralPaymentRequestInReview: async (id: string) => {
+      return this.client.post<ReferralPaymentRequestDto>(
+        `/producer/referrals/payment-requests/${encodeURIComponent(id)}/mark-in-review`,
+      );
+    },
+    markProducerReferralPaymentRequestPaid: async (id: string) => {
+      return this.client.post<ReferralPaymentRequestDto>(
+        `/producer/referrals/payment-requests/${encodeURIComponent(id)}/mark-paid`,
+      );
+    },
+    rejectProducerReferralPaymentRequest: async (
+      id: string,
+      body: RejectReferralPaymentRequestInput,
+    ) => {
+      return this.client.post<ReferralPaymentRequestDto>(
+        `/producer/referrals/payment-requests/${encodeURIComponent(id)}/reject`,
+        body,
+      );
+    },
+    getProducerReferralMetrics: async () => {
+      return this.client.get<ProducerReferralMetricsResponse>('/producer/referrals/metrics');
+    },
+    getProducerEventReferralMetrics: async (eventId: string) => {
+      return this.client.get<ProducerEventReferralMetricsResponse>(
+        `/producer/events/${encodeURIComponent(eventId)}/referrals/metrics`,
+      );
+    },
+    getReferrerReferralMetrics: async () => {
+      return this.client.get<ReferrerReferralMetricsResponse>('/referrer/metrics');
+    },
+    getReferrerAgreementMetrics: async (agreementId: string) => {
+      return this.client.get<ReferrerAgreementMetricsResponse>(
+        `/referrer/agreements/${encodeURIComponent(agreementId)}/metrics`,
+      );
     },
   };
 

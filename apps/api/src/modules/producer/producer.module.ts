@@ -9,6 +9,12 @@ import { CommercialReviewsModule } from '../commercial-reviews/commercial-review
 import { ProfilesAuthorizationService } from '../../common/profiles-authorization.service';
 import { ProducerEventsController } from './producer-events.controller';
 import { ProducerReferrersController } from './producer-referrers.controller';
+import { ProducerReferralProposalsController } from './producer-referral-proposals.controller';
+import { ProducerReferralPaymentRequestsController } from './producer-referral-payment-requests.controller';
+import {
+  ProducerEventReferralMetricsController,
+  ProducerReferralMetricsController,
+} from './producer-referral-metrics.controller';
 import { ProducerRolesGuard } from '../../common/guards/producer-roles.guard';
 import { ProducerTicketTypesController } from './producer-ticket-types.controller';
 import { ProducerTicketTemplateController } from './producer-ticket-template.controller';
@@ -34,6 +40,10 @@ import { ProducerDashboardMetricsService } from './producer-dashboard-metrics.se
   controllers: [
     ProducerEventsController,
     ProducerReferrersController,
+    ProducerReferralProposalsController,
+    ProducerReferralPaymentRequestsController,
+    ProducerReferralMetricsController,
+    ProducerEventReferralMetricsController,
     ProducerTicketTypesController,
     ProducerTicketTemplateController,
     ProducerProfileController,

@@ -246,7 +246,9 @@ SMOKE_USER_EMAIL=felipe.e.salom@gmail.com SMOKE_USER_PASSWORD=<pass> pnpm --filt
 |---------|----------------|
 | `smoke:notifications` | Notificaciones `e2e-demo:*` |
 | `smoke:reviews` | Reviews `[smoke-test]` |
+| `smoke:referrals` | Propuestas, comisiones, solicitudes de pago (productor + referido) |
 | `smoke:user-portal` | Órdenes, usuarios `@smoke.yo-te-invito.test`, transfers |
+| `test:referral-proposals` / `test:referral-commission` / `test:referral-payment-requests` | Util Referidos V2 (sin BD) |
 
 Cleanup automático al finalizar (configurable). Manual:
 

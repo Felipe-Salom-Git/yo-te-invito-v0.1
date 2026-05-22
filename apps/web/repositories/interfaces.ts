@@ -969,7 +969,14 @@ export interface ProducerReferrerContext {
   producerProfileId: string | null;
 }
 
-export type ReferralCommissionStatus = 'PENDING' | 'REQUESTED' | 'PAID' | 'REJECTED';
+export type ReferralCommissionStatus =
+  | 'PENDING'
+  | 'CONFIRMED'
+  | 'CANCELLED'
+  | 'MARKED_AS_PAID'
+  | 'REQUESTED'
+  | 'PAID'
+  | 'REJECTED';
 
 export interface ReferralCommission {
   id: string;
@@ -981,7 +988,55 @@ export interface ReferralCommission {
   requestedAt: string | null;
   paidAt: string | null;
   confirmedByUserId: string | null;
+  referralAttributionId?: string | null;
+  agreementId?: string | null;
+  producerProfileId?: string | null;
+  referrerProfileId?: string | null;
+  orderId?: string | null;
+  commissionType?: 'PERCENTAGE' | 'FIXED_PER_TICKET' | null;
+  commissionValue?: number | null;
+  attributedSubtotalCents?: number | null;
+  ticketQuantity?: number | null;
 }
+
+import type {
+  ReferralCommercialProposalDto,
+  ReferralCommercialProposalList,
+  CreateReferralCommercialProposalInput,
+  AcceptReferralCommercialProposalResponse,
+  ReferralCommissionType,
+  ReferralCommercialProposalStatus,
+  ReferralPaymentRequestDto,
+  ReferralPaymentRequestList,
+  CreateReferralPaymentRequestInput,
+  RejectReferralPaymentRequestInput,
+  EligibleReferralCommissionsList,
+  ProducerReferralMetricsResponse,
+  ProducerEventReferralMetricsResponse,
+  ReferrerReferralMetricsResponse,
+  ReferrerAgreementMetricsResponse,
+} from '@yo-te-invito/shared';
+
+export type {
+  ReferralPaymentRequestDto,
+  ReferralPaymentRequestList,
+  CreateReferralPaymentRequestInput,
+  RejectReferralPaymentRequestInput,
+  EligibleReferralCommissionsList,
+  ProducerReferralMetricsResponse,
+  ProducerEventReferralMetricsResponse,
+  ReferrerReferralMetricsResponse,
+  ReferrerAgreementMetricsResponse,
+};
+
+export type {
+  ReferralCommercialProposalDto,
+  ReferralCommercialProposalList,
+  CreateReferralCommercialProposalInput,
+  AcceptReferralCommercialProposalResponse,
+  ReferralCommissionType,
+  ReferralCommercialProposalStatus,
+};
 
 export interface CourtesyGrantSummary {
   id: string;
@@ -1670,6 +1725,35 @@ export interface ReferralsRepo {
   requestCommission(referrerId: string, referralLinkId: string): Promise<ReferralCommission>;
   listCommissionRequestsForEvent(eventId: string): Promise<ReferralCommission[]>;
   confirmCommissionPayout(commissionId: string, producerUserId: string): Promise<ReferralCommission | null>;
+  listProducerReferralProposals(): Promise<ReferralCommercialProposalList>;
+  getProducerReferralProposal(proposalId: string): Promise<ReferralCommercialProposalDto>;
+  createProducerReferralProposal(
+    body: CreateReferralCommercialProposalInput,
+  ): Promise<ReferralCommercialProposalDto>;
+  cancelProducerReferralProposal(proposalId: string): Promise<ReferralCommercialProposalDto>;
+  listReferrerProposals(): Promise<ReferralCommercialProposalList>;
+  getReferrerProposal(proposalId: string): Promise<ReferralCommercialProposalDto>;
+  acceptReferrerProposal(proposalId: string): Promise<AcceptReferralCommercialProposalResponse>;
+  rejectReferrerProposal(proposalId: string): Promise<ReferralCommercialProposalDto>;
+  listReferrerEligibleCommissions(): Promise<EligibleReferralCommissionsList>;
+  listReferrerPaymentRequests(): Promise<ReferralPaymentRequestList>;
+  getReferrerPaymentRequest(id: string): Promise<ReferralPaymentRequestDto>;
+  createReferrerPaymentRequest(
+    body: CreateReferralPaymentRequestInput,
+  ): Promise<ReferralPaymentRequestDto>;
+  cancelReferrerPaymentRequest(id: string): Promise<ReferralPaymentRequestDto>;
+  listProducerReferralPaymentRequests(): Promise<ReferralPaymentRequestList>;
+  getProducerReferralPaymentRequest(id: string): Promise<ReferralPaymentRequestDto>;
+  markProducerReferralPaymentRequestInReview(id: string): Promise<ReferralPaymentRequestDto>;
+  markProducerReferralPaymentRequestPaid(id: string): Promise<ReferralPaymentRequestDto>;
+  rejectProducerReferralPaymentRequest(
+    id: string,
+    body: RejectReferralPaymentRequestInput,
+  ): Promise<ReferralPaymentRequestDto>;
+  getProducerReferralMetrics(): Promise<ProducerReferralMetricsResponse>;
+  getProducerEventReferralMetrics(eventId: string): Promise<ProducerEventReferralMetricsResponse>;
+  getReferrerReferralMetrics(): Promise<ReferrerReferralMetricsResponse>;
+  getReferrerAgreementMetrics(agreementId: string): Promise<ReferrerAgreementMetricsResponse>;
 }
 
 export interface CourtesyCreateResult {

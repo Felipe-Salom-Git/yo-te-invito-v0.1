@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRepositories } from '@/repositories/context';
@@ -27,8 +27,17 @@ import { ProducerReferralsHelp } from './ProducerReferralsHelp';
 import { ProducerCommissionPendingNotice } from './ProducerCommissionPendingNotice';
 import { ReferralLinkRow } from './ReferralLinkRow';
 import { CopyReferralLinkButton } from './CopyReferralLinkButton';
+import { ProducerReferralProposalForm } from './ProducerReferralProposalForm';
+import { ProducerReferralProposalList } from './ProducerReferralProposalList';
+import { ProducerReferralAgreementSummary } from './ProducerReferralAgreementSummary';
+import { ProducerEventReferralMetricsPanel } from './ProducerEventReferralMetricsPanel';
+import {
+  useProducerReferralProposals,
+  useCancelProducerReferralProposal,
+} from '@/hooks/useProducerReferralProposals';
+import { useProducerEventReferralMetrics } from '@/hooks/useProducerReferralMetrics';
 
-type TabId = 'assigned' | 'links' | 'metrics' | 'commissions';
+type TabId = 'proposals' | 'assigned' | 'links' | 'metrics' | 'commissions';
 
 function isOperationalAssignmentStatus(s: string): boolean {
   return s === 'ACTIVE' || s === 'PAUSED';
@@ -45,7 +54,8 @@ export function ProducerEventReferralsPageClient({ eventId }: Props) {
   const { addToast } = useToast();
   const t = tenantId ?? 'tenant-demo';
 
-  const [activeTab, setActiveTab] = useState<TabId>('assigned');
+  const [activeTab, setActiveTab] = useState<TabId>('proposals');
+  const [showProposalForm, setShowProposalForm] = useState(false);
   const [assigningRefId, setAssigningRefId] = useState<string | null>(null);
   const [courtesyQuota, setCourtesyQuota] = useState(0);
 
@@ -73,11 +83,7 @@ export function ProducerEventReferralsPageClient({ eventId }: Props) {
     enabled: !!eventId,
   });
 
-  const { data: eventMetrics, isLoading: metricsLoading } = useQuery({
-    queryKey: ['producer', 'event-metrics', eventId],
-    queryFn: () => repos.metrics.getEventMetrics(eventId),
-    enabled: !!eventId && activeTab === 'metrics',
-  });
+  const { data: eventReferralMetrics } = useProducerEventReferralMetrics(eventId, !!eventId);
 
   const { data: commissionRequests = [] } = useQuery({
     queryKey: referralKeys.eventCommissions(eventId),
@@ -85,10 +91,19 @@ export function ProducerEventReferralsPageClient({ eventId }: Props) {
     enabled: !!eventId,
   });
 
+  const { data: proposalsData, isLoading: proposalsLoading } = useProducerReferralProposals(!!eventId);
+  const cancelProposalMutation = useCancelProducerReferralProposal();
+  const [cancelBusyId, setCancelBusyId] = useState<string | null>(null);
+
+  const eventProposals = useMemo(
+    () => (proposalsData?.proposals ?? []).filter((p) => p.eventId === eventId),
+    [proposalsData?.proposals, eventId],
+  );
+
   const assignments = assignmentsData?.assignments ?? [];
   const links = linksData?.links ?? [];
   const hasCommissions = commissionRequests.length > 0;
-  const performance = eventMetrics?.referralPerformance ?? [];
+  const metricsReferrerCount = eventReferralMetrics?.byReferrer.length ?? 0;
 
   const profileNameById = new Map(
     assignments.map((a) => [a.referrerProfile.id, a.referrerProfile.displayName]),
@@ -126,7 +141,7 @@ export function ProducerEventReferralsPageClient({ eventId }: Props) {
       repos.referrals.confirmCommissionPayout(commissionId, ''),
     onError: (err) => addToast(getErrorMessage(err), 'error'),
     onSuccess: () => {
-      addToast('Cobro confirmado', 'success');
+      addToast('Pago externo registrado', 'success');
       queryClient.invalidateQueries({ queryKey: referralKeys.eventCommissions(eventId) });
     },
   });
@@ -149,10 +164,33 @@ export function ProducerEventReferralsPageClient({ eventId }: Props) {
 
   const eventTitle = event?.title ?? 'Evento';
 
+  const referrerOptions = activeAssociated.map((r) => ({
+    id: r.referrerProfile.id,
+    displayName: r.referrerProfile.displayName,
+    publicHandle: r.referrerProfile.publicHandle,
+  }));
+
+  const handleCancelProposal = (proposalId: string) => {
+    if (
+      !window.confirm(
+        '¿Cancelar esta propuesta pendiente? El referido ya no podrá aceptarla.',
+      )
+    ) {
+      return;
+    }
+    setCancelBusyId(proposalId);
+    cancelProposalMutation.mutate(proposalId, {
+      onSettled: () => setCancelBusyId(null),
+      onSuccess: () => addToast('Propuesta cancelada', 'success'),
+      onError: (err) => addToast(getErrorMessage(err), 'error'),
+    });
+  };
+
   const tabs: { id: TabId; label: string; count?: number }[] = [
+    { id: 'proposals', label: 'Propuestas', count: eventProposals.length },
     { id: 'assigned', label: 'Asignados', count: assignments.length },
     { id: 'links', label: 'Links', count: links.length },
-    { id: 'metrics', label: 'Rendimiento', count: performance.length || undefined },
+    { id: 'metrics', label: 'Métricas', count: metricsReferrerCount || undefined },
   ];
   if (hasCommissions) {
     tabs.push({ id: 'commissions', label: 'Solicitudes', count: commissionRequests.length });
@@ -200,6 +238,43 @@ export function ProducerEventReferralsPageClient({ eventId }: Props) {
           </button>
         ))}
       </nav>
+
+      {activeTab === 'proposals' && (
+        <section className="mt-6 space-y-6">
+          <ProducerReferralAgreementSummary
+            proposals={eventProposals}
+            paymentRequestsPending={commissionRequests.filter((c) => c.status === 'REQUESTED').length}
+          />
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="font-semibold text-text">Propuestas comerciales</h2>
+              <p className="mt-1 text-sm text-text-muted">
+                Enviá una propuesta con regla de comisión. Si el referido acepta, se activa el link
+                de venta automáticamente.
+              </p>
+            </div>
+            <Button
+              type="button"
+              className="w-full shrink-0 sm:w-auto"
+              onClick={() => setShowProposalForm(true)}
+              disabled={referrerOptions.length === 0}
+            >
+              Enviar propuesta
+            </Button>
+          </div>
+          {proposalsLoading ? (
+            <p className="text-sm text-text-muted">Cargando propuestas…</p>
+          ) : (
+            <ProducerReferralProposalList
+              proposals={eventProposals}
+              onCancel={handleCancelProposal}
+              cancelBusyId={cancelBusyId}
+              emptyTitle="Sin propuestas para este evento"
+              emptyDescription="Enviá una propuesta a un referido asociado para promocionar este evento con comisión pactada."
+            />
+          )}
+        </section>
+      )}
 
       {activeTab === 'assigned' && (
         <section className="mt-6 space-y-8">
@@ -368,52 +443,24 @@ export function ProducerEventReferralsPageClient({ eventId }: Props) {
 
       {activeTab === 'metrics' && (
         <section className="mt-6">
-          <h2 className="font-semibold text-text">Rendimiento por referido</h2>
+          <h2 className="font-semibold text-text">Métricas de referidos (evento)</h2>
           <p className="mt-1 text-sm text-text-muted">
-            Pedidos <span className="text-text">PAID</span> con código de referido atribuido (datos del
-            backend).
+            Solo pedidos <span className="text-text">pagados</span> atribuidos a links de referido. La comisión
+            generada es referencia según acuerdos; no es saldo.
           </p>
-          {metricsLoading ? (
-            <p className="mt-4 text-sm text-text-muted">Cargando métricas…</p>
-          ) : performance.length === 0 ? (
-            <div className="mt-6">
-              <EmptyState
-                title="Sin ventas atribuidas aún"
-                description="Cuando haya compras con código de referido, aparecerán acá."
-              />
-            </div>
-          ) : (
-            <div className="mt-4 overflow-x-auto rounded-xl border border-border">
-              <table className="w-full min-w-[520px] text-left text-sm">
-                <thead>
-                  <tr className="border-b border-border bg-bg-muted/50 text-text-muted">
-                    <th className="px-4 py-3">Referidor</th>
-                    <th className="px-4 py-3">Código</th>
-                    <th className="px-4 py-3">Pedidos</th>
-                    <th className="px-4 py-3">Tickets</th>
-                    <th className="px-4 py-3">Bruto</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {performance.map((row) => (
-                    <tr key={row.referralLinkId} className="border-b border-border/60">
-                      <td className="px-4 py-3 text-text">{row.referrerDisplayName ?? '—'}</td>
-                      <td className="px-4 py-3 font-mono text-xs text-accent">{row.code}</td>
-                      <td className="px-4 py-3">{row.paidOrdersCount}</td>
-                      <td className="px-4 py-3">{row.ticketsSoldCount}</td>
-                      <td className="px-4 py-3">{formatMoneyCents(row.grossRevenueCents)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+          <div className="mt-6">
+            <ProducerEventReferralMetricsPanel eventId={eventId} />
+          </div>
         </section>
       )}
 
       {activeTab === 'commissions' && hasCommissions && (
         <section className="mt-6">
-          <h2 className="font-semibold text-text">Solicitudes de comisión</h2>
+          <h2 className="font-semibold text-text">Solicitudes de pago</h2>
+          <p className="mt-1 text-sm text-text-muted">
+            El referido puede solicitar el pago a tu productora fuera de la plataforma. Registrar acá
+            no transfiere dinero.
+          </p>
           <ul className="mt-4 space-y-3">
             {commissionRequests.map((c) => (
               <li
@@ -437,7 +484,7 @@ export function ProducerEventReferralsPageClient({ eventId }: Props) {
                     disabled={confirmMutation.isPending}
                     onClick={() => confirmMutation.mutate(c.id)}
                   >
-                    Confirmar cobro
+                    Registrar pago externo
                   </Button>
                 ) : (
                   <span className="text-sm text-text-muted">{commissionStatusLabel(c.status)}</span>
@@ -447,6 +494,23 @@ export function ProducerEventReferralsPageClient({ eventId }: Props) {
           </ul>
         </section>
       )}
+
+      <SideSheet
+        isOpen={showProposalForm}
+        onClose={() => setShowProposalForm(false)}
+        title="Enviar propuesta comercial"
+      >
+        <ProducerReferralProposalForm
+          eventId={eventId}
+          eventTitle={eventTitle}
+          referrers={referrerOptions}
+          onSuccess={() => {
+            addToast('Propuesta enviada al referido', 'success');
+            setShowProposalForm(false);
+          }}
+          onCancel={() => setShowProposalForm(false)}
+        />
+      </SideSheet>
 
       <SideSheet
         isOpen={!!assigningRefId}

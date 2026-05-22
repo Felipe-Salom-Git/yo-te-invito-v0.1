@@ -4,6 +4,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { ReferralCommissionService } from '../referrals/referral-commission.service';
 import { AuditAction } from '@prisma/client';
 import {
   ErrorCode,
@@ -13,7 +14,10 @@ import {
 
 @Injectable()
 export class AdminTicketsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly referralCommissions: ReferralCommissionService,
+  ) {}
 
   async revoke(
     tenantId: string,
@@ -124,6 +128,14 @@ export class AdminTicketsService {
           ...(Object.keys(metadata).length > 0 ? { metadata: metadata as object } : {}),
         },
       });
+
+      if (ticket.orderId) {
+        await this.referralCommissions.syncOrderCommissionInTransaction(
+          tx,
+          ticket.orderId,
+          tenantId,
+        );
+      }
     });
 
     return {

@@ -20,6 +20,8 @@
 | `pnpm --filter api run seed:subcategories` | Bajo | Catálogo |
 | `pnpm --filter api run user:*` | Bajo–Medio | Ver guía |
 | `pnpm --filter api run smoke:*` | Bajo–Alto | Ver SMOKE_TESTS_GUIDE |
+| `pnpm --filter api run smoke:referrals` | Alto | Referidos V2 — productor + referido + evento |
+| `pnpm --filter api run test:referral-*` | No | Util % / propuestas / solicitudes pago |
 | `pnpm --filter api run smoke:cleanup` | Medio | Artefactos smoke |
 | `pnpm e2e:portal` / `e2e:notifications` | Bajo* | E2E UI |
 

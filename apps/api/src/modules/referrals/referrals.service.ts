@@ -18,7 +18,7 @@ import type {
   ProducerFreelanceReferrersQuery,
 } from '@yo-te-invito/shared';
 import { ErrorCode } from '@yo-te-invito/shared';
-import { Prisma } from '@prisma/client';
+import { Prisma, ReferralCommissionStatus } from '@prisma/client';
 import { referralCheckoutUrl } from '../../common/referral-checkout-url';
 
 /** Referidor pidió asociación a la productora (la productora acepta/rechaza el pendiente) */
@@ -980,7 +980,30 @@ export class ReferralsService {
       where: { referrerId: userId },
       orderBy: { requestedAt: 'desc' },
     });
-    return items.map((c) => ({
+    return items.map((c) => this.mapReferralCommission(c));
+  }
+
+  private mapReferralCommission(c: {
+    id: string;
+    referrerId: string;
+    referralLinkId: string;
+    eventId: string;
+    amountCents: number;
+    status: ReferralCommissionStatus;
+    requestedAt: Date | null;
+    paidAt: Date | null;
+    confirmedByUserId: string | null;
+    referralAttributionId?: string | null;
+    agreementId?: string | null;
+    producerProfileId?: string | null;
+    referrerProfileId?: string | null;
+    orderId?: string | null;
+    commissionType?: string | null;
+    commissionValue?: { toString(): string } | null;
+    attributedSubtotalCents?: number | null;
+    ticketQuantity?: number | null;
+  }) {
+    return {
       id: c.id,
       referrerId: c.referrerId,
       referralLinkId: c.referralLinkId,
@@ -990,7 +1013,17 @@ export class ReferralsService {
       requestedAt: c.requestedAt?.toISOString() ?? null,
       paidAt: c.paidAt?.toISOString() ?? null,
       confirmedByUserId: c.confirmedByUserId,
-    }));
+      referralAttributionId: c.referralAttributionId ?? null,
+      agreementId: c.agreementId ?? null,
+      producerProfileId: c.producerProfileId ?? null,
+      referrerProfileId: c.referrerProfileId ?? null,
+      orderId: c.orderId ?? null,
+      commissionType:
+        (c.commissionType as 'PERCENTAGE' | 'FIXED_PER_TICKET' | null) ?? null,
+      commissionValue: c.commissionValue != null ? Number(c.commissionValue) : null,
+      attributedSubtotalCents: c.attributedSubtotalCents ?? null,
+      ticketQuantity: c.ticketQuantity ?? null,
+    };
   }
 
   async requestCommission(
@@ -1027,7 +1060,10 @@ export class ReferralsService {
       });
     }
     const existing = await this.prisma.referralCommission.findFirst({
-      where: { referralLinkId },
+      where: {
+        referralLinkId,
+        referralAttributionId: null,
+      },
     });
     if (existing) {
       if (existing.status === 'REQUESTED' || existing.status === 'PAID') {
@@ -1093,20 +1129,10 @@ export class ReferralsService {
       throw new ForbiddenException({ code: 'FORBIDDEN', message: 'Not allowed' });
     }
     const items = await this.prisma.referralCommission.findMany({
-      where: { eventId, status: 'REQUESTED' },
+      where: { eventId, status: 'REQUESTED', referralAttributionId: null },
       orderBy: { requestedAt: 'asc' },
     });
-    return items.map((c) => ({
-      id: c.id,
-      referrerId: c.referrerId,
-      referralLinkId: c.referralLinkId,
-      eventId: c.eventId,
-      amountCents: c.amountCents,
-      status: c.status,
-      requestedAt: c.requestedAt?.toISOString() ?? null,
-      paidAt: c.paidAt?.toISOString() ?? null,
-      confirmedByUserId: c.confirmedByUserId,
-    }));
+    return items.map((c) => this.mapReferralCommission(c));
   }
 
   async confirmCommissionPayout(

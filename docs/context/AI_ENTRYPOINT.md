@@ -166,6 +166,8 @@ SMOKE_USER_EMAIL=felipe.e.salom@gmail.com SMOKE_USER_PASSWORD=<pass> \
 |---------|--------|
 | `smoke:api` | Health endpoints |
 | `smoke:reviews` | Reviews V2; roles opcionales `SMOKE_PRODUCER_EMAIL`, etc. |
+| `smoke:referrals` | Referidos V2; requiere `SMOKE_PRODUCER_EMAIL` + `SMOKE_REFERRER_EMAIL` |
+| `test:referral-proposals` / `test:referral-commission` / `test:referral-payment-requests` | Util sin BD |
 | `smoke:notifications` | Bandeja in-app + seed-demo admin (push requiere VAPID + navegador) |
 | `smoke:producer-follows` | Follows (cleanup follow al final) |
 | `smoke:cleanup` | Dry-run / `--confirm` — artefactos smoke en BD |

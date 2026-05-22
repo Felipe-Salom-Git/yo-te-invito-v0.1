@@ -129,7 +129,12 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 ## J. Referidos y documentación
 
 - [x] Marketplace reventa eliminado — solo transferencia personal (`20260605120000_remove_resale_marketplace`)
-- [ ] Comisiones referidores — reglas definitivas
+- [x] Comisiones referidores — reglas definitivas (`docs/referrals/REFERRALS_V2.md`)
+- [x] Referidos V2 Slice 2 — API propuestas comerciales (`ReferralCommercialProposal` / `Agreement`, rutas producer/referrer)
+- [x] Referidos V2 Slice 3 — cálculo comisión generada por orden PAID (`ReferralCommissionService`, hook pagos)
+- [x] Referidos V2 Slice 4–7 — portales, solicitud de pago manual, métricas
+- [x] Referidos V2 Slice 8 — QA: `smoke:referrals`, `test:referral-proposals|commission|payment-requests`
+- [ ] Deprecar flujo legacy `POST /me/commissions/request` y tab comisiones legacy en evento (opcional)
 - [x] Unificar docs context (`PROJECT_CONTEXT`, `FRONTEND_CONTEXT`, `BACKEND_CONTEXT` sin sufijos V1/V2/V3)
 - [ ] Mantener este archivo al cerrar slices
 

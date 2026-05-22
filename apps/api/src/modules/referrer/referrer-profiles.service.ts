@@ -140,13 +140,16 @@ export class ReferrerProfilesService {
         where: { referrerProfileId: profile.id, status: 'PENDING' },
       }),
       this.prisma.referralCommission.aggregate({
-        where: { referrerId: userId, status: 'PAID' },
+        where: {
+          referrerId: userId,
+          status: { in: ['PAID', 'MARKED_AS_PAID'] },
+        },
         _sum: { amountCents: true },
       }),
       this.prisma.referralCommission.aggregate({
         where: {
           referrerId: userId,
-          status: { in: ['PENDING', 'REQUESTED'] },
+          status: { in: ['CONFIRMED', 'PENDING', 'REQUESTED'] },
         },
         _sum: { amountCents: true },
       }),

@@ -17,6 +17,7 @@ import { GetnetCheckoutService } from './providers/getnet/getnet-checkout.servic
 import { mapGetnetStatusToLocal } from './providers/getnet/getnet.mapper';
 import { loadGetnetConfig } from './providers/getnet/getnet.config';
 import { TicketBatchService } from '../../ticketing/ticket-batch.service';
+import { ReferralCommissionService } from '../referrals/referral-commission.service';
 
 function generateQrPayload(): string {
   return 'yti:v1:' + randomBytes(24).toString('hex');
@@ -48,6 +49,7 @@ export class PublicPaymentsService {
     private readonly emailQueue: EmailQueueService,
     private readonly getnetCheckout: GetnetCheckoutService,
     private readonly ticketBatches: TicketBatchService,
+    private readonly referralCommissions: ReferralCommissionService,
   ) {}
 
   async createPayment(
@@ -354,6 +356,12 @@ export class PublicPaymentsService {
         }
       }
 
+      await this.referralCommissions.processOrderPaidInTransaction(
+        tx,
+        payment.orderId,
+        tenantId,
+      );
+
       const updatedOrder = await tx.order.findUniqueOrThrow({
         where: { id: payment.orderId },
         include: {
@@ -563,6 +571,8 @@ export class PublicPaymentsService {
           });
         }
       }
+
+      await this.referralCommissions.processOrderPaidInTransaction(tx, orderId, tenantId);
 
       const updatedOrder = await tx.order.findUniqueOrThrow({
         where: { id: orderId },

@@ -9,6 +9,9 @@ import { ReferrerRolesGuard } from '../../common/guards/referrer-roles.guard';
 import { ReferrerProfilesService } from './referrer-profiles.service';
 import { ReferrerIdentityService } from './referrer-identity.service';
 import { ReferrerSelfController } from './referrer-self.controller';
+import { ReferrerProposalsController } from './referrer-proposals.controller';
+import { ReferrerPaymentRequestsController } from './referrer-payment-requests.controller';
+import { ReferrerMetricsController } from './referrer-metrics.controller';
 
 @Module({
   imports: [
@@ -20,7 +23,12 @@ import { ReferrerSelfController } from './referrer-self.controller';
       signOptions: { expiresIn: '7d' },
     }),
   ],
-  controllers: [ReferrerSelfController],
+  controllers: [
+    ReferrerSelfController,
+    ReferrerProposalsController,
+    ReferrerPaymentRequestsController,
+    ReferrerMetricsController,
+  ],
   providers: [
     ReferrerProfilesService,
     ReferrerIdentityService,

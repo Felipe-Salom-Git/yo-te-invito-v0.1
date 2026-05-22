@@ -7,12 +7,30 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRepositories } from '@/repositories/context';
 import { useTenant } from '@/hooks/useTenant';
 import { useProducerId } from '@/hooks/useProducerId';
-import { PageContainer, SectionTitle, Button, Input, useToast, EmptyState } from '@/components';
+import {
+  PageContainer,
+  SectionTitle,
+  Button,
+  Input,
+  useToast,
+  EmptyState,
+  SideSheet,
+} from '@/components';
 import { CommercialReviewPanel } from '@/components/portal/CommercialReviewPanel';
 import { getErrorMessage } from '@/lib/errors';
 import { relationshipStatusLabel } from '@/lib/producer/referral-display';
 import { ProducerReferralsHelp } from '@/components/producer/referrals/ProducerReferralsHelp';
 import { ProducerCommissionPendingNotice } from '@/components/producer/referrals/ProducerCommissionPendingNotice';
+import { ProducerReferralProposalForm } from '@/components/producer/referrals/ProducerReferralProposalForm';
+import { ProducerReferralProposalList } from '@/components/producer/referrals/ProducerReferralProposalList';
+import { ProducerReferralAgreementSummary } from '@/components/producer/referrals/ProducerReferralAgreementSummary';
+import { ProducerReferralPaymentRequestList } from '@/components/producer/referrals/ProducerReferralPaymentRequestList';
+import { ProducerReferralMetricsPanel } from '@/components/producer/referrals/ProducerReferralMetricsPanel';
+import { useProducerPaymentRequests } from '@/hooks/useProducerPaymentRequests';
+import {
+  useProducerReferralProposals,
+  useCancelProducerReferralProposal,
+} from '@/hooks/useProducerReferralProposals';
 import type {
   FreelanceReferrersSort,
   ProducerReferrerRelationship,
@@ -163,7 +181,11 @@ export default function ProducerReferralsPage() {
   const queryClient = useQueryClient();
   const { addToast } = useToast();
 
-  const [activeTab, setActiveTab] = useState<'associated' | 'freelance' | 'events'>('associated');
+  const [activeTab, setActiveTab] = useState<
+    'metrics' | 'proposals' | 'payment-requests' | 'associated' | 'freelance' | 'events'
+  >('metrics');
+  const [showProposalSheet, setShowProposalSheet] = useState(false);
+  const [cancelBusyId, setCancelBusyId] = useState<string | null>(null);
   const [freelanceBusyId, setFreelanceBusyId] = useState<string | null>(null);
   const [freelanceSearch, setFreelanceSearch] = useState('');
   const [debouncedFreelanceSearch, setDebouncedFreelanceSearch] = useState('');
@@ -177,6 +199,13 @@ export default function ProducerReferralsPage() {
   const [freelanceAssigned, setFreelanceAssigned] = useState<
     NonNullable<ProducerFreelanceReferrersParams['assignedEvents']>
   >('any');
+
+  const { data: paymentRequestsData } = useProducerPaymentRequests(status === 'authenticated');
+
+  const { data: proposalsData, isLoading: proposalsLoading, isError: proposalsError } =
+    useProducerReferralProposals(status === 'authenticated');
+  const cancelProposalMutation = useCancelProducerReferralProposal();
+  const allProposals = proposalsData?.proposals ?? [];
 
   const { data: associated = [] } = useQuery({
     queryKey: ['producer', 'referrers', 'associated'],
@@ -263,7 +292,8 @@ export default function ProducerReferralsPage() {
   const { data: eventsData } = useQuery({
     queryKey: ['events', 'producer', PRODUCER_ID, TENANT_ID],
     queryFn: () => repos.events.list({ tenantId: TENANT_ID, producerId: PRODUCER_ID, limit: 50 }),
-    enabled: status === 'authenticated' && activeTab === 'events',
+    enabled:
+      status === 'authenticated' && (activeTab === 'events' || showProposalSheet),
   });
   const events = eventsData?.data ?? [];
 
@@ -364,6 +394,35 @@ export default function ProducerReferralsPage() {
       <nav className="-mx-1 mb-6 flex gap-1 overflow-x-auto border-b border-border px-1 pb-px">
         <button
           type="button"
+          onClick={() => setActiveTab('metrics')}
+          className={`shrink-0 whitespace-nowrap px-4 py-2.5 text-sm font-medium transition-colors ${
+            activeTab === 'metrics' ? 'border-b-2 border-accent text-accent' : 'text-text-muted hover:text-text'
+          }`}
+        >
+          Métricas
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('proposals')}
+          className={`shrink-0 whitespace-nowrap px-4 py-2.5 text-sm font-medium transition-colors ${
+            activeTab === 'proposals' ? 'border-b-2 border-accent text-accent' : 'text-text-muted hover:text-text'
+          }`}
+        >
+          Propuestas ({allProposals.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('payment-requests')}
+          className={`shrink-0 whitespace-nowrap px-4 py-2.5 text-sm font-medium transition-colors ${
+            activeTab === 'payment-requests'
+              ? 'border-b-2 border-accent text-accent'
+              : 'text-text-muted hover:text-text'
+          }`}
+        >
+          Solicitudes de pago ({paymentRequestsData?.paymentRequests?.length ?? '—'})
+        </button>
+        <button
+          type="button"
           onClick={() => setActiveTab('associated')}
           className={`shrink-0 whitespace-nowrap px-4 py-2.5 text-sm font-medium transition-colors ${
             activeTab === 'associated' ? 'border-b-2 border-accent text-accent' : 'text-text-muted hover:text-text'
@@ -390,6 +449,68 @@ export default function ProducerReferralsPage() {
           Links por evento
         </button>
       </nav>
+
+      {activeTab === 'metrics' && (
+        <section className="space-y-4">
+          <ProducerReferralMetricsPanel />
+        </section>
+      )}
+
+      {activeTab === 'proposals' && (
+        <section className="space-y-6">
+          <ProducerReferralAgreementSummary proposals={allProposals} />
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="max-w-2xl text-sm text-text-muted">
+              Propuesta comercial por evento: el referido acepta o rechaza la regla de comisión. La
+              plataforma registra y mide; el pago es entre partes.
+            </p>
+            <Button
+              type="button"
+              className="w-full shrink-0 sm:w-auto"
+              onClick={() => setShowProposalSheet(true)}
+            >
+              Enviar propuesta
+            </Button>
+          </div>
+          {proposalsLoading && <p className="text-sm text-text-muted">Cargando propuestas…</p>}
+          {proposalsError && (
+            <p className="text-sm text-red-400">No se pudieron cargar las propuestas.</p>
+          )}
+          {!proposalsLoading && !proposalsError && (
+            <ProducerReferralProposalList
+              proposals={allProposals}
+              cancelBusyId={cancelBusyId}
+              onCancel={(id) => {
+                if (
+                  !window.confirm(
+                    '¿Cancelar esta propuesta pendiente? El referido ya no podrá aceptarla.',
+                  )
+                ) {
+                  return;
+                }
+                setCancelBusyId(id);
+                cancelProposalMutation.mutate(id, {
+                  onSettled: () => setCancelBusyId(null),
+                  onSuccess: () => {
+                    addToast('Propuesta cancelada', 'success');
+                  },
+                  onError: (err) => addToast(getErrorMessage(err), 'error'),
+                });
+              }}
+            />
+          )}
+        </section>
+      )}
+
+      {activeTab === 'payment-requests' && (
+        <section className="space-y-4">
+          <h2 className="text-lg font-semibold text-text">Solicitudes de pago de referidos</h2>
+          <p className="max-w-2xl text-sm text-text-muted">
+            Registro comunicacional de pedidos de liquidación externa. Yo Te Invito no transfiere fondos.
+          </p>
+          <ProducerReferralPaymentRequestList />
+        </section>
+      )}
 
       {activeTab === 'associated' && (
         <section className="space-y-8">
@@ -697,6 +818,27 @@ export default function ProducerReferralsPage() {
           )}
         </section>
       )}
+      <SideSheet
+        isOpen={showProposalSheet}
+        onClose={() => setShowProposalSheet(false)}
+        title="Enviar propuesta comercial"
+      >
+        <ProducerReferralProposalForm
+          eventOptions={events.map((ev) => ({ id: ev.id, title: ev.title }))}
+          referrers={associated
+            .filter((r) => r.status === 'ACTIVE')
+            .map((r) => ({
+              id: r.referrerProfileId,
+              displayName: r.referrerProfile.displayName,
+              publicHandle: r.referrerProfile.publicHandle,
+            }))}
+          onSuccess={() => {
+            addToast('Propuesta enviada', 'success');
+            setShowProposalSheet(false);
+          }}
+          onCancel={() => setShowProposalSheet(false)}
+        />
+      </SideSheet>
     </PageContainer>
   );
 }

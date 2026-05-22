@@ -70,7 +70,7 @@ yo-te-invito-v0.1/
 - **Admin**: rol `ADMIN` en `User.role`; web `/admin/*` restringido a ADMIN; aprobación/rechazo de eventos notifica a productoras (in-app + email + push según preferencias). Inbox, **cola disputas** (`/admin/review-disputes`), **reporte reputación** (`/admin/reviews`), users, config, **rentals** locales/productos, audit. Cuenta maestro: `user:restore-master` + re-login.
 - **Gastro V2 (cerrado):** portal `/gastro/*` (dashboard, contenido Prisma, descuentos, validaciones, valoraciones), ficha `/restaurants/[id]`, QR + scanner PWA, follows + alertas descuento. Docs: `docs/gastro/`, `docs/audits/GASTRO_HOTELES_V2_AUDIT.md`.
 - **Hoteles V2 (liviano, cerrado):** discovery Próximamente (sin gateway/carrusel); portal `/hotel` + `/hotel/editar`; ficha pública `/hoteles/[id]`; valoraciones `/hotel/valoraciones`; E2E `pnpm e2e:hotel` (`docs/hotel/HOTEL_E2E.md`).
-- Referrer portal as documented in backend/frontend context.
+- **Referidos V2 (cerrado):** propuesta → aceptación → acuerdo + link; comisión **% o fijo por entrada** al pagar; solicitud de pago y registro `mark-paid` (**liquidación manual externa**, sin custodia de fondos). Portales `/producer/referrals`, evento referrals, `/referrer`. Doc: `docs/referrals/REFERRALS_V2.md`; smoke `smoke:referrals`. Legacy `/me/commissions/request` convive (deprecación opcional).
 
 ### Portal usuario (`/me/*`)
 
@@ -80,13 +80,13 @@ yo-te-invito-v0.1/
 - **V2.1.3–V2.1.4:** activar push desde `/me/notifications`, preferencias por tipo de alerta, `deliver()` con deduplicación `PUSH`; transferencias y cron de reviews disparan push si corresponde.
 - **V2.2 ticketera:** ticket comprador desde `TicketTemplate` o fallback premium; QR `yti:v1:` imprimible; estados visibles; validación scanner documentada en smokes.
 - **Gastro follows:** seguir locales/restaurantes desde preferencias y ficha pública (`UserGastroFollow`).
-- Smokes: `smoke:user-portal`, `smoke:notifications`, `smoke:producer-follows` + cleanup automático post-run.
+- Smokes: `smoke:user-portal`, `smoke:notifications`, `smoke:producer-follows`, `smoke:referrals` + cleanup automático post-run.
 - Doc detallada: `docs/user/USER_PORTAL.md`, `docs/user/TICKET_TRANSFER.md`, `docs/tickets/TICKET_CANVAS_STUDIO.md`.
 - Checklist operativo: `docs/dev/Yo_Te_Invito_Checklist_V2_Produccion.md` (sincronizar con este archivo al cerrar ítems).
 
 ### Backend highlights
 
-- Referrer ↔ producer relationships (`ProducerReferrerRelationship`).
+- Referidos V2: `ReferralCommercialProposal`, `ReferralCommercialAgreement`, `ReferralPaymentRequest`, comisión en `PAID` (`ReferralCommissionService`). Ver `docs/referrals/REFERRALS_V2.md`.
 - Inbox → gastro discounts / review moderation / **cola de disputas de reseñas** (`REVIEW_DISPUTE_REQUEST` + modelo `ReviewDisputeRequest`).
 - **Reviews V2** (checklist § Reviews cerrado): UI pública, perfil comentarista, filtros, cola admin disputas, notificaciones (`ReviewNotificationsService`), reporte admin (`GET /admin/reviews/report` + CSV). Ver `docs/reviews/REVIEWS_V2.md`; smoke `smoke:reviews`.
 - Disputas con auditoría; ocultar del público al aceptar disputa (sin borrar reseña por defecto).

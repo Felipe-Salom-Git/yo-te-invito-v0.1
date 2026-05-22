@@ -137,6 +137,9 @@ model Tenant {
   referralLinks     ReferralLink[]
   referralAttributions ReferralAttribution[]
   referralCommissions ReferralCommission[]
+  referralCommercialProposals ReferralCommercialProposal[]
+  referralCommercialAgreements ReferralCommercialAgreement[]
+  referralPaymentRequests ReferralPaymentRequest[]
   reviews             Review[]
   auditLogs           AuditLog[]
   fraudSignals        FraudSignal[]
@@ -259,6 +262,9 @@ model ProducerProfile {
   events     Event[]
   referrerRelationships ProducerReferrerRelationship[]
   eventReferrerAssignments EventReferrerAssignment[]
+  referralCommercialProposals ReferralCommercialProposal[]
+  referralCommercialAgreements ReferralCommercialAgreement[]
+  referralPaymentRequestsReceived ReferralPaymentRequest[]
   commercialReviewsReceived CommercialRelationshipReview[] @relation("CommercialReviewProducer")
   reviewDisputeRequests     ReviewDisputeRequest[]
 
@@ -394,6 +400,9 @@ model ReferrerProfile {
   referralLinks ReferralLink[]
   producerRelationships ProducerReferrerRelationship[]
   eventAssignments EventReferrerAssignment[]
+  referralCommercialProposals ReferralCommercialProposal[]
+  referralCommercialAgreements ReferralCommercialAgreement[]
+  referralPaymentRequests ReferralPaymentRequest[]
   commercialReviewsReceived CommercialRelationshipReview[] @relation("CommercialReviewReferrer")
 
   @@unique([tenantId, slug])
@@ -794,6 +803,8 @@ model Event {
   referralAttributions ReferralAttribution[]
   referralCommissions  ReferralCommission[]
   referrerAssignments  EventReferrerAssignment[]
+  referralCommercialProposals ReferralCommercialProposal[]
+  referralCommercialAgreements ReferralCommercialAgreement[]
   reviews             Review[]
   reviewDisputeRequests ReviewDisputeRequest[]
   fraudSignals        FraudSignal[]
@@ -1491,33 +1502,120 @@ model EventMedia {
   @@index([eventId])
 }
 
+enum ReferralCommissionType {
+  PERCENTAGE
+  FIXED_PER_TICKET
+}
+
+enum ReferralCommercialProposalStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CANCELLED
+  EXPIRED
+}
+
+enum ReferralCommercialAgreementStatus {
+  ACTIVE
+  PAUSED
+  ENDED
+  CANCELLED
+}
+
 enum ReferralCommissionStatus {
   PENDING
+  CONFIRMED
+  CANCELLED
+  MARKED_AS_PAID
   REQUESTED
   PAID
   REJECTED
 }
 
 model ReferralCommission {
-  id                String                   @id @default(cuid())
-  tenantId          String
-  referrerId        String
-  referralLinkId    String
-  eventId           String
-  amountCents       Int
-  status            ReferralCommissionStatus @default(PENDING)
-  requestedAt       DateTime?
-  paidAt            DateTime?
-  confirmedByUserId String?
+  id                      String                   @id @default(cuid())
+  tenantId                String
+  referrerId              String
+  referralLinkId          String
+  eventId                 String
+  amountCents             Int
+  status                  ReferralCommissionStatus @default(PENDING)
+  requestedAt             DateTime?
+  paidAt                  DateTime?
+  confirmedByUserId       String?
+  /// V2: una fila por venta atribuida (idempotente por attribution)
+  referralAttributionId   String?                  @unique
+  agreementId             String?
+  producerProfileId       String?
+  referrerProfileId       String?
+  orderId                 String?                  @unique
+  commissionType          ReferralCommissionType?
+  commissionValue         Decimal?                 @db.Decimal(12, 4)
+  attributedSubtotalCents Int?
+  ticketQuantity          Int?
 
-  tenant       Tenant       @relation(fields: [tenantId], references: [id])
-  referrer     User         @relation(fields: [referrerId], references: [id])
-  referralLink ReferralLink @relation(fields: [referralLinkId], references: [id])
-  event        Event        @relation(fields: [eventId], references: [id])
+  tenant              Tenant                     @relation(fields: [tenantId], references: [id])
+  referrer            User                       @relation(fields: [referrerId], references: [id])
+  referralLink        ReferralLink               @relation(fields: [referralLinkId], references: [id])
+  event               Event                      @relation(fields: [eventId], references: [id])
+  referralAttribution ReferralAttribution?       @relation(fields: [referralAttributionId], references: [id], onDelete: SetNull)
+  agreement           ReferralCommercialAgreement? @relation(fields: [agreementId], references: [id], onDelete: SetNull)
+  paymentRequestItems ReferralPaymentRequestItem[]
 
   @@index([tenantId])
   @@index([referrerId])
   @@index([eventId])
+  @@index([agreementId])
+  @@index([referrerProfileId])
+  @@index([producerProfileId])
+}
+
+enum ReferralPaymentRequestStatus {
+  REQUESTED
+  IN_REVIEW
+  PAID
+  REJECTED
+  CANCELLED
+}
+
+model ReferralPaymentRequest {
+  id                  String                       @id @default(cuid())
+  tenantId            String
+  referrerProfileId   String
+  producerProfileId   String
+  amountRequestedCents Int
+  message             String?
+  status              ReferralPaymentRequestStatus @default(REQUESTED)
+  rejectReason        String?
+  requestedAt         DateTime                     @default(now())
+  inReviewAt          DateTime?
+  paidAt              DateTime?
+  rejectedAt          DateTime?
+  cancelledAt         DateTime?
+  createdAt           DateTime                     @default(now())
+  updatedAt           DateTime                     @updatedAt
+
+  tenant          Tenant          @relation(fields: [tenantId], references: [id])
+  referrerProfile ReferrerProfile @relation(fields: [referrerProfileId], references: [id], onDelete: Cascade)
+  producerProfile ProducerProfile @relation(fields: [producerProfileId], references: [id], onDelete: Cascade)
+  items           ReferralPaymentRequestItem[]
+
+  @@index([tenantId])
+  @@index([referrerProfileId])
+  @@index([producerProfileId])
+  @@index([tenantId, producerProfileId, status])
+  @@index([tenantId, referrerProfileId, status])
+}
+
+model ReferralPaymentRequestItem {
+  id               String @id @default(cuid())
+  paymentRequestId String
+  commissionId     String @unique
+
+  paymentRequest ReferralPaymentRequest @relation(fields: [paymentRequestId], references: [id], onDelete: Cascade)
+  commission     ReferralCommission     @relation(fields: [commissionId], references: [id], onDelete: Restrict)
+
+  @@index([paymentRequestId])
 }
 
 model ReferralLink {
@@ -1538,11 +1636,74 @@ model ReferralLink {
   attributions ReferralAttribution[]
   commissions  ReferralCommission[]
   eventAssignment EventReferrerAssignment?
+  commercialAgreement ReferralCommercialAgreement?
 
   @@index([tenantId])
   @@index([eventId])
   @@index([referrerId])
   @@index([referrerProfileId])
+}
+
+model ReferralCommercialProposal {
+  id                 String                           @id @default(cuid())
+  tenantId           String
+  producerProfileId  String
+  referrerProfileId  String
+  eventId            String
+  commissionType     ReferralCommissionType
+  commissionValue    Decimal                          @db.Decimal(12, 4)
+  message            String?
+  terms              String?
+  startAt            DateTime?
+  endAt              DateTime?
+  status             ReferralCommercialProposalStatus @default(PENDING)
+  respondedAt        DateTime?
+  createdAt          DateTime                         @default(now())
+  updatedAt          DateTime                         @updatedAt
+
+  tenant          Tenant                    @relation(fields: [tenantId], references: [id])
+  producerProfile ProducerProfile           @relation(fields: [producerProfileId], references: [id], onDelete: Cascade)
+  referrerProfile ReferrerProfile           @relation(fields: [referrerProfileId], references: [id], onDelete: Cascade)
+  event           Event                     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  agreement       ReferralCommercialAgreement?
+
+  @@index([tenantId])
+  @@index([producerProfileId])
+  @@index([referrerProfileId])
+  @@index([eventId])
+  @@index([tenantId, producerProfileId, status])
+  @@index([tenantId, referrerProfileId, status])
+  @@index([tenantId, producerProfileId, referrerProfileId, eventId])
+}
+
+model ReferralCommercialAgreement {
+  id                 String                          @id @default(cuid())
+  tenantId           String
+  proposalId         String                          @unique
+  producerProfileId  String
+  referrerProfileId  String
+  eventId            String
+  referralLinkId     String                          @unique
+  commissionType     ReferralCommissionType
+  commissionValue    Decimal                         @db.Decimal(12, 4)
+  status             ReferralCommercialAgreementStatus @default(ACTIVE)
+  acceptedAt         DateTime
+  endedAt            DateTime?
+  createdAt          DateTime                        @default(now())
+  updatedAt          DateTime                        @updatedAt
+
+  tenant          Tenant                    @relation(fields: [tenantId], references: [id])
+  proposal        ReferralCommercialProposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  producerProfile ProducerProfile           @relation(fields: [producerProfileId], references: [id], onDelete: Cascade)
+  referrerProfile ReferrerProfile           @relation(fields: [referrerProfileId], references: [id], onDelete: Cascade)
+  event           Event                     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  referralLink    ReferralLink              @relation(fields: [referralLinkId], references: [id], onDelete: Restrict)
+  commissions     ReferralCommission[]
+
+  @@index([tenantId])
+  @@index([producerProfileId])
+  @@index([referrerProfileId])
+  @@index([eventId])
 }
 
 model ReferralAttribution {
@@ -1556,6 +1717,7 @@ model ReferralAttribution {
   tenant       Tenant       @relation(fields: [tenantId], references: [id])
   event        Event        @relation(fields: [eventId], references: [id])
   referralLink ReferralLink @relation(fields: [referralLinkId], references: [id])
+  commission   ReferralCommission?
 
   @@index([tenantId])
   @@index([eventId])
@@ -1586,6 +1748,8 @@ enum AuditAction {
   REVIEW_HIDDEN
   REVIEW_RESTORED
   REVIEW_REPLY_UPDATED
+  REFERRAL_PAYMENT_REQUEST_CREATED
+  REFERRAL_PAYMENT_REQUEST_STATUS_CHANGED
 }
 
 model AuditLog {

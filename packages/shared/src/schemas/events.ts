@@ -465,10 +465,27 @@ export const referralCommissionSchema = z.object({
   referralLinkId: z.string(),
   eventId: z.string(),
   amountCents: z.number(),
-  status: z.enum(['PENDING', 'REQUESTED', 'PAID', 'REJECTED']),
+  status: z.enum([
+    'PENDING',
+    'CONFIRMED',
+    'CANCELLED',
+    'MARKED_AS_PAID',
+    'REQUESTED',
+    'PAID',
+    'REJECTED',
+  ]),
   requestedAt: z.string().datetime().nullable(),
   paidAt: z.string().datetime().nullable(),
   confirmedByUserId: z.string().nullable(),
+  referralAttributionId: z.string().nullable().optional(),
+  agreementId: z.string().nullable().optional(),
+  producerProfileId: z.string().nullable().optional(),
+  referrerProfileId: z.string().nullable().optional(),
+  orderId: z.string().nullable().optional(),
+  commissionType: z.enum(['PERCENTAGE', 'FIXED_PER_TICKET']).nullable().optional(),
+  commissionValue: z.number().nullable().optional(),
+  attributedSubtotalCents: z.number().nullable().optional(),
+  ticketQuantity: z.number().nullable().optional(),
 });
 export type ReferralCommission = z.infer<typeof referralCommissionSchema>;
 

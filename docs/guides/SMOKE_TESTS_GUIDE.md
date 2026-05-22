@@ -37,7 +37,11 @@ Cuenta recomendada: `felipe.e.salom@gmail.com` (u otra en BD con contraseña con
 | `SMOKE_USER_PASSWORD` | **Sí** | Contraseña |
 | `SMOKE_SECOND_USER_EMAIL` | No | Segundo usuario en transferencias |
 | `SMOKE_SCANNER_EMAIL` / `SMOKE_SCANNER_PASSWORD` | No | Validación QR en `smoke:user-portal` |
-| `SMOKE_PRODUCER_EMAIL`, `SMOKE_GASTRO_EMAIL`, `SMOKE_REFERRER_EMAIL`, `SMOKE_ADMIN_EMAIL` | No | Roles extra en `smoke:reviews` |
+| `SMOKE_PRODUCER_EMAIL`, `SMOKE_GASTRO_EMAIL`, `SMOKE_REFERRER_EMAIL`, `SMOKE_ADMIN_EMAIL` | No | Roles extra en `smoke:reviews` y `smoke:referrals` (productor + referido) |
+| `SMOKE_PRODUCER_PASSWORD`, `SMOKE_REFERRER_PASSWORD` | No | Si difieren de `SMOKE_USER_PASSWORD` |
+| `SMOKE_EVENT_ID` | No | Evento APPROVED con tipos de entrada (`smoke:referrals`) |
+| `SMOKE_REFERRER_PROFILE_ID` | No | Cuid del perfil referido (si no se infiere de `GET /referrer/me`) |
+| `SMOKE_SECOND_PRODUCER_EMAIL` | No | Verificar que otra productora no puede `mark-paid` ajena |
 | `SMOKE_ALLOW_DEV_AUTH=1` | No | Fallback `X-Dev-User-Id` (solo dev) |
 | `SMOKE_SKIP_CLEANUP=1` | No | No borrar artefactos al finalizar |
 | `SMOKE_CLEANUP_BEFORE=1` | No | Limpiar antes de ejecutar |
@@ -61,6 +65,7 @@ SMOKE_USER_EMAIL=felipe.e.salom@gmail.com SMOKE_USER_PASSWORD=<pass> pnpm --filt
 | `smoke:notifications` | Sí | Notif `e2e-demo:*` | Requiere rol ADMIN para seed-demo |
 | `smoke:reviews` | Sí | Reviews `[smoke-test]` | Muchos `skip` sin eventos/roles |
 | `smoke:user-portal` | **Alto** | Órdenes, usuarios smoke, transfers | Necesita evento con entradas para cobertura completa |
+| `smoke:referrals` | **Alto** | Propuestas, órdenes atribuidas, comisiones, solicitudes de pago | Requiere `SMOKE_PRODUCER_EMAIL` + `SMOKE_REFERRER_EMAIL`, asociación ACTIVE y evento APPROVED |
 
 ### `smoke:api`
 
@@ -99,6 +104,27 @@ SMOKE_PRODUCER_EMAIL=... SMOKE_GASTRO_EMAIL=... SMOKE_REFERRER_EMAIL=... SMOKE_A
 ```
 
 Documentación de dominio: [docs/reviews/REVIEWS_V2.md](../reviews/REVIEWS_V2.md).
+
+### `smoke:referrals`
+
+Contrato Referidos V2: propuesta → aceptación → link → orden con `referralCode` → `demo-confirm` → comisión `CONFIRMED` → solicitud de pago → `mark-in-review` / `mark-paid` (liquidación **externa**, registro informativo).
+
+```bash
+SMOKE_USER_EMAIL=... SMOKE_USER_PASSWORD=... \
+SMOKE_PRODUCER_EMAIL=... SMOKE_REFERRER_EMAIL=... \
+pnpm --filter api run smoke:referrals
+```
+
+| Requisito | Notas |
+|-----------|--------|
+| Productor + referido | Usuarios reales con perfiles y membresías; no `@demo.local` |
+| Asociación | `ProducerReferrerRelationship` en estado `ACTIVE` |
+| Evento | `SMOKE_EVENT_ID` o primer evento `APPROVED` del productor con tipos de entrada públicos |
+| Persistencia | Crea orden/comisión/solicitud; `smoke:cleanup` estándar al final (no revierte `mark-paid`) |
+
+Tests util relacionados: `test:referral-proposals`, `test:referral-commission`, `test:referral-payment-requests`.
+
+Documentación: [docs/referrals/REFERRALS_V2.md](../referrals/REFERRALS_V2.md).
 
 ### `smoke:user-portal`
 
