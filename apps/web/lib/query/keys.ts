@@ -228,6 +228,25 @@ export const metricsKeys = {
   admin: ['admin', 'metrics'] as const,
 };
 
+export const adminDashboardKeys = {
+  all: ['admin', 'dashboard'] as const,
+};
+
+export const adminEventsKeys = {
+  all: ['admin', 'events'] as const,
+  list: (filtersKey: string) => [...adminEventsKeys.all, 'list', filtersKey] as const,
+};
+
+export const adminAuditKeys = {
+  all: ['admin', 'audit-logs'] as const,
+  list: (filtersKey: string) => [...adminAuditKeys.all, 'list', filtersKey] as const,
+};
+
+export const adminUsersKeys = {
+  all: ['admin', 'users'] as const,
+  list: (filtersKey: string) => [...adminUsersKeys.all, 'list', filtersKey] as const,
+};
+
 // ─── Payouts ───────────────────────────────────────────────────────────────
 
 export const payoutsKeys = {

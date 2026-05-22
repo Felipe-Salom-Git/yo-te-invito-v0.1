@@ -116,7 +116,7 @@ export function EventPurchaseCard({
         </Link>
         <Link
           href={`/checkout/${eventId}?tenantId=${tenantId}`}
-          className="inline-flex items-center justify-center rounded-lg bg-accent px-4 py-2.5 font-semibold text-bg shadow-lg shadow-accent-glow transition-all hover:bg-accent-hover"
+          className="inline-flex items-center justify-center rounded-lg bg-accent px-4 py-2.5 font-semibold text-bg shadow-accent-glow transition-all hover:bg-accent-hover"
         >
           Comprar directo
         </Link>

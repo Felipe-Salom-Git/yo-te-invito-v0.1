@@ -1128,6 +1128,39 @@ export interface PlatformMetrics {
   usageRatePercent?: number;
 }
 
+export type AdminDashboardMetrics = import('@yo-te-invito/shared').AdminDashboardMetrics;
+export type AdminDashboardPendingEvent = import('@yo-te-invito/shared').AdminDashboardPendingEvent;
+export type AdminDashboardResponse = import('@yo-te-invito/shared').AdminDashboardResponse;
+
+export interface AdminDashboardRepo {
+  getDashboard(): Promise<AdminDashboardResponse>;
+}
+
+export type AdminEventsListQuery = import('@yo-te-invito/shared').AdminEventsListQuery;
+export type AdminEventListItem = import('@yo-te-invito/shared').AdminEventListItem;
+export type AdminEventsListResponse = import('@yo-te-invito/shared').AdminEventsListResponse;
+
+export interface AdminEventsRepo {
+  list(query: AdminEventsListQuery): Promise<AdminEventsListResponse>;
+}
+
+export type AuditLogsListQuery = import('@yo-te-invito/shared').AuditLogsListQuery;
+export type AuditLogItem = import('@yo-te-invito/shared').AuditLogItem;
+export type AuditLogsListResponse = import('@yo-te-invito/shared').AuditLogsListResponse;
+
+export interface AdminAuditRepo {
+  listLogs(query: AuditLogsListQuery): Promise<AuditLogsListResponse>;
+}
+
+export type AdminUsersListQuery = import('@yo-te-invito/shared').AdminUsersListQuery;
+export type AdminUserListItem = import('@yo-te-invito/shared').AdminUserListItem;
+export type AdminUsersListResponse = import('@yo-te-invito/shared').AdminUsersListResponse;
+
+export interface AdminUsersRepo {
+  list(query: AdminUsersListQuery): Promise<AdminUsersListResponse>;
+  updateRole(userId: string, role: string): Promise<User | null>;
+}
+
 export type PayoutStatus = 'REQUESTED' | 'PENDING' | 'PROCESSING' | 'SENT' | 'REJECTED';
 
 export interface PayoutRequest {
@@ -2226,6 +2259,10 @@ export interface Repositories {
   referrals: ReferralsRepo;
   courtesies: CourtesiesRepo;
   metrics: MetricsRepo;
+  adminDashboard: AdminDashboardRepo;
+  adminEvents: AdminEventsRepo;
+  adminAudit: AdminAuditRepo;
+  adminUsers: AdminUsersRepo;
   producerDashboard: ProducerDashboardRepo;
   producers: ProducersRepo;
   commercialReviews: CommercialReviewsRepo;

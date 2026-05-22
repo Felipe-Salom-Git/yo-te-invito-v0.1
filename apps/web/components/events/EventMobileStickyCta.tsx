@@ -32,7 +32,7 @@ export function EventMobileStickyCta({
       </div>
       <Link
         href={`/checkout/${eventId}?tenantId=${tenantId}`}
-        className="flex-shrink-0 rounded-lg bg-accent px-5 py-2.5 font-semibold text-bg shadow-lg shadow-accent-glow transition-all hover:bg-accent-hover focus:outline-none focus:ring-2 focus:ring-accent-muted focus:ring-offset-2 focus:ring-offset-bg"
+        className="flex-shrink-0 rounded-lg bg-accent px-5 py-2.5 font-semibold text-bg shadow-accent-glow transition-all hover:bg-accent-hover focus:outline-none focus:ring-2 focus:ring-accent-muted focus:ring-offset-2 focus:ring-offset-bg"
       >
         {ctaLabel}
       </Link>

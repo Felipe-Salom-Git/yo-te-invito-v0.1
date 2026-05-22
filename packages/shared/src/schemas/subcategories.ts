@@ -64,6 +64,8 @@ export type PublicSubcategoriesListResponse = z.infer<
 
 export const adminSubcategoriesListResponseSchema = z.object({
   data: z.array(subcategoryResponseSchema),
+  /** Present when `category=hotel` — subcategory management disabled */
+  comingSoon: z.literal(true).optional(),
 });
 export type AdminSubcategoriesListResponse = z.infer<
   typeof adminSubcategoriesListResponseSchema

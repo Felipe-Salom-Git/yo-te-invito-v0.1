@@ -1,5 +1,5 @@
-import { redirect } from 'next/navigation';
+import { AdminEventsPageClient } from '@/components/admin/events/AdminEventsPageClient';
 
-export default function AdminEventosRedirectPage() {
-  redirect('/admin/publicaciones-generales');
+export default function AdminEventosPage() {
+  return <AdminEventsPageClient />;
 }

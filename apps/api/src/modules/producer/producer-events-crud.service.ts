@@ -14,7 +14,7 @@ import type {
   EventsPaginatedResponse,
 } from '@yo-te-invito/shared';
 import { deriveProducerEventMode } from '@yo-te-invito/shared';
-import { ErrorCode, parseRentalOpeningHours, type RentalOpeningHours } from '@yo-te-invito/shared';
+import { ErrorCode, parseRentalOpeningHours } from '@yo-te-invito/shared';
 import { SubcategoriesService } from '../subcategories/subcategories.service';
 import { RentalLocationsService } from '../rental-locations/rental-locations.service';
 
@@ -56,6 +56,31 @@ export class ProducerEventsCrudService {
     return event;
   }
 
+  private mapRentalLocationForDetail(
+    loc: {
+      id: string;
+      name: string;
+      address: string | null;
+      openingHours: unknown;
+      openingHoursNote: string | null;
+      whatsappPhone: string | null;
+      geoLat: number | null;
+      geoLng: number | null;
+    } | null,
+  ): EventDetail['rentalLocation'] {
+    if (!loc) return undefined;
+    return {
+      id: loc.id,
+      name: loc.name,
+      address: loc.address,
+      openingHours: parseRentalOpeningHours(loc.openingHours),
+      openingHoursNote: loc.openingHoursNote,
+      whatsappPhone: loc.whatsappPhone,
+      geoLat: loc.geoLat,
+      geoLng: loc.geoLng,
+    };
+  }
+
   private toEventDetail(event: {
     id: string;
     title: string;
@@ -70,8 +95,9 @@ export class ProducerEventsCrudService {
       id: string;
       name: string;
       address: string | null;
-      openingHours: RentalOpeningHours | null;
+      openingHours: unknown;
       openingHoursNote: string | null;
+      whatsappPhone: string | null;
       geoLat: number | null;
       geoLng: number | null;
     } | null;
@@ -117,7 +143,7 @@ export class ProducerEventsCrudService {
         url: m.url,
         sortOrder: m.sortOrder,
       })),
-      rentalLocation: event.rentalLocation ?? undefined,
+      rentalLocation: this.mapRentalLocationForDetail(event.rentalLocation ?? null),
     };
   }
 
@@ -144,18 +170,7 @@ export class ProducerEventsCrudService {
     return this.toEventDetail({
       ...event,
       media: event.media,
-      rentalLocation: event.rentalLocation
-        ? {
-            id: event.rentalLocation.id,
-            name: event.rentalLocation.name,
-            address: event.rentalLocation.address,
-            openingHours: parseRentalOpeningHours(event.rentalLocation.openingHours),
-            openingHoursNote: event.rentalLocation.openingHoursNote,
-            whatsappPhone: event.rentalLocation.whatsappPhone,
-            geoLat: event.rentalLocation.geoLat,
-            geoLng: event.rentalLocation.geoLng,
-          }
-        : null,
+      rentalLocation: event.rentalLocation,
     });
   }
 
@@ -300,18 +315,7 @@ export class ProducerEventsCrudService {
     return this.toEventDetail({
       ...event,
       media: event.media,
-      rentalLocation: event.rentalLocation
-        ? {
-            id: event.rentalLocation.id,
-            name: event.rentalLocation.name,
-            address: event.rentalLocation.address,
-            openingHours: parseRentalOpeningHours(event.rentalLocation.openingHours),
-            openingHoursNote: event.rentalLocation.openingHoursNote,
-            whatsappPhone: event.rentalLocation.whatsappPhone,
-            geoLat: event.rentalLocation.geoLat,
-            geoLng: event.rentalLocation.geoLng,
-          }
-        : null,
+      rentalLocation: event.rentalLocation,
     });
   }
 
@@ -402,18 +406,7 @@ export class ProducerEventsCrudService {
     return this.toEventDetail({
       ...event,
       media: event.media,
-      rentalLocation: event.rentalLocation
-        ? {
-            id: event.rentalLocation.id,
-            name: event.rentalLocation.name,
-            address: event.rentalLocation.address,
-            openingHours: parseRentalOpeningHours(event.rentalLocation.openingHours),
-            openingHoursNote: event.rentalLocation.openingHoursNote,
-            whatsappPhone: event.rentalLocation.whatsappPhone,
-            geoLat: event.rentalLocation.geoLat,
-            geoLng: event.rentalLocation.geoLng,
-          }
-        : null,
+      rentalLocation: event.rentalLocation,
     });
   }
 }

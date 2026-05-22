@@ -6,6 +6,8 @@ import { PortalSidebar } from '@/components/layout/PortalSidebar';
 
 const NAV = [
   { href: '/admin', label: 'Dashboard' },
+  { href: '/admin/eventos', label: 'Eventos' },
+  { href: '/admin/auditoria', label: 'Auditoría' },
   { href: '/admin/review-disputes', label: 'Reseñas (disputas)' },
   { href: '/admin/productoras', label: 'Productoras' },
   { href: '/admin/publicaciones-generales', label: 'Publicaciones Generales' },
@@ -16,7 +18,7 @@ const NAV = [
   { href: '/admin/usuarios', label: 'Usuarios' },
   { href: '/admin/tickets', label: 'Tickets' },
   { href: '/admin/contactos', label: 'Contactos' },
-  { href: '/admin/categorias', label: 'Categorías' },
+  { href: '/admin/categorias', label: 'Subcategorías' },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

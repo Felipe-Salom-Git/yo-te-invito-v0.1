@@ -25,7 +25,7 @@ export function ContentPreviewActions({
       <Link
         href={detailHref}
         onClick={onClose}
-        className="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-accent px-6 py-3 font-semibold text-bg shadow-lg shadow-accent-glow transition-all hover:bg-accent-hover focus:outline-none focus:ring-2 focus:ring-accent-muted focus:ring-offset-2 focus:ring-offset-bg-muted"
+        className="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-accent px-6 py-3 font-semibold text-bg shadow-accent-glow transition-all hover:bg-accent-hover focus:outline-none focus:ring-2 focus:ring-accent-muted focus:ring-offset-2 focus:ring-offset-bg-muted"
       >
         {primaryCtaLabel}
       </Link>

@@ -73,6 +73,10 @@ ApiClient → HTTP (NEXT_PUBLIC_API_BASE_URL)
 | **producerReviews** / **adminReviewDisputes** | ✓ | comentarios productora + cola admin disputas |
 | **commercialReviews** | ✓ | valoraciones privadas productora↔referidor |
 | **MePortalRepo** | ✓ | dashboard, cart, favorites, expected-events, activity, account, transfer offers, notifications, **push subscriptions** |
+| **adminDashboard** | ✓ | `GET /admin/dashboard` — KPIs + cola eventos pendientes |
+| **adminEvents** | ✓ | `GET /admin/events` — listado operativo con filtros |
+| **adminAudit** | ✓ | `GET /admin/audit-logs` — auditoría con filtros |
+| **adminUsers** | ✓ | `GET /admin/users`, `PATCH /admin/users/:id/role` — listado operativo con filtros |
 | ProfilesRepo, ApplicationsRepo, PlatformConfigRepo | ✓ | |
 
 **Category routing**: `gastro` → `/restaurants`, `excursion` → `/excursiones`, `rental` → `/rentals`, `hotel` → `/hoteles`, default → `/events`.
@@ -88,7 +92,7 @@ ApiClient → HTTP (NEXT_PUBLIC_API_BASE_URL)
 | Public | `/`, `/home`, **`/explore`** (filtros URL: `q`, `category`, `subcategoryId`, `city`, `from`, `to`, `page`), `/events/[id]`, `/restaurants/[id]`, `/excursiones/[id]`, **`/rentals/[id]`**, `/hoteles/[id]`, **`/users/[userId]`** (perfil comentarista), checkout, `/me/tickets`, `/referrers`, `/r/[code]` |
 | Account | `/login`, `/register`, **`/me/*`** (portal usuario estándar) |
 | Cuenta (legacy) | `/cuenta/*` → **redirects** a `/me/*` (no mantener lógica duplicada) |
-| Admin | `/admin/*` (**solo rol `ADMIN`**, `ProfileProtectedLayout` en `admin/layout.tsx`), sidebar operaciones; acceso: `/profiles`, navbar «Administración», URL directa |
+| Admin | `/admin/*` (**solo rol `ADMIN`**, `ProfileProtectedLayout` en `admin/layout.tsx`), sidebar operaciones; **`/admin`** dashboard; **`/admin/eventos`** listado filtrado; **`/admin/usuarios`** listado usuarios con filtros URL; **`/admin/categorias`** subcategorías + banners (`/admin/subcategorias` redirige); **`/admin/auditoria`** logs operativos; acceso: `/profiles`, navbar «Administración», URL directa |
 | Producer | `/producer` (hub: KPIs, engagement, **`ProducerDashboardEventStatusAlerts`**, eventos; nav en sidebar), `/producer/events`, ticket studio, **`/producer/profile`** (hub por bloques + completitud frontend), **`/producer/profile/create`** (solo nombre; slug en servidor), **`/producer/profile/identity|images|contact`**, **`/producer/comments`** (`ManagedReviewsCommentsPage`), referidos, payouts |
 | Gastro / Hotel / Referrer | `/gastro/*`, **`/gastro/valoraciones`**, `/hotel`, **`/hotel/valoraciones`**, `/referrer`, `/cuenta/solicitar-referrer` |
 
@@ -164,6 +168,11 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`). Shared UI tokens:
 | Dashboard productor | `components/producer/dashboard/` (`ProducerDashboardClient`, KPIs, engagement, alertas estado evento; **sin** `ProducerDashboardQuickLinks`) |
 | Valoración B2B | `CommercialReviewPanel`, `CommercialAspectBreakdown` |
 | Navbar admin | `NavbarUserMenu` — enlace «Administración» si `Role.ADMIN` |
+| Dashboard admin | `components/admin/dashboard/` — `AdminDashboardClient`, KPIs, cola, accesos; hook `lib/query/admin-dashboard.ts` |
+| Eventos admin | `components/admin/events/` — `AdminEventsPageClient`, filtros URL, tabla + cards mobile |
+| Auditoría admin | `components/admin/audit/` — `AdminAuditPageClient`, `AdminAuditFilters`, tabla + cards, `AdminAuditMetadataPreview`; hook `lib/query/admin-audit.ts` |
+| Usuarios admin | `components/admin/users/` — `AdminUsersPageClient`, filtros URL, tabla + cards mobile, badges rol/perfiles; cambio de rol con confirmación; cuenta maestro sin selector; hook `lib/query/admin-users.ts` |
+| Subcategorías admin | `components/admin/subcategories/` — `AdminSubcategoriesPageClient`, tabs por vertical, CRUD vía `SubcategoriesRepo`, hotel `AdminHotelComingSoonPanel`; banners en `AdminCategoryBannerPanel`; hook `useAdminSubcategories` |
 | Portal usuario push | `components/me/MePushNotificationsPanel`, `MePushAlertPreferences`, `MeDashboardPushCta`, `InterestsDisclosure` |
 | Ticket comprador | `components/tickets/*`, `components/me/MeBuyerTicketPanel`, `MeTicketListCard` |
 

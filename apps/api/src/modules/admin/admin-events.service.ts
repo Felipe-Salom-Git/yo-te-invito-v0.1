@@ -9,12 +9,37 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { EventPublicationAlertsService } from '../notifications/event-publication-alerts.service';
 import { ProducerEventStatusNotificationsService } from '../notifications/producer-event-status-notifications.service';
 import { ErrorCode } from '@yo-te-invito/shared';
-import type { EventsPaginatedResponse, EventSummary } from '@yo-te-invito/shared';
+import type {
+  AdminEventStatus,
+  AdminEventsListQuery,
+  AdminEventsListResponse,
+  AdminEventListItem,
+  EventsPaginatedResponse,
+  EventSummary,
+} from '@yo-te-invito/shared';
+import {
+  buildAdminEventsOrderBy,
+  buildAdminEventsWhere,
+} from './admin-events-list.util';
 
 type ModerationAuditAction =
   | typeof AuditAction.EVENT_REJECTED
   | typeof AuditAction.EVENT_POSTPONED
   | typeof AuditAction.EVENT_CANCELLED;
+
+/** Legacy `EventSummary` uses Prisma enum casing; admin list uses lowercase slugs. */
+function adminStatusToEventSummaryStatus(
+  status: AdminEventStatus,
+): NonNullable<EventSummary['status']> {
+  const map: Record<AdminEventStatus, NonNullable<EventSummary['status']>> = {
+    draft: 'DRAFT',
+    pending: 'PENDING',
+    approved: 'APPROVED',
+    paused: 'PAUSED',
+    cancelled: 'CANCELLED',
+  };
+  return map[status];
+}
 
 @Injectable()
 export class AdminEventsService {
@@ -24,49 +49,88 @@ export class AdminEventsService {
     private readonly producerEventNotifications: ProducerEventStatusNotificationsService,
   ) {}
 
+  /** Legacy shim — prefer {@link listForAdmin} with full query. */
   async list(
     tenantId: string,
     page = 1,
     limit = 50,
     status?: string,
   ): Promise<EventsPaginatedResponse> {
-    const where: { tenantId: string; deletedAt: null; status?: EventStatus } = {
-      tenantId,
-      deletedAt: null,
+    const result = await this.listForAdmin(tenantId, {
+      page,
+      limit,
+      ...(status ? { status: status.toLowerCase() as AdminEventsListQuery['status'] } : {}),
+    });
+    const data: EventSummary[] = result.data.map((e) => ({
+      id: e.id,
+      title: e.title,
+      startAt: e.startAt,
+      city: e.city,
+      venueName: null,
+      coverImageUrl: null,
+      status: adminStatusToEventSummaryStatus(e.status),
+      category: e.category,
+    }));
+    return {
+      data,
+      meta: result.meta,
     };
-    const validStatuses: EventStatus[] = ['DRAFT', 'PENDING', 'APPROVED', 'PAUSED', 'CANCELLED'];
-    if (status && validStatuses.includes(status.toUpperCase() as EventStatus)) {
-      where.status = status.toUpperCase() as EventStatus;
-    }
-    const [data, total] = await Promise.all([
+  }
+
+  async listForAdmin(
+    tenantId: string,
+    query: AdminEventsListQuery,
+  ): Promise<AdminEventsListResponse> {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+    const where = buildAdminEventsWhere(tenantId, query);
+    const orderBy = buildAdminEventsOrderBy(query);
+
+    const [rows, total] = await Promise.all([
       this.prisma.event.findMany({
         where,
+        orderBy,
+        skip: (page - 1) * limit,
+        take: limit,
         select: {
           id: true,
           title: true,
-          startAt: true,
-          city: true,
-          venueName: true,
-          coverImageUrl: true,
+          category: true,
+          subcategoryId: true,
           status: true,
+          city: true,
+          producerProfileId: true,
+          startAt: true,
+          endAt: true,
+          createdAt: true,
+          updatedAt: true,
+          publishedAt: true,
+          subcategory: { select: { name: true } },
+          producerProfile: { select: { id: true, displayName: true } },
         },
-        orderBy: { startAt: 'asc' },
-        skip: (page - 1) * limit,
-        take: limit,
       }),
       this.prisma.event.count({ where }),
     ]);
-    const items = data.map((e) => ({
+
+    const data: AdminEventListItem[] = rows.map((e) => ({
       id: e.id,
       title: e.title,
-      startAt: e.startAt.toISOString(),
+      category: e.category,
+      subcategoryId: e.subcategoryId,
+      subcategoryName: e.subcategory?.name ?? null,
+      status: e.status.toLowerCase() as AdminEventListItem['status'],
       city: e.city,
-      venueName: e.venueName,
-      coverImageUrl: e.coverImageUrl,
-      status: e.status.toLowerCase(),
+      producerProfileId: e.producerProfileId ?? e.producerProfile?.id ?? null,
+      producerName: e.producerProfile?.displayName ?? null,
+      startAt: e.startAt.toISOString(),
+      endAt: e.endAt?.toISOString() ?? null,
+      createdAt: e.createdAt.toISOString(),
+      updatedAt: e.updatedAt.toISOString(),
+      publishedAt: e.publishedAt?.toISOString() ?? null,
     }));
+
     return {
-      data: items as EventSummary[],
+      data,
       meta: {
         page,
         limit,

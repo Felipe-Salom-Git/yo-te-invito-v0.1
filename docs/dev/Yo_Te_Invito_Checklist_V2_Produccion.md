@@ -64,12 +64,15 @@
 
 ## Admin operativo
 
-- [ ] Mejorar dashboard admin.
-- [ ] Agregar cola visible de eventos pendientes.
-- [ ] Mejorar filtros de auditoría.
-- [ ] Mejorar filtros de usuarios/eventos.
-- [ ] Confirmar gestión completa de subcategorías.
-- [ ] Mostrar Hoteles como “Próximamente” donde corresponda.
+_Bloque cerrado (Slices 1–5): dashboard, cola pendientes, eventos/usuarios/auditoría con filtros, subcategorías admin, hoteles Próximamente._
+
+- [x] Mejorar dashboard admin (`/admin`, `AdminDashboardClient`, KPIs reales vía `GET /admin/dashboard`).
+- [x] Agregar cola visible de eventos pendientes (cola en dashboard + CTA «Revisar» → `/admin/productoras/:id`).
+- [x] Mejorar filtros de auditoría (`/admin/auditoria`, filtros backend-first en `GET /admin/audit-logs`).
+- [x] Mejorar filtros de eventos admin (`/admin/eventos`, búsqueda, estado, categoría, ciudad, tabs, API paginada).
+- [x] Mejorar filtros de usuarios/eventos admin (usuarios: `/admin/usuarios`; eventos: Slice 2).
+- [x] Confirmar gestión completa de subcategorías (`/admin/categorias`, CRUD event/gastro/rental/excursion, editar nombre, orden, activar/desactivar, banners).
+- [x] Mostrar Hoteles como “Próximamente” donde corresponda (dashboard verticales + tab Hoteles en `/admin/categorias`).
 
 ## Reviews, reputación y moderación
 

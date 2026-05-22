@@ -120,6 +120,7 @@ export class SubcategoriesService {
   }
 
   async create(tenantId: string, body: CreateSubcategoryBody) {
+    this.assertNotHotel(body.category);
     this.assertMainCategory(body.category);
     const baseSlug = body.slug?.trim() || slugifySubcategoryName(body.name);
     if (!baseSlug) {

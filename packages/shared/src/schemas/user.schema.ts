@@ -203,14 +203,13 @@ export const userPreferencesPatchSchema = z.object({
 });
 export type UserPreferencesPatch = z.infer<typeof userPreferencesPatchSchema>;
 
-/** Admin: list users query */
-export const adminUsersListQuerySchema = z.object({
-  tenantId: z.string().optional(),
-  role: z.string().optional(),
-  page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
-});
-export type AdminUsersListQuery = z.infer<typeof adminUsersListQuerySchema>;
+/** @deprecated Import from `./admin-users` — re-exported for backward compatibility */
+export {
+  adminUsersListQuerySchema,
+  type AdminUsersListQuery,
+  adminUpdateRoleBodySchema,
+  type AdminUpdateRoleBody,
+} from './admin-users';
 
 /** Admin: create referrer body */
 export const adminCreateReferrerBodySchema = z.object({
@@ -220,12 +219,6 @@ export const adminCreateReferrerBodySchema = z.object({
   password: z.string().min(6).optional(),
 });
 export type AdminCreateReferrerBody = z.infer<typeof adminCreateReferrerBodySchema>;
-
-/** Admin: update role body */
-export const adminUpdateRoleBodySchema = z.object({
-  role: z.string().min(1),
-});
-export type AdminUpdateRoleBody = z.infer<typeof adminUpdateRoleBodySchema>;
 
 /** Request body for POST /auth/google (create/find user from OAuth) */
 export const authGoogleRequestSchema = z.object({

@@ -4,7 +4,12 @@ import { Fragment, useState } from 'react';
 import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRepositories } from '@/repositories/context';
-import { adminProducersKeys } from '@/lib/query/keys';
+import {
+  adminAuditKeys,
+  adminDashboardKeys,
+  adminEventsKeys,
+  adminProducersKeys,
+} from '@/lib/query/keys';
 import { Button, useToast } from '@/components';
 import { getErrorMessage } from '@/lib/errors';
 import type { AdminProducerEventListItem } from '@/repositories/interfaces';
@@ -36,6 +41,9 @@ export function AdminProducerEventsTable({ producerId, events }: AdminProducerEv
   });
 
   const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: adminDashboardKeys.all });
+    queryClient.invalidateQueries({ queryKey: adminEventsKeys.all });
+    queryClient.invalidateQueries({ queryKey: adminAuditKeys.all });
     queryClient.invalidateQueries({ queryKey: adminProducersKeys.events(producerId) });
     queryClient.invalidateQueries({ queryKey: adminProducersKeys.detail(producerId) });
     queryClient.invalidateQueries({ queryKey: adminProducersKeys.all });

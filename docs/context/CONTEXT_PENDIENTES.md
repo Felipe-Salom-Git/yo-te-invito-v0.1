@@ -66,9 +66,14 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 
 ## F. Admin y operaciones
 
-- [ ] Cola de eventos pendientes visible en dashboard
+- [x] Cola de eventos pendientes visible en dashboard (`GET /admin/dashboard`, `AdminPendingEventsQueue` en `/admin`)
+- [x] Mejorar filtros de eventos admin (`/admin/eventos`, `GET /admin/events` extendido, filtros URL + tabs)
+- [x] Mejorar filtros de usuarios admin (`/admin/usuarios`, `GET /admin/users` extendido, filtros URL + paginación, perfiles en listado)
+- [x] Confirmar gestión completa de subcategorías (`/admin/categorias`, CRUD 4 verticales activas, hotel Próximamente, `seed:subcategories` intacto)
 - [ ] Google Maps autocomplete (opcional; hoy OSM embed)
-- [ ] Auditoría con filtros útiles en UI
+- [x] Auditoría con filtros útiles en UI (`/admin/auditoria`, `GET /admin/audit-logs` extendido)
+
+**Bloque Admin Operativo (Slices 1–5, 2026-05):** cerrado — dashboard + cola pendientes, eventos/usuarios/auditoría con filtros API, subcategorías admin, hoteles «Próximamente» en dashboard y categorías. Fuera de bloque: pagos reales, storage, portal productor completo.
 
 ---
 

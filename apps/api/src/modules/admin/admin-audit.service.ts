@@ -1,16 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import type { AuditLogsListQuery, AuditLogItem } from '@yo-te-invito/shared';
-
-export interface AuditLogsResponse {
-  data: AuditLogItem[];
-  meta: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
-}
+import type { AuditLogsListQuery, AuditLogItem, AuditLogsListResponse } from '@yo-te-invito/shared';
+import { buildAuditLogSummary } from './admin-audit-summary.util';
+import { buildAdminAuditWhere } from './admin-audit-list.util';
 
 @Injectable()
 export class AdminAuditService {
@@ -18,40 +10,84 @@ export class AdminAuditService {
 
   async list(
     query: AuditLogsListQuery & { tenantId: string },
-  ): Promise<AuditLogsResponse> {
-    const where = { tenantId: query.tenantId };
+  ): Promise<AuditLogsListResponse> {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+
+    let actorIdsFromEmail: string[] | undefined;
+    if (query.actorEmail?.trim()) {
+      const users = await this.prisma.user.findMany({
+        where: {
+          tenantId: query.tenantId,
+          deletedAt: null,
+          email: { contains: query.actorEmail.trim(), mode: 'insensitive' },
+        },
+        select: { id: true },
+        take: 50,
+      });
+      actorIdsFromEmail = users.map((u) => u.id);
+    }
+
+    const where = buildAdminAuditWhere(query.tenantId, query, actorIdsFromEmail);
 
     const [data, total] = await Promise.all([
       this.prisma.auditLog.findMany({
         where,
         orderBy: { createdAt: 'desc' },
-        skip: (query.page - 1) * query.limit,
-        take: query.limit,
+        skip: (page - 1) * limit,
+        take: limit,
       }),
       this.prisma.auditLog.count({ where }),
     ]);
 
-    const items: AuditLogItem[] = data.map((r: { id: string; tenantId: string; actorId: string; actorRole: string; action: string; entityType: string; entityId: string; before: unknown; after: unknown; metadata: unknown; createdAt: Date }) => ({
-      id: r.id,
-      tenantId: r.tenantId,
-      actorId: r.actorId,
-      actorRole: r.actorRole,
-      action: r.action,
-      entityType: r.entityType,
-      entityId: r.entityId,
-      before: r.before,
-      after: r.after,
-      metadata: r.metadata,
-      createdAt: r.createdAt.toISOString(),
-    }));
+    const actorIds = [...new Set(data.map((r) => r.actorId))];
+    const users =
+      actorIds.length > 0
+        ? await this.prisma.user.findMany({
+            where: {
+              tenantId: query.tenantId,
+              id: { in: actorIds },
+            },
+            select: {
+              id: true,
+              email: true,
+              firstName: true,
+              lastName: true,
+            },
+          })
+        : [];
+    const userById = new Map(users.map((u) => [u.id, u]));
+
+    const items: AuditLogItem[] = data.map((r) => {
+      const user = userById.get(r.actorId);
+      const displayName = user
+        ? `${user.firstName} ${user.lastName}`.trim() || null
+        : null;
+      return {
+        id: r.id,
+        tenantId: r.tenantId,
+        actorId: r.actorId,
+        actorRole: r.actorRole,
+        action: r.action,
+        entityType: r.entityType,
+        entityId: r.entityId,
+        before: r.before,
+        after: r.after,
+        metadata: r.metadata,
+        createdAt: r.createdAt.toISOString(),
+        actorEmail: user?.email ?? null,
+        actorDisplayName: displayName,
+        summary: buildAuditLogSummary(r.action, r.entityType, r.before, r.after),
+      };
+    });
 
     return {
       data: items,
       meta: {
-        page: query.page,
-        limit: query.limit,
+        page,
+        limit,
         total,
-        totalPages: Math.ceil(total / query.limit) || 1,
+        totalPages: Math.ceil(total / limit) || 1,
       },
     };
   }

@@ -61,6 +61,8 @@ import {
   type AdminGastroDiscountActionNote,
   type AdminGastroDiscountReject,
   type AdminGastroDiscountCancel,
+  adminEventsListQuerySchema,
+  type AdminEventsListQuery,
 } from '@yo-te-invito/shared';
 import { AdminGastroService } from './admin-gastro.service';
 import { AdminProducersService } from './admin-producers.service';
@@ -76,6 +78,7 @@ import { AdminAuditService } from './admin-audit.service';
 import { AdminTicketsService } from './admin-tickets.service';
 import { AdminFraudService } from './admin-fraud.service';
 import { PlatformMetricsService } from './platform-metrics.service';
+import { AdminDashboardService } from './admin-dashboard.service';
 import { AdminUsersService } from './admin-users.service';
 import { AdminConfigService } from './admin-config.service';
 import { AdminApplicationsService } from './admin-applications.service';
@@ -91,6 +94,7 @@ export class AdminController {
     private readonly tickets: AdminTicketsService,
     private readonly fraud: AdminFraudService,
     private readonly platformMetrics: PlatformMetricsService,
+    private readonly adminDashboard: AdminDashboardService,
     private readonly users: AdminUsersService,
     private readonly config: AdminConfigService,
     private readonly applications: AdminApplicationsService,
@@ -255,16 +259,10 @@ export class AdminController {
   @RequireRole(Role.ADMIN)
   async listEvents(
     @CurrentUser() user: { tenantId: string },
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
-    @Query('status') status?: string,
+    @Query(new ZodValidationPipe(adminEventsListQuerySchema))
+    query: AdminEventsListQuery,
   ) {
-    return this.events.list(
-      user.tenantId,
-      page ? parseInt(page, 10) || 1 : 1,
-      limit ? parseInt(limit, 10) || 50 : 50,
-      status || undefined,
-    );
+    return this.events.listForAdmin(user.tenantId, query);
   }
 
   @Post('events/:eventId/approve')
@@ -315,6 +313,13 @@ export class AdminController {
   @RequireRole(Role.ADMIN)
   async getPlatformMetrics() {
     return this.platformMetrics.getMetrics();
+  }
+
+  @Get('dashboard')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async getDashboard(@CurrentUser() user: { tenantId: string }) {
+    return this.adminDashboard.getDashboard(user.tenantId);
   }
 
   @Get('audit-logs')

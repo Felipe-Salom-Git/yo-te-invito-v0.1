@@ -21,6 +21,7 @@ import { AdminProducersService } from './admin-producers.service';
 import { AdminGeneralPublicationsService } from './admin-general-publications.service';
 import { EmailModule } from '../../email/email.module';
 import { AdminGastroService } from './admin-gastro.service';
+import { AdminDashboardService } from './admin-dashboard.service';
 import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
@@ -50,6 +51,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
     AdminProducersService,
     AdminGeneralPublicationsService,
     AdminGastroService,
+    AdminDashboardService,
   ],
 })
 export class AdminModule {}

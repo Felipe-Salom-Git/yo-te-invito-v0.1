@@ -116,7 +116,7 @@ export function ReviewForm({
         <button
           type="submit"
           disabled={isSubmitting || !canSubmit}
-          className="w-full rounded-lg bg-accent px-5 py-3 font-semibold text-bg shadow-lg shadow-accent-glow transition-all hover:bg-accent-hover disabled:opacity-60 disabled:cursor-not-allowed sm:w-auto sm:min-w-[180px]"
+          className="w-full rounded-lg bg-accent px-5 py-3 font-semibold text-bg shadow-accent-glow transition-all hover:bg-accent-hover disabled:opacity-60 disabled:cursor-not-allowed sm:w-auto sm:min-w-[180px]"
         >
           {isSubmitting ? 'Enviando…' : 'Publicar valoración'}
         </button>

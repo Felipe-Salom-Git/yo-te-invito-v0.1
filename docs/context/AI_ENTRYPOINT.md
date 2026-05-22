@@ -138,7 +138,7 @@ pnpm run -w dev    # API :3001 + web :3000
 
 - Principal: `felipe.e.salom@gmail.com` (registro o existente en BD).
 - Restaurar **ADMIN** + portales tras cleanup: `pnpm --filter api run user:restore-master` → luego **cerrar sesión y volver a entrar** (JWT trae `role`).
-- Panel admin: `/admin` (solo `Role.ADMIN`); también `/profiles` → tarjeta Administración o menú navbar.
+- Panel admin: `/admin` (solo `Role.ADMIN`); operativo V2: dashboard + cola pendientes, `/admin/eventos`, `/admin/usuarios`, `/admin/auditoria`, `/admin/categorias` (subcategorías; hotel Próximamente). También `/profiles` → tarjeta Administración o menú navbar.
 
 ### Limpiar contenido del tenant (no borra Felipe)
 

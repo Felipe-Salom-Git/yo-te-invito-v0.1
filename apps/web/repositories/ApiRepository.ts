@@ -1172,6 +1172,45 @@ export class ApiRepository implements Repositories {
     },
   };
 
+  adminDashboard: import('./interfaces').AdminDashboardRepo = {
+    getDashboard: async () => {
+      return this.client.get<import('./interfaces').AdminDashboardResponse>('/admin/dashboard');
+    },
+  };
+
+  adminEvents: import('./interfaces').AdminEventsRepo = {
+    list: async (query) => {
+      return this.client.get<import('./interfaces').AdminEventsListResponse>(
+        '/admin/events',
+        query as Record<string, string | number | boolean | undefined>,
+      );
+    },
+  };
+
+  adminAudit: import('./interfaces').AdminAuditRepo = {
+    listLogs: async (query) => {
+      return this.client.get<import('./interfaces').AuditLogsListResponse>(
+        '/admin/audit-logs',
+        query as Record<string, string | number | boolean | undefined>,
+      );
+    },
+  };
+
+  adminUsers: import('./interfaces').AdminUsersRepo = {
+    list: async (query) => {
+      return this.client.get<import('./interfaces').AdminUsersListResponse>(
+        '/admin/users',
+        query as Record<string, string | number | boolean | undefined>,
+      );
+    },
+    updateRole: async (userId, role) => {
+      return this.client.patch<User | null>(
+        `/admin/users/${encodeURIComponent(userId)}/role`,
+        { role },
+      );
+    },
+  };
+
   producerDashboard: import('./interfaces').ProducerDashboardRepo = {
     getMetrics: async () => {
       return this.client.get<import('./interfaces').ProducerDashboardMetrics>(

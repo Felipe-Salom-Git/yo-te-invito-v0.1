@@ -108,7 +108,19 @@ Bloque **Descubrimiento público** cerrado en checklist V2. Detalle: `docs/audit
 | Visibilidad eventos vencidos | Cerrado — 1:00 AM día siguiente (AR) en `GET /public/events*` |
 | Trending | Cerrado — `viewCount` + `rankingScore` en `/public/events/trending` |
 
-**Fuera de este bloque:** pagos reales, storage imágenes, portales admin/productor, drift TS global (`registerPush`, etc.). Rentals V2 (WhatsApp, cards, subcategorías, anti-alojamiento, detalle mobile) cerrado en checklist § Rentals.
+**Fuera de este bloque:** pagos reales, storage imágenes, drift TS global (`registerPush`, etc.). Rentals V2 (WhatsApp, cards, subcategorías, anti-alojamiento, detalle mobile) cerrado en checklist § Rentals.
+
+## 5b. Admin operativo — Estado cerrado (2026-05, Slices 1–5)
+
+| Pieza | Estado |
+|-------|--------|
+| Dashboard `/admin` | Cerrado — KPIs `GET /admin/dashboard`, cola pendientes, accesos operativos |
+| Eventos `/admin/eventos` | Cerrado — listado filtrado `GET /admin/events` |
+| Usuarios `/admin/usuarios` | Cerrado — `GET /admin/users`, rol con confirmación; cuenta maestro protegida |
+| Auditoría `/admin/auditoria` | Cerrado — `GET /admin/audit-logs` con filtros |
+| Subcategorías `/admin/categorias` | Cerrado — CRUD 4 verticales; hoteles Próximamente |
+
+Detalle API/UI: `BACKEND_CONTEXT.md`, `FRONTEND_CONTEXT.md`, checklist V2 § Admin operativo.
 
 ---
 
