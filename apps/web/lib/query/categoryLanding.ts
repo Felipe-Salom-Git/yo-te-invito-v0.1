@@ -1,6 +1,7 @@
 'use client';
 
 import { useQueries } from '@tanstack/react-query';
+import { RECOMMENDED_LIST_MIN_VALID_REVIEWS } from '@yo-te-invito/shared';
 import type { CategoryGatewayId } from '@/lib/home/categoryGatewayConfig';
 import {
   getCrossCategoryRails,
@@ -13,12 +14,6 @@ import { categoryLandingKeys } from './keys';
 
 const TENANT_ID = 'tenant-demo';
 
-function matchCategory(item: EventSummary, category: CategoryGatewayId): boolean {
-  const cat = item.category ?? 'event';
-  if (category === 'event') return cat === 'event' || !item.category;
-  return cat === category;
-}
-
 const CROSS_CATEGORY_LIMIT = 8;
 
 async function fetchCrossCategoryItems(
@@ -26,12 +21,26 @@ async function fetchCrossCategoryItems(
   tenantId: string,
   category: CategoryGatewayId,
 ): Promise<EventSummary[]> {
-  const trending = await repos.events.trending(tenantId, 20);
-  const filtered = trending.filter((e) => matchCategory(e, category));
-  if (filtered.length >= 4) {
-    return filtered.slice(0, CROSS_CATEGORY_LIMIT);
+  if (category !== 'event') {
+    const recommended = await repos.events.recommended({
+      tenantId,
+      category,
+      limit: CROSS_CATEGORY_LIMIT,
+      minValidReviews: RECOMMENDED_LIST_MIN_VALID_REVIEWS,
+      mode: 'recommended',
+    });
+    if (recommended.length >= 3) return recommended.slice(0, CROSS_CATEGORY_LIMIT);
   }
-  const res = await repos.events.list({ tenantId, category, limit: CROSS_CATEGORY_LIMIT });
+
+  const res = await repos.events.list({
+    tenantId,
+    category,
+    limit: CROSS_CATEGORY_LIMIT,
+    page: 1,
+    sort: category === 'event' ? 'upcoming' : undefined,
+    hasTicketing: category === 'event' ? true : undefined,
+    excludeGeneralPublications: category === 'event' ? true : undefined,
+  });
   return res.data;
 }
 
@@ -50,11 +59,13 @@ export function useCrossCategoryRails(selectedCategory: CategoryGatewayId) {
     })),
   });
 
-  return crossRails.map((meta, i) => ({
-    ...meta,
-    items: results[i]?.data ?? [],
-    isLoading: results[i]?.isLoading ?? true,
-  }));
+  return crossRails
+    .map((meta, i) => ({
+      ...meta,
+      items: results[i]?.data ?? [],
+      isLoading: results[i]?.isLoading ?? true,
+    }))
+    .filter((rail) => rail.isLoading || rail.items.length > 0);
 }
 
 export { useCategoryCarousels } from './useCategoryCarousels';

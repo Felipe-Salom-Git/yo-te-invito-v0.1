@@ -4,8 +4,10 @@ import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import type { EventSummary } from '@/repositories/interfaces';
-import { getContentDetailHref } from '@/lib/home/contentRoutes';
+import { getCategoryLabel, getContentDetailHref } from '@/lib/home/contentRoutes';
 import { ExpandedContentCardOverlay, type ContentCardMetadata } from './ExpandedContentCardOverlay';
+import { PriceBadge } from './PriceBadge';
+import { ProducerMeta } from './ProducerMeta';
 
 export interface ContentCardItem extends EventSummary {
   description?: string | null;
@@ -137,11 +139,18 @@ export function ContentCard({ item, onClick, tenantId }: ContentCardProps) {
               Cupón · {item.gastroPromoLabel}
             </span>
           ) : null}
-          {item.category && (
-            <span className="mb-1.5 w-fit rounded bg-accent/90 px-2 py-0.5 text-[11px] font-medium text-bg">
-              {item.category}
-            </span>
-          )}
+          <div className="mb-1.5 flex max-w-full flex-wrap gap-1.5">
+            {item.category ? (
+              <span className="w-fit rounded bg-accent/90 px-2 py-0.5 text-[11px] font-medium text-bg">
+                {getCategoryLabel(item.category)}
+              </span>
+            ) : null}
+            {item.subcategoryName ? (
+              <span className="w-fit max-w-[85%] truncate rounded border border-white/25 bg-black/40 px-2 py-0.5 text-[10px] font-medium text-white/90">
+                {item.subcategoryName}
+              </span>
+            ) : null}
+          </div>
           <p className="line-clamp-2 text-sm font-semibold text-white">
             {item.title}
           </p>
@@ -149,9 +158,18 @@ export function ContentCard({ item, onClick, tenantId }: ContentCardProps) {
             <span>{dateLabel}</span>
             <span className="truncate">{locationLabel}</span>
           </div>
-          {item.ratingAvg != null && item.ratingAvg > 0 && (
-            <p className="mt-1 text-xs text-accent">★ {item.ratingAvg.toFixed(1)}</p>
-          )}
+          {item.producerName ? (
+            <ProducerMeta
+              producerName={item.producerName}
+              className="mt-1"
+            />
+          ) : null}
+          <div className="mt-1 flex flex-wrap items-center gap-2">
+            <PriceBadge fromPrice={item.fromPrice} />
+            {item.ratingAvg != null && item.ratingAvg > 0 ? (
+              <span className="text-xs text-accent">★ {item.ratingAvg.toFixed(1)}</span>
+            ) : null}
+          </div>
         </div>
 
         {/* Expanded overlay (desktop hover/focus only) */}

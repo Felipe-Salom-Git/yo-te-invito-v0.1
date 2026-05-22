@@ -16,13 +16,14 @@ export function useCategorySubcategories(category: CategoryGatewayId) {
   );
 
   const subcategories = useMemo(() => {
+    const withoutHotel = base.filter((s) => s.category !== 'hotel');
     if (category !== 'gastro' || !discountCount?.count) {
-      return base;
+      return withoutHotel;
     }
-    if (base.some((s) => s.slug === GASTRO_DISCOUNTS_SUBCATEGORY_SLUG)) {
-      return base;
+    if (withoutHotel.some((s) => s.slug === GASTRO_DISCOUNTS_SUBCATEGORY_SLUG)) {
+      return withoutHotel;
     }
-    return [GASTRO_DISCOUNTS_VIRTUAL_SUBCATEGORY, ...base];
+    return [GASTRO_DISCOUNTS_VIRTUAL_SUBCATEGORY, ...withoutHotel];
   }, [category, base, discountCount?.count]);
 
   return {

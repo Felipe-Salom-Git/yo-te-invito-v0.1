@@ -62,7 +62,7 @@ ApiClient → HTTP (NEXT_PUBLIC_API_BASE_URL)
 
 | Repository | Status | Notes |
 |------------|--------|-------|
-| EventsRepo | ✓ | list, search, trending, detail, ticket types, public discounts |
+| EventsRepo | ✓ | list, search, trending, detail, ticket types, public discounts; list summaries include `fromPrice`, `producerName` |
 | **RentalLocationsRepo** | ✓ | Admin CRUD locales + productos (`/admin/rental-locations`) |
 | SubcategoriesRepo | ✓ | `listPublic`, admin CRUD |
 | OrdersRepo, TicketsRepo, ReviewsRepo | ✓ | V2: `listPublicV2`, `getPublicSummary`, `createMyReview`, replies |
@@ -85,7 +85,7 @@ ApiClient → HTTP (NEXT_PUBLIC_API_BASE_URL)
 
 | Area | Routes |
 |------|--------|
-| Public | `/`, `/home`, `/explore`, `/events/[id]`, `/restaurants/[id]`, `/excursiones/[id]`, **`/rentals/[id]`**, `/hoteles/[id]`, **`/users/[userId]`** (perfil comentarista), checkout, `/me/tickets`, `/referrers`, `/r/[code]` |
+| Public | `/`, `/home`, **`/explore`** (filtros URL: `q`, `category`, `subcategoryId`, `city`, `from`, `to`, `page`), `/events/[id]`, `/restaurants/[id]`, `/excursiones/[id]`, **`/rentals/[id]`**, `/hoteles/[id]`, **`/users/[userId]`** (perfil comentarista), checkout, `/me/tickets`, `/referrers`, `/r/[code]` |
 | Account | `/login`, `/register`, **`/me/*`** (portal usuario estándar) |
 | Cuenta (legacy) | `/cuenta/*` → **redirects** a `/me/*` (no mantener lógica duplicada) |
 | Admin | `/admin/*` (**solo rol `ADMIN`**, `ProfileProtectedLayout` en `admin/layout.tsx`), sidebar operaciones; acceso: `/profiles`, navbar «Administración», URL directa |
@@ -169,7 +169,22 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`):
 
 ---
 
-## 7b. Ticket Canvas vs ticket comprador
+## 7a. Category landing (`/categoria/[category]`)
+
+- **Rutas:** `event` | `gastro` | `rental` | `excursion` — `CategoryLandingPage` / `EventDiscoveryContent` (eventos + vista fecha/calendario).
+- **Estructura:** `CategoryHeroBanner` → `CategoryLandingEditorial` → `SubcategoryRail` (`SubcategoriesRepo.listPublic`, sin `hotel`) → carruseles propios (`useCategoryCarousels`) → `CrossCategoryRails` (otras 3 categorías, `getCrossCategoryRails`).
+- **Carruseles eventos:** Destacados, Próximos, Nuevos. **Otras categorías:** Destacados, Mejor puntuados (si aplica), Recientes/Nuevos.
+- **Ver más:** carruseles propios → `/explore?category=…` (+ `subcategoryId` si filtra); cruzados → `/categoria/{otra}`.
+- **Query:** `?subcategory=` o `?subcategoryId=` (slug o id). Cards: `ContentCard` con `fromPrice` / `producerName` / `subcategoryName`.
+
+## 7b. Category gateway (post-splash)
+
+- **Rutas:** `/` (splash + gateway si `shouldShowIntro()` en `introStorage.ts`, 24h) y `/categorias` (reentrada desde logo navbar).
+- **UI:** `CategoryGatewayScreen` — hero poster, grilla 2×2 (`CATEGORY_GATEWAY_OPTIONS`), footer a `/home` y `/explore`.
+- **Navegación categoría:** `getCategoryGatewayHref` → `/categoria/{event|gastro|rental|excursion}` (sin hotel en grilla).
+- **Config:** `lib/home/categoryGatewayConfig.ts` — copy, imágenes Unsplash, `CATEGORY_GATEWAY_PATH`.
+
+## 7c. Ticket Canvas vs ticket comprador
 
 | Área | Ruta / código | Rol |
 |------|----------------|-----|
@@ -182,9 +197,25 @@ Doc: `docs/tickets/TICKET_CANVAS_STUDIO.md`, `docs/tickets/TICKET_TEMPLATE_QR_ZO
 
 ## 8. Home / Landing
 
-- `HomeLanding` + `useHomeCarousels` / `useCategoryCarousels`: trending, nearYou, categorías, más **recommended** / **top_rated** por `rankingScore` (`lib/query/home.ts`, `category-carousel.logic.ts`).
-- Path A (anonymous): category tabs in hero — **pending** (`CONTEXT_PENDIENTES.md`).
-- Path B (logged-in + preferences): “Para vos” rail, reordered categories.
+- `HomeLanding` + `useHomeCarousels`: editorial rails (recomendados, trending, nuevos, cerca de ti) + **4 carruseles por categoría** (`event`, `gastro`, `rental`, `excursion`) con **Ver más** → `/categoria/[category]`.
+- `lib/home/homeDiscoveryConfig.ts` — tabs hero y definición de rails (sin hotel en discovery principal).
+- Path A (anonymous): tabs hero 4 categorías + `HomeCategoryStrip`; hoteles en bloque **Próximamente** (`HomeHotelsComingSoon`).
+- Path B (logged-in + preferences): “Para vos”, favoritos, rails reordenados por `preferredCategories` (sin hotel).
+- Cards: `fromPrice` / `producerName` vía `ContentCard` (API Slice 2).
+- Carril trending home: **«Lo más visto»** — `GET /public/events/trending` (orden por `viewCount` en API).
+
+---
+
+## 8b. Explore (`/explore`)
+
+- `ExplorePageContent` + `useExploreUrlFilters` — filtros en URL: `q`, `category`, `subcategoryId`, `city`, `from`, `to`, `page`.
+- `useExploreEvents` → `GET /public/events/search` (misma metadata que listados: `fromPrice`, `producerName`, `subcategoryName`).
+- Subcategorías: `usePublicSubcategories(category)`.
+- Estados: loading skeleton, empty, `QueryError`.
+
+## 8c. Descubrimiento público — cerrado
+
+Bloque checklist V2 cerrado (Slices 1–8). Resumen: gateway → categorías/home/explore; sin hotel en discovery principal; rentals sin copy de alojamiento; visibilidad eventos vencida en API. Audit: `docs/audits/PUBLIC_DISCOVERY_AUDIT.md`.
 
 ---
 

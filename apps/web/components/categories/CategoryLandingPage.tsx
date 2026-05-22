@@ -9,6 +9,7 @@ import { ContentPreviewModal } from '@/components/home/ContentPreviewModal';
 import { SubcategoryRail } from './SubcategoryRail';
 import { CrossCategoryRails } from './CrossCategoryRails';
 import { CategoryHeroBanner } from './CategoryHeroBanner';
+import { CategoryLandingEditorial } from './CategoryLandingEditorial';
 import { useCategoryBanner } from '@/lib/query/useCategoryBanner';
 import { toContentMainCategory } from '@/lib/categories/categoryLandingConfig';
 import { GastroDiscountsRail } from '@/components/gastro/GastroDiscountsRail';
@@ -64,6 +65,8 @@ export function CategoryLandingPage({ category, subcategorySlug }: CategoryLandi
         isLoading={bannerLoading}
       />
 
+      <CategoryLandingEditorial category={category} />
+
       {filterMode && activeSubcategory && (
         <p className="border-b border-white/10 px-4 py-2 text-center text-xs font-bold uppercase tracking-wider text-accent sm:px-6 md:px-10">
           Filtrando: {activeSubcategory.name}
@@ -118,6 +121,8 @@ export function CategoryLandingPage({ category, subcategorySlug }: CategoryLandi
               items={section.items}
               isLoading={section.isLoading}
               onCardClick={handleCardClick}
+              seeMoreHref={section.seeMoreHref}
+              seeMoreLabel={section.seeMoreLabel}
               headingVariant="category"
             />
           ))

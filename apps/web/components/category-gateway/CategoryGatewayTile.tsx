@@ -16,7 +16,7 @@ export function CategoryGatewayTile({ option, onSelect }: CategoryGatewayTilePro
       variants={gatewayTileVariants}
       onClick={() => onSelect(option.id)}
       aria-label={`${option.title}: ${option.description}`}
-      className="group relative h-full min-h-0 w-full overflow-hidden bg-neutral-900 text-left transition-[filter] duration-300 hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent active:brightness-95"
+      className="group relative h-full min-h-0 w-full touch-manipulation overflow-hidden bg-neutral-900 text-left transition-[filter] duration-300 hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent active:brightness-95"
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <motion.img
@@ -31,19 +31,19 @@ export function CategoryGatewayTile({ option, onSelect }: CategoryGatewayTilePro
       />
 
       <div
-        className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent"
+        className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black via-black/55 to-black/15"
         aria-hidden
       />
 
-      <div className="absolute inset-x-0 bottom-0 p-2 sm:p-2.5">
-        <h2 className="text-sm font-black uppercase leading-none tracking-tight text-white sm:text-base">
+      <div className="absolute inset-x-0 bottom-0 p-2.5 sm:p-3">
+        <h2 className="text-[0.8rem] font-black uppercase leading-none tracking-tight text-white sm:text-base md:text-lg">
           {option.title}
         </h2>
         <div
           className="mt-1 h-[2px] w-6 bg-accent transition-[width] duration-300 group-hover:w-8"
           aria-hidden
         />
-        <p className="mt-1 line-clamp-2 text-[0.55rem] font-semibold uppercase leading-tight tracking-wide text-white/85 sm:text-[0.6rem]">
+        <p className="mt-1 line-clamp-3 text-[0.58rem] font-semibold uppercase leading-tight tracking-wide text-white/90 sm:line-clamp-2 sm:text-[0.62rem] md:text-[0.68rem]">
           {option.description}
         </p>
       </div>

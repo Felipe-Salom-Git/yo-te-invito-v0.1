@@ -9,6 +9,7 @@ import {
   gatewayGridVariants,
   gatewayScreenTransition,
 } from './categoryGatewayMotion';
+import { CategoryGatewayFooter } from './CategoryGatewayFooter';
 import { CategoryGatewayHero } from './CategoryGatewayHero';
 import { CategoryGatewayTile } from './CategoryGatewayTile';
 
@@ -43,14 +44,14 @@ export function CategoryGatewayScreen({
       <main
         className={
           isOverlay
-            ? 'mx-auto flex h-full w-full max-w-lg flex-col px-3 pb-3 pt-4 sm:max-w-xl sm:px-4 sm:pb-4 sm:pt-5 md:max-w-2xl lg:max-w-4xl'
-            : 'mx-auto flex min-h-0 flex-1 w-full max-w-lg flex-col px-3 pb-3 pt-4 sm:max-w-xl sm:px-4 sm:pb-4 sm:pt-5 md:max-w-2xl lg:max-w-4xl'
+            ? 'mx-auto flex h-full w-full max-w-lg flex-col px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-4 sm:max-w-xl sm:px-4 sm:pb-4 sm:pt-5 md:max-w-2xl lg:max-w-4xl xl:max-w-5xl'
+            : 'mx-auto flex min-h-0 w-full max-w-lg flex-1 flex-col px-3 pb-6 pt-4 sm:max-w-xl sm:px-4 sm:pb-8 sm:pt-5 md:max-w-2xl lg:max-w-4xl xl:max-w-5xl'
         }
       >
         <CategoryGatewayHero showLogo={logoVisible} />
 
         <motion.div
-          className="mt-4 grid min-h-0 flex-1 grid-cols-2 grid-rows-2 gap-1.5 sm:mt-5 sm:gap-2"
+          className="mt-3 grid min-h-0 flex-1 grid-cols-2 grid-rows-2 gap-2 sm:mt-4 sm:gap-2.5 md:gap-3"
           role="list"
           aria-label="Categorías de experiencias"
           variants={gatewayGridVariants}
@@ -65,6 +66,8 @@ export function CategoryGatewayScreen({
             />
           ))}
         </motion.div>
+
+        <CategoryGatewayFooter />
       </main>
     </motion.div>
   );

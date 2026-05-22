@@ -36,7 +36,7 @@ export function getCategoryLabel(category?: string): string {
     case 'excursion':
       return 'Excursión';
     case 'rental':
-      return 'Alquiler';
+      return 'Equipos y Rentals';
     default:
       return 'Evento';
   }

@@ -44,14 +44,15 @@
 
 ## Descubrimiento público
 
-- [ ] Terminar pantalla editorial post-splash.
-- [ ] Terminar páginas por categoría.
-- [ ] Agregar carruseles cruzados por categoría.
-- [ ] Agregar `fromPrice` en cards/listados.
-- [ ] Agregar `producerName` en cards/listados.
-- [ ] Aplicar regla de eventos vencidos públicamente.
-- [ ] Mejorar `/explore`.
-- [ ] Revisar home pública con recomendaciones y categorías.
+- [x] Terminar pantalla editorial post-splash (grilla 2×2, copy, `/` + `/categorias`, footer home/explore, sin hotel).
+- [x] Terminar páginas por categoría (hero, editorial, subcategorías, carruseles, Ver más → explore).
+- [x] Agregar carruseles cruzados por categoría (3 rails sin categoría actual ni hotel, Ver más → `/categoria/*`).
+- [x] Agregar `fromPrice` en cards/listados (API `EventSummary`; UI `ContentCard`/`PriceBadge`).
+- [x] Agregar `producerName` en cards/listados (API `EventSummary`; UI `ProducerMeta`).
+- [x] Aplicar regla de eventos vencidos públicamente (`mergePublicEventVisibility` en list/search/trending/recommended/detail; tests `test:event-visibility`).
+- [x] Mejorar `/explore` (filtros URL, subcategoría, metadata en cards, estados loading/empty/error).
+- [x] Revisar home pública con recomendaciones y categorías (4 categorías, sin hotel en discovery, Ver más, metadata cards).
+- [x] Trending real (`viewCount` / ranking en `GET /public/events/trending`; carril «Lo más visto»).
 
 ## Rentals / Equipos y Rentals
 

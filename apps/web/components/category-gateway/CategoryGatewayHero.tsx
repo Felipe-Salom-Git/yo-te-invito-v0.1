@@ -32,11 +32,11 @@ export function CategoryGatewayHero({ showLogo = true }: CategoryGatewayHeroProp
         />
       )}
 
-      <h1 className="gateway-poster-title max-w-[16ch] text-[1.65rem] leading-[0.92] sm:max-w-none sm:text-4xl md:text-[2.75rem]">
+      <h1 className="gateway-poster-title max-w-[14ch] text-[1.75rem] leading-[0.9] sm:max-w-none sm:text-4xl md:text-[2.85rem] lg:text-5xl">
         {CATEGORY_GATEWAY_HEADLINE}
       </h1>
 
-      <p className="mt-2 max-w-md text-[0.625rem] font-bold uppercase leading-snug tracking-[0.1em] text-white/90 sm:mt-2.5 sm:text-[0.7rem] sm:tracking-[0.12em]">
+      <p className="mt-2 max-w-[28rem] px-1 text-[0.625rem] font-bold uppercase leading-snug tracking-[0.08em] text-white/90 sm:mt-2.5 sm:text-xs sm:tracking-[0.1em] md:text-[0.8rem]">
         <span>{CATEGORY_GATEWAY_SUBTITLE_PREFIX} </span>
         <span className="text-accent">EN {CATEGORY_GATEWAY_LOCATION}.</span>
       </p>

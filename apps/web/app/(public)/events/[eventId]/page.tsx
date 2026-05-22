@@ -177,13 +177,15 @@ export default function EventDetailPage() {
 
   const primaryCtaLabel = getPlaceHeroCtaLabel(event.category);
   const fromPrice =
-    ticketTypes && ticketTypes.length > 0
-      ? Math.min(
-          ...ticketTypes.map((tt) =>
-            typeof tt.price === 'string' ? parseFloat(tt.price) : tt.price
+    event.fromPrice != null
+      ? event.fromPrice
+      : ticketTypes && ticketTypes.length > 0
+        ? Math.min(
+            ...ticketTypes.map((tt) =>
+              typeof tt.price === 'string' ? parseFloat(tt.price) : tt.price
+            )
           )
-        )
-      : null;
+        : null;
 
   const canPurchaseTickets =
     !event.isGeneralPublication &&

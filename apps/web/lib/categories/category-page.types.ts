@@ -7,6 +7,8 @@ export type CategoryCarouselSection = {
   subtitle?: string;
   items: EventSummary[];
   isLoading: boolean;
+  seeMoreHref?: string;
+  seeMoreLabel?: string;
 };
 
 export type CategoryCarouselMode = 'all' | 'subcategory_only';

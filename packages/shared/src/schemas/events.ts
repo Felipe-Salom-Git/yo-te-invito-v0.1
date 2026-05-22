@@ -96,6 +96,10 @@ export const eventSummarySchema = z.object({
   isGeneralPublication: z.boolean().optional(),
   eventMode: producerEventModeSchema.optional(),
   subcategoryName: z.string().nullable().optional(),
+  /** Minimum purchasable ticket price (major units, e.g. ARS). Null when not on sale. */
+  fromPrice: z.number().nullable().optional(),
+  /** Active producer profile display name — never email. */
+  producerName: z.string().nullable().optional(),
   status: z.enum(['DRAFT', 'PENDING', 'APPROVED', 'PAUSED', 'CANCELLED']).optional(),
 });
 

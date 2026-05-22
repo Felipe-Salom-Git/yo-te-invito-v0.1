@@ -43,8 +43,8 @@ export const CATEGORY_GATEWAY_OPTIONS: CategoryGatewayOption[] = [
     title: 'EQUIPOS Y RENTALS',
     description: 'ALQUILER DE AUTOS, BICIS, KAYAKS, EQUIPOS Y MUCHO MÁS.',
     imageSrc:
-      'https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?auto=format&fit=crop&w=800&q=80',
-    imageAlt: 'Auto de alquiler para turismo',
+      'https://images.unsplash.com/photo-1527004013197-933c4a06eafd?auto=format&fit=crop&w=800&q=80',
+    imageAlt: 'Kayaks y equipos de aventura en el lago',
   },
   {
     id: 'excursion',
@@ -71,16 +71,7 @@ export function isCategoryGatewayId(
 
 /** Maps gateway category to the first relevant home rail id for scroll-into-view. */
 export function getHomeRailIdForCategory(category: CategoryGatewayId): string {
-  switch (category) {
-    case 'gastro':
-      return 'gastro';
-    case 'rental':
-      return 'rental';
-    case 'excursion':
-      return 'excursion';
-    default:
-      return 'highlights';
-  }
+  return category;
 }
 
 export function buildHomeHrefWithCategory(category: CategoryGatewayId): string {

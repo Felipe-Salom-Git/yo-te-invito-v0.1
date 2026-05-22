@@ -11,6 +11,7 @@ import { ContentPreviewModal } from '@/components/home/ContentPreviewModal';
 import { SubcategoryRail } from '@/components/categories/SubcategoryRail';
 import { CrossCategoryRails } from '@/components/categories/CrossCategoryRails';
 import { CategoryHeroBanner } from '@/components/categories/CategoryHeroBanner';
+import { CategoryLandingEditorial } from '@/components/categories/CategoryLandingEditorial';
 import { useCategoryBanner } from '@/lib/query/useCategoryBanner';
 import { toContentMainCategory } from '@/lib/categories/categoryLandingConfig';
 import { EventDiscoveryViewToggle } from './EventDiscoveryViewToggle';
@@ -76,6 +77,8 @@ export function EventDiscoveryContent({
         isLoading={bannerLoading}
       />
 
+      <CategoryLandingEditorial category={category} />
+
       {carousel.filterMode && carousel.activeSubcategory && (
         <p className="border-b border-white/10 px-4 py-2 text-center text-xs font-bold uppercase tracking-wider text-accent sm:px-6 md:px-10">
           Filtrando: {carousel.activeSubcategory.name}
@@ -112,6 +115,8 @@ export function EventDiscoveryContent({
                 items={section.items}
                 isLoading={section.isLoading}
                 onCardClick={handleCardClick}
+                seeMoreHref={section.seeMoreHref}
+                seeMoreLabel={section.seeMoreLabel}
                 headingVariant="category"
               />
             ))

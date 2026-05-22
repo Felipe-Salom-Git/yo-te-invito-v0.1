@@ -62,7 +62,10 @@ HTTP → Controller (thin) → ZodValidationPipe → Service → Prisma → Post
 |------|---------|
 | `GET /public/events` | List (tenantId, category, city, dates, `sort=recommended\|top_rated`, `minValidReviews`) |
 | `GET /public/events/recommended` | Carrusel ranking (recommended / top_rated) |
-| `GET /public/events/search`, `/trending`, `/:id` | |
+| `GET /public/events/search`, `/:id` | |
+| `GET /public/events/trending` | Públicos visibles (`mergePublicEventVisibility`); orden: `viewCount` ↓, `rankingScore` ↓, `startAt` ↑, `createdAt` ↓ — ver `event-trending.util.ts`. Sin filtro mínimo de reviews (distinto de `/recommended`). |
+
+**Visibilidad eventos vencidos (discovery):** `PublicEventsService.publicWhere()` aplica `event-public-visibility.util.ts` en **list, search, trending, recommended, detail, calendar month**. Eventos `event`/null: ocultos después de **01:00 del día siguiente** al `startAt` (TZ `America/Argentina/Buenos_Aires`). Gastro/rental/excursion/hotel no caducan por fecha en listados. Tests: `pnpm --filter api run test:event-visibility`.
 | `GET /public/reviews/summary`, `GET /public/reviews` | Resumen + listado V2 por entidad |
 | `GET /public/users/:userId/review-profile`, `…/reviews` | Perfil comentarista |
 | `GET /public/events/:id/discounts` | Active gastro discounts |
@@ -195,7 +198,7 @@ Opcional cron: `NOTIFICATIONS_CRON_ENABLED=false`, `NOTIFICATION_REMINDER_HOURS`
 
 - Payments: demo only.
 - Image uploads often data-URL in forms (límite Zod ~2M chars por URL); web comprime en `RentalProductImagesForm` — object storage pendiente.
-- `fromPrice` / `producerName` may be missing from base list API.
+- Public list `EventSummary` includes `fromPrice` (min active ticket/batch price, major units) and `producerName` (`ProducerProfile.displayName`, ACTIVE only) — see `public-event-summary.util.ts`.
 - Run `prisma migrate deploy` + `prisma generate` after schema changes.
 
 ---

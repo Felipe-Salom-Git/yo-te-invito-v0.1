@@ -362,6 +362,10 @@ export interface EventSummary {
   hasTicketing?: boolean;
   isGeneralPublication?: boolean;
   subcategoryName?: string | null;
+  /** Public list: minimum ticket price (major units). Null when not applicable. */
+  fromPrice?: number | null;
+  /** Public list: producer display name. Null when no active profile. */
+  producerName?: string | null;
 }
 
 export interface ProducerSummary {

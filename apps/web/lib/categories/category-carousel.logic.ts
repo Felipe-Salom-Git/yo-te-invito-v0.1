@@ -19,14 +19,58 @@ export const TOP_RATED_SECTION = {
 } as const;
 
 export const EVENT_FEATURED_SECTION = {
-  title: 'Destacados',
-  subtitle: 'Eventos con ticketera — comprá entradas en la plataforma',
+  title: 'Destacados en Eventos',
+  subtitle: 'Shows, fiestas y recitales con ticketera en la plataforma',
+} as const;
+
+export const EVENT_UPCOMING_SECTION = {
+  title: 'Próximos eventos',
+  subtitle: 'Ordenados por fecha — lo que viene en Bariloche',
+} as const;
+
+export const EVENT_NEW_SECTION = {
+  title: 'Nuevos eventos',
+  subtitle: 'Recién publicados en la plataforma',
 } as const;
 
 export const RECENT_SECTION = {
   title: 'Recientes',
   subtitle: 'Últimos agregados',
 } as const;
+
+const CATEGORY_FEATURED_TITLES: Record<
+  Exclude<CategoryGatewayId, 'event'>,
+  { title: string; subtitle: string }
+> = {
+  gastro: {
+    title: 'Destacados en Gastronomía',
+    subtitle: 'Restaurantes, bares y lugares para disfrutar',
+  },
+  rental: {
+    title: 'Destacados en Equipos y Rentals',
+    subtitle: 'Movilidad, equipos y aventura en la montaña',
+  },
+  excursion: {
+    title: 'Destacados en Excursiones',
+    subtitle: 'Recorridos y experiencias al aire libre',
+  },
+};
+
+export function getFeaturedSectionMeta(category: CategoryGatewayId): {
+  title: string;
+  subtitle: string;
+} {
+  if (category === 'event') return EVENT_FEATURED_SECTION;
+  return CATEGORY_FEATURED_TITLES[category];
+}
+
+export function getRecentSectionMeta(category: CategoryGatewayId): {
+  title: string;
+  subtitle: string;
+} {
+  if (category === 'event') return EVENT_NEW_SECTION;
+  return RECENT_SECTION;
+}
 
 /**
  * Client-side fallback when API omits `createdAt` on list items.

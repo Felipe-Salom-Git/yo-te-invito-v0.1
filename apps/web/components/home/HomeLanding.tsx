@@ -4,7 +4,9 @@ import { useMemo, useCallback, useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ContentPreviewModal } from '@/components/home/ContentPreviewModal';
 import { ContentRail } from '@/components/home/ContentRail';
+import { HomeCategoryStrip } from '@/components/home/HomeCategoryStrip';
 import { HomeHero } from '@/components/home/HomeHero';
+import { HomeHotelsComingSoon } from '@/components/home/HomeHotelsComingSoon';
 import type { ContentCardItem } from '@/components/home/ContentCard';
 import { useMe } from '@/hooks/useMe';
 import { usePreferences, portalPrefsToHomeStrategy } from '@/hooks/usePreferences';
@@ -44,8 +46,8 @@ export function HomeLanding({ initialCategory = null }: HomeLandingProps) {
     recommendedGlobal,
     nearYou,
     newEvents,
+    eventCategory,
     gastro,
-    hotel,
     excursion,
     rental,
     isLoading: carouselsLoading,
@@ -102,8 +104,8 @@ export function HomeLanding({ initialCategory = null }: HomeLandingProps) {
         recommendedGlobal,
         nearYou,
         newEvents,
+        eventCategory,
         gastro,
-        hotel,
         excursion,
         rental,
         eventsLoading,
@@ -119,15 +121,15 @@ export function HomeLanding({ initialCategory = null }: HomeLandingProps) {
       recommendedGlobal,
       nearYou,
       newEvents,
+      eventCategory,
       gastro,
-      hotel,
       excursion,
       rental,
       eventsLoading,
       carouselsLoading,
       favoriteEvents,
       favoritesLoading,
-    ]
+    ],
   );
 
   const similarItems = useMemo(() => {
@@ -171,7 +173,9 @@ export function HomeLanding({ initialCategory = null }: HomeLandingProps) {
         isLoading={viewModel.heroLoading}
       />
 
-      <div className="w-full overflow-visible px-0 py-8 md:py-12">
+      {viewModel.strategy === 'discovery' ? <HomeCategoryStrip /> : null}
+
+      <div className="w-full overflow-visible px-0 pb-10 pt-6 md:pt-10">
         {viewModel.rails.map((rail) => (
           <ContentRail
             key={rail.id}
@@ -181,8 +185,21 @@ export function HomeLanding({ initialCategory = null }: HomeLandingProps) {
             items={rail.items}
             isLoading={rail.isLoading}
             onCardClick={openPreview}
+            seeMoreHref={rail.seeMoreHref}
+            seeMoreLabel={rail.seeMoreLabel ?? 'Ver más'}
           />
         ))}
+
+        {viewModel.rails.length === 0 && !viewModel.heroLoading ? (
+          <p className="px-4 text-center text-sm text-text-muted sm:px-6">
+            No hay contenido para mostrar por ahora.{' '}
+            <a href="/explore" className="text-accent hover:underline">
+              Explorá todo Bariloche
+            </a>
+          </p>
+        ) : null}
+
+        {viewModel.showHotelsComingSoon ? <HomeHotelsComingSoon /> : null}
       </div>
 
       <ContentPreviewModal
@@ -195,4 +212,3 @@ export function HomeLanding({ initialCategory = null }: HomeLandingProps) {
     </div>
   );
 }
-

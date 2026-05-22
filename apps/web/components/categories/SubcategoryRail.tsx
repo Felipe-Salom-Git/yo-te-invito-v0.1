@@ -63,7 +63,7 @@ export function SubcategoryRail({
             <div key={i} className={SKELETON_CHIP_CLASS} />
           ))}
         </div>
-      ) : items.length === 0 && !trailing ? (
+      ) : items.length === 0 ? (
         <p className="px-4 text-sm text-white/60 sm:px-6">
           Todavía no hay subcategorías disponibles para esta categoría.
         </p>

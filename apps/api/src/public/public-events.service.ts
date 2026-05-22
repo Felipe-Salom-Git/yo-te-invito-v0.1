@@ -18,6 +18,12 @@ import {
   type EventsRecommendedQuery,
 } from '@yo-te-invito/shared';
 import { mergePublicEventVisibility } from '../common/utils/event-public-visibility.util';
+import { TRENDING_PRISMA_ORDER_BY } from '../common/utils/event-trending.util';
+import {
+  loadPublicFromPriceByEventId,
+  resolvePublicProducerName,
+  type PublicFromPriceCandidate,
+} from '../common/utils/public-event-summary.util';
 
 @Injectable()
 export class PublicEventsService {
@@ -104,12 +110,27 @@ export class PublicEventsService {
       isTicketingEnabled: true,
       isGeneralPublication: true,
       subcategory: { select: { name: true } },
+      producerProfile: {
+        where: { status: 'ACTIVE' },
+        select: { displayName: true },
+      },
       ticketTypes: {
         where: { deletedAt: null, status: 'ACTIVE' },
         select: { id: true },
         take: 1,
       },
     } as const;
+  }
+
+  private async attachFromPriceToSummaries(
+    items: EventSummary[],
+    candidates: PublicFromPriceCandidate[],
+  ): Promise<EventSummary[]> {
+    const fromPriceMap = await loadPublicFromPriceByEventId(this.prisma, candidates);
+    return items.map((item) => ({
+      ...item,
+      fromPrice: fromPriceMap.get(item.id) ?? null,
+    }));
   }
 
   private applySubcategoryFilter(
@@ -196,6 +217,10 @@ export class PublicEventsService {
                 orderBy: { createdAt: 'desc' },
                 take: 1,
               },
+              producerProfile: {
+                where: { status: 'ACTIVE' },
+                select: { displayName: true },
+              },
             },
             orderBy,
             skip: (query.page - 1) * query.limit,
@@ -211,7 +236,8 @@ export class PublicEventsService {
       this.prisma.event.count({ where }),
     ]);
 
-    const items: EventSummary[] = gastroList
+    const priceCandidates: PublicFromPriceCandidate[] = [];
+    const itemsBase: EventSummary[] = gastroList
       ? (
           data as Array<{
             id: string;
@@ -226,7 +252,9 @@ export class PublicEventsService {
             ratingCount: number;
             createdAt: Date;
             isTicketingEnabled: boolean;
+            isGeneralPublication: boolean;
             subcategoryId: string | null;
+            producerProfile: { displayName: string } | null;
             gastroDiscounts: Array<{
               code: string;
               type: string;
@@ -236,6 +264,11 @@ export class PublicEventsService {
             }>;
           }>
         ).map((e) => {
+          priceCandidates.push({
+            id: e.id,
+            isTicketingEnabled: e.isTicketingEnabled,
+            isGeneralPublication: e.isGeneralPublication,
+          });
           const d = e.gastroDiscounts[0];
           const promoLabel =
             d &&
@@ -259,9 +292,12 @@ export class PublicEventsService {
             ratingCount: e.ratingCount ?? undefined,
             createdAt: e.createdAt.toISOString(),
             isTicketingEnabled: e.isTicketingEnabled,
+            isGeneralPublication: e.isGeneralPublication,
             subcategoryId: e.subcategoryId ?? undefined,
             gastroPromoLabel: promoLabel ?? null,
             gastroPromoImageUrl: promoImg ?? null,
+            producerName: resolvePublicProducerName(e.producerProfile),
+            fromPrice: null,
           };
         })
       : (
@@ -281,26 +317,38 @@ export class PublicEventsService {
             isTicketingEnabled: boolean;
             isGeneralPublication: boolean;
             subcategory: { name: string } | null;
+            producerProfile: { displayName: string } | null;
             ticketTypes: Array<{ id: string }>;
           }>
-        ).map((e) => ({
-          id: e.id,
-          title: e.title,
-          startAt: e.startAt.toISOString(),
-          city: e.city,
-          venueName: e.venueName,
-          coverImageUrl: e.coverImageUrl,
-          category: e.category ?? undefined,
-          subcategoryId: e.subcategoryId ?? undefined,
-          subcategoryName: e.subcategory?.name ?? null,
-          description: e.description ?? undefined,
-          ratingAvg: e.ratingAvg ?? undefined,
-          ratingCount: e.ratingCount ?? undefined,
-          createdAt: e.createdAt.toISOString(),
-          isTicketingEnabled: e.isTicketingEnabled,
-          isGeneralPublication: e.isGeneralPublication,
-          hasTicketing: this.mapHasTicketing(e),
-        }));
+        ).map((e) => {
+          priceCandidates.push({
+            id: e.id,
+            isTicketingEnabled: e.isTicketingEnabled,
+            isGeneralPublication: e.isGeneralPublication,
+          });
+          return {
+            id: e.id,
+            title: e.title,
+            startAt: e.startAt.toISOString(),
+            city: e.city,
+            venueName: e.venueName,
+            coverImageUrl: e.coverImageUrl,
+            category: e.category ?? undefined,
+            subcategoryId: e.subcategoryId ?? undefined,
+            subcategoryName: e.subcategory?.name ?? null,
+            description: e.description ?? undefined,
+            ratingAvg: e.ratingAvg ?? undefined,
+            ratingCount: e.ratingCount ?? undefined,
+            createdAt: e.createdAt.toISOString(),
+            isTicketingEnabled: e.isTicketingEnabled,
+            isGeneralPublication: e.isGeneralPublication,
+            hasTicketing: this.mapHasTicketing(e),
+            producerName: resolvePublicProducerName(e.producerProfile),
+            fromPrice: null,
+          };
+        });
+
+    const items = await this.attachFromPriceToSummaries(itemsBase, priceCandidates);
 
     return {
       data: items,
@@ -368,21 +416,11 @@ export class PublicEventsService {
 
     const where = this.publicWhere(base);
 
+    const summarySelect = this.listSummarySelect();
     const [data, total] = await Promise.all([
       this.prisma.event.findMany({
         where,
-        select: {
-          id: true,
-          title: true,
-          startAt: true,
-          city: true,
-          venueName: true,
-          coverImageUrl: true,
-          category: true,
-          description: true,
-          ratingAvg: true,
-          ratingCount: true,
-        },
+        select: summarySelect,
         orderBy: { startAt: 'asc' },
         skip: (query.page - 1) * query.limit,
         take: query.limit,
@@ -390,18 +428,56 @@ export class PublicEventsService {
       this.prisma.event.count({ where }),
     ]);
 
-    const items: EventSummary[] = data.map((e) => ({
-      id: e.id,
-      title: e.title,
-      startAt: e.startAt.toISOString(),
-      city: e.city,
-      venueName: e.venueName,
-      coverImageUrl: e.coverImageUrl,
-      category: e.category ?? undefined,
-      description: e.description ?? undefined,
-      ratingAvg: e.ratingAvg ?? undefined,
-      ratingCount: e.ratingCount ?? undefined,
-    }));
+    const priceCandidates: PublicFromPriceCandidate[] = [];
+    const itemsBase: EventSummary[] = (
+      data as Array<{
+        id: string;
+        title: string;
+        startAt: Date;
+        city: string | null;
+        venueName: string | null;
+        coverImageUrl: string | null;
+        category: string | null;
+        subcategoryId: string | null;
+        description: string | null;
+        ratingAvg: number | null;
+        ratingCount: number;
+        createdAt: Date;
+        isTicketingEnabled: boolean;
+        isGeneralPublication: boolean;
+        subcategory: { name: string } | null;
+        producerProfile: { displayName: string } | null;
+        ticketTypes: Array<{ id: string }>;
+      }>
+    ).map((e) => {
+      priceCandidates.push({
+        id: e.id,
+        isTicketingEnabled: e.isTicketingEnabled,
+        isGeneralPublication: e.isGeneralPublication,
+      });
+      return {
+        id: e.id,
+        title: e.title,
+        startAt: e.startAt.toISOString(),
+        city: e.city,
+        venueName: e.venueName,
+        coverImageUrl: e.coverImageUrl,
+        category: e.category ?? undefined,
+        subcategoryId: e.subcategoryId ?? undefined,
+        subcategoryName: e.subcategory?.name ?? null,
+        description: e.description ?? undefined,
+        ratingAvg: e.ratingAvg ?? undefined,
+        ratingCount: e.ratingCount ?? undefined,
+        createdAt: e.createdAt.toISOString(),
+        isTicketingEnabled: e.isTicketingEnabled,
+        isGeneralPublication: e.isGeneralPublication,
+        hasTicketing: this.mapHasTicketing(e),
+        producerName: resolvePublicProducerName(e.producerProfile),
+        fromPrice: null,
+      };
+    });
+
+    const items = await this.attachFromPriceToSummaries(itemsBase, priceCandidates);
 
     return {
       data: items,
@@ -429,42 +505,72 @@ export class PublicEventsService {
   }
 
   async trending(query: EventsTrendingQuery): Promise<EventSummary[]> {
+    const summarySelect = {
+      ...this.listSummarySelect(),
+      viewCount: true,
+      rankingScore: true,
+    };
     const data = await this.prisma.event.findMany({
       where: this.publicWhere({
         tenantId: query.tenantId,
         status: 'APPROVED',
         deletedAt: null,
-        ratingCount: { gt: 0 },
-        ratingAvg: { not: null },
       }),
-      select: {
-        id: true,
-        title: true,
-        startAt: true,
-        city: true,
-        venueName: true,
-        coverImageUrl: true,
-        category: true,
-        description: true,
-        ratingAvg: true,
-        ratingCount: true,
-      },
-      orderBy: [{ ratingAvg: 'desc' }, { ratingCount: 'desc' }],
+      select: summarySelect,
+      orderBy: TRENDING_PRISMA_ORDER_BY,
       take: query.limit,
     });
 
-    return data.map((e) => ({
-      id: e.id,
-      title: e.title,
-      startAt: e.startAt.toISOString(),
-      city: e.city,
-      venueName: e.venueName,
-      coverImageUrl: e.coverImageUrl,
-      category: e.category ?? undefined,
-      description: e.description ?? undefined,
-      ratingAvg: e.ratingAvg ?? undefined,
-      ratingCount: e.ratingCount ?? undefined,
-    }));
+    const priceCandidates: PublicFromPriceCandidate[] = [];
+    const itemsBase: EventSummary[] = (
+      data as Array<{
+        id: string;
+        title: string;
+        startAt: Date;
+        city: string | null;
+        venueName: string | null;
+        coverImageUrl: string | null;
+        category: string | null;
+        subcategoryId: string | null;
+        description: string | null;
+        ratingAvg: number | null;
+        ratingCount: number;
+        createdAt: Date;
+        isTicketingEnabled: boolean;
+        isGeneralPublication: boolean;
+        subcategory: { name: string } | null;
+        producerProfile: { displayName: string } | null;
+        ticketTypes: Array<{ id: string }>;
+      }>
+    ).map((e) => {
+      priceCandidates.push({
+        id: e.id,
+        isTicketingEnabled: e.isTicketingEnabled,
+        isGeneralPublication: e.isGeneralPublication,
+      });
+      return {
+        id: e.id,
+        title: e.title,
+        startAt: e.startAt.toISOString(),
+        city: e.city,
+        venueName: e.venueName,
+        coverImageUrl: e.coverImageUrl,
+        category: e.category ?? undefined,
+        subcategoryId: e.subcategoryId ?? undefined,
+        subcategoryName: e.subcategory?.name ?? null,
+        description: e.description ?? undefined,
+        ratingAvg: e.ratingAvg ?? undefined,
+        ratingCount: e.ratingCount ?? undefined,
+        createdAt: e.createdAt.toISOString(),
+        isTicketingEnabled: e.isTicketingEnabled,
+        isGeneralPublication: e.isGeneralPublication,
+        hasTicketing: this.mapHasTicketing(e),
+        producerName: resolvePublicProducerName(e.producerProfile),
+        fromPrice: null,
+      };
+    });
+
+    return this.attachFromPriceToSummaries(itemsBase, priceCandidates);
   }
 
   async listPublicGastroDiscounts(eventId: string, tenantId: string): Promise<PublicGastroDiscountsResponse> {
@@ -574,6 +680,15 @@ export class PublicEventsService {
       });
     }
 
+    const producerName = resolvePublicProducerName(event.producerProfile);
+    const fromPriceMap = await loadPublicFromPriceByEventId(this.prisma, [
+      {
+        id: event.id,
+        isTicketingEnabled: event.isTicketingEnabled,
+        isGeneralPublication: event.isGeneralPublication,
+      },
+    ]);
+
     return {
       id: event.id,
       title: event.title,
@@ -637,6 +752,8 @@ export class PublicEventsService {
             whatsapp: event.producerProfile.whatsapp,
           }
         : null,
+      producerName,
+      fromPrice: fromPriceMap.get(event.id) ?? null,
     };
   }
 }

@@ -237,3 +237,7 @@ Al agregar scripts nuevos: documentar en `DEVELOPER_SCRIPTS_GUIDE.md` y `SCRIPTS
 ### Scripts usuario (API)
 
 `user:restore-master`, `user:inspect`, `user:reset-password`, `user:verify-email`, `user:test-login` — ver §8 y `DEVELOPER_SCRIPTS_GUIDE.md`.
+
+### Descubrimiento público (cerrado V2)
+
+Checklist: `docs/dev/Yo_Te_Invito_Checklist_V2_Produccion.md` § Descubrimiento público. Auditoría y QA: `docs/audits/PUBLIC_DISCOVERY_AUDIT.md`. Contexto: `PROJECT_CONTEXT.md` §5, `FRONTEND_CONTEXT.md` §7–8c, `BACKEND_CONTEXT.md` §4.

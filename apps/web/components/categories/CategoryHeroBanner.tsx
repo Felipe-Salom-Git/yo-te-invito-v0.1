@@ -81,7 +81,7 @@ function HeroCTAs({ model }: { model: HeroViewModel }) {
     <div className="mt-3 flex flex-wrap gap-2 sm:mt-4 sm:gap-3">
       <Link
         href={model.detailHref}
-        className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-bg shadow-md shadow-accent-glow transition-all hover:bg-accent-hover sm:px-5 sm:py-2.5"
+        className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-bg shadow-md transition-all hover:bg-accent-hover sm:px-5 sm:py-2.5"
       >
         {model.primaryCtaLabel}
       </Link>

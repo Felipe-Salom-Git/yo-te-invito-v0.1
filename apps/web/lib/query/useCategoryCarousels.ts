@@ -1,18 +1,18 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useQueries, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import type { CategoryGatewayId } from '@/lib/home/categoryGatewayConfig';
 import {
   CATEGORY_CAROUSEL_LIMIT,
-  EVENT_FEATURED_SECTION,
-  RECOMMENDED_SECTION,
+  EVENT_UPCOMING_SECTION,
   TOP_RATED_SECTION,
-  RECENT_SECTION,
   featuredSortForCategory,
-  sortFeaturedFallback,
+  getFeaturedSectionMeta,
+  getRecentSectionMeta,
   sortRecentItems,
 } from '@/lib/categories/category-carousel.logic';
+import { getCategoryExploreHref } from '@/lib/categories/categoryLandingConfig';
 import { RECOMMENDED_LIST_MIN_VALID_REVIEWS } from '@yo-te-invito/shared';
 import type { CategoryCarouselSection } from '@/lib/categories/category-page.types';
 import type {
@@ -62,11 +62,11 @@ async function fetchCategoryList(
 
 function findActiveSubcategory(
   subcategories: PublicSubcategorySummary[],
-  slug: string | null | undefined,
+  slugOrId: string | null | undefined,
 ): PublicSubcategorySummary | undefined {
-  const s = slug?.trim();
+  const s = slugOrId?.trim();
   if (!s) return undefined;
-  return subcategories.find((x) => x.slug === s);
+  return subcategories.find((x) => x.slug === s || x.id === s);
 }
 
 export function useCategoryCarousels(
@@ -137,6 +137,17 @@ export function useCategoryCarousels(
     enabled: !!t && !filterMode && category !== 'event',
   });
 
+  const upcomingQuery = useQuery({
+    queryKey: categoryLandingKeys.carousel(t, category, 'upcoming', ''),
+    queryFn: () =>
+      fetchCategoryList(repos, t, category, {
+        sort: 'upcoming',
+        hasTicketing: true,
+        excludeGeneralPublications: true,
+      }),
+    enabled: !!t && !filterMode && category === 'event',
+  });
+
   const recentQuery = useQuery({
     queryKey: categoryLandingKeys.carousel(t, category, 'recent', ''),
     queryFn: async () => {
@@ -146,22 +157,13 @@ export function useCategoryCarousels(
     enabled: !!t && !filterMode,
   });
 
-  const subcategoryQueries = useQueries({
-    queries: subcategories.map((sub) => ({
-      queryKey: categoryLandingKeys.carousel(t, category, 'sub', sub.slug),
-      queryFn: () =>
-        fetchCategoryList(repos, t, category, {
-          subcategorySlug: sub.slug,
-          sort: 'upcoming',
-        }),
-      enabled: !!t && !filterMode && subcategories.length > 0,
-    })),
-  });
-
   const sections: CategoryCarouselSection[] = useMemo(() => {
     if (filterMode && activeSubcategory && discountsSubcategoryMode) {
       return [];
     }
+
+    const exploreSeeMore = (subcategoryId?: string) =>
+      getCategoryExploreHref(category, subcategoryId ? { subcategoryId } : undefined);
 
     if (filterMode && activeSubcategory) {
       const items = filteredQuery.data ?? [];
@@ -173,23 +175,42 @@ export function useCategoryCarousels(
           subtitle: activeSubcategory.description ?? undefined,
           items,
           isLoading: filteredQuery.isLoading,
+          seeMoreHref: exploreSeeMore(activeSubcategory.id),
+          seeMoreLabel: 'Ver más',
         },
       ];
     }
 
     const out: CategoryCarouselSection[] = [];
+    const featuredMeta = getFeaturedSectionMeta(category);
+    const recentMeta = getRecentSectionMeta(category);
 
     const recommendedItems = recommendedQuery.data ?? [];
     if (recommendedQuery.isLoading || recommendedItems.length > 0) {
-      const meta =
-        category === 'event' ? EVENT_FEATURED_SECTION : RECOMMENDED_SECTION;
       out.push({
         id: 'recommended',
-        title: meta.title,
-        subtitle: meta.subtitle,
+        title: featuredMeta.title,
+        subtitle: featuredMeta.subtitle,
         items: recommendedItems,
         isLoading: recommendedQuery.isLoading,
+        seeMoreHref: exploreSeeMore(),
+        seeMoreLabel: 'Ver más',
       });
+    }
+
+    if (category === 'event') {
+      const upcomingItems = upcomingQuery.data ?? [];
+      if (upcomingQuery.isLoading || upcomingItems.length > 0) {
+        out.push({
+          id: 'upcoming',
+          title: EVENT_UPCOMING_SECTION.title,
+          subtitle: EVENT_UPCOMING_SECTION.subtitle,
+          items: upcomingItems,
+          isLoading: upcomingQuery.isLoading,
+          seeMoreHref: exploreSeeMore(),
+          seeMoreLabel: 'Ver más',
+        });
+      }
     }
 
     if (category !== 'event') {
@@ -201,6 +222,8 @@ export function useCategoryCarousels(
           subtitle: TOP_RATED_SECTION.subtitle,
           items: topRatedItems,
           isLoading: topRatedQuery.isLoading,
+          seeMoreHref: exploreSeeMore(),
+          seeMoreLabel: 'Ver más',
         });
       }
     }
@@ -209,25 +232,14 @@ export function useCategoryCarousels(
     if (recentQuery.isLoading || recentItems.length > 0) {
       out.push({
         id: 'recent',
-        title: RECENT_SECTION.title,
-        subtitle: RECENT_SECTION.subtitle,
+        title: recentMeta.title,
+        subtitle: recentMeta.subtitle,
         items: recentItems,
         isLoading: recentQuery.isLoading,
+        seeMoreHref: exploreSeeMore(),
+        seeMoreLabel: 'Ver más',
       });
     }
-
-    subcategories.forEach((sub, i) => {
-      const q = subcategoryQueries[i];
-      const items = q?.data ?? [];
-      if (!q?.isLoading && items.length === 0) return;
-      out.push({
-        id: `subcategory-${sub.id}`,
-        title: sub.name,
-        subtitle: sub.description ?? undefined,
-        items,
-        isLoading: q?.isLoading ?? true,
-      });
-    });
 
     return out;
   }, [
@@ -241,8 +253,9 @@ export function useCategoryCarousels(
     topRatedQuery.isLoading,
     recentQuery.data,
     recentQuery.isLoading,
-    subcategories,
-    subcategoryQueries,
+    upcomingQuery.data,
+    upcomingQuery.isLoading,
+    category,
   ]);
 
   const isLoading =
@@ -254,7 +267,7 @@ export function useCategoryCarousels(
         : recommendedQuery.isLoading ||
           topRatedQuery.isLoading ||
           recentQuery.isLoading ||
-          subcategoryQueries.some((q) => q.isLoading));
+          upcomingQuery.isLoading);
 
   const visibleSections = sections.filter((s) => s.isLoading || s.items.length > 0);
   const isEmpty =

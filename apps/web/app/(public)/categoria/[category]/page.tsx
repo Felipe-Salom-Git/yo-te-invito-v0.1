@@ -10,7 +10,8 @@ function CategoryPageContent() {
   const params = useParams();
   const searchParams = useSearchParams();
   const categoryParam = typeof params.category === 'string' ? params.category : '';
-  const subcategory = searchParams.get('subcategory');
+  const subcategory =
+    searchParams.get('subcategory') ?? searchParams.get('subcategoryId');
 
   if (!isCategoryLandingId(categoryParam)) {
     notFound();

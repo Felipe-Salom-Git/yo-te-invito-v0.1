@@ -93,22 +93,40 @@ yo-te-invito-v0.1/
 
 ---
 
-## 5. Gaps
+## 5. Descubrimiento público — Estado cerrado (2026-05-22, Slices 1–8)
 
-See **`docs/context/CONTEXT_PENDIENTES.md`** (checkbox backlog).
+Bloque **Descubrimiento público** cerrado en checklist V2. Detalle: `docs/audits/PUBLIC_DISCOVERY_AUDIT.md`.
 
-Summary: real payments, gastro scanner QR, image storage (vs data-URL), validación física ticket en staging, anonymous hero category tabs, SEO/loading polish.
+| Pieza | Estado |
+|-------|--------|
+| Gateway editorial (`/`, `/categorias`) | Cerrado — 2×2, sin hotel en grilla, footer home/explore |
+| Home (`/home`) | Cerrado — 4 categorías, rails, metadata cards, hoteles “Próximamente” |
+| Explore (`/explore`) | Cerrado — filtros URL, subcategoría, `fromPrice` / `producerName` |
+| Categorías (`/categoria/*`) | Cerrado — hero, subcategorías, carruseles, cruzados |
+| Metadata en cards | Cerrado — API + `ContentCard` |
+| Visibilidad eventos vencidos | Cerrado — 1:00 AM día siguiente (AR) en `GET /public/events*` |
+| Trending | Cerrado — `viewCount` + `rankingScore` en `/public/events/trending` |
+
+**Fuera de este bloque:** pagos reales, storage imágenes, portales admin/productor, polish rentals checklist, drift TS global (`registerPush`, etc.).
 
 ---
 
-## 6. Product / Design
+## 6. Gaps
+
+See **`docs/context/CONTEXT_PENDIENTES.md`** (checkbox backlog).
+
+Summary: real payments, gastro scanner QR, image storage (vs data-URL), validación física ticket en staging, SEO/loading polish, E2E discovery automatizado.
+
+---
+
+## 7. Product / Design
 
 - Black background, green accent, white text.
 - Premium, cinematic, discovery-first (Netflix-style rails).
 
 ---
 
-## 7. Dev database & QA
+## 8. Dev database & QA
 
 | Acción | Comando |
 |--------|---------|
@@ -125,7 +143,7 @@ Guías: `docs/guides/README.md`, `DEVELOPER_SCRIPTS_GUIDE.md`, `SMOKE_TESTS_GUID
 
 ---
 
-## 8. AI Guidance
+## 9. AI Guidance
 
 1. Extend existing patterns; avoid rewrites.
 2. Use `packages/shared` + repository interfaces.

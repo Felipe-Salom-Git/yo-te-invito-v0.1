@@ -84,11 +84,17 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 
 ## H. Home y descubrimiento
 
+- [x] Pantalla editorial post-splash / gateway (`/`, `/categorias`, grilla 2×2, copy Bariloche, footer home/explore — Slice 5)
+- [x] Páginas `/categoria/[category]` + carruseles cruzados (`CrossCategoryRails`, Slice 6)
 - [x] Home global: carruseles por `rankingScore` («más recomendados» / «mejor puntuados») vía `GET /public/events/recommended` + `useCategoryCarousels`
 - [x] Landing por categoría: mismos carruseles en `/categoria/[category]`
-- [ ] Tabs de categoría en hero anónimo (Path A en `FRONTEND_CONTEXT.md`)
-- [ ] `fromPrice` / `producerName` en listados API
+- [x] Tabs de categoría en hero anónimo (Path A — 4 categorías sin hotel; `HOME_DISCOVERY_TABS`)
+- [x] `fromPrice` / `producerName` en listados API (`GET /public/events*`, schema `EventSummary`)
+- [x] Regla eventos vencidos en discovery público (`event-public-visibility.util.ts` + `PublicEventsService.publicWhere`)
+- [x] `/explore` con filtros URL y metadata en cards (Slice 3)
+- [x] Trending por `viewCount` (Slice 7)
 - [ ] “Guardar para después” persistido
+- [ ] Smoke E2E Playwright del flujo discovery (manual OK; automatizado pendiente)
 
 ---
 
@@ -133,7 +139,7 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 - [x] Slice 8: perfil productor hub — completitud calculada en frontend (`producer-profile-completeness.ts`), checklist, preview liviana, bloques con badge, formularios con intro/ayuda; estado real `profile.status` (sin `publicVisibility` inventado); **slug único auto** desde `displayName` (`producer-profile-slug.util.ts`, sufijos `-2` si colisión)
 - [x] Slice 9: comentarios productor — resumen con pendientes/disputas (API), filtros (respuesta, disputa OPEN, estado público, orden), cards/modales pulidos; `ManagedReviewsCommentsPage` parametrizado (gastro/hotel sin regresión)
 - [x] Slice 10: notificaciones productor por estado de evento — `EVENT_APPROVED_BY_ADMIN` / `EVENT_REJECTED_BY_ADMIN`, hook en `AdminEventsService`, `ProducerEventStatusNotificationsService`, alertas en `/producer` vía `/me/notifications`
-- [ ] Trending real (`viewCount` / `recentScore` en ranking) — contador existe; falta usar en carruseles trending
+- [x] Trending real (`viewCount` + `rankingScore` en `GET /public/events/trending`; sin `recentScore` en schema — Slice 7)
 - [x] Réplica gastro/hotel/admin por rutas dedicadas (`/gastro|hotel|admin/reviews/:id/reply`)
 - [x] Formularios B2B con 4 aspectos comerciales (productora ↔ referido)
 - [x] Smoke tests Reviews V2 — `pnpm --filter api run smoke:reviews` + guía `docs/guides/SMOKE_TESTS_GUIDE.md`

@@ -51,8 +51,8 @@ export function getCrossCategoryRails(
   );
 }
 
-export const CROSS_CATEGORY_DISCOVERY_HEADING = 'También podés descubrir';
-export const CROSS_CATEGORY_DISCOVERY_SUBHEADING = 'Más para hacer en Bariloche';
+export const CROSS_CATEGORY_DISCOVERY_HEADING = 'Más para hacer';
+export const CROSS_CATEGORY_DISCOVERY_SUBHEADING = 'Otras categorías en Bariloche';
 
 export const CROSS_CATEGORY_EMPTY_EVENT_MESSAGE =
   'No hay eventos próximos disponibles por ahora.';
@@ -61,6 +61,7 @@ export interface CategoryLandingMeta {
   id: CategoryGatewayId;
   title: string;
   subtitle: string;
+  editorialDescription: string;
 }
 
 export const CATEGORY_LANDING_META: Record<CategoryGatewayId, CategoryLandingMeta> = {
@@ -68,23 +69,44 @@ export const CATEGORY_LANDING_META: Record<CategoryGatewayId, CategoryLandingMet
     id: 'event',
     title: 'EVENTOS',
     subtitle: 'Shows, fiestas y experiencias en vivo',
+    editorialDescription:
+      'Fiestas, recitales, teatro y festivales. Filtrá por subcategoría o explorá por fecha.',
   },
   gastro: {
     id: 'gastro',
     title: 'GASTRONOMÍA',
-    subtitle: 'Sabores y lugares para disfrutar',
+    subtitle: 'Restaurantes, bares y lugares para disfrutar',
+    editorialDescription:
+      'Restaurants, bares, cafeterías y experiencias gastronómicas en la ciudad.',
   },
   rental: {
     id: 'rental',
     title: 'EQUIPOS Y RENTALS',
     subtitle: 'Movilidad, equipos y aventura',
+    editorialDescription:
+      'Alquiler de autos, bicis, kayaks, equipos de nieve y más — sin alojamientos.',
   },
   excursion: {
     id: 'excursion',
     title: 'EXCURSIONES',
-    subtitle: 'Recorridos y experiencias únicas',
+    subtitle: 'Aventuras, recorridos y experiencias únicas',
+    editorialDescription:
+      'Recorridos guiados, aventuras y experiencias al aire libre en la región.',
   },
 };
+
+/** Ver todo en explore con filtros de categoría (y subcategoría opcional). */
+export function getCategoryExploreHref(
+  category: CategoryGatewayId,
+  opts?: { subcategoryId?: string },
+): string {
+  const params = new URLSearchParams();
+  params.set('category', category);
+  if (opts?.subcategoryId?.trim()) {
+    params.set('subcategoryId', opts.subcategoryId.trim());
+  }
+  return `/explore?${params.toString()}`;
+}
 
 export function isCategoryLandingId(value: string): value is CategoryGatewayId {
   return value === 'event' || value === 'gastro' || value === 'rental' || value === 'excursion';

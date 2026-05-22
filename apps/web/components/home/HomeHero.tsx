@@ -3,6 +3,10 @@
 import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
+import {
+  getCategoryGatewayHref,
+  isCategoryGatewayId,
+} from '@/lib/home/categoryGatewayConfig';
 import type { HeroViewModel } from '@/lib/home/heroModel';
 import { mapFeaturedItemToHeroModel } from '@/lib/home/heroModel';
 
@@ -208,7 +212,7 @@ export function HomeHero({
       {featuredTabs.length > 0 && (
         <div className="absolute left-0 right-0 top-6 z-10 px-4 sm:px-6 md:px-10 lg:px-16">
           <div
-            className="flex flex-wrap gap-1 rounded-lg bg-black/40 p-1 backdrop-blur-sm"
+            className="flex flex-wrap items-center gap-2 rounded-lg bg-black/40 p-1 backdrop-blur-sm"
             role="tablist"
             aria-label="Categorías destacadas"
           >
@@ -233,6 +237,14 @@ export function HomeHero({
               );
             })}
           </div>
+          {selectedTabId && isCategoryGatewayId(selectedTabId) ? (
+            <Link
+              href={getCategoryGatewayHref(selectedTabId)}
+              className="mt-2 inline-block text-xs font-bold uppercase tracking-wider text-accent hover:text-white"
+            >
+              Ver categoría {featuredTabs.find((t) => t.id === selectedTabId)?.label} →
+            </Link>
+          ) : null}
         </div>
       )}
 

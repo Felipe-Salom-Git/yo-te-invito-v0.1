@@ -71,10 +71,67 @@ async function main() {
 
   try {
     const r = await fetchApi('/public/events', auth.headers, { query: { tenantId: TENANT, limit: '5' } });
-    const ok = r.ok && Array.isArray((r.data as { data?: unknown[] })?.data);
-    results.push({ name: 'events.list', ok: ok || r.ok, err: ok ? undefined : `status=${r.status}` });
+    const rows = (r.data as { data?: Record<string, unknown>[] })?.data;
+    const ok =
+      r.ok &&
+      Array.isArray(rows) &&
+      rows.every(
+        (item) =>
+          item &&
+          ('fromPrice' in item) &&
+          (item.fromPrice === null || typeof item.fromPrice === 'number') &&
+          ('producerName' in item) &&
+          (item.producerName === null || typeof item.producerName === 'string'),
+      );
+    results.push({
+      name: 'events.list',
+      ok: ok || r.ok,
+      err: ok ? undefined : `status=${r.status} or missing fromPrice/producerName`,
+    });
   } catch (e) {
     results.push({ name: 'events.list', ok: false, err: String(e) });
+  }
+
+  try {
+    const r = await fetchApi('/public/events/search', auth.headers, {
+      query: { tenantId: TENANT, limit: '3' },
+    });
+    const rows = (r.data as { data?: Record<string, unknown>[] })?.data;
+    const ok =
+      r.ok &&
+      Array.isArray(rows) &&
+      rows.every((item) => item && 'fromPrice' in item && 'producerName' in item);
+    results.push({ name: 'events.search', ok, err: ok ? undefined : 'contract fields' });
+  } catch (e) {
+    results.push({ name: 'events.search', ok: false, err: String(e) });
+  }
+
+  try {
+    const r = await fetchApi('/public/events/trending', auth.headers, {
+      query: { tenantId: TENANT, limit: '3' },
+    });
+    const rows = r.data as Record<string, unknown>[] | undefined;
+    const ok =
+      r.ok &&
+      Array.isArray(rows) &&
+      rows.every((item) => item && 'fromPrice' in item && 'producerName' in item);
+    results.push({ name: 'events.trending', ok, err: ok ? undefined : 'contract fields' });
+  } catch (e) {
+    results.push({ name: 'events.trending', ok: false, err: String(e) });
+  }
+
+  try {
+    const r = await fetchApi('/public/events/recommended', auth.headers, {
+      query: { tenantId: TENANT, limit: '3' },
+    });
+    const rows = r.data as Record<string, unknown>[] | undefined;
+    const ok =
+      r.ok &&
+      Array.isArray(rows) &&
+      rows.every((item) => item && 'fromPrice' in item && 'producerName' in item);
+    results.push({ name: 'events.recommended', ok, err: ok ? undefined : 'contract fields' });
+  } catch (e) {
+    results.push({ name: 'events.recommended', ok: false, err: String(e) });
   }
 
   try {

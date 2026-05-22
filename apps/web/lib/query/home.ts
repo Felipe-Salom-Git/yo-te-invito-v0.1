@@ -8,7 +8,7 @@ import type { EventSummary, Repositories } from '@/repositories/interfaces';
 import { homeKeys } from './keys';
 
 const TENANT_ID = 'tenant-demo';
-const DEFAULT_CITY = 'Buenos Aires';
+const DEFAULT_CITY = 'Bariloche';
 const HOME_RAIL_LIMIT = 8;
 
 export interface UseHomeCarouselsOptions {
@@ -78,6 +78,12 @@ export function useHomeCarousels(options?: UseHomeCarouselsOptions) {
     enabled: !!t,
   });
 
+  const eventCategory = useQuery({
+    queryKey: homeKeys.categoryRecommended(t, 'event'),
+    queryFn: () => fetchCategoryRecommended(repos, t, 'event'),
+    enabled: !!t,
+  });
+
   const gastro = useQuery({
     queryKey: homeKeys.categoryRecommended(t, 'gastro'),
     queryFn: () => fetchCategoryRecommended(repos, t, 'gastro'),
@@ -96,28 +102,22 @@ export function useHomeCarousels(options?: UseHomeCarouselsOptions) {
     enabled: !!t,
   });
 
-  const hotel = useQuery({
-    queryKey: homeKeys.categoryRecommended(t, 'hotel'),
-    queryFn: () => fetchCategoryRecommended(repos, t, 'hotel'),
-    enabled: !!t,
-  });
-
   return {
     trending: trending.data ?? [],
     recommendedGlobal: recommendedGlobal.data ?? [],
     nearYou: nearYou.data?.data ?? [],
     newEvents: newEvents.data?.data ?? [],
+    eventCategory: eventCategory.data ?? [],
     gastro: gastro.data ?? [],
     excursion: excursion.data ?? [],
     rental: rental.data ?? [],
-    hotel: hotel.data ?? [],
     isLoading:
       trending.isLoading ||
       recommendedGlobal.isLoading ||
       nearYou.isLoading ||
+      eventCategory.isLoading ||
       gastro.isLoading ||
       excursion.isLoading ||
-      rental.isLoading ||
-      hotel.isLoading,
+      rental.isLoading,
   };
 }

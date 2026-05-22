@@ -8,14 +8,14 @@ import { subcategoriesKeys } from './keys';
 
 const TENANT_ID = 'tenant-demo';
 
-export function usePublicSubcategories(category: ContentMainCategory) {
+export function usePublicSubcategories(category: ContentMainCategory | null) {
   const repos = useRepositories();
   const { tenantId } = useTenant();
   const t = tenantId || TENANT_ID;
 
   return useQuery({
-    queryKey: subcategoriesKeys.public(t, category),
-    queryFn: () => repos.subcategories.listPublic(t, category),
+    queryKey: subcategoriesKeys.public(t, category ?? 'none'),
+    queryFn: () => repos.subcategories.listPublic(t, category!),
     enabled: !!t && !!category,
   });
 }
