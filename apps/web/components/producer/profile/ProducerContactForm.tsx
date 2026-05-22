@@ -1,14 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ProducerDetail } from '@/repositories/interfaces';
 import { useRepositories } from '@/repositories/context';
 import { producersKeys } from '@/lib/query/keys';
-import { PageContainer, Button, Input, useToast, SectionTitle } from '@/components';
+import { PageContainer, Button, Input, useToast } from '@/components';
 import { getErrorMessage } from '@/lib/errors';
+import { ProducerProfileFormIntro } from './ProducerProfileFormIntro';
 
 function invalidateProducerProfile(
   queryClient: ReturnType<typeof useQueryClient>,
@@ -93,13 +93,12 @@ export function ProducerContactForm({ profile }: { profile: ProducerDetail }) {
 
   return (
     <PageContainer className="max-w-2xl">
-      <Link href="/producer/profile" className="text-sm text-text-muted hover:text-accent">
-        ← Volver al perfil
-      </Link>
-      <SectionTitle className="mt-4">Contacto</SectionTitle>
-      <p className="mt-2 text-sm text-text-muted">Datos públicos para que te escriban o llamen.</p>
+      <ProducerProfileFormIntro
+        blockTitle="Contacto"
+        description="Teléfonos, email, WhatsApp, ciudad y redes visibles en tu ficha pública. No uses datos que no quieras exponer."
+      />
 
-      <form className="mt-8 space-y-4" onSubmit={onSubmit}>
+      <form className="mt-6 space-y-4" onSubmit={onSubmit}>
         <div className="grid gap-4 sm:grid-cols-2">
           <Input label="Teléfono" value={primaryPhone} onChange={(e) => setPrimaryPhone(e.target.value)} />
           <Input label="Teléfono alternativo" value={secondaryPhone} onChange={(e) => setSecondaryPhone(e.target.value)} />
@@ -126,7 +125,10 @@ export function ProducerContactForm({ profile }: { profile: ProducerDetail }) {
             placeholder="@cuenta o URL"
           />
         </div>
-        <p className="text-xs text-text-muted">Al guardar, debe quedar al menos un teléfono o email.</p>
+        <p className="rounded-lg border border-border/80 bg-bg-muted/40 px-3 py-2 text-xs text-text-muted">
+          Público en la ficha: todo lo que guardes acá. Requerido al menos un teléfono, email, WhatsApp o
+          red social al guardar.
+        </p>
         <div className="flex gap-3 pt-4">
           <Button type="submit" disabled={mutation.isPending}>
             {mutation.isPending ? 'Guardando…' : 'Guardar'}

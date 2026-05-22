@@ -1,6 +1,10 @@
-import { Controller, Get, NotFoundException, Param, Query } from '@nestjs/common';
+import { Controller, Get, Post, NotFoundException, Param, Query, UseGuards } from '@nestjs/common';
 import { PublicProducersService } from './public-producers.service';
+import { PublicEngagementService } from './public-engagement.service';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
+import { OptionalJwtOrDevAuthGuard } from '../auth/optional-jwt-or-dev-auth.guard';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { eventDetailQuerySchema, type EventDetailQuery } from '@yo-te-invito/shared';
 import {
   getProducersQuerySchema,
   producerReviewsListQuerySchema,
@@ -10,7 +14,10 @@ import {
 
 @Controller('public/producers')
 export class PublicProducersController {
-  constructor(private readonly service: PublicProducersService) {}
+  constructor(
+    private readonly service: PublicProducersService,
+    private readonly engagement: PublicEngagementService,
+  ) {}
 
   @Get()
   async list(@Query(new ZodValidationPipe(getProducersQuerySchema)) query: GetProducersQuery) {
@@ -39,5 +46,16 @@ export class PublicProducersController {
     const producer = await this.service.getBySlugOrId(slug);
     if (!producer) throw new NotFoundException('Producer not found');
     return producer;
+  }
+
+  /** Increment public profile view counter (V2: no per-user dedup). */
+  @Post(':slug/view')
+  @UseGuards(OptionalJwtOrDevAuthGuard)
+  async recordView(
+    @Param('slug') slug: string,
+    @Query(new ZodValidationPipe(eventDetailQuerySchema)) query: EventDetailQuery,
+    @CurrentUser() user?: { id: string; tenantId: string; role: string },
+  ) {
+    return this.engagement.recordProducerProfileView(query.tenantId, slug, user);
   }
 }

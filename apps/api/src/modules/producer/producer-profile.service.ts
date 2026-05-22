@@ -7,6 +7,7 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import type { CreateProducerProfileInput, UpdateProducerProfileInput } from '@yo-te-invito/shared';
 import { mapProducerProfileToPortal } from './producer-profile.mapper';
+import { uniqueProducerProfileSlug } from './producer-profile-slug.util';
 
 function hasContact(profile: {
   primaryPhone: string | null;
@@ -59,11 +60,14 @@ export class ProducerProfileService {
       throw new ConflictException('Ya tenés un perfil de productora');
     }
 
+    const displayName = body.displayName.trim();
+    const slug = await uniqueProducerProfileSlug(this.prisma, displayName);
+
     const profile = await this.prisma.producerProfile.create({
       data: {
         tenantId,
-        displayName: body.displayName.trim(),
-        slug: body.slug?.trim() || null,
+        displayName,
+        slug,
         status: 'ACTIVE',
         createdByUserId: userId,
       },
@@ -129,10 +133,29 @@ export class ProducerProfileService {
           }
         : undefined;
 
+    const displayNameForSlug =
+      data.displayName !== undefined ? data.displayName.trim() : existing.displayName;
+    let resolvedSlug: string | null | undefined = undefined;
+    if (data.slug !== undefined) {
+      resolvedSlug = data.slug?.trim()
+        ? await uniqueProducerProfileSlug(
+            this.prisma,
+            data.slug.trim(),
+            membership.profileId,
+          )
+        : null;
+    } else if (!existing.slug?.trim()) {
+      resolvedSlug = await uniqueProducerProfileSlug(
+        this.prisma,
+        displayNameForSlug,
+        membership.profileId,
+      );
+    }
+
     const updated = await this.prisma.producerProfile.update({
       where: { id: membership.profileId },
       data: {
-        slug: data.slug,
+        ...(resolvedSlug !== undefined ? { slug: resolvedSlug } : {}),
         displayName: data.displayName,
         legalName: data.legalName,
         shortDescription: data.shortDescription,

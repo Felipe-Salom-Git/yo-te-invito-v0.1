@@ -2,11 +2,23 @@
 
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import type { ProducerManagedReviewListItem } from '@yo-te-invito/shared';
+import type {
+  ProducerManagedReviewListItem,
+  ProducerReviewDisputeFilter,
+  ProducerReviewReplyFilter,
+  ReviewPublicStatus,
+} from '@yo-te-invito/shared';
 import { useRepositories } from '@/repositories/context';
-import { SectionTitle } from '@/components';
-import { ProducerReviewSummary } from '@/components/producer/comments/ProducerReviewSummary';
+import { SectionTitle, PageLoader, QueryError, EmptyState } from '@/components';
+import { getErrorMessage } from '@/lib/errors';
+import { ManagedReviewSummary } from '@/components/producer/comments/ManagedReviewSummary';
+import { ProducerCommentsHelp } from '@/components/producer/comments/ProducerCommentsHelp';
 import { ManagedReviewCard } from '@/components/producer/comments/ManagedReviewCard';
+import {
+  PUBLIC_STATUS_FILTER_OPTIONS,
+  quickFilterToListParams,
+  type ManagedReviewsQuickFilter,
+} from '@/lib/producer/managed-reviews-filters';
 import {
   gastroReviewsKeys,
   hotelReviewsKeys,
@@ -22,7 +34,7 @@ const COPY: Record<
   producer: {
     title: 'Comentarios y valoraciones',
     subtitle:
-      'Gestioná las valoraciones recibidas en tus eventos y solicitá revisión si considerás que alguna calificación no corresponde.',
+      'Revisá la reputación de tus eventos, respondé en público y solicitá revisión a administración cuando corresponda.',
     eventLabel: 'Evento',
   },
   gastro: {
@@ -39,8 +51,24 @@ const COPY: Record<
   },
 };
 
+const PRODUCER_QUICK_FILTERS: { id: ManagedReviewsQuickFilter; label: string }[] = [
+  { id: 'all', label: 'Todos' },
+  { id: 'unanswered', label: 'Sin responder' },
+  { id: 'answered', label: 'Respondidos' },
+  { id: 'open_dispute', label: 'Con disputa' },
+  { id: 'highest', label: 'Mejores' },
+  { id: 'lowest', label: 'Menores' },
+];
+
 const selectClass =
   'rounded-lg border border-border bg-bg px-3 py-2 text-sm text-text focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent';
+
+const chipClass = (active: boolean) =>
+  `shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+    active
+      ? 'border-accent-muted bg-accent-surface text-accent-soft'
+      : 'border-border text-text-muted hover:border-accent-muted hover:text-text'
+  }`;
 
 type Props = {
   scope: ManagedReviewsScope;
@@ -49,33 +77,69 @@ type Props = {
 export function ManagedReviewsCommentsPage({ scope }: Props) {
   const repos = useRepositories();
   const copy = COPY[scope];
+  const [quickFilter, setQuickFilter] = useState<ManagedReviewsQuickFilter>('all');
   const [eventId, setEventId] = useState('');
   const [overallRating, setOverallRating] = useState('');
-  const [disputeStatus, setDisputeStatus] = useState('ALL');
-  const [sort, setSort] = useState<'newest' | 'oldest'>('newest');
+  const [disputeStatus, setDisputeStatus] = useState<ProducerReviewDisputeFilter>('ALL');
+  const [replyFilter, setReplyFilter] = useState<ProducerReviewReplyFilter>('ALL');
+  const [publicStatus, setPublicStatus] = useState<'' | ReviewPublicStatus>('');
+  const [sort, setSort] = useState<'newest' | 'oldest' | 'highest' | 'lowest'>('newest');
   const [page, setPage] = useState(1);
 
+  const quickParams = quickFilterToListParams(quickFilter);
+
   const filtersKey = useMemo(
-    () => JSON.stringify({ scope, eventId, overallRating, disputeStatus, sort, page }),
-    [scope, eventId, overallRating, disputeStatus, sort, page],
+    () =>
+      JSON.stringify({
+        scope,
+        quickFilter,
+        eventId,
+        overallRating,
+        disputeStatus,
+        replyFilter,
+        publicStatus,
+        sort,
+        page,
+      }),
+    [
+      scope,
+      quickFilter,
+      eventId,
+      overallRating,
+      disputeStatus,
+      replyFilter,
+      publicStatus,
+      sort,
+      page,
+    ],
   );
 
   const listParams = {
     eventId: eventId || undefined,
     overallRating: overallRating ? Number(overallRating) : undefined,
-    disputeStatus: scope === 'producer' && disputeStatus !== 'ALL' ? disputeStatus : undefined,
-    sort,
+    disputeStatus:
+      scope === 'producer'
+        ? quickParams.disputeStatus ?? (disputeStatus !== 'ALL' ? disputeStatus : undefined)
+        : undefined,
+    replyFilter:
+      scope === 'producer'
+        ? quickParams.replyFilter ?? (replyFilter !== 'ALL' ? replyFilter : undefined)
+        : undefined,
+    publicStatus: scope === 'producer' && publicStatus ? publicStatus : undefined,
+    sort: quickParams.sort ?? sort,
     page,
     limit: 15,
   };
 
+  const summaryKey =
+    scope === 'producer'
+      ? producerReviewsKeys.summary()
+      : scope === 'gastro'
+        ? gastroReviewsKeys.summary()
+        : hotelReviewsKeys.summary();
+
   const summaryQuery = useQuery({
-    queryKey:
-      scope === 'producer'
-        ? producerReviewsKeys.summary()
-        : scope === 'gastro'
-          ? gastroReviewsKeys.summary()
-          : hotelReviewsKeys.summary(),
+    queryKey: summaryKey,
     queryFn: () =>
       scope === 'producer'
         ? repos.producerReviews.getSummary()
@@ -84,13 +148,15 @@ export function ManagedReviewsCommentsPage({ scope }: Props) {
           : repos.hotelReviews.getSummary(),
   });
 
+  const listQueryKey =
+    scope === 'producer'
+      ? producerReviewsKeys.list(filtersKey)
+      : scope === 'gastro'
+        ? gastroReviewsKeys.list(filtersKey)
+        : hotelReviewsKeys.list(filtersKey);
+
   const listQuery = useQuery({
-    queryKey:
-      scope === 'producer'
-        ? producerReviewsKeys.list(filtersKey)
-        : scope === 'gastro'
-          ? gastroReviewsKeys.list(filtersKey)
-          : hotelReviewsKeys.list(filtersKey),
+    queryKey: listQueryKey,
     queryFn: () =>
       scope === 'producer'
         ? repos.producerReviews.listReviews(listParams)
@@ -99,13 +165,6 @@ export function ManagedReviewsCommentsPage({ scope }: Props) {
           : repos.hotelReviews.listReviews(listParams),
   });
 
-  const invalidateQueryKey =
-    scope === 'producer'
-      ? producerReviewsKeys.list(filtersKey)
-      : scope === 'gastro'
-        ? gastroReviewsKeys.list(filtersKey)
-        : hotelReviewsKeys.list(filtersKey);
-
   const replyFn =
     scope === 'producer'
       ? repos.producerReviews.reply.bind(repos.producerReviews)
@@ -113,20 +172,95 @@ export function ManagedReviewsCommentsPage({ scope }: Props) {
         ? repos.gastroReviews.reply.bind(repos.gastroReviews)
         : repos.hotelReviews.reply.bind(repos.hotelReviews);
 
+  const replyAuthorLabel =
+    scope === 'producer'
+      ? 'Tu productora'
+      : scope === 'gastro'
+        ? 'Tu establecimiento'
+        : 'Tu hotel';
+
   const data = listQuery.data;
   const totalPages = data ? Math.ceil(data.total / 15) : 0;
-  const showEventFilter = scope !== 'gastro' && (data?.events.length ?? 0) > 1;
+  const showEventFilter = scope === 'producer' && (data?.events.length ?? 0) > 1;
+
+  const resetFilters = () => {
+    setQuickFilter('all');
+    setEventId('');
+    setOverallRating('');
+    setDisputeStatus('ALL');
+    setReplyFilter('ALL');
+    setPublicStatus('');
+    setSort('newest');
+    setPage(1);
+  };
+
+  const hasActiveFilters =
+    quickFilter !== 'all' ||
+    Boolean(eventId) ||
+    Boolean(overallRating) ||
+    disputeStatus !== 'ALL' ||
+    replyFilter !== 'ALL' ||
+    Boolean(publicStatus) ||
+    sort !== 'newest';
 
   return (
     <section>
       <SectionTitle>{copy.title}</SectionTitle>
       <p className="mt-1 max-w-2xl text-sm text-text-muted">{copy.subtitle}</p>
 
-      {summaryQuery.data ? <ProducerReviewSummary summary={summaryQuery.data} /> : null}
+      {summaryQuery.isLoading ? (
+        <p className="mt-6 text-sm text-text-muted">Cargando resumen…</p>
+      ) : summaryQuery.isError ? (
+        <QueryError
+          className="mt-6"
+          message={getErrorMessage(summaryQuery.error)}
+          onRetry={() => void summaryQuery.refetch()}
+        />
+      ) : summaryQuery.data ? (
+        <div className="mt-6">
+          <ManagedReviewSummary summary={summaryQuery.data} scope={scope} />
+        </div>
+      ) : null}
+
+      {scope === 'producer' ? (
+        <div className="mt-6">
+          <ProducerCommentsHelp />
+        </div>
+      ) : null}
 
       <section className="mt-8 rounded-xl border border-border bg-bg-muted p-4">
-        <h3 className="text-sm font-semibold text-text">Filtros</h3>
-        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="text-sm font-semibold text-text">Filtros</h3>
+          {hasActiveFilters ? (
+            <button
+              type="button"
+              onClick={resetFilters}
+              className="text-xs text-accent hover:underline"
+            >
+              Limpiar filtros
+            </button>
+          ) : null}
+        </div>
+
+        {scope === 'producer' ? (
+          <div className="-mx-1 mt-3 flex gap-2 overflow-x-auto px-1 pb-1">
+            {PRODUCER_QUICK_FILTERS.map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                className={chipClass(quickFilter === f.id)}
+                onClick={() => {
+                  setQuickFilter(f.id);
+                  setPage(1);
+                }}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+        ) : null}
+
+        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {showEventFilter ? (
             <label className="block text-xs text-text-muted">
               {copy.eventLabel}
@@ -138,7 +272,7 @@ export function ManagedReviewsCommentsPage({ scope }: Props) {
                   setPage(1);
                 }}
               >
-                <option value="">Todos</option>
+                <option value="">Todos los eventos</option>
                 {(data?.events ?? []).map((ev) => (
                   <option key={ev.id} value={ev.id}>
                     {ev.title}
@@ -147,8 +281,9 @@ export function ManagedReviewsCommentsPage({ scope }: Props) {
               </select>
             </label>
           ) : null}
+
           <label className="block text-xs text-text-muted">
-            Puntaje (1–10)
+            Puntaje exacto (1–10)
             <select
               className={`${selectClass} mt-1 w-full`}
               value={overallRating}
@@ -157,7 +292,7 @@ export function ManagedReviewsCommentsPage({ scope }: Props) {
                 setPage(1);
               }}
             >
-              <option value="">Todos</option>
+              <option value="">Cualquiera</option>
               {[10, 9, 8, 7, 6, 5, 4, 3, 2, 1].map((n) => (
                 <option key={n} value={String(n)}>
                   {n}/10
@@ -165,66 +300,112 @@ export function ManagedReviewsCommentsPage({ scope }: Props) {
               ))}
             </select>
           </label>
+
+          <label className="block text-xs text-text-muted">
+            Orden
+            <select
+              className={`${selectClass} mt-1 w-full`}
+              value={quickParams.sort ?? sort}
+              onChange={(e) => {
+                setSort(e.target.value as typeof sort);
+                setQuickFilter('all');
+                setPage(1);
+              }}
+            >
+              <option value="newest">Más recientes</option>
+              <option value="oldest">Más antiguas</option>
+              <option value="highest">Mayor puntaje</option>
+              <option value="lowest">Menor puntaje</option>
+            </select>
+          </label>
+
           {scope === 'producer' ? (
             <>
               <label className="block text-xs text-text-muted">
-                Estado
+                Respuesta
                 <select
                   className={`${selectClass} mt-1 w-full`}
-                  value={disputeStatus}
+                  value={quickParams.replyFilter ?? replyFilter}
                   onChange={(e) => {
-                    setDisputeStatus(e.target.value);
+                    setReplyFilter(e.target.value as ProducerReviewReplyFilter);
+                    setQuickFilter('all');
                     setPage(1);
                   }}
+                  disabled={quickFilter === 'unanswered' || quickFilter === 'answered'}
+                >
+                  <option value="ALL">Todas</option>
+                  <option value="UNANSWERED">Sin responder</option>
+                  <option value="ANSWERED">Respondidas</option>
+                </select>
+              </label>
+
+              <label className="block text-xs text-text-muted">
+                Disputa
+                <select
+                  className={`${selectClass} mt-1 w-full`}
+                  value={quickParams.disputeStatus ?? disputeStatus}
+                  onChange={(e) => {
+                    setDisputeStatus(e.target.value as ProducerReviewDisputeFilter);
+                    setQuickFilter('all');
+                    setPage(1);
+                  }}
+                  disabled={quickFilter === 'open_dispute'}
                 >
                   <option value="ALL">Todas</option>
                   <option value="NONE">Sin solicitud</option>
-                  <option value="PENDING">Solicitud pendiente</option>
+                  <option value="OPEN">Abiertas</option>
+                  <option value="PENDING">Pendiente</option>
                   <option value="IN_REVIEW">En revisión</option>
                   <option value="RESOLVED">Resuelta</option>
                   <option value="ACCEPTED">Aceptada</option>
                   <option value="REJECTED">Rechazada</option>
                 </select>
               </label>
+
               <label className="block text-xs text-text-muted">
-                Fecha
+                Estado público
                 <select
                   className={`${selectClass} mt-1 w-full`}
-                  value={sort}
+                  value={publicStatus}
                   onChange={(e) => {
-                    setSort(e.target.value as 'newest' | 'oldest');
+                    setPublicStatus(e.target.value as '' | ReviewPublicStatus);
                     setPage(1);
                   }}
                 >
-                  <option value="newest">Más recientes</option>
-                  <option value="oldest">Más antiguas</option>
+                  {PUBLIC_STATUS_FILTER_OPTIONS.map((o) => (
+                    <option key={o.value || 'any'} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
                 </select>
               </label>
             </>
-          ) : (
-            <label className="block text-xs text-text-muted">
-              Fecha
-              <select
-                className={`${selectClass} mt-1 w-full`}
-                value={sort}
-                onChange={(e) => {
-                  setSort(e.target.value as 'newest' | 'oldest');
-                  setPage(1);
-                }}
-              >
-                <option value="newest">Más recientes</option>
-                <option value="oldest">Más antiguas</option>
-              </select>
-            </label>
-          )}
+          ) : null}
         </div>
       </section>
 
       <section className="mt-8">
         {listQuery.isLoading ? (
-          <p className="text-sm text-text-muted">Cargando comentarios…</p>
+          <PageLoader message="Cargando comentarios…" />
+        ) : listQuery.isError ? (
+          <QueryError
+            message={getErrorMessage(listQuery.error)}
+            onRetry={() => void listQuery.refetch()}
+          />
         ) : !data?.reviews.length ? (
-          <p className="text-sm text-text-muted">No hay valoraciones con estos filtros.</p>
+          scope === 'producer' &&
+          !hasActiveFilters &&
+          (summaryQuery.data?.totalReviews ?? 0) === 0 ? (
+            <EmptyState
+              title="Todavía no hay comentarios"
+              description="Cuando tus eventos reciban valoraciones, las vas a ver acá para responder o solicitar revisión."
+            />
+          ) : (
+            <EmptyState
+              title="Sin resultados"
+              description="No hay valoraciones con estos filtros. Probá ampliar la búsqueda."
+            />
+          )
         ) : (
           <ul className="space-y-4">
             {data.reviews.map((r: ProducerManagedReviewListItem) => (
@@ -234,8 +415,10 @@ export function ManagedReviewsCommentsPage({ scope }: Props) {
                   scope={scope}
                   allowDisputes={scope === 'producer'}
                   replyFn={replyFn}
-                  invalidateQueryKey={invalidateQueryKey}
+                  invalidateQueryKey={listQueryKey}
+                  summaryQueryKey={summaryKey}
                   filtersKey={filtersKey}
+                  replyAuthorLabel={replyAuthorLabel}
                 />
               </li>
             ))}
@@ -243,23 +426,23 @@ export function ManagedReviewsCommentsPage({ scope }: Props) {
         )}
 
         {totalPages > 1 ? (
-          <footer className="mt-6 flex gap-2">
+          <footer className="mt-6 flex flex-wrap items-center gap-2">
             <button
               type="button"
               disabled={page <= 1}
               onClick={() => setPage((p) => p - 1)}
-              className="rounded border border-border px-3 py-1 text-sm disabled:opacity-40"
+              className="rounded border border-border px-3 py-2 text-sm disabled:opacity-40"
             >
               Anterior
             </button>
-            <span className="self-center text-sm text-text-muted">
+            <span className="text-sm text-text-muted">
               Página {page} de {totalPages}
             </span>
             <button
               type="button"
               disabled={page >= totalPages}
               onClick={() => setPage((p) => p + 1)}
-              className="rounded border border-border px-3 py-1 text-sm disabled:opacity-40"
+              className="rounded border border-border px-3 py-2 text-sm disabled:opacity-40"
             >
               Siguiente
             </button>

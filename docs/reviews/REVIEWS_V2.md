@@ -70,9 +70,11 @@ pnpm --filter api exec prisma generate
 
 ## Portal productora (`/producer/comments`)
 
-- Listado V2: `overallRating` /10, aspectos, estado, réplica
-- Resumen con distribución 1–10; filtro por puntaje
-- `ProducerReplyModal` → `POST /producer/reviews/:id/reply`
+- Listado V2: `overallRating` /10, aspectos, estado público, réplica, disputa
+- Resumen: promedio, distribución 1–10, `unansweredCount`, `openDisputeCount` (API)
+- Filtros: respuesta (`replyFilter`), disputa (`OPEN`, etc.), estado público, orden `highest`/`lowest`
+- UI: `ManagedReviewsCommentsPage` + `ManagedReviewCard`; modales `ReviewReplyModal` / `ReviewDisputeModal`
+- Gastro/hotel: mismo shell sin disputas ni filtros productor
 
 ## Bloque Reviews V2 — cerrado (smoke)
 

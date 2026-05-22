@@ -7,9 +7,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRepositories } from '@/repositories/context';
 import { useTenant } from '@/hooks/useTenant';
 import { useProducerId } from '@/hooks/useProducerId';
-import { PageContainer, SectionTitle, Button, Input, useToast } from '@/components';
+import { PageContainer, SectionTitle, Button, Input, useToast, EmptyState } from '@/components';
 import { CommercialReviewPanel } from '@/components/portal/CommercialReviewPanel';
 import { getErrorMessage } from '@/lib/errors';
+import { relationshipStatusLabel } from '@/lib/producer/referral-display';
+import { ProducerReferralsHelp } from '@/components/producer/referrals/ProducerReferralsHelp';
+import { ProducerCommissionPendingNotice } from '@/components/producer/referrals/ProducerCommissionPendingNotice';
 import type {
   FreelanceReferrersSort,
   ProducerReferrerRelationship,
@@ -19,20 +22,7 @@ import type {
 /** Solo este origen: el referidor pidió; la productora cierra aceptando/rechazando. */
 const REFERRER_INITIATED_ORIGINS = new Set(['REQUESTED_BY_REFERRER']);
 
-function statusLabel(s: string): string {
-  switch (s) {
-    case 'PENDING':
-      return 'Pendiente';
-    case 'ACTIVE':
-      return 'Activa';
-    case 'REJECTED':
-      return 'Rechazada';
-    case 'BLOCKED':
-      return 'Bloqueada';
-    default:
-      return s;
-  }
-}
+const statusLabel = relationshipStatusLabel;
 
 function StatusBadge({ status }: { status: string }) {
   const colors: Record<string, string> = {
@@ -95,8 +85,8 @@ function RelationshipCard({
         Ventas (perfil): {rel.referrerProfile.completedSales ?? 0} · Score: {rel.referrerProfile.salesScore ?? '—'}
       </p>
       <p className="mb-3 text-xs text-text-muted">
-        La asociación general no asigna eventos. Los links de venta por evento se gestionan en la pestaña &quot;Por
-        evento&quot;.
+        La asociación general no asigna eventos. Los links de venta por evento se gestionan en la pestaña
+        &quot;Links por evento&quot;.
       </p>
 
       {rel.status === 'PENDING' && REFERRER_INITIATED_ORIGINS.has(rel.origin) && (
@@ -361,25 +351,30 @@ export default function ProducerReferralsPage() {
         ← Panel
       </Link>
       <SectionTitle>Gestión de referidos</SectionTitle>
-      <p className="mb-6 mt-2 text-text-muted">
+      <p className="mb-4 mt-2 max-w-2xl text-text-muted">
         Asociación general productora–referidor (directorio o link del referidor). No implica asignación a un evento ni
         creación de links de venta <span className="font-mono text-xs">/r/</span>.
       </p>
 
-      <div className="mb-6 flex border-b border-border">
+      <div className="mb-6 space-y-4">
+        <ProducerReferralsHelp variant="global" />
+        <ProducerCommissionPendingNotice />
+      </div>
+
+      <nav className="-mx-1 mb-6 flex gap-1 overflow-x-auto border-b border-border px-1 pb-px">
         <button
           type="button"
           onClick={() => setActiveTab('associated')}
-          className={`px-4 py-2 font-medium transition-colors ${
+          className={`shrink-0 whitespace-nowrap px-4 py-2.5 text-sm font-medium transition-colors ${
             activeTab === 'associated' ? 'border-b-2 border-accent text-accent' : 'text-text-muted hover:text-text'
           }`}
         >
-          Mis referidos ({associated.length})
+          Asociados ({associated.length})
         </button>
         <button
           type="button"
           onClick={() => setActiveTab('freelance')}
-          className={`px-4 py-2 font-medium transition-colors ${
+          className={`shrink-0 whitespace-nowrap px-4 py-2.5 text-sm font-medium transition-colors ${
             activeTab === 'freelance' ? 'border-b-2 border-accent text-accent' : 'text-text-muted hover:text-text'
           }`}
         >
@@ -388,18 +383,26 @@ export default function ProducerReferralsPage() {
         <button
           type="button"
           onClick={() => setActiveTab('events')}
-          className={`px-4 py-2 font-medium transition-colors ${
+          className={`shrink-0 whitespace-nowrap px-4 py-2.5 text-sm font-medium transition-colors ${
             activeTab === 'events' ? 'border-b-2 border-accent text-accent' : 'text-text-muted hover:text-text'
           }`}
         >
-          Por evento
+          Links por evento
         </button>
-      </div>
+      </nav>
 
       {activeTab === 'associated' && (
         <section className="space-y-8">
           {associated.length === 0 ? (
-            <p className="text-text-muted">No tenés relaciones ni solicitudes.</p>
+            <div className="space-y-4">
+              <EmptyState
+                title="Todavía no tenés referidos asociados"
+                description="Explorá el directorio o aceptá solicitudes cuando un referidor se vincule con tu productora."
+              />
+              <Button type="button" variant="outline" onClick={() => setActiveTab('freelance')}>
+                Explorar directorio
+              </Button>
+            </div>
           ) : (
             <>
               {grouped.pending.length > 0 && (
@@ -684,7 +687,14 @@ export default function ProducerReferralsPage() {
               </li>
             ))}
           </ul>
-          {events.length === 0 && <p className="text-text-muted">No tenés eventos.</p>}
+          {events.length === 0 && (
+            <EmptyState
+              title="Sin eventos para asignar referidos"
+              description="Creá un evento y después configurá referidos por evento desde esta sección."
+              actionLabel="Crear evento"
+              actionHref="/producer/events/new"
+            />
+          )}
         </section>
       )}
     </PageContainer>

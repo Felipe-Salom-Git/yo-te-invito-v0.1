@@ -34,6 +34,8 @@ export const userPortalPreferencesSchema = z.object({
   notifyRecommendations: z.boolean(),
   /** Push al crear notificación interna importante. */
   notifyUnreadNotifications: z.boolean(),
+  /** Aprobación/rechazo de eventos propios por administración (portal productor). */
+  notifyProducerEventStatus: z.boolean(),
   /** Per-ticket opt-out when global reminder is on */
   ticketReminderOverrides: z.record(z.string(), z.boolean()).default({}),
 });
@@ -58,6 +60,7 @@ export const userPortalPreferencesPatchSchema = z.object({
   notifyFavoriteSubcategories: z.boolean().optional(),
   notifyRecommendations: z.boolean().optional(),
   notifyUnreadNotifications: z.boolean().optional(),
+  notifyProducerEventStatus: z.boolean().optional(),
   ticketReminderOverrides: z.record(z.string(), z.boolean()).optional(),
 });
 export type UserPortalPreferencesPatch = z.infer<typeof userPortalPreferencesPatchSchema>;

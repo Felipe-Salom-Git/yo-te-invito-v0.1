@@ -342,6 +342,7 @@ export interface EventSummary {
   id: string;
   title: string;
   startAt: string;
+  endAt?: string | null;
   city: string | null;
   venueName: string | null;
   coverImageUrl: string | null;
@@ -519,7 +520,9 @@ export interface ManagedVenueReviewsRepo {
     overallRating?: number;
     rating?: number;
     disputeStatus?: string;
-    sort?: 'newest' | 'oldest';
+    replyFilter?: string;
+    publicStatus?: string;
+    sort?: 'newest' | 'oldest' | 'highest' | 'lowest';
     page?: number;
     limit?: number;
   }): Promise<{
@@ -1091,7 +1094,16 @@ export interface EventMetrics {
   revenue: string;
   currency: string;
   scanCount: number;
+  viewCount: number;
+  favoriteCount: number;
+  expectedCount: number;
   referralPerformance?: EventReferralPerformance[];
+}
+
+export type ProducerDashboardMetrics = import('@yo-te-invito/shared').ProducerDashboardMetricsResponse;
+
+export interface ProducerDashboardRepo {
+  getMetrics(): Promise<ProducerDashboardMetrics>;
 }
 
 export interface PlatformMetrics {
@@ -1170,6 +1182,8 @@ export interface EventsRepo {
     mode?: 'recommended' | 'top_rated';
   }): Promise<EventSummary[]>;
   getDetail(eventId: string, tenantId: string): Promise<EventDetail | null>;
+  /** POST /public/events/:id/view — public page view counter (V2). */
+  recordPublicView(eventId: string, tenantId: string): Promise<{ recorded: boolean }>;
   /** GET /public/events/:id/discounts — empty discounts if event is not gastro. */
   listPublicDiscounts(eventId: string, tenantId: string): Promise<{ discounts: PublicGastroDiscountSummary[] }>;
   /** Event detail for producer portal (includes DRAFT/PENDING). */
@@ -1577,10 +1591,24 @@ export interface ReferralsRepo {
   confirmCommissionPayout(commissionId: string, producerUserId: string): Promise<ReferralCommission | null>;
 }
 
+export interface CourtesyCreateResult {
+  grantId: string;
+  issued: number;
+  tickets: Array<{ id: string; qrPayload: string }>;
+}
+
 export interface CourtesiesRepo {
-  list(eventId: string, userId: string): Promise<{ grants: CourtesyGrantSummary[] }>;
-  create(eventId: string, body: { mode: string; ticketTypeId?: string; quantity: number; note?: string }, userId: string): Promise<{ issued: number }>;
-  fetchTicketTypes(eventId: string, userId: string): Promise<TicketTypeResponse[]>;
+  list(eventId: string): Promise<{ grants: CourtesyGrantSummary[] }>;
+  create(
+    eventId: string,
+    body: {
+      mode: 'CONSUMES_BATCH' | 'FREE_CAPACITY';
+      ticketTypeId?: string;
+      quantity: number;
+      note?: string;
+    },
+  ): Promise<CourtesyCreateResult>;
+  fetchTicketTypes(eventId: string): Promise<TicketTypeResponse[]>;
 }
 
 export interface MetricsRepo {
@@ -1603,6 +1631,8 @@ export interface ProducersRepo {
   updateMyProfileContact(
     data: import('@yo-te-invito/shared').ProducerProfileContactUpdateInput,
   ): Promise<ProducerDetail>;
+  /** POST /public/producers/:idOrSlug/view — public profile view counter (V2). */
+  recordPublicView(idOrSlug: string, tenantId: string): Promise<{ recorded: boolean }>;
   getReviewsSummary(idOrSlug: string): Promise<ProducerReviewsSummary>;
   listReviews(
     idOrSlug: string,
@@ -2184,6 +2214,7 @@ export interface Repositories {
   referrals: ReferralsRepo;
   courtesies: CourtesiesRepo;
   metrics: MetricsRepo;
+  producerDashboard: ProducerDashboardRepo;
   producers: ProducersRepo;
   commercialReviews: CommercialReviewsRepo;
   producerReviews: ProducerReviewsRepo;

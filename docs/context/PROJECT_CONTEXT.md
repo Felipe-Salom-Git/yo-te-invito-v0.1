@@ -65,8 +65,9 @@ yo-te-invito-v0.1/
 
 ### Producer / Admin / Gastro / Hotel / Referrer
 
-- **Producer (productoras / “Proveedores v2”)**: events, ticket types, **Ticket Canvas Studio**, courtesies, referidos, payouts; **perfil público** (`ProducerProfile`) con página `/producers/[id|slug]`, portal por **bloques** en `/producer/profile`; **comentarios y valoraciones V2** (aspectos 1–10, réplica, disputas `/producer/comments`, admin `/admin/review-disputes`); valoraciones **comerciales** B2B (4 aspectos 1–10). Gastro/hotel: portales `/gastro/valoraciones`, `/hotel/valoraciones`.
-- Admin: users, event approval, inbox (gastro promos, review moderation, **solicitudes de disputa de reseñas**), profiles (incl. hotel), config, **rentals locales/products**, audit.
+- **Producer (productoras / “Proveedores v2”)**: portal pulido (slices 1–10 en checklist V2): dashboard `/producer` (métricas, engagement, alertas de aprobación/rechazo admin vía `/me/notifications`), eventos por estado, create/edit, tandas, cortesías, referidos, **perfil por bloques** (`/producer/profile` + slug **auto-único** desde nombre), **comentarios** (`/producer/comments`). Ficha pública `/producers/[id|slug]`. Valoraciones **comerciales** B2B. Navegación principal en **sidebar** del layout productor (sin duplicar accesos rápidos en dashboard).
+- **Admin**: rol `ADMIN` en `User.role`; web `/admin/*` restringido a ADMIN; aprobación/rechazo de eventos notifica a productoras (in-app + email + push según preferencias). Inbox, disputas reseñas, users, config, **rentals** locales/productos, audit. Cuenta maestro: `user:restore-master` + re-login.
+- Gastro/hotel: portales `/gastro/valoraciones`, `/hotel/valoraciones`.
 - Gastro / Hotel / Referrer portals as documented in backend/frontend context.
 
 ### Portal usuario (`/me/*`)
@@ -75,8 +76,11 @@ yo-te-invito-v0.1/
 - Carrito persistido (`UserCart`), favoritos, eventos esperados, transferencias personales (`TicketTransferOffer`), bandeja notificaciones + **Web Push** (canal adicional, no reemplaza la bandeja).
 - **V2.1.2:** inicio con alertas/recomendados; **Mi Carro**; preferencias (ciudad, categorías, productoras seguidas).
 - **V2.1.3–V2.1.4:** activar push desde `/me/notifications`, preferencias por tipo de alerta, `deliver()` con deduplicación `PUSH`; transferencias y cron de reviews disparan push si corresponde.
+- **V2.2 ticketera:** ticket comprador desde `TicketTemplate` o fallback premium; QR `yti:v1:` imprimible; estados visibles; validación scanner documentada en smokes.
+- **Gastro follows:** seguir locales/restaurantes desde preferencias y ficha pública (`UserGastroFollow`).
 - Smokes: `smoke:user-portal`, `smoke:notifications`, `smoke:producer-follows` + cleanup automático post-run.
-- Doc detallada: `docs/user/USER_PORTAL.md` (§ Push notifications), `docs/user/TICKET_TRANSFER.md`.
+- Doc detallada: `docs/user/USER_PORTAL.md`, `docs/user/TICKET_TRANSFER.md`, `docs/tickets/TICKET_CANVAS_STUDIO.md`.
+- Checklist operativo: `docs/dev/Yo_Te_Invito_Checklist_V2_Produccion.md` (sincronizar con este archivo al cerrar ítems).
 
 ### Backend highlights
 
@@ -93,7 +97,7 @@ yo-te-invito-v0.1/
 
 See **`docs/context/CONTEXT_PENDIENTES.md`** (checkbox backlog).
 
-Summary: real payments, gastro scanner QR, image storage (vs data-URL), ticket render from template, anonymous hero category tabs, SEO/loading polish.
+Summary: real payments, gastro scanner QR, image storage (vs data-URL), validación física ticket en staging, anonymous hero category tabs, SEO/loading polish.
 
 ---
 
@@ -135,4 +139,5 @@ Guías: `docs/guides/README.md`, `DEVELOPER_SCRIPTS_GUIDE.md`, `SMOKE_TESTS_GUID
 - `docs/context/AI_ENTRYPOINT.md`
 - `docs/context/BACKEND_CONTEXT.md`
 - `docs/context/FRONTEND_CONTEXT.md`
+- `docs/dev/Yo_Te_Invito_Checklist_V2_Produccion.md`
 - `docs/tickets/TICKET_CANVAS_STUDIO.md`

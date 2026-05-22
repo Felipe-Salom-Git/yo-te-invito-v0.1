@@ -6,6 +6,7 @@ import { NotificationsSchedulerService } from './notifications-scheduler.service
 import { EventPublicationAlertsService } from './event-publication-alerts.service';
 import { SmartAlertsPreparedService } from './smart-alerts-prepared.service';
 import { UserNotificationsService } from './user-notifications.service';
+import { ProducerEventStatusNotificationsService } from './producer-event-status-notifications.service';
 import { WebPushService } from './web-push.service';
 
 @Module({
@@ -17,6 +18,7 @@ import { WebPushService } from './web-push.service';
     NotificationsSchedulerService,
     SmartAlertsPreparedService,
     EventPublicationAlertsService,
+    ProducerEventStatusNotificationsService,
   ],
   exports: [
     WebPushService,
@@ -24,6 +26,7 @@ import { WebPushService } from './web-push.service';
     NotificationsSchedulerService,
     SmartAlertsPreparedService,
     EventPublicationAlertsService,
+    ProducerEventStatusNotificationsService,
   ],
 })
 export class NotificationsModule {}

@@ -15,13 +15,11 @@ export function ProducerProfileCreatePage() {
   const queryClient = useQueryClient();
   const { addToast } = useToast();
   const [displayName, setDisplayName] = useState('');
-  const [slug, setSlug] = useState('');
 
   const mutation = useMutation({
     mutationFn: () =>
       repos.producers.createMyProfile({
         displayName: displayName.trim(),
-        ...(slug.trim().length >= 2 ? { slug: slug.trim() } : {}),
       }),
     onSuccess: () => {
       addToast('Perfil creado', 'success');
@@ -38,8 +36,8 @@ export function ProducerProfileCreatePage() {
       </Link>
       <SectionTitle className="mt-4">Crear perfil de productora</SectionTitle>
       <p className="mt-2 text-sm text-text-muted">
-        Empezá con un nombre público. Después podés completar identidad, imágenes y contacto por
-        secciones.
+        Empezá con un nombre público. La URL de tu ficha (/producers/…) se genera sola a partir del
+        nombre y se ajusta si ya existe otra productora con un slug similar.
       </p>
       <form
         className="mt-8 space-y-4"
@@ -58,12 +56,6 @@ export function ProducerProfileCreatePage() {
           onChange={(e) => setDisplayName(e.target.value)}
           required
           placeholder="Ej. Fiestas Bresh"
-        />
-        <Input
-          label="Slug opcional"
-          value={slug}
-          onChange={(e) => setSlug(e.target.value)}
-          placeholder="URL amigable (mín. 2 caracteres)"
         />
         <div className="flex gap-3 pt-4">
           <Button type="submit" disabled={mutation.isPending}>

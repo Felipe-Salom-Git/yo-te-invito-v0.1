@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -10,6 +10,7 @@ import { EventModeBadge } from '@/components/producer/events/EventModeBadge';
 import { deriveEventModeFromEvent } from '@/lib/producer/event-mode';
 import { getErrorMessage } from '@/lib/errors';
 import { TicketTypesEditor } from '@/components/producer/ticket-types/TicketTypesEditor';
+import { ProducerEventPostSavePanel } from '@/components/producer/events/ProducerEventPostSavePanel';
 import type { ProducerReviewRow } from '@/repositories/interfaces';
 
 export default function ProducerEventManagePage() {
@@ -78,17 +79,20 @@ export default function ProducerEventManagePage() {
     );
   }
 
+  const eventMode = deriveEventModeFromEvent(event);
+
   return (
     <PageContainer>
       <Link href="/producer/events" className="mb-4 inline-block text-sm text-text-muted hover:text-text">
         ← Eventos
       </Link>
+      <Suspense fallback={null}>
+        <ProducerEventPostSavePanel eventId={eventId} mode={eventMode} variant="welcome" />
+        <ProducerEventPostSavePanel eventId={eventId} mode={eventMode} variant="saved" />
+      </Suspense>
       <div className="flex flex-wrap items-center gap-2">
         <SectionTitle>{event.title}</SectionTitle>
-        <EventModeBadge
-          mode={deriveEventModeFromEvent(event)}
-          hasActiveTicketing={event.isTicketingEnabled}
-        />
+        <EventModeBadge mode={eventMode} hasActiveTicketing={event.isTicketingEnabled} />
         <Badge variant={event.status === 'APPROVED' ? 'accent' : event.status === 'PENDING' ? 'default' : 'muted'}>
           {event.status ?? 'DRAFT'}
         </Badge>
@@ -96,6 +100,13 @@ export default function ProducerEventManagePage() {
       <p className="mt-2 text-text-muted">
         {event.venueName ?? event.city ?? '—'} · {new Date(event.startAt).toLocaleDateString('es-AR')}
       </p>
+      <div className="mt-4">
+        <Link href={`/producer/events/${eventId}/edit`}>
+          <Button type="button" variant="outline" size="sm">
+            Editar ficha del evento
+          </Button>
+        </Link>
+      </div>
 
       {event.isGeneralPublication ? (
         <div className="mt-8 rounded-lg border border-border bg-bg-muted p-4 text-sm text-text-muted">
@@ -191,13 +202,13 @@ export default function ProducerEventManagePage() {
           href={`/producer/events/${eventId}/courtesies`}
           className="rounded border border-accent px-4 py-2 text-accent hover:bg-accent/10"
         >
-          Courtesías
+          Cortesías
         </Link>
         <Link
           href={`/producer/events/${eventId}/referrals`}
           className="rounded border border-accent px-4 py-2 text-accent hover:bg-accent/10"
         >
-          Referidos del evento
+          Referidos
         </Link>
         <Link
           href="/producer/payouts"

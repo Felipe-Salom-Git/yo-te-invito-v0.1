@@ -16,28 +16,25 @@ export function normalizeGalleryForSave(coverUrl: string, gallery: string[]): st
   return gallery.filter((u) => u.trim() && (!c || u.trim() !== c));
 }
 
+import { getProducerProfileCompleteness } from '@/lib/producer/producer-profile-completeness';
+
+/** @deprecated Prefer getProducerProfileCompleteness — kept for minimal churn */
 export function getProducerProfileCompletion(profile: ProducerDetail) {
-  const hasTitle = Boolean(profile.displayName?.trim());
-  const hasLogo = Boolean(profile.logoUrl?.trim());
-  const hasCover = Boolean(profile.coverImageUrl?.trim());
-  const hasDesc = Boolean(
-    profile.longDescription?.trim() || profile.shortDescription?.trim(),
-  );
-  const hasContact = Boolean(
-    profile.primaryPhone?.trim() ||
-      profile.secondaryPhone?.trim() ||
-      profile.whatsapp?.trim() ||
-      profile.primaryEmail?.trim() ||
-      profile.secondaryEmail?.trim() ||
-      profile.websiteUrl?.trim() ||
-      profile.instagramUrl?.trim(),
-  );
-  const checks = { hasTitle, hasLogo, hasCover, hasDesc, hasContact };
-  const done = Object.values(checks).filter(Boolean).length;
-  const total = 5;
-  return { checks, done, total, percent: Math.round((done / total) * 100) };
+  const r = getProducerProfileCompleteness(profile);
+  return {
+    checks: {
+      hasTitle: r.checks.hasTitle,
+      hasLogo: r.checks.hasLogo,
+      hasCover: r.checks.hasCoverOrGallery,
+      hasDesc: r.checks.hasDescription,
+      hasContact: r.checks.hasContact,
+    },
+    done: r.doneCount,
+    total: r.totalRequired,
+    percent: r.percent,
+  };
 }
 
 export function hasAnyContactPreview(profile: ProducerDetail): boolean {
-  return getProducerProfileCompletion(profile).checks.hasContact;
+  return getProducerProfileCompleteness(profile).checks.hasContact;
 }

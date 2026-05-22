@@ -1,5 +1,7 @@
 'use client';
 
+import { Role } from '@yo-te-invito/shared';
+import { ProfileProtectedLayout } from '@/components/auth/ProfileProtectedLayout';
 import { PortalSidebar } from '@/components/layout/PortalSidebar';
 
 const NAV = [
@@ -19,8 +21,10 @@ const NAV = [
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mx-auto max-w-5xl px-3 sm:px-4">
-      <PortalSidebar items={NAV}>{children}</PortalSidebar>
-    </div>
+    <ProfileProtectedLayout allowedRoles={[Role.ADMIN]}>
+      <div className="mx-auto max-w-5xl px-3 sm:px-4">
+        <PortalSidebar items={NAV}>{children}</PortalSidebar>
+      </div>
+    </ProfileProtectedLayout>
   );
 }

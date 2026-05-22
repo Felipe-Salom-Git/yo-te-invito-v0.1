@@ -1,16 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ProducerDetail } from '@/repositories/interfaces';
 import { useRepositories } from '@/repositories/context';
 import { producersKeys } from '@/lib/query/keys';
-import { PageContainer, Button, useToast, SectionTitle } from '@/components';
+import { PageContainer, Button, useToast } from '@/components';
 import { getErrorMessage } from '@/lib/errors';
 import { RentalProductImagesForm } from '@/components/rentals/RentalProductImagesForm';
 import { normalizeGalleryForSave, parseGalleryUrls } from './utils';
+import { ProducerProfileFormIntro } from './ProducerProfileFormIntro';
 
 function invalidateProducerProfile(
   queryClient: ReturnType<typeof useQueryClient>,
@@ -54,13 +54,12 @@ export function ProducerImagesForm({ profile }: { profile: ProducerDetail }) {
 
   return (
     <PageContainer className="max-w-2xl">
-      <Link href="/producer/profile" className="text-sm text-text-muted hover:text-accent">
-        ← Volver al perfil
-      </Link>
-      <SectionTitle className="mt-4">Galería e imágenes</SectionTitle>
-      <p className="mt-2 text-sm text-text-muted">Cabecera y galería (sin incluir la cabecera duplicada en la galería).</p>
+      <ProducerProfileFormIntro
+        blockTitle="Imágenes"
+        description="Cabecera y galería de tu ficha pública. El logo se edita en Identidad. La cabecera no se repite en la galería al guardar."
+      />
 
-      <div className="mt-8">
+      <div className="mt-6 overflow-hidden">
         <RentalProductImagesForm
           value={{ headerImageUrl: coverImageUrl, galleryImageUrls: galleryUrls }}
           onChange={({ headerImageUrl, galleryImageUrls }) => {

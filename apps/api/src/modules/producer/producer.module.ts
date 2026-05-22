@@ -18,6 +18,8 @@ import { ProducerEventsCrudService } from './producer-events-crud.service';
 import { ProducerTicketTypesService } from './producer-ticket-types.service';
 import { ProducerProfileController } from './producer-profile.controller';
 import { ProducerProfileService } from './producer-profile.service';
+import { ProducerDashboardController } from './producer-dashboard.controller';
+import { ProducerDashboardMetricsService } from './producer-dashboard-metrics.service';
 
 @Module({
   imports: [
@@ -35,6 +37,7 @@ import { ProducerProfileService } from './producer-profile.service';
     ProducerTicketTypesController,
     ProducerTicketTemplateController,
     ProducerProfileController,
+    ProducerDashboardController,
   ],
   providers: [
     ProfilesAuthorizationService,
@@ -44,6 +47,7 @@ import { ProducerProfileService } from './producer-profile.service';
     ProducerTicketTypesService,
     ProducerTicketTemplateService,
     ProducerProfileService,
+    ProducerDashboardMetricsService,
   ],
   exports: [EventMetricsService],
 })

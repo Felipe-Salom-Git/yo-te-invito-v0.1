@@ -2,11 +2,14 @@
 
 import Link from 'next/link';
 import type { ProducerDetail } from '@/repositories/interfaces';
+import { getProducerProfileCompleteness } from '@/lib/producer/producer-profile-completeness';
 import { ProducerProfileBlockCard } from './ProducerProfileBlockCard';
 
 type Props = { profile: ProducerDetail };
 
 export function ProducerIdentityBlock({ profile }: Props) {
+  const { blocks } = getProducerProfileCompleteness(profile);
+  const block = blocks.identity;
   const desc = (profile.longDescription?.trim() || profile.shortDescription?.trim() || '').slice(0, 160);
   const truncated =
     desc.length > 0
@@ -17,13 +20,14 @@ export function ProducerIdentityBlock({ profile }: Props) {
     <ProducerProfileBlockCard
       icon={<span aria-hidden>◎</span>}
       title="Identidad"
-      description="Editá el logo, nombre, subtítulo y descripción de tu productora."
+      status={block.complete ? 'complete' : 'incomplete'}
+      description="Nombre, subtítulo y descripción visibles en la ficha pública."
       footer={
         <Link
-          href="/producer/profile/identity"
-          className="inline-flex items-center justify-center rounded border border-border bg-transparent px-3 py-1.5 text-sm font-medium text-text transition-colors hover:border-accent hover:text-accent"
+          href={block.editHref}
+          className="inline-flex w-full items-center justify-center rounded border border-border bg-transparent px-3 py-2 text-sm font-medium text-text transition-colors hover:border-accent hover:text-accent sm:w-auto"
         >
-          Editar identidad
+          {block.complete ? 'Editar identidad' : 'Completar identidad'}
         </Link>
       }
     >

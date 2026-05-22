@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import type { ProducerDetail, PublicProducerEventSummary } from '@/repositories/interfaces';
 import { useRepositories } from '@/repositories/context';
 import { producersKeys } from '@/lib/query/keys';
+import { useRecordPublicProducerView } from '@/lib/query/public-engagement';
 import { PublicProducerHero } from './PublicProducerHero';
 import { PublicProducerGallery } from './PublicProducerGallery';
 import { PublicProducerEventsSection } from './PublicProducerEventsSection';
@@ -23,6 +24,7 @@ export function PublicProducerPageContent({ producer, tenantId }: Props) {
   const [descExpanded, setDescExpanded] = useState(false);
   const description = producer.longDescription?.trim();
   const idOrSlug = producer.slug?.trim() || producer.id;
+  useRecordPublicProducerView(idOrSlug, tenantId, true);
 
   const { data: reviewsSummary } = useQuery({
     queryKey: [...producersKeys.detail(idOrSlug), 'reviews-summary'],

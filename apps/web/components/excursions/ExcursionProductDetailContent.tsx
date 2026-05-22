@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRepositories } from '@/repositories/context';
 import { useEventDetail, eventsKeys } from '@/lib/query/events';
+import { useRecordPublicEventView } from '@/lib/query/public-engagement';
 import { reviewsKeys } from '@/lib/query/keys';
 import { usePublicEntityReviews } from '@/lib/query/reviews';
 import { getCategoryLabel, getRelatedSectionTitle } from '@/lib/home/contentRoutes';
@@ -58,6 +59,7 @@ export function ExcursionProductDetailContent({
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
 
   const { data: event, isLoading, error } = useEventDetail(id, tenantId);
+  useRecordPublicEventView(id, tenantId, !!event && event.status === 'APPROVED');
 
   const { data: subcategories } = useQuery({
     queryKey: ['subcategories', 'public', tenantId, 'excursion'],

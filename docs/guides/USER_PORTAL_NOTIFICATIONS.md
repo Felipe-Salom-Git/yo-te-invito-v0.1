@@ -23,6 +23,17 @@ pnpm db:migrate
 | `TICKET_REMINDER_24H` | ~24 h antes del `Event.startAt` (ticket `VALID` del usuario) |
 | `FAVORITE_EVENT_SOON` | Mismo ventana para eventos en `UserFavorite` (`entityType=event`) |
 | `EXPECTED_EVENT_SOON` | Mismo ventana para `UserExpectedEvent` |
+| `EVENT_APPROVED_BY_ADMIN` | Admin aprueba evento → miembros de la productora (portal productor) |
+| `EVENT_REJECTED_BY_ADMIN` | Admin rechaza evento → miembros de la productora (portal productor) |
+
+### Portal productor (moderación admin)
+
+- Disparo: `AdminEventsService.approveEvent` / `rejectEvent` (solo transición real de estado).
+- Servicio: `ProducerEventStatusNotificationsService` → `UserNotificationsService.deliver()`.
+- Idempotencia: `referenceKey` = `producer-event-status:{eventId}:APPROVED|REJECTED`.
+- Destinatarios: `UserProducerMembership` activos + `ProducerProfile.createdByUserId` (fallback `event.producerId`).
+- Preferencias: `notifyProducerEventStatus` + `emailNotificationsEnabled` / `pushAlertsEnabled` (ver `user-portal-preferences.util.ts`).
+- UI: `ProducerDashboardEventStatusAlerts` en `/producer` (filtra kinds desde `GET /me/notifications`).
 
 ## Cron
 

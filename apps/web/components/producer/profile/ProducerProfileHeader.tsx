@@ -1,34 +1,28 @@
 'use client';
 
 import Link from 'next/link';
-import { Button, useToast } from '@/components';
 import type { ProducerDetail } from '@/repositories/interfaces';
 import { getProducerPublicPath } from '@/lib/producer/public-path';
-import { getProducerProfileCompletion } from './utils';
+import {
+  getProducerProfileCompleteness,
+  profileStatusLabel,
+} from '@/lib/producer/producer-profile-completeness';
+import { CopyReferralLinkButton } from '@/components/producer/referrals/CopyReferralLinkButton';
 
 type Props = {
   profile: ProducerDetail;
 };
 
 export function ProducerProfileHeader({ profile }: Props) {
-  const { addToast } = useToast();
-  const { percent, checks } = getProducerProfileCompletion(profile);
+  const { percent, checks, isPubliclyListed } = getProducerProfileCompleteness(profile);
   const complete = percent >= 100;
   const path = getProducerPublicPath(profile);
-
-  const copyLink = async () => {
-    const url = typeof window !== 'undefined' ? `${window.location.origin}${path}` : '';
-    if (!url) return;
-    try {
-      await navigator.clipboard.writeText(url);
-      addToast('Enlace copiado al portapapeles', 'success');
-    } catch {
-      addToast('No se pudo copiar', 'error');
-    }
-  };
+  const abs =
+    typeof window !== 'undefined' ? `${window.location.origin}${path}` : path;
+  const statusLabel = profileStatusLabel(profile.status);
 
   return (
-    <header className="rounded-2xl border border-border/80 bg-bg-muted/40 p-6">
+    <header className="rounded-2xl border border-border/80 bg-bg-muted/40 p-5 sm:p-6">
       <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
         <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-border bg-bg">
           {profile.logoUrl ? (
@@ -39,7 +33,9 @@ export function ProducerProfileHeader({ profile }: Props) {
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-medium uppercase tracking-wide text-text-muted">Perfil de productora</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-text-muted">
+            Tu productora
+          </p>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight text-text">
             {profile.displayName}
           </h1>
@@ -56,17 +52,25 @@ export function ProducerProfileHeader({ profile }: Props) {
                   : 'border-amber-500/25 bg-amber-500/10 text-amber-200/90'
               }`}
             >
-              {complete ? 'Perfil completo (recomendado)' : `Perfil incompleto · ${percent}% recomendado`}
+              {complete
+                ? 'Perfil básico completo'
+                : `Perfil incompleto · ${percent}%`}
+            </span>
+            <span className="rounded-full border border-border px-2.5 py-0.5 text-xs text-text-muted">
+              Estado: {statusLabel}
             </span>
             {!checks.hasContact ? (
-              <span className="text-xs text-text-muted">Faltan datos de contacto recomendados</span>
+              <span className="text-xs text-amber-200/80">Falta contacto</span>
+            ) : null}
+            {!isPubliclyListed ? (
+              <span className="text-xs text-amber-200/80">
+                Puede no listarse públicamente hasta activarse
+              </span>
             ) : null}
           </div>
         </div>
         <div className="flex flex-wrap gap-2 sm:justify-end">
-          <Button variant="outline" size="sm" type="button" onClick={copyLink}>
-            Copiar enlace
-          </Button>
+          <CopyReferralLinkButton text={abs} label="Copiar enlace" className="shrink-0" />
         </div>
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
@@ -76,7 +80,7 @@ export function ProducerProfileHeader({ profile }: Props) {
           rel="noopener noreferrer"
           className="inline-flex items-center justify-center rounded border border-accent-muted bg-accent-surface/80 px-4 py-2 text-sm font-medium text-accent-soft transition-colors hover:bg-accent-surface"
         >
-          Ver perfil público
+          Ver ficha pública
         </Link>
       </div>
     </header>

@@ -8,7 +8,14 @@ export const notificationKindSchema = z.enum([
   'REVIEW_PENDING',
   'FOLLOWED_PRODUCER_NEW_EVENT',
   'FAVORITE_INTEREST_NEW_CONTENT',
+  'EVENT_APPROVED_BY_ADMIN',
+  'EVENT_REJECTED_BY_ADMIN',
 ]);
+
+export const PRODUCER_EVENT_STATUS_NOTIFICATION_KINDS = [
+  'EVENT_APPROVED_BY_ADMIN',
+  'EVENT_REJECTED_BY_ADMIN',
+] as const;
 export type NotificationKind = z.infer<typeof notificationKindSchema>;
 
 export const userNotificationSchema = z.object({

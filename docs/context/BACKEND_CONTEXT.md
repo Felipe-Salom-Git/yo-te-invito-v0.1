@@ -77,9 +77,9 @@ HTTP → Controller (thin) → ZodValidationPipe → Service → Prisma → Post
 See previous full endpoint tables in git history; key groups:
 
 - **Me (legacy)**: tickets, orders, inbox create, commissions; `GET /me/tickets/:id`, `PATCH /me/tickets/:id/reminder`.
-- **Me portal V1** (`MePortalController`, `MeCartController`, …): `GET /me/dashboard`; `GET/PATCH /me/preferences` (portal, sin `favoriteEventIds`); `GET/PATCH /me/account`, `POST /me/account/change-password`; `GET /me/activity` (+ `/attended`, `/reviews`, `/transfers`); carrito `GET/POST/PATCH/DELETE /me/cart*`, `GET /me/cart/pending-orders`, `POST /me/cart/checkout`; `GET/POST/DELETE/PATCH /me/favorites*`; `GET/POST/DELETE/PATCH /me/expected-events*`; transferencias `POST /me/tickets/:ticketId/transfer-offers` (`recipientEmail`, `message`), `GET /me/ticket-transfer-offers/lookup/:token`, `POST .../reject`, `POST .../cancel`, `POST .../accept`, `GET /me/ticket-transfer-offers`; cron expiración `TicketTransferSchedulerService`; legacy `POST /tickets/:ticketId/transfer` → 410. Schemas: `packages/shared/src/schemas/user-portal.ts`, `ticket-transfer-offer.ts`.
-- **Producer**: events CRUD, metrics, ticket types, **ticket-template** PUT/GET/DELETE, referrers (associated, freelance, association link); **profile** `GET/POST/PATCH /producer/profile` (GET puede devolver `null`); **reseñas** `GET /producer/reviews`, `GET /producer/reviews/summary`, `POST /producer/reviews/:id/reply`, `POST /producer/reviews/:id/dispute`, `GET /producer/review-disputes*`; valoraciones comerciales `commercial-reviews` (4 aspectos 1–10).
-- **Admin**: event approval, users, applications, inbox resolve, config, payouts, hotel/referrer profile approval; **disputas** `GET/POST /admin/review-disputes/:id`; **reseñas** `POST /admin/reviews/:id/reply|hide|restore`.
+- **Me portal V1** (`MePortalController`, `MeCartController`, …): `GET /me/dashboard`; `GET/PATCH /me/preferences` (portal, sin `favoriteEventIds`); `GET/PATCH /me/account`, `POST /me/account/change-password`; `GET /me/activity` (+ `/attended`, `/reviews`, `/transfers`); carrito `GET/POST/PATCH/DELETE /me/cart*`, `GET /me/cart/pending-orders`, `POST /me/cart/checkout`; `GET/POST/DELETE/PATCH /me/favorites*`; `GET/POST/DELETE/PATCH /me/expected-events*`; **gastro follows** `GET /me/gastro-follows`, `GET /me/gastro-follows/status?gastroProfileId=`, `POST /me/gastro-follows`, `DELETE /me/gastro-follows/:id`, `PATCH /me/gastro-follows/:id/notifications` (`MeGastroFollowsController`, `UserGastroFollowsService`); transferencias `POST /me/tickets/:ticketId/transfer-offers` (`recipientEmail`, `message`), `GET /me/ticket-transfer-offers/lookup/:token`, `POST .../reject`, `POST .../cancel`, `POST .../accept`, `GET /me/ticket-transfer-offers`; cron expiración `TicketTransferSchedulerService`; legacy `POST /tickets/:ticketId/transfer` → 410. **`GET /me/tickets/:id`** incluye `ticketTemplate` para render comprador. Schemas: `packages/shared/src/schemas/user-portal.ts`, `ticket-transfer-offer.ts`, `push-notifications.ts`.
+- **Producer**: events CRUD, metrics, ticket types, **ticket-template** PUT/GET/DELETE, referrers (associated, freelance, association link); **profile** `GET/POST/PATCH /producer/profile` (GET puede devolver `null`); **slug** generado en servidor desde `displayName` con unicidad global (`producer-profile-slug.util.ts`, sufijos `-2`, …); **reseñas** `GET /producer/reviews` (filtros `replyFilter`, `disputeStatus` incl. `OPEN`, `publicStatus`, `sort` highest/lowest), `GET /producer/reviews/summary` (`unansweredCount`, `openDisputeCount`), `POST /producer/reviews/:id/reply`, `POST /producer/reviews/:id/dispute`, `GET /producer/review-disputes*`; valoraciones comerciales `commercial-reviews` (4 aspectos 1–10).
+- **Admin**: event approval/reject (`AdminEventsService` → dispara notificaciones productor), users, applications, inbox resolve, config, payouts, hotel/referrer profile approval; **disputas** `GET/POST /admin/review-disputes/:id`; **reseñas** `POST /admin/reviews/:id/reply|hide|restore`.
 - **Gastro**: `GET/POST /gastro/reviews*`, `POST /gastro/reviews/:id/reply` (requiere `ReviewsModule` import en `GastroModule`).
 - **Hotel**: `GET /hotel/me`, `POST /profiles/hotel/apply`; `GET /hotel/reviews*`, `POST /hotel/reviews/:id/reply`.
 - **Me**: `POST /me/reviews` (crear review V2 autenticado).
@@ -88,7 +88,8 @@ See previous full endpoint tables in git history; key groups:
 - **Transferencia personal**: `TicketTransferOffer` — sin marketplace `/resale/*` (eliminado `20260605120000_remove_resale_marketplace`).
 - **Notificaciones usuario**: `GET/PATCH /me/notifications`, `POST .../mark-all-read` (`UserNotificationsService`, `NotificationsSchedulerService`, Resend email).
   - **Entrega unificada** `deliver()`: canales `IN_APP`, `EMAIL`, `PUSH` (log idempotente `NotificationDeliveryLog`).
-  - **Kinds:** `TICKET_REMINDER_24H`, `FAVORITE_EVENT_SOON`, `EXPECTED_EVENT_SOON`, `TRANSFER_OFFER_PENDING`, `REVIEW_PENDING`.
+  - **Kinds:** `TICKET_REMINDER_24H`, `FAVORITE_EVENT_SOON`, `EXPECTED_EVENT_SOON`, `TRANSFER_OFFER_PENDING`, `REVIEW_PENDING`, `FOLLOWED_PRODUCER_NEW_EVENT`, `FAVORITE_INTEREST_NEW_CONTENT`, **`EVENT_APPROVED_BY_ADMIN`**, **`EVENT_REJECTED_BY_ADMIN`** (productoras: miembros activos + `createdByUserId`; idempotencia `producer-event-status:{eventId}:APPROVED|REJECTED`).
+  - **Productor evento admin:** `ProducerEventStatusNotificationsService` (hook en `approveEvent` / `rejectEvent`); no falla moderación si email/push fallan; preferencia `notifyProducerEventStatus` en `User.preferences`.
   - **Push:** `WebPushService` (`web-push`, VAPID); `GET/POST/DELETE /me/push-subscriptions`, `GET /config`, `POST /test` (`UserPushSubscriptionsService`).
   - **Preferencias push** en `User.preferences` (portal): `pushAlertsEnabled`, `notifyUpcomingEvents`, `notifyTransferOffers`, etc. — ver `user-portal-preferences.util.ts` + `shouldSendPushForKind`.
   - **Alertas inteligentes:** transfer al crear oferta; cron reviews; publicación evento → `EventPublicationAlertsService` (approve admin, publicaciones generales, rental/excursion APPROVED); kinds `FOLLOWED_PRODUCER_NEW_EVENT`, `FAVORITE_INTEREST_NEW_CONTENT`; throttling `SMART_ALERTS_MAX_PER_USER_HOUR` (default 5).
@@ -112,7 +113,7 @@ See previous full endpoint tables in git history; key groups:
 - **Event**, **EventMedia**, **ContentSubcategory**
 - **RentalLocation** → rental products
 - **TicketType**, **TicketTemplate**, **TicketBatch**, **Order**, **OrderItem**, **Payment**, **Ticket** (`TRANSFER_PENDING`, `TRANSFERRED`; **TicketTransferOffer**)
-- **UserCart**, **UserCartItem**, **UserFavorite**, **UserExpectedEvent**, **UserPushSubscription**
+- **UserCart**, **UserCartItem**, **UserFavorite**, **UserExpectedEvent**, **UserGastroFollow**, **UserPushSubscription**
 - **UserNotification**, **NotificationDeliveryLog** (`NotificationChannel`: `IN_APP`, `EMAIL`, `PUSH`)
 - **ReferrerProfile**, **ProducerReferrerRelationship**, **ReferralLink**, **ReferralAttribution**, **ReferralCommission**
 - **GastroDiscount**, **GastroDiscountValidation**, **InboxItem** (kind incl. `REVIEW_DISPUTE_REQUEST`)
@@ -132,7 +133,8 @@ Manual de comandos: **`docs/guides/DEVELOPER_SCRIPTS_GUIDE.md`**. Inventario té
 | Script | Command |
 |--------|---------|
 | Subcategorías (idempotente, sin usuarios) | `pnpm --filter api run seed:subcategories` |
-| Restaurar ADMIN + portales maestro | `pnpm --filter api run user:restore-master` |
+| Restaurar ADMIN + portales maestro | `pnpm --filter api run user:restore-master` (idempotente; luego **logout/login** en web) |
+| Inspeccionar usuario | `pnpm --filter api run user:inspect -- <email>` |
 | Inspeccionar cuenta | `pnpm --filter api run user:inspect -- <email> [--verify-password <pass>]` |
 | Reset / verificar email | `user:reset-password`, `user:verify-email` |
 | Probar login API | `user:test-login` (con `SMOKE_USER_EMAIL` / `SMOKE_USER_PASSWORD`) |
@@ -216,3 +218,4 @@ Opcional cron: `NOTIFICATIONS_CRON_ENABLED=false`, `NOTIFICATION_REMINDER_HOURS`
 - `apps/api/prisma/schema.prisma`
 - `docs/reviews/REVIEWS_V2.md`
 - `docs/guides/SMOKE_TESTS_GUIDE.md`
+- `docs/dev/Yo_Te_Invito_Checklist_V2_Produccion.md`

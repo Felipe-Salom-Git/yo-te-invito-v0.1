@@ -47,6 +47,17 @@ export const ticketsKeys = {
 
 // ─── Ticket types ──────────────────────────────────────────────────────────
 
+export const referralKeys = {
+  eventAssignments: (eventId: string) => ['producer', 'referrers', 'event-assignments', eventId] as const,
+  eventLinks: (eventId: string) => ['referralLinks', eventId] as const,
+  eventCommissions: (eventId: string) => ['referralCommissions', 'event', eventId] as const,
+};
+
+export const courtesyKeys = {
+  grants: (eventId: string) => ['courtesies', 'grants', eventId] as const,
+  ticketTypes: (eventId: string) => ['courtesies', 'ticket-types', eventId] as const,
+};
+
 export const ticketTypesKeys = {
   all: ['ticketTypes'] as const,
   byEvent: (eventId: string) => ['ticketTypes', eventId] as const,
@@ -179,6 +190,11 @@ export const producersKeys = {
   all: ['producers'] as const,
   detail: (id: string) => ['producer', id] as const,
   myProfile: () => ['producer', 'my-profile'] as const,
+};
+
+export const producerDashboardKeys = {
+  all: ['producer', 'dashboard'] as const,
+  metrics: () => [...producerDashboardKeys.all, 'metrics'] as const,
 };
 
 export const producerReviewsKeys = {

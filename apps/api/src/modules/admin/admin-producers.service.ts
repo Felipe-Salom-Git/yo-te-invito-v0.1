@@ -321,6 +321,16 @@ export class AdminProducersService {
       0,
     );
 
+    const [favoriteCount, expectedCount] = await Promise.all([
+      this.prisma.userFavorite.count({ where: { tenantId, entityId: eventId } }),
+      this.prisma.userExpectedEvent.count({ where: { tenantId, eventId } }),
+    ]);
+    const engagement = {
+      viewCount: event.viewCount,
+      favoriteCount,
+      expectedCount,
+    };
+
     if (event.isGeneralPublication) {
       return {
         hasTicketing: false,
@@ -339,6 +349,7 @@ export class AdminProducersService {
         ratingAvg: event.ratingAvg,
         ratingCount: event.ratingCount,
         referralPerformance: [],
+        ...engagement,
       };
     }
 
@@ -360,6 +371,7 @@ export class AdminProducersService {
         ratingAvg: event.ratingAvg,
         ratingCount: event.ratingCount,
         referralPerformance: [],
+        ...engagement,
       };
     }
 

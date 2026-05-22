@@ -14,7 +14,10 @@ import { PublicGastroLocationsController } from './public-gastro-locations.contr
 import { PublicGastroLocationsService } from './public-gastro-locations.service';
 import { PublicGastroDiscountsController } from './public-gastro-discounts.controller';
 import { PublicGastroDiscountsService } from './public-gastro-discounts.service';
+import { PublicEngagementService } from './public-engagement.service';
 import { EmailModule } from '../email/email.module';
+import { AuthModule } from '../auth/auth.module';
+import { ProfilesAuthorizationService } from '../common/profiles-authorization.service';
 import { PublicReferrersController } from './public-referrers.controller';
 import { ReferralsModule } from '../modules/referrals/referrals.module';
 import { ReviewsModule } from '../modules/reviews/reviews.module';
@@ -26,6 +29,7 @@ import { CategoryBannersModule } from '../modules/category-banners/category-bann
 
 @Module({
   imports: [
+    AuthModule,
     ReferralsModule,
     ReviewsModule,
     ReferrerModule,
@@ -54,6 +58,8 @@ import { CategoryBannersModule } from '../modules/category-banners/category-bann
     PublicProducersService,
     PublicGastroLocationsService,
     PublicGastroDiscountsService,
+    PublicEngagementService,
+    ProfilesAuthorizationService,
   ],
   exports: [PublicOrdersService],
 })

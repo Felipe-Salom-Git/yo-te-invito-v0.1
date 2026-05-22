@@ -73,6 +73,7 @@ export const eventSummarySchema = z.object({
   id: z.string(),
   title: z.string(),
   startAt: z.string().datetime(),
+  endAt: z.string().datetime().nullable().optional(),
   city: z.string().nullable(),
   venueName: z.string().nullable(),
   coverImageUrl: z.string().nullable(),
@@ -95,6 +96,7 @@ export const eventSummarySchema = z.object({
   isGeneralPublication: z.boolean().optional(),
   eventMode: producerEventModeSchema.optional(),
   subcategoryName: z.string().nullable().optional(),
+  status: z.enum(['DRAFT', 'PENDING', 'APPROVED', 'PAUSED', 'CANCELLED']).optional(),
 });
 
 export const eventsCalendarMonthQuerySchema = z.object({
@@ -234,6 +236,9 @@ export const producerEventMetricsResponseSchema = z.object({
   revenue: z.string(),
   currency: z.string(),
   scanCount: z.number().int().min(0),
+  viewCount: z.number().int().min(0),
+  favoriteCount: z.number().int().min(0),
+  expectedCount: z.number().int().min(0),
   referralPerformance: z.array(producerEventReferralPerformanceSchema).optional(),
 });
 export type ProducerEventMetricsResponse = z.infer<typeof producerEventMetricsResponseSchema>;

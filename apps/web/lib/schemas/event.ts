@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 export const eventFormSchema = z.object({
   title: z.string().min(1, 'Título requerido'),
+  summary: z.string().max(220, 'Máximo 220 caracteres').optional(),
   description: z.string().optional(),
   startAt: z.string().min(1, 'Fecha de inicio requerida'),
   endAt: z.string().optional(),

@@ -2,12 +2,15 @@
 
 import Link from 'next/link';
 import type { ProducerDetail } from '@/repositories/interfaces';
+import { getProducerProfileCompleteness } from '@/lib/producer/producer-profile-completeness';
 import { ProducerProfileBlockCard } from './ProducerProfileBlockCard';
 import { normalizeGalleryForSave, parseGalleryUrls } from './utils';
 
 type Props = { profile: ProducerDetail };
 
 export function ProducerImagesBlock({ profile }: Props) {
+  const { blocks } = getProducerProfileCompleteness(profile);
+  const block = blocks.images;
   const rawGallery = parseGalleryUrls(profile);
   const cover = profile.coverImageUrl?.trim() ?? '';
   const galleryOnly = normalizeGalleryForSave(cover, rawGallery);
@@ -16,14 +19,15 @@ export function ProducerImagesBlock({ profile }: Props) {
   return (
     <ProducerProfileBlockCard
       icon={<span aria-hidden>▣</span>}
-      title="Galería e imágenes"
-      description="Gestioná la imagen de cabecera y las fotos que se muestran en tu perfil público."
+      title="Imágenes"
+      status={block.complete ? 'complete' : 'incomplete'}
+      description="Logo (en Identidad), cabecera y galería de la ficha pública."
       footer={
         <Link
-          href="/producer/profile/images"
-          className="inline-flex items-center justify-center rounded border border-border bg-transparent px-3 py-1.5 text-sm font-medium text-text transition-colors hover:border-accent hover:text-accent"
+          href={block.editHref}
+          className="inline-flex w-full items-center justify-center rounded border border-border bg-transparent px-3 py-2 text-sm font-medium text-text transition-colors hover:border-accent hover:text-accent sm:w-auto"
         >
-          Gestionar imágenes
+          {block.complete ? 'Editar imágenes' : 'Completar imágenes'}
         </Link>
       }
     >

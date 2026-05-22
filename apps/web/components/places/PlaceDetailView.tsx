@@ -7,6 +7,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRepositories } from '@/repositories/context';
 import { useAddToCart } from '@/hooks/useAddToCart';
 import { useEventDetail, eventsKeys } from '@/lib/query/events';
+import { useRecordPublicEventView } from '@/lib/query/public-engagement';
 import { reviewsKeys } from '@/lib/query/keys';
 import { usePublicEntityReviews } from '@/lib/query/reviews';
 import type { PublicReviewCategory } from '@yo-te-invito/shared';
@@ -65,6 +66,7 @@ export function PlaceDetailView({ id, variant, tenantId = 'tenant-demo' }: Place
 
   const category = VARIANT_TO_CATEGORY[variant];
   const { data: event, isLoading, error } = useEventDetail(id, tenantId);
+  useRecordPublicEventView(id, tenantId, !!event && event.status === 'APPROVED');
 
   const { data: ticketTypes } = useQuery({
     queryKey: ['ticketTypes', id],

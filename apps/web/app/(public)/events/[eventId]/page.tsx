@@ -5,6 +5,7 @@ import { useParams, useSearchParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useEventDetail, eventsKeys } from '@/lib/query/events';
+import { useRecordPublicEventView } from '@/lib/query/public-engagement';
 import { useRepositories } from '@/repositories/context';
 import { useSession } from 'next-auth/react';
 import { useAddToCart } from '@/hooks/useAddToCart';
@@ -60,6 +61,7 @@ export default function EventDetailPage() {
   const { addToast } = useToast();
 
   const { data: event, isLoading, error } = useEventDetail(eventId, tenantId);
+  useRecordPublicEventView(eventId, tenantId, !!event && event.status === 'APPROVED');
 
   const { data: ticketTypes } = useQuery({
     queryKey: ['ticketTypes', eventId],

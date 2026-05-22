@@ -2,12 +2,14 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
+import { Role } from '@yo-te-invito/shared';
 import { useRole } from '@/hooks/useRole';
 import { useCart } from '@/context/CartContext';
 import { useMeCart, useMeNotificationsUnread } from '@/lib/query/me-portal';
 
 export function NavbarUserMenu() {
-  const { session, status, isAuthenticated } = useRole();
+  const { session, status, isAuthenticated, hasRole } = useRole();
+  const isAdmin = hasRole(Role.ADMIN);
   const { totalItems: localCartItems } = useCart();
   const { data: apiCart } = useMeCart(isAuthenticated);
   const { data: unreadData } = useMeNotificationsUnread(isAuthenticated);
@@ -98,6 +100,15 @@ export function NavbarUserMenu() {
               >
                 Cambiar perfil
               </Link>
+              {isAdmin ? (
+                <Link
+                  href="/admin"
+                  className="block px-3 py-2 text-sm font-medium text-accent hover:bg-bg-muted"
+                  onClick={() => setOpen(false)}
+                >
+                  Administración
+                </Link>
+              ) : null}
               <Link
                 href="/me"
                 className="block px-3 py-2 text-sm text-text hover:bg-bg-muted"

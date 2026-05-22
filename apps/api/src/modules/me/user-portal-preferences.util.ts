@@ -126,6 +126,10 @@ export function readPortalPreferences(
       typeof prev.notifyUnreadNotifications === 'boolean'
         ? prev.notifyUnreadNotifications
         : true,
+    notifyProducerEventStatus:
+      typeof prev.notifyProducerEventStatus === 'boolean'
+        ? prev.notifyProducerEventStatus
+        : true,
     ticketReminderOverrides,
   };
 }
@@ -150,9 +154,18 @@ export function shouldSendPushForKind(
       return prefs.notifyFollowedProducers;
     case 'FAVORITE_INTEREST_NEW_CONTENT':
       return prefs.notifyRecommendations || prefs.notifyFavoriteCategories || prefs.notifyFavoriteSubcategories;
+    case 'EVENT_APPROVED_BY_ADMIN':
+    case 'EVENT_REJECTED_BY_ADMIN':
+      return prefs.notifyProducerEventStatus;
     default:
       return prefs.notifyUnreadNotifications;
   }
+}
+
+export function shouldSendEmailForProducerEventStatus(
+  prefs: UserPortalPreferences,
+): boolean {
+  return prefs.emailNotificationsEnabled && prefs.notifyProducerEventStatus;
 }
 
 export function pushTypeForKind(kind: NotificationKind): string {
@@ -171,6 +184,10 @@ export function pushTypeForKind(kind: NotificationKind): string {
       return 'FOLLOWED_PRODUCER';
     case 'FAVORITE_INTEREST_NEW_CONTENT':
       return 'FAVORITE_INTEREST';
+    case 'EVENT_APPROVED_BY_ADMIN':
+      return 'PRODUCER_EVENT_APPROVED';
+    case 'EVENT_REJECTED_BY_ADMIN':
+      return 'PRODUCER_EVENT_REJECTED';
     default:
       return 'PORTAL_ALERT';
   }
@@ -257,6 +274,10 @@ export function mergePortalPreferencesPatch(
       patch.notifyUnreadNotifications !== undefined
         ? patch.notifyUnreadNotifications
         : base.notifyUnreadNotifications,
+    notifyProducerEventStatus:
+      patch.notifyProducerEventStatus !== undefined
+        ? patch.notifyProducerEventStatus
+        : base.notifyProducerEventStatus,
     ticketReminderOverrides:
       patch.ticketReminderOverrides !== undefined
         ? { ...base.ticketReminderOverrides, ...patch.ticketReminderOverrides }

@@ -88,8 +88,8 @@ ApiClient → HTTP (NEXT_PUBLIC_API_BASE_URL)
 | Public | `/`, `/home`, `/explore`, `/events/[id]`, `/restaurants/[id]`, `/excursiones/[id]`, **`/rentals/[id]`**, `/hoteles/[id]`, **`/users/[userId]`** (perfil comentarista), checkout, `/me/tickets`, `/referrers`, `/r/[code]` |
 | Account | `/login`, `/register`, **`/me/*`** (portal usuario estándar) |
 | Cuenta (legacy) | `/cuenta/*` → **redirects** a `/me/*` (no mantener lógica duplicada) |
-| Admin | `/admin/*`, **`/admin/rentals`**, **`/admin/rentals/locales/...`**, **`/admin/review-disputes`**, inbox, perfiles, config |
-| Producer | `/producer`, `/producer/events`, ticket studio, **`/producer/profile`** (dashboard por bloques), **`/producer/profile/create`**, **`/producer/profile/identity`**, **`/producer/profile/images`**, **`/producer/profile/contact`**, **`/producer/comments`** (reseñas de eventos + solicitud revisión), referidos, payouts |
+| Admin | `/admin/*` (**solo rol `ADMIN`**, `ProfileProtectedLayout` en `admin/layout.tsx`), sidebar operaciones; acceso: `/profiles`, navbar «Administración», URL directa |
+| Producer | `/producer` (hub: KPIs, engagement, **`ProducerDashboardEventStatusAlerts`**, eventos; nav en sidebar), `/producer/events`, ticket studio, **`/producer/profile`** (hub por bloques + completitud frontend), **`/producer/profile/create`** (solo nombre; slug en servidor), **`/producer/profile/identity|images|contact`**, **`/producer/comments`** (`ManagedReviewsCommentsPage`), referidos, payouts |
 | Gastro / Hotel / Referrer | `/gastro/*`, **`/gastro/valoraciones`**, `/hotel`, **`/hotel/valoraciones`**, `/referrer`, `/cuenta/solicitar-referrer` |
 
 ### Rental public detail (`/rentals/[id]`)
@@ -121,8 +121,8 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`):
 |------|-----|
 | `/me` | Dashboard (alertas, recomendados, **MeDashboardPushCta**) |
 | `/me/cart` | **Mi Carro** — carrito API + checkout |
-| `/me/tickets`, `/me/tickets/[ticketId]` | Tickets + transferencia personal |
-| `/me/preferences` | Tabs: intereses, productoras, gastro, favoritos, esperados, notificaciones globales |
+| `/me/tickets`, `/me/tickets/[ticketId]` | Listado agrupado + **detalle ticket comprador** (`MeBuyerTicketPanel`, impresión, transferencia) |
+| `/me/preferences` | Tabs: intereses, productoras, **gastro follows** (`MePreferencesGastro`), favoritos, esperados, notificaciones globales |
 | `/me/activity` | Asistidos, reviews, transfers |
 | `/me/account` | Perfil, contraseña, solicitudes de rol |
 | `/me/notifications` | Bandeja in-app + **push** (`MePushNotificationsPanel`) + preferencias alertas (`MePushAlertPreferences` en `InterestsDisclosure`) |
@@ -132,8 +132,9 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`):
 - Hooks: `lib/query/me-portal.ts` (incl. `usePushSubscriptions*`, `useRegisterPushSubscription`, `useSendTestPushNotification`); keys `mePortalKeys` en `lib/query/keys.ts`.
 - Push cliente: `lib/push/registerPush.ts`; service worker `public/push-sw.js` (registro `/push-sw.js`).
 - Layout: `UserPortalLayout` bajo `app/(portal)/me/` (menú: Inicio, Mis tickets, Mi Carro, Preferencias, Actividad, Notificaciones, Mi cuenta).
-- Componentes portal: `MeDashboardAlerts`, `MeRecommendationsSection`, `MePreferencesInterests` + **`InterestsDisclosure`** (acordeones reutilizables).
-- Engagement en fichas: `EventEngagementRow` → API favoritos / expected-events.
+- Componentes portal: `MeDashboardAlerts`, `MeRecommendationsSection`, `MePreferencesInterests` + **`InterestsDisclosure`** (acordeones reutilizables); órdenes: `MeOrderDetailSummary`, `MeOrderTicketsList`.
+- **Ticket comprador (V2.2):** `components/tickets/` (`BuyerTicketVisual`, `TicketTemplateRenderer`, `DefaultBuyerTicket`, `TicketQrImage`, `TicketEntryStatusBanner`); utilidades `lib/tickets/` (`qr-display.ts`, `qr-image-url.ts`, `ticket-status-ui.ts`); estilos impresión en `styles/globals.css` (`@media print`).
+- Engagement en fichas: `EventEngagementRow` → API favoritos / expected-events; **`GastroFollowButton`** en detalle restaurante → `/me/gastro-follows`.
 - Checkout autenticado: redirige a `/me/cart`; invitado usa `/checkout` público.
 
 **Eliminado:** `/reventa`, `/dev/seed`, `/dev/local-db`, `lib/local-db/*`.
@@ -156,9 +157,26 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`):
 | TicketStudioClient | `components/producer/ticket-studio/` |
 | OpeningHoursEditor, RentalProductImagesForm | `components/forms/`, `components/rentals/` |
 | Reviews V2 (público + portales) | `components/reviews/` (`ReviewForm`, `ReviewCard`, `ReviewSummary`, `ManagedReviewsCommentsPage`, `ReviewReplyModal`) |
-| Comentarios productora | `components/producer/comments/` (`ProducerCommentsPage` → `ManagedReviewsCommentsPage`) |
+| Comentarios productora | `components/producer/comments/` (`ProducerCommentsPage` → `ManagedReviewsCommentsPage`, filtros rápidos, resumen API) |
+| Perfil productor (portal) | `components/producer/profile/` (`ProducerProfilePage`, `ManagedReviewSummary`, `ProducerProfilePublicPreview`, `producer-profile-completeness.ts`) |
+| Dashboard productor | `components/producer/dashboard/` (`ProducerDashboardClient`, KPIs, engagement, alertas estado evento; **sin** `ProducerDashboardQuickLinks`) |
 | Valoración B2B | `CommercialReviewPanel`, `CommercialAspectBreakdown` |
+| Navbar admin | `NavbarUserMenu` — enlace «Administración» si `Role.ADMIN` |
 | Portal usuario push | `components/me/MePushNotificationsPanel`, `MePushAlertPreferences`, `MeDashboardPushCta`, `InterestsDisclosure` |
+| Ticket comprador | `components/tickets/*`, `components/me/MeBuyerTicketPanel`, `MeTicketListCard` |
+
+**QR comprador:** payload `yti:v1:<hex>` sin transformar; imagen vía API externa con tamaño mínimo 200px (`MIN_QR_DISPLAY_PX`). No alterar sin auditar scanner PWA.
+
+---
+
+## 7b. Ticket Canvas vs ticket comprador
+
+| Área | Ruta / código | Rol |
+|------|----------------|-----|
+| **Studio productor** | `/producer/events/.../ticket-studio`, `TicketStudioClient` | Diseño plantilla (`TicketTemplate` JSON + zona QR) |
+| **Vista comprador** | `/me/tickets/[ticketId]` | Render plantilla o fallback; imprimir; estado de ingreso |
+
+Doc: `docs/tickets/TICKET_CANVAS_STUDIO.md`, `docs/tickets/TICKET_TEMPLATE_QR_ZONE.md`.
 
 ---
 
@@ -220,6 +238,7 @@ Ver: `docs/guides/README.md`, `docs/guides/DEVELOPER_SCRIPTS_GUIDE.md`, `docs/gu
 - `docs/context/PROJECT_CONTEXT.md`
 - `docs/context/BACKEND_CONTEXT.md`
 - `docs/context/CONTEXT_PENDIENTES.md`
+- `docs/dev/Yo_Te_Invito_Checklist_V2_Produccion.md`
 - `docs/reviews/REVIEWS_V2.md`
 - `docs/tickets/TICKET_CANVAS_STUDIO.md`
 - `docs/frontend/FRONTEND_CONVENTIONS.md`

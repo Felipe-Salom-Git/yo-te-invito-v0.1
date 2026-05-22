@@ -24,6 +24,7 @@ export type ReviewDisputeStatus = z.infer<typeof reviewDisputeStatusSchema>;
 export const producerReviewDisputeFilterSchema = z.enum([
   'ALL',
   'NONE',
+  'OPEN',
   'PENDING',
   'IN_REVIEW',
   'ACCEPTED',
@@ -31,6 +32,9 @@ export const producerReviewDisputeFilterSchema = z.enum([
   'RESOLVED',
 ]);
 export type ProducerReviewDisputeFilter = z.infer<typeof producerReviewDisputeFilterSchema>;
+
+export const producerReviewReplyFilterSchema = z.enum(['ALL', 'UNANSWERED', 'ANSWERED']);
+export type ProducerReviewReplyFilter = z.infer<typeof producerReviewReplyFilterSchema>;
 
 const reviewScoreDistributionShape = {
   '1': z.number().int().nonnegative(),
@@ -59,7 +63,9 @@ export const producerManagedReviewListQuerySchema = z.object({
   /** @deprecated legacy 1–5 — use overallRating */
   rating: z.coerce.number().int().min(1).max(5).optional(),
   disputeStatus: producerReviewDisputeFilterSchema.optional().default('ALL'),
-  sort: z.enum(['newest', 'oldest']).optional().default('newest'),
+  replyFilter: producerReviewReplyFilterSchema.optional().default('ALL'),
+  publicStatus: reviewPublicStatusSchema.optional(),
+  sort: z.enum(['newest', 'oldest', 'highest', 'lowest']).optional().default('newest'),
   page: z.coerce.number().int().min(1).optional().default(1),
   limit: z.coerce.number().int().min(1).max(50).optional().default(20),
 });
@@ -69,6 +75,10 @@ export const producerManagedReviewSummarySchema = z.object({
   averageRating: z.number().nullable(),
   totalReviews: z.number(),
   distribution: z.object(reviewScoreDistributionShape),
+  /** Portal productor: sin respuesta oficial */
+  unansweredCount: z.number().int().nonnegative().optional(),
+  /** Portal productor: disputas PENDING o IN_REVIEW */
+  openDisputeCount: z.number().int().nonnegative().optional(),
 });
 export type ProducerManagedReviewSummary = z.infer<typeof producerManagedReviewSummarySchema>;
 

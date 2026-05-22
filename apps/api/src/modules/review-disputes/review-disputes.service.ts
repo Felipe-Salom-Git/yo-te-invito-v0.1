@@ -111,28 +111,43 @@ export class ReviewDisputesService {
         averageRating: null,
         totalReviews: 0,
         distribution: emptyReviewScoreDistribution(),
+        unansweredCount: 0,
+        openDisputeCount: 0,
       };
     }
 
     const rows = await this.prisma.review.findMany({
       where: { tenantId, eventId: { in: eventIds } },
-      select: { overallRating: true, score: true },
+      select: { overallRating: true, score: true, officialReply: true },
     });
 
     const distribution = emptyReviewScoreDistribution();
     let sum = 0;
+    let unansweredCount = 0;
     for (const r of rows) {
       const overall = readOverallRating(r);
       sum += overall;
       const key = String(overall) as keyof typeof distribution;
       if (key in distribution) distribution[key] += 1;
+      if (!r.officialReply?.trim()) unansweredCount += 1;
     }
+
+    const openDisputeCount = await this.prisma.reviewDisputeRequest.count({
+      where: {
+        tenantId,
+        producerProfileId,
+        status: { in: OPEN_DISPUTE_STATUSES },
+        eventId: { in: eventIds },
+      },
+    });
 
     return {
       averageRating:
         rows.length > 0 ? Math.round((sum / rows.length) * 10) / 10 : null,
       totalReviews: rows.length,
       distribution,
+      unansweredCount,
+      openDisputeCount,
     };
   }
 
@@ -175,13 +190,41 @@ export class ReviewDisputesService {
       eventId: { in: eventIds },
     };
 
+    const andParts: Prisma.ReviewWhereInput[] = Array.isArray(where.AND)
+      ? [...where.AND]
+      : where.AND
+        ? [where.AND]
+        : [];
+
     if (query.overallRating) {
-      where.OR = [
-        { overallRating: query.overallRating },
-        { overallRating: null, score: Math.min(5, Math.max(1, Math.round(query.overallRating / 2))) },
-      ];
+      andParts.push({
+        OR: [
+          { overallRating: query.overallRating },
+          {
+            overallRating: null,
+            score: Math.min(5, Math.max(1, Math.round(query.overallRating / 2))),
+          },
+        ],
+      });
     } else if (query.rating) {
       where.score = query.rating;
+    }
+
+    if (query.replyFilter === 'UNANSWERED') {
+      andParts.push({ OR: [{ officialReply: null }, { officialReply: '' }] });
+    } else if (query.replyFilter === 'ANSWERED') {
+      andParts.push({
+        officialReply: { not: null },
+        NOT: { officialReply: '' },
+      });
+    }
+
+    if (andParts.length > 0) {
+      where.AND = andParts;
+    }
+
+    if (query.publicStatus) {
+      where.status = query.publicStatus;
     }
 
     if (query.disputeStatus && query.disputeStatus !== 'ALL') {
@@ -196,6 +239,10 @@ export class ReviewDisputesService {
           if (!d || !OPEN_DISPUTE_STATUSES.includes(d.status)) {
             matchingReviewIds.push(r.id);
           }
+        } else if (query.disputeStatus === 'OPEN') {
+          if (d && OPEN_DISPUTE_STATUSES.includes(d.status)) {
+            matchingReviewIds.push(r.id);
+          }
         } else if (d?.status === query.disputeStatus) {
           matchingReviewIds.push(r.id);
         }
@@ -206,13 +253,22 @@ export class ReviewDisputesService {
     const total = await this.prisma.review.count({ where });
     const skip = (query.page - 1) * query.limit;
 
+    const orderBy: Prisma.ReviewOrderByWithRelationInput[] =
+      query.sort === 'oldest'
+        ? [{ createdAt: 'asc' }]
+        : query.sort === 'highest'
+          ? [{ overallRating: 'desc' }, { createdAt: 'desc' }]
+          : query.sort === 'lowest'
+            ? [{ overallRating: 'asc' }, { createdAt: 'desc' }]
+            : [{ createdAt: 'desc' }];
+
     const rows = await this.prisma.review.findMany({
       where,
       include: {
         event: { select: { title: true, category: true } },
         user: { select: { firstName: true, lastName: true } },
       },
-      orderBy: { createdAt: query.sort === 'oldest' ? 'asc' : 'desc' },
+      orderBy,
       skip,
       take: query.limit,
     });
@@ -811,16 +867,37 @@ export class ReviewDisputesService {
       eventId: { in: eventIds },
     };
 
+    const andParts: Prisma.ReviewWhereInput[] = [];
+
     if (query.overallRating) {
-      where.OR = [
-        { overallRating: query.overallRating },
-        {
-          overallRating: null,
-          score: Math.min(5, Math.max(1, Math.round(query.overallRating / 2))),
-        },
-      ];
+      andParts.push({
+        OR: [
+          { overallRating: query.overallRating },
+          {
+            overallRating: null,
+            score: Math.min(5, Math.max(1, Math.round(query.overallRating / 2))),
+          },
+        ],
+      });
     } else if (query.rating) {
       where.score = query.rating;
+    }
+
+    if (query.replyFilter === 'UNANSWERED') {
+      andParts.push({ OR: [{ officialReply: null }, { officialReply: '' }] });
+    } else if (query.replyFilter === 'ANSWERED') {
+      andParts.push({
+        officialReply: { not: null },
+        NOT: { officialReply: '' },
+      });
+    }
+
+    if (query.publicStatus) {
+      where.status = query.publicStatus;
+    }
+
+    if (andParts.length > 0) {
+      where.AND = andParts;
     }
 
     if (query.disputeStatus && query.disputeStatus !== 'ALL' && disputeProducerProfileId) {
@@ -835,6 +912,10 @@ export class ReviewDisputesService {
           if (!d || !OPEN_DISPUTE_STATUSES.includes(d.status as ReviewDisputeStatus)) {
             matchingReviewIds.push(r.id);
           }
+        } else if (query.disputeStatus === 'OPEN') {
+          if (d && OPEN_DISPUTE_STATUSES.includes(d.status as ReviewDisputeStatus)) {
+            matchingReviewIds.push(r.id);
+          }
         } else if (d?.status === query.disputeStatus) {
           matchingReviewIds.push(r.id);
         }
@@ -845,13 +926,22 @@ export class ReviewDisputesService {
     const total = await this.prisma.review.count({ where });
     const skip = (query.page - 1) * query.limit;
 
+    const orderBy: Prisma.ReviewOrderByWithRelationInput[] =
+      query.sort === 'oldest'
+        ? [{ createdAt: 'asc' }]
+        : query.sort === 'highest'
+          ? [{ overallRating: 'desc' }, { createdAt: 'desc' }]
+          : query.sort === 'lowest'
+            ? [{ overallRating: 'asc' }, { createdAt: 'desc' }]
+            : [{ createdAt: 'desc' }];
+
     const rows = await this.prisma.review.findMany({
       where,
       include: {
         event: { select: { title: true, category: true } },
         user: { select: { firstName: true, lastName: true } },
       },
-      orderBy: { createdAt: query.sort === 'oldest' ? 'asc' : 'desc' },
+      orderBy,
       skip,
       take: query.limit,
     });

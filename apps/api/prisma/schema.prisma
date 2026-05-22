@@ -230,6 +230,8 @@ model ProducerProfile {
   socialLinks      Json?
   ratingAvg        Float?
   ratingCount      Int           @default(0)
+  /// Public profile page views (simple counter; no per-user dedup in V2)
+  viewCount        Int           @default(0)
   createdByUserId  String?
   status           ProfileStatus @default(DRAFT)
   createdAt        DateTime      @default(now())
@@ -723,6 +725,8 @@ model Event {
   /// Internal sort metric — never expose on public API responses
   bayesianRating    Float?
   rankingScore      Float?
+  /// Public detail page views (simple counter; no per-user dedup in V2)
+  viewCount         Int          @default(0)
   publishedAt       DateTime?
   createdAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
@@ -804,6 +808,8 @@ enum NotificationKind {
   REVIEW_PENDING
   FOLLOWED_PRODUCER_NEW_EVENT
   FAVORITE_INTEREST_NEW_CONTENT
+  EVENT_APPROVED_BY_ADMIN
+  EVENT_REJECTED_BY_ADMIN
 }
 
 enum NotificationChannel {

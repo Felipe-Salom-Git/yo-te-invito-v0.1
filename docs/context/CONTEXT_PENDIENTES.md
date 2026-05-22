@@ -9,14 +9,16 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 - [x] Registro con elección de perfil + formulario específico (`POST /auth/register` con `profileType` / `profileData`)
 - [x] Perfiles comerciales activos al crear (sin cola admin de perfiles)
 - [x] Admin: ocultar «Perfiles pendientes» (`/admin/perfiles` redirige a `/admin`)
-- [x] Script test user: `pnpm --filter api run user:restore-master` (`felipe.e.salom@gmail.com`)
+- [x] Script test user: `pnpm --filter api run user:restore-master` (`felipe.e.salom@gmail.com`) — rol `ADMIN` + memberships portales; **cerrar sesión y volver a entrar** para refrescar JWT
+- [x] Portal `/admin/*` protegido en web (`ProfileProtectedLayout`, rol `ADMIN`); acceso desde `/profiles`, navbar «Administración» y URL directa
 - [ ] Deprecar/eliminar endpoints legacy `RoleApplication` y `/admin/applications` (opcional)
+- [ ] UI preferencias `notifyProducerEventStatus` en portal (backend ya soporta; default `true`)
 
 ---
 
 ## A. Infraestructura y backend
 
-- [ ] Ejecutar migraciones Prisma en cada entorno (`prisma migrate deploy`) y `prisma generate` tras cambios de schema
+- [ ] Ejecutar migraciones Prisma en cada entorno (`prisma migrate deploy`) y `prisma generate` tras cambios de schema (incl. `20260608120000_producer_event_status_notifications` — kinds `EVENT_APPROVED_BY_ADMIN` / `EVENT_REJECTED_BY_ADMIN`)
 - [ ] Confirmar cliente Prisma alineado con DB (hotel, inbox, **RentalLocation**, opening hours JSON, etc.)
 - [ ] Rate limiting y hardening en producción
 - [x] Variables Web Push documentadas (`USER_PORTAL.md`, `AI_ENTRYPOINT.md`, `BACKEND_CONTEXT.md`)
@@ -112,6 +114,7 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 ## K. Productoras / Proveedores (portal + reseñas)
 
 - [x] Perfil productor por bloques: API `GET/POST/PATCH /producer/profile`, rutas `/producer/profile/*` (create, identity, images, contact)
+- [x] Slice 8: hub `/producer/profile` con completitud (frontend), preview pública liviana, bloques con estado, formularios pulidos; ficha `/producers/[id|slug]` sin cambios de contrato
 - [x] Ficha pública productor (`/producers/[id|slug]`) y reseñas públicas de eventos
 - [x] Portal: `/producer/comments` — reseñas de eventos + solicitud de revisión (disputa) vía inbox
 - [x] Admin: cola `/admin/review-disputes` para resolver disputas de reseñas
@@ -120,14 +123,26 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 - [x] UI pública: listados con desglose aspectos vía `listPublicV2` en fichas detalle (eventos, gastro, rental, excursión, hotel)
 - [x] Carruseles «más recomendados» / «mejor puntuados» por `rankingScore` en landing por categoría y home global
 - [x] Portal productora: aspectos, réplica, filtros 1–10 en `/producer/comments`
+- [x] Slice 1: dashboard productor hub (`/producer`) — KPIs, engagement, alertas evento, próximos eventos (sin bloque accesos rápidos; navegación en sidebar)
+- [x] Slice 2: métricas interacción — `viewCount` Event/ProducerProfile, `GET /producer/dashboard/metrics`, `POST /public/events|producers/.../view`
+- [x] Slice 3: gestión eventos productor por estado — tabs, búsqueda, cards, empty states (`/producer/events`)
+- [x] Slice 4: creación/edición eventos productor — formulario por bloques, validaciones visibles, preview, post-guardado (`/producer/events/new`, `/edit`, CTAs en detalle `?welcome=1` / `?saved=1`)
+- [x] Slice 5: ticket types / tandas productor — cards resumen, timeline de tandas, ayuda UX, validaciones estructuradas, Ticket Studio link (`TicketTypesEditor` en detalle evento)
+- [x] Slice 6: cortesías productor — `ProducerCourtesiesPageClient`, modos CONSUMES_BATCH / FREE_CAPACITY, listado otorgamientos, sin localStorage/fetch directo (`/producer/events/[eventId]/courtesies`)
+- [x] Slice 7: referidos productor — ayuda UX, copy link con feedback, tabs mobile, evento refactor (`/producer/referrals`, `/producer/events/[eventId]/referrals`); aviso comisiones pendientes (sin inventar reglas)
+- [x] Slice 8: perfil productor hub — completitud calculada en frontend (`producer-profile-completeness.ts`), checklist, preview liviana, bloques con badge, formularios con intro/ayuda; estado real `profile.status` (sin `publicVisibility` inventado); **slug único auto** desde `displayName` (`producer-profile-slug.util.ts`, sufijos `-2` si colisión)
+- [x] Slice 9: comentarios productor — resumen con pendientes/disputas (API), filtros (respuesta, disputa OPEN, estado público, orden), cards/modales pulidos; `ManagedReviewsCommentsPage` parametrizado (gastro/hotel sin regresión)
+- [x] Slice 10: notificaciones productor por estado de evento — `EVENT_APPROVED_BY_ADMIN` / `EVENT_REJECTED_BY_ADMIN`, hook en `AdminEventsService`, `ProducerEventStatusNotificationsService`, alertas en `/producer` vía `/me/notifications`
+- [ ] Trending real (`viewCount` / `recentScore` en ranking) — contador existe; falta usar en carruseles trending
 - [x] Réplica gastro/hotel/admin por rutas dedicadas (`/gastro|hotel|admin/reviews/:id/reply`)
 - [x] Formularios B2B con 4 aspectos comerciales (productora ↔ referido)
 - [x] Smoke tests Reviews V2 — `pnpm --filter api run smoke:reviews` + guía `docs/guides/SMOKE_TESTS_GUIDE.md`
 - [x] Perfil público comentarista `/users/[userId]` + badge reputación
 - [x] Auth: JWT huérfano si usuario borrado → 401 en guard + `me.service` (logout/login; no spam `NotFoundError`)
-- [ ] Trending real (`viewCount` / `recentScore` en ranking)
 - [ ] Moderación avanzada / notificaciones email para disputas (si aplica)
 - [ ] Export o reporting de disputas y reseñas comerciales
+
+_(Trending con `viewCount`: ver ítem Slice 2 arriba en § K.)_
 
 ---
 
@@ -151,7 +166,8 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 - [x] V2.1.4: hook publicación → seguidores productora (`EventPublicationAlertsService` + `FOLLOWED_PRODUCER_NEW_EVENT`)
 - [x] V2.1.4: matching ciudad/categoría/subcategoría (`FAVORITE_INTEREST_NEW_CONTENT` + throttling simple por hora)
 - [x] UI: preferencias de alertas push en desplegable (`InterestsDisclosure` en `/me/notifications`)
-- [ ] V2.2: ticket final comprador + QR production-ready (siguiente slice planificado)
+- [x] V2.2: ticket comprador + QR + impresión (`BuyerTicketVisual`, `DefaultBuyerTicket`, `@media print`, smoke `qrPayload`)
+- [x] Seguir locales gastro (`UserGastroFollow`, `/me/gastro-follows`, `MePreferencesGastro`, `GastroFollowButton`)
 - [x] V2: seguir productoras + recomendaciones (`UserProducerFollow`, `/me/producer-follows`, `/me/recommendations`)
 - [x] Etapa 3 portal: pulido transferencia (email receptor, rechazo, cron expiración, textos legales)
 
@@ -197,6 +213,7 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 | `legacy/guides/` | Histórico archivado |
 | `docs/guides/DEMO_REMOVAL.md` | Regla pago demo / no datos demo |
 | `docs/reviews/REVIEWS_V2.md` | Comentarios y valoraciones V2 |
-| `docs/user/USER_PORTAL.md` | Portal usuario + § Push notifications (V2.1.3–V2.1.4) |
+| `docs/user/USER_PORTAL.md` | Portal usuario + push (V2.1.3–V2.1.4) + ticket (V2.2) |
+| `docs/dev/Yo_Te_Invito_Checklist_V2_Produccion.md` | Checklist operativo V2 → producción |
 | `docs/user/USER_PORTAL_PRISMA_PROPOSAL.md` | Diff modelo (pre-migrate) |
 

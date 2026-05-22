@@ -8,6 +8,7 @@ type Props = {
   index: number;
   total: number;
   disabled?: boolean;
+  batchError?: string;
   onChange: (patch: Partial<BatchRowModel>) => void;
   onRemove: () => void;
   onMoveUp: () => void;
@@ -19,13 +20,18 @@ export function ProducerTicketBatchRow({
   index,
   total,
   disabled,
+  batchError,
   onChange,
   onRemove,
   onMoveUp,
   onMoveDown,
 }: Props) {
   return (
-    <div className="rounded-lg border border-border bg-bg p-4 space-y-3">
+    <div
+      className={`rounded-lg border bg-bg p-4 space-y-3 ${
+        batchError ? 'border-red-500/50' : 'border-border'
+      }`}
+    >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="text-xs font-medium uppercase tracking-wide text-text-muted">
           Tanda · orden {row.orderIndex + 1}
@@ -50,6 +56,7 @@ export function ProducerTicketBatchRow({
           </div>
         )}
       </div>
+      {batchError ? <p className="text-sm text-red-400">{batchError}</p> : null}
       <Input
         label="Nombre de la tanda"
         value={row.name}
@@ -79,7 +86,9 @@ export function ProducerTicketBatchRow({
           type="number"
           min={1}
           value={row.baseQuantity || ''}
-          onChange={(e) => onChange({ baseQuantity: Math.max(0, parseInt(e.target.value, 10) || 0) })}
+          onChange={(e) =>
+            onChange({ baseQuantity: Math.max(1, parseInt(e.target.value, 10) || 1) })
+          }
           disabled={disabled}
         />
         <Input

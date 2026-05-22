@@ -5,7 +5,11 @@ import type { EventSummary } from '@/repositories/interfaces';
 interface ProductoraEventCardProps {
   event: EventSummary;
   ticketsSold?: number;
+  /** Formatted revenue string; omit to hide sales line until metrics load */
   revenue?: string;
+  viewCount?: number;
+  favoriteCount?: number;
+  expectedCount?: number;
   statusLabel?: string;
 }
 
@@ -19,10 +23,16 @@ const statusMap: Record<string, { label: string; variant: 'default' | 'accent' |
 
 export function ProductoraEventCard({
   event,
-  ticketsSold = 0,
-  revenue = '0',
+  ticketsSold,
+  revenue,
+  viewCount,
+  favoriteCount,
+  expectedCount,
   statusLabel,
 }: ProductoraEventCardProps) {
+  const showSales = ticketsSold !== undefined || revenue !== undefined;
+  const showEngagement =
+    viewCount !== undefined || favoriteCount !== undefined || expectedCount !== undefined;
   const status = (event.status ?? 'DRAFT').toUpperCase();
   const { label: statusText, variant } = statusMap[status] ?? { label: status, variant: 'muted' };
   const displayStatus = statusLabel ?? statusText;
@@ -47,10 +57,21 @@ export function ProductoraEventCard({
             <Badge variant={variant}>{displayStatus}</Badge>
           </div>
           <p className="mt-1 text-sm text-text-muted">{venue} · {date}</p>
-          <div className="mt-2 flex flex-wrap gap-3 text-sm text-text-muted">
-            <span>{ticketsSold} vendidos</span>
-            <span className="text-accent font-medium">${revenue}</span>
-          </div>
+          {showSales ? (
+            <div className="mt-2 flex flex-wrap gap-3 text-sm text-text-muted">
+              {ticketsSold !== undefined ? <span>{ticketsSold} vendidos</span> : null}
+              {revenue !== undefined ? (
+                <span className="font-medium text-accent">${revenue}</span>
+              ) : null}
+            </div>
+          ) : null}
+          {showEngagement ? (
+            <div className="mt-2 flex flex-wrap gap-3 text-xs text-text-muted">
+              {viewCount !== undefined ? <span>{viewCount} vistas</span> : null}
+              {favoriteCount !== undefined ? <span>{favoriteCount} favoritos</span> : null}
+              {expectedCount !== undefined ? <span>{expectedCount} lo esperan</span> : null}
+            </div>
+          ) : null}
         </div>
         <span className="shrink-0 text-sm text-accent">Gestionar →</span>
       </div>

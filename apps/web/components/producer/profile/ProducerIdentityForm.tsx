@@ -1,15 +1,17 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ProducerDetail } from '@/repositories/interfaces';
 import { useRepositories } from '@/repositories/context';
 import { producersKeys } from '@/lib/query/keys';
-import { PageContainer, Button, Input, useToast, SectionTitle } from '@/components';
+import Link from 'next/link';
+import { PageContainer, Button, Input, useToast } from '@/components';
 import { getErrorMessage } from '@/lib/errors';
+import { getProducerPublicPath } from '@/lib/producer/public-path';
 import { ImageUrlPreview } from '@/components/admin/ImageUrlPreview';
+import { ProducerProfileFormIntro } from './ProducerProfileFormIntro';
 
 function readLogoFile(e: React.ChangeEvent<HTMLInputElement>, onLogo: (url: string) => void) {
   const file = e.target.files?.[0];
@@ -37,7 +39,6 @@ export function ProducerIdentityForm({ profile }: { profile: ProducerDetail }) {
   const queryClient = useQueryClient();
   const { addToast } = useToast();
   const [displayName, setDisplayName] = useState(profile.displayName);
-  const [slug, setSlug] = useState(profile.slug ?? '');
   const [legalName, setLegalName] = useState(profile.legalName ?? '');
   const [shortDescription, setShortDescription] = useState(profile.shortDescription ?? '');
   const [longDescription, setLongDescription] = useState(profile.longDescription ?? '');
@@ -45,7 +46,6 @@ export function ProducerIdentityForm({ profile }: { profile: ProducerDetail }) {
 
   useEffect(() => {
     setDisplayName(profile.displayName);
-    setSlug(profile.slug ?? '');
     setLegalName(profile.legalName ?? '');
     setShortDescription(profile.shortDescription ?? '');
     setLongDescription(profile.longDescription ?? '');
@@ -56,7 +56,6 @@ export function ProducerIdentityForm({ profile }: { profile: ProducerDetail }) {
     mutationFn: () =>
       repos.producers.updateMyProfileIdentity({
         displayName: displayName.trim(),
-        ...(slug.trim().length >= 2 ? { slug: slug.trim() } : {}),
         ...(legalName.trim() ? { legalName: legalName.trim() } : { legalName: undefined }),
         ...(shortDescription.trim()
           ? { shortDescription: shortDescription.trim() }
@@ -76,16 +75,13 @@ export function ProducerIdentityForm({ profile }: { profile: ProducerDetail }) {
 
   return (
     <PageContainer className="max-w-2xl">
-      <Link href="/producer/profile" className="text-sm text-text-muted hover:text-accent">
-        ← Volver al perfil
-      </Link>
-      <SectionTitle className="mt-4">Identidad</SectionTitle>
-      <p className="mt-2 text-sm text-text-muted">
-        Logo, nombre, subtítulo y descripción pública de tu productora.
-      </p>
+      <ProducerProfileFormIntro
+        blockTitle="Identidad"
+        description="Nombre, logo y textos de tu ficha pública. La URL se genera automáticamente desde el nombre (única en la plataforma). La razón social no se muestra en la vista pública."
+      />
 
       <form
-        className="mt-8 space-y-6"
+        className="mt-6 space-y-6"
         onSubmit={(e) => {
           e.preventDefault();
           if (!displayName.trim()) {
@@ -97,6 +93,7 @@ export function ProducerIdentityForm({ profile }: { profile: ProducerDetail }) {
       >
         <div>
           <p className="text-sm font-medium text-text">Logo</p>
+          <p className="mt-1 text-xs text-text-muted">Recomendado cuadrado, visible en listados y ficha.</p>
           <div className="mt-3 flex flex-wrap items-start gap-4">
             {logoUrl.trim() ? (
               <div className="h-20 w-20 overflow-hidden rounded-full border border-border">
@@ -127,13 +124,30 @@ export function ProducerIdentityForm({ profile }: { profile: ProducerDetail }) {
           </div>
         </div>
 
-        <Input label="Nombre / título" value={displayName} onChange={(e) => setDisplayName(e.target.value)} required />
         <Input
-          label="Identificador URL (slug)"
-          value={slug}
-          onChange={(e) => setSlug(e.target.value)}
-          placeholder="ej. mi-productora"
+          label="Nombre / título"
+          value={displayName}
+          onChange={(e) => setDisplayName(e.target.value)}
+          required
         />
+        {profile.slug?.trim() ? (
+          <div className="rounded-lg border border-border/80 bg-bg-muted/40 px-3 py-2 text-sm">
+            <p className="text-xs text-text-muted">URL pública de tu ficha</p>
+            <p className="mt-1 font-mono text-text">{getProducerPublicPath(profile)}</p>
+            <Link
+              href={getProducerPublicPath(profile)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 inline-block text-xs text-accent hover:underline"
+            >
+              Ver ficha pública →
+            </Link>
+          </div>
+        ) : (
+          <p className="text-xs text-text-muted">
+            Al guardar, se creará automáticamente la URL pública a partir del nombre.
+          </p>
+        )}
         <Input
           label="Razón social (opcional)"
           value={legalName}

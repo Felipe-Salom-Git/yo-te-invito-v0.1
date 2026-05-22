@@ -1,4 +1,4 @@
-import { Controller, Get, Query, Param } from '@nestjs/common';
+import { Controller, Get, Post, Query, Param, UseGuards } from '@nestjs/common';
 import {
   eventsListQuerySchema,
   eventsSearchQuerySchema,
@@ -7,6 +7,8 @@ import {
   type EventsRecommendedQuery,
   eventsCalendarMonthQuerySchema,
   eventDetailQuerySchema,
+  publicEventViewQuerySchema,
+  type PublicEventViewQuery,
   type EventsListQuery,
   type EventsSearchQuery,
   type EventsTrendingQuery,
@@ -14,11 +16,17 @@ import {
   type EventDetailQuery,
 } from '@yo-te-invito/shared';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
+import { OptionalJwtOrDevAuthGuard } from '../auth/optional-jwt-or-dev-auth.guard';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { PublicEventsService } from './public-events.service';
+import { PublicEngagementService } from './public-engagement.service';
 
 @Controller('public/events')
 export class PublicEventsController {
-  constructor(private readonly service: PublicEventsService) {}
+  constructor(
+    private readonly service: PublicEventsService,
+    private readonly engagement: PublicEngagementService,
+  ) {}
 
   @Get()
   async list(
@@ -70,5 +78,16 @@ export class PublicEventsController {
     @Query(new ZodValidationPipe(eventDetailQuerySchema)) query: EventDetailQuery,
   ) {
     return this.service.detail(id, query.tenantId);
+  }
+
+  /** Increment public view counter (V2: no per-user dedup). */
+  @Post(':id/view')
+  @UseGuards(OptionalJwtOrDevAuthGuard)
+  async recordView(
+    @Param('id') id: string,
+    @Query(new ZodValidationPipe(publicEventViewQuerySchema)) query: PublicEventViewQuery,
+    @CurrentUser() user?: { id: string; tenantId: string; role: string },
+  ) {
+    return this.engagement.recordEventView(query.tenantId, id, user);
   }
 }

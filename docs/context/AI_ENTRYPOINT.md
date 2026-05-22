@@ -60,11 +60,15 @@ Controllers: HTTP + Zod only. Services: business logic. Prisma: persistence only
 | **`CONTEXT_PENDIENTES.md`** | Checkbox backlog — mark `[x]` when done |
 | **`FRONTEND_DEMO_NOTES.md`** | Legacy demo mapping (not current persistence) |
 
-**Portal productor:** `PROJECT_CONTEXT.md`, `BACKEND_CONTEXT.md`, `FRONTEND_CONTEXT.md`, `CONTEXT_PENDIENTES.md` § K.
+**Portal productor:** `PROJECT_CONTEXT.md`, `BACKEND_CONTEXT.md`, `FRONTEND_CONTEXT.md`, `CONTEXT_PENDIENTES.md` § K (slices 1–10 cerrados en checklist V2; slug auto en perfil; notificaciones `EVENT_*_BY_ADMIN`).
+
+**Checklist producción portal productor:** `docs/dev/Yo_Te_Invito_Checklist_V2_Produccion.md` § Portal productor — sincronizado con § K de este archivo.
 
 **Reviews V2:** `docs/reviews/REVIEWS_V2.md` — smoke `smoke:reviews`.
 
-**Portal usuario (`/me/*`):** `docs/user/USER_PORTAL.md` (incl. **Push notifications** V2.1.3–V2.1.4).
+**Portal usuario (`/me/*`):** `docs/user/USER_PORTAL.md` (incl. **Push notifications** V2.1.3–V2.1.4, **ticket comprador** V2.2).
+
+**Checklist producción (V2 → prod):** `docs/dev/Yo_Te_Invito_Checklist_V2_Produccion.md` — marcar ítems al cerrar slices; alinear con `CONTEXT_PENDIENTES.md`.
 
 **Guías developer (leer primero para scripts/QA):**
 
@@ -88,7 +92,7 @@ Controllers: HTTP + Zod only. Services: business logic. Prisma: persistence only
 
 ```
 docs/context/     ← start here
-docs/dev/         ← SCRIPTS.md (npm commands)
+docs/dev/         ← SCRIPTS.md, Yo_Te_Invito_Checklist_V2_Produccion.md
 docs/guides/      ← README, DEVELOPER_SCRIPTS_GUIDE, SMOKE_TESTS_GUIDE
 docs/legacy/guides/  ← histórico (slices, planes viejos)
 apps/api/src/     ← NestJS modules
@@ -133,7 +137,8 @@ pnpm run -w dev    # API :3001 + web :3000
 ### Cuenta de trabajo
 
 - Principal: `felipe.e.salom@gmail.com` (registro o existente en BD).
-- Restaurar portales tras cleanup: `pnpm --filter api run user:restore-master`.
+- Restaurar **ADMIN** + portales tras cleanup: `pnpm --filter api run user:restore-master` → luego **cerrar sesión y volver a entrar** (JWT trae `role`).
+- Panel admin: `/admin` (solo `Role.ADMIN`); también `/profiles` → tarjeta Administración o menú navbar.
 
 ### Limpiar contenido del tenant (no borra Felipe)
 
@@ -212,8 +217,10 @@ Al agregar scripts nuevos: documentar en `DEVELOPER_SCRIPTS_GUIDE.md` y `SCRIPTS
 - **Hub:** `/me` (dashboard con alertas + CTA push), `/me/cart` (**Mi Carro**), `/me/tickets`, `/me/preferences`, `/me/activity`, `/me/account`, `/me/notifications`, `/me/producer-follows`, `/me/recommendations` (redirect `/me/recommendations` → `/me`).
 - **V2.1.2 UX:** Inicio con alertas/recomendados; productoras en preferencias; ciudad/categorías favoritas en `User.preferences` JSON.
 - **V2.1.3–V2.1.4 notificaciones:** bandeja in-app + **PUSH**; publicación evento → seguidores + matching intereses (`EventPublicationAlertsService`, kinds `FOLLOWED_PRODUCER_NEW_EVENT`, `FAVORITE_INTEREST_NEW_CONTENT`); throttling `SMART_ALERTS_MAX_PER_USER_HOUR`.
+- **V2.2 ticketera comprador:** render desde `TicketTemplate` o `DefaultBuyerTicket`; QR `yti:v1:` (mín. 200px, ECC M); impresión `@media print`; estados en pantalla e impresión; smoke valida payload + `TRANSFER_PENDING` rechazado en scanner.
+- **Gastro follows:** `GET/POST/DELETE/PATCH /me/gastro-follows*`; UI `MePreferencesGastro`, `GastroFollowButton` en ficha restaurante.
 - **Datos:** API `MePortalController` + `UserNotificationsService`, `WebPushService`, `EventPublicationAlertsService`; SW `push-sw.js`; UI push en `/me/notifications`.
-- **Frontend:** `repositories/mePortal` + hooks `lib/query/me-portal.ts`; `lib/push/registerPush.ts`; layout `UserPortalLayout`.
+- **Frontend:** `repositories/mePortal` + hooks `lib/query/me-portal.ts`; `lib/push/registerPush.ts`; `components/tickets/*`, `lib/tickets/*`; layout `UserPortalLayout`.
 - **Redirects:** `/cuenta/*` → rutas `/me/*` (temporal; no duplicar lógica en páginas `/cuenta`).
 - **Checkout:** usuario autenticado usa carrito API (`POST /me/cart/checkout`); invitado mantiene flujo público.
 - **Transferencia:** solo personal (`TicketTransferOffer`); marketplace `/reventa` y módulo API `resale` **eliminados**.

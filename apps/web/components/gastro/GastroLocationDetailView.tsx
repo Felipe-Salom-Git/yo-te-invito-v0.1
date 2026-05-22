@@ -7,6 +7,7 @@ import { useRepositories } from '@/repositories/context';
 import { publicGastroKeys, reviewsKeys } from '@/lib/query/keys';
 import { usePublicEntityReviews } from '@/lib/query/reviews';
 import { eventsKeys } from '@/lib/query/events';
+import { useRecordPublicEventView } from '@/lib/query/public-engagement';
 import { getCategoryLabel, getRelatedSectionTitle } from '@/lib/home/contentRoutes';
 import { buildGastroGalleryImages, buildGastroWhatsAppHref } from '@/lib/gastro/gallery';
 import { GastroLocationHero } from './GastroLocationHero';
@@ -60,6 +61,7 @@ export function GastroLocationDetailView({
 
   const resolvedLocationId = location?.id;
   const reviewEventId = location?.publicEventId ?? eventId;
+  useRecordPublicEventView(reviewEventId ?? undefined, tenantId, !!reviewEventId && !!location);
 
   const { data: discountsData } = useQuery({
     queryKey: publicGastroKeys.discounts(resolvedLocationId ?? '', tenantId),

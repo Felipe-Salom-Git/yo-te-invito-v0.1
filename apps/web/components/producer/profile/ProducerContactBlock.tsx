@@ -2,12 +2,15 @@
 
 import Link from 'next/link';
 import type { ProducerDetail } from '@/repositories/interfaces';
+import { getProducerProfileCompleteness } from '@/lib/producer/producer-profile-completeness';
 import { ProducerProfileBlockCard } from './ProducerProfileBlockCard';
 import { hasAnyContactPreview } from './utils';
 
 type Props = { profile: ProducerDetail };
 
 export function ProducerContactBlock({ profile }: Props) {
+  const { blocks } = getProducerProfileCompleteness(profile);
+  const block = blocks.contact;
   const lines: string[] = [];
   if (profile.primaryPhone?.trim()) lines.push(`Tel: ${profile.primaryPhone}`);
   if (profile.whatsapp?.trim()) lines.push(`WhatsApp: ${profile.whatsapp}`);
@@ -20,13 +23,14 @@ export function ProducerContactBlock({ profile }: Props) {
     <ProducerProfileBlockCard
       icon={<span aria-hidden>✉</span>}
       title="Contacto"
-      description="Agregá los medios por los que los usuarios pueden comunicarse con tu productora."
+      status={block.complete ? 'complete' : 'incomplete'}
+      description="Teléfono, WhatsApp, email y redes visibles en la ficha pública."
       footer={
         <Link
-          href="/producer/profile/contact"
-          className="inline-flex items-center justify-center rounded border border-border bg-transparent px-3 py-1.5 text-sm font-medium text-text transition-colors hover:border-accent hover:text-accent"
+          href={block.editHref}
+          className="inline-flex w-full items-center justify-center rounded border border-border bg-transparent px-3 py-2 text-sm font-medium text-text transition-colors hover:border-accent hover:text-accent sm:w-auto"
         >
-          Editar contacto
+          {block.complete ? 'Editar contacto' : 'Completar contacto'}
         </Link>
       }
     >

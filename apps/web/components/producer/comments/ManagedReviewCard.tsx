@@ -1,9 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import type {
   ProducerManagedReviewListItem,
   PublicReviewReply,
+  ReviewDisputeReasonType,
   ReviewDisputeStatus,
 } from '@yo-te-invito/shared';
 import type { QueryKey } from '@tanstack/react-query';
@@ -30,6 +32,14 @@ const EVENT_HEADER: Record<ManagedReviewsScope, string> = {
   hotel: 'Alojamiento',
 };
 
+const DISPUTE_REASON_LABELS: Record<ReviewDisputeReasonType, string> = {
+  UNFAIR_RATING: 'Calificación injusta',
+  OFFENSIVE: 'Comentario ofensivo',
+  FALSE_INFORMATION: 'Información falsa',
+  WRONG_EVENT: 'No corresponde al evento',
+  OTHER: 'Otro',
+};
+
 type Props = {
   review: ProducerManagedReviewListItem;
   scope: ManagedReviewsScope;
@@ -37,6 +47,8 @@ type Props = {
   filtersKey: string;
   replyFn: (reviewId: string, body: { body: string }) => Promise<{ ok: true }>;
   invalidateQueryKey: QueryKey;
+  summaryQueryKey: QueryKey;
+  replyAuthorLabel: string;
 };
 
 export function ManagedReviewCard({
@@ -46,19 +58,24 @@ export function ManagedReviewCard({
   filtersKey,
   replyFn,
   invalidateQueryKey,
+  summaryQueryKey,
+  replyAuthorLabel,
 }: Props) {
   const [disputeModalOpen, setDisputeModalOpen] = useState(false);
   const [replyModalOpen, setReplyModalOpen] = useState(false);
-  const [showDispute, setShowDispute] = useState(false);
+  const [showDisputeDetail, setShowDisputeDetail] = useState(false);
 
   const hasOpenDispute =
     allowDisputes && review.dispute && OPEN.includes(review.dispute.status);
+  const hasReply = Boolean(review.officialReply?.trim());
 
-  const authorType = review.replyAuthorType ?? (scope === 'gastro' ? 'GASTRO_OWNER' : scope === 'hotel' ? 'HOTEL_OWNER' : 'PRODUCER');
+  const authorType =
+    review.replyAuthorType ??
+    (scope === 'gastro' ? 'GASTRO_OWNER' : scope === 'hotel' ? 'HOTEL_OWNER' : 'PRODUCER');
 
-  const publicReply = review.officialReply?.trim()
+  const publicReply = hasReply
     ? {
-        body: review.officialReply,
+        body: review.officialReply!,
         authorType,
         authorDisplayName: REPLY_LABELS[authorType],
         createdAt: review.replyUpdatedAt ?? review.createdAt,
@@ -67,11 +84,20 @@ export function ManagedReviewCard({
     : null;
 
   return (
-    <article className="rounded-xl border border-border bg-bg-muted p-5">
-      <header className="flex flex-wrap items-start justify-between gap-2">
-        <div>
+    <article className="overflow-hidden rounded-xl border border-border bg-bg-muted p-4 sm:p-5">
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
           <p className="text-xs text-text-muted">{EVENT_HEADER[scope]}</p>
-          <p className="font-medium text-text">{review.eventTitle}</p>
+          {scope === 'producer' ? (
+            <Link
+              href={`/producer/events/${review.eventId}`}
+              className="font-medium text-text hover:text-accent"
+            >
+              {review.eventTitle}
+            </Link>
+          ) : (
+            <p className="font-medium text-text">{review.eventTitle}</p>
+          )}
         </div>
         <div className="flex flex-wrap gap-2">
           <ReviewPublicStatusBadge status={review.status} />
@@ -82,10 +108,17 @@ export function ManagedReviewCard({
       </header>
 
       <p className="mt-3 text-sm text-text-muted">
-        <span className="text-text">{review.userDisplayName}</span>
+        <span className="font-medium text-text">{review.userDisplayName}</span>
         {' · '}
-        {new Date(review.createdAt).toLocaleDateString('es-AR')}
+        {new Date(review.createdAt).toLocaleString('es-AR', {
+          dateStyle: 'medium',
+          timeStyle: 'short',
+        })}
       </p>
+
+      {review.title?.trim() ? (
+        <p className="mt-2 text-sm font-medium text-text">{review.title}</p>
+      ) : null}
 
       <p className="mt-2 text-sm">
         Puntaje general:{' '}
@@ -96,7 +129,7 @@ export function ManagedReviewCard({
       </p>
 
       {review.aspectRatings && Object.keys(review.aspectRatings).length > 0 ? (
-        <div className="mt-3">
+        <div className="mt-3 overflow-x-auto">
           <ReviewAspectBreakdown
             category={review.eventCategory}
             aspectAverages={review.aspectRatings}
@@ -106,14 +139,18 @@ export function ManagedReviewCard({
       ) : null}
 
       {review.comment ? (
-        <p className="mt-3 text-sm text-text-muted leading-relaxed">
-          <span className="font-medium text-text">Comentario:</span>
-          <br />
-          &ldquo;{review.comment}&rdquo;
-        </p>
-      ) : null}
+        <blockquote className="mt-3 border-l-2 border-accent/40 pl-3 text-sm leading-relaxed text-text-muted">
+          {review.comment}
+        </blockquote>
+      ) : (
+        <p className="mt-3 text-sm italic text-text-muted">Sin comentario escrito</p>
+      )}
 
-      {publicReply ? <ReviewReply reply={publicReply} /> : null}
+      {publicReply ? (
+        <div className="mt-4">
+          <ReviewReply reply={publicReply} />
+        </div>
+      ) : null}
 
       {review.dispute?.adminNote ? (
         <p className="mt-3 rounded-lg border border-border/60 bg-bg px-3 py-2 text-xs text-text-muted">
@@ -122,43 +159,64 @@ export function ManagedReviewCard({
         </p>
       ) : null}
 
-      <footer className="mt-4 flex flex-wrap gap-2">
+      {showDisputeDetail && review.dispute ? (
+        <div className="mt-3 rounded-lg border border-border/80 bg-bg px-3 py-3 text-xs text-text-muted">
+          <p>
+            <span className="font-medium text-text">Solicitud:</span>{' '}
+            {DISPUTE_REASON_LABELS[review.dispute.reasonType]}
+          </p>
+          <p className="mt-1">
+            Estado: <ReviewDisputeStatusBadge status={review.dispute.status} />
+          </p>
+          <p className="mt-1">
+            Enviada:{' '}
+            {new Date(review.dispute.createdAt).toLocaleString('es-AR')}
+          </p>
+        </div>
+      ) : null}
+
+      <footer className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
         <button
           type="button"
           onClick={() => setReplyModalOpen(true)}
-          className="rounded-full border border-border px-4 py-2 text-sm text-text hover:border-accent"
+          className="w-full rounded-full border border-border px-4 py-2 text-sm text-text hover:border-accent sm:w-auto"
         >
-          {review.officialReply ? 'Editar respuesta' : 'Responder'}
+          {hasReply ? 'Editar respuesta' : 'Responder'}
         </button>
         {allowDisputes && !hasOpenDispute ? (
           <button
             type="button"
             onClick={() => setDisputeModalOpen(true)}
-            className="rounded-full border border-accent-muted bg-accent-surface/70 px-4 py-2 text-sm font-medium text-accent-soft hover:bg-accent-surface"
+            className="w-full rounded-full border border-accent-muted bg-accent-surface/70 px-4 py-2 text-sm font-medium text-accent-soft hover:bg-accent-surface sm:w-auto"
           >
             Solicitar revisión
           </button>
         ) : null}
         {allowDisputes && hasOpenDispute ? (
-          <span className="self-center text-xs text-text-muted">Solicitud de revisión abierta</span>
+          <p className="text-xs text-amber-200/90 sm:self-center">
+            Ya hay una solicitud abierta — no podés crear otra hasta que administración la resuelva.
+          </p>
         ) : null}
         {allowDisputes && review.dispute ? (
           <button
             type="button"
-            onClick={() => setShowDispute((v) => !v)}
-            className="rounded-full border border-border px-4 py-2 text-sm text-text hover:border-accent"
+            onClick={() => setShowDisputeDetail((v) => !v)}
+            className="w-full rounded-full border border-border px-4 py-2 text-sm text-text hover:border-accent sm:w-auto"
           >
-            {showDispute ? 'Ocultar solicitud' : 'Ver solicitud'}
+            {showDisputeDetail ? 'Ocultar solicitud' : 'Ver solicitud'}
           </button>
         ) : null}
+        {scope === 'producer' ? (
+          <Link
+            href={`/events/${review.eventId}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full text-center text-xs text-accent hover:underline sm:ml-auto sm:w-auto sm:self-center"
+          >
+            Ver en ficha pública
+          </Link>
+        ) : null}
       </footer>
-
-      {showDispute && review.dispute ? (
-        <p className="mt-3 text-xs text-text-muted">
-          ID solicitud: {review.dispute.id} ·{' '}
-          {new Date(review.dispute.createdAt).toLocaleString('es-AR')}
-        </p>
-      ) : null}
 
       {allowDisputes ? (
         <ReviewDisputeModal
@@ -175,6 +233,8 @@ export function ManagedReviewCard({
         existingReply={review.officialReply}
         replyFn={replyFn}
         invalidateQueryKey={invalidateQueryKey}
+        summaryQueryKey={summaryQueryKey}
+        authorLabel={replyAuthorLabel}
       />
     </article>
   );

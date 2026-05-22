@@ -17,6 +17,7 @@ export class EventMetricsService {
   ): Promise<ProducerEventMetricsResponse> {
     const event = await this.prisma.event.findFirst({
       where: { id: eventId, tenantId, deletedAt: null },
+      select: { id: true, viewCount: true },
     });
 
     if (!event) {
@@ -26,8 +27,15 @@ export class EventMetricsService {
       });
     }
 
-    const [ticketsSold, courtesyCount, revenueResult, scanCount, assignments] =
-      await Promise.all([
+    const [
+      ticketsSold,
+      courtesyCount,
+      revenueResult,
+      scanCount,
+      assignments,
+      favoriteCount,
+      expectedCount,
+    ] = await Promise.all([
         this.prisma.ticket.count({
           where: {
             eventId,
@@ -54,6 +62,12 @@ export class EventMetricsService {
             referrerProfile: { select: { id: true, displayName: true } },
           },
         }),
+        this.prisma.userFavorite.count({
+          where: { tenantId, entityId: eventId },
+        }),
+        this.prisma.userExpectedEvent.count({
+          where: { tenantId, eventId },
+        }),
       ]);
 
     const revenueRaw = revenueResult._sum.totalAmount;
@@ -71,6 +85,9 @@ export class EventMetricsService {
       revenue,
       currency,
       scanCount,
+      viewCount: event.viewCount,
+      favoriteCount,
+      expectedCount,
       referralPerformance,
     };
   }

@@ -24,18 +24,23 @@
 - [x] Smoke: `qrPayload` `yti:v1:` + scanner rechaza `TRANSFER_PENDING` (`smoke:user-portal`).
 - [x] Estados visuales en ticket (overlay + banner en impresión).
 - [ ] Validación final en staging con dispositivo físico (papel + lector en acceso).
-- [ ] Probar scan completo VALID→USED en entorno dedicado (`pnpm --filter api run test:door-scan` — consume el ticket).
+- [X] Probar scan completo VALID→USED en entorno dedicado (`pnpm --filter api run test:door-scan` — consume el ticket).
 
 ## Portal productor
 
-- [ ] Pulir dashboard productor.
-- [ ] Mejorar gestión de eventos por estado.
-- [ ] Pulir creación/edición de eventos.
-- [ ] Pulir ticket types / tandas.
-- [ ] Pulir cortesías.
-- [ ] Pulir referidos del productor.
-- [ ] Pulir perfil productor por bloques.
-- [ ] Pulir comentarios, réplicas y disputas.
+- [x] Pulir dashboard productor.
+- [x] Agregar métricas de interacción por evento: vistas, favoritos y esperados.
+- [x] Agregar métricas acumuladas de productora: vistas de eventos, favoritos/esperados de eventos, vistas de perfil y seguidores de productora.
+- [x] Mejorar gestión de eventos por estado.
+- [x] Pulir creación/edición de eventos.
+- [x] Pulir ticket types / tandas.
+- [x] Pulir cortesías.
+- [x] Pulir referidos del productor.
+- [x] Pulir perfil productor por bloques.
+- [x] Pulir comentarios, réplicas y disputas.
+- [x] Notificaciones in-app/email/push para evento aprobado por admin.
+- [x] Notificaciones in-app/email/push para evento rechazado por admin.
+- [x] Alertas de estado de evento visibles en dashboard productor.
 
 ## Descubrimiento público
 

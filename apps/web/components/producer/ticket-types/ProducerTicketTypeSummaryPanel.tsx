@@ -24,7 +24,10 @@ function toPreviewRows(batches: TicketBatchResponse[]): BatchPreviewInput[] {
 }
 
 /** Draft rows from the form → same shape as API for preview (0 sold). */
-function draftBatchesToPreviewInputs(drafts: BatchRowModel[]): BatchPreviewInput[] | null {
+function draftBatchesToPreviewInputs(
+  drafts: BatchRowModel[],
+  now = new Date(),
+): BatchPreviewInput[] | null {
   const sorted = renumberBatches(drafts);
   const out: BatchPreviewInput[] = [];
   for (let i = 0; i < sorted.length; i++) {
@@ -35,9 +38,15 @@ function draftBatchesToPreviewInputs(drafts: BatchRowModel[]): BatchPreviewInput
     const sd = new Date(s);
     const ed = new Date(e);
     if (Number.isNaN(sd.getTime()) || Number.isNaN(ed.getTime())) return null;
+    const status =
+      now.getTime() < sd.getTime()
+        ? 'SCHEDULED'
+        : now.getTime() > ed.getTime()
+          ? 'CLOSED'
+          : 'ACTIVE';
     out.push({
       orderIndex: i,
-      status: 'OPEN',
+      status,
       startAt: sd.toISOString(),
       endAt: ed.toISOString(),
       effectiveQuantity: Math.max(0, b.baseQuantity),

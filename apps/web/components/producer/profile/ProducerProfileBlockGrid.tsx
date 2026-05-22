@@ -8,7 +8,7 @@ import { ProducerPublicProfileBlock } from './ProducerPublicProfileBlock';
 
 export function ProducerProfileBlockGrid({ profile }: { profile: ProducerDetail }) {
   return (
-    <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2">
+    <div className="grid gap-4 sm:grid-cols-2">
       <ProducerIdentityBlock profile={profile} />
       <ProducerImagesBlock profile={profile} />
       <ProducerContactBlock profile={profile} />

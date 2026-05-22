@@ -46,6 +46,7 @@ import type {
   ReferrerProducerRelationshipRow,
   ReferralCommission,
   CourtesyGrantSummary,
+  CourtesyCreateResult,
   TicketTypeResponse,
   TicketTypesRepo,
   TicketTypeCreateInput,
@@ -319,6 +320,14 @@ export class ApiRepository implements Repositories {
         tenantId: t,
       });
       return raw;
+    },
+    recordPublicView: async (eventId: string, tenantId: string) => {
+      const t = tenantId ?? this.defaultTenantId;
+      return this.client.post<{ recorded: boolean }>(
+        `/public/events/${encodeURIComponent(eventId)}/view`,
+        undefined,
+        { tenantId: t },
+      );
     },
     listPublicDiscounts: async (eventId: string, tenantId: string) => {
       const t = tenantId ?? this.defaultTenantId;
@@ -1128,13 +1137,16 @@ export class ApiRepository implements Repositories {
       );
       return { grants: raw.grants ?? [] };
     },
-    create: async (eventId: string, body: { mode: string; ticketTypeId?: string; quantity: number; note?: string }) => {
-      return this.client.post<{ issued: number }>(`/events/${encodeURIComponent(eventId)}/courtesies`, {
-        mode: body.mode,
-        ticketTypeId: body.ticketTypeId ?? null,
-        quantity: body.quantity,
-        note: body.note ?? null,
-      });
+    create: async (eventId, body) => {
+      return this.client.post<CourtesyCreateResult>(
+        `/events/${encodeURIComponent(eventId)}/courtesies`,
+        {
+          mode: body.mode,
+          ticketTypeId: body.ticketTypeId ?? null,
+          quantity: body.quantity,
+          note: body.note ?? null,
+        },
+      );
     },
     fetchTicketTypes: async (eventId: string) => {
       const raw = await this.client.get<Array<TicketTypeResponse & { price?: string | number }>>(
@@ -1160,9 +1172,25 @@ export class ApiRepository implements Repositories {
     },
   };
 
+  producerDashboard: import('./interfaces').ProducerDashboardRepo = {
+    getMetrics: async () => {
+      return this.client.get<import('./interfaces').ProducerDashboardMetrics>(
+        '/producer/dashboard/metrics',
+      );
+    },
+  };
+
   producers: ProducersRepo = {
     get: async (id: string) => {
       return this.client.get<ProducerDetail | null>('/public/producers/' + encodeURIComponent(id));
+    },
+    recordPublicView: async (idOrSlug: string, tenantId: string) => {
+      const t = tenantId ?? this.defaultTenantId;
+      return this.client.post<{ recorded: boolean }>(
+        `/public/producers/${encodeURIComponent(idOrSlug)}/view`,
+        undefined,
+        { tenantId: t },
+      );
     },
     list: async (query) => {
       return this.client.get<{ producers: ProducerSummary[]; total: number }>('/public/producers', query);

@@ -76,6 +76,27 @@ export const PAYMENT_STATUS_LABELS: Record<string, string> = {
   EXPIRED: 'Pago expirado',
 };
 
+// ─── Event status (producer portal) ───────────────────────────────────────
+
+export const EVENT_STATUS_LABELS: Record<string, string> = {
+  DRAFT: 'Borrador',
+  PENDING: 'Pendiente',
+  APPROVED: 'Publicado',
+  PAUSED: 'Pausado',
+  CANCELLED: 'Cancelado',
+};
+
+export const EVENT_STATUS_BADGE_VARIANT: Record<
+  string,
+  'default' | 'accent' | 'muted'
+> = {
+  APPROVED: 'accent',
+  PENDING: 'default',
+  DRAFT: 'muted',
+  PAUSED: 'muted',
+  CANCELLED: 'muted',
+};
+
 // ─── Scan result ──────────────────────────────────────────────────────────
 
 export type ScanResult = 'OK' | 'ALREADY_USED' | 'REVOKED' | 'INVALID';

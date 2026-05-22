@@ -7,6 +7,7 @@ import {
 import { EventStatus, Prisma, AuditAction } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EventPublicationAlertsService } from '../notifications/event-publication-alerts.service';
+import { ProducerEventStatusNotificationsService } from '../notifications/producer-event-status-notifications.service';
 import { ErrorCode } from '@yo-te-invito/shared';
 import type { EventsPaginatedResponse, EventSummary } from '@yo-te-invito/shared';
 
@@ -20,6 +21,7 @@ export class AdminEventsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly publicationAlerts: EventPublicationAlertsService,
+    private readonly producerEventNotifications: ProducerEventStatusNotificationsService,
   ) {}
 
   async list(
@@ -125,6 +127,13 @@ export class AdminEventsService {
 
     this.publicationAlerts.handleEventBecameApproved(tenantId, eventId, previousStatus);
 
+    this.producerEventNotifications.notifyApproved(tenantId, {
+      id: event.id,
+      title: event.title,
+      producerProfileId: event.producerProfileId,
+      producerId: event.producerId,
+    });
+
     return { id: eventId, status: 'approved' };
   }
 
@@ -220,7 +229,8 @@ export class AdminEventsService {
     reason: string,
   ): Promise<{ id: string; status: string }> {
     const event = await this.assertEvent(tenantId, eventId);
-    const before = { status: event.status };
+    const previousStatus = event.status;
+    const before = { status: previousStatus };
     const after = { status, reason };
 
     await this.prisma.$transaction(async (tx) => {
@@ -238,6 +248,22 @@ export class AdminEventsService {
         },
       });
     });
+
+    if (
+      action === AuditAction.EVENT_REJECTED &&
+      previousStatus !== status
+    ) {
+      this.producerEventNotifications.notifyRejected(
+        tenantId,
+        {
+          id: event.id,
+          title: event.title,
+          producerProfileId: event.producerProfileId,
+          producerId: event.producerId,
+        },
+        reason,
+      );
+    }
 
     return { id: eventId, status: status.toLowerCase() };
   }
