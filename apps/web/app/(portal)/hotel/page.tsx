@@ -6,11 +6,9 @@ import { useRepositories } from '@/repositories/context';
 import { PageContainer, SectionTitle, QueryError } from '@/components';
 import { getErrorMessage } from '@/lib/errors';
 import { HotelProfilePreview } from '@/components/hotel/HotelProfilePreview';
+import { HotelOnboardingChecklist } from '@/components/onboarding/HotelOnboardingChecklist';
 import { HOTELS_PORTAL_V2_NOTE } from '@/lib/hotel/hotelsComingSoonCopy';
-import {
-  getHotelProfileCompleteness,
-  hotelProfileStatusLabel,
-} from '@/lib/hotel/hotel-profile-completeness';
+import { hotelProfileStatusLabel } from '@/lib/hotel/hotel-profile-completeness';
 import { hotelKeys } from '@/lib/query/keys';
 
 export default function HotelPortalPage() {
@@ -60,8 +58,6 @@ export default function HotelPortalPage() {
     );
   }
 
-  const completeness = getHotelProfileCompleteness(profile);
-
   return (
     <PageContainer>
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
@@ -73,40 +69,7 @@ export default function HotelPortalPage() {
           </p>
           <p className="mt-4 max-w-2xl text-sm text-text-muted">{HOTELS_PORTAL_V2_NOTE}</p>
 
-          <div className="mt-6 rounded-xl border border-border bg-bg-muted/40 p-5">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className="text-sm font-semibold text-text">Completitud de la ficha</h2>
-              <span className="text-sm font-medium text-accent">{completeness.percent}%</span>
-            </div>
-            <div className="mt-3 h-2 overflow-hidden rounded-full bg-bg">
-              <div
-                className="h-full rounded-full bg-accent transition-all"
-                style={{ width: `${completeness.percent}%` }}
-              />
-            </div>
-            <ul className="mt-4 space-y-2 text-sm">
-              {completeness.items.map((item) => (
-                <li key={item.id} className="flex items-center justify-between gap-2">
-                  <span className={item.done ? 'text-text-muted line-through' : 'text-text'}>
-                    {item.label}
-                  </span>
-                  {!item.done ? (
-                    <Link href={item.editHref} className="shrink-0 text-accent hover:underline">
-                      Completar
-                    </Link>
-                  ) : (
-                    <span className="text-xs text-emerald-400/90">Listo</span>
-                  )}
-                </li>
-              ))}
-            </ul>
-            <Link
-              href="/hotel/editar"
-              className="mt-5 inline-flex items-center justify-center rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-bg hover:bg-accent-hover"
-            >
-              Editar ficha
-            </Link>
-          </div>
+          <HotelOnboardingChecklist profile={profile} className="mt-6" />
 
           <p className="mt-6 text-sm text-text-muted">
             Valoraciones de huéspedes en{' '}

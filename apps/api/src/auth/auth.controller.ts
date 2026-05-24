@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, Req } from '@nestjs/common';
 import {
   authLoginRequestSchema,
   authRegisterRequestSchema,
@@ -26,8 +26,12 @@ export class AuthController {
   @Post('register')
   async register(
     @Body(new ZodValidationPipe(authRegisterRequestSchema)) body: AuthRegisterRequest,
+    @Req() req: { headers: Record<string, string | string[] | undefined>; ip?: string },
   ) {
-    return this.authService.register(body);
+    return this.authService.register(body, {
+      ipAddress: req.ip ?? null,
+      userAgent: (req.headers['user-agent'] as string) ?? null,
+    });
   }
 
   @Post('apply-role')

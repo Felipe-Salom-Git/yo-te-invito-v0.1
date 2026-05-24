@@ -29,6 +29,7 @@ import { RentalLocalCard } from './RentalLocalCard';
 import { buildRentalWhatsAppHref } from '@/lib/rentals/whatsapp';
 import { RentalContactCard } from './RentalContactCard';
 import { RentalMobileStickyCta } from './RentalMobileStickyCta';
+import { RentalProviderContactCta } from './RentalProviderContactCta';
 import { RENTAL_DETAIL_SECTION_TITLE } from '@/lib/rentals/rentalDetailUi';
 import type { RentalOpeningHours } from '@yo-te-invito/shared';
 
@@ -269,6 +270,10 @@ export function RentalProductDetailContent({
             tenantId={tenantId}
             title={getRelatedSectionTitle('rental')}
           />
+        </div>
+
+        <div className="mt-8 sm:mt-10">
+          <RentalProviderContactCta variant="light" />
         </div>
       </div>
 

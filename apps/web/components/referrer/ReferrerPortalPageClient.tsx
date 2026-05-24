@@ -11,6 +11,7 @@ import { ReferrerActiveLinks } from '@/components/referrer/ReferrerActiveLinks';
 import { ReferrerCommissionSummary } from '@/components/referrer/ReferrerCommissionSummary';
 import { ReferrerPaymentRequestPanel } from '@/components/referrer/ReferrerPaymentRequestPanel';
 import { ReferrerReferralMetricsPanel } from '@/components/referrer/ReferrerReferralMetricsPanel';
+import { ReferrerOnboardingChecklist } from '@/components/onboarding/ReferrerOnboardingChecklist';
 import { ReferrerLegalDisclaimer } from '@/components/referrer/ReferrerLegalDisclaimer';
 import { formatMoneyCents } from '@/lib/producer/referral-display';
 import { getErrorMessage } from '@/lib/errors';
@@ -386,6 +387,8 @@ export function ReferrerPortalPageClient() {
         </div>
 
         <ReferrerLegalDisclaimer className="mb-6" />
+
+        {dash ? <ReferrerOnboardingChecklist dashboard={dash} className="mb-6" /> : null}
 
         <Tabs
           defaultValue="metrics"

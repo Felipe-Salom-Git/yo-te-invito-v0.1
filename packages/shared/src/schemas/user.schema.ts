@@ -129,27 +129,50 @@ export const authLoginResponseSchema = z.object({
 });
 export type AuthLoginResponse = z.infer<typeof authLoginResponseSchema>;
 
-/** Profile type chosen during public registration (not ADMIN / SCANNER). */
-export const registrationProfileTypeSchema = z.enum([
-  'USER',
-  'PRODUCER',
-  'GASTRO',
-  'HOTEL',
-  'REFERRER',
-]);
-export type RegistrationProfileType = z.infer<typeof registrationProfileTypeSchema>;
+export {
+  registrationProfileTypeSchema,
+  type RegistrationProfileType,
+  validateAuthRegisterProfilePayload,
+} from './profile-onboarding';
+
+import { signupLegalAcceptanceSchema } from './me-legal';
+import {
+  registrationProfileTypeSchema,
+  validateAuthRegisterProfilePayload,
+} from './profile-onboarding';
 
 /** Request body for POST /auth/register */
-export const authRegisterRequestSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
-  firstName: z.string().min(1, 'Nombre requerido'),
-  lastName: z.string().min(1, 'Apellido requerido'),
-  city: z.string().max(120).optional(),
-  tenantId: z.string().optional(),
-  profileType: registrationProfileTypeSchema.optional().default('USER'),
-  profileData: z.unknown().optional(),
-});
+export const authRegisterRequestSchema = z
+  .object({
+    email: z.string().email(),
+    password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
+    firstName: z.string().min(1, 'Nombre requerido'),
+    lastName: z.string().min(1, 'Apellido requerido'),
+    city: z.string().max(120).optional(),
+    tenantId: z.string().optional(),
+    profileType: registrationProfileTypeSchema.optional().default('USER'),
+    profileData: z.unknown().optional(),
+    /** When present, SIGNUP acceptances are persisted in the same transaction as user creation. */
+    signupLegalAcceptance: signupLegalAcceptanceSchema.optional(),
+  })
+  .superRefine((data, ctx) => {
+    const result = validateAuthRegisterProfilePayload(data.profileType, data.profileData);
+    if (!result.success) {
+      for (const issue of result.error.issues) {
+        ctx.addIssue({
+          ...issue,
+          path: ['profileData', ...issue.path],
+        });
+      }
+    }
+    if (data.profileType !== 'USER' && data.profileData == null) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'profileData es requerido para el tipo de perfil seleccionado',
+        path: ['profileData'],
+      });
+    }
+  });
 export type AuthRegisterRequest = z.infer<typeof authRegisterRequestSchema>;
 
 /** Response for POST /auth/register (same shape as login) */
@@ -228,78 +251,17 @@ export const authGoogleRequestSchema = z.object({
 });
 export type AuthGoogleRequest = z.infer<typeof authGoogleRequestSchema>;
 
-/** Request body for POST /profiles/producer/apply */
-export const profileProducerApplySchema = z.object({
-  displayName: z.string().min(1, 'displayName requerido'),
-  legalName: z.string().optional(),
-  slug: z.string().optional(),
-  shortDescription: z.string().optional(),
-  description: z.string().optional(), // kept for legacy
-  longDescription: z.string().optional(),
-  primaryPhone: z.string().optional(),
-  primaryEmail: z.string().email().optional(),
-  city: z.string().optional(),
-  country: z.string().optional(),
-});
-export type ProfileProducerApplyInput = z.infer<typeof profileProducerApplySchema>;
-
-/** Request body for POST /profiles/gastro/apply */
-export const profileGastroApplySchema = z.object({
-  displayName: z.string().min(1, 'displayName requerido'),
-  legalName: z.string().optional(),
-  description: z.string().optional(),
-  address: z.string().optional(),
-  city: z.string().optional(),
-  contactPhone: z.string().optional(),
-});
-export type ProfileGastroApplyInput = z.infer<typeof profileGastroApplySchema>;
-
-/** Request body for POST /profiles/hotel/apply */
-export const profileHotelApplySchema = z.object({
-  displayName: z.string().min(1, 'displayName requerido'),
-  legalName: z.string().optional(),
-  description: z.string().max(5000).optional(),
-  address: z.string().optional(),
-  city: z.string().optional(),
-  starCategory: z.number().int().min(1).max(5).optional(),
-  contactPhone: z.string().optional(),
-  contactEmail: z.union([z.string().email(), z.literal('')]).optional(),
-  websiteUrl: z
-    .string()
-    .min(1, 'Sitio web requerido')
-    .max(2048)
-    .refine((s) => /^https?:\/\//i.test(s.trim()), {
-      message: 'La URL del sitio debe empezar con http:// o https://',
-    }),
-  bookingUrl: z
-    .string()
-    .max(2048)
-    .optional()
-    .refine((s) => !s?.trim() || /^https?:\/\//i.test(s.trim()), {
-      message: 'La URL de reservas debe empezar con http:// o https://',
-    }),
-  socialLinks: z
-    .object({
-      instagram: z.string().max(500).optional(),
-      facebook: z.string().max(500).optional(),
-      tripadvisor: z.string().max(500).optional(),
-      other: z.string().max(500).optional(),
-    })
-    .optional(),
-});
-export type ProfileHotelApplyInput = z.infer<typeof profileHotelApplySchema>;
-
-/** Request body for POST /profiles/referrer/apply */
-export const profileReferrerApplySchema = z.object({
-  displayName: z.string().min(1, 'displayName requerido'),
-  bio: z.string().max(500).optional(),
-  longBio: z.string().max(5000).optional(),
-  avatarUrl: z.string().max(2048).optional(),
-  city: z.string().max(120).optional(),
-  region: z.string().max(120).optional(),
-  publicVisibility: z.boolean().optional(),
-});
-export type ProfileReferrerApplyInput = z.infer<typeof profileReferrerApplySchema>;
+/** @deprecated Use names from `profile-onboarding.ts` — aliases kept for importers */
+export {
+  producerProfileApplySchema as profileProducerApplySchema,
+  gastroProfileApplySchema as profileGastroApplySchema,
+  hotelProfileApplySchema as profileHotelApplySchema,
+  referrerProfileApplySchema as profileReferrerApplySchema,
+  type ProducerProfileApplyInput as ProfileProducerApplyInput,
+  type GastroProfileApplyInput as ProfileGastroApplyInput,
+  type HotelProfileApplyInput as ProfileHotelApplyInput,
+  type ReferrerProfileApplyInput as ProfileReferrerApplyInput,
+} from './profile-onboarding';
 
 /** Request body for POST /auth/apply-role */
 export const authApplyRoleRequestSchema = z.object({

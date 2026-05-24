@@ -61,12 +61,32 @@ export type MeLegalAcceptanceHistoryResponse = z.infer<
   typeof meLegalAcceptanceHistoryResponseSchema
 >;
 
+export const publicLegalMissingDocumentSchema = z.object({
+  documentKey: legalDocumentKeySchema,
+  title: z.string(),
+  reason: z.enum(['NO_PUBLISHED_VERSION']),
+});
+export type PublicLegalMissingDocument = z.infer<typeof publicLegalMissingDocumentSchema>;
+
 /** GET /public/legal/requirements */
 export const publicLegalRequirementsResponseSchema = z.object({
   context: legalAcceptanceContextSchema,
   profileType: registrationProfileTypeSchema.nullable().optional(),
   required: z.array(meLegalRequirementItemSchema),
+  /** Documents flagged required in catalog but without a PUBLISHED version for this flow. */
+  missingRequiredDocuments: z.array(publicLegalMissingDocumentSchema).default([]),
+  /** False when signup/checkout cannot proceed (unpublished required docs). */
+  canProceed: z.boolean(),
+  /** Count of catalog documents required for this context + profile (with or without publish). */
+  catalogRequiredCount: z.number().int().min(0),
 });
 export type PublicLegalRequirementsResponse = z.infer<
   typeof publicLegalRequirementsResponseSchema
 >;
+
+/** Legal acceptance bundled with POST /auth/register (transactional signup). */
+export const signupLegalAcceptanceSchema = z.object({
+  documentVersionIds: z.array(z.string().min(1)).min(1).max(20),
+  context: z.literal('SIGNUP').default('SIGNUP'),
+});
+export type SignupLegalAcceptance = z.infer<typeof signupLegalAcceptanceSchema>;

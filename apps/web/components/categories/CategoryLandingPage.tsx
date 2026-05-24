@@ -13,6 +13,7 @@ import { CategoryLandingEditorial } from './CategoryLandingEditorial';
 import { useCategoryBanner } from '@/lib/query/useCategoryBanner';
 import { toContentMainCategory } from '@/lib/categories/categoryLandingConfig';
 import { RENTAL_CATEGORY_EMPTY_MESSAGE } from '@/lib/rentals/publicCopy';
+import { RentalProviderContactCta } from '@/components/rentals/RentalProviderContactCta';
 import { GastroDiscountsRail } from '@/components/gastro/GastroDiscountsRail';
 import { EventDiscoveryContent } from '@/components/events/discovery/EventDiscoveryContent';
 
@@ -131,6 +132,12 @@ export function CategoryLandingPage({ category, subcategorySlug }: CategoryLandi
           ))
         )}
       </div>
+
+      {category === 'rental' ? (
+        <div className="mt-8 px-4 sm:px-6 md:px-10 lg:px-12">
+          <RentalProviderContactCta variant="dark" />
+        </div>
+      ) : null}
 
       {!filterMode && <CrossCategoryRails selectedCategory={category} onCardClick={handleCardClick} />}
 

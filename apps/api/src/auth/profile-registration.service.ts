@@ -1,18 +1,30 @@
 import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import {
-  profileProducerApplySchema,
-  profileGastroApplySchema,
-  profileHotelApplySchema,
-  profileReferrerApplySchema,
-  gastroLocalCreateSchema,
+  parseProfileSignupData,
+  gastroProfileToPersistInput,
   type RegistrationProfileType,
+  type ProducerProfileSignupInput,
+  type ProducerProfileApplyInput,
+  type GastroProfileSignupInput,
+  type GastroProfileApplyInput,
+  type GastroProfilePersistInput,
+  type HotelProfileSignupInput,
+  type HotelProfileApplyInput,
+  hotelProfileToPersistInput,
+  type HotelProfilePersistInput,
+  type ReferrerProfileSignupInput,
+  type ReferrerProfileApplyInput,
 } from '@yo-te-invito/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { ReferrerProfilesService } from '../modules/referrer/referrer-profiles.service';
 import { ReferrerIdentityService } from '../modules/referrer/referrer-identity.service';
 
 type DbClient = PrismaService | Prisma.TransactionClient;
+
+type ProducerPersistInput = ProducerProfileApplyInput;
+type HotelPersistInput = HotelProfilePersistInput | HotelProfileApplyInput;
+type ReferrerPersistInput = ReferrerProfileSignupInput | ReferrerProfileApplyInput;
 
 @Injectable()
 export class ProfileRegistrationService {
@@ -35,20 +47,24 @@ export class ProfileRegistrationService {
   ): Promise<void> {
     if (profileType === 'USER') return;
 
-    switch (profileType) {
+    const parsed = parseProfileSignupData(profileType, profileData);
+    if (!parsed.success) {
+      throw new BadRequestException({
+        code: 'VALIDATION_FAILED',
+        message: 'Datos de perfil inválidos',
+        details: parsed.error.flatten(),
+      });
+    }
+
+    switch (parsed.profileType) {
       case 'PRODUCER':
-        await this.createProducerActive(
-          tenantId,
-          userId,
-          profileProducerApplySchema.parse(profileData),
-          tx,
-        );
+        await this.createProducerActive(tenantId, userId, parsed.data, tx);
         return;
       case 'GASTRO':
         await this.createGastroActive(
           tenantId,
           userId,
-          gastroLocalCreateSchema.parse(profileData),
+          gastroProfileToPersistInput(parsed.data),
           tx,
         );
         return;
@@ -56,17 +72,12 @@ export class ProfileRegistrationService {
         await this.createHotelActive(
           tenantId,
           userId,
-          profileHotelApplySchema.parse(profileData),
+          hotelProfileToPersistInput(parsed.data),
           tx,
         );
         return;
       case 'REFERRER':
-        await this.createReferrerActive(
-          tenantId,
-          userId,
-          profileReferrerApplySchema.parse(profileData),
-          tx,
-        );
+        await this.createReferrerActive(tenantId, userId, parsed.data, tx);
         return;
       default:
         throw new BadRequestException({
@@ -79,7 +90,7 @@ export class ProfileRegistrationService {
   async createProducerActive(
     tenantId: string,
     userId: string,
-    body: ReturnType<typeof profileProducerApplySchema.parse>,
+    body: ProducerPersistInput,
     tx?: Prisma.TransactionClient,
   ) {
     const db = this.db(tx);
@@ -124,7 +135,7 @@ export class ProfileRegistrationService {
   async createGastroActive(
     tenantId: string,
     userId: string,
-    body: ReturnType<typeof gastroLocalCreateSchema.parse>,
+    body: GastroProfilePersistInput,
     tx?: Prisma.TransactionClient,
   ) {
     const db = this.db(tx);
@@ -146,26 +157,15 @@ export class ProfileRegistrationService {
       data: {
         tenantId,
         displayName: body.displayName,
-        summary: body.summary?.trim() || null,
-        detail: body.detail?.trim() || null,
-        bannerUrl: body.bannerUrl ?? null,
-        galleryUrls: body.galleryUrls?.length
-          ? (body.galleryUrls as Prisma.InputJsonValue)
-          : undefined,
-        province: body.location.province,
-        city: body.location.city,
-        address: body.location.address,
-        geoLat: body.location.lat,
-        geoLng: body.location.lng,
-        openingHours: body.openingHours
-          ? (body.openingHours as Prisma.InputJsonValue)
-          : undefined,
-        openingHoursNote: body.openingHoursNote ?? null,
-        contactPhone: body.contactPhone ?? null,
+        legalName: body.legalName,
+        summary: body.summary,
+        province: body.province,
+        city: body.city,
+        address: body.address,
+        geoLat: body.geoLat,
+        geoLng: body.geoLng,
+        contactPhone: body.contactPhone,
         contactEmail: body.contactEmail,
-        menuUrl: body.menuUrl ?? null,
-        websiteUrl: body.websiteUrl ?? null,
-        subcategoryId: body.subcategoryId ?? null,
         createdByUserId: userId,
         status: 'ACTIVE',
       },
@@ -185,7 +185,7 @@ export class ProfileRegistrationService {
   async createHotelActive(
     tenantId: string,
     userId: string,
-    body: ReturnType<typeof profileHotelApplySchema.parse>,
+    body: HotelPersistInput,
     tx?: Prisma.TransactionClient,
   ) {
     const db = this.db(tx);
@@ -204,7 +204,9 @@ export class ProfileRegistrationService {
     }
 
     const social =
-      body.socialLinks && Object.values(body.socialLinks).some((v) => v && String(v).trim())
+      'socialLinks' in body &&
+      body.socialLinks &&
+      Object.values(body.socialLinks).some((v) => v && String(v).trim())
         ? (body.socialLinks as Prisma.InputJsonValue)
         : undefined;
 
@@ -212,15 +214,15 @@ export class ProfileRegistrationService {
       data: {
         tenantId,
         displayName: body.displayName.trim(),
-        legalName: body.legalName?.trim() || null,
+        legalName: 'legalName' in body ? body.legalName?.trim() || null : null,
         description: body.description?.trim() || null,
         address: body.address?.trim() || null,
         city: body.city?.trim() || null,
-        starCategory: body.starCategory ?? null,
-        contactPhone: body.contactPhone?.trim() || null,
-        contactEmail: body.contactEmail?.trim() || null,
+        starCategory: 'starCategory' in body ? body.starCategory ?? null : null,
+        contactPhone: 'contactPhone' in body ? body.contactPhone?.trim() || null : null,
+        contactEmail: 'contactEmail' in body ? body.contactEmail?.trim() || null : null,
         websiteUrl: body.websiteUrl.trim(),
-        bookingUrl: body.bookingUrl?.trim() || null,
+        bookingUrl: 'bookingUrl' in body ? body.bookingUrl?.trim() || null : null,
         socialLinks: social ?? undefined,
         createdByUserId: userId,
         status: 'ACTIVE',
@@ -241,7 +243,7 @@ export class ProfileRegistrationService {
   async createReferrerActive(
     tenantId: string,
     userId: string,
-    body: ReturnType<typeof profileReferrerApplySchema.parse>,
+    body: ReferrerPersistInput,
     tx?: Prisma.TransactionClient,
   ) {
     const db = this.db(tx);
@@ -267,11 +269,11 @@ export class ProfileRegistrationService {
         slug,
         publicHandle,
         bio: body.bio ?? null,
-        longBio: body.longBio ?? null,
-        avatarUrl: body.avatarUrl ?? null,
+        longBio: 'longBio' in body ? body.longBio ?? null : null,
+        avatarUrl: 'avatarUrl' in body ? body.avatarUrl ?? null : null,
         city: body.city ?? null,
-        region: body.region ?? null,
-        publicVisibility: body.publicVisibility ?? false,
+        region: 'region' in body ? body.region ?? null : null,
+        publicVisibility: 'publicVisibility' in body ? body.publicVisibility ?? false : false,
         associationLinkToken: this.referrerProfiles.newToken(),
         createdByUserId: userId,
         status: 'ACTIVE',
@@ -287,5 +289,97 @@ export class ProfileRegistrationService {
         status: 'ACTIVE',
       },
     });
+  }
+
+  /** Apply flow: same persistence as signup (validated with apply schema in controller). */
+  async createProducerFromApply(
+    tenantId: string,
+    userId: string,
+    body: ProducerProfileApplyInput,
+    tx?: Prisma.TransactionClient,
+  ) {
+    return this.createProducerActive(tenantId, userId, body, tx);
+  }
+
+  async createGastroFromApply(
+    tenantId: string,
+    userId: string,
+    body: GastroProfileApplyInput,
+    tx?: Prisma.TransactionClient,
+  ) {
+    return this.createGastroActive(tenantId, userId, gastroProfileToPersistInput(body), tx);
+  }
+
+  async createHotelFromApply(
+    tenantId: string,
+    userId: string,
+    body: HotelProfileApplyInput,
+    tx?: Prisma.TransactionClient,
+  ) {
+    return this.createHotelActive(tenantId, userId, body, tx);
+  }
+
+  async createReferrerFromApply(
+    tenantId: string,
+    userId: string,
+    body: ReferrerProfileApplyInput,
+    tx?: Prisma.TransactionClient,
+  ) {
+    const db = this.db(tx);
+    const active = await db.userReferrerMembership.findFirst({
+      where: { tenantId, userId, status: 'ACTIVE', profile: { status: 'ACTIVE' } },
+    });
+    if (active) {
+      throw new ConflictException({
+        code: 'CONFLICT',
+        message: 'Ya tenés un perfil de referidor activo',
+      });
+    }
+
+    const pendingMembership = await db.userReferrerMembership.findFirst({
+      where: { tenantId, userId, profile: { status: 'PENDING' } },
+      include: { profile: true },
+    });
+
+    const token = this.referrerProfiles.newToken();
+
+    if (pendingMembership) {
+      const { slug, publicHandle } = await this.referrerIdentity.ensureIdentityForExistingProfile(
+        tenantId,
+        body.displayName,
+        pendingMembership.profile.id,
+        {
+          slug: pendingMembership.profile.slug,
+          publicHandle: pendingMembership.profile.publicHandle,
+        },
+      );
+      const profile = await db.referrerProfile.update({
+        where: { id: pendingMembership.profile.id },
+        data: {
+          displayName: body.displayName,
+          slug,
+          publicHandle,
+          bio: body.bio ?? null,
+          longBio: body.longBio ?? null,
+          avatarUrl: body.avatarUrl ?? null,
+          city: body.city ?? null,
+          region: body.region ?? null,
+          publicVisibility: body.publicVisibility ?? false,
+          status: 'ACTIVE',
+        },
+      });
+      await db.userReferrerMembership.update({
+        where: { id: pendingMembership.id },
+        data: { status: 'ACTIVE' },
+      });
+      return profile;
+    }
+
+    await this.createReferrerActive(tenantId, userId, body, tx);
+    const created = await db.referrerProfile.findFirst({
+      where: { tenantId, createdByUserId: userId },
+      orderBy: { createdAt: 'desc' },
+    });
+    return created!;
   }
 }

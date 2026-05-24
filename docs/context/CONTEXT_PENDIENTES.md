@@ -6,6 +6,15 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 
 ## Perfiles y registro (2026-05)
 
+- [x] Auditar flujo actual de registro con elección de perfil — `docs/audits/REGISTER_ONBOARDING_AUDIT.md` (Slice 1, 2026-05-24)
+- [x] Matriz definitiva de campos por tipo de perfil — `docs/onboarding/PROFILE_FIELDS_MATRIX.md` (Slice 2, 2026-05-24; decisión Rental: no wizard V2)
+- [x] Registro/onboarding Slice 3: schemas register/apply unificados por perfil — `docs/onboarding/REGISTER_SCHEMA_ALIGNMENT.md` (2026-05-24)
+- [x] Registro/onboarding Slice 4: hardening legal signup — `docs/onboarding/LEGAL_SIGNUP_HARDENING.md` (2026-05-24)
+- [x] Registro/onboarding Slice 5: wizard base + comprador — `docs/onboarding/REGISTER_BUYER_WIZARD_BASE.md` (2026-05-24)
+- [x] Registro/onboarding Slice 6: formulario productora — `docs/onboarding/REGISTER_PRODUCER_FORM.md` (2026-05-24)
+- [x] Registro/onboarding Slice 7: formulario gastronómico — `docs/onboarding/REGISTER_GASTRO_FORM.md` (2026-05-24)
+- [x] Registro/onboarding Slice 8: rental sin signup V2 — `docs/onboarding/REGISTER_RENTAL_DECISION.md` (2026-05-24)
+- [x] Registro/onboarding Slice 9: formulario hotel — `docs/onboarding/REGISTER_HOTEL_FORM.md` (2026-05-24)
 - [x] Registro con elección de perfil + formulario específico (`POST /auth/register` con `profileType` / `profileData`)
 - [x] Perfiles comerciales activos al crear (sin cola admin de perfiles)
 - [x] Admin: ocultar «Perfiles pendientes» (`/admin/perfiles` redirige a `/admin`)
@@ -40,7 +49,23 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 
 - [x] Aceptación obligatoria términos generales en registro (`SIGNUP`, docs publicados)
 - [x] Links legales en registro, checkout, footer, portales
-- [ ] Textos de responsabilidad por tipo de usuario (contenido legal, no solo UI)
+- [x] Matriz campos signup vs onboarding por perfil — `docs/onboarding/PROFILE_FIELDS_MATRIX.md`
+- [x] Schemas register/apply alineados (Slice 3) — `docs/onboarding/REGISTER_SCHEMA_ALIGNMENT.md`
+- [x] Hardening legal signup (Slice 4) — `docs/onboarding/LEGAL_SIGNUP_HARDENING.md` (requirements `canProceed`, register transaccional, retry UI)
+- [x] Pulir formulario registro comprador / wizard base (Slice 5) — `docs/onboarding/REGISTER_BUYER_WIZARD_BASE.md`
+- [x] Pulir formulario registro productora (Slice 6) — `docs/onboarding/REGISTER_PRODUCER_FORM.md`
+- [x] Pulir formulario registro gastronómico (Slice 7) — `docs/onboarding/REGISTER_GASTRO_FORM.md`
+- [x] Rental / proveedor equipos: sin wizard V2, admin + CTA público (Slice 8) — `docs/onboarding/REGISTER_RENTAL_DECISION.md`
+- [x] Pulir formulario registro hotel (Slice 9) — `docs/onboarding/REGISTER_HOTEL_FORM.md`
+- [x] Pulir formulario registro referido (Slice 10) — `docs/onboarding/REGISTER_REFERRER_FORM.md`
+- [x] Textos de responsabilidad UX por tipo de usuario centralizados (Slice 11) — `docs/onboarding/PROFILE_RESPONSIBILITY_COPY.md`
+- [x] Estado visual completitud/onboarding post-registro (Slice 12) — `docs/onboarding/PROFILE_COMPLETION_ONBOARDING.md`
+- [x] Mensajes de error y validaciones visibles en registro (Slice 13) — `docs/onboarding/REGISTER_ERROR_VALIDATION_UX.md`
+- [x] UX mobile + accesibilidad registro completo (Slice 14) — `docs/onboarding/REGISTER_ONBOARDING_SMOKE.md`
+- [x] Fixes registro email duplicado + hotel provincia/ciudad (Slice 12.5) — `docs/onboarding/REGISTER_FORM_FIXES_EMAIL_HOTEL_LOCATION.md`
+- [x] Registro gastro: select provincia/ciudad dependiente (Slice 12.6) — `docs/onboarding/REGISTER_GASTRO_LOCATION_SELECT.md`
+- [x] **Bloque registro/onboarding por tipo de usuario (V2) cerrado** — slices 1–14 + 12.5–12.6; smoke: `docs/onboarding/REGISTER_ONBOARDING_SMOKE.md`
+- [ ] Redacción/publicación legal profesional por vertical (contenido en `docs/legal/`, no solo copy UX)
 
 ---
 

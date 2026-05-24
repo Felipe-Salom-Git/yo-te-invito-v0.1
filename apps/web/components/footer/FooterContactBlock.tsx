@@ -14,7 +14,8 @@ export function FooterContactBlock({ contact, compact }: Props) {
 
   return (
     <section
-      className="min-w-0"
+      id="footer-support"
+      className="min-w-0 scroll-mt-24"
       aria-labelledby={compact ? undefined : 'footer-support-heading'}
     >
       {!compact ? (

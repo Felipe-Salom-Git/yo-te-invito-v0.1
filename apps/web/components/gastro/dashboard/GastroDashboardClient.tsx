@@ -11,6 +11,7 @@ import {
   EmptyState,
 } from '@/components';
 import { ProducerKpiCard } from '@/components/producer/dashboard/ProducerKpiCard';
+import { GastroOnboardingChecklist } from '@/components/onboarding/GastroOnboardingChecklist';
 import { ManagedPortalReviewAlerts } from '@/components/reviews/ManagedPortalReviewAlerts';
 import { useGastroDashboard } from '@/lib/query/gastro-dashboard';
 import { getErrorMessage } from '@/lib/errors';
@@ -133,6 +134,8 @@ export function GastroDashboardClient() {
             : ' · Sin contenido publicado'}
         </p>
       </header>
+
+      <GastroOnboardingChecklist />
 
       <section className="mt-8">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-text-muted">Indicadores</h2>

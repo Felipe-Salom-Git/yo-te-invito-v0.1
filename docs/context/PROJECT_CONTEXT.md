@@ -114,6 +114,18 @@ Bloque **Descubrimiento público** cerrado en checklist V2. Detalle: `docs/audit
 
 **Fuera de este bloque:** pagos reales, storage imágenes, drift TS global (`registerPush`, etc.). Rentals V2 (WhatsApp, cards, subcategorías, anti-alojamiento, detalle mobile) cerrado en checklist § Rentals.
 
+## 5a. Registro y onboarding por tipo de usuario — Estado cerrado (2026-05-24)
+
+| Pieza | Estado |
+|-------|--------|
+| Wizard `/register` + legales SIGNUP | Cerrado — slices 1–14 |
+| Schemas unificados signup/apply | Cerrado — `profile-onboarding.ts` |
+| Email duplicado + ubicación hotel | Cerrado — slice 12.5 |
+| Gastro provincia/ciudad (selects) | Cerrado — slice 12.6 |
+| Rental signup | Excluido V2 — admin + CTA público |
+
+Docs: `docs/onboarding/`, `docs/audits/REGISTER_ONBOARDING_AUDIT.md`. Checklist V2 § Registro y onboarding.
+
 ## 5b. Admin operativo — Estado cerrado (2026-05, Slices 1–5)
 
 | Pieza | Estado |

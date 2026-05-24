@@ -36,6 +36,7 @@ import {
   assertPublishableLegalContent,
   getNextLegalVersionLabel,
 } from './legal-content.util';
+import { buildPublicLegalRequirements } from './legal-requirements.util';
 
 const RECENT_VERSIONS_LIMIT = 20;
 
@@ -566,35 +567,6 @@ export class LegalDocumentsService {
     };
   }
 
-  private matchesContextFlag(
-    context: LegalAcceptanceContext,
-    doc: Pick<
-      LegalDocument,
-      'isRequiredForSignup' | 'isRequiredForCheckout' | 'isRequiredForPortalAccess'
-    >,
-  ): boolean {
-    switch (context) {
-      case 'SIGNUP':
-        return doc.isRequiredForSignup;
-      case 'CHECKOUT':
-        return doc.isRequiredForCheckout;
-      case 'PROFILE_ONBOARDING':
-      case 'PORTAL_ACCESS':
-        return doc.isRequiredForPortalAccess;
-      default:
-        return false;
-    }
-  }
-
-  private matchesProfileType(
-    doc: Pick<LegalDocument, 'appliesToProfiles'>,
-    profileType?: string,
-  ): boolean {
-    if (!profileType) return true;
-    if (doc.appliesToProfiles.length === 0) return true;
-    return doc.appliesToProfiles.includes(profileType);
-  }
-
   async getPublicRequirements(
     tenantId: string,
     query: PublicLegalRequirementsQuery,
@@ -609,40 +581,10 @@ export class LegalDocumentsService {
         versions: {
           where: { status: 'PUBLISHED' },
           orderBy: { publishedAt: 'desc' },
-          take: 1,
         },
       },
     });
 
-    const required: MeLegalRequirementItem[] = [];
-
-    for (const doc of documents) {
-      if (!this.matchesContextFlag(query.context, doc)) continue;
-      if (!this.matchesProfileType(doc, query.profileType)) continue;
-
-      const published = doc.versions[0];
-      if (!published) continue;
-
-      const slug = LEGAL_KEY_TO_SLUG[doc.key as LegalDocumentKeyValue];
-      required.push({
-        documentId: doc.id,
-        documentKey: doc.key as LegalDocumentKeyValue,
-        title: published.title,
-        documentVersionId: published.id,
-        version: published.version,
-        publishedAt: (published.publishedAt ?? published.updatedAt).toISOString(),
-        publicSlug: slug ?? null,
-        publicPath: slug ? `/legal/${slug}` : null,
-        context: query.context,
-      });
-    }
-
-    required.sort((a, b) => a.documentKey.localeCompare(b.documentKey));
-
-    return {
-      context: query.context,
-      profileType: query.profileType ?? null,
-      required,
-    };
+    return buildPublicLegalRequirements(documents, query.context, query.profileType);
   }
 }

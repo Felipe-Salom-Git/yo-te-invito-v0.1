@@ -3,6 +3,8 @@
  * Single source for gateway, home, categoría, explore y detalle.
  */
 
+import { PROFILE_RESPONSIBILITY_COPY } from '@/components/auth/register/register-wizard-responsibility-copy';
+
 export const RENTAL_PUBLIC_TAGLINE =
   'Alquiler de autos, bicis, kayaks, ropa de invierno y equipos turísticos.';
 
@@ -31,3 +33,19 @@ export const RENTAL_CATEGORY_EMPTY_MESSAGE =
 
 export const RENTAL_EXPLORE_EMPTY_HINT =
   'No encontramos equipos con esos filtros. Probá otra subcategoría o quitá fechas (no aplican a alquiler de equipos).';
+
+/** Clarifies rental vertical vs hotels / accommodation (public surfaces). */
+export const RENTAL_NOT_ACCOMMODATION_NOTE =
+  'Equipos y movilidad: autos, bicis, kayaks, ropa de nieve y aventura. No es alojamiento, cabañas ni reservas hoteleras.';
+
+export const RENTAL_PROVIDER_CTA_TITLE = '¿Tenés un local de alquiler?';
+
+export const RENTAL_PROVIDER_CTA_BODY =
+  'Sumá tus equipos, vehículos o servicios de alquiler a Yo Te Invito. Contactanos para evaluar el alta de tu comercio.';
+
+/** UX responsabilidad rental (Slice 11) — ver `register-wizard-responsibility-copy.ts` */
+export const RENTAL_PROVIDER_RESPONSIBILITY_NOTE = PROFILE_RESPONSIBILITY_COPY.RENTAL_CONTACT;
+
+export const RENTAL_PROVIDER_CTA_BUTTON = 'Contactar a Yo Te Invito';
+
+export const RENTAL_PROVIDER_CTA_MAIL_SUBJECT = 'Consulta alta comercio rental — Yo Te Invito';

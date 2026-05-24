@@ -7,6 +7,8 @@ export type {
 export { EMPTY_LOCATION_VALUE } from './location.types';
 export { ARGENTINA_PROVINCES } from './argentina-locations';
 export { ProvinceCitySelect } from './ProvinceCitySelect';
+export { GastroProvinceCityFields } from './GastroProvinceCityFields';
+export type { GastroLocationFieldValues } from './GastroProvinceCityFields';
 export { LocationPickerMap } from './LocationPickerMap';
 export { EventLocationFields } from './EventLocationFields';
 export { RentalLocationFields } from './RentalLocationFields';

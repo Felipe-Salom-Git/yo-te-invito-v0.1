@@ -2,6 +2,7 @@
 
 import type { CategoryGatewayId } from '@/lib/home/categoryGatewayConfig';
 import { CATEGORY_LANDING_META } from '@/lib/categories/categoryLandingConfig';
+import { RENTAL_NOT_ACCOMMODATION_NOTE } from '@/lib/rentals/publicCopy';
 
 export function CategoryLandingEditorial({ category }: { category: CategoryGatewayId }) {
   const meta = CATEGORY_LANDING_META[category];
@@ -14,6 +15,11 @@ export function CategoryLandingEditorial({ category }: { category: CategoryGatew
       <p className="mt-2 max-w-2xl text-sm leading-relaxed text-white/75 sm:text-[0.95rem]">
         {meta.editorialDescription}
       </p>
+      {category === 'rental' ? (
+        <p className="mt-2 max-w-2xl text-xs leading-relaxed text-white/55 sm:text-sm">
+          {RENTAL_NOT_ACCOMMODATION_NOTE}
+        </p>
+      ) : null}
     </div>
   );
 }

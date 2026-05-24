@@ -17,9 +17,10 @@ interface SelectProps extends Omit<SelectHTMLAttributes<HTMLSelectElement>, 'chi
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
   ({ label, options, placeholder, error, density = 'default', className = '', id, ...props }, ref) => {
     const selectId = id ?? label?.toLowerCase().replace(/\s/g, '-');
+    const errorId = error ? `${selectId}-error` : undefined;
     const dense = density === 'dense';
     return (
-      <div className="w-full">
+      <div className="w-full min-w-0">
         {label && (
           <label
             htmlFor={selectId}
@@ -35,13 +36,15 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
         <select
           ref={ref}
           id={selectId}
+          aria-invalid={!!error}
+          aria-describedby={errorId}
           className={`
             w-full rounded border bg-bg text-text
             focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent
             disabled:cursor-not-allowed disabled:opacity-50
             border-border
-            ${dense ? 'px-2 py-1 text-xs leading-tight min-h-[1.75rem]' : 'px-3 py-2'}
-            ${error ? 'border-red-500' : ''}
+            ${dense ? 'min-h-[1.75rem] px-2 py-1 text-xs leading-tight' : 'min-h-11 px-3 py-2'}
+            ${error ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}
             ${className}
           `}
           {...props}
@@ -58,7 +61,9 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           ))}
         </select>
         {error && (
-          <p className={`mt-1 text-red-500 ${dense ? 'text-xs' : 'text-sm'}`}>{error}</p>
+          <p id={errorId} className={`mt-1 text-red-500 ${dense ? 'text-xs' : 'text-sm'}`} role="alert">
+            {error}
+          </p>
         )}
       </div>
     );

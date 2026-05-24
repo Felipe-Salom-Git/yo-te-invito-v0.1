@@ -1502,7 +1502,14 @@ export interface AuthRepo {
 
 export interface ProfilesRepo {
   applyProducer(body: { displayName: string; legalName?: string; description?: string; city?: string; country?: string }): Promise<{ id: string; displayName: string; status: string; message: string }>;
-  applyGastro(body: { displayName: string; legalName?: string; description?: string; address?: string; city?: string; contactPhone?: string }): Promise<{ id: string; displayName: string; status: string; message: string }>;
+  applyGastro(body: {
+    displayName: string;
+    contactEmail: string;
+    location: { province: string; city: string; address: string; lat?: number; lng?: number };
+    summary?: string;
+    legalName?: string;
+    contactPhone?: string;
+  }): Promise<{ id: string; displayName: string; status: string; message: string }>;
   applyHotel(body: {
     displayName: string;
     legalName?: string;

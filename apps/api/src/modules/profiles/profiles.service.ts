@@ -1,28 +1,21 @@
 import { ConflictException, Injectable } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import type { Prisma } from '@prisma/client';
 import type {
-  ProfileProducerApplyInput,
-  ProfileGastroApplyInput,
-  ProfileHotelApplyInput,
-  ProfileReferrerApplyInput,
+  ProducerProfileApplyInput,
+  GastroProfileApplyInput,
+  HotelProfileApplyInput,
+  ReferrerProfileApplyInput,
 } from '@yo-te-invito/shared';
-import { ReferrerProfilesService } from '../referrer/referrer-profiles.service';
-import { ReferrerIdentityService } from '../referrer/referrer-identity.service';
+import { PrismaService } from '../../prisma/prisma.service';
+import { ProfileRegistrationService } from '../../auth/profile-registration.service';
 
 @Injectable()
 export class ProfilesService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly referrerProfiles: ReferrerProfilesService,
-    private readonly referrerIdentity: ReferrerIdentityService,
+    private readonly profileRegistration: ProfileRegistrationService,
   ) {}
 
-  async applyProducer(
-    tenantId: string,
-    userId: string,
-    body: ProfileProducerApplyInput,
-  ) {
+  async applyProducer(tenantId: string, userId: string, body: ProducerProfileApplyInput) {
     const existing = await this.prisma.userProducerMembership.findFirst({
       where: { tenantId, userId, status: 'ACTIVE', profile: { status: 'ACTIVE' } },
     });
@@ -33,42 +26,22 @@ export class ProfilesService {
       });
     }
 
-    const profile = await this.prisma.producerProfile.create({
-      data: {
-        tenantId,
-        displayName: body.displayName,
-        legalName: body.legalName ?? null,
-        shortDescription: body.description ?? null,
-        city: body.city ?? null,
-        country: body.country ?? null,
-        createdByUserId: userId,
-        status: 'ACTIVE',
-      },
-    });
+    await this.profileRegistration.createProducerFromApply(tenantId, userId, body);
 
-    await this.prisma.userProducerMembership.create({
-      data: {
-        tenantId,
-        userId,
-        profileId: profile.id,
-        membershipRole: 'OWNER',
-        status: 'ACTIVE',
-      },
+    const profile = await this.prisma.producerProfile.findFirst({
+      where: { tenantId, createdByUserId: userId },
+      orderBy: { createdAt: 'desc' },
     });
 
     return {
-      id: profile.id,
-      displayName: profile.displayName,
-      status: profile.status,
+      id: profile!.id,
+      displayName: profile!.displayName,
+      status: profile!.status,
       message: 'Tu perfil de productor está activo. Ya podés entrar al panel.',
     };
   }
 
-  async applyGastro(
-    tenantId: string,
-    userId: string,
-    body: ProfileGastroApplyInput,
-  ) {
+  async applyGastro(tenantId: string, userId: string, body: GastroProfileApplyInput) {
     const existing = await this.prisma.userGastroMembership.findFirst({
       where: { tenantId, userId, status: 'ACTIVE', profile: { status: 'ACTIVE' } },
     });
@@ -79,43 +52,22 @@ export class ProfilesService {
       });
     }
 
-    const profile = await this.prisma.gastroProfile.create({
-      data: {
-        tenantId,
-        displayName: body.displayName,
-        legalName: body.legalName ?? null,
-        description: body.description ?? null,
-        address: body.address ?? null,
-        city: body.city ?? null,
-        contactPhone: body.contactPhone ?? null,
-        createdByUserId: userId,
-        status: 'ACTIVE',
-      },
-    });
+    await this.profileRegistration.createGastroFromApply(tenantId, userId, body);
 
-    await this.prisma.userGastroMembership.create({
-      data: {
-        tenantId,
-        userId,
-        profileId: profile.id,
-        membershipRole: 'OWNER',
-        status: 'ACTIVE',
-      },
+    const profile = await this.prisma.gastroProfile.findFirst({
+      where: { tenantId, createdByUserId: userId },
+      orderBy: { createdAt: 'desc' },
     });
 
     return {
-      id: profile.id,
-      displayName: profile.displayName,
-      status: profile.status,
+      id: profile!.id,
+      displayName: profile!.displayName,
+      status: profile!.status,
       message: 'Tu perfil gastronómico está activo. Ya podés gestionar tu local.',
     };
   }
 
-  async applyHotel(
-    tenantId: string,
-    userId: string,
-    body: ProfileHotelApplyInput,
-  ) {
+  async applyHotel(tenantId: string, userId: string, body: HotelProfileApplyInput) {
     const duplicate = await this.prisma.userHotelMembership.findFirst({
       where: {
         tenantId,
@@ -130,140 +82,27 @@ export class ProfilesService {
       });
     }
 
-    const social =
-      body.socialLinks && Object.values(body.socialLinks).some((v) => v && String(v).trim())
-        ? (body.socialLinks as Prisma.InputJsonValue)
-        : undefined;
+    await this.profileRegistration.createHotelFromApply(tenantId, userId, body);
 
-    const profile = await this.prisma.hotelProfile.create({
-      data: {
-        tenantId,
-        displayName: body.displayName.trim(),
-        legalName: body.legalName?.trim() || null,
-        description: body.description?.trim() || null,
-        address: body.address?.trim() || null,
-        city: body.city?.trim() || null,
-        starCategory: body.starCategory ?? null,
-        contactPhone: body.contactPhone?.trim() || null,
-        contactEmail: body.contactEmail?.trim() || null,
-        websiteUrl: body.websiteUrl.trim(),
-        bookingUrl: body.bookingUrl?.trim() || null,
-        socialLinks: social ?? undefined,
-        createdByUserId: userId,
-        status: 'ACTIVE',
-      },
-    });
-
-    await this.prisma.userHotelMembership.create({
-      data: {
-        tenantId,
-        userId,
-        profileId: profile.id,
-        membershipRole: 'OWNER',
-        status: 'ACTIVE',
-      },
+    const profile = await this.prisma.hotelProfile.findFirst({
+      where: { tenantId, createdByUserId: userId },
+      orderBy: { createdAt: 'desc' },
     });
 
     return {
-      id: profile.id,
-      displayName: profile.displayName,
-      status: profile.status,
+      id: profile!.id,
+      displayName: profile!.displayName,
+      status: profile!.status,
       message: 'Tu perfil de hotel está activo. Ya podés entrar al panel.',
     };
   }
 
-  async applyReferrer(
-    tenantId: string,
-    userId: string,
-    body: ProfileReferrerApplyInput,
-  ) {
-    const active = await this.prisma.userReferrerMembership.findFirst({
-      where: { tenantId, userId, status: 'ACTIVE', profile: { status: 'ACTIVE' } },
-    });
-    if (active) {
-      throw new ConflictException({
-        code: 'CONFLICT',
-        message: 'Ya tenés un perfil de referidor activo',
-      });
-    }
-
-    const pendingMembership = await this.prisma.userReferrerMembership.findFirst({
-      where: { tenantId, userId, profile: { status: 'PENDING' } },
-      include: { profile: true },
-    });
-
-    const token = this.referrerProfiles.newToken();
-
-    if (pendingMembership) {
-      const { slug, publicHandle } = await this.referrerIdentity.ensureIdentityForExistingProfile(
-        tenantId,
-        body.displayName,
-        pendingMembership.profile.id,
-        {
-          slug: pendingMembership.profile.slug,
-          publicHandle: pendingMembership.profile.publicHandle,
-        },
-      );
-      const profile = await this.prisma.referrerProfile.update({
-        where: { id: pendingMembership.profile.id },
-        data: {
-          displayName: body.displayName,
-          slug,
-          publicHandle,
-          bio: body.bio ?? null,
-          longBio: body.longBio ?? null,
-          avatarUrl: body.avatarUrl ?? null,
-          city: body.city ?? null,
-          region: body.region ?? null,
-          publicVisibility: body.publicVisibility ?? false,
-          status: 'ACTIVE',
-        },
-      });
-      await this.prisma.userReferrerMembership.update({
-        where: { id: pendingMembership.id },
-        data: { status: 'ACTIVE' },
-      });
-      return {
-        id: profile.id,
-        displayName: profile.displayName,
-        status: profile.status,
-        message:
-          'Tu perfil de referidor está activo. Podés entrar al panel y compartir tu link con productoras.',
-      };
-    }
-
-    const { slug, publicHandle } = await this.referrerIdentity.assignIdentityForNewProfile(
+  async applyReferrer(tenantId: string, userId: string, body: ReferrerProfileApplyInput) {
+    const profile = await this.profileRegistration.createReferrerFromApply(
       tenantId,
-      body.displayName,
+      userId,
+      body,
     );
-
-    const profile = await this.prisma.referrerProfile.create({
-      data: {
-        tenantId,
-        displayName: body.displayName,
-        slug,
-        publicHandle,
-        bio: body.bio ?? null,
-        longBio: body.longBio ?? null,
-        avatarUrl: body.avatarUrl ?? null,
-        city: body.city ?? null,
-        region: body.region ?? null,
-        publicVisibility: body.publicVisibility ?? false,
-        associationLinkToken: token,
-        createdByUserId: userId,
-        status: 'ACTIVE',
-      },
-    });
-
-    await this.prisma.userReferrerMembership.create({
-      data: {
-        tenantId,
-        userId,
-        profileId: profile.id,
-        membershipRole: 'OWNER',
-        status: 'ACTIVE',
-      },
-    });
 
     return {
       id: profile.id,

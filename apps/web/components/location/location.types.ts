@@ -35,6 +35,10 @@ export type ProvinceCitySelectProps = {
   required?: boolean;
   provinceError?: string;
   cityError?: string;
+  provinceLabel?: string;
+  cityLabel?: string;
+  provincePlaceholder?: string;
+  cityPlaceholder?: string;
 };
 
 export const EMPTY_LOCATION_VALUE: LocationValue = {

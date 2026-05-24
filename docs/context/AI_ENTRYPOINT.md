@@ -64,6 +64,7 @@ Controllers: HTTP + Zod only. Services: business logic. Prisma: persistence only
 | **`docs/audits/PUBLIC_FOOTER_CLOSING_AUDIT.md`** | Auditoría de cierre footer |
 | **`CONTEXT_PENDIENTES.md`** | Checkbox backlog — mark `[x]` when done |
 | **`docs/legal/LEGAL_ADMIN_MODULE.md`** | Legal Admin — modelos, endpoints, flujos, staging (módulo cerrado 2026-05-24) |
+| **`docs/onboarding/`** | Registro V2 por perfil — wizard, schemas, legales signup, slices 12.5–12.6 |
 | **`FRONTEND_DEMO_NOTES.md`** | Legacy demo mapping (not current persistence) |
 
 **Portal productor:** `PROJECT_CONTEXT.md`, `BACKEND_CONTEXT.md`, `FRONTEND_CONTEXT.md`, `CONTEXT_PENDIENTES.md` § K (slices 1–10 cerrados en checklist V2; slug auto en perfil; notificaciones `EVENT_*_BY_ADMIN`).
@@ -77,6 +78,8 @@ Controllers: HTTP + Zod only. Services: business logic. Prisma: persistence only
 **Legal Admin / Legales V2 (cerrado 2026-05-24):** slices 1–8 + import Markdown — admin `/admin/legales`, público `/legal/[slug]`, aceptación `/me/legal/*`, integración registro/checkout/footer/portales; **layout portales** `max-w-screen-2xl` (`portalLayoutClasses.ts`, `PortalPageContext`). Doc: `docs/legal/LEGAL_ADMIN_MODULE.md`; QA: `docs/dev/LEGAL_ADMIN_QA_SMOKE.md`; smoke `pnpm --filter api run smoke:legal` (API + `DEV_AUTH_ENABLED` o JWT). **No** marcar checklist de redacción legal hasta publicar contenido real.
 
 **Footer público V2 (cerrado 2026-05-24):** `RouteAwareFooter` + variantes `full`/`minimal`/`hidden` (`footerVisibility.ts`); UI `components/footer/*`; contacto `GET /public/platform-config` + `usePublicPlatformConfig`; legales `footerLegalLinks.ts`. `/categorias`: solo `CategoryGatewayFooter` (global hidden). Checklist V2 § Footer público completo. Docs: `PUBLIC_FOOTER_AUDIT.md`, `PUBLIC_FOOTER_SMOKE.md`, `PUBLIC_FOOTER_CLOSING_AUDIT.md`.
+
+**Registro y onboarding por tipo de usuario (cerrado 2026-05-24, slices 1–14 + 12.5–12.6):** wizard `/register` (`RegisterWizard` + pasos por perfil), `POST /auth/register` con `profileType` / `profileData`, legales SIGNUP transaccionales, perfiles comerciales ACTIVE al crear. Schemas: `packages/shared/src/schemas/profile-onboarding.ts`. Ubicación: catálogo `ARGENTINA_PROVINCES` en `@yo-te-invito/shared`; hotel y gastro con selects provincia/ciudad; email duplicado `EMAIL_ALREADY_EXISTS`. Rental sin signup (admin + CTA). Índice: `docs/onboarding/` — auditoría `docs/audits/REGISTER_ONBOARDING_AUDIT.md`, smoke `docs/onboarding/REGISTER_ONBOARDING_SMOKE.md`.
 
 **Portal usuario (`/me/*`):** `docs/user/USER_PORTAL.md` (incl. **Push notifications** V2.1.3–V2.1.4, **ticket comprador** V2.2).
 

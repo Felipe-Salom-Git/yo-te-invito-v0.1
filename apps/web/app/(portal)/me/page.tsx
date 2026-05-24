@@ -10,6 +10,7 @@ import {
   QueryError,
   EmptyState,
 } from '@/components';
+import { MeOnboardingChecklist } from '@/components/onboarding/MeOnboardingChecklist';
 import { MeDashboardAlerts } from '@/components/me/MeDashboardAlerts';
 import { MeDashboardPushCta } from '@/components/me/MeDashboardPushCta';
 import { MeDashboardQuickLinks } from '@/components/me/MeDashboardQuickLinks';
@@ -57,6 +58,7 @@ export default function MeDashboardPage() {
         Alertas, recomendaciones y accesos rápidos a tu actividad.
       </p>
 
+      <MeOnboardingChecklist />
       <MeDashboardAlerts dashboard={data} />
       <MeDashboardPushCta />
       <MeRecommendationsSection />

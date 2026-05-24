@@ -79,6 +79,15 @@ HTTP → Controller (thin) → ZodValidationPipe → Service → Prisma → Post
 
 ## 5. Auth / Me / Producer / Admin
 
+**Registro V2 (`AuthController`, `AuthService`, `ProfileRegistrationService`, `LegalSignupService`):**
+
+| Method | Path | Notas |
+|--------|------|--------|
+| POST | `/auth/register` | `profileType` (`USER` \| `PRODUCER` \| `GASTRO` \| `HOTEL` \| `REFERRER`), `profileData` según `profile-onboarding.ts`; `signupLegalAcceptance` opcional; perfiles comerciales **ACTIVE** al crear; email duplicado → `409` `EMAIL_ALREADY_EXISTS` |
+| POST | `/profiles/*/apply` | Usuario logueado sin perfil (p. ej. gastro en `/cuenta/solicitar-gastro`) |
+
+Schemas signup/apply: `packages/shared/src/schemas/profile-onboarding.ts` (`gastroProfileToPersistInput`, `hotelProfileToPersistInput`, …). Catálogo provincias/ciudades (labels en persist): `packages/shared/src/location/argentina-locations.ts`.
+
 See previous full endpoint tables in git history; key groups:
 
 - **Me (legacy)**: tickets, orders, inbox create, commissions; `GET /me/tickets/:id`, `PATCH /me/tickets/:id/reminder`.

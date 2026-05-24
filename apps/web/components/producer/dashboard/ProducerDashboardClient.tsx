@@ -29,6 +29,7 @@ import {
 import { ProducerDashboardEngagement } from './ProducerDashboardEngagement';
 import { ProducerDashboardTopEvents } from './ProducerDashboardTopEvents';
 import { ProducerDashboardEventStatusAlerts } from './ProducerDashboardEventStatusAlerts';
+import { ProducerOnboardingChecklist } from '@/components/onboarding/ProducerOnboardingChecklist';
 import { ManagedPortalReviewAlerts } from '@/components/reviews/ManagedPortalReviewAlerts';
 
 function displayNameFromSession(user: {
@@ -205,6 +206,8 @@ export function ProducerDashboardClient() {
           <Button>Crear evento</Button>
         </Link>
       </header>
+
+      <ProducerOnboardingChecklist />
 
       {profileQuery.data ? (
         <div className="mt-4 flex flex-wrap items-center gap-3">

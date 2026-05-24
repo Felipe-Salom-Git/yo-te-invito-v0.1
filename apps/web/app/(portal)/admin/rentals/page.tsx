@@ -24,7 +24,9 @@ export default function AdminRentalsPage() {
       </Link>
       <SectionTitle>Rentals (Alquileres)</SectionTitle>
       <p className="mt-2 text-text-muted">
-        Gestioná locales y los productos que se muestran al usuario en cada uno.
+        Alta operativa V2: los proveedores de alquiler no se registran desde el wizard público. Gestioná
+        locales, productos, horarios, WhatsApp e imágenes desde aquí; el contacto comercial llega por
+        soporte institucional.
       </p>
 
       <Link

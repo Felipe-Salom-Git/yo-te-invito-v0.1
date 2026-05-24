@@ -14,6 +14,10 @@ export function ProvinceCitySelect({
   required,
   provinceError,
   cityError,
+  provinceLabel,
+  cityLabel,
+  provincePlaceholder,
+  cityPlaceholder,
 }: ProvinceCitySelectProps) {
   const provinceOptions = useMemo(
     () => ARGENTINA_PROVINCES.map((p) => ({ value: p.value, label: p.label })),
@@ -28,21 +32,39 @@ export function ProvinceCitySelect({
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       <Select
-        label={required ? 'Provincia *' : 'Provincia'}
+        label={
+          provinceLabel
+            ? required
+              ? `${provinceLabel} *`
+              : provinceLabel
+            : required
+              ? 'Provincia *'
+              : 'Provincia'
+        }
         value={province}
         onChange={(e) => onProvinceChange(e.target.value)}
         options={provinceOptions}
-        placeholder="Seleccionar provincia"
+        placeholder={provincePlaceholder ?? 'Seleccionar provincia'}
         disabled={disabled}
         required={required}
         error={provinceError}
       />
       <Select
-        label={required ? 'Ciudad / localidad *' : 'Ciudad / localidad'}
+        label={
+          cityLabel
+            ? required
+              ? `${cityLabel} *`
+              : cityLabel
+            : required
+              ? 'Ciudad / localidad *'
+              : 'Ciudad / localidad'
+        }
         value={city}
         onChange={(e) => onCityChange(e.target.value)}
         options={cityOptions}
-        placeholder={province ? 'Seleccionar ciudad' : 'Elegí una provincia primero'}
+        placeholder={
+          cityPlaceholder ?? (province ? 'Seleccionar ciudad' : 'Elegí una provincia primero')
+        }
         disabled={disabled || !province}
         required={required}
         error={cityError}

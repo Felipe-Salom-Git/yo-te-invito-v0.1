@@ -13,7 +13,18 @@ import type {
   AuthGoogleRequest,
   RegistrationProfileType,
 } from '@yo-te-invito/shared';
+import {
+  AUTH_REGISTER_ERROR_CODES,
+  LEGAL_SIGNUP_ERROR_CODES,
+  LEGAL_SIGNUP_USER_MESSAGES,
+} from '@yo-te-invito/shared';
+import { LegalSignupService } from '../modules/legal/legal-signup.service';
 import { ProfileRegistrationService } from './profile-registration.service';
+
+export type RegisterRequestMeta = {
+  ipAddress?: string | null;
+  userAgent?: string | null;
+};
 
 const DEFAULT_TENANT_ID = 'tenant-demo';
 
@@ -40,6 +51,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly emailQueue: EmailQueueService,
     private readonly profileRegistration: ProfileRegistrationService,
+    private readonly legalSignup: LegalSignupService,
   ) {}
 
   async login(body: AuthLoginRequest): Promise<AuthLoginResponse> {
@@ -93,7 +105,10 @@ export class AuthService {
     };
   }
 
-  async register(body: AuthRegisterRequest): Promise<AuthRegisterResponse> {
+  async register(
+    body: AuthRegisterRequest,
+    meta: RegisterRequestMeta = {},
+  ): Promise<AuthRegisterResponse> {
     const tenantId = body.tenantId ?? DEFAULT_TENANT_ID;
     const email = body.email.trim().toLowerCase();
     const existing = await this.prisma.user.findFirst({
@@ -101,8 +116,8 @@ export class AuthService {
     });
     if (existing) {
       throw new ConflictException({
-        code: 'CONFLICT',
-        message: 'Email already in use',
+        code: AUTH_REGISTER_ERROR_CODES.EMAIL_ALREADY_EXISTS,
+        message: 'Ya existe una cuenta con este email.',
       });
     }
     const passwordHash = hashPassword(body.password);
@@ -112,6 +127,30 @@ export class AuthService {
         code: 'VALIDATION_FAILED',
         message: 'profileData es requerido para el tipo de perfil seleccionado',
       });
+    }
+
+    const signupRequirements = await this.legalSignup.getSignupRequirements(
+      tenantId,
+      profileType,
+    );
+    if (!signupRequirements.canProceed) {
+      throw new BadRequestException({
+        code: LEGAL_SIGNUP_ERROR_CODES.CONFIG_UNAVAILABLE,
+        message: LEGAL_SIGNUP_USER_MESSAGES.configUnavailable,
+        details: {
+          missingRequiredDocuments: signupRequirements.missingRequiredDocuments,
+        },
+      });
+    }
+
+    const versionIds = body.signupLegalAcceptance?.documentVersionIds ?? [];
+    if (signupRequirements.required.length > 0) {
+      if (versionIds.length === 0) {
+        throw new BadRequestException({
+          code: LEGAL_SIGNUP_ERROR_CODES.MISSING_LEGAL_ACCEPTANCE,
+          message: LEGAL_SIGNUP_USER_MESSAGES.missingAcceptanceIds,
+        });
+      }
     }
 
     const cityTrimmed = body.city?.trim() || null;
@@ -144,6 +183,17 @@ export class AuthService {
           profileType,
           body.profileData,
           tx,
+        );
+      }
+
+      if (signupRequirements.required.length > 0) {
+        await this.legalSignup.persistSignupAcceptances(
+          tx,
+          tenantId,
+          created.id,
+          profileType,
+          versionIds,
+          meta,
         );
       }
 

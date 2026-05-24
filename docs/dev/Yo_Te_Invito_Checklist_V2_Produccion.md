@@ -194,19 +194,23 @@ _Footer público completo — bloque V2 cerrado. Smoke: `docs/audits/PUBLIC_FOOT
 - [x] Agregar aceptación obligatoria de términos generales (Slice Legal Admin 7 — según flags publicados).
 - [x] Agregar aceptación obligatoria de términos específicos según tipo de perfil (portal: `PORTAL_ACCESS`; signup según `isRequiredForSignup`).
 - [x] Agregar links a condiciones legales desde cada formulario (registro, checkout, footer, portales — Slice 7).
-- [ ] Auditar flujo actual de registro con elección de perfil.
-- [ ] Pulir formulario de registro para usuario comprador.
-- [ ] Pulir formulario de registro para productora / productor.
-- [ ] Pulir formulario de registro para gastronómico.
-- [ ] Pulir formulario de registro para rental / proveedor de equipos.
-- [ ] Pulir formulario de registro para hotel.
-- [ ] Pulir formulario de registro para referido.
-- [ ] Definir campos obligatorios y opcionales por tipo de perfil.
-- [ ] Agregar textos claros de responsabilidad por tipo de usuario (contenido legal pendiente de redacción).
-- [ ] Registrar versión aceptada de términos y fecha de aceptación.
-- [ ] Agregar estado visual de completitud del registro/onboarding cuando aplique.
-- [ ] Revisar mensajes de error y validaciones visibles.
-- [ ] Revisar UX mobile de registro completo.
+- [x] Auditar flujo actual de registro con elección de perfil. Auditoría: `docs/audits/REGISTER_ONBOARDING_AUDIT.md`
+- [x] Pulir formulario de registro para usuario comprador (`docs/onboarding/REGISTER_BUYER_WIZARD_BASE.md`, Slice 5).
+- [x] Pulir formulario de registro para productora / productor (`docs/onboarding/REGISTER_PRODUCER_FORM.md`, Slice 6).
+- [x] Pulir formulario de registro para gastronómico (`docs/onboarding/REGISTER_GASTRO_FORM.md`, Slice 7).
+- [x] Pulir formulario de registro para rental / proveedor de equipos. Nota: V2 no incluye signup rental; resuelto como decisión producto + flujo admin + CTA contacto público (`docs/onboarding/REGISTER_RENTAL_DECISION.md`, Slice 8).
+- [x] Pulir formulario de registro para hotel (`docs/onboarding/REGISTER_HOTEL_FORM.md`, Slice 9).
+- [x] Fixes registro: email duplicado + hotel provincia/ciudad (`docs/onboarding/REGISTER_FORM_FIXES_EMAIL_HOTEL_LOCATION.md`, Slice 12.5).
+- [x] Registro gastro: select provincia/ciudad dependiente (`docs/onboarding/REGISTER_GASTRO_LOCATION_SELECT.md`, Slice 12.6).
+- [x] Pulir formulario de registro para referido (`docs/onboarding/REGISTER_REFERRER_FORM.md`, Slice 10).
+- [x] Definir campos obligatorios y opcionales por tipo de perfil. Matriz: `docs/onboarding/PROFILE_FIELDS_MATRIX.md`
+- [x] Agregar textos claros de responsabilidad por tipo de usuario (`docs/onboarding/PROFILE_RESPONSIBILITY_COPY.md`, Slice 11 — copy UX centralizado; redacción legal publicada sigue pendiente).
+- [x] Registrar versión aceptada de términos y fecha de aceptación (SIGNUP transaccional + retry; ver `docs/onboarding/LEGAL_SIGNUP_HARDENING.md`). Nota: términos solo `PORTAL_ACCESS` / checkout guest siguen fuera de este cierre.
+- [x] Agregar estado visual de completitud del registro/onboarding cuando aplique (`docs/onboarding/PROFILE_COMPLETION_ONBOARDING.md`, Slice 12).
+- [x] Revisar mensajes de error y validaciones visibles (`docs/onboarding/REGISTER_ERROR_VALIDATION_UX.md`, Slice 13).
+- [x] Revisar UX mobile de registro completo (`docs/onboarding/REGISTER_ONBOARDING_SMOKE.md`, Slice 14).
+
+> **Bloque Registro y onboarding por tipo de usuario cerrado (V2)** — ver `docs/onboarding/REGISTER_ONBOARDING_SMOKE.md` y slices 1–14 + 12.5–12.6 en `docs/onboarding/`.
 
 ## QA responsive global
 
