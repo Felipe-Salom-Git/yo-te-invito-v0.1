@@ -1330,6 +1330,72 @@ export class ApiRepository implements Repositories {
     },
   };
 
+  legalDocuments: import('./interfaces').LegalDocumentsRepo = {
+    listAdminLegalDocuments: async (query) => {
+      return this.client.get<import('./interfaces').AdminLegalDocumentListResponse>(
+        '/admin/legal-documents',
+        query as Record<string, string | number | boolean | undefined>,
+      );
+    },
+    getAdminLegalDocument: async (key) => {
+      return this.client.get<import('./interfaces').AdminLegalDocumentDetail>(
+        `/admin/legal-documents/${encodeURIComponent(key)}`,
+      );
+    },
+    getAdminLegalDocumentVersions: async (key) => {
+      return this.client.get<import('./interfaces').AdminLegalDocumentVersionsListResponse>(
+        `/admin/legal-documents/${encodeURIComponent(key)}/versions`,
+      );
+    },
+    updateAdminLegalDocument: async (key, payload) => {
+      return this.client.patch<import('./interfaces').AdminLegalDocumentMutationResponse>(
+        `/admin/legal-documents/${encodeURIComponent(key)}`,
+        payload,
+      );
+    },
+    saveAdminLegalDocumentDraft: async (key, payload) => {
+      return this.client.post<import('./interfaces').AdminLegalDocumentMutationResponse>(
+        `/admin/legal-documents/${encodeURIComponent(key)}/draft`,
+        payload,
+      );
+    },
+    publishAdminLegalDocument: async (key, payload) => {
+      return this.client.post<import('./interfaces').AdminLegalDocumentMutationResponse>(
+        `/admin/legal-documents/${encodeURIComponent(key)}/publish`,
+        payload ?? {},
+      );
+    },
+    getPublicLegalDocument: async (tenantId, slug) => {
+      return this.client.get<import('./interfaces').PublicLegalDocumentResponse>(
+        `/public/legal/${encodeURIComponent(slug)}`,
+        { tenantId },
+      );
+    },
+    getPublicLegalRequirements: async (query) => {
+      return this.client.get<import('./interfaces').PublicLegalRequirementsResponse>(
+        '/public/legal/requirements',
+        query as Record<string, string | undefined>,
+      );
+    },
+    getMyLegalRequirements: async (query) => {
+      return this.client.get<import('./interfaces').MeLegalRequirementsResponse>(
+        '/me/legal/requirements',
+        query as Record<string, string | undefined>,
+      );
+    },
+    acceptMyLegalDocuments: async (payload) => {
+      return this.client.post<import('./interfaces').MeLegalAcceptResponse>(
+        '/me/legal/accept',
+        payload,
+      );
+    },
+    getMyLegalAcceptances: async () => {
+      return this.client.get<import('./interfaces').MeLegalAcceptanceHistoryResponse>(
+        '/me/legal/acceptances',
+      );
+    },
+  };
+
   producerDashboard: import('./interfaces').ProducerDashboardRepo = {
     getMetrics: async () => {
       return this.client.get<import('./interfaces').ProducerDashboardMetrics>(

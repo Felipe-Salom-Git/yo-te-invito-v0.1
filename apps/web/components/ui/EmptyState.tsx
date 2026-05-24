@@ -6,6 +6,7 @@ interface EmptyStateProps {
   actionLabel?: string;
   actionHref?: string;
   icon?: React.ReactNode;
+  className?: string;
 }
 
 export function EmptyState({
@@ -14,9 +15,12 @@ export function EmptyState({
   actionLabel,
   actionHref,
   icon,
+  className = '',
 }: EmptyStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-bg-muted/50 py-16 px-6 text-center">
+    <div
+      className={`flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-bg-muted/50 py-16 px-6 text-center ${className}`.trim()}
+    >
       {icon && (
         <div className="mb-4 text-4xl text-text-muted" aria-hidden>
           {icon}

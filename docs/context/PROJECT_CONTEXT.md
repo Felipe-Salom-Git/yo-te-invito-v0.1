@@ -56,6 +56,7 @@ yo-te-invito-v0.1/
 ### Public
 
 - Home, explore, category detail pages, checkout (demo), tickets, referrers directory, referral redirect `/r/[code]`.
+- **Legales:** `/legal/[slug]` (documentos publicados); footer con enlaces; aceptación en registro/checkout/portales — ver §5d.
 - **Navbar V2 (2026-05):** navegación responsive modular (drawer mobile, selector ciudad, carro con badge, menú usuario simplificado, portales con sidebar/mobile nav). Auditoría: `docs/audits/NAVBAR_RESPONSIVE_AUDIT.md`. Usuario maestro: sidebar unificado multi-portal (`MASTER_USER_EMAIL`).
 
 ### Rentals (Equipos y Rentals) — V2 cerrado (checklist)
@@ -68,7 +69,7 @@ yo-te-invito-v0.1/
 ### Producer / Admin / Gastro / Hotel / Referrer
 
 - **Producer (productoras / “Proveedores v2”)**: portal pulido (slices 1–10 en checklist V2): dashboard `/producer` (métricas, engagement, alertas de aprobación/rechazo admin vía `/me/notifications`), eventos por estado, create/edit, tandas, cortesías, referidos, **perfil por bloques** (`/producer/profile` + slug **auto-único** desde nombre), **comentarios** (`/producer/comments`). Ficha pública `/producers/[id|slug]`. Valoraciones **comerciales** B2B. Navegación principal en **sidebar** del layout productor (sin duplicar accesos rápidos en dashboard).
-- **Admin**: rol `ADMIN` en `User.role`; web `/admin/*` restringido a ADMIN; aprobación/rechazo de eventos notifica a productoras (in-app + email + push según preferencias). Inbox, **cola disputas** (`/admin/review-disputes`), **reporte reputación** (`/admin/reviews`), users, config, **rentals** locales/productos, audit. Cuenta maestro: `user:restore-master` + re-login.
+- **Admin**: rol `ADMIN` en `User.role`; web `/admin/*` restringido a ADMIN; aprobación/rechazo de eventos notifica a productoras (in-app + email + push según preferencias). Inbox, **cola disputas** (`/admin/review-disputes`), **reporte reputación** (`/admin/reviews`), users, config, **rentals** locales/productos, **`/admin/legales`** (documentos versionados), audit. Cuenta maestro: `user:restore-master` + re-login.
 - **Gastro V2 (cerrado):** portal `/gastro/*` (dashboard, contenido Prisma, descuentos, validaciones, valoraciones), ficha `/restaurants/[id]`, QR + scanner PWA, follows + alertas descuento. Docs: `docs/gastro/`, `docs/audits/GASTRO_HOTELES_V2_AUDIT.md`.
 - **Hoteles V2 (liviano, cerrado):** discovery Próximamente (sin gateway/carrusel); portal `/hotel` + `/hotel/editar`; ficha pública `/hoteles/[id]`; valoraciones `/hotel/valoraciones`; E2E `pnpm e2e:hotel` (`docs/hotel/HOTEL_E2E.md`).
 - **Referidos V2 (cerrado):** propuesta → aceptación → acuerdo + link; comisión **% o fijo por entrada** al pagar; solicitud de pago y registro `mark-paid` (**liquidación manual externa**, sin custodia de fondos). Portales `/producer/referrals`, evento referrals, `/referrer`. Doc: `docs/referrals/REFERRALS_V2.md`; smoke `smoke:referrals`. Legacy `/me/commissions/request` convive (deprecación opcional).
@@ -133,6 +134,22 @@ Detalle API/UI: `BACKEND_CONTEXT.md`, `FRONTEND_CONTEXT.md`, checklist V2 § Adm
 
 Checklist V2 § Gastro y Hoteles marcado. Auditoría: `docs/audits/GASTRO_HOTELES_V2_AUDIT.md`.
 
+## 5d. Legal Admin — Estado cerrado (2026-05-24)
+
+| Pieza | Estado |
+|-------|--------|
+| Backend versionado + audit | Cerrado — draft/publish, una PUBLISHED por doc |
+| Admin UI `/admin/legales` | Cerrado |
+| Páginas públicas `/legal/*` | Cerrado |
+| Aceptación `/me/legal/*` | Cerrado — por `documentVersionId` + contexto |
+| Integración registro/checkout/footer/portales | Cerrado |
+| QA + smokes `smoke:legal` | Cerrado (ejecutar con API + dev auth) |
+| Import Markdown `seed:legal-content` | Cerrado — borradores desde `docs/legal/` |
+| **Legales V2** — layout portales + listado admin | Cerrado — `PORTAL_BODY_CLASS`, tabla `min-w-[900px]` |
+| **Redacción legal real** | Pendiente — publicar versiones aprobadas en admin |
+
+Referencia: `docs/legal/LEGAL_ADMIN_MODULE.md`, `BACKEND_CONTEXT.md` §8, `FRONTEND_CONTEXT.md` §8e, `CONTEXT_PENDIENTES.md` § Legal Admin.
+
 ---
 
 ## 6. Gaps
@@ -155,6 +172,7 @@ Summary: real payments, image storage (vs data-URL), validación física ticket 
 | Acción | Comando |
 |--------|---------|
 | Limpiar contenido tenant (conserva Felipe) | `pnpm db:cleanup-content` / `-- --confirm` |
+| Seed catálogo legal (idempotente) | `pnpm --filter api run seed:legal-documents` |
 | Reset BD completo (peligroso) | `pnpm db:reset-dangerous -- --confirm` |
 | Limpiar artefactos smokes | `pnpm --filter api run smoke:cleanup` / `-- --confirm` |
 | Inventario scripts | `docs/dev/SCRIPTS.md` |
@@ -182,4 +200,5 @@ Guías: `docs/guides/README.md`, `DEVELOPER_SCRIPTS_GUIDE.md`, `SMOKE_TESTS_GUID
 - `docs/context/BACKEND_CONTEXT.md`
 - `docs/context/FRONTEND_CONTEXT.md`
 - `docs/dev/Yo_Te_Invito_Checklist_V2_Produccion.md`
+- `docs/legal/LEGAL_ADMIN_MODULE.md`
 - `docs/tickets/TICKET_CANVAS_STUDIO.md`

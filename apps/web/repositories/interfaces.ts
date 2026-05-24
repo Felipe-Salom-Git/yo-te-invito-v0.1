@@ -78,6 +78,10 @@ export interface RentalLocationSummary {
   address: string | null;
   openingHours: import('@yo-te-invito/shared').RentalOpeningHours | null;
   openingHoursNote: string | null;
+  contactPhone?: string | null;
+  whatsappPhone?: string | null;
+  contactEmail?: string | null;
+  websiteUrl?: string | null;
   geoLat: number | null;
   geoLng: number | null;
   isActive: boolean;
@@ -1236,6 +1240,69 @@ export type AdminUsersListResponse = import('@yo-te-invito/shared').AdminUsersLi
 export interface AdminUsersRepo {
   list(query: AdminUsersListQuery): Promise<AdminUsersListResponse>;
   updateRole(userId: string, role: string): Promise<User | null>;
+}
+
+export type AdminLegalDocumentListQuery =
+  import('@yo-te-invito/shared').AdminLegalDocumentListQuery;
+export type AdminLegalDocumentListItem =
+  import('@yo-te-invito/shared').AdminLegalDocumentListItem;
+export type AdminLegalDocumentListResponse =
+  import('@yo-te-invito/shared').AdminLegalDocumentListResponse;
+export type AdminLegalDocumentDetail = import('@yo-te-invito/shared').AdminLegalDocumentDetail;
+export type AdminLegalDocumentVersionsListResponse =
+  import('@yo-te-invito/shared').AdminLegalDocumentVersionsListResponse;
+export type AdminLegalDocumentMutationResponse =
+  import('@yo-te-invito/shared').AdminLegalDocumentMutationResponse;
+export type AdminUpdateLegalDocument = import('@yo-te-invito/shared').AdminUpdateLegalDocument;
+export type AdminSaveLegalDocumentDraft = import('@yo-te-invito/shared').AdminSaveLegalDocumentDraft;
+export type AdminPublishLegalDocument = import('@yo-te-invito/shared').AdminPublishLegalDocument;
+export type PublicLegalDocumentResponse =
+  import('@yo-te-invito/shared').PublicLegalDocumentResponse;
+export type LegalDocumentKeyValue = import('@yo-te-invito/shared').LegalDocumentKeyValue;
+export type LegalDocumentVersionSummary =
+  import('@yo-te-invito/shared').LegalDocumentVersionSummary;
+export type MeLegalRequirementsQuery = import('@yo-te-invito/shared').MeLegalRequirementsQuery;
+export type MeLegalRequirementsResponse =
+  import('@yo-te-invito/shared').MeLegalRequirementsResponse;
+export type MeLegalRequirementItem = import('@yo-te-invito/shared').MeLegalRequirementItem;
+export type MeLegalAcceptRequest = import('@yo-te-invito/shared').MeLegalAcceptRequest;
+export type MeLegalAcceptResponse = import('@yo-te-invito/shared').MeLegalAcceptResponse;
+export type MeLegalAcceptanceHistoryResponse =
+  import('@yo-te-invito/shared').MeLegalAcceptanceHistoryResponse;
+export type PublicLegalRequirementsQuery =
+  import('@yo-te-invito/shared').PublicLegalRequirementsQuery;
+export type PublicLegalRequirementsResponse =
+  import('@yo-te-invito/shared').PublicLegalRequirementsResponse;
+
+export interface LegalDocumentsRepo {
+  listAdminLegalDocuments(
+    query?: AdminLegalDocumentListQuery,
+  ): Promise<AdminLegalDocumentListResponse>;
+  getAdminLegalDocument(key: string): Promise<AdminLegalDocumentDetail>;
+  getAdminLegalDocumentVersions(key: string): Promise<AdminLegalDocumentVersionsListResponse>;
+  updateAdminLegalDocument(
+    key: string,
+    payload: AdminUpdateLegalDocument,
+  ): Promise<AdminLegalDocumentMutationResponse>;
+  saveAdminLegalDocumentDraft(
+    key: string,
+    payload: AdminSaveLegalDocumentDraft,
+  ): Promise<AdminLegalDocumentMutationResponse>;
+  publishAdminLegalDocument(
+    key: string,
+    payload?: AdminPublishLegalDocument,
+  ): Promise<AdminLegalDocumentMutationResponse>;
+  getPublicLegalDocument(tenantId: string, slug: string): Promise<PublicLegalDocumentResponse>;
+  getPublicLegalRequirements(
+    query: PublicLegalRequirementsQuery,
+  ): Promise<PublicLegalRequirementsResponse>;
+  getMyLegalRequirements(
+    query: import('@yo-te-invito/shared').MeLegalRequirementsQuery,
+  ): Promise<import('@yo-te-invito/shared').MeLegalRequirementsResponse>;
+  acceptMyLegalDocuments(
+    payload: import('@yo-te-invito/shared').MeLegalAcceptRequest,
+  ): Promise<import('@yo-te-invito/shared').MeLegalAcceptResponse>;
+  getMyLegalAcceptances(): Promise<import('@yo-te-invito/shared').MeLegalAcceptanceHistoryResponse>;
 }
 
 export type PayoutStatus = 'REQUESTED' | 'PENDING' | 'PROCESSING' | 'SENT' | 'REJECTED';
@@ -2459,6 +2526,7 @@ export interface Repositories {
   adminEvents: AdminEventsRepo;
   adminAudit: AdminAuditRepo;
   adminUsers: AdminUsersRepo;
+  legalDocuments: LegalDocumentsRepo;
   producerDashboard: ProducerDashboardRepo;
   producers: ProducersRepo;
   commercialReviews: CommercialReviewsRepo;

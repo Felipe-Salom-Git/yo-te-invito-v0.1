@@ -45,6 +45,7 @@ export const PORTAL_NAV_BY_KEY: Record<PortalNavKey, PortalNavDefinition> = {
       { href: '/admin', label: 'Dashboard' },
       { href: '/admin/eventos', label: 'Eventos' },
       { href: '/admin/auditoria', label: 'Auditoría' },
+      { href: '/admin/legales', label: 'Legales' },
       { href: '/admin/reviews', label: 'Reputación' },
       { href: '/admin/review-disputes', label: 'Reseñas (disputas)' },
       { href: '/admin/productoras', label: 'Productoras' },

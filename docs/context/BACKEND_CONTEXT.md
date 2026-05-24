@@ -206,7 +206,47 @@ Opcional cron: `NOTIFICATIONS_CRON_ENABLED=false`, `NOTIFICATION_REMINDER_HOURS`
 
 ---
 
-## 8. Debt / risks
+## 8. Legal Admin — cerrado (2026-05-24, Slices 1–8)
+
+**Estado:** módulo técnico listo para producción; **contenido** de cada documento sigue placeholder hasta redacción legal.
+
+**Models:** `LegalDocument`, `LegalDocumentVersion`, `UserLegalAcceptance` — migración `20260524120000_legal_documents`.
+
+**Modules:** `apps/api/src/modules/legal/` (`LegalDocumentsService`, `AdminLegalDocumentsController`, `PublicLegalDocumentsController`, `MeLegalService` + `MeLegalController` en `me/`).
+
+### Endpoints
+
+| Method | Path | Auth | Notes |
+|--------|------|------|-------|
+| GET | `/admin/legal-documents` | ADMIN | Lista + `publishedVersion` / `draftVersion` |
+| GET | `/admin/legal-documents/:key` | ADMIN | Detalle |
+| GET | `/admin/legal-documents/:key/versions` | ADMIN | Historial |
+| PATCH | `/admin/legal-documents/:key` | ADMIN | Metadata + flags requerido |
+| POST | `/admin/legal-documents/:key/draft` | ADMIN | Borrador (no edita PUBLISHED in-place) |
+| POST | `/admin/legal-documents/:key/publish` | ADMIN | Publica; archiva PUBLISHED anterior (una sola vigente) |
+| GET | `/public/legal/requirements` | Público | Requeridos por `context` + `profileType` + `documentVersionId` |
+| GET | `/public/legal/:slug` | Público | Solo PUBLIC + PUBLISHED; INTERNAL/DRAFT → 404 |
+| GET | `/me/legal/requirements` | Usuario | Pendientes por contexto |
+| POST | `/me/legal/accept` | Usuario | `{ documentVersionIds, context }` — idempotente |
+| GET | `/me/legal/acceptances` | Usuario | Historial |
+
+**Seguridad:** `RolesGuard` + `Role.ADMIN` en admin; aceptación rechaza INTERNAL y no-PUBLISHED; tenant isolation.
+
+**AuditAction:** `LEGAL_DOCUMENT_CREATED`, `LEGAL_DOCUMENT_UPDATED`, `LEGAL_DOCUMENT_DRAFT_SAVED`, `LEGAL_DOCUMENT_PUBLISHED`, `LEGAL_DOCUMENT_ARCHIVED`.
+
+**Shared:** `packages/shared` — `constants/legal-documents.ts`, `schemas/legal-documents.ts`, `schemas/me-legal.ts`.
+
+**Seed:** `pnpm --filter api run seed:legal-documents` (catálogo idempotente) · `pnpm --filter api run seed:legal-content` (Markdown `docs/legal/` → DRAFT; `--dry-run`, `--force`, `--publish` opcional).
+
+**Smokes:** `pnpm --filter api run smoke:legal` | `test:legal-documents` | `test:me-legal-acceptance`. Requiere API + `DEV_AUTH_ENABLED=true` (o JWT) y usuario ADMIN para tests admin.
+
+**Docs:** `docs/legal/LEGAL_ADMIN_MODULE.md`, `docs/dev/LEGAL_ADMIN_QA_SMOKE.md`, `docs/audits/LEGAL_ADMIN_AUDIT.md`. UI: `FRONTEND_CONTEXT.md` §8e.
+
+**Pendiente:** redacción legal; bloqueos duros portal; disclaimers hardcoded → documentos publicados.
+
+---
+
+## 9. Debt / risks
 
 - Payments: demo only.
 - Image uploads often data-URL in forms (límite Zod ~2M chars por URL); web comprime en `RentalProductImagesForm` — object storage pendiente.
@@ -215,7 +255,7 @@ Opcional cron: `NOTIFICATIONS_CRON_ENABLED=false`, `NOTIFICATION_REMINDER_HOURS`
 
 ---
 
-## 9. Backend slice guidance
+## 10. Backend slice guidance
 
 1. Thin controllers; logic in services.
 2. Zod from `packages/shared`.
@@ -235,4 +275,5 @@ Opcional cron: `NOTIFICATIONS_CRON_ENABLED=false`, `NOTIFICATION_REMINDER_HOURS`
 - `docs/guides/SMOKE_TESTS_GUIDE.md`
 - `docs/dev/Yo_Te_Invito_Checklist_V2_Produccion.md`
 - `docs/audits/GASTRO_HOTELES_V2_AUDIT.md`
+- `docs/audits/LEGAL_ADMIN_AUDIT.md`
 - `docs/gastro/GASTRO_DISCOUNT_QR.md`, `docs/hotel/HOTEL_E2E.md`

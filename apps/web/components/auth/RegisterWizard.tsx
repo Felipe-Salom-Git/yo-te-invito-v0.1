@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { signIn } from 'next-auth/react';
@@ -8,9 +8,17 @@ import { z } from 'zod';
 import { Button, Input, Card, CardHeader, CardContent } from '@/components';
 import { PreferredCitySelect } from '@/components/me/PreferredCitySelect';
 import { Logo } from '@/components/brand/Logo';
+import { LegalFlowAcceptanceBlock } from '@/components/legal/LegalFlowAcceptanceBlock';
 import { useRepositories } from '@/repositories/context';
 import { getErrorMessage } from '@/lib/errors';
+import { usePublicLegalRequirements } from '@/lib/query/public-legal-requirements';
+import {
+  allLegalItemsSelected,
+  LEGAL_ACCEPTANCE_REQUIRED_MSG,
+} from '@/lib/legal/legal-acceptance-validation';
 import type { RegistrationProfileType } from '@yo-te-invito/shared';
+
+type WizardStep = 1 | 2 | 3 | 'legal';
 
 const accountSchema = z
   .object({
@@ -78,13 +86,28 @@ function redirectForProfile(type: RegistrationProfileType): string {
 export function RegisterWizard() {
   const router = useRouter();
   const repos = useRepositories();
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [step, setStep] = useState<WizardStep>(1);
   const [account, setAccount] = useState<AccountData | null>(null);
   const [profileType, setProfileType] = useState<RegistrationProfileType>('USER');
   const [error, setError] = useState<string | null>(null);
+  const [legalError, setLegalError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<string, string>>>({});
   const [regCity, setRegCity] = useState('Bariloche');
+  const [selectedLegalVersionIds, setSelectedLegalVersionIds] = useState<string[]>([]);
+
+  const needsLegalStep = step === 3 || step === 'legal';
+  const { data: signupLegal, isLoading: signupLegalLoading } = usePublicLegalRequirements(
+    'SIGNUP',
+    profileType,
+    needsLegalStep,
+  );
+  const signupLegalItems = signupLegal?.required ?? [];
+
+  useEffect(() => {
+    setSelectedLegalVersionIds([]);
+    setLegalError(null);
+  }, [profileType]);
 
   const handleAccountSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -113,10 +136,44 @@ export function RegisterWizard() {
     setStep(2);
   };
 
+  const registerAndAcceptLegal = async (
+    registerPayload: Parameters<typeof repos.auth.register>[0],
+  ) => {
+    if (!allLegalItemsSelected(signupLegalItems, selectedLegalVersionIds)) {
+      setLegalError(LEGAL_ACCEPTANCE_REQUIRED_MSG);
+      throw new Error(LEGAL_ACCEPTANCE_REQUIRED_MSG);
+    }
+    setLegalError(null);
+
+    await repos.auth.register(registerPayload);
+
+    const signInResult = await signIn('credentials', {
+      email: registerPayload.email,
+      password: registerPayload.password,
+      redirect: false,
+    });
+
+    if (signInResult?.error) {
+      setError('Cuenta creada. Iniciá sesión con tu email y contraseña.');
+      router.push('/login?registered=1');
+      return false;
+    }
+
+    if (selectedLegalVersionIds.length > 0) {
+      await repos.legalDocuments.acceptMyLegalDocuments({
+        documentVersionIds: selectedLegalVersionIds,
+        context: 'SIGNUP',
+      });
+    }
+
+    return true;
+  };
+
   const handleProfileFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!account) return;
     setError(null);
+    setLegalError(null);
     setSubmitting(true);
 
     let data: unknown;
@@ -161,7 +218,7 @@ export function RegisterWizard() {
     }
 
     try {
-      await repos.auth.register({
+      const ok = await registerAndAcceptLegal({
         email: account.email,
         password: account.password,
         firstName: account.firstName,
@@ -171,23 +228,15 @@ export function RegisterWizard() {
         profileType,
         profileData: profileType === 'USER' ? undefined : data,
       });
-
-      const signInResult = await signIn('credentials', {
-        email: account.email,
-        password: account.password,
-        redirect: false,
-      });
-
-      if (signInResult?.error) {
-        setError('Cuenta creada. Iniciá sesión con tu email y contraseña.');
-        router.push('/login?registered=1');
-        return;
-      }
+      if (!ok) return;
 
       router.push(redirectForProfile(profileType));
       router.refresh();
     } catch (err) {
-      setError(getErrorMessage(err));
+      const msg = getErrorMessage(err);
+      if (msg !== LEGAL_ACCEPTANCE_REQUIRED_MSG) {
+        setError(msg);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -197,8 +246,9 @@ export function RegisterWizard() {
     if (!account) return;
     setSubmitting(true);
     setError(null);
+    setLegalError(null);
     try {
-      await repos.auth.register({
+      const ok = await registerAndAcceptLegal({
         email: account.email,
         password: account.password,
         firstName: account.firstName,
@@ -207,19 +257,14 @@ export function RegisterWizard() {
         tenantId: 'tenant-demo',
         profileType: 'USER',
       });
-      const signInResult = await signIn('credentials', {
-        email: account.email,
-        password: account.password,
-        redirect: false,
-      });
-      if (signInResult?.error) {
-        router.push('/login?registered=1');
-        return;
-      }
+      if (!ok) return;
       router.push('/me');
       router.refresh();
     } catch (err) {
-      setError(getErrorMessage(err));
+      const msg = getErrorMessage(err);
+      if (msg !== LEGAL_ACCEPTANCE_REQUIRED_MSG) {
+        setError(msg);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -232,9 +277,10 @@ export function RegisterWizard() {
         <CardHeader>
           <h1 className="text-xl font-semibold text-text">Crear cuenta</h1>
           <p className="text-sm text-text-muted">
-            {step === 1 && 'Paso 1 de 3 — Datos de acceso'}
-            {step === 2 && 'Paso 2 de 3 — Elegí tu perfil'}
-            {step === 3 && 'Paso 3 de 3 — Completá tu perfil'}
+            {step === 1 && 'Paso 1 — Datos de acceso'}
+            {step === 2 && 'Paso 2 — Elegí tu perfil'}
+            {step === 'legal' && 'Paso final — Aceptación legal'}
+            {step === 3 && 'Paso 3 — Completá tu perfil'}
           </p>
         </CardHeader>
         <CardContent>
@@ -283,7 +329,7 @@ export function RegisterWizard() {
                   onClick={() => {
                     setProfileType(choice.type);
                     if (choice.type === 'USER') {
-                      void finishUserOnly();
+                      setStep('legal');
                     } else {
                       setStep(3);
                     }
@@ -303,6 +349,38 @@ export function RegisterWizard() {
                 ← Volver
               </Button>
               {error && <p className="text-sm text-red-400">{error}</p>}
+            </div>
+          )}
+
+          {step === 'legal' && account && profileType === 'USER' && (
+            <div className="space-y-4">
+              <LegalFlowAcceptanceBlock
+                items={signupLegalItems}
+                selectedVersionIds={selectedLegalVersionIds}
+                onChange={setSelectedLegalVersionIds}
+                disabled={submitting}
+                loading={signupLegalLoading}
+                error={legalError}
+              />
+              {error && <p className="text-sm text-red-400">{error}</p>}
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setStep(2)}
+                  disabled={submitting}
+                >
+                  ← Volver
+                </Button>
+                <Button
+                  type="button"
+                  className="flex-1"
+                  disabled={submitting || signupLegalLoading}
+                  onClick={() => void finishUserOnly()}
+                >
+                  {submitting ? 'Creando cuenta…' : 'Crear cuenta'}
+                </Button>
+              </div>
             </div>
           )}
 
@@ -368,12 +446,20 @@ export function RegisterWizard() {
                   </p>
                 </>
               )}
+              <LegalFlowAcceptanceBlock
+                items={signupLegalItems}
+                selectedVersionIds={selectedLegalVersionIds}
+                onChange={setSelectedLegalVersionIds}
+                disabled={submitting}
+                loading={signupLegalLoading}
+                error={legalError}
+              />
               {error && <p className="text-sm text-red-400">{error}</p>}
               <div className="flex gap-2">
                 <Button type="button" variant="outline" onClick={() => setStep(2)} disabled={submitting}>
                   ← Volver
                 </Button>
-                <Button type="submit" className="flex-1" disabled={submitting}>
+                <Button type="submit" className="flex-1" disabled={submitting || signupLegalLoading}>
                   {submitting ? 'Creando cuenta…' : 'Crear cuenta'}
                 </Button>
               </div>

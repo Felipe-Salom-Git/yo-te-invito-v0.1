@@ -18,6 +18,9 @@
 | `pnpm db:reset-dangerous -- --confirm` | Alto | Toda la BD |
 | `pnpm db:seed` | Medio | Opt-in env |
 | `pnpm --filter api run seed:subcategories` | Bajo | Catálogo |
+| `pnpm --filter api run seed:legal-documents` | Bajo | Catálogo legal (idempotente; sin auto-publish) |
+| `pnpm --filter api run seed:legal-content` | Bajo | Importa `docs/legal/*.md` → borradores (`--dry-run`, `--force`, `--publish`) |
+| `pnpm --filter api run smoke:legal` | Bajo | Legal Admin — API + `DEV_AUTH_ENABLED` o JWT |
 | `pnpm --filter api run user:*` | Bajo–Medio | Ver guía |
 | `pnpm --filter api run smoke:*` | Bajo–Alto | Ver SMOKE_TESTS_GUIDE |
 | `pnpm --filter api run smoke:referrals` | Alto | Referidos V2 — productor + referido + evento |

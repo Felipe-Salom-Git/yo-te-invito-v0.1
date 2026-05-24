@@ -140,7 +140,8 @@ _Pendiente fuera de alcance del bloque: navbar contextual en portales (reducir c
 ## Footer público completo
 
 - [ ] Diseñar footer público completo para home, explore, categorías y fichas públicas.
-- [ ] Agregar enlaces legales: términos, privacidad, compra/cancelación/reembolso.
+- [x] Rutas públicas `/legal/*` con contenido desde API (Slice Legal Admin 5).
+- [x] Agregar enlaces legales en footer: términos, privacidad, compra/cancelación/reembolso y verticales (Slice Legal Admin 7).
 - [ ] Agregar enlaces por vertical: eventos, gastronomía, rentals, excursiones y hoteles próximamente.
 - [ ] Agregar acceso a soporte/contacto.
 - [ ] Agregar redes sociales.
@@ -153,21 +154,26 @@ _Pendiente fuera de alcance del bloque: navbar contextual en portales (reducir c
 
 ## Legal y responsabilidades por perfil
 
-- [ ] Redactar términos y condiciones generales de la plataforma.
-- [ ] Redactar política de privacidad.
-- [ ] Redactar política de compra, cancelación y reembolso.
-- [ ] Redactar condiciones para productores/productoras.
-- [ ] Redactar condiciones para gastronómicos.
-- [ ] Redactar condiciones para rentals/proveedores de equipos.
-- [ ] Redactar condiciones para hoteles.
-- [ ] Redactar condiciones para referidos.
-- [ ] Redactar condiciones de transferencia de tickets.
+- [x] Infra backend documentos legales (Slice Legal Admin 2–3): modelos, lectura, draft/publish versionado, audit, seed — ver `docs/audits/LEGAL_ADMIN_AUDIT.md`
+- [x] Panel admin `/admin/legales` (Slice Legal Admin 4): listado, edición metadata/borrador, publicación, historial versiones
+- [x] Cargar borradores legales iniciales en Admin Legales desde `docs/legal/` (`seed:legal-content`; Slice Legal Content 1).
+- [x] Layout portales ampliado + listado admin Legales V2 (`PORTAL_BODY_CLASS`, tabla original con scroll en contenedor).
+- [ ] Publicar versión aprobada — términos y condiciones generales.
+- [ ] Publicar versión aprobada — política de privacidad.
+- [ ] Publicar versión aprobada — política de compra, cancelación y reembolso.
+- [ ] Publicar versión aprobada — condiciones para productores/productoras.
+- [ ] Publicar versión aprobada — condiciones para gastronómicos.
+- [ ] Publicar versión aprobada — condiciones para rentals/proveedores de equipos.
+- [ ] Publicar versión aprobada — condiciones para hoteles.
+- [ ] Publicar versión aprobada — condiciones para referidos.
+- [ ] Publicar versión aprobada — condiciones de transferencia de tickets.
 - [ ] Aclarar responsabilidad de la plataforma en acuerdos productor ↔ referido.
 - [ ] Aclarar que la plataforma no interviene en pagos externos entre productor y referido si la liquidación es manual.
 - [ ] Aclarar alcance de la plataforma como portal de comunicación entre partes cuando aplique.
-- [ ] Agregar links legales en footer, registro, checkout y portales.
-- [ ] Registrar versión de términos aceptada por cada usuario.
-- [ ] Preparar procedimiento interno de soporte.
+- [x] Agregar links legales en footer, registro, checkout y portales (Slice Legal Admin 7).
+- [x] Backend aceptación legal por versión (`/me/legal/*`, Slice 6).
+- [x] Registrar versión de términos aceptada por cada usuario en flujos UI checkout/registro autenticados (`POST /me/legal/accept`); checkout invitado: checkbox + declaración (sin persistencia hasta cuenta).
+- [ ] Publicar procedimiento interno de soporte (borrador importado; `INTERNAL`, no público).
 
 ## Registro y onboarding por tipo de usuario
 
@@ -179,10 +185,10 @@ _Pendiente fuera de alcance del bloque: navbar contextual en portales (reducir c
 - [ ] Pulir formulario de registro para hotel.
 - [ ] Pulir formulario de registro para referido.
 - [ ] Definir campos obligatorios y opcionales por tipo de perfil.
-- [ ] Agregar aceptación obligatoria de términos generales.
-- [ ] Agregar aceptación obligatoria de términos específicos según tipo de perfil.
-- [ ] Agregar textos claros de responsabilidad por tipo de usuario.
-- [ ] Agregar links a condiciones legales desde cada formulario.
+- [x] Agregar aceptación obligatoria de términos generales (Slice Legal Admin 7 — según flags publicados).
+- [x] Agregar aceptación obligatoria de términos específicos según tipo de perfil (portal: `PORTAL_ACCESS`; signup según `isRequiredForSignup`).
+- [ ] Agregar textos claros de responsabilidad por tipo de usuario (contenido legal pendiente de redacción).
+- [x] Agregar links a condiciones legales desde cada formulario (registro, checkout, footer, portales — Slice 7).
 - [ ] Registrar versión aceptada de términos y fecha de aceptación.
 - [ ] Agregar estado visual de completitud del registro/onboarding cuando aplique.
 - [ ] Revisar mensajes de error y validaciones visibles.

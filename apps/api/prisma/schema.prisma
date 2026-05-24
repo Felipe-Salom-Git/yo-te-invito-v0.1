@@ -176,6 +176,7 @@ model Tenant {
   ticketTransferOffers          TicketTransferOffer[]
   userNotifications             UserNotification[]
   notificationDeliveryLogs      NotificationDeliveryLog[]
+  legalDocuments                LegalDocument[]
 }
 
 model RentalLocation {
@@ -691,6 +692,8 @@ model User {
   pushSubscriptions             UserPushSubscription[]
   notifications                 UserNotification[]
   notificationDeliveries      NotificationDeliveryLog[]
+  legalDocumentVersionsPublished LegalDocumentVersion[] @relation("LegalVersionPublisher")
+  legalAcceptances              UserLegalAcceptance[]
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -1750,6 +1753,11 @@ enum AuditAction {
   REVIEW_REPLY_UPDATED
   REFERRAL_PAYMENT_REQUEST_CREATED
   REFERRAL_PAYMENT_REQUEST_STATUS_CHANGED
+  LEGAL_DOCUMENT_CREATED
+  LEGAL_DOCUMENT_UPDATED
+  LEGAL_DOCUMENT_DRAFT_SAVED
+  LEGAL_DOCUMENT_PUBLISHED
+  LEGAL_DOCUMENT_ARCHIVED
 }
 
 model AuditLog {
@@ -1948,4 +1956,90 @@ model GastroDiscountClaim {
   @@unique([discountId, email])
   @@index([tenantId, discountId])
   @@index([userId])
+}
+
+// ─── Legal documents (administrable TyC / policies) ───────────────────────────
+
+enum LegalDocumentVisibility {
+  PUBLIC
+  INTERNAL
+}
+
+enum LegalDocumentVersionStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum LegalAcceptanceContext {
+  SIGNUP
+  CHECKOUT
+  PROFILE_ONBOARDING
+  PORTAL_ACCESS
+}
+
+model LegalDocument {
+  id                        String                  @id @default(cuid())
+  tenantId                  String
+  key                       String
+  title                     String
+  description               String?
+  visibility                LegalDocumentVisibility @default(PUBLIC)
+  appliesToProfiles         String[]                @default([])
+  isRequiredForSignup       Boolean                 @default(false)
+  isRequiredForCheckout     Boolean                 @default(false)
+  isRequiredForPortalAccess   Boolean                 @default(false)
+  isActive                  Boolean                 @default(true)
+  createdAt                 DateTime                @default(now())
+  updatedAt                 DateTime                @updatedAt
+
+  tenant      Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  versions    LegalDocumentVersion[]
+  acceptances UserLegalAcceptance[]
+
+  @@unique([tenantId, key])
+  @@index([tenantId, visibility])
+  @@index([tenantId, isActive])
+}
+
+model LegalDocumentVersion {
+  id                  String                     @id @default(cuid())
+  documentId          String
+  version             String
+  status              LegalDocumentVersionStatus @default(DRAFT)
+  title               String
+  contentMarkdown     String                     @db.Text
+  summary             String?
+  publishedAt         DateTime?
+  publishedByUserId   String?
+  createdAt           DateTime                   @default(now())
+  updatedAt           DateTime                   @updatedAt
+
+  document    LegalDocument         @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  publishedBy User?                 @relation("LegalVersionPublisher", fields: [publishedByUserId], references: [id], onDelete: SetNull)
+  acceptances UserLegalAcceptance[]
+
+  @@unique([documentId, version])
+  @@index([documentId, status])
+}
+
+model UserLegalAcceptance {
+  id                String                 @id @default(cuid())
+  userId            String
+  documentId        String
+  documentVersionId String
+  context           LegalAcceptanceContext
+  acceptedAt        DateTime               @default(now())
+  ipAddress         String?
+  userAgent         String?
+  createdAt         DateTime               @default(now())
+
+  user            User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document        LegalDocument        @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  documentVersion LegalDocumentVersion @relation(fields: [documentVersionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, documentVersionId, context])
+  @@index([userId, context])
+  @@index([documentId])
+  @@index([documentVersionId])
 }

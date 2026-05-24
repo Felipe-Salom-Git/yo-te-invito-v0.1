@@ -17,9 +17,34 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 
 ---
 
+## Legal Admin (documentos administrables) — módulo técnico cerrado
+
+> Referencia operativa: **`docs/legal/LEGAL_ADMIN_MODULE.md`** · QA manual: **`docs/dev/LEGAL_ADMIN_QA_SMOKE.md`** · Smokes: `pnpm --filter api run smoke:legal`
+
+- [x] **Slice 2 (2026-05-24):** modelos Prisma, migración, schemas shared, módulo `legal`, endpoints lectura, seed `seed:legal-documents`
+- [x] **Slice 3 (2026-05-24):** `PATCH` metadata, `POST` draft/publish, archivado automático, validación anti-placeholder, `AuditLog` en mutaciones, smoke ampliado `test:legal-documents`
+- [x] **Slice 4 (2026-05-24):** UI admin `/admin/legales` (listado, detalle, versiones), `LegalDocumentsRepo`, hooks TanStack Query, nav admin «Legales»
+- [x] **Slice 5 (2026-05-24):** páginas públicas `/legal/[slug]` dinámicas (API publicada, metadata, 404 controlado)
+- [x] **Slice 6 (2026-05-24):** `GET/POST /me/legal/*`, requirements, aceptación por versión, hooks/componentes reutilizables, `test:me-legal-acceptance`
+- [x] **Slice 7 (2026-05-24):** footer legales, registro + `POST /me/legal/accept` post-signup, checkout (`/me/cart`, `/checkout/*`), banner portal comercial, `GET /public/legal/requirements`
+- [x] **Slice 8 (2026-05-24):** QA/hardening, `smoke:legal`, `docs/legal/LEGAL_ADMIN_MODULE.md`, smoke manual `docs/dev/LEGAL_ADMIN_QA_SMOKE.md`
+- [x] **Slice Legal Content 1 (2026-05-24):** `seed:legal-content` — importa `docs/legal/*.md` como DRAFT (no auto-publish)
+- [x] **Legales V2 (2026-05-24):** layout portales ampliado (`PORTAL_BODY_CLASS` `max-w-screen-2xl`, `PortalPageContext` + `PageContainer` sin doble `max-w`); listado `/admin/legales` — tabla administrativa original (`overflow-x-auto`, `min-w-[900px]`, `md:block`) + cards mobile (`md:hidden`)
+- [ ] Revisión/aprobación cliente y **publicación** de versiones legales en `/admin/legales`
+- [ ] Bloqueos duros portal (publicar evento, descuentos gastro, pago referido, etc.) si faltan términos
+- [ ] Migrar disclaimers hardcoded (transferencia, referidos) a documentos publicados
+
+### Registro / legales (checklist V2 — integración)
+
+- [x] Aceptación obligatoria términos generales en registro (`SIGNUP`, docs publicados)
+- [x] Links legales en registro, checkout, footer, portales
+- [ ] Textos de responsabilidad por tipo de usuario (contenido legal, no solo UI)
+
+---
+
 ## A. Infraestructura y backend
 
-- [ ] Ejecutar migraciones Prisma en cada entorno (`prisma migrate deploy`) y `prisma generate` tras cambios de schema (incl. `20260608120000_producer_event_status_notifications` — kinds `EVENT_APPROVED_BY_ADMIN` / `EVENT_REJECTED_BY_ADMIN`)
+- [ ] Ejecutar migraciones Prisma en cada entorno (`prisma migrate deploy`) y `prisma generate` tras cambios de schema (incl. `20260524120000_legal_documents`, `20260608120000_producer_event_status_notifications`)
 - [ ] Confirmar cliente Prisma alineado con DB (hotel, inbox, **RentalLocation**, opening hours JSON, etc.)
 - [ ] Rate limiting y hardening en producción
 - [x] Variables Web Push documentadas (`USER_PORTAL.md`, `AI_ENTRYPOINT.md`, `BACKEND_CONTEXT.md`)

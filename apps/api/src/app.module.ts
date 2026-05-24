@@ -22,6 +22,7 @@ import { HotelModule } from './modules/hotel/hotel.module';
 import { ProfilesModule } from './modules/profiles/profiles.module';
 import { ReferrerModule } from './modules/referrer/referrer.module';
 import { ReviewDisputesModule } from './modules/review-disputes/review-disputes.module';
+import { LegalModule } from './modules/legal/legal.module';
 import { AuthModule } from './auth/auth.module';
 import { EmailModule } from './email/email.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
@@ -54,6 +55,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
     ProfilesModule,
     ReferrerModule,
     ReviewDisputesModule,
+    LegalModule,
   ],
 })
 export class AppModule {}

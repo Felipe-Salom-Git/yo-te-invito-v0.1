@@ -11,6 +11,12 @@ import { checkoutFormSchema, type CheckoutFormData } from '@/lib/schemas/checkou
 import { getReferralCode } from '@/lib/referral-cookie';
 import { PageContainer, SectionTitle, Button, Input, PageLoader } from '@/components';
 import { useState } from 'react';
+import { LegalFlowAcceptanceBlock } from '@/components/legal/LegalFlowAcceptanceBlock';
+import { usePublicLegalRequirements } from '@/lib/query/public-legal-requirements';
+import {
+  allLegalItemsSelected,
+  LEGAL_ACCEPTANCE_REQUIRED_MSG,
+} from '@/lib/legal/legal-acceptance-validation';
 
 const TENANT_ID = 'tenant-demo';
 
@@ -34,6 +40,14 @@ export default function CheckoutPage() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  const [selectedLegalVersionIds, setSelectedLegalVersionIds] = useState<string[]>([]);
+
+  const { data: checkoutLegal, isLoading: checkoutLegalLoading } = usePublicLegalRequirements(
+    'CHECKOUT',
+    'USER',
+    items.length > 0,
+  );
+  const checkoutLegalItems = checkoutLegal?.required ?? [];
 
   useEffect(() => {
     if (status === 'authenticated') {
@@ -85,6 +99,10 @@ export default function CheckoutPage() {
         if (path) errs[path] = err.message;
       });
       setErrors(errs);
+      return;
+    }
+    if (!allLegalItemsSelected(checkoutLegalItems, selectedLegalVersionIds)) {
+      setErrors({ form: LEGAL_ACCEPTANCE_REQUIRED_MSG });
       return;
     }
     setErrors({});
@@ -208,8 +226,17 @@ export default function CheckoutPage() {
             value={form.phone ?? ''}
             onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))}
           />
+          <LegalFlowAcceptanceBlock
+            items={checkoutLegalItems}
+            selectedVersionIds={selectedLegalVersionIds}
+            onChange={setSelectedLegalVersionIds}
+            disabled={loading}
+            loading={checkoutLegalLoading}
+            guestMode
+            error={errors.legal}
+          />
           {errors.form && <p className="text-sm text-red-400">{errors.form}</p>}
-          <Button type="submit" disabled={loading} className="w-full">
+          <Button type="submit" disabled={loading || checkoutLegalLoading} className="w-full">
             {loading ? 'Creando…' : 'Crear orden y pagar'}
           </Button>
         </form>

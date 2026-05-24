@@ -77,6 +77,7 @@ ApiClient → HTTP (NEXT_PUBLIC_API_BASE_URL)
 | **adminEvents** | ✓ | `GET /admin/events` — listado operativo con filtros |
 | **adminAudit** | ✓ | `GET /admin/audit-logs` — auditoría con filtros |
 | **adminUsers** | ✓ | `GET /admin/users`, `PATCH /admin/users/:id/role` — listado operativo con filtros |
+| **LegalDocumentsRepo** | ✓ | Admin CRUD + publish; público `/public/legal/*`; aceptación `/me/legal/*` |
 | ProfilesRepo, ApplicationsRepo, PlatformConfigRepo | ✓ | |
 
 **Category routing**: `gastro` → `/restaurants`, `excursion` → `/excursiones`, `rental` → `/rentals`, `hotel` → `/hoteles`, default → `/events`.
@@ -89,10 +90,10 @@ ApiClient → HTTP (NEXT_PUBLIC_API_BASE_URL)
 
 | Area | Routes |
 |------|--------|
-| Public | `/`, `/home`, **`/explore`** (filtros URL: `q`, `category`, `subcategoryId`, `city`, `from`, `to`, `page`; `?category=hotel` → banner Próximamente), `/events/[id]`, **`/restaurants/[id]`** (ficha gastro `GastroPublicDetailContent`, no ticketera), `/gastronomicos/[id]`, `/excursiones/[id]`, **`/rentals/[id]`**, **`/hoteles`** + **`/hoteles/[id]`** (vertical Próximamente; ver abajo), **`/users/[userId]`** (perfil comentarista), checkout, `/me/tickets`, `/referrers`, `/r/[code]` |
-| Account | `/login`, `/register`, **`/me/*`** (portal usuario estándar) |
+| Public | `/`, `/home`, **`/explore`** (filtros URL: `q`, `category`, `subcategoryId`, `city`, `from`, `to`, `page`; `?category=hotel` → banner Próximamente), `/events/[id]`, **`/restaurants/[id]`** (ficha gastro `GastroPublicDetailContent`, no ticketera), `/gastronomicos/[id]`, `/excursiones/[id]`, **`/rentals/[id]`**, **`/hoteles`** + **`/hoteles/[id]`** (vertical Próximamente; ver abajo), **`/users/[userId]`** (perfil comentarista), **`/legal/[slug]`** (documentos publicados, ISR), checkout, `/me/tickets`, `/referrers`, `/r/[code]` |
+| Account | `/login`, `/register` (aceptación legal `SIGNUP` post-registro), **`/me/*`** (portal usuario estándar) |
 | Cuenta (legacy) | `/cuenta/*` → **redirects** a `/me/*` (no mantener lógica duplicada) |
-| Admin | `/admin/*` (**solo rol `ADMIN`**, `ProfileProtectedLayout` en `admin/layout.tsx`), sidebar operaciones; **`/admin`** dashboard; **`/admin/eventos`** listado filtrado; **`/admin/reviews`** reporte reputación (KPIs, CSV); **`/admin/review-disputes`** cola disputas; **`/admin/usuarios`** listado usuarios con filtros URL; **`/admin/categorias`** subcategorías + banners (`/admin/subcategorias` redirige); **`/admin/auditoria`** logs operativos; acceso: `/profiles` o sidebar maestro (usuario maestro) |
+| Admin | `/admin/*` (**solo rol `ADMIN`**, `ProfileProtectedLayout` en `admin/layout.tsx`), sidebar operaciones; **`/admin`** dashboard; **`/admin/eventos`** listado filtrado; **`/admin/legales`** documentos legales versionados; **`/admin/reviews`** reporte reputación (KPIs, CSV); **`/admin/review-disputes`** cola disputas; **`/admin/usuarios`** listado usuarios con filtros URL; **`/admin/categorias`** subcategorías + banners (`/admin/subcategorias` redirige); **`/admin/auditoria`** logs operativos; acceso: `/profiles` o sidebar maestro (usuario maestro) |
 | Producer | `/producer` (hub: KPIs, engagement, **`ProducerDashboardEventStatusAlerts`**, eventos; nav en sidebar), `/producer/events`, ticket studio, **`/producer/profile`** (hub por bloques + completitud frontend), **`/producer/profile/create`** (solo nombre; slug en servidor), **`/producer/profile/identity|images|contact`**, **`/producer/comments`** (`ManagedReviewsCommentsPage`), referidos, payouts |
 | Gastro / Hotel / Referrer | `/gastro/*`, **`/gastro/contenido`** (editorial Prisma), **`/gastro/valoraciones`**, `/hotel`, **`/hotel/valoraciones`**, `/referrer`, `/cuenta/solicitar-referrer` |
 
@@ -126,7 +127,7 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`). Shared UI tokens:
 | Ruta | Uso |
 |------|-----|
 | `/me` | Dashboard (alertas, recomendados, **MeDashboardPushCta**) |
-| `/me/cart` | **Mi Carro** — carrito API + checkout |
+| `/me/cart` | **Mi Carro** — carrito API + checkout; aceptación legal `CHECKOUT` antes de confirmar |
 | `/me/tickets`, `/me/tickets/[ticketId]` | Listado agrupado + **detalle ticket comprador** (`MeBuyerTicketPanel`, impresión, transferencia) |
 | `/me/preferences` | Tabs: intereses, productoras, **gastro follows** (`MePreferencesGastro`), favoritos, esperados, notificaciones globales |
 | `/me/activity` | Asistidos, reviews, transfers |
@@ -143,7 +144,7 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`). Shared UI tokens:
 - Ficha gastro pública: `components/gastro/GastroPublicDetailContent` + hooks `lib/query/gastro-public-detail.ts`; **`GastroFollowButton`** → `/me/gastro-follows` (sin favoritos/esperados de evento en ficha restaurante).
 - Portal gastro: dashboard + validaciones (Slice 6). Valoraciones: `ManagedReviewsCommentsPage` scope `gastro` + `ManagedPortalReviewAlerts`. Follows: `GastroFollowButton`, `MePreferencesGastro` (toggles web/email por local). Notificaciones descuento: kind `FOLLOWED_GASTRO_NEW_DISCOUNT` en bandeja `/me/notifications`.
 - Engagement eventos: `EventEngagementRow` en fichas de **eventos** (favoritos / expected-events).
-- Checkout autenticado: redirige a `/me/cart`; invitado usa `/checkout` público.
+- Checkout autenticado: redirige a `/me/cart` (aceptación `CHECKOUT` vía `POST /me/legal/accept`); invitado `/checkout` y `/checkout/[eventId]` — checkbox obligatorio (declaración; persistencia al tener cuenta).
 - **Hoteles (discovery Próximamente, portal + ficha pública Slice 10–11):** `/hoteles` (Próximamente), **`/hoteles/[id]`** — `HotelLocationDetailView` + `GET /public/hotel-locations/by-event/:eventId` (fallback evento hotel); contacto real (WhatsApp/tel/email); sin reservas/checkout. Portal: `/hotel`, `/hotel/editar`. Valoraciones `/hotel/valoraciones`. `/categoria/hotel` → 404.
 
 **Eliminado:** `/reventa`, `/dev/seed`, `/dev/local-db`, `lib/local-db/*`.
@@ -170,8 +171,9 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`). Shared UI tokens:
 | Perfil productor (portal) | `components/producer/profile/` (`ProducerProfilePage`, `ManagedReviewSummary`, `ProducerProfilePublicPreview`, `producer-profile-completeness.ts`) |
 | Dashboard productor | `components/producer/dashboard/` (`ProducerDashboardClient`, KPIs, engagement, alertas estado evento; **sin** `ProducerDashboardQuickLinks`) |
 | Valoración B2B | `CommercialReviewPanel`, `CommercialAspectBreakdown` |
-| **Navbar V2** | `components/Navbar.tsx` — logo → `/categorias`, casita → `/home`, Explorar (`md+`), ciudad (`NavbarCitySelector` / drawer mobile), carro (`NavbarCartButton` + `useNavbarCart`), menú usuario (`NavbarUserMenu`) o drawer `NavbarMobileNav` + `MobilePublicNavDrawer`. Config: `lib/navigation/publicNavConfig.ts`, `userNavConfig.ts`. Footer sin link Admin (Slice 8). A11y: `useOverlayA11y`, `navA11yClasses`. Docs: `docs/audits/NAVBAR_RESPONSIVE_AUDIT.md`, `NAVBAR_RESPONSIVE_SMOKE.md` |
+| **Navbar V2** | `components/Navbar.tsx` — logo → `/categorias`, casita → `/home`, Explorar (`md+`), ciudad (`NavbarCitySelector` / drawer mobile), carro (`NavbarCartButton` + `useNavbarCart`), menú usuario (`NavbarUserMenu`) o drawer `NavbarMobileNav` + `MobilePublicNavDrawer`. Config: `lib/navigation/publicNavConfig.ts`, `userNavConfig.ts`. **Footer:** grid legales (`footerLegalLinks.ts`) + contacto `PlatformConfig` (sin duplicar navbar). A11y: `useOverlayA11y`, `navA11yClasses`. Docs: `docs/audits/NAVBAR_RESPONSIVE_AUDIT.md`, `NAVBAR_RESPONSIVE_SMOKE.md` |
 | Portales nav | `PortalLayoutShell`, `PortalSidebar` (desktop), `MobilePortalNav` (mobile por portal); config `lib/navigation/portalNavConfig.ts` |
+| Portales layout (Legales V2) | `PORTAL_BODY_CLASS` en `app/(portal)/*/layout.tsx` (`max-w-screen-2xl`, padding responsive); `PortalPageProvider` + `PageContainer` sin segundo `max-w-6xl` dentro de portales |
 | Usuario maestro nav | `lib/navigation/masterUser.ts` — inicio portal → `/me`; menú acordeón multi-vertical en todos los portales |
 | Dashboard admin | `components/admin/dashboard/` — `AdminDashboardClient`, KPIs, cola, accesos; hook `lib/query/admin-dashboard.ts` |
 | Eventos admin | `components/admin/events/` — `AdminEventsPageClient`, filtros URL, tabla + cards mobile |
@@ -181,6 +183,13 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`). Shared UI tokens:
 | Reputación admin | `/admin/reviews` — `AdminReviewsReportPageClient`, KPIs, tabla por vertical, señales problemáticas, top disputas, export CSV; hook `useAdminReviewsReport` |
 | Usuarios admin | `components/admin/users/` — `AdminUsersPageClient`, filtros URL, tabla + cards mobile, badges rol/perfiles; cambio de rol con confirmación; cuenta maestro sin selector; hook `lib/query/admin-users.ts` |
 | Subcategorías admin | `components/admin/subcategories/` — `AdminSubcategoriesPageClient`, tabs por vertical, CRUD vía `SubcategoriesRepo`, hotel `AdminHotelComingSoonPanel`; banners en `AdminCategoryBannerPanel`; hook `useAdminSubcategories` |
+| **Legales admin** | `components/admin/legal/` — `/admin/legales` (tabla desktop `md+` con `overflow-x-auto` + `min-w-[900px]`; cards `md:hidden`), detalle, versiones; `LegalDocumentsRepo` + `lib/query/admin-legal-documents.ts` |
+| **Legales público** | `components/legal/` — `/legal/[slug]` (server fetch, ISR); preview Markdown |
+| **Aceptación legal (reutilizable)** | `LegalAcceptanceCheckboxList`, `LegalRequirementNotice`, `LegalDocumentsLinksList`, `LegalFlowAcceptanceBlock`, `PortalLegalPendingBanner`; hooks `lib/query/me-legal.ts`, `lib/query/public-legal-requirements.ts`; integración en `RegisterWizard`, `/me/cart`, checkout público, `PortalLayoutShell` |
+| **Footer legales** | `lib/navigation/footerLegalLinks.ts` → `Footer` (grid responsive, sin duplicar navbar) |
+| **Portal legales** | `PortalLegalPendingBanner` en portales comerciales (`PORTAL_ACCESS`); `lib/navigation/portalLegalProfile.ts` |
+| **Markdown legal** | `LegalMarkdownPreview` — subset seguro, sin `dangerouslySetInnerHTML`; SSR público vía `fetchPublicLegalDocument` |
+| **QA / ops** | Smoke manual `docs/dev/LEGAL_ADMIN_QA_SMOKE.md`; módulo `docs/legal/LEGAL_ADMIN_MODULE.md` |
 | Portal usuario push | `components/me/MePushNotificationsPanel`, `MePushAlertPreferences`, `MeDashboardPushCta`, `InterestsDisclosure` |
 | Ticket comprador | `components/tickets/*`, `components/me/MeBuyerTicketPanel`, `MeTicketListCard` |
 
@@ -257,6 +266,25 @@ Auditoría: `docs/audits/GASTRO_HOTELES_V2_AUDIT.md` · QA/scripts: `docs/guides
 
 **Rentals V2 (checklist § Rentals):** WhatsApp por local, cards discovery, subcategorías, anti-alojamiento, detalle mobile — ver `CONTEXT_PENDIENTES.md` § E.
 
+## 8e. Legal Admin — cerrado (2026-05-24, Slices 1–8)
+
+Módulo técnico **cerrado**; contenido base en `docs/legal/` importable como borrador (`seed:legal-content`). Publicación y aprobación cliente pendientes.
+
+| Capa | Implementado |
+|------|----------------|
+| Admin | `/admin/legales`, editor borrador, preview Markdown seguro, publicación con confirmación, historial versiones |
+| Público | `/legal/[slug]` — solo `PUBLIC` + `PUBLISHED`; `fetchPublicLegalDocument` (ISR 60s) |
+| Aceptación | `RegisterWizard` (`SIGNUP`), `/me/cart` + checkout (`CHECKOUT`), banner portales (`PORTAL_ACCESS`) |
+| Footer | Enlaces estables a slugs públicos + contacto desde config |
+
+**Hooks/repos:** `LegalDocumentsRepo`, `admin-legal-documents.ts`, `me-legal.ts`, `public-legal-requirements.ts`.
+
+**Smokes API:** `test:legal-documents`, `test:me-legal-acceptance`, `smoke:legal` (requiere API + `DEV_AUTH_ENABLED` o JWT).
+
+**Docs:** `docs/legal/LEGAL_ADMIN_MODULE.md` (referencia), `docs/dev/LEGAL_ADMIN_QA_SMOKE.md` (manual), `docs/audits/LEGAL_ADMIN_AUDIT.md` (auditoría inicial).
+
+**Pendiente producto:** redacción profesional, bloqueos duros en acciones sensibles del portal, migrar avisos hardcoded (transferencia/referidos).
+
 ---
 
 ## 9. Domain Rules (frontend)
@@ -270,6 +298,8 @@ Auditoría: `docs/audits/GASTRO_HOTELES_V2_AUDIT.md` · QA/scripts: `docs/guides
 
 - **Persistencia:** solo API — no `lib/local-db`, no `/dev/seed`, no `/dev/local-db`.
 - **Subcategorías (estructura):** `pnpm --filter api run seed:subcategories`.
+- **Documentos legales (catálogo):** `pnpm --filter api run seed:legal-documents` (idempotente; sin auto-publish).
+- **Contenido legal (Markdown):** `pnpm --filter api run seed:legal-content` — ver `docs/legal/README.md`.
 - **Cleanup contenido:** `pnpm db:cleanup-content` (preserva `felipe.e.salom@gmail.com`).
 - **Dev UI:** `/dev/scanner-sim` (simulación escaneo QR).
 - **Login:** NextAuth → `POST /auth/login`; sin hints `@demo.local` en formulario.
@@ -291,6 +321,12 @@ Auditoría: `docs/audits/GASTRO_HOTELES_V2_AUDIT.md` · QA/scripts: `docs/guides
 
 Usar `SMOKE_USER_EMAIL` / `SMOKE_USER_PASSWORD` — ver `docs/guides/SMOKE_TESTS_GUIDE.md`, `docs/guides/DEVELOPER_SCRIPTS_GUIDE.md`.
 
+| Comando | Alcance |
+|---------|---------|
+| `pnpm --filter api run smoke:legal` | Documentos admin/public + aceptación usuario |
+| `pnpm --filter api run test:legal-documents` | Solo API documentos |
+| `pnpm --filter api run test:me-legal-acceptance` | Solo `/me/legal/*` |
+
 Ver: `docs/guides/README.md`, `docs/guides/DEVELOPER_SCRIPTS_GUIDE.md`, `docs/guides/SMOKE_TESTS_GUIDE.md`, `docs/guides/DEMO_REMOVAL.md`, `docs/guides/DEVELOPER_USERS.md`.
 
 ---
@@ -310,6 +346,9 @@ Ver: `docs/guides/README.md`, `docs/guides/DEVELOPER_SCRIPTS_GUIDE.md`, `docs/gu
 - `docs/context/PROJECT_CONTEXT.md`
 - `docs/context/BACKEND_CONTEXT.md`
 - `docs/context/CONTEXT_PENDIENTES.md`
+- `docs/legal/LEGAL_ADMIN_MODULE.md`
+- `docs/dev/LEGAL_ADMIN_QA_SMOKE.md`
+- `docs/audits/LEGAL_ADMIN_AUDIT.md`
 - `docs/dev/Yo_Te_Invito_Checklist_V2_Produccion.md`
 - `docs/reviews/REVIEWS_V2.md`
 - `docs/tickets/TICKET_CANVAS_STUDIO.md`

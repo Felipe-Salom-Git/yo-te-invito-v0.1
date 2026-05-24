@@ -134,7 +134,7 @@ export function HotelPublicDetailContent({
             <HotelAmenitiesSection amenities={hotel.amenities} />
 
             {galleryImages.length > 0 ? (
-              <GastroGallerySection images={galleryImages.map((img) => img.url)} />
+              <GastroGallerySection images={galleryImages} />
             ) : null}
           </div>
 

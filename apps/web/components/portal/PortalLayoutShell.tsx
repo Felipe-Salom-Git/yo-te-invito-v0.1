@@ -6,6 +6,9 @@ import { useIsMasterUser } from '@/hooks/useIsMasterUser';
 import { MobilePortalNav } from './MobilePortalNav';
 import { MasterMobilePortalNav } from './MasterMobilePortalNav';
 import { MasterPortalSidebar } from './MasterPortalSidebar';
+import { PortalLegalPendingBanner } from '@/components/legal/PortalLegalPendingBanner';
+import { portalHasLegalProfile } from '@/lib/navigation/portalLegalProfile';
+import { PortalPageProvider } from '@/lib/navigation/PortalPageContext';
 
 export interface PortalLayoutShellProps {
   portalKey: PortalNavKey;
@@ -27,19 +30,23 @@ export function PortalLayoutShell({
 
   if (isMaster) {
     return (
-      <>
+      <PortalPageProvider>
         <MasterMobilePortalNav showPublicHomeLink={showPublicHomeLink} />
         <MasterPortalSidebar>{children}</MasterPortalSidebar>
-      </>
+      </PortalPageProvider>
     );
   }
 
   const { items } = getPortalNavDefinition(portalKey);
+  const showLegalBanner = portalHasLegalProfile(portalKey);
 
   return (
-    <>
+    <PortalPageProvider>
       <MobilePortalNav portalKey={portalKey} showPublicHomeLink={showPublicHomeLink} />
-      <PortalSidebar items={items}>{children}</PortalSidebar>
-    </>
+      <PortalSidebar items={items}>
+        {showLegalBanner ? <PortalLegalPendingBanner portalKey={portalKey} /> : null}
+        {children}
+      </PortalSidebar>
+    </PortalPageProvider>
   );
 }

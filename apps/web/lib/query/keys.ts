@@ -306,6 +306,31 @@ export const adminUsersKeys = {
   list: (filtersKey: string) => [...adminUsersKeys.all, 'list', filtersKey] as const,
 };
 
+export const adminLegalDocumentsKeys = {
+  all: ['admin', 'legal-documents'] as const,
+  list: (filtersKey: string) => [...adminLegalDocumentsKeys.all, 'list', filtersKey] as const,
+  detail: (key: string) => [...adminLegalDocumentsKeys.all, 'detail', key] as const,
+  versions: (key: string) => [...adminLegalDocumentsKeys.all, 'versions', key] as const,
+};
+
+export const publicLegalDocumentsKeys = {
+  all: ['public', 'legal'] as const,
+  bySlug: (tenantId: string, slug: string) =>
+    [...publicLegalDocumentsKeys.all, tenantId, slug] as const,
+  requirements: (tenantId: string, context: string, profileType?: string) =>
+    [...publicLegalDocumentsKeys.all, 'requirements', tenantId, context, profileType ?? ''] as const,
+};
+
+/** @alias publicLegalDocumentsKeys */
+export const publicLegalKeys = publicLegalDocumentsKeys;
+
+export const meLegalKeys = {
+  all: ['me', 'legal'] as const,
+  requirements: (context: string, profileType?: string) =>
+    [...meLegalKeys.all, 'requirements', context, profileType ?? ''] as const,
+  acceptances: () => [...meLegalKeys.all, 'acceptances'] as const,
+};
+
 // ─── Payouts ───────────────────────────────────────────────────────────────
 
 export const payoutsKeys = {

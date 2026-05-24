@@ -30,6 +30,11 @@ const LINKS: OperationalLink[] = [
     description: 'Registro de acciones admin: eventos, disputas, tickets y más.',
   },
   {
+    href: '/admin/legales',
+    label: 'Legales',
+    description: 'Términos, políticas, condiciones por perfil y procedimientos internos.',
+  },
+  {
     href: '/admin/tickets',
     label: 'Tickets',
     description: 'Intervenciones sobre tickets (revocaciones).',

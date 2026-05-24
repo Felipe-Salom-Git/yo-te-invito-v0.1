@@ -6,6 +6,7 @@
 export * from './enums';
 export * from './constants/ticket-transfer';
 export * from './constants/master-user';
+export * from './constants/legal-documents';
 export * from './schemas/events';
 export * from './schemas/scanner';
 export * from './schemas/scanner-gastro-discount';
@@ -57,3 +58,5 @@ export * from './schemas/user-portal';
 export * from './schemas/ticket-transfer-offer';
 export * from './schemas/notifications';
 export * from './schemas/push-notifications';
+export * from './schemas/legal-documents';
+export * from './schemas/me-legal';

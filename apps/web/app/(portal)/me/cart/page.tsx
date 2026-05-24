@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
@@ -22,6 +22,12 @@ import {
 import { useTenant } from '@/hooks/useTenant';
 import { getErrorMessage } from '@/lib/errors';
 import { getReferralCode } from '@/lib/referral-cookie';
+import { LegalFlowAcceptanceBlock } from '@/components/legal/LegalFlowAcceptanceBlock';
+import { useMyLegalRequirements, useAcceptLegalDocuments } from '@/lib/query/me-legal';
+import {
+  allLegalItemsSelected,
+  LEGAL_ACCEPTANCE_REQUIRED_MSG,
+} from '@/lib/legal/legal-acceptance-validation';
 
 function MeCartContent() {
   const { tenantId } = useTenant();
@@ -43,6 +49,16 @@ function MeCartContent() {
     refetch: refetchPending,
   } = useMePendingOrders();
   const { patchItem, removeItem, checkout } = useMeCartMutations();
+  const [selectedLegalVersionIds, setSelectedLegalVersionIds] = useState<string[]>([]);
+  const [legalError, setLegalError] = useState<string | null>(null);
+
+  const { data: checkoutLegal, isLoading: checkoutLegalLoading } = useMyLegalRequirements(
+    { context: 'CHECKOUT', profileType: 'USER' },
+    true,
+  );
+  const acceptLegal = useAcceptLegalDocuments();
+  const checkoutPending = checkoutLegal?.pending ?? [];
+  const needsLegalAcceptance = checkoutPending.length > 0;
 
   const createdCount = searchParams.get('created');
   const showCreatedBanner = createdCount != null && Number(createdCount) > 0;
@@ -57,8 +73,27 @@ function MeCartContent() {
     onError: (err: unknown) => addToast(getErrorMessage(err), 'error'),
   };
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     if (!tenantId) return;
+    setLegalError(null);
+
+    if (needsLegalAcceptance) {
+      if (!allLegalItemsSelected(checkoutPending, selectedLegalVersionIds)) {
+        setLegalError(LEGAL_ACCEPTANCE_REQUIRED_MSG);
+        addToast(LEGAL_ACCEPTANCE_REQUIRED_MSG, 'error');
+        return;
+      }
+      try {
+        await acceptLegal.mutateAsync({
+          documentVersionIds: selectedLegalVersionIds,
+          context: 'CHECKOUT',
+        });
+      } catch (err) {
+        addToast(getErrorMessage(err), 'error');
+        return;
+      }
+    }
+
     checkout.mutate(
       { tenantId, referralCode: getReferralCode() || undefined },
       {
@@ -182,11 +217,23 @@ function MeCartContent() {
               Si hay entradas de varios eventos, se creará un pedido por evento al confirmar. Si no hay
               stock, verás el error al cambiar cantidad o al confirmar.
             </p>
+            {needsLegalAcceptance ? (
+              <div className="mt-4">
+                <LegalFlowAcceptanceBlock
+                  items={checkoutPending}
+                  selectedVersionIds={selectedLegalVersionIds}
+                  onChange={setSelectedLegalVersionIds}
+                  disabled={checkout.isPending || acceptLegal.isPending}
+                  loading={checkoutLegalLoading}
+                  error={legalError}
+                />
+              </div>
+            ) : null}
             <div className="mt-4 flex justify-end">
               <Button
                 className="w-full sm:w-auto"
-                onClick={handleCheckout}
-                disabled={checkout.isPending || !tenantId}
+                onClick={() => void handleCheckout()}
+                disabled={checkout.isPending || acceptLegal.isPending || !tenantId}
               >
                 {checkout.isPending ? 'Procesando…' : 'Confirmar y crear pedidos'}
               </Button>

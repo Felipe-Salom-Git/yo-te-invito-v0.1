@@ -1,9 +1,10 @@
 'use client';
 
 import { RentalGalleryThumbnails } from '@/components/rentals/RentalGalleryThumbnails';
+import type { RentalGalleryImage } from '@/lib/rentals/productGallery';
 
 type GastroGallerySectionProps = {
-  images: string[];
+  images: RentalGalleryImage[];
 };
 
 export function GastroGallerySection({ images }: GastroGallerySectionProps) {

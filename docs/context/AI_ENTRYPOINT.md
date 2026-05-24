@@ -60,6 +60,7 @@ Controllers: HTTP + Zod only. Services: business logic. Prisma: persistence only
 | **`docs/audits/NAVBAR_RESPONSIVE_AUDIT.md`** | Slices 1–10 navbar + fix dropdown flotante |
 | **`docs/audits/NAVBAR_RESPONSIVE_SMOKE.md`** | Smoke responsive navbar |
 | **`CONTEXT_PENDIENTES.md`** | Checkbox backlog — mark `[x]` when done |
+| **`docs/legal/LEGAL_ADMIN_MODULE.md`** | Legal Admin — modelos, endpoints, flujos, staging (módulo cerrado 2026-05-24) |
 | **`FRONTEND_DEMO_NOTES.md`** | Legacy demo mapping (not current persistence) |
 
 **Portal productor:** `PROJECT_CONTEXT.md`, `BACKEND_CONTEXT.md`, `FRONTEND_CONTEXT.md`, `CONTEXT_PENDIENTES.md` § K (slices 1–10 cerrados en checklist V2; slug auto en perfil; notificaciones `EVENT_*_BY_ADMIN`).
@@ -69,6 +70,8 @@ Controllers: HTTP + Zod only. Services: business logic. Prisma: persistence only
 **Reviews V2 (reputación y moderación):** `docs/reviews/REVIEWS_V2.md` — slices UI pública, perfil, filtros, cola admin, notificaciones, reporting (`/admin/reviews`); smoke `smoke:reviews`; checklist § Reviews en `Yo_Te_Invito_Checklist_V2_Produccion.md` cerrado.
 
 **Gastro y Hoteles V2 (cerrado 2026-05-22):** checklist § Gastro y Hoteles; auditoría `docs/audits/GASTRO_HOTELES_V2_AUDIT.md`. Gastro: QR `docs/gastro/GASTRO_DISCOUNT_QR.md`, tests `test:gastro-discount-qr` / `test:gastro-discount-scan`. Hoteles: discovery Próximamente, portal `/hotel`, ficha `/hoteles/[id]`, E2E `pnpm e2e:hotel` + `docs/hotel/HOTEL_E2E.md`.
+
+**Legal Admin / Legales V2 (cerrado 2026-05-24):** slices 1–8 + import Markdown — admin `/admin/legales`, público `/legal/[slug]`, aceptación `/me/legal/*`, integración registro/checkout/footer/portales; **layout portales** `max-w-screen-2xl` (`portalLayoutClasses.ts`, `PortalPageContext`). Doc: `docs/legal/LEGAL_ADMIN_MODULE.md`; QA: `docs/dev/LEGAL_ADMIN_QA_SMOKE.md`; smoke `pnpm --filter api run smoke:legal` (API + `DEV_AUTH_ENABLED` o JWT). **No** marcar checklist de redacción legal hasta publicar contenido real.
 
 **Portal usuario (`/me/*`):** `docs/user/USER_PORTAL.md` (incl. **Push notifications** V2.1.3–V2.1.4, **ticket comprador** V2.2).
 
@@ -172,6 +175,9 @@ SMOKE_USER_EMAIL=felipe.e.salom@gmail.com SMOKE_USER_PASSWORD=<pass> \
 | `test:referral-proposals` / `test:referral-commission` / `test:referral-payment-requests` | Util sin BD |
 | `smoke:notifications` | Bandeja in-app + seed-demo admin (push requiere VAPID + navegador) |
 | `smoke:producer-follows` | Follows (cleanup follow al final) |
+| `smoke:legal` | Documentos legales + aceptación usuario (`test:legal-documents` + `test:me-legal-acceptance`) |
+| `seed:legal-documents` | Catálogo legal idempotente (sin auto-publish) |
+| `seed:legal-content` | Importa `docs/legal/*.md` → borradores (`--dry-run`, `--force`, `--publish`) |
 | `smoke:cleanup` | Dry-run / `--confirm` — artefactos smoke en BD |
 
 Variables útiles: `SMOKE_SKIP_CLEANUP`, `SMOKE_CLEANUP_BEFORE`, `SMOKE_ALLOW_DESTRUCTIVE` (transfer accept). Ver `docs/dev/SCRIPTS.md`.
@@ -228,7 +234,8 @@ Al agregar scripts nuevos: documentar en `DEVELOPER_SCRIPTS_GUIDE.md` y `SCRIPTS
 - **Datos:** API `MePortalController` + `UserNotificationsService`, `WebPushService`, `EventPublicationAlertsService`; SW `push-sw.js`; UI push en `/me/notifications`.
 - **Frontend:** `repositories/mePortal` + hooks `lib/query/me-portal.ts`; `lib/push/registerPush.ts`; `components/tickets/*`, `lib/tickets/*`; layout `UserPortalLayout`.
 - **Redirects:** `/cuenta/*` → rutas `/me/*` (temporal; no duplicar lógica en páginas `/cuenta`).
-- **Checkout:** usuario autenticado usa carrito API (`POST /me/cart/checkout`); invitado mantiene flujo público.
+- **Checkout:** usuario autenticado usa carrito API (`POST /me/cart/checkout`); aceptación legal `CHECKOUT` en `/me/cart` antes de confirmar; invitado mantiene flujo público con checkbox (persistencia al autenticarse).
+- **Legales:** registro acepta `SIGNUP` tras crear usuario (`POST /me/legal/accept`); footer y `/legal/[slug]` — ver `LEGAL_ADMIN_MODULE.md`.
 - **Transferencia:** solo personal (`TicketTransferOffer`); marketplace `/reventa` y módulo API `resale` **eliminados**.
 
 ### Eliminado (no reintroducir)

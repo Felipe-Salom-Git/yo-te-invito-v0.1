@@ -13,6 +13,13 @@ import { checkoutFormSchema, type CheckoutFormData } from '@/lib/schemas/checkou
 import { PageContainer, SectionTitle, Button, Input, useToast, PageLoader } from '@/components';
 import { CheckoutPaymentPanel } from '@/components/checkout/CheckoutPaymentPanel';
 import { getErrorMessage } from '@/lib/errors';
+import { LegalFlowAcceptanceBlock } from '@/components/legal/LegalFlowAcceptanceBlock';
+import { usePublicLegalRequirements } from '@/lib/query/public-legal-requirements';
+import { useMyLegalRequirements, useAcceptLegalDocuments } from '@/lib/query/me-legal';
+import {
+  allLegalItemsSelected,
+  LEGAL_ACCEPTANCE_REQUIRED_MSG,
+} from '@/lib/legal/legal-acceptance-validation';
 import { getReferralCode, setReferralCodeCookie } from '@/lib/referral-cookie';
 import type { TicketTypeResponse } from '@/repositories/interfaces';
 
@@ -45,8 +52,25 @@ export default function CheckoutEventPage() {
   );
   const [orderId, setOrderId] = useState<string | null>(existingOrderId || null);
   const [resumeTotal, setResumeTotal] = useState<string | null>(null);
+  const [selectedLegalVersionIds, setSelectedLegalVersionIds] = useState<string[]>([]);
+  const [legalError, setLegalError] = useState<string | null>(null);
 
   const { data: account } = useMeAccount(isAuthenticated);
+
+  const { data: meCheckoutLegal, isLoading: meCheckoutLegalLoading } = useMyLegalRequirements(
+    { context: 'CHECKOUT', profileType: 'USER' },
+    isAuthenticated,
+  );
+  const { data: publicCheckoutLegal, isLoading: publicCheckoutLegalLoading } =
+    usePublicLegalRequirements('CHECKOUT', 'USER', !isAuthenticated && step === 'form');
+  const acceptLegal = useAcceptLegalDocuments();
+
+  const checkoutLegalItems = isAuthenticated
+    ? (meCheckoutLegal?.pending ?? [])
+    : (publicCheckoutLegal?.required ?? []);
+  const checkoutLegalLoading = isAuthenticated
+    ? meCheckoutLegalLoading
+    : publicCheckoutLegalLoading;
 
   useEffect(() => {
     if (refFromUrl) setReferralCodeCookie(refFromUrl);
@@ -156,7 +180,7 @@ export default function CheckoutEventPage() {
       ? `Total: $${resumeTotal}`
       : `Total: $${totalCents}`;
 
-  const handleSubmitForm = (e: React.FormEvent) => {
+  const handleSubmitForm = async (e: React.FormEvent) => {
     e.preventDefault();
     const parsed = checkoutFormSchema.safeParse(form);
     if (!parsed.success) {
@@ -168,6 +192,28 @@ export default function CheckoutEventPage() {
       setErrors(errs);
       return;
     }
+
+    setLegalError(null);
+    if (
+      checkoutLegalItems.length > 0 &&
+      !allLegalItemsSelected(checkoutLegalItems, selectedLegalVersionIds)
+    ) {
+      setLegalError(LEGAL_ACCEPTANCE_REQUIRED_MSG);
+      return;
+    }
+
+    if (isAuthenticated && selectedLegalVersionIds.length > 0) {
+      try {
+        await acceptLegal.mutateAsync({
+          documentVersionIds: selectedLegalVersionIds,
+          context: 'CHECKOUT',
+        });
+      } catch (err) {
+        addToast(getErrorMessage(err), 'error');
+        return;
+      }
+    }
+
     setErrors({});
     createMutation.mutate();
   };
@@ -320,11 +366,27 @@ export default function CheckoutEventPage() {
             value={form.phone ?? ''}
             onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))}
           />
+          {(checkoutLegalItems.length > 0 || checkoutLegalLoading) && (
+            <LegalFlowAcceptanceBlock
+              items={checkoutLegalItems}
+              selectedVersionIds={selectedLegalVersionIds}
+              onChange={setSelectedLegalVersionIds}
+              disabled={createMutation.isPending || acceptLegal.isPending}
+              loading={checkoutLegalLoading}
+              error={legalError}
+              guestMode={!isAuthenticated}
+            />
+          )}
           <div className="flex gap-4">
             <Button type="button" variant="outline" onClick={() => setStep('select')}>
               Atrás
             </Button>
-            <Button type="submit" disabled={createMutation.isPending}>
+            <Button
+              type="submit"
+              disabled={
+                createMutation.isPending || acceptLegal.isPending || checkoutLegalLoading
+              }
+            >
               {createMutation.isPending ? 'Creando…' : 'Crear orden'}
             </Button>
           </div>

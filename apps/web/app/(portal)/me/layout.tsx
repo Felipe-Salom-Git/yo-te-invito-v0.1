@@ -6,6 +6,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { PageLoader } from '@/components';
 import { PortalLayoutShell } from '@/components/portal/PortalLayoutShell';
+import { PORTAL_BODY_CLASS } from '@/lib/navigation/portalLayoutClasses';
 
 /** Portal V2 polish: mobile nav, EmptyState/QueryError, ticket groups, cart UX — see task plan in PR. */
 export default function MePortalLayout({ children }: { children: React.ReactNode }) {
@@ -21,7 +22,7 @@ export default function MePortalLayout({ children }: { children: React.ReactNode
 
   if (status === 'loading') {
     return (
-      <div className="mx-auto max-w-7xl px-4 py-12">
+      <div className={PORTAL_BODY_CLASS}>
         <PageLoader message="Cargando tu espacio…" />
       </div>
     );
@@ -32,7 +33,7 @@ export default function MePortalLayout({ children }: { children: React.ReactNode
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-6">
+    <div className={PORTAL_BODY_CLASS}>
       <Link
         href="/home"
         className="mb-4 hidden text-sm text-text-muted hover:text-text md:inline-block"

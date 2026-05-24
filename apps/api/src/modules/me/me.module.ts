@@ -4,6 +4,7 @@ import { ReferralsModule } from '../referrals/referrals.module';
 import { InboxModule } from '../inbox/inbox.module';
 import { PublicModule } from '../../public/public.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { LegalModule } from '../legal/legal.module';
 import { ProfilesAuthorizationService } from '../../common/profiles-authorization.service';
 import { ReferrerRolesGuard } from '../../common/guards/referrer-roles.guard';
 import { MeController } from './me.controller';
@@ -17,6 +18,7 @@ import { MeProducerFollowsController } from './me-producer-follows.controller';
 import { MeGastroFollowsController } from './me-gastro-follows.controller';
 import { MePushSubscriptionsController } from './me-push-subscriptions.controller';
 import { MeRecommendationsController } from './me-recommendations.controller';
+import { MeLegalController } from './me-legal.controller';
 import { MeService } from './me.service';
 import { MeDashboardService } from './me-dashboard.service';
 import { MeActivityService } from './me-activity.service';
@@ -32,10 +34,11 @@ import { UserPushSubscriptionsService } from './user-push-subscriptions.service'
 import { MeRecommendationsService } from './me-recommendations.service';
 
 @Module({
-  imports: [AuthModule, ReferralsModule, InboxModule, PublicModule, NotificationsModule],
+  imports: [AuthModule, ReferralsModule, InboxModule, PublicModule, NotificationsModule, LegalModule],
   controllers: [
     MeController,
     MePortalController,
+    MeLegalController,
     MeCartController,
     MeFavoritesController,
     MeExpectedEventsController,
