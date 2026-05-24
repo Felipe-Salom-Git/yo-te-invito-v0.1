@@ -25,6 +25,7 @@ import {
 } from '@/lib/producer/referral-display';
 import { ProducerReferralsHelp } from './ProducerReferralsHelp';
 import { ProducerCommissionPendingNotice } from './ProducerCommissionPendingNotice';
+import { ReferralLegalDisclaimer } from './ReferralLegalDisclaimer';
 import { ReferralLinkRow } from './ReferralLinkRow';
 import { CopyReferralLinkButton } from './CopyReferralLinkButton';
 import { ProducerReferralProposalForm } from './ProducerReferralProposalForm';
@@ -217,6 +218,7 @@ export function ProducerEventReferralsPageClient({ eventId }: Props) {
       </p>
 
       <div className="mt-6 space-y-4">
+        <ReferralLegalDisclaimer />
         <ProducerReferralsHelp variant="event" />
         <ProducerCommissionPendingNotice />
       </div>

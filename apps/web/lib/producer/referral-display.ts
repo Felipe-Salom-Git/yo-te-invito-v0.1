@@ -1,13 +1,16 @@
 import type { ReferralCommissionStatus } from '@/repositories/interfaces';
 
-export const REFERRAL_LEGAL_DISCLAIMER_REFERRER =
-  'Yo Te Invito no administra ni garantiza pagos entre productoras y referidos. La plataforma solo registra el acuerdo, mide ventas atribuidas y facilita la comunicación. El pago debe ser acordado y realizado directamente entre las partes.';
-
 export const REFERRAL_LEGAL_DISCLAIMER_PRODUCER =
-  'Yo Te Invito no interviene ni garantiza los pagos entre productoras y referidos. La plataforma solo registra el acuerdo, mide ventas atribuidas y facilita la comunicación. Las condiciones y el pago son responsabilidad exclusiva de las partes.';
+  'Yo Te Invito registra propuestas, acuerdos, links y comisiones generadas, pero no administra ni garantiza pagos externos entre productor y referido. La liquidación manual se realiza directamente entre las partes.';
+
+export const REFERRAL_LEGAL_DISCLAIMER_REFERRER =
+  'Las comisiones mostradas son informativas y dependen del acuerdo aceptado con cada productora. Si la liquidación es manual, el pago se coordina directamente con la productora.';
+
+export const REFERRAL_PROPOSAL_ACCEPT_DISCLAIMER =
+  'Al aceptar una propuesta, aceptás un acuerdo comercial directo con la productora. Yo Te Invito brinda herramientas de comunicación, seguimiento y registro, pero no forma parte del acuerdo económico entre las partes.';
 
 export const COMMISSION_RULES_PENDING_NOTICE =
-  'Los montos de comisión generada son referencia según el acuerdo y las ventas atribuidas. No son saldo disponible ni dinero custodiado por Yo Te Invito. La liquidación es un pago externo entre productora y referido.';
+  'Las comisiones generadas son informativas según el acuerdo y las ventas atribuidas. No son saldo disponible ni dinero custodiado por Yo Te Invito. La liquidación manual es un pago externo entre productora y referido.';
 
 export function proposalStatusLabel(status: string): string {
   switch (status) {
@@ -103,10 +106,10 @@ export function paymentRequestStatusLabel(status: string): string {
 }
 
 export const REFERRAL_PAYMENT_REQUEST_DISCLAIMER_REFERRER =
-  'Esta solicitud será enviada a la productora. Yo Te Invito no realiza ni garantiza pagos.';
+  'Esta solicitud registra el pedido dentro de la plataforma, pero no ejecuta transferencias automáticas. El pago efectivo debe realizarse por fuera de Yo Te Invito según el acuerdo entre las partes.';
 
 export const REFERRAL_PAYMENT_REQUEST_DISCLAIMER_PRODUCER =
-  'Al marcar como pagado, solo estás registrando que el pago fue realizado fuera de la plataforma.';
+  'Al marcar como pagado, solo registrás un pago externo entre las partes. Yo Te Invito no transfiere fondos ni garantiza la liquidación.';
 
 export function commissionStatusLabel(status: ReferralCommissionStatus | string): string {
   switch (status) {

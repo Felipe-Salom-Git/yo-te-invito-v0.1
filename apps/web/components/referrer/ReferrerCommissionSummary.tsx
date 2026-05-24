@@ -2,7 +2,6 @@
 
 import { useSession } from 'next-auth/react';
 import { QueryError, Skeleton } from '@/components';
-import { ReferrerLegalDisclaimer } from '@/components/referrer/ReferrerLegalDisclaimer';
 import { useReferrerCommissionSummary } from '@/hooks/useReferrerCommissionSummary';
 import {
   COMMISSION_RULES_PENDING_NOTICE,
@@ -67,8 +66,6 @@ export function ReferrerCommissionSummary() {
 
   return (
     <div className="space-y-6">
-      <ReferrerLegalDisclaimer />
-
       <p className="text-sm text-text-muted">{COMMISSION_RULES_PENDING_NOTICE}</p>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">

@@ -11,6 +11,7 @@ import { ReferrerActiveLinks } from '@/components/referrer/ReferrerActiveLinks';
 import { ReferrerCommissionSummary } from '@/components/referrer/ReferrerCommissionSummary';
 import { ReferrerPaymentRequestPanel } from '@/components/referrer/ReferrerPaymentRequestPanel';
 import { ReferrerReferralMetricsPanel } from '@/components/referrer/ReferrerReferralMetricsPanel';
+import { ReferrerLegalDisclaimer } from '@/components/referrer/ReferrerLegalDisclaimer';
 import { formatMoneyCents } from '@/lib/producer/referral-display';
 import { getErrorMessage } from '@/lib/errors';
 
@@ -383,6 +384,8 @@ export function ReferrerPortalPageClient() {
             Directorio público →
           </Link>
         </div>
+
+        <ReferrerLegalDisclaimer className="mb-6" />
 
         <Tabs
           defaultValue="metrics"

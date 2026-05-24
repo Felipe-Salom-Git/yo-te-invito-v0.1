@@ -9,7 +9,6 @@ import {
   Skeleton,
   useToast,
 } from '@/components';
-import { ReferralLegalDisclaimer } from '@/components/producer/referrals/ReferralLegalDisclaimer';
 import {
   useMarkProducerPaymentRequestInReview,
   useMarkProducerPaymentRequestPaid,
@@ -176,7 +175,6 @@ function PaymentRequestDetail({
         <p className="text-sm font-medium text-amber-200/90">
           {REFERRAL_PAYMENT_REQUEST_DISCLAIMER_PRODUCER}
         </p>
-        <ReferralLegalDisclaimer variant="compact" className="mt-3" />
       </Modal>
 
       <Modal
@@ -269,10 +267,9 @@ export function ProducerReferralPaymentRequestList() {
           ? `${openCount} solicitud(es) pendiente(s) de gestión.`
           : 'No hay solicitudes abiertas.'}
       </p>
-      <p className="text-sm font-medium text-amber-200/90">
+      <p className="text-sm leading-relaxed text-amber-200/90">
         {REFERRAL_PAYMENT_REQUEST_DISCLAIMER_PRODUCER}
       </p>
-      <ReferralLegalDisclaimer variant="compact" />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <ul className="space-y-3">

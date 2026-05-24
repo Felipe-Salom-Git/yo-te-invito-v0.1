@@ -369,6 +369,8 @@ Opcional (slice posterior): desglose por orden, export CSV para conciliación **
 
 ## 10) Copy exacto — disclaimer
 
+**Slice Legal Content 2 (2026-05-24):** las aclaraciones sobre acuerdos productor ↔ referido, liquidación manual externa y alcance de Yo Te Invito como portal de comunicación están en `docs/legal/` (`terms_general`, `producer_terms`, `referrer_terms`) y reforzadas en UI vía `apps/web/lib/producer/referral-display.ts` (`REFERRAL_LEGAL_DISCLAIMER_*`, `REFERRAL_PROPOSAL_ACCEPT_DISCLAIMER`, `REFERRAL_PAYMENT_REQUEST_DISCLAIMER_*`). La publicación legal final depende de aprobación manual en `/admin/legales` (`seed:legal-content --force` actualiza borradores, sin auto-publish).
+
 Texto legal/producto a mostrar **siempre visible** (no colapsado por defecto) en las cuatro superficies. Misma sustancia; se permite acortar solo la primera línea en mobile si el bloque completo queda a un toque (“Ver condiciones”).
 
 ### 10.1 Formulario de propuesta del productor

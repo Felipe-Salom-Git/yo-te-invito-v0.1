@@ -80,6 +80,25 @@ Definiciones seed: `packages/shared/src/constants/legal-documents.ts`.
 
 **Integración producto:** `Footer`, `RegisterWizard`, `/me/cart`, `/checkout`, `/checkout/[eventId]`, banner en portales comerciales (`PortalLegalPendingBanner`).
 
+### 4c. Slice Legal Content 2 — acuerdos productor ↔ referido
+
+Aclaraciones incorporadas en:
+
+- `docs/legal/01_TERMINOS_Y_CONDICIONES_GENERALES.md` (§8)
+- `docs/legal/04_CONDICIONES_PRODUCTORES.md` (§7)
+- `docs/legal/08_CONDICIONES_REFERIDOS.md` (§§3–5, 8)
+
+**UI:** copy en `apps/web/lib/producer/referral-display.ts`; avisos en `/producer/referrals`, `/producer/events/[eventId]/referrals`, portal `/referrer` (propuestas, comisiones, solicitudes de pago).
+
+**Actualizar borradores en admin** (no publica automáticamente):
+
+```bash
+pnpm --filter api run seed:legal-content -- --dry-run
+pnpm --filter api run seed:legal-content -- --force
+```
+
+La publicación final depende de aprobación manual en `/admin/legales`.
+
 ### 4b. UI listado admin (`/admin/legales`) — Legales V2
 
 | Vista | Comportamiento |

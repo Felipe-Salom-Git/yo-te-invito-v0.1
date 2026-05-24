@@ -31,3 +31,11 @@ pnpm --filter api run seed:legal-content
 ```
 
 Luego revisar y publicar en `/admin/legales`. Ver `LEGAL_ADMIN_MODULE.md` §7b.
+
+Tras editar los Markdown (p. ej. Slice Legal Content 2), reimportar borradores con `--force` si ya existían:
+
+```bash
+pnpm --filter api run seed:legal-content -- --force
+```
+
+No usar `--publish` salvo staging controlado con revisión explícita.

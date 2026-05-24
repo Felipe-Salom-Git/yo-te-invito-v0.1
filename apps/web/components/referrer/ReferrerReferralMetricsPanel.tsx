@@ -2,7 +2,6 @@
 
 import { QueryError, Skeleton } from '@/components';
 import { ReferralMetricsKpiGrid, moneyKpi } from '@/components/referrals/ReferralMetricsKpiGrid';
-import { ReferrerLegalDisclaimer } from '@/components/referrer/ReferrerLegalDisclaimer';
 import { useReferrerReferralMetrics } from '@/hooks/useReferrerReferralMetrics';
 import {
   formatCommissionValue,
@@ -63,7 +62,6 @@ export function ReferrerReferralMetricsPanel() {
 
   return (
     <section className="space-y-6">
-      <ReferrerLegalDisclaimer variant="compact" />
       <ReferralMetricsKpiGrid items={kpis} />
       <div>
         <h3 className="text-sm font-semibold uppercase tracking-wide text-text-muted">

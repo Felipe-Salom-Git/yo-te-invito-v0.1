@@ -19,7 +19,7 @@ export function ReferralLegalDisclaimer({ variant = 'block', className = '' }: P
     <div
       className={`rounded-lg border border-amber-500/25 bg-amber-500/5 px-4 py-3 text-sm text-text-muted ${className}`}
     >
-      <p className="font-medium text-text">Condiciones del acuerdo comercial</p>
+      <p className="font-medium text-text">Acuerdos con referidos</p>
       <p className="mt-2 leading-relaxed">{REFERRAL_LEGAL_DISCLAIMER_PRODUCER}</p>
     </div>
   );

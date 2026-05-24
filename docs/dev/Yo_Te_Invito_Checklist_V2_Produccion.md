@@ -167,9 +167,8 @@ _Pendiente fuera de alcance del bloque: navbar contextual en portales (reducir c
 - [ ] Publicar versión aprobada — condiciones para hoteles.
 - [ ] Publicar versión aprobada — condiciones para referidos.
 - [ ] Publicar versión aprobada — condiciones de transferencia de tickets.
-- [ ] Aclarar responsabilidad de la plataforma en acuerdos productor ↔ referido.
-- [ ] Aclarar que la plataforma no interviene en pagos externos entre productor y referido si la liquidación es manual.
-- [ ] Aclarar alcance de la plataforma como portal de comunicación entre partes cuando aplique.
+- [x] Agregar aclaraciones productor ↔ referido en documentos base y UI (Slice Legal Content 2; borradores vía `seed:legal-content --force`).
+- [ ] Confirmar publicación de aclaraciones legales productor ↔ referido (requiere publicar versiones aprobadas en admin).
 - [x] Agregar links legales en footer, registro, checkout y portales (Slice Legal Admin 7).
 - [x] Backend aceptación legal por versión (`/me/legal/*`, Slice 6).
 - [x] Registrar versión de términos aceptada por cada usuario en flujos UI checkout/registro autenticados (`POST /me/legal/accept`); checkout invitado: checkbox + declaración (sin persistencia hasta cuenta).

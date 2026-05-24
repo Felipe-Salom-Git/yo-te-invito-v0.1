@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import type { ReferralCommissionType } from '@yo-te-invito/shared';
 import { Button, Input } from '@/components';
-import { ReferralLegalDisclaimer } from './ReferralLegalDisclaimer';
+import { REFERRAL_PROPOSAL_ACCEPT_DISCLAIMER } from '@/lib/producer/referral-display';
 import {
   commissionTypeLabel,
   formatCommissionValue,
@@ -237,7 +237,9 @@ export function ProducerReferralProposalForm({
         </p>
       </div>
 
-      <ReferralLegalDisclaimer />
+      <p className="rounded-lg border border-border/80 bg-bg-muted/50 px-3 py-2.5 text-xs leading-relaxed text-text-muted">
+        {REFERRAL_PROPOSAL_ACCEPT_DISCLAIMER}
+      </p>
 
       <label className="flex cursor-pointer items-start gap-3 text-sm text-text">
         <input

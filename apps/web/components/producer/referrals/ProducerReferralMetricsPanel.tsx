@@ -2,7 +2,6 @@
 
 import { EmptyState, QueryError, Skeleton } from '@/components';
 import { ReferralMetricsKpiGrid, moneyKpi } from '@/components/referrals/ReferralMetricsKpiGrid';
-import { ReferralLegalDisclaimer } from '@/components/producer/referrals/ReferralLegalDisclaimer';
 import { useProducerReferralMetrics } from '@/hooks/useProducerReferralMetrics';
 import { formatMoneyCents } from '@/lib/producer/referral-display';
 import { getErrorMessage } from '@/lib/errors';
@@ -144,7 +143,6 @@ export function ProducerReferralMetricsPanel() {
 
   return (
     <section className="space-y-6">
-      <ReferralLegalDisclaimer variant="compact" />
       <ReferralMetricsKpiGrid items={kpis} />
       <div>
         <h3 className="text-sm font-semibold uppercase tracking-wide text-text-muted">Por referido</h3>

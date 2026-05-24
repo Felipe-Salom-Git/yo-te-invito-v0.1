@@ -30,7 +30,9 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 - [x] **Slice 8 (2026-05-24):** QA/hardening, `smoke:legal`, `docs/legal/LEGAL_ADMIN_MODULE.md`, smoke manual `docs/dev/LEGAL_ADMIN_QA_SMOKE.md`
 - [x] **Slice Legal Content 1 (2026-05-24):** `seed:legal-content` — importa `docs/legal/*.md` como DRAFT (no auto-publish)
 - [x] **Legales V2 (2026-05-24):** layout portales ampliado (`PORTAL_BODY_CLASS` `max-w-screen-2xl`, `PortalPageContext` + `PageContainer` sin doble `max-w`); listado `/admin/legales` — tabla administrativa original (`overflow-x-auto`, `min-w-[900px]`, `md:block`) + cards mobile (`md:hidden`)
+- [x] **Slice Legal Content 2 (2026-05-24):** aclaraciones productor ↔ referido en `docs/legal/` (`terms_general`, `producer_terms`, `referrer_terms`) + disclaimers UI referidos/productor; actualizar borradores con `seed:legal-content --force` (sin auto-publish)
 - [ ] Revisión/aprobación cliente y **publicación** de versiones legales en `/admin/legales`
+- [ ] Confirmar publicación de aclaraciones legales productor ↔ referido (tras publish manual en admin)
 - [ ] Bloqueos duros portal (publicar evento, descuentos gastro, pago referido, etc.) si faltan términos
 - [ ] Migrar disclaimers hardcoded (transferencia, referidos) a documentos publicados
 

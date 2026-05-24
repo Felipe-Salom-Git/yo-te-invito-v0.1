@@ -14,6 +14,17 @@ pnpm --filter api run smoke:legal   # automatizado
 
 ---
 
+## Slice Legal Content 2 (acuerdos productor ↔ referido)
+
+| # | Paso | Esperado |
+|---|------|----------|
+| 1 | Revisar `docs/legal/` § acuerdos / liquidación manual / portal | Texto presente en `terms_general`, `producer_terms`, `referrer_terms` |
+| 2 | `seed:legal-content -- --force` | Borradores actualizados; `PUBLISHED` sin cambios |
+| 3 | `/producer/referrals` y `/referrer` | Aviso visible (sin duplicar en cada tab) |
+| 4 | Modal aceptar propuesta / solicitud de pago | Copy de acuerdo directo y sin transferencias automáticas |
+
+---
+
 ## Importación de contenido (`seed:legal-content`)
 
 | # | Paso | Esperado |

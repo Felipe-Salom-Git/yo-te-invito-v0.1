@@ -15,6 +15,7 @@ import {
   useReferrerProposals,
 } from '@/hooks/useReferrerProposals';
 import {
+  REFERRAL_PROPOSAL_ACCEPT_DISCLAIMER,
   commissionTypeLabel,
   formatCommissionValue,
   proposalStatusLabel,
@@ -190,8 +191,6 @@ export function ReferrerProposalInbox() {
 
   return (
     <div className="space-y-6">
-      <ReferrerLegalDisclaimer />
-
       <div>
         <h3 className="text-sm font-semibold uppercase tracking-wide text-text-muted">
           Pendientes de tu respuesta
@@ -281,12 +280,7 @@ export function ReferrerProposalInbox() {
               evento <span className="font-medium">{acceptTarget.event?.title}</span> con comisión{' '}
               {formatCommissionValue(acceptTarget.commissionType, acceptTarget.commissionValue)}.
             </p>
-            <p className="text-text-muted">
-              Al aceptar, se activará un link de referido para promocionar el evento según el acuerdo.
-              Yo Te Invito calcula la comisión generada según ventas atribuidas; no realiza pagos ni
-              garantiza cobros.
-            </p>
-            <ReferrerLegalDisclaimer variant="compact" />
+            <p className="text-text-muted">{REFERRAL_PROPOSAL_ACCEPT_DISCLAIMER}</p>
             <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-border bg-bg-muted/40 p-3">
               <input
                 type="checkbox"

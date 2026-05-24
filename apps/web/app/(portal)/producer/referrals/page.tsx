@@ -21,6 +21,7 @@ import { getErrorMessage } from '@/lib/errors';
 import { relationshipStatusLabel } from '@/lib/producer/referral-display';
 import { ProducerReferralsHelp } from '@/components/producer/referrals/ProducerReferralsHelp';
 import { ProducerCommissionPendingNotice } from '@/components/producer/referrals/ProducerCommissionPendingNotice';
+import { ReferralLegalDisclaimer } from '@/components/producer/referrals/ReferralLegalDisclaimer';
 import { ProducerReferralProposalForm } from '@/components/producer/referrals/ProducerReferralProposalForm';
 import { ProducerReferralProposalList } from '@/components/producer/referrals/ProducerReferralProposalList';
 import { ProducerReferralAgreementSummary } from '@/components/producer/referrals/ProducerReferralAgreementSummary';
@@ -387,6 +388,7 @@ export default function ProducerReferralsPage() {
       </p>
 
       <div className="mb-6 space-y-4">
+        <ReferralLegalDisclaimer />
         <ProducerReferralsHelp variant="global" />
         <ProducerCommissionPendingNotice />
       </div>

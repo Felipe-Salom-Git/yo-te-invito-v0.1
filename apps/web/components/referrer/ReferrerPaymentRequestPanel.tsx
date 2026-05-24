@@ -9,7 +9,6 @@ import {
   Skeleton,
   useToast,
 } from '@/components';
-import { ReferrerLegalDisclaimer } from '@/components/referrer/ReferrerLegalDisclaimer';
 import {
   useCancelReferrerPaymentRequest,
   useCreateReferrerPaymentRequest,
@@ -327,8 +326,7 @@ export function ReferrerPaymentRequestPanel() {
         }
       >
         <div className="space-y-3 text-sm">
-          <p className="font-medium text-amber-200/90">{REFERRAL_PAYMENT_REQUEST_DISCLAIMER_REFERRER}</p>
-          <ReferrerLegalDisclaimer variant="compact" />
+          <p className="leading-relaxed text-amber-200/90">{REFERRAL_PAYMENT_REQUEST_DISCLAIMER_REFERRER}</p>
           <p className="text-text-muted">
             Total: <span className="text-text font-semibold">{formatMoneyCents(selectedTotal)}</span>{' '}
             · {selectedIds.size} comisión(es)
