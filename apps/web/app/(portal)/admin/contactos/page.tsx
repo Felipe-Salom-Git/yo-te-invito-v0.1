@@ -7,6 +7,7 @@ import { useRepositories } from '@/repositories/context';
 import { useTenant } from '@/hooks/useTenant';
 import { PageContainer, SectionTitle, Button, Input, useToast } from '@/components';
 import { getErrorMessage } from '@/lib/errors';
+import { publicPlatformConfigKeys } from '@/lib/query/keys';
 
 export default function AdminContactosPage() {
   const repos = useRepositories();
@@ -34,6 +35,7 @@ export default function AdminContactosPage() {
     onSuccess: (data) => {
       setContact(data.contact);
       queryClient.invalidateQueries({ queryKey: ['platformConfig', tenantId] });
+      queryClient.invalidateQueries({ queryKey: publicPlatformConfigKeys.byTenant(tenantId) });
     },
   });
 

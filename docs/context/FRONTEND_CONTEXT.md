@@ -78,7 +78,8 @@ ApiClient → HTTP (NEXT_PUBLIC_API_BASE_URL)
 | **adminAudit** | ✓ | `GET /admin/audit-logs` — auditoría con filtros |
 | **adminUsers** | ✓ | `GET /admin/users`, `PATCH /admin/users/:id/role` — listado operativo con filtros |
 | **LegalDocumentsRepo** | ✓ | Admin CRUD + publish; público `/public/legal/*`; aceptación `/me/legal/*` |
-| ProfilesRepo, ApplicationsRepo, PlatformConfigRepo | ✓ | |
+| ProfilesRepo, ApplicationsRepo, PlatformConfigRepo | ✓ | Admin `GET/PATCH /admin/config` |
+| **PublicPlatformConfigRepo** | ✓ | `GET /public/platform-config` — contacto footer (sin auth) |
 
 **Category routing**: `gastro` → `/restaurants`, `excursion` → `/excursiones`, `rental` → `/rentals`, `hotel` → `/hoteles`, default → `/events`.
 
@@ -171,7 +172,7 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`). Shared UI tokens:
 | Perfil productor (portal) | `components/producer/profile/` (`ProducerProfilePage`, `ManagedReviewSummary`, `ProducerProfilePublicPreview`, `producer-profile-completeness.ts`) |
 | Dashboard productor | `components/producer/dashboard/` (`ProducerDashboardClient`, KPIs, engagement, alertas estado evento; **sin** `ProducerDashboardQuickLinks`) |
 | Valoración B2B | `CommercialReviewPanel`, `CommercialAspectBreakdown` |
-| **Navbar V2** | `components/Navbar.tsx` — logo → `/categorias`, casita → `/home`, Explorar (`md+`), ciudad (`NavbarCitySelector` / drawer mobile), carro (`NavbarCartButton` + `useNavbarCart`), menú usuario (`NavbarUserMenu`) o drawer `NavbarMobileNav` + `MobilePublicNavDrawer`. Config: `lib/navigation/publicNavConfig.ts`, `userNavConfig.ts`. **Footer:** grid legales (`footerLegalLinks.ts`) + contacto `PlatformConfig` (sin duplicar navbar). A11y: `useOverlayA11y`, `navA11yClasses`. Docs: `docs/audits/NAVBAR_RESPONSIVE_AUDIT.md`, `NAVBAR_RESPONSIVE_SMOKE.md` |
+| **Navbar V2** | `components/Navbar.tsx` — logo → `/categorias`, casita → `/home`, Explorar (`md+`), ciudad (`NavbarCitySelector` / drawer mobile), carro (`NavbarCartButton` + `useNavbarCart`), menú usuario (`NavbarUserMenu`) o drawer `NavbarMobileNav` + `MobilePublicNavDrawer`. Config: `lib/navigation/publicNavConfig.ts`, `userNavConfig.ts`. **Footer:** variantes por ruta (`footerVisibility.ts`, `RouteAwareFooter`); legales `footerLegalLinks.ts`; contacto `usePublicPlatformConfig` → `GET /public/platform-config` (no `/admin/config`). A11y: `useOverlayA11y`, `navA11yClasses`. Docs: `docs/audits/NAVBAR_RESPONSIVE_AUDIT.md`, `PUBLIC_FOOTER_AUDIT.md` |
 | Portales nav | `PortalLayoutShell`, `PortalSidebar` (desktop), `MobilePortalNav` (mobile por portal); config `lib/navigation/portalNavConfig.ts` |
 | Portales layout (Legales V2) | `PORTAL_BODY_CLASS` en `app/(portal)/*/layout.tsx` (`max-w-screen-2xl`, padding responsive); `PortalPageProvider` + `PageContainer` sin segundo `max-w-6xl` dentro de portales |
 | Usuario maestro nav | `lib/navigation/masterUser.ts` — inicio portal → `/me`; menú acordeón multi-vertical en todos los portales |
@@ -186,7 +187,7 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`). Shared UI tokens:
 | **Legales admin** | `components/admin/legal/` — `/admin/legales` (tabla desktop `md+` con `overflow-x-auto` + `min-w-[900px]`; cards `md:hidden`), detalle, versiones; `LegalDocumentsRepo` + `lib/query/admin-legal-documents.ts` |
 | **Legales público** | `components/legal/` — `/legal/[slug]` (server fetch, ISR); preview Markdown |
 | **Aceptación legal (reutilizable)** | `LegalAcceptanceCheckboxList`, `LegalRequirementNotice`, `LegalDocumentsLinksList`, `LegalFlowAcceptanceBlock`, `PortalLegalPendingBanner`; hooks `lib/query/me-legal.ts`, `lib/query/public-legal-requirements.ts`; integración en `RegisterWizard`, `/me/cart`, checkout público, `PortalLayoutShell` |
-| **Footer legales** | `lib/navigation/footerLegalLinks.ts` → `Footer` (grid responsive, sin duplicar navbar) |
+| **Footer público** | `components/footer/*` + `RouteAwareFooter` — variantes full/minimal/hidden; legales `footerLegalLinks.ts`; config `footerPublicConfig.ts`; contacto `usePublicPlatformConfig`; smoke `docs/audits/PUBLIC_FOOTER_SMOKE.md` |
 | **Portal legales** | `PortalLegalPendingBanner` en portales comerciales (`PORTAL_ACCESS`); `lib/navigation/portalLegalProfile.ts` |
 | **Markdown legal** | `LegalMarkdownPreview` — subset seguro, sin `dangerouslySetInnerHTML`; SSR público vía `fetchPublicLegalDocument` |
 | **QA / ops** | Smoke manual `docs/dev/LEGAL_ADMIN_QA_SMOKE.md`; módulo `docs/legal/LEGAL_ADMIN_MODULE.md` |
@@ -266,6 +267,18 @@ Auditoría: `docs/audits/GASTRO_HOTELES_V2_AUDIT.md` · QA/scripts: `docs/guides
 
 **Rentals V2 (checklist § Rentals):** WhatsApp por local, cards discovery, subcategorías, anti-alojamiento, detalle mobile — ver `CONTEXT_PENDIENTES.md` § E.
 
+## 8f. Footer público V2 — cerrado (2026-05-24, Slices 1–5)
+
+| Capa | Implementado |
+|------|----------------|
+| Visibilidad | `footerVisibility.ts` → `full` \| `minimal` \| `hidden`; `RouteAwareFooter` en root layout |
+| UI | `components/footer/*` — institucional, verticales, accesos, legales, soporte, confianza, redes, dev |
+| Contacto | `usePublicPlatformConfig` → `GET /public/platform-config`; fallback placeholder |
+| Gateway | `/categorias`: global `hidden` + `CategoryGatewayFooter` |
+| Legal | `/legal/*`: `minimal` + nota versión en `LegalDocumentPage` |
+
+**Docs:** `docs/audits/PUBLIC_FOOTER_AUDIT.md`, `PUBLIC_FOOTER_SMOKE.md`, `PUBLIC_FOOTER_CLOSING_AUDIT.md`.
+
 ## 8e. Legal Admin — cerrado (2026-05-24, Slices 1–8)
 
 Módulo técnico **cerrado**; contenido base en `docs/legal/` importable como borrador (`seed:legal-content`). Publicación y aprobación cliente pendientes.
@@ -275,7 +288,7 @@ Módulo técnico **cerrado**; contenido base en `docs/legal/` importable como bo
 | Admin | `/admin/legales`, editor borrador, preview Markdown seguro, publicación con confirmación, historial versiones |
 | Público | `/legal/[slug]` — solo `PUBLIC` + `PUBLISHED`; `fetchPublicLegalDocument` (ISR 60s) |
 | Aceptación | `RegisterWizard` (`SIGNUP`), `/me/cart` + checkout (`CHECKOUT`), banner portales (`PORTAL_ACCESS`) |
-| Footer | Enlaces estables a slugs públicos + contacto desde config |
+| Footer | Enlaces estables a slugs públicos + contacto vía `GET /public/platform-config` (`usePublicPlatformConfig`, fallback placeholder documentado) |
 
 **Hooks/repos:** `LegalDocumentsRepo`, `admin-legal-documents.ts`, `me-legal.ts`, `public-legal-requirements.ts`.
 

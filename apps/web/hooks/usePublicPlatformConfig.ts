@@ -3,21 +3,23 @@
 import { useQuery } from '@tanstack/react-query';
 import { useRepositories } from '@/repositories/context';
 import { useTenant } from '@/hooks/useTenant';
+import { publicPlatformConfigKeys } from '@/lib/query/keys';
 
 const DEFAULT_TENANT_ID = 'tenant-demo';
 
 /**
- * Admin platform config (contact + categories) — requires ADMIN via /admin/config.
- * Public footer: use `usePublicPlatformConfig` instead.
+ * Public institutional contact for footer and other public surfaces.
+ * Uses GET /public/platform-config — not /admin/config.
  */
-export function usePlatformConfig() {
+export function usePublicPlatformConfig() {
   const repos = useRepositories();
   const { tenantId } = useTenant();
   const t = tenantId ?? DEFAULT_TENANT_ID;
 
   return useQuery({
-    queryKey: ['platformConfig', t],
-    queryFn: () => repos.platformConfig.get(t),
+    queryKey: publicPlatformConfigKeys.byTenant(t),
+    queryFn: () => repos.publicPlatformConfig.get(t),
     staleTime: 60_000,
+    retry: 1,
   });
 }

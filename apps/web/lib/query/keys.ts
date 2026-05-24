@@ -400,3 +400,10 @@ export const adminGastroKeys = {
   metrics: (profileId: string, discountId: string) =>
     [...adminGastroKeys.all, 'metrics', profileId, discountId] as const,
 };
+
+// ─── Public platform config (footer contact) ───────────────────────────────
+
+export const publicPlatformConfigKeys = {
+  all: ['publicPlatformConfig'] as const,
+  byTenant: (tenantId: string) => [...publicPlatformConfigKeys.all, tenantId] as const,
+};

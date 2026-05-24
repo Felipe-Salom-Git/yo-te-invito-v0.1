@@ -56,9 +56,12 @@ Controllers: HTTP + Zod only. Services: business logic. Prisma: persistence only
 | **`AI_ENTRYPOINT.md`** | This index |
 | **`PROJECT_CONTEXT.md`** | Product vision, monorepo, scope, rentals domain |
 | **`BACKEND_CONTEXT.md`** | API modules, Prisma, endpoints, dev scripts |
-| **`FRONTEND_CONTEXT.md`** | Web app routes, repos, rental UI, **navbar V2**, E2E |
+| **`FRONTEND_CONTEXT.md`** | Web app routes, repos, rental UI, **navbar V2**, **footer público V2**, E2E |
 | **`docs/audits/NAVBAR_RESPONSIVE_AUDIT.md`** | Slices 1–10 navbar + fix dropdown flotante |
 | **`docs/audits/NAVBAR_RESPONSIVE_SMOKE.md`** | Smoke responsive navbar |
+| **`docs/audits/PUBLIC_FOOTER_AUDIT.md`** | Footer público — Slices 1–5 + cierre |
+| **`docs/audits/PUBLIC_FOOTER_SMOKE.md`** | Smoke / QA footer |
+| **`docs/audits/PUBLIC_FOOTER_CLOSING_AUDIT.md`** | Auditoría de cierre footer |
 | **`CONTEXT_PENDIENTES.md`** | Checkbox backlog — mark `[x]` when done |
 | **`docs/legal/LEGAL_ADMIN_MODULE.md`** | Legal Admin — modelos, endpoints, flujos, staging (módulo cerrado 2026-05-24) |
 | **`FRONTEND_DEMO_NOTES.md`** | Legacy demo mapping (not current persistence) |
@@ -72,6 +75,8 @@ Controllers: HTTP + Zod only. Services: business logic. Prisma: persistence only
 **Gastro y Hoteles V2 (cerrado 2026-05-22):** checklist § Gastro y Hoteles; auditoría `docs/audits/GASTRO_HOTELES_V2_AUDIT.md`. Gastro: QR `docs/gastro/GASTRO_DISCOUNT_QR.md`, tests `test:gastro-discount-qr` / `test:gastro-discount-scan`. Hoteles: discovery Próximamente, portal `/hotel`, ficha `/hoteles/[id]`, E2E `pnpm e2e:hotel` + `docs/hotel/HOTEL_E2E.md`.
 
 **Legal Admin / Legales V2 (cerrado 2026-05-24):** slices 1–8 + import Markdown — admin `/admin/legales`, público `/legal/[slug]`, aceptación `/me/legal/*`, integración registro/checkout/footer/portales; **layout portales** `max-w-screen-2xl` (`portalLayoutClasses.ts`, `PortalPageContext`). Doc: `docs/legal/LEGAL_ADMIN_MODULE.md`; QA: `docs/dev/LEGAL_ADMIN_QA_SMOKE.md`; smoke `pnpm --filter api run smoke:legal` (API + `DEV_AUTH_ENABLED` o JWT). **No** marcar checklist de redacción legal hasta publicar contenido real.
+
+**Footer público V2 (cerrado 2026-05-24):** `RouteAwareFooter` + variantes `full`/`minimal`/`hidden` (`footerVisibility.ts`); UI `components/footer/*`; contacto `GET /public/platform-config` + `usePublicPlatformConfig`; legales `footerLegalLinks.ts`. `/categorias`: solo `CategoryGatewayFooter` (global hidden). Checklist V2 § Footer público completo. Docs: `PUBLIC_FOOTER_AUDIT.md`, `PUBLIC_FOOTER_SMOKE.md`, `PUBLIC_FOOTER_CLOSING_AUDIT.md`.
 
 **Portal usuario (`/me/*`):** `docs/user/USER_PORTAL.md` (incl. **Push notifications** V2.1.3–V2.1.4, **ticket comprador** V2.2).
 

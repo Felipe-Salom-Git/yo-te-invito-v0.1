@@ -1,6 +1,6 @@
 /**
  * Public legal footer links (stable slugs from shared LEGAL_KEY_TO_SLUG).
- * Soporte/contacto comes from PlatformConfig in Footer.
+ * Soporte/contacto comes from GET /public/platform-config via usePublicPlatformConfig.
  */
 
 export type FooterLegalLink = {
@@ -21,4 +21,14 @@ export const FOOTER_LEGAL_LINKS: FooterLegalLink[] = [
   { href: '/legal/rentals', label: 'Rentals' },
   { href: '/legal/hoteles', label: 'Hoteles' },
   { href: '/legal/referidos', label: 'Referidos' },
+];
+
+/** Checkout, legal pages and minimal footer variant. */
+export const FOOTER_LEGAL_LINKS_ESSENTIAL: FooterLegalLink[] = [
+  { href: '/legal/terminos', label: 'Términos y condiciones' },
+  { href: '/legal/privacidad', label: 'Privacidad' },
+  {
+    href: '/legal/compras-cancelaciones-reembolsos',
+    label: 'Compra, cancelación y reembolso',
+  },
 ];

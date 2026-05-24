@@ -128,6 +128,16 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 
 ---
 
+## H0. Footer público completo (2026-05-24) — bloque cerrado
+
+> Auditoría: `docs/audits/PUBLIC_FOOTER_AUDIT.md` · Smoke: `PUBLIC_FOOTER_SMOKE.md` · Cierre: `PUBLIC_FOOTER_CLOSING_AUDIT.md` · Checklist V2 § Footer público completo
+
+- [x] Slices 1–5: auditoría, visibilidad, API contacto pública, UI dark premium, responsive/a11y
+- [x] `GET /public/platform-config` + `usePublicPlatformConfig` (footer sin `/admin/config`)
+- [ ] Datos reales: Instagram, contacto institucional, web/red equipo desarrollador (post-bloque)
+
+---
+
 ## H. Home y descubrimiento
 
 - [x] Pantalla editorial post-splash / gateway (`/`, `/categorias`, grilla 2×2, copy Bariloche, footer home/explore — Slice 5)
@@ -279,6 +289,9 @@ _(Trending con `viewCount`: ver ítem Slice 2 arriba en § K.)_
 | `docs/user/USER_PORTAL.md` | Portal usuario + push (V2.1.3–V2.1.4) + ticket (V2.2) |
 | `docs/dev/Yo_Te_Invito_Checklist_V2_Produccion.md` | Checklist operativo V2 → producción |
 | `docs/audits/GASTRO_HOTELES_V2_AUDIT.md` | Auditoría cierre Gastro/Hoteles V2 |
+| `docs/audits/PUBLIC_FOOTER_AUDIT.md` | Footer público — bloque cerrado Slices 1–5 (2026-05-24) |
+| `docs/audits/PUBLIC_FOOTER_SMOKE.md` | Smoke / QA footer público |
+| `docs/audits/PUBLIC_FOOTER_CLOSING_AUDIT.md` | Auditoría de cierre bloque footer (2026-05-24) |
 | `docs/hotel/HOTEL_E2E.md` | E2E Playwright vertical hotel |
 | `docs/gastro/GASTRO_DISCOUNT_QR.md` | QR descuentos gastro v1 |
 | `docs/user/USER_PORTAL_PRISMA_PROPOSAL.md` | Diff modelo (pre-migrate) |

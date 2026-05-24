@@ -172,6 +172,32 @@ async function main() {
   }
 
   try {
+    const r = await fetchApi('/public/platform-config', {}, {
+      query: { tenantId: TENANT },
+      auth: false,
+    });
+    const body = r.data as {
+      supportEmail?: unknown;
+      supportPhone?: unknown;
+      categories?: unknown;
+    };
+    const ok =
+      r.ok &&
+      body != null &&
+      'supportEmail' in body &&
+      'supportPhone' in body &&
+      !('categories' in body) &&
+      !('contact' in body);
+    results.push({
+      name: 'public/platform-config',
+      ok,
+      err: ok ? undefined : `status=${r.status}`,
+    });
+  } catch (e) {
+    results.push({ name: 'public/platform-config', ok: false, err: String(e) });
+  }
+
+  try {
     const r = await fetchApi('/admin/config', auth.headers);
     const ok = r.ok && typeof (r.data as { contact?: unknown })?.contact === 'object';
     results.push({ name: 'admin/config', ok: ok || r.ok, err: ok ? undefined : `status=${r.status}` });

@@ -135,22 +135,37 @@ _Bloque cerrado 2026-05-23 — Slices 1–10; auditoría `docs/audits/NAVBAR_RES
 - [x] Revisar accesibilidad: foco, teclado, aria-labels y cierre al tocar fuera.
 - [x] Smoke visual en home, explore, categorías, detalle, checkout y portales (revisión código + guía manual; ver smoke doc).
 
-_Pendiente fuera de alcance del bloque: navbar contextual en portales (reducir chrome); footer público completo (bloque aparte)._
+_Pendiente fuera de alcance del bloque navbar: navbar contextual en portales (reducir chrome). Footer público completo: cerrado — ver § Footer público completo y `PUBLIC_FOOTER_SMOKE.md`._
 
 ## Footer público completo
 
-- [ ] Diseñar footer público completo para home, explore, categorías y fichas públicas.
+- [x] Slice 1 Footer público completo: auditoría y arquitectura inicial (`docs/audits/PUBLIC_FOOTER_AUDIT.md`, 2026-05-24).
+- [x] Slice 2 Footer público: visibilidad por ruta (`footerVisibility.ts`, `RouteAwareFooter`), config base (`footerPublicConfig.ts`), sin doble pie en `/categorias` y `/legal/*` (2026-05-24).
+- [x] Slice 3 Footer público: `GET /public/platform-config`, `usePublicPlatformConfig`, footer sin `/admin/config` (2026-05-24).
+- [x] Slice 4 Footer público completo dark premium (`components/footer/*`, 2026-05-24).
 - [x] Rutas públicas `/legal/*` con contenido desde API (Slice Legal Admin 5).
 - [x] Agregar enlaces legales en footer: términos, privacidad, compra/cancelación/reembolso y verticales (Slice Legal Admin 7).
-- [ ] Agregar enlaces por vertical: eventos, gastronomía, rentals, excursiones y hoteles próximamente.
-- [ ] Agregar acceso a soporte/contacto.
-- [ ] Agregar redes sociales.
-- [ ] Agregar bloque institucional breve: qué es Yo Te Invito.
-- [ ] Agregar accesos rápidos a Explorar, Categorías y Portal de usuario.
-- [ ] Agregar copy de confianza para compra segura, tickets digitales y soporte.
-- [ ] Revisar consistencia visual con branding dark premium.
-- [ ] Revisar footer responsive mobile.
-- [ ] Verificar que no duplique información crítica del navbar.
+- [x] Diseñar footer público completo para home, explore, categorías y fichas públicas (Slice 4).
+- [x] Agregar enlaces por vertical: eventos, gastronomía, rentals, excursiones y hoteles próximamente (Slice 4).
+- [x] Agregar acceso a soporte/contacto (API pública + footer; datos reales vía `/admin/contactos` — Slice 3).
+- [x] Agregar redes sociales (placeholders + merge API; datos reales pendientes — Slice 4).
+- [x] Agregar bloque institucional breve: qué es Yo Te Invito (Slice 4).
+- [x] Agregar accesos rápidos a Explorar, Categorías y Portal de usuario (Slice 4).
+- [x] Agregar copy de confianza (tickets/QR/legales; sin promesa pagos reales — Slice 4).
+- [x] Revisar consistencia visual con branding dark premium (Slice 4).
+- [x] Revisar footer responsive mobile (Slice 5 — `PUBLIC_FOOTER_SMOKE.md`).
+- [x] Verificar que no duplique información crítica del navbar (Slice 4).
+- [x] Slice 5 Footer público: responsive, accesibilidad, smoke y cierre de bloque (2026-05-24).
+
+_Footer público completo — bloque V2 cerrado. Smoke: `docs/audits/PUBLIC_FOOTER_SMOKE.md`._
+
+### Footer — datos reales pendientes (post-bloque)
+
+- [ ] Reemplazar Instagram real de Yo Te Invito.
+- [ ] Reemplazar contacto real de Yo Te Invito (email/tel en `/admin/contactos`).
+- [ ] Reemplazar web/red social real del equipo desarrollador.
+- [ ] Publicar documentos legales reales en `/admin/legales` si aún están en borrador.
+- [ ] QA mobile en dispositivo físico (opcional; guía en `PUBLIC_FOOTER_SMOKE.md`).
 
 ## Legal y responsabilidades por perfil
 
@@ -158,6 +173,10 @@ _Pendiente fuera de alcance del bloque: navbar contextual en portales (reducir c
 - [x] Panel admin `/admin/legales` (Slice Legal Admin 4): listado, edición metadata/borrador, publicación, historial versiones
 - [x] Cargar borradores legales iniciales en Admin Legales desde `docs/legal/` (`seed:legal-content`; Slice Legal Content 1).
 - [x] Layout portales ampliado + listado admin Legales V2 (`PORTAL_BODY_CLASS`, tabla original con scroll en contenedor).
+- [x] Agregar links legales en footer, registro, checkout y portales (Slice Legal Admin 7).
+- [x] Backend aceptación legal por versión (`/me/legal/*`, Slice 6).
+- [x] Registrar versión de términos aceptada por cada usuario en flujos UI checkout/registro autenticados (`POST /me/legal/accept`); checkout invitado: checkbox + declaración (sin persistencia hasta cuenta).
+- [x] Agregar aclaraciones productor ↔ referido en documentos base y UI (Slice Legal Content 2; borradores vía `seed:legal-content --force`).
 - [ ] Publicar versión aprobada — términos y condiciones generales.
 - [ ] Publicar versión aprobada — política de privacidad.
 - [ ] Publicar versión aprobada — política de compra, cancelación y reembolso.
@@ -167,15 +186,14 @@ _Pendiente fuera de alcance del bloque: navbar contextual en portales (reducir c
 - [ ] Publicar versión aprobada — condiciones para hoteles.
 - [ ] Publicar versión aprobada — condiciones para referidos.
 - [ ] Publicar versión aprobada — condiciones de transferencia de tickets.
-- [x] Agregar aclaraciones productor ↔ referido en documentos base y UI (Slice Legal Content 2; borradores vía `seed:legal-content --force`).
 - [ ] Confirmar publicación de aclaraciones legales productor ↔ referido (requiere publicar versiones aprobadas en admin).
-- [x] Agregar links legales en footer, registro, checkout y portales (Slice Legal Admin 7).
-- [x] Backend aceptación legal por versión (`/me/legal/*`, Slice 6).
-- [x] Registrar versión de términos aceptada por cada usuario en flujos UI checkout/registro autenticados (`POST /me/legal/accept`); checkout invitado: checkbox + declaración (sin persistencia hasta cuenta).
 - [ ] Publicar procedimiento interno de soporte (borrador importado; `INTERNAL`, no público).
 
 ## Registro y onboarding por tipo de usuario
 
+- [x] Agregar aceptación obligatoria de términos generales (Slice Legal Admin 7 — según flags publicados).
+- [x] Agregar aceptación obligatoria de términos específicos según tipo de perfil (portal: `PORTAL_ACCESS`; signup según `isRequiredForSignup`).
+- [x] Agregar links a condiciones legales desde cada formulario (registro, checkout, footer, portales — Slice 7).
 - [ ] Auditar flujo actual de registro con elección de perfil.
 - [ ] Pulir formulario de registro para usuario comprador.
 - [ ] Pulir formulario de registro para productora / productor.
@@ -184,10 +202,7 @@ _Pendiente fuera de alcance del bloque: navbar contextual en portales (reducir c
 - [ ] Pulir formulario de registro para hotel.
 - [ ] Pulir formulario de registro para referido.
 - [ ] Definir campos obligatorios y opcionales por tipo de perfil.
-- [x] Agregar aceptación obligatoria de términos generales (Slice Legal Admin 7 — según flags publicados).
-- [x] Agregar aceptación obligatoria de términos específicos según tipo de perfil (portal: `PORTAL_ACCESS`; signup según `isRequiredForSignup`).
 - [ ] Agregar textos claros de responsabilidad por tipo de usuario (contenido legal pendiente de redacción).
-- [x] Agregar links a condiciones legales desde cada formulario (registro, checkout, footer, portales — Slice 7).
 - [ ] Registrar versión aceptada de términos y fecha de aceptación.
 - [ ] Agregar estado visual de completitud del registro/onboarding cuando aplique.
 - [ ] Revisar mensajes de error y validaciones visibles.

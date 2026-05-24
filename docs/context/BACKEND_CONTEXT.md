@@ -72,6 +72,8 @@ HTTP → Controller (thin) → ZodValidationPipe → Service → Prisma → Post
 | `GET /public/events/:eventId/ticket-types` | |
 | `POST /public/orders`, payments, demo-confirm | |
 | `GET /public/referrers`, `/slug/:slug`, `/association/:token` | |
+| `GET /public/platform-config?tenantId=` | Contacto institucional público (footer); sin auth; no expone `categories` ni campos admin |
+| `GET /public/legal/:slug`, `GET /public/legal/requirements` | Documentos legales publicados |
 
 ---
 

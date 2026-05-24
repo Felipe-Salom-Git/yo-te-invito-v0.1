@@ -2337,6 +2337,13 @@ export interface PlatformConfigRepo {
   update(tenantId: string, patch: { contact?: PlatformConfig['contact']; categories?: PlatformConfig['categories'] }): Promise<PlatformConfig>;
 }
 
+export type PublicPlatformConfig =
+  import('@yo-te-invito/shared').PublicPlatformConfigResponse;
+
+export interface PublicPlatformConfigRepo {
+  get(tenantId: string): Promise<PublicPlatformConfig>;
+}
+
 export type HotelProfile = HotelProfileResponse;
 
 export type PublicHotelLocation = HotelProfile & { publicEventId: string | null };
@@ -2538,4 +2545,5 @@ export interface Repositories {
   scanner: ScannerRepo;
   payouts: PayoutsRepo;
   platformConfig: PlatformConfigRepo;
+  publicPlatformConfig: PublicPlatformConfigRepo;
 }

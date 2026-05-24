@@ -27,12 +27,10 @@ export function LegalDocumentPage({
         <LegalDocumentMeta document={document} />
         <LegalDocumentContent contentMarkdown={document.contentMarkdown} />
 
-        <footer className="mt-12 border-t border-border/60 pt-6 text-center text-xs text-text-muted">
-          <p>© {new Date().getFullYear()} Yo Te Invito</p>
-          <p className="mt-1">
-            Este texto corresponde a la versión publicada indicada arriba.
-          </p>
-        </footer>
+        <p className="mt-12 border-t border-border/60 pt-6 text-center text-xs text-text-muted">
+          Este texto corresponde a la versión publicada indicada arriba. Otros
+          documentos legales están en el pie de página del sitio.
+        </p>
       </div>
     </div>
   );

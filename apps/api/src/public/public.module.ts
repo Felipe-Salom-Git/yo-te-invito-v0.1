@@ -14,6 +14,8 @@ import { PublicGastroLocationsController } from './public-gastro-locations.contr
 import { PublicGastroLocationsService } from './public-gastro-locations.service';
 import { PublicHotelLocationsController } from './public-hotel-locations.controller';
 import { PublicHotelLocationsService } from './public-hotel-locations.service';
+import { PublicPlatformConfigController } from './public-platform-config.controller';
+import { PublicPlatformConfigService } from './public-platform-config.service';
 import { PublicGastroDiscountsController } from './public-gastro-discounts.controller';
 import { PublicGastroDiscountsService } from './public-gastro-discounts.service';
 import { PublicEngagementService } from './public-engagement.service';
@@ -55,6 +57,7 @@ import { GastroModule } from '../modules/gastro/gastro.module';
     PublicGastroLocationsController,
     PublicGastroDiscountsController,
     PublicHotelLocationsController,
+    PublicPlatformConfigController,
   ],
   providers: [
     PublicEventsService,
@@ -64,6 +67,7 @@ import { GastroModule } from '../modules/gastro/gastro.module';
     PublicGastroLocationsService,
     PublicGastroDiscountsService,
     PublicHotelLocationsService,
+    PublicPlatformConfigService,
     PublicEngagementService,
     ProfilesAuthorizationService,
   ],

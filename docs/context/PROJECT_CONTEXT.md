@@ -58,6 +58,7 @@ yo-te-invito-v0.1/
 - Home, explore, category detail pages, checkout (demo), tickets, referrers directory, referral redirect `/r/[code]`.
 - **Legales:** `/legal/[slug]` (documentos publicados); footer con enlaces; aceptación en registro/checkout/portales — ver §5d.
 - **Navbar V2 (2026-05):** navegación responsive modular (drawer mobile, selector ciudad, carro con badge, menú usuario simplificado, portales con sidebar/mobile nav). Auditoría: `docs/audits/NAVBAR_RESPONSIVE_AUDIT.md`. Usuario maestro: sidebar unificado multi-portal (`MASTER_USER_EMAIL`).
+- **Footer público V2 (2026-05-24):** pie modular dark premium; variantes por ruta; contacto vía `GET /public/platform-config`; oculto en portales. Auditoría: `docs/audits/PUBLIC_FOOTER_CLOSING_AUDIT.md`.
 
 ### Rentals (Equipos y Rentals) — V2 cerrado (checklist)
 
@@ -133,6 +134,18 @@ Detalle API/UI: `BACKEND_CONTEXT.md`, `FRONTEND_CONTEXT.md`, checklist V2 § Adm
 | Hoteles | Próximamente (sin tile gateway) | `/hotel`, `/hotel/editar` | `/hoteles/[id]` informativa | `pnpm e2e:hotel` (`E2E_HOTEL_*`, skip sin env) |
 
 Checklist V2 § Gastro y Hoteles marcado. Auditoría: `docs/audits/GASTRO_HOTELES_V2_AUDIT.md`.
+
+## 5e. Footer público V2 — Estado cerrado (2026-05-24)
+
+| Pieza | Estado |
+|-------|--------|
+| Variantes por ruta (`footerVisibility`, `RouteAwareFooter`) | Cerrado |
+| UI full / minimal / hidden (`components/footer/*`) | Cerrado |
+| Contacto público `GET /public/platform-config` | Cerrado |
+| Sin doble pie `/categorias`, `/legal/*` | Cerrado |
+| Legales + verticales + accesos + confianza | Cerrado |
+
+Detalle: `docs/audits/PUBLIC_FOOTER_AUDIT.md`, cierre `PUBLIC_FOOTER_CLOSING_AUDIT.md`, smoke `PUBLIC_FOOTER_SMOKE.md`. Pendientes producto: datos reales Instagram/contacto/desarrollador, publicación legales.
 
 ## 5d. Legal Admin — Estado cerrado (2026-05-24)
 

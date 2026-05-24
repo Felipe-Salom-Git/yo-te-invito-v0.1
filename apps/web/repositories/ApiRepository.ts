@@ -1934,4 +1934,13 @@ export class ApiRepository implements Repositories {
       return this.client.patch<PlatformConfig>('/admin/config', patch);
     },
   };
+
+  publicPlatformConfig = {
+    get: async (tenantId: string) => {
+      return this.client.get<import('./interfaces').PublicPlatformConfig>(
+        '/public/platform-config',
+        { tenantId },
+      );
+    },
+  };
 }

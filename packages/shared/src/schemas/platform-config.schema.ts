@@ -25,3 +25,20 @@ export const adminConfigPatchSchema = z.object({
   categories: z.array(platformConfigCategorySchema).optional(),
 });
 export type AdminConfigPatch = z.infer<typeof adminConfigPatchSchema>;
+
+/** GET /public/platform-config?tenantId= */
+export const publicPlatformConfigQuerySchema = z.object({
+  tenantId: z.string().min(1),
+});
+export type PublicPlatformConfigQuery = z.infer<typeof publicPlatformConfigQuerySchema>;
+
+/** Public footer / discovery — no categories, no admin fields. */
+export const publicPlatformConfigResponseSchema = z.object({
+  supportEmail: z.string().nullable(),
+  supportPhone: z.string().nullable(),
+  whatsappPhone: z.string().nullable(),
+  address: z.string().nullable(),
+  instagramUrl: z.string().nullable(),
+  websiteUrl: z.string().nullable(),
+});
+export type PublicPlatformConfigResponse = z.infer<typeof publicPlatformConfigResponseSchema>;

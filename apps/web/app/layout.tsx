@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import '@/styles/globals.css';
 import { Providers } from './providers';
-import { Navbar, Footer } from '@/components';
+import { Navbar } from '@/components';
+import { RouteAwareFooter } from '@/components/RouteAwareFooter';
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'),
@@ -22,7 +23,7 @@ export default function RootLayout({
         <Providers>
           <Navbar />
           <main className="min-w-0 flex-1 overflow-x-clip">{children}</main>
-          <Footer />
+          <RouteAwareFooter />
         </Providers>
       </body>
     </html>
