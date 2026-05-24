@@ -1,23 +1,14 @@
 'use client';
 
 import { ProfileProtectedLayout } from '@/components/auth/ProfileProtectedLayout';
-import { PortalSidebar } from '@/components/layout/PortalSidebar';
+import { PortalLayoutShell } from '@/components/portal/PortalLayoutShell';
 import { Role } from '@yo-te-invito/shared';
-
-const NAV = [
-  { href: '/gastro', label: 'Dashboard' },
-  { href: '/gastro/local', label: 'Mi local' },
-  { href: '/gastro/contenido', label: 'Contenido' },
-  { href: '/gastro/descuentos', label: 'Descuentos' },
-  { href: '/gastro/validaciones', label: 'Resumen descuentos' },
-  { href: '/gastro/valoraciones', label: 'Valoraciones' },
-];
 
 export default function GastroLayout({ children }: { children: React.ReactNode }) {
   return (
     <ProfileProtectedLayout allowedRoles={[Role.ADMIN, Role.GASTRO_OWNER]} requiredProfile="gastro">
       <div className="mx-auto max-w-5xl">
-        <PortalSidebar items={NAV}>{children}</PortalSidebar>
+        <PortalLayoutShell portalKey="gastro">{children}</PortalLayoutShell>
       </div>
     </ProfileProtectedLayout>
   );

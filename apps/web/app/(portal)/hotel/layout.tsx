@@ -1,20 +1,14 @@
 'use client';
 
 import { ProfileProtectedLayout } from '@/components/auth/ProfileProtectedLayout';
-import { PortalSidebar } from '@/components/layout/PortalSidebar';
+import { PortalLayoutShell } from '@/components/portal/PortalLayoutShell';
 import { Role } from '@yo-te-invito/shared';
-
-const NAV = [
-  { href: '/hotel', label: 'Mi establecimiento' },
-  { href: '/hotel/editar', label: 'Editar ficha' },
-  { href: '/hotel/valoraciones', label: 'Valoraciones' },
-];
 
 export default function HotelLayout({ children }: { children: React.ReactNode }) {
   return (
     <ProfileProtectedLayout allowedRoles={[Role.ADMIN, Role.HOTEL_OWNER]} requiredProfile="hotel">
       <div className="mx-auto max-w-5xl">
-        <PortalSidebar items={NAV}>{children}</PortalSidebar>
+        <PortalLayoutShell portalKey="hotel">{children}</PortalLayoutShell>
       </div>
     </ProfileProtectedLayout>
   );

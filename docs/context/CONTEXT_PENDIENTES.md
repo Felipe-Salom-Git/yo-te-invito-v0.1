@@ -10,7 +10,8 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 - [x] Perfiles comerciales activos al crear (sin cola admin de perfiles)
 - [x] Admin: ocultar «Perfiles pendientes» (`/admin/perfiles` redirige a `/admin`)
 - [x] Script test user: `pnpm --filter api run user:restore-master` (`felipe.e.salom@gmail.com`) — rol `ADMIN` + memberships portales; **cerrar sesión y volver a entrar** para refrescar JWT
-- [x] Portal `/admin/*` protegido en web (`ProfileProtectedLayout`, rol `ADMIN`); acceso desde `/profiles`, navbar «Administración» y URL directa
+- [x] Portal `/admin/*` protegido en web (`ProfileProtectedLayout`, rol `ADMIN`); acceso desde `/profiles` y URL directa
+- [x] **Navbar V2** (2026-05): responsive, drawer mobile, ciudad, carro, portales, a11y, smoke — checklist V2 § Navbar cerrado
 - [ ] Deprecar/eliminar endpoints legacy `RoleApplication` y `/admin/applications` (opcional)
 - [ ] UI preferencias `notifyProducerEventStatus` en portal (backend ya soporta; default `true`)
 

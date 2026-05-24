@@ -16,7 +16,7 @@ export default function LogoutPage() {
 
   return (
     <div className="flex min-h-[40vh] items-center justify-center">
-      <p className="text-text-muted">Signing out…</p>
+      <p className="text-text-muted">Cerrando sesión…</p>
     </div>
   );
 }

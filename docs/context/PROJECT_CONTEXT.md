@@ -56,6 +56,7 @@ yo-te-invito-v0.1/
 ### Public
 
 - Home, explore, category detail pages, checkout (demo), tickets, referrers directory, referral redirect `/r/[code]`.
+- **Navbar V2 (2026-05):** navegación responsive modular (drawer mobile, selector ciudad, carro con badge, menú usuario simplificado, portales con sidebar/mobile nav). Auditoría: `docs/audits/NAVBAR_RESPONSIVE_AUDIT.md`. Usuario maestro: sidebar unificado multi-portal (`MASTER_USER_EMAIL`).
 
 ### Rentals (Equipos y Rentals) — V2 cerrado (checklist)
 

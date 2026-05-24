@@ -113,25 +113,29 @@ _Doc e implementación V2: `docs/referrals/REFERRALS_V2.md`. QA Slice 8: `smoke:
 
 ## Navbar y navegación responsive
 
-- [ ] Auditar navbar actual en desktop, tablet y mobile.
-- [ ] Definir estructura final del navbar público.
-- [ ] Convertir el botón “Eventos” en botón compacto tipo home/casita.
-- [ ] Mantener acceso principal a Explorar.
-- [ ] Agregar selector simple de ciudad visible en navbar.
-- [ ] Agrupar ciudades por provincia en el selector.
-- [ ] Mostrar solo ciudades con contenido cargado para la categoría/vista actual.
-- [ ] Mantener botón de Carro visible.
-- [ ] Mostrar badge de cantidad de ítems en el Carro cuando corresponda.
-- [ ] Pulir menú de login / usuario.
-- [ ] Simplificar menú de usuario: Inicio del portal, Mis tickets, Mi cuenta y Cerrar sesión.
-- [ ] Crear menú mobile desplegable desde esquina derecha.
-- [ ] Mover navegación de portales a menú mobile contextual.
-- [ ] Mantener sidebar de portales en desktop.
-- [ ] Adaptar navegación mobile para `/me`, `/producer`, `/admin`, `/gastro`, `/hotel` y `/referrer`.
-- [ ] Evitar que el navbar tape contenido o genere scroll horizontal.
-- [ ] Revisar comportamiento sticky/fixed en mobile.
-- [ ] Revisar accesibilidad: foco, teclado, aria-labels y cierre al tocar fuera.
-- [ ] Smoke visual en home, explore, categorías, detalle, checkout y portales.
+_Bloque cerrado 2026-05-23 — Slices 1–10; auditoría `docs/audits/NAVBAR_RESPONSIVE_AUDIT.md`; smoke `docs/audits/NAVBAR_RESPONSIVE_SMOKE.md`._
+
+- [x] Auditar navbar actual en desktop, tablet y mobile.
+- [x] Definir estructura final del navbar público.
+- [x] Convertir el botón “Eventos” en botón compacto tipo home/casita.
+- [x] Mantener acceso principal a Explorar.
+- [x] Agregar selector simple de ciudad visible en navbar.
+- [x] Agrupar ciudades por provincia en el selector.
+- [x] Mostrar solo ciudades con contenido cargado para la categoría/vista actual (heurística vía `events.search` + catálogo; sin endpoint dedicado de ciudades).
+- [x] Mantener botón de Carro visible.
+- [x] Mostrar badge de cantidad de ítems en el Carro cuando corresponda.
+- [x] Pulir menú de login / usuario.
+- [x] Simplificar menú de usuario: Inicio del portal, Mis tickets, Mi cuenta y Cerrar sesión.
+- [x] Crear menú mobile desplegable desde esquina derecha.
+- [x] Mover navegación de portales a menú mobile contextual.
+- [x] Mantener sidebar de portales en desktop.
+- [x] Adaptar navegación mobile para `/me`, `/producer`, `/admin`, `/gastro`, `/hotel` y `/referrer`.
+- [x] Evitar que el navbar tape contenido o genere scroll horizontal (`overflow-x-clip`, `scroll-padding-top`).
+- [x] Revisar comportamiento sticky/fixed en mobile.
+- [x] Revisar accesibilidad: foco, teclado, aria-labels y cierre al tocar fuera.
+- [x] Smoke visual en home, explore, categorías, detalle, checkout y portales (revisión código + guía manual; ver smoke doc).
+
+_Pendiente fuera de alcance del bloque: navbar contextual en portales (reducir chrome); footer público completo (bloque aparte)._
 
 ## Footer público completo
 

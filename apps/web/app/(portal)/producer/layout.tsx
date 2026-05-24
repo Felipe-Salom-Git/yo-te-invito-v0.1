@@ -1,23 +1,14 @@
 'use client';
 
 import { ProfileProtectedLayout } from '@/components/auth/ProfileProtectedLayout';
-import { PortalSidebar } from '@/components/layout/PortalSidebar';
+import { PortalLayoutShell } from '@/components/portal/PortalLayoutShell';
 import { Role } from '@yo-te-invito/shared';
-
-const NAV = [
-  { href: '/producer', label: 'Dashboard' },
-  { href: '/producer/profile', label: 'Perfil' },
-  { href: '/producer/events', label: 'Eventos' },
-  { href: '/producer/comments', label: 'Comentarios' },
-  { href: '/producer/referrals', label: 'Referidos' },
-  { href: '/producer/payouts', label: 'Payouts' },
-];
 
 export default function ProducerLayout({ children }: { children: React.ReactNode }) {
   return (
     <ProfileProtectedLayout allowedRoles={[Role.ADMIN, Role.PRODUCER_OWNER, Role.PRODUCER_STAFF]} requiredProfile="producer">
       <div className="mx-auto max-w-7xl">
-        <PortalSidebar items={NAV}>{children}</PortalSidebar>
+        <PortalLayoutShell portalKey="producer">{children}</PortalLayoutShell>
       </div>
     </ProfileProtectedLayout>
   );

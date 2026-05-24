@@ -182,6 +182,14 @@ export const exploreKeys = {
   search: (query: EventsSearchQuery) => [...exploreKeys.all, query] as const,
 };
 
+// ─── Navbar city selector ────────────────────────────────────────────────────
+
+export const navbarCityKeys = {
+  all: ['navbar', 'discovery-cities'] as const,
+  discovery: (tenantId: string, category: string) =>
+    [...navbarCityKeys.all, tenantId, category] as const,
+};
+
 // ─── Subcategories ─────────────────────────────────────────────────────────
 
 export const subcategoriesKeys = {

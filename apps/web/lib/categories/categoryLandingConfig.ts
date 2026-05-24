@@ -101,12 +101,15 @@ export const CATEGORY_LANDING_META: Record<CategoryGatewayId, CategoryLandingMet
 /** Ver todo en explore con filtros de categoría (y subcategoría opcional). */
 export function getCategoryExploreHref(
   category: CategoryGatewayId,
-  opts?: { subcategoryId?: string },
+  opts?: { subcategoryId?: string; city?: string },
 ): string {
   const params = new URLSearchParams();
   params.set('category', category);
   if (opts?.subcategoryId?.trim()) {
     params.set('subcategoryId', opts.subcategoryId.trim());
+  }
+  if (opts?.city?.trim()) {
+    params.set('city', opts.city.trim());
   }
   return `/explore?${params.toString()}`;
 }

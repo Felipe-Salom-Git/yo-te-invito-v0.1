@@ -56,7 +56,9 @@ Controllers: HTTP + Zod only. Services: business logic. Prisma: persistence only
 | **`AI_ENTRYPOINT.md`** | This index |
 | **`PROJECT_CONTEXT.md`** | Product vision, monorepo, scope, rentals domain |
 | **`BACKEND_CONTEXT.md`** | API modules, Prisma, endpoints, dev scripts |
-| **`FRONTEND_CONTEXT.md`** | Web app routes, repos, rental UI, E2E |
+| **`FRONTEND_CONTEXT.md`** | Web app routes, repos, rental UI, **navbar V2**, E2E |
+| **`docs/audits/NAVBAR_RESPONSIVE_AUDIT.md`** | Slices 1–10 navbar + fix dropdown flotante |
+| **`docs/audits/NAVBAR_RESPONSIVE_SMOKE.md`** | Smoke responsive navbar |
 | **`CONTEXT_PENDIENTES.md`** | Checkbox backlog — mark `[x]` when done |
 | **`FRONTEND_DEMO_NOTES.md`** | Legacy demo mapping (not current persistence) |
 

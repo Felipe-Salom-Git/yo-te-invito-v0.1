@@ -1,153 +1,219 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useId } from 'react';
 import Link from 'next/link';
-import { Role } from '@yo-te-invito/shared';
+import { createPortal } from 'react-dom';
 import { useRole } from '@/hooks/useRole';
-import { useCart } from '@/context/CartContext';
-import { useMeCart, useMeNotificationsUnread } from '@/lib/query/me-portal';
+import { useFocusTrap } from '@/hooks/useOverlayA11y';
+import { useMeNotificationsUnread } from '@/lib/query/me-portal';
+import { getUserMenuLoggedInItems } from '@/lib/navigation/userNavConfig';
+import { navFocusRing, navTouchTarget } from '@/lib/navigation/navA11yClasses';
+
+const menuLinkClass = `block px-3 py-2.5 text-sm text-text transition-colors hover:bg-bg-muted ${navFocusRing}`;
+
+const actionBtn = `inline-flex shrink-0 items-center justify-center rounded border border-border bg-bg-muted text-sm text-text transition-colors hover:bg-border ${navFocusRing}`;
 
 export function NavbarUserMenu() {
-  const { session, status, isAuthenticated, hasRole } = useRole();
-  const isAdmin = hasRole(Role.ADMIN);
-  const { totalItems: localCartItems } = useCart();
-  const { data: apiCart } = useMeCart(isAuthenticated);
+  const { session, status, isAuthenticated } = useRole();
   const { data: unreadData } = useMeNotificationsUnread(isAuthenticated);
   const unreadNotifications = unreadData?.unreadCount ?? 0;
-  const totalItems = isAuthenticated
-    ? (apiCart?.itemCount ?? 0)
-    : localCartItems;
-  const cartHref = isAuthenticated ? '/me/cart' : '/checkout';
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const menuId = useId();
+  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number; width: number } | null>(
+    null,
+  );
+
+  useFocusTrap(menuRef, open);
+
+  useEffect(() => {
+    if (!open) {
+      setMenuPosition(null);
+      return;
+    }
+
+    function updatePosition() {
+      const trigger = triggerRef.current;
+      if (!trigger) return;
+      const rect = trigger.getBoundingClientRect();
+      const panelWidth = 256;
+      const left = Math.min(
+        Math.max(8, rect.right - panelWidth),
+        window.innerWidth - panelWidth - 8,
+      );
+      setMenuPosition({
+        top: rect.bottom + 8,
+        left,
+        width: panelWidth,
+      });
+    }
+
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+    };
+  }, [open]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      if (triggerRef.current?.contains(target) || menuRef.current?.contains(target)) return;
+      setOpen(false);
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    if (!open) return;
+    function handleEscape(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpen(false);
+    }
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [open]);
+
   if (status === 'loading') {
-    return <span className="text-sm text-text-muted">…</span>;
+    return (
+      <span
+        className="hidden min-h-9 min-w-9 items-center justify-center text-sm text-text-muted md:inline-flex"
+        aria-live="polite"
+        aria-busy="true"
+      >
+        Cargando cuenta…
+      </span>
+    );
   }
 
-  const email = session?.user?.email ?? 'User';
+  const email = session?.user?.email ?? '';
+  const menuItems = getUserMenuLoggedInItems(email);
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
       {isAuthenticated && (
         <Link
           href="/me/notifications"
-          className="relative rounded border border-border bg-bg-muted px-3 py-1.5 text-sm text-text hover:bg-border transition-colors"
-          aria-label="Notificaciones"
+          className={`${actionBtn} relative hidden p-2 lg:inline-flex lg:px-3 lg:py-1.5`}
+          aria-label={
+            unreadNotifications > 0
+              ? `Notificaciones, ${unreadNotifications} sin leer`
+              : 'Notificaciones'
+          }
         >
-          Notificaciones
+          <BellIcon />
+          <span className="hidden lg:inline">Notificaciones</span>
           {unreadNotifications > 0 && (
-            <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-xs text-bg">
+            <span
+              className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-xs text-bg ring-1 ring-bg"
+              aria-hidden
+            >
               {unreadNotifications > 9 ? '9+' : unreadNotifications}
             </span>
           )}
         </Link>
       )}
-      <Link
-        href={cartHref}
-        className="relative rounded border border-border bg-bg-muted px-3 py-1.5 text-sm text-text hover:bg-border transition-colors"
-      >
-        Mi Carro
-        {totalItems > 0 && (
-          <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-accent text-xs text-bg">
-            {totalItems}
-          </span>
-        )}
-      </Link>
       {!isAuthenticated || !session?.user ? (
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-1.5">
           <Link
             href="/register"
-            className="rounded border border-border px-3 py-1.5 text-sm text-text-muted hover:text-text hover:border-border/80 transition-colors"
+            className={`${actionBtn} hidden px-3 py-1.5 text-text-muted hover:text-text sm:inline-flex`}
           >
-            Registrarse
+            Crear cuenta
           </Link>
           <Link
             href="/login"
-            className="rounded border border-accent px-3 py-1.5 text-sm font-medium text-accent hover:bg-accent/10 transition-colors"
+            className={`inline-flex ${navTouchTarget} shrink-0 items-center rounded border border-accent px-2.5 py-2 text-sm font-medium text-accent transition-colors hover:bg-accent/10 sm:px-3`}
+            aria-label="Iniciar sesión"
           >
-            Iniciar sesión
+            <span className="sm:hidden">Entrar</span>
+            <span className="hidden sm:inline">Iniciar sesión</span>
           </Link>
         </div>
       ) : (
-        <div className="relative" ref={ref}>
+        <div className="relative" ref={triggerRef}>
           <button
             type="button"
             onClick={() => setOpen(!open)}
-            className="flex items-center gap-2 rounded border border-border bg-bg-muted px-3 py-1.5 text-sm text-text hover:bg-border transition-colors"
+            className={`${actionBtn} ${navTouchTarget} max-w-[7.5rem] gap-2 px-2.5 py-2 sm:max-w-[10rem] sm:px-3`}
             aria-expanded={open}
-            aria-haspopup="true"
+            aria-haspopup="menu"
+            aria-controls={menuId}
+            aria-label={
+              email ? `Abrir menú de usuario, sesión de ${email}` : 'Abrir menú de usuario'
+            }
           >
-            <span className="max-w-[120px] truncate text-text-muted">{email}</span>
+            <UserIcon />
+            <span className="hidden truncate text-text-muted sm:inline" aria-hidden>
+              {email}
+            </span>
           </button>
-          {open && (
-            <div className="absolute right-0 top-full z-50 mt-1 w-48 rounded border border-border bg-bg py-1 shadow-lg">
-              <div className="border-b border-border px-3 py-2 text-xs text-text-muted">
-                {email}
-              </div>
-              <Link
-                href="/profiles"
-                className="block px-3 py-2 text-sm text-text hover:bg-bg-muted"
-                onClick={() => setOpen(false)}
-              >
-                Cambiar perfil
-              </Link>
-              {isAdmin ? (
-                <Link
-                  href="/admin"
-                  className="block px-3 py-2 text-sm font-medium text-accent hover:bg-bg-muted"
-                  onClick={() => setOpen(false)}
+          {open && menuPosition && typeof document !== 'undefined'
+            ? createPortal(
+                <div
+                  ref={menuRef}
+                  id={menuId}
+                  className="fixed z-[60] max-h-[calc(100vh-5rem)] overflow-y-auto overscroll-contain rounded-xl border border-border bg-bg py-1 shadow-2xl"
+                  style={{
+                    top: menuPosition.top,
+                    left: menuPosition.left,
+                    width: menuPosition.width,
+                  }}
+                  role="menu"
+                  aria-label="Menú de cuenta"
                 >
-                  Administración
-                </Link>
-              ) : null}
-              <Link
-                href="/me"
-                className="block px-3 py-2 text-sm text-text hover:bg-bg-muted"
-                onClick={() => setOpen(false)}
-              >
-                Inicio
-              </Link>
-              <Link
-                href="/me/cart"
-                className="block px-3 py-2 text-sm text-text hover:bg-bg-muted"
-                onClick={() => setOpen(false)}
-              >
-                Mi Carro
-              </Link>
-              <Link
-                href="/me/tickets"
-                className="block px-3 py-2 text-sm text-text hover:bg-bg-muted"
-                onClick={() => setOpen(false)}
-              >
-                Mis tickets
-              </Link>
-              <Link
-                href="/me/orders"
-                className="block px-3 py-2 text-sm text-text hover:bg-bg-muted"
-                onClick={() => setOpen(false)}
-              >
-                Mis pedidos
-              </Link>
-              <Link
-                href="/logout"
-                className="block px-3 py-2 text-sm text-text hover:bg-bg-muted"
-                onClick={() => setOpen(false)}
-              >
-                Sign out
-              </Link>
-            </div>
-          )}
+                  <div
+                    className="border-b border-border px-3 py-2 text-xs text-text-muted"
+                    role="presentation"
+                  >
+                    {email}
+                  </div>
+                  {menuItems.map((item) => (
+                    <Link
+                      key={item.id}
+                      href={item.href}
+                      role="menuitem"
+                      className={`${menuLinkClass}${item.id === 'logout' ? ' mt-1 border-t border-border' : ''}`}
+                      onClick={() => setOpen(false)}
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>,
+                document.body,
+              )
+            : null}
         </div>
       )}
     </div>
+  );
+}
+
+function BellIcon() {
+  return (
+    <svg className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+      />
+    </svg>
+  );
+}
+
+function UserIcon() {
+  return (
+    <svg className="h-5 w-5 shrink-0 sm:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+      />
+    </svg>
   );
 }

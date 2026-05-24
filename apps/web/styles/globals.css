@@ -33,10 +33,28 @@
   --color-border: #e4e4e7;
 }
 
+html {
+  /* Sticky navbar (`h-14` → `md:h-[4.5rem]`) — anchor/focus no queda bajo la barra */
+  scroll-padding-top: 3.5rem;
+}
+
+@media (min-width: 640px) {
+  html {
+    scroll-padding-top: 4rem;
+  }
+}
+
+@media (min-width: 768px) {
+  html {
+    scroll-padding-top: 4.5rem;
+  }
+}
+
 body {
   background-color: var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-sans);
+  overflow-x: clip;
 }
 
 /* Focus visible for keyboard navigation */

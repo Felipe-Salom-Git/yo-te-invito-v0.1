@@ -5,19 +5,9 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { PageLoader } from '@/components';
-import { PortalSidebar } from '@/components/layout/PortalSidebar';
+import { PortalLayoutShell } from '@/components/portal/PortalLayoutShell';
 
 /** Portal V2 polish: mobile nav, EmptyState/QueryError, ticket groups, cart UX — see task plan in PR. */
-const NAV = [
-  { href: '/me', label: 'Inicio' },
-  { href: '/me/tickets', label: 'Mis tickets' },
-  { href: '/me/cart', label: 'Mi Carro' },
-  { href: '/me/preferences', label: 'Preferencias' },
-  { href: '/me/activity', label: 'Actividad' },
-  { href: '/me/notifications', label: 'Notificaciones' },
-  { href: '/me/account', label: 'Mi cuenta' },
-];
-
 export default function MePortalLayout({ children }: { children: React.ReactNode }) {
   const { status } = useSession();
   const router = useRouter();
@@ -43,10 +33,15 @@ export default function MePortalLayout({ children }: { children: React.ReactNode
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6">
-      <Link href="/home" className="mb-4 inline-block text-sm text-text-muted hover:text-text">
+      <Link
+        href="/home"
+        className="mb-4 hidden text-sm text-text-muted hover:text-text md:inline-block"
+      >
         ← Volver al inicio
       </Link>
-      <PortalSidebar items={NAV}>{children}</PortalSidebar>
+      <PortalLayoutShell portalKey="me" showPublicHomeLink>
+        {children}
+      </PortalLayoutShell>
     </div>
   );
 }

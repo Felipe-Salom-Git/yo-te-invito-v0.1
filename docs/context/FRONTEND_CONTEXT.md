@@ -92,7 +92,7 @@ ApiClient → HTTP (NEXT_PUBLIC_API_BASE_URL)
 | Public | `/`, `/home`, **`/explore`** (filtros URL: `q`, `category`, `subcategoryId`, `city`, `from`, `to`, `page`; `?category=hotel` → banner Próximamente), `/events/[id]`, **`/restaurants/[id]`** (ficha gastro `GastroPublicDetailContent`, no ticketera), `/gastronomicos/[id]`, `/excursiones/[id]`, **`/rentals/[id]`**, **`/hoteles`** + **`/hoteles/[id]`** (vertical Próximamente; ver abajo), **`/users/[userId]`** (perfil comentarista), checkout, `/me/tickets`, `/referrers`, `/r/[code]` |
 | Account | `/login`, `/register`, **`/me/*`** (portal usuario estándar) |
 | Cuenta (legacy) | `/cuenta/*` → **redirects** a `/me/*` (no mantener lógica duplicada) |
-| Admin | `/admin/*` (**solo rol `ADMIN`**, `ProfileProtectedLayout` en `admin/layout.tsx`), sidebar operaciones; **`/admin`** dashboard; **`/admin/eventos`** listado filtrado; **`/admin/reviews`** reporte reputación (KPIs, CSV); **`/admin/review-disputes`** cola disputas; **`/admin/usuarios`** listado usuarios con filtros URL; **`/admin/categorias`** subcategorías + banners (`/admin/subcategorias` redirige); **`/admin/auditoria`** logs operativos; acceso: `/profiles`, navbar «Administración», URL directa |
+| Admin | `/admin/*` (**solo rol `ADMIN`**, `ProfileProtectedLayout` en `admin/layout.tsx`), sidebar operaciones; **`/admin`** dashboard; **`/admin/eventos`** listado filtrado; **`/admin/reviews`** reporte reputación (KPIs, CSV); **`/admin/review-disputes`** cola disputas; **`/admin/usuarios`** listado usuarios con filtros URL; **`/admin/categorias`** subcategorías + banners (`/admin/subcategorias` redirige); **`/admin/auditoria`** logs operativos; acceso: `/profiles` o sidebar maestro (usuario maestro) |
 | Producer | `/producer` (hub: KPIs, engagement, **`ProducerDashboardEventStatusAlerts`**, eventos; nav en sidebar), `/producer/events`, ticket studio, **`/producer/profile`** (hub por bloques + completitud frontend), **`/producer/profile/create`** (solo nombre; slug en servidor), **`/producer/profile/identity|images|contact`**, **`/producer/comments`** (`ManagedReviewsCommentsPage`), referidos, payouts |
 | Gastro / Hotel / Referrer | `/gastro/*`, **`/gastro/contenido`** (editorial Prisma), **`/gastro/valoraciones`**, `/hotel`, **`/hotel/valoraciones`**, `/referrer`, `/cuenta/solicitar-referrer` |
 
@@ -137,7 +137,7 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`). Shared UI tokens:
 
 - Hooks: `lib/query/me-portal.ts` (incl. `usePushSubscriptions*`, `useRegisterPushSubscription`, `useSendTestPushNotification`); keys `mePortalKeys` en `lib/query/keys.ts`.
 - Push cliente: `lib/push/registerPush.ts`; service worker `public/push-sw.js` (registro `/push-sw.js`).
-- Layout: `UserPortalLayout` bajo `app/(portal)/me/` (menú: Inicio, Mis tickets, Mi Carro, Preferencias, Actividad, Notificaciones, Mi cuenta).
+- Layout: `app/(portal)/me/layout.tsx` + **`PortalLayoutShell`** (`portalKey="me"`); sidebar/mobile nav vía `portalNavConfig` (Slice 7). Usuario maestro (`MASTER_USER_EMAIL`): sidebar acordeón con **todas** las verticales (`MasterPortalSidebar` / `MasterMobilePortalNav`).
 - Componentes portal: `MeDashboardAlerts`, `MeRecommendationsSection`, `MePreferencesInterests` + **`InterestsDisclosure`** (acordeones reutilizables); órdenes: `MeOrderDetailSummary`, `MeOrderTicketsList`.
 - **Ticket comprador (V2.2):** `components/tickets/` (`BuyerTicketVisual`, `TicketTemplateRenderer`, `DefaultBuyerTicket`, `TicketQrImage`, `TicketEntryStatusBanner`); utilidades `lib/tickets/` (`qr-display.ts`, `qr-image-url.ts`, `ticket-status-ui.ts`); estilos impresión en `styles/globals.css` (`@media print`).
 - Ficha gastro pública: `components/gastro/GastroPublicDetailContent` + hooks `lib/query/gastro-public-detail.ts`; **`GastroFollowButton`** → `/me/gastro-follows` (sin favoritos/esperados de evento en ficha restaurante).
@@ -170,7 +170,9 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`). Shared UI tokens:
 | Perfil productor (portal) | `components/producer/profile/` (`ProducerProfilePage`, `ManagedReviewSummary`, `ProducerProfilePublicPreview`, `producer-profile-completeness.ts`) |
 | Dashboard productor | `components/producer/dashboard/` (`ProducerDashboardClient`, KPIs, engagement, alertas estado evento; **sin** `ProducerDashboardQuickLinks`) |
 | Valoración B2B | `CommercialReviewPanel`, `CommercialAspectBreakdown` |
-| Navbar admin | `NavbarUserMenu` — enlace «Administración» si `Role.ADMIN` |
+| **Navbar V2** | `components/Navbar.tsx` — logo → `/categorias`, casita → `/home`, Explorar (`md+`), ciudad (`NavbarCitySelector` / drawer mobile), carro (`NavbarCartButton` + `useNavbarCart`), menú usuario (`NavbarUserMenu`) o drawer `NavbarMobileNav` + `MobilePublicNavDrawer`. Config: `lib/navigation/publicNavConfig.ts`, `userNavConfig.ts`. Footer sin link Admin (Slice 8). A11y: `useOverlayA11y`, `navA11yClasses`. Docs: `docs/audits/NAVBAR_RESPONSIVE_AUDIT.md`, `NAVBAR_RESPONSIVE_SMOKE.md` |
+| Portales nav | `PortalLayoutShell`, `PortalSidebar` (desktop), `MobilePortalNav` (mobile por portal); config `lib/navigation/portalNavConfig.ts` |
+| Usuario maestro nav | `lib/navigation/masterUser.ts` — inicio portal → `/me`; menú acordeón multi-vertical en todos los portales |
 | Dashboard admin | `components/admin/dashboard/` — `AdminDashboardClient`, KPIs, cola, accesos; hook `lib/query/admin-dashboard.ts` |
 | Eventos admin | `components/admin/events/` — `AdminEventsPageClient`, filtros URL, tabla + cards mobile |
 | Auditoría admin | `components/admin/audit/` — `AdminAuditPageClient`, `AdminAuditFilters`, tabla + cards, `AdminAuditMetadataPreview`; hook `lib/query/admin-audit.ts` |
@@ -193,6 +195,15 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`). Shared UI tokens:
 - **Carruseles eventos:** Destacados, Próximos, Nuevos. **Otras categorías:** Destacados, Mejor puntuados (si aplica), Recientes/Nuevos.
 - **Ver más:** carruseles propios → `/explore?category=…` (+ `subcategoryId` si filtra); cruzados → `/categoria/{otra}`.
 - **Query:** `?subcategory=` o `?subcategoryId=` (slug o id). Cards: `ContentCard` con `fromPrice` / `producerName` / `subcategoryName`.
+
+## 7e. Navbar y navegación responsive (V2 — 2026-05)
+
+- **Público desktop:** `[Logo /categorias] [🏠 /home] [Explorar] [Ciudad]` + tema + notificaciones (`lg+`) + carro + menú cuenta.
+- **Público mobile:** `[Logo] [Carro] [☰]` — links y cuenta en `MobilePublicNavDrawer`; ciudad en drawer.
+- **Menú cuenta:** Inicio del portal (`/profiles`; maestro → `/me`), Mis tickets, Mi cuenta, Cerrar sesión (`/logout` en español).
+- **Portales:** sidebar vertical `md+`; mobile `MobilePortalNav` por ruta; sin scroll horizontal en navbar (`overflow-x-clip`, `scroll-padding-top` global).
+- **Dropdown usuario:** panel en portal (`fixed`, `z-[60]`) — no expande altura del navbar.
+- **Usuario maestro** (`packages/shared` `MASTER_USER_EMAIL`): `MasterPortalNavSections` — acordeones Usuario / Productora / Administración / Gastronómico / Hotel / Referido.
 
 ## 7b. Category gateway (post-splash)
 

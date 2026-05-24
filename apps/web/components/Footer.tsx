@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePlatformConfig } from '@/hooks/usePlatformConfig';
+import { navFocusRing } from '@/lib/navigation/navA11yClasses';
 
 export function Footer() {
   const { data: config } = usePlatformConfig();
@@ -30,14 +31,11 @@ export function Footer() {
               </div>
             )}
           </div>
-          <div className="flex gap-6 text-sm text-text-muted">
-            <Link href="/home" className="hover:text-accent transition-colors">
+          <nav className="flex gap-6 text-sm text-text-muted" aria-label="Enlaces del sitio">
+            <Link href="/home" className={`rounded transition-colors hover:text-accent ${navFocusRing}`}>
               Eventos
             </Link>
-            <Link href="/admin" className="hover:text-accent transition-colors">
-              Admin
-            </Link>
-          </div>
+          </nav>
         </div>
       </div>
     </footer>
