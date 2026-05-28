@@ -1,6 +1,9 @@
 import type { HotelProfile } from '@/repositories/interfaces';
 import { getHotelProfileCompleteness } from '@/lib/hotel/hotel-profile-completeness';
-import { buildOnboardingChecklistResult } from './onboarding-checklist.types';
+import {
+  buildOnboardingChecklistResult,
+  type OnboardingChecklistItem,
+} from './onboarding-checklist.types';
 
 export function getHotelPortalOnboarding(
   profile: HotelProfile,
@@ -8,7 +11,7 @@ export function getHotelPortalOnboarding(
 ) {
   const completeness = getHotelProfileCompleteness(profile);
 
-  const items = completeness.items.map((item) => ({
+  const items: OnboardingChecklistItem[] = completeness.items.map((item) => ({
     id: item.id,
     label: item.label,
     done: item.done,

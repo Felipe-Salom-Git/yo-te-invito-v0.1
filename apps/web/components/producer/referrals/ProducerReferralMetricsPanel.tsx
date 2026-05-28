@@ -5,7 +5,10 @@ import { ReferralMetricsKpiGrid, moneyKpi } from '@/components/referrals/Referra
 import { useProducerReferralMetrics } from '@/hooks/useProducerReferralMetrics';
 import { formatMoneyCents } from '@/lib/producer/referral-display';
 import { getErrorMessage } from '@/lib/errors';
-import type { ProducerReferralMetricsByEvent, ProducerReferralMetricsByReferrer } from '@/repositories/interfaces';
+import type {
+  ProducerReferralMetricsByEvent,
+  ProducerReferralMetricsByReferrer,
+} from '@yo-te-invito/shared';
 
 function ReferrerMetricsTable({ rows }: { rows: ProducerReferralMetricsByReferrer[] }) {
   if (rows.length === 0) {
