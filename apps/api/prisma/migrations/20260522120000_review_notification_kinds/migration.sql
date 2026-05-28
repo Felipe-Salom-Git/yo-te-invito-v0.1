@@ -1,4 +1,17 @@
 -- Review & dispute notification kinds (Reviews V2 slice 5)
+-- Ensure NotificationKind exists before ALTER TYPE (fresh DB ordering fix).
+
+DO $$
+BEGIN
+  CREATE TYPE "NotificationKind" AS ENUM (
+    'TICKET_REMINDER_24H',
+    'FAVORITE_EVENT_SOON',
+    'EXPECTED_EVENT_SOON'
+  );
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
+
 ALTER TYPE "NotificationKind" ADD VALUE IF NOT EXISTS 'REVIEW_RECEIVED';
 ALTER TYPE "NotificationKind" ADD VALUE IF NOT EXISTS 'REVIEW_OFFICIAL_REPLY';
 ALTER TYPE "NotificationKind" ADD VALUE IF NOT EXISTS 'REVIEW_DISPUTE_CREATED';

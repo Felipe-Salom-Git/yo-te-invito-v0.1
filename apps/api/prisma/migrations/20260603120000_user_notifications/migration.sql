@@ -1,7 +1,22 @@
 -- User notifications V2: in-app inbox + delivery log (idempotent email)
 
-CREATE TYPE "NotificationKind" AS ENUM ('TICKET_REMINDER_24H', 'FAVORITE_EVENT_SOON', 'EXPECTED_EVENT_SOON');
-CREATE TYPE "NotificationChannel" AS ENUM ('IN_APP', 'EMAIL');
+DO $$
+BEGIN
+  CREATE TYPE "NotificationKind" AS ENUM (
+    'TICKET_REMINDER_24H',
+    'FAVORITE_EVENT_SOON',
+    'EXPECTED_EVENT_SOON'
+  );
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+  CREATE TYPE "NotificationChannel" AS ENUM ('IN_APP', 'EMAIL');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 
 CREATE TABLE "UserNotification" (
     "id" TEXT NOT NULL,
