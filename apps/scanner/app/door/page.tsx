@@ -123,7 +123,8 @@ export default function DoorPage() {
           devUserId: devUserId.trim(),
         });
         setLastGastro(res);
-        setHistory((prev) => [{ kind: 'gastro-discount', result: res }, ...prev].slice(0, MAX_HISTORY));
+        const gastroItem: ScanHistoryItem = { kind: 'gastro-discount', result: res };
+        setHistory((prev) => [gastroItem, ...prev].slice(0, MAX_HISTORY));
       } catch {
         setLastGastro({
           status: 'INVALID',
@@ -161,11 +162,13 @@ export default function DoorPage() {
         res = await scanOffline(eventId.trim(), qrPayload.trim());
       }
       setLastTicket(res);
-      setHistory((prev) => [{ kind: 'ticket', result: res }, ...prev].slice(0, MAX_HISTORY));
+      const ticketItem: ScanHistoryItem = { kind: 'ticket', result: res };
+      setHistory((prev) => [ticketItem, ...prev].slice(0, MAX_HISTORY));
     } catch {
       const invalid: ScanResponse = { result: 'INVALID' };
       setLastTicket(invalid);
-      setHistory((prev) => [{ kind: 'ticket', result: invalid }, ...prev].slice(0, MAX_HISTORY));
+      const invalidItem: ScanHistoryItem = { kind: 'ticket', result: invalid };
+      setHistory((prev) => [invalidItem, ...prev].slice(0, MAX_HISTORY));
     } finally {
       setLoading(false);
     }
