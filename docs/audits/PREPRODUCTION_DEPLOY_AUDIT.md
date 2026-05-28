@@ -1,8 +1,10 @@
 # Auditoría de preproducción y Producción técnica — Yo Te Invito
 
-**Fecha:** 2026-05-28  
-**Slice:** Infra 1 — solo documentación (sin deploy, sin cambios en servidor ni `.env` reales).  
+**Fecha:** 2026-05-28 (auditoría) · **Actualización estado prod:** Mayo 2026  
+**Slice:** Infra 1 — auditoría pre-deploy. **Infra 2B** — provisioning ejecutado en VPS DonWeb.  
 **Fuentes:** código y docs del monorepo (`docs/context/*`, `docs/dev/*`, `docs/guides/*`, `apps/*`).
+
+> **Estado producción (Mayo 2026):** VPS DonWeb levantado en **`yoteinvito.club`** (`179.43.124.145`). systemd + Nginx + HTTPS + PostgreSQL/Redis locales. Migraciones (`migrate deploy`), seeds, admin maestro operativo. **Pendiente:** backups, hardening, rotación secretos, legales reales, smoke completo. Ver [`docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTION_RUNBOOK.md) §24.
 
 ---
 
@@ -23,9 +25,9 @@ Yo Te Invito es un monorepo **Nx + pnpm** con tres aplicaciones desplegables (**
 
 **Riesgos principales antes de desplegar:** imágenes en **data-URL** en BD (tamaño, backups, rendimiento); **sin rate limiting** en API; **`DEV_AUTH_ENABLED` o `JWT_SECRET` por defecto** en producción; **puertos/documentación inconsistentes** (`.env.example` API `PORT=4000` vs runtime default `3001`); **cron Nest** activo en cada réplica API sin coordinación; ausencia de **backups probados**.
 
-**Recomendación de dominios:** subdominios separados (`yoteinvito.com`, `api.yoteinvito.com`, `scanner.yoteinvito.com`) — ver §7.
+**Recomendación de dominios:** subdominios separados — ver §7. **Aplicado en prod:** `yoteinvito.club`, `api.yoteinvito.club`, `scanner.yoteinvito.club`.
 
-**Siguiente slice sugerido:** **Infra 2 — Provisionar VPS + PostgreSQL + Redis + Nginx + variables de entorno** siguiendo §15 de este documento (sin tocar pagos reales ni GCS hasta slice dedicado).
+**Siguiente bloque:** **Infra 2C — Cierre operativo** (secretos, backups, hardening, legales reales, smoke) — ver runbook §24.8.
 
 ---
 

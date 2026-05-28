@@ -145,9 +145,11 @@ packages/shared/  ← Zod schemas
 ### Infra
 
 ```bash
-pnpm db:up && pnpm db:migrate
+pnpm db:up && pnpm db:migrate   # solo desarrollo local
 pnpm run -w dev    # API :3001 + web :3000
 ```
+
+**Producción VPS (Mayo 2026):** `yoteinvito.club` — `npx prisma migrate deploy` en `apps/api` (no `pnpm db:migrate`). Runbook: `docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md` §24.
 
 ### Cuenta de trabajo
 

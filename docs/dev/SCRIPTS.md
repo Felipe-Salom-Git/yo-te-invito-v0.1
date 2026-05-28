@@ -6,6 +6,8 @@
 
 **Regla:** pago demo sí · datos demo automáticos no · usuario maestro `felipe.e.salom@gmail.com`
 
+**Producción:** usar `cd apps/api && npx prisma migrate deploy` — **no** `pnpm db:migrate`. Deploy VPS: [`docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTION_RUNBOOK.md).
+
 ---
 
 ## Tabla rápida (raíz + api)

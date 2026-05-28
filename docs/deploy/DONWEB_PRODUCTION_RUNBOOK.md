@@ -1,10 +1,10 @@
 # Runbook Producción técnica — DonWeb / Yo Te Invito
 
-**Versión:** 1.0 (Slice Infra 2A — 2026-05-28)  
-**Estado:** Documento operativo para ejecución **manual** en VPS DonWeb. **No sustituye** la auditoría base.  
+**Versión:** 1.1 (Slice Infra 2B — ejecución real Mayo 2026)  
+**Estado:** Runbook operativo + registro de **deploy ejecutado** en VPS DonWeb. **No incluye secretos.**  
 **Referencias:** [`docs/audits/PREPRODUCTION_DEPLOY_AUDIT.md`](../audits/PREPRODUCTION_DEPLOY_AUDIT.md), [`docs/dev/Yo_Te_Invito_Checklist_V2_Produccion.md`](../dev/Yo_Te_Invito_Checklist_V2_Produccion.md) § Producción técnica.
 
-> **Este runbook no ejecuta deploy.** No incluye secretos reales. Completar tablas de §5 antes de operar en el servidor.
+> La auditoría original asumía dominio `yoteinvito.com`; **producción actual** usa **`yoteinvito.club`**. Sustituir hosts al seguir pasos genéricos del runbook.
 
 ---
 
@@ -72,6 +72,32 @@ Internet → Nginx (TLS) → web:3000 | api:3001 | scanner:3002
 ```
 
 **Flujo de datos:** Browser → Next.js → `ApiRepository` → NestJS → Prisma → PostgreSQL.
+
+### 3.4 Producción actual (`yoteinvito.club` — Mayo 2026)
+
+| Dato | Valor aplicado |
+|------|----------------|
+| Dominio | `yoteinvito.club` |
+| IP VPS | `179.43.124.145` |
+| SO | Ubuntu 24.04 LTS |
+| Ruta repo | `/opt/yoteinvito` |
+| SSH | Puerto **5230** (UFW); no usar solo puerto 22 si se cambió |
+| PostgreSQL | Local — DB `yo_te_invito`, usuario `yti_app` |
+| Redis | Local |
+| Tenant | `tenant-demo` — nombre «Yo Te Invito» |
+| systemd | `yti-api`, `yti-web`, `yti-scanner` |
+| HTTPS | Certbot / Let's Encrypt activo |
+
+**Hosts públicos:**
+
+| Host | Upstream |
+|------|----------|
+| `https://yoteinvito.club` | `127.0.0.1:3000` |
+| `https://www.yoteinvito.club` | `127.0.0.1:3000` |
+| `https://api.yoteinvito.club` | `127.0.0.1:3001` |
+| `https://scanner.yoteinvito.club` | `127.0.0.1:3002` |
+
+**Correo:** registros MX/SPF/DKIM/DMARC en DonWeb **no eliminados**; `autoconfig` / `autodiscover` orientados a `mail.yoteinvito.club`.
 
 ---
 
@@ -1051,6 +1077,86 @@ Marcar en el día del deploy (no commitear estados al repo).
 
 ---
 
+## 24. Ejecución real — Mayo 2026 (Infra 2B)
+
+Registro de lo ejecutado en VPS DonWeb. Sin passwords ni tokens.
+
+### 24.1 Infraestructura completada
+
+- VPS DonWeb operativo; Ubuntu 24.04 LTS; IP `179.43.124.145`.
+- DNS en DonWeb: `yoteinvito.club`, `www`, `api`, `scanner` → IP del VPS.
+- Stack: Node 20, npm, pnpm 9.14.2, Nginx, PostgreSQL 16, Redis, UFW.
+- Puertos públicos: SSH **5230**, HTTP 80, HTTPS 443.
+- Puertos **no** expuestos: 3000, 3001, 3002, 5432, 6379.
+
+### 24.2 Base de datos y migraciones
+
+```bash
+cd /opt/yoteinvito/apps/api
+npx prisma generate
+npx prisma migrate deploy
+```
+
+- **No** se usó `pnpm db:migrate` en producción.
+- Tras fix en repo (`NotificationKind` creado antes de `ALTER TYPE`), deploy desde DB vacía aplicó **69 migraciones**.
+
+### 24.3 Seeds y legales bootstrap
+
+```bash
+cd /opt/yoteinvito
+pnpm --filter api run seed:subcategories
+pnpm --filter api run seed:legal-documents
+```
+
+- Registro admin bloqueado por legales obligatorios sin versión publicada → se publicó **contenido legal bootstrap temporal** (no es redacción final aprobada).
+- Reemplazar desde `/admin/legales` antes de considerar producción cerrada.
+
+### 24.4 Build y servicios
+
+```bash
+cd /opt/yoteinvito
+pnpm build   # shared, api, web, scanner — OK
+```
+
+- systemd: `yti-api` (:3001), `yti-web` (:3000), `yti-scanner` (:3002) — activos.
+- Verificación local: `curl http://localhost:3001/health`, `curl -I` web/scanner.
+
+### 24.5 Nginx y TLS
+
+- Reverse proxy según §3.4; Certbot; HTTPS operativo en los cuatro hosts.
+
+### 24.6 Admin maestro
+
+- Usuario: `felipe.e.salom@gmail.com` — operativo tras registro + `user:restore-master` + re-login.
+- Acceso `/admin` verificado.
+
+### 24.7 Incidentes resueltos durante el deploy (repo)
+
+| Tema | Resolución |
+|------|------------|
+| Prisma Client | `npx prisma generate` antes de build/API |
+| Scanner `ScanHistoryItem` | Tipado explícito en `door/page.tsx` |
+| Web métricas referidos | Imports desde `@yo-te-invito/shared` |
+| Migración `NotificationKind` | Enum idempotente antes de `ALTER TYPE` |
+| Registro bloqueado | Legal bootstrap temporal publicado |
+
+### 24.8 Pendientes post-deploy (no cerrar Infra 2B sin esto)
+
+| Prioridad | Pendiente |
+|-----------|-----------|
+| **Crítica** | Rotar password root VPS, password DB `yti_app`, `JWT_SECRET`, `NEXTAUTH_SECRET` (expuestos en sesión) |
+| **Crítica** | SSH por clave; deshabilitar root password login |
+| Alta | Backups `pg_dump` + restore probado |
+| Alta | Legales reales en admin (sustituir bootstrap) |
+| Alta | Smoke E2E dominio real (checkout **DEMO**, scanner QR) |
+| Media | Rate limiting Nginx + Nest; monitoreo/alertas |
+| Media | `certbot renew --dry-run`; health DB/Redis |
+| Baja | Resend producción; VAPID push; GCS imágenes; Getnet |
+
+**Pagos:** provider **`DEMO`** mantenido; Getnet no activado.
+
+---
+
 ## Referencias cruzadas
 
 | Documento | Uso |
@@ -1064,4 +1170,4 @@ Marcar en el día del deploy (no commitear estados al repo).
 
 ---
 
-**Siguiente slice:** **Infra 2B — Provisioning real en DonWeb** (ejecutar este runbook en el VPS con datos reales del cliente, sin modificar lógica de negocio en el repo).
+**Siguiente bloque recomendado:** **Infra 2C — Cierre operativo** (rotación secretos, backups, hardening, legales reales, smoke producción).

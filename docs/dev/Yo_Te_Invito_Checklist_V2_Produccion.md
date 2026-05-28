@@ -281,25 +281,106 @@ _Footer público completo — bloque V2 cerrado. Smoke: `docs/audits/PUBLIC_FOOT
 
 ## Producción técnica
 
-- [ ] Contratar VPS.
-- [ ] Configurar dominio.
-- [ ] Configurar PostgreSQL producción.
-- [ ] Configurar Redis producción.
-- [ ] Configurar variables de entorno producción.
-- [ ] Ejecutar migraciones Prisma en producción.
-- [ ] Crear/restaurar usuario admin real.
-- [ ] Ejecutar seed de subcategorías.
+- [x] Contratar VPS.
+- [x] Configurar dominio.
+- [x] Configurar PostgreSQL producción.
+- [x] Configurar Redis producción.
+- [x] Configurar variables de entorno producción.
+- [x] Ejecutar migraciones Prisma en producción.
+- [x] Crear/restaurar usuario admin real.
+- [x] Ejecutar seed de subcategorías.
 - [ ] Configurar backups automáticos.
 - [ ] Configurar logs/monitoreo.
 - [ ] Configurar rate limiting y hardening.
 
-## Storage
+> **Nota (Infra 2B — Mayo 2026):** Ejecutada en VPS DonWeb con dominio **`yoteinvito.club`** (IP `179.43.124.145`, Ubuntu 24.04). Stack: systemd (`yti-api`, `yti-web`, `yti-scanner`), Nginx, Certbot, PostgreSQL y Redis locales, repo en `/opt/yoteinvito`. Migraciones con `npx prisma migrate deploy` (no `pnpm db:migrate`). Seeds: `seed:subcategories`, `seed:legal-documents` + publicación legal **bootstrap temporal** para desbloquear registro admin. Admin maestro operativo (`felipe.e.salom@gmail.com`). Provider **`DEMO`** activo; Getnet no habilitado.
+>
+> **Pendiente cierre operativo:** backups, hardening fino, rotación de secretos expuestos en sesión de deploy, monitoreo/rate limiting, smoke E2E desde dominio real, reemplazo de legales bootstrap por versiones aprobadas en `/admin/legales`. Detalle: [`docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTION_RUNBOOK.md) § Ejecución real.
 
-- [ ] Contratar/configurar AWS S3 o equivalente.
+## Google Cloud — Maps y Storage
+
+- [ ] Crear proyecto Google Cloud del cliente para Yo Te Invito.
+- [ ] Activar billing en Google Cloud.
+- [ ] Configurar presupuesto/alertas de gasto.
+- [ ] Agregar colaborador técnico con rol suficiente para configuración inicial.
+- [ ] Definir ambientes: producción y staging.
+- [ ] Habilitar Google Maps Platform.
+- [ ] Habilitar Maps JavaScript API.
+- [ ] Habilitar Places API / Places API New si se usa autocomplete.
+- [ ] Habilitar Geocoding API si se convierten direcciones en coordenadas.
+- [ ] Habilitar Maps Embed API solo si se usan mapas embebidos simples.
+- [ ] Crear API Key pública para frontend.
+- [ ] Restringir API Key pública por dominio/referrer.
+- [ ] Restringir API Key pública solo a las APIs necesarias.
+- [ ] Definir si habrá key separada para staging.
+- [ ] Documentar variables de entorno Google Maps.
+- [ ] Integrar autocomplete de direcciones donde corresponda.
+- [ ] Guardar dirección legible + lat/lng en eventos, gastro, rentals, hoteles y productoras cuando aplique.
+- [ ] Mostrar botón “Ver ubicación” o mapa en fichas públicas con coordenadas reales.
+- [ ] Mantener fallback manual si Google Maps no está configurado o falla.
+- [ ] Revisar privacidad si se usa ubicación actual del usuario.
+- [ ] Smoke test: autocomplete, guardado de dirección, mapa público y botón de ubicación.
+
+### Google Cloud Storage
+
+- [ ] Confirmar Google Cloud Storage como proveedor de storage V2.
+- [ ] Crear bucket de producción.
+- [ ] Crear bucket de staging si corresponde.
+- [ ] Definir región del bucket.
+- [ ] Definir estructura de carpetas: eventos, productoras, gastro, rentals, hoteles, tickets, facturas, sistema.
+- [ ] Crear Service Account para backend.
+- [ ] Asignar permisos mínimos sobre buckets del proyecto.
+- [ ] Configurar credenciales seguras para backend.
+- [ ] Definir estrategia de archivos públicos vs privados.
+- [ ] Definir URLs públicas para imágenes.
+- [ ] Definir URLs firmadas para archivos privados si aplica.
+- [ ] Configurar CORS del bucket.
 - [ ] Implementar upload real de imágenes.
 - [ ] Reemplazar data-URL por URLs de storage.
 - [ ] Configurar límites de peso/formato.
 - [ ] Configurar cleanup de imágenes huérfanas.
+- [ ] Configurar `next/image` con dominios remotos de Google Cloud Storage.
+- [ ] Evaluar Cloud CDN o dominio `cdn.yoteinvito.com` si crece el tráfico.
+- [ ] Smoke test: subir imagen, mostrar imagen pública, borrar/reemplazar imagen y validar fallback.
+
+## Google Analytics 4
+
+- [ ] Crear propiedad Google Analytics 4 para Yo Te Invito.
+- [ ] Crear Web Data Stream para el dominio definitivo.
+- [ ] Obtener Measurement ID (`G-XXXXXXXXXX`).
+- [ ] Definir si se usará GA4 directo o Google Tag Manager.
+- [ ] Documentar variable `NEXT_PUBLIC_GA_MEASUREMENT_ID`.
+- [ ] Integrar GA4 en Next.js App Router.
+- [ ] Registrar page views en navegación cliente.
+- [ ] Definir eventos personalizados principales.
+- [ ] Medir vistas de fichas públicas.
+- [ ] Medir clicks en cards públicas.
+- [ ] Medir búsquedas en explore.
+- [ ] Medir filtros aplicados en explore.
+- [ ] Medir contacto por WhatsApp.
+- [ ] Medir agregar a favoritos / follow / evento esperado.
+- [ ] Medir inicio de checkout.
+- [ ] Medir compra completada cuando exista pago real.
+- [ ] Medir registro completado por tipo de perfil.
+- [ ] Medir errores críticos de checkout/pago cuando corresponda.
+- [ ] Configurar conversiones principales en GA4.
+- [ ] Excluir tráfico interno/admin si corresponde.
+- [ ] Revisar consentimiento/cookies antes de activar tracking completo.
+- [ ] Configurar Consent Mode si se implementa banner de consentimiento.
+- [ ] Smoke test: page view, evento custom y conversión en GA4 DebugView.
+
+## Google Search Console y SEO técnico
+
+- [ ] Crear propiedad de Google Search Console para el dominio definitivo.
+- [ ] Verificar dominio mediante DNS TXT.
+- [ ] Enviar sitemap público.
+- [ ] Validar robots.txt.
+- [ ] Revisar indexación de home, explore, categorías y fichas públicas.
+- [ ] Validar que portales privados, checkout privado, órdenes, tickets y admin no se indexen.
+- [ ] Revisar errores de cobertura/indexación.
+- [ ] Revisar Core Web Vitals cuando haya tráfico real.
+- [ ] Revisar rich results cuando se agregue JSON-LD.
+- [ ] Documentar procedimiento de revisión SEO post-deploy.
 
 ## Pagos reales y checkout productivo
 
@@ -320,6 +401,88 @@ _Footer público completo — bloque V2 cerrado. Smoke: `docs/audits/PUBLIC_FOOT
 - [ ] Notificar al comprador cuando el pago sea aprobado, rechazado o quede pendiente.
 - [ ] Notificar a admin ante errores críticos de webhook o reconciliación.
 - [ ] Smoke test checkout real: orden → pago → webhook → tickets.
+
+## SEO, GEO y metadata social
+
+- [ ] Agregar favicon / ícono de pestaña con la marca Yo Te Invito.
+- [ ] Agregar app icons para mobile/PWA cuando corresponda.
+- [ ] Configurar title template global: `Yo Te Invito | ...`.
+- [ ] Configurar metadata base global de la plataforma.
+- [ ] Agregar SEO metadata por ficha pública.
+- [ ] Agregar SEO metadata por categoría.
+- [ ] Agregar SEO metadata para home, explore y gateway de categorías.
+- [ ] Agregar canonical URLs para páginas públicas indexables.
+- [ ] Agregar metadata Open Graph global.
+- [ ] Agregar metadata Twitter/X Card global.
+- [ ] Agregar Open Graph dinámico para eventos: imagen de cabecera, título, descripción, ciudad y fecha.
+- [ ] Agregar Open Graph dinámico para gastronomía: imagen de cabecera, título, descripción, ciudad y tipo de local.
+- [ ] Agregar Open Graph dinámico para rentals: imagen de cabecera, título, descripción, ciudad, local y subcategoría.
+- [ ] Agregar Open Graph dinámico para excursiones: imagen de cabecera, título, descripción, ciudad y fecha/temporada si aplica.
+- [ ] Agregar Open Graph dinámico para hoteles: imagen de cabecera o galería principal, título, descripción y ciudad.
+- [ ] Agregar Open Graph dinámico para productoras: logo/imagen de perfil, nombre, descripción y ciudad/base operativa si aplica.
+- [ ] Definir fallback Open Graph cuando una ficha no tenga imagen: logo Yo Te Invito o imagen institucional.
+- [ ] Validar que al compartir links se vea título, descripción e imagen correcta.
+- [ ] Agregar JSON-LD / structured data para eventos.
+- [ ] Agregar JSON-LD / structured data para gastronomía/locales.
+- [ ] Agregar JSON-LD / structured data para rentals/productos de alquiler.
+- [ ] Agregar JSON-LD / structured data para excursiones.
+- [ ] Agregar JSON-LD / structured data para hoteles.
+- [ ] Agregar JSON-LD / structured data para productoras/organizaciones.
+- [ ] Agregar structured data de reviews/rating donde corresponda y sea válido.
+- [ ] Revisar GEO/localización para ciudad preferida y descubrimiento.
+- [ ] Agregar metadata contextual por ciudad cuando aplique.
+- [ ] Mejorar URLs públicas para que sean legibles cuando sea posible: slug + id o slug estable.
+- [ ] Generar sitemap público.
+- [ ] Generar robots.txt.
+- [ ] Definir qué rutas públicas se indexan y cuáles no.
+- [ ] Evitar indexar portales privados, checkout privado, órdenes, tickets y admin.
+- [ ] Mejorar contenido visible para SEO/GEO: títulos claros, descripciones completas, ubicación, categoría, fechas, precios desde, productor/local y preguntas frecuentes cuando aplique.
+- [ ] Agregar contenido semántico útil para IA/GEO en fichas públicas: resumen, ubicación, categoría, horarios, condiciones y datos clave.
+- [ ] Evaluar archivo `llms.txt` o equivalente informativo para orientar crawlers/IA, sin depender de él como garantía.
+- [ ] Documentar estrategia GEO/AEO: contenido claro, datos estructurados, fuentes internas consistentes y páginas públicas bien enlazadas.
+- [ ] Configurar `next/image` con dominios remotos cuando haya storage.
+- [ ] Validar metadata con herramientas de preview social y rich results.
+
+## QA responsive global
+
+- [ ] Hacer responsive polish general.
+- [ ] Revisar mobile de home, explore, detalle, checkout y portales.
+- [ ] Revisar navbar responsive en mobile real.
+- [ ] Revisar footer responsive en mobile real.
+- [ ] Revisar home pública en mobile real.
+- [ ] Revisar gateway/categorías en mobile real.
+- [ ] Revisar explore en mobile real.
+- [ ] Revisar fichas públicas de eventos en mobile real.
+- [ ] Revisar fichas públicas de gastronomía en mobile real.
+- [ ] Revisar fichas públicas de rentals en mobile real.
+- [ ] Revisar fichas públicas de excursiones en mobile real.
+- [ ] Revisar fichas públicas de hoteles en mobile real.
+- [ ] Revisar checkout en mobile real.
+- [ ] Revisar portal usuario `/me/*` en mobile real.
+- [ ] Revisar portal productor en mobile real.
+- [ ] Revisar portal admin en mobile real.
+- [ ] Revisar portal gastro en mobile real.
+- [ ] Revisar portal hotel en mobile real.
+- [ ] Revisar portal referido en mobile real.
+- [ ] Validar que no haya scroll horizontal accidental.
+- [ ] Validar que modales, menús y dropdowns cierren correctamente.
+- [ ] Validar accesibilidad básica: foco, teclado, aria-labels y contraste.
+
+## QA final
+
+- [ ] Ejecutar smoke `user-portal`.
+- [ ] Ejecutar smoke `reviews`.
+- [ ] Ejecutar smoke `notifications`.
+- [ ] Ejecutar smoke `producer-follows`.
+- [ ] Ejecutar E2E portal.
+- [ ] Ejecutar E2E checkout.
+- [ ] Ejecutar E2E notifications.
+- [ ] Probar flujo comprador completo.
+- [ ] Probar flujo productor completo.
+- [ ] Probar flujo admin completo.
+- [ ] Probar scanner real.
+- [ ] Probar mobile real.
+- [ ] Hacer limpieza de datos de prueba antes de producción.
 
 ## Facturación automática
 
@@ -356,22 +519,5 @@ _Footer público completo — bloque V2 cerrado. Smoke: `docs/audits/PUBLIC_FOOT
 - [ ] Probar flujo completo comprador: checkout → pago aprobado → email → ticket → factura.
 - [ ] Probar flujo de error: pago aprobado pero factura fallida.
 - [ ] Probar flujo de error: pago aprobado pero email fallido.
-
-## QA final
-
-- [ ] Ejecutar smoke `user-portal`.
-- [ ] Ejecutar smoke `reviews`.
-- [ ] Ejecutar smoke `notifications`.
-- [ ] Ejecutar smoke `producer-follows`.
-- [ ] Ejecutar E2E portal.
-- [ ] Ejecutar E2E checkout.
-- [ ] Ejecutar E2E notifications.
-- [ ] Probar flujo comprador completo.
-- [ ] Probar flujo productor completo.
-- [ ] Probar flujo admin completo.
-- [ ] Probar scanner real.
-- [ ] Probar mobile real.
-- [ ] Hacer limpieza de datos de prueba antes de producción.
-
 
 

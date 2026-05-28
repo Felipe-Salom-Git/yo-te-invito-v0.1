@@ -310,6 +310,18 @@ Módulo técnico **cerrado**; contenido base en `docs/legal/` importable como bo
 
 ## 10. Dev, E2E y datos
 
+### Producción VPS (Mayo 2026)
+
+| Dato | Valor |
+|------|--------|
+| Web | `https://yoteinvito.club` |
+| API (`NEXT_PUBLIC_API_BASE_URL`) | `https://api.yoteinvito.club` |
+| Scanner (`NEXT_PUBLIC_SCANNER_APP_URL`) | `https://scanner.yoteinvito.club/door` |
+| NextAuth (`NEXTAUTH_URL`) | `https://yoteinvito.club` |
+| Checkout | Provider **DEMO** (sin Getnet prod) |
+
+Runbook: [`docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTION_RUNBOOK.md). Pendiente: smoke dominio real, legales bootstrap → contenido aprobado.
+
 - **Persistencia:** solo API — no `lib/local-db`, no `/dev/seed`, no `/dev/local-db`.
 - **Subcategorías (estructura):** `pnpm --filter api run seed:subcategories`.
 - **Documentos legales (catálogo):** `pnpm --filter api run seed:legal-documents` (idempotente; sin auto-publish).

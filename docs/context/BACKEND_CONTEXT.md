@@ -259,10 +259,22 @@ Opcional cron: `NOTIFICATIONS_CRON_ENABLED=false`, `NOTIFICATION_REMINDER_HOURS`
 
 ## 9. Debt / risks
 
-- Payments: demo only.
-- Image uploads often data-URL in forms (límite Zod ~2M chars por URL); web comprime en `RentalProductImagesForm` — object storage pendiente.
+- Payments: demo only (`DEMO` + `demo-confirm`); Getnet no activo en prod (Mayo 2026).
+- Image uploads often data-URL in forms (límite Zod ~2M chars por URL); web comprime en `RentalProductImagesForm` — object storage pendiente; **riesgo alto en VPS prod**.
 - Public list `EventSummary` includes `fromPrice` (min active ticket/batch price, major units) and `producerName` (`ProducerProfile.displayName`, ACTIVE only) — see `public-event-summary.util.ts`.
-- Run `prisma migrate deploy` + `prisma generate` after schema changes.
+- Run `prisma migrate deploy` + `prisma generate` after schema changes — **prod:** `https://api.yoteinvito.club`, migraciones vía `migrate deploy` (no `pnpm db:migrate`).
+
+### Producción VPS (Mayo 2026)
+
+| Dato | Valor |
+|------|--------|
+| API pública | `https://api.yoteinvito.club` |
+| Health | `GET /health` |
+| BD | PostgreSQL local `yo_te_invito` |
+| Redis | Local (cola email) |
+| Deploy | systemd `yti-api` → `:3001` |
+
+Detalle operativo: [`docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTION_RUNBOOK.md).
 
 ---
 

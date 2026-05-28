@@ -40,7 +40,7 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 - [x] **Slice Legal Content 1 (2026-05-24):** `seed:legal-content` — importa `docs/legal/*.md` como DRAFT (no auto-publish)
 - [x] **Legales V2 (2026-05-24):** layout portales ampliado (`PORTAL_BODY_CLASS` `max-w-screen-2xl`, `PortalPageContext` + `PageContainer` sin doble `max-w`); listado `/admin/legales` — tabla administrativa original (`overflow-x-auto`, `min-w-[900px]`, `md:block`) + cards mobile (`md:hidden`)
 - [x] **Slice Legal Content 2 (2026-05-24):** aclaraciones productor ↔ referido en `docs/legal/` (`terms_general`, `producer_terms`, `referrer_terms`) + disclaimers UI referidos/productor; actualizar borradores con `seed:legal-content --force` (sin auto-publish)
-- [ ] Revisión/aprobación cliente y **publicación** de versiones legales en `/admin/legales`
+- [ ] Revisión/aprobación cliente y **publicación** de versiones legales en `/admin/legales` — en prod hay **bootstrap temporal** (Mayo 2026); reemplazar antes de cerrar go-live
 - [ ] Confirmar publicación de aclaraciones legales productor ↔ referido (tras publish manual en admin)
 - [ ] Bloqueos duros portal (publicar evento, descuentos gastro, pago referido, etc.) si faltan términos
 - [ ] Migrar disclaimers hardcoded (transferencia, referidos) a documentos publicados
@@ -71,29 +71,48 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 
 ## A. Infraestructura y backend
 
-- [ ] Ejecutar migraciones Prisma en cada entorno (`prisma migrate deploy`) y `prisma generate` tras cambios de schema (incl. `20260524120000_legal_documents`, `20260608120000_producer_event_status_notifications`)
+- [x] Ejecutar migraciones Prisma en producción VPS (`npx prisma migrate deploy` + `prisma generate`) — Mayo 2026, DB vacía → 69 migraciones OK
+- [ ] Ejecutar migraciones Prisma en cada entorno futuro tras cambios de schema (mismo flujo: `migrate deploy`, no `pnpm db:migrate`)
 - [ ] Confirmar cliente Prisma alineado con DB (hotel, inbox, **RentalLocation**, opening hours JSON, etc.)
-- [ ] Rate limiting y hardening en producción
+- [ ] Rate limiting y hardening en producción (Nginx + Nest — pendiente post-deploy)
 - [x] Variables Web Push documentadas (`USER_PORTAL.md`, `AI_ENTRYPOINT.md`, `BACKEND_CONTEXT.md`)
-- [ ] Variables de entorno documentadas por app (resto de apps/servicios)
+- [ ] Variables de entorno documentadas por app en plantilla centralizada (prod ya configuradas en servidor; rotar secretos pendiente)
 
-### Producción técnica (plan — Slice Infra 1–2A, 2026-05-28)
+### Producción técnica — VPS DonWeb (Infra 2B ejecutada, Mayo 2026)
 
-> **Auditoría:** [`docs/audits/PREPRODUCTION_DEPLOY_AUDIT.md`](../audits/PREPRODUCTION_DEPLOY_AUDIT.md) — variables reales, dominios, scripts seguros/peligrosos, orden de ejecución.  
-> **Runbook DonWeb (ejecución manual):** [`docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTION_RUNBOOK.md) — VPS, DNS, Postgres, Redis, Nginx, TLS, envs, migraciones, seeds, admin, backups, smokes, rollback.  
-> Checklist operativo: `docs/dev/Yo_Te_Invito_Checklist_V2_Produccion.md` § Producción técnica.
+> **Auditoría:** [`docs/audits/PREPRODUCTION_DEPLOY_AUDIT.md`](../audits/PREPRODUCTION_DEPLOY_AUDIT.md)  
+> **Runbook:** [`docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTION_RUNBOOK.md) — incluye § Ejecución real  
+> **Checklist V2:** `docs/dev/Yo_Te_Invito_Checklist_V2_Produccion.md` § Producción técnica
 
-- [ ] Contratar VPS.
-- [ ] Configurar dominio.
-- [ ] Configurar PostgreSQL producción.
-- [ ] Configurar Redis producción.
-- [ ] Configurar variables de entorno producción.
-- [ ] Ejecutar migraciones Prisma en producción.
-- [ ] Crear/restaurar usuario admin real.
-- [ ] Ejecutar seed de subcategorías.
-- [ ] Configurar backups automáticos.
-- [ ] Configurar logs/monitoreo.
-- [ ] Configurar rate limiting y hardening.
+**Estado actual:** VPS DonWeb productivo base levantado con systemd + Nginx + HTTPS. Web/API/Scanner activos en **`yoteinvito.club`**. DB `yo_te_invito` migrada; seeds iniciales aplicados; admin maestro operativo. Pendiente cierre operativo de seguridad, backups, monitoreo y legales reales.
+
+| Ítem | Estado |
+|------|--------|
+| Contratar VPS | [x] DonWeb — Ubuntu 24.04, IP `179.43.124.145` |
+| Configurar dominio | [x] `yoteinvito.club` + `www` / `api` / `scanner` (DNS DonWeb; correo MX/SPF/DKIM/DMARC preservados) |
+| PostgreSQL producción | [x] Local VPS — DB `yo_te_invito`, usuario `yti_app`, tenant `tenant-demo` |
+| Redis producción | [x] Local VPS |
+| Variables de entorno | [x] API / web / scanner en servidor (**rotar secretos** — ver pendientes) |
+| Migraciones Prisma | [x] `npx prisma migrate deploy` (no `pnpm db:migrate`) |
+| Usuario admin real | [x] `felipe.e.salom@gmail.com` + `user:restore-master` |
+| Seed subcategorías | [x] `seed:subcategories` + `seed:legal-documents` |
+| Backups automáticos | [ ] |
+| Logs / monitoreo | [ ] |
+| Rate limiting / hardening | [ ] |
+
+#### Pendientes críticos post-deploy (producción)
+
+- [ ] **Rotar secretos** expuestos en sesión de deploy: password root VPS, password DB `yti_app`, `JWT_SECRET`, `NEXTAUTH_SECRET`
+- [ ] SSH por clave; deshabilitar login root por password tras validar usuario deploy
+- [ ] Confirmar `DEV_AUTH_ENABLED=false` y permisos `600` en `.env`
+- [ ] Backups `pg_dump` + retención + prueba de restore
+- [ ] Rate limiting Nginx; rate limiting Nest (slice código)
+- [ ] Monitoreo / alertas (disco, servicios, certificado TLS)
+- [ ] `certbot renew --dry-run` documentado
+- [ ] Health check extendido (DB/Redis), no solo `GET /health`
+- [ ] **Legales:** reemplazar bootstrap temporal por contenido aprobado en `/admin/legales`
+- [ ] Smoke completo desde dominio real (home, login, admin, checkout demo, scanner QR, emails si Resend)
+- [ ] Storage imágenes (salir de data-URL); Getnet/pagos reales fuera de este cierre
 
 ---
 
@@ -128,7 +147,7 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 - [x] Ficha pública gastro pulida (`/restaurants/[id]`, `GastroPublicDetailContent`; sin ticketera; redirect `/events/:id` gastro → restaurants)
 - [x] Dashboard gastro V2 (`GET /gastro/dashboard`, KPIs reales, alertas, `/gastro/validaciones` con filtros y paginación)
 - [x] Gastro + Reviews V2 + follows + alerta `FOLLOWED_GASTRO_NEW_DISCOUNT` (Slice 7 — `docs/gastro/GASTRO_FOLLOWS_NOTIFICATIONS.md`)
-- [ ] Storage para imágenes (salir de data-URL)
+- [ ] Storage para imágenes (salir de data-URL) — riesgo alto en prod con data-URL en PostgreSQL
 - [x] Portal `/gastro/valoraciones` — listado + réplica (`POST /gastro/reviews/:id/reply`)
 
 ---
@@ -338,6 +357,6 @@ _(Trending con `viewCount`: ver ítem Slice 2 arriba en § K.)_
 | `docs/hotel/HOTEL_E2E.md` | E2E Playwright vertical hotel |
 | `docs/gastro/GASTRO_DISCOUNT_QR.md` | QR descuentos gastro v1 |
 | `docs/audits/PREPRODUCTION_DEPLOY_AUDIT.md` | Preproducción / plan Producción técnica (Infra 1) |
-| `docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md` | Runbook provisioning DonWeb (Infra 2A) |
+| `docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md` | Runbook DonWeb + §24 ejecución real (Infra 2B) |
 | `docs/user/USER_PORTAL_PRISMA_PROPOSAL.md` | Diff modelo (pre-migrate) |
 
