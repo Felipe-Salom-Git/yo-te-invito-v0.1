@@ -77,6 +77,24 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 - [x] Variables Web Push documentadas (`USER_PORTAL.md`, `AI_ENTRYPOINT.md`, `BACKEND_CONTEXT.md`)
 - [ ] Variables de entorno documentadas por app (resto de apps/servicios)
 
+### Producción técnica (plan — Slice Infra 1–2A, 2026-05-28)
+
+> **Auditoría:** [`docs/audits/PREPRODUCTION_DEPLOY_AUDIT.md`](../audits/PREPRODUCTION_DEPLOY_AUDIT.md) — variables reales, dominios, scripts seguros/peligrosos, orden de ejecución.  
+> **Runbook DonWeb (ejecución manual):** [`docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTION_RUNBOOK.md) — VPS, DNS, Postgres, Redis, Nginx, TLS, envs, migraciones, seeds, admin, backups, smokes, rollback.  
+> Checklist operativo: `docs/dev/Yo_Te_Invito_Checklist_V2_Produccion.md` § Producción técnica.
+
+- [ ] Contratar VPS.
+- [ ] Configurar dominio.
+- [ ] Configurar PostgreSQL producción.
+- [ ] Configurar Redis producción.
+- [ ] Configurar variables de entorno producción.
+- [ ] Ejecutar migraciones Prisma en producción.
+- [ ] Crear/restaurar usuario admin real.
+- [ ] Ejecutar seed de subcategorías.
+- [ ] Configurar backups automáticos.
+- [ ] Configurar logs/monitoreo.
+- [ ] Configurar rate limiting y hardening.
+
 ---
 
 ## B. Pagos y producción
@@ -319,5 +337,7 @@ _(Trending con `viewCount`: ver ítem Slice 2 arriba en § K.)_
 | `docs/audits/PUBLIC_FOOTER_CLOSING_AUDIT.md` | Auditoría de cierre bloque footer (2026-05-24) |
 | `docs/hotel/HOTEL_E2E.md` | E2E Playwright vertical hotel |
 | `docs/gastro/GASTRO_DISCOUNT_QR.md` | QR descuentos gastro v1 |
+| `docs/audits/PREPRODUCTION_DEPLOY_AUDIT.md` | Preproducción / plan Producción técnica (Infra 1) |
+| `docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md` | Runbook provisioning DonWeb (Infra 2A) |
 | `docs/user/USER_PORTAL_PRISMA_PROPOSAL.md` | Diff modelo (pre-migrate) |
 
