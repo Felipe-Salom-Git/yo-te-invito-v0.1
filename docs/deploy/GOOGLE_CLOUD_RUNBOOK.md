@@ -74,13 +74,12 @@
 - [ ] Estructura de carpetas (`eventos/`, `productoras/`, `gastro/`, `rentals/`, `hoteles/`, `tickets/`, `facturas/`, `sistema/`, `backups/`)
 - [ ] CORS del bucket (orígenes web/API)
 - [ ] Lifecycle rules (opcional)
-- [ ] Credenciales SA en VPS/API (`GOOGLE_APPLICATION_CREDENTIALS` o workload — sin versionar JSON)
+- [x] Credenciales SA en VPS para backups (`GOOGLE_APPLICATION_CREDENTIALS` en `/opt/yoteinvito/.ops/backup-gcs.env`)
 - [ ] Upload real NestJS + reemplazo data-URL
 - [ ] Estrategia URLs públicas vs firmadas
 - [ ] `next/image` — `images.remotePatterns` para dominio GCS o CDN
 - [x] Script repo `scripts/ops/backup-postgres-to-gcs.sh` + runbook [`GCS_BACKUPS_RUNBOOK.md`](./GCS_BACKUPS_RUNBOOK.md)
-- [ ] Instalar credencial SA en VPS + `.pgpass` + timer/cron
-- [ ] Primer backup manual + restore drill en VPS
+- [x] Backups PostgreSQL → GCS operativos en VPS (2026-05-31): credencial SA, `.pgpass`, timer systemd 03:30, restore drill OK
 - [ ] Retención / lifecycle en bucket (`backups/postgres/`)
 - [ ] Smoke: subir, leer, borrar objeto de prueba
 
@@ -174,7 +173,7 @@ OAuth login Google (distinto de Maps): ver [`CONFIG_GOOGLE_RESEND.md`](../guides
 | Deploy app, SSH, UFW, secretos rotados | [`DONWEB_PRODUCTION_RUNBOOK.md`](./DONWEB_PRODUCTION_RUNBOOK.md) §24–25 |
 | Hardening seguridad | [`PRODUCTION_SECURITY_HARDENING_AUDIT.md`](../audits/PRODUCTION_SECURITY_HARDENING_AUDIT.md) |
 
-El bucket GCS **existe**. **Backups:** script y runbook en repo ([`GCS_BACKUPS_RUNBOOK.md`](./GCS_BACKUPS_RUNBOOK.md)); pendiente instalación en VPS (credencial SA, timer, restore drill). Upload de imágenes y credenciales API siguen en Etapa B.
+El bucket GCS **existe**. **Backups PostgreSQL → GCS operativos** en VPS (2026-05-31) — [`GCS_BACKUPS_RUNBOOK.md`](./GCS_BACKUPS_RUNBOOK.md). Pendiente: lifecycle/retención en bucket; upload imágenes y credenciales API para NestJS (Etapa B).
 
 ---
 
@@ -185,7 +184,7 @@ Orden sugerido:
 | # | Slice | Alcance |
 |---|--------|---------|
 | B1 | **Cloud docs + env** | Variables documentadas en runbook/VPS; plantillas `.env.example` sin valores reales |
-| B2 | **Backups GCS** | [x] Script + runbook en repo — pendiente instalación VPS, timer, restore drill, retención ([`GCS_BACKUPS_RUNBOOK.md`](./GCS_BACKUPS_RUNBOOK.md)) |
+| B2 | **Backups GCS** | [x] Operativo VPS 2026-05-31 — timer 03:30, restore drill OK; pendiente lifecycle/retención ([`GCS_BACKUPS_RUNBOOK.md`](./GCS_BACKUPS_RUNBOOK.md)) |
 | B3 | **Storage backend** | Módulo upload GCS, rutas por entidad, CORS, límites; reemplazo gradual data-URL |
 | B4 | **Maps frontend** | Key en prod web, autocomplete, lat/lng, fichas públicas |
 | B5 | **SEO / GSC** | sitemap, robots, metadata, JSON-LD, no-index rutas privadas |

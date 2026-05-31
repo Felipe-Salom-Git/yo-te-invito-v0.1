@@ -176,7 +176,7 @@ main() {
     log "DRY RUN — no se ejecutará pg_dump ni subida"
     log "  1. mkdir -p ${BACKUP_LOCAL_DIR}"
     log "  2. pg_dump -h ${BACKUP_DB_HOST} -p ${BACKUP_DB_PORT} -U ${BACKUP_DB_USER} -d ${BACKUP_DB_NAME} --no-password | gzip > ${local_gz}"
-    log "  3. sha256sum ${local_gz} > ${local_sha}"
+    log "  3. (cd ${BACKUP_LOCAL_DIR} && sha256sum ${filename} > ${filename}.sha256)"
     log "  4. ${GCS_CLI} cp ${local_gz} ${gcs_uri}"
     log "  5. ${GCS_CLI} cp ${local_sha} ${gcs_sha_uri}"
     log "  6. rm -f ${local_gz} ${local_sha}"
@@ -195,8 +195,8 @@ main() {
     --no-password \
     | gzip > "${local_gz}"
 
-  log "Calculando checksum sha256..."
-  sha256sum "${local_gz}" > "${local_sha}"
+  log "Calculando checksum sha256 (basename portable para sha256sum -c)..."
+  (cd "${BACKUP_LOCAL_DIR}" && sha256sum "${filename}" > "${filename}.sha256")
 
   log "Subiendo backup a GCS..."
   upload_to_gcs "${local_gz}" "${gcs_uri}"

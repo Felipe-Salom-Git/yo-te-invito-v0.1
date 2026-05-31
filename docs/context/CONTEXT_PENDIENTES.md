@@ -84,7 +84,7 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 > **Runbook:** [`docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTION_RUNBOOK.md) — §24 ejecución real, §25 seguridad post-deploy  
 > **Checklist V2:** `docs/dev/Yo_Te_Invito_Checklist_V2_Produccion.md` § Producción técnica
 
-**Estado actual:** VPS DonWeb productivo con systemd + Nginx + HTTPS. Web/API/Scanner en **`yoteinvito.club`**. Hardening base cerrado. **GCP Etapa A:** proyecto, bucket GCS privado y Maps key listos en consola — ver § Google Cloud. **Próximo bloque (Etapa B):** integración backups/upload en GCS + Maps en web. Pendiente VPS: monitoreo, rate limiting fino, legales reales, bind `127.0.0.1`, postfix/snmpd.
+**Estado actual:** VPS DonWeb productivo con systemd + Nginx + HTTPS. Web/API/Scanner en **`yoteinvito.club`**. Hardening base cerrado. **Backups GCS operativos** (2026-05-31). **GCP Etapa A:** proyecto, bucket GCS privado y Maps key listos en consola. **Etapa B pendiente:** upload imágenes, Maps en web, lifecycle backups. Pendiente VPS: monitoreo, rate limiting fino, legales reales, bind `127.0.0.1`, postfix/snmpd.
 
 | Ítem | Estado |
 |------|--------|
@@ -98,7 +98,7 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 | Seed subcategorías | [x] `seed:subcategories` + `seed:legal-documents` |
 | SSH hardening | [x] `ssh yoteinvito` → `deploy@…:5230`, clave, sin root/password |
 | UFW base | [x] Solo `5230`, `80`, `443`; regla `200.58.112.191` eliminada |
-| Backups automáticos | [ ] Script + runbook en repo; pendiente VPS: credencial SA, timer, restore drill — [`GCS_BACKUPS_RUNBOOK.md`](../deploy/GCS_BACKUPS_RUNBOOK.md) |
+| Backups automáticos | [x] GCS operativo 2026-05-31 — timer 03:30, restore drill OK — [`GCS_BACKUPS_RUNBOOK.md`](../deploy/GCS_BACKUPS_RUNBOOK.md); pendiente lifecycle/retención |
 | Logs / monitoreo | [ ] |
 | Rate limiting / hardening fino | [ ] Nginx/Nest; bind apps a `127.0.0.1`; revisar postfix `:25`, snmpd `:161` |
 
@@ -115,7 +115,7 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 
 **Pendiente:**
 
-- [ ] **Backups automáticos** — script [`scripts/ops/backup-postgres-to-gcs.sh`](../../scripts/ops/backup-postgres-to-gcs.sh) + [`GCS_BACKUPS_RUNBOOK.md`](../deploy/GCS_BACKUPS_RUNBOOK.md) en repo; pendiente VPS: credencial SA, `.pgpass`, timer, primer backup, restore drill, retención
+- [x] **Backups automáticos** — PostgreSQL → `gs://yti-prod-storage/backups/postgres/` vía `scripts/ops/backup-postgres-to-gcs.sh`; VPS configurado 2026-05-31 (timer systemd 03:30, restore drill OK). Pendiente: lifecycle/retención en bucket.
 - [ ] Rate limiting Nginx; rate limiting Nest (slice código)
 - [ ] Monitoreo / alertas (disco, servicios, certificado TLS)
 - [ ] `certbot renew --dry-run` documentado
@@ -146,22 +146,23 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 
 **Etapa B — pendientes principales:**
 
-#### Backups PostgreSQL → GCS
+#### Backups PostgreSQL → GCS — cerrado 2026-05-31
 
 - [x] Bucket GCS productivo creado (`yti-prod-storage`)
 - [x] Service Account creada (`yti-backend-storage`)
 - [x] Script repo + runbook ([`GCS_BACKUPS_RUNBOOK.md`](../deploy/GCS_BACKUPS_RUNBOOK.md))
-- [ ] Instalar credencial GCP en VPS
-- [ ] Configurar `.pgpass` + `backup-gcs.env` en VPS
-- [ ] Configurar timer/cron
-- [ ] Ejecutar primer backup manual
-- [ ] Ejecutar restore drill
-- [ ] Definir lifecycle/retención
+- [x] Instalar credencial GCP en VPS
+- [x] Configurar `.pgpass` + `backup-gcs.env` en VPS
+- [x] Configurar timer systemd (`yti-postgres-backup.timer`, 03:30)
+- [x] Ejecutar primer backup manual
+- [x] Ejecutar restore drill (2026-05-31)
+- [ ] Definir lifecycle/retención automática en bucket
 
 #### Otros Etapa B
 
 - [ ] Budget alerts en GCP
-- [ ] Credenciales SA en VPS/API (`GOOGLE_APPLICATION_CREDENTIALS`) — sin JSON en repo
+- [x] Credenciales SA en VPS para backups (2026-05-31)
+- [ ] Credenciales SA en API NestJS para upload (`GOOGLE_APPLICATION_CREDENTIALS`)
 - [ ] CORS + estructura carpetas GCS
 - [ ] Upload real backend + reemplazo data-URL + `next/image` remoto
 - [ ] Estrategia imágenes públicas (firmadas / CDN / bucket separado)

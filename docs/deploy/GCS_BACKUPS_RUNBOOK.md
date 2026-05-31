@@ -1,11 +1,35 @@
 # Runbook — Backups PostgreSQL → Google Cloud Storage
 
-**Estado:** script y documentación preparados en repo (Mayo 2026).  
-**Pendiente operador:** instalar credenciales en VPS, primer backup manual, timer/cron, restore drill.
+**Estado:** **operativo en VPS** (cerrado 2026-05-31).  
+**Pendiente:** lifecycle / retención automática en bucket (`backups/postgres/`).
 
 > **Regla:** no commitear JSON de service account, passwords de BD ni dumps. Solo nombres, IDs y rutas documentales.
 
-**Producción:** VPS DonWeb · BD `yo_te_invito` · bucket `gs://yti-prod-storage` · runbook GCP: [`GOOGLE_CLOUD_RUNBOOK.md`](./GOOGLE_CLOUD_RUNBOOK.md)
+**Producción:** VPS DonWeb · `/opt/yoteinvito` · usuario `deploy` · BD `yo_te_invito` · bucket privado `gs://yti-prod-storage` · prefijo `backups/postgres` · SA `yti-backend-storage@yoteinvito-1721413433327.iam.gserviceaccount.com`
+
+---
+
+## 0. Ejecución real en VPS (2026-05-31)
+
+| Ítem | Estado |
+|------|--------|
+| Google Cloud CLI en VPS | OK |
+| Key JSON SA | `/opt/yoteinvito/secrets/gcp-yti-backend-storage.json` (`600`, `deploy:deploy`) |
+| `.pgpass` | `/home/deploy/.pgpass` (`600`) |
+| Env backup | `/opt/yoteinvito/.ops/backup-gcs.env` (`600`) |
+| Conexión PostgreSQL `yti_app` | OK |
+| Primer backup manual | OK → `gs://yti-prod-storage/backups/postgres/2026/05/yo_te_invito_20260531_082114.sql.gz` + `.sha256` |
+| Checksum manual | Validado |
+| systemd service | `/etc/systemd/system/yti-postgres-backup.service` |
+| systemd timer | `/etc/systemd/system/yti-postgres-backup.timer` — **diario 03:30** |
+| Backup vía systemd (manual + timer) | OK → `yo_te_invito_20260531_082817.sql.gz` + `.sha256` |
+| Restore drill | OK — DB temporal `yo_te_invito_restore_test`; `"User"`: 2, `"Tenant"`: 1, `"Event"`: 0; DB eliminada al finalizar |
+
+**Nota checksum:** backups del 2026-05-31 pueden tener `.sha256` con ruta absoluta local. Tras actualizar el script en VPS (`git pull`), los nuevos backups generan `.sha256` con **basename** portable (`sha256sum -c archivo.sql.gz.sha256` funciona en cualquier carpeta de descarga).
+
+**Pendiente operativo:**
+
+- [ ] Lifecycle rule o limpieza controlada por prefijo (retención sugerida: 14–30 días diarios)
 
 ---
 
@@ -152,7 +176,7 @@ gsutil ls "gs://yti-prod-storage/backups/postgres/$(date +%Y)/$(date +%m)/"
 Salida esperada por backup:
 
 - `yo_te_invito_YYYYmmdd_HHMMSS.sql.gz`
-- `yo_te_invito_YYYYmmdd_HHMMSS.sql.gz.sha256`
+- `yo_te_invito_YYYYmmdd_HHMMSS.sql.gz.sha256` — formato portable: `<hash>  <basename>` (verificable con `sha256sum -c` en la carpeta de descarga)
 
 ---
 
@@ -219,7 +243,9 @@ Asegurar que el cron corre como **`deploy`** y que `~/.pgpass` existe para ese u
 
 ---
 
-## 8. Restore drill (obligatorio antes de confiar en backups)
+## 8. Restore drill
+
+> **Ejecutado en prod (2026-05-31):** backup `yo_te_invito_20260531_082114.sql.gz` restaurado en `yo_te_invito_restore_test`; conteos `"User"`: 2, `"Tenant"`: 1, `"Event"`: 0; DB temporal eliminada. Repetir periódicamente o tras cambios mayores en el script.
 
 > **Advertencias**
 >
@@ -303,17 +329,22 @@ Soft delete del bucket (7 días) ofrece margen ante borrado accidental reciente.
 
 ---
 
-## 11. Checklist operador (cerrar Etapa B backups)
+## 11. Checklist operador
 
-- [ ] JSON SA instalado en `/opt/yoteinvito/secrets/` (`chmod 600`)
-- [ ] `gcloud auth activate-service-account` OK
-- [ ] `.pgpass` para `yti_app` (`chmod 600`)
-- [ ] `/opt/yoteinvito/.ops/backup-gcs.env` creado (`chmod 600`)
-- [ ] `--dry-run` revisado
-- [ ] Primer backup manual OK en GCS
-- [ ] Timer systemd o cron activo
-- [ ] Restore drill documentado con fecha
-- [ ] Política de retención definida (lifecycle o procedimiento manual)
+**Cerrado (2026-05-31):**
+
+- [x] JSON SA instalado en `/opt/yoteinvito/secrets/` (`chmod 600`)
+- [x] `gcloud auth activate-service-account` OK
+- [x] `.pgpass` para `yti_app` (`chmod 600`)
+- [x] `/opt/yoteinvito/.ops/backup-gcs.env` creado (`chmod 600`)
+- [x] `--dry-run` revisado
+- [x] Primer backup manual OK en GCS
+- [x] Timer systemd activo (`yti-postgres-backup.timer`, 03:30)
+- [x] Restore drill documentado (2026-05-31)
+
+**Pendiente:**
+
+- [ ] Política de retención / lifecycle en bucket
 
 ---
 

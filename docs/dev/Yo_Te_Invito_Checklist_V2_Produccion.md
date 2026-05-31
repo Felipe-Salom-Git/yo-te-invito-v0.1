@@ -293,7 +293,7 @@ _Footer público completo — bloque V2 cerrado. Smoke: `docs/audits/PUBLIC_FOOT
 - [x] SSH por clave y hardening (`deploy`, puerto `5230`, sin root/password).
 - [x] Confirmar entorno producción (`NODE_ENV=production`, `DEV_AUTH_ENABLED=false`, `.env` permisos `600`).
 - [x] UFW base (solo `5230`, `80`, `443`).
-- [ ] Configurar backups automáticos. **Progreso (Mayo 2026):** script `scripts/ops/backup-postgres-to-gcs.sh` y runbook [`GCS_BACKUPS_RUNBOOK.md`](../deploy/GCS_BACKUPS_RUNBOOK.md) preparados. **Pendiente en VPS:** credencial SA, `.pgpass`, timer/cron, primer backup manual, restore drill, retención.
+- [x] Configurar backups automáticos. **Cerrado 2026-05-31:** PostgreSQL → GCS (`gs://yti-prod-storage/backups/postgres/`), timer systemd diario 03:30, restore drill OK. Runbook: [`GCS_BACKUPS_RUNBOOK.md`](../deploy/GCS_BACKUPS_RUNBOOK.md). **Pendiente:** lifecycle/retención automática en bucket.
 - [ ] Configurar logs/monitoreo.
 - [ ] Configurar rate limiting y hardening fino (Nginx/Nest, bind `127.0.0.1`, postfix/snmpd).
 
@@ -303,7 +303,7 @@ _Footer público completo — bloque V2 cerrado. Smoke: `docs/audits/PUBLIC_FOOT
 >
 > **Hotfix migración:** `20260531072000_restore_user_push_subscription` — tabla `UserPushSubscription` faltaba en prod; API fallaba hasta aplicar migración idempotente.
 >
-> **Pendiente:** instalación backups en VPS ([`GCS_BACKUPS_RUNBOOK.md`](../deploy/GCS_BACKUPS_RUNBOOK.md)), monitoreo/rate limiting, bind interno apps, smoke E2E dominio real, legales reales en `/admin/legales`. Runbooks: [`DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTION_RUNBOOK.md) §24–25 · [`GOOGLE_CLOUD_RUNBOOK.md`](../deploy/GOOGLE_CLOUD_RUNBOOK.md) · [`GCS_BACKUPS_RUNBOOK.md`](../deploy/GCS_BACKUPS_RUNBOOK.md).
+> **Pendiente:** lifecycle/retención backups GCS, monitoreo/rate limiting, bind interno apps, smoke E2E dominio real, legales reales en `/admin/legales`. Runbooks: [`DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTION_RUNBOOK.md) §24–25 · [`GOOGLE_CLOUD_RUNBOOK.md`](../deploy/GOOGLE_CLOUD_RUNBOOK.md) · [`GCS_BACKUPS_RUNBOOK.md`](../deploy/GCS_BACKUPS_RUNBOOK.md).
 
 ## Google Cloud — Maps y Storage
 
@@ -340,8 +340,8 @@ _Footer público completo — bloque V2 cerrado. Smoke: `docs/audits/PUBLIC_FOOT
 - [ ] Definir estructura de carpetas: eventos, productoras, gastro, rentals, hoteles, tickets, facturas, sistema.
 - [x] Crear Service Account para backend (`yti-backend-storage@…`).
 - [x] Asignar permisos sobre bucket (rol actual: **Storage Object Admin** — aceptable etapa inicial; ver nota hardening IAM en runbook).
-- [ ] Configurar credenciales seguras para backend. **Backups:** pendiente instalar JSON SA en VPS — ver [`GCS_BACKUPS_RUNBOOK.md`](../deploy/GCS_BACKUPS_RUNBOOK.md).
-- [ ] Restore drill backups PostgreSQL. **Script/runbook listos;** pendiente ejecución en VPS.
+- [x] Configurar credenciales seguras para backend (backups). JSON SA en VPS `/opt/yoteinvito/secrets/` — ver [`GCS_BACKUPS_RUNBOOK.md`](../deploy/GCS_BACKUPS_RUNBOOK.md). Pendiente: credencial para upload NestJS (Etapa B storage).
+- [x] Restore drill backups PostgreSQL. **OK 2026-05-31** — DB temporal `yo_te_invito_restore_test`; documentado en runbook.
 - [ ] Definir estrategia de archivos públicos vs privados.
 - [ ] Definir URLs públicas para imágenes.
 - [ ] Definir URLs firmadas para archivos privados si aplica.

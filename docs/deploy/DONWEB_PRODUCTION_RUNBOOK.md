@@ -1149,7 +1149,7 @@ pnpm build   # shared, api, web, scanner — OK
 | ~~Crítica~~ | Rotar password root VPS, DB `yti_app`, `JWT_SECRET`, `NEXTAUTH_SECRET` | **Cerrado** §25.2 |
 | ~~Crítica~~ | SSH por clave; deshabilitar root/password | **Cerrado** §25.1 |
 | ~~Alta~~ | `.env` 600, `DEV_AUTH_ENABLED=false`, UFW base | **Cerrado** §25.3 |
-| Alta | Backups → **Google Cloud Storage** (ver §25.4) | Pendiente |
+| Alta | Backups → GCS | **Cerrado** 2026-05-31 — ver §25.4 |
 | Alta | Legales reales en admin (sustituir bootstrap) | Pendiente |
 | Alta | Smoke E2E dominio real (checkout **DEMO**, scanner QR) | Pendiente |
 | Media | Rate limiting Nginx + Nest; monitoreo/alertas | Pendiente |
@@ -1200,27 +1200,29 @@ Registro del cierre operativo de hardening en VPS DonWeb. Sin passwords ni token
 
 **Observaciones (slice posterior):** `yti-api` / `yti-web` / `yti-scanner` siguen escuchando en `*:3001` / `*:3000` / `*:3002`; ideal bind `127.0.0.1`. Revisar `postfix` (`25`) y `snmpd` (`161`).
 
-### 25.4 Backups PostgreSQL → GCS (Etapa B — script en repo)
+### 25.4 Backups PostgreSQL → GCS — operativo (2026-05-31)
 
-**Infra GCS (Etapa A manual):** bucket `yti-prod-storage`, SA `yti-backend-storage` — ver [`GOOGLE_CLOUD_RUNBOOK.md`](./GOOGLE_CLOUD_RUNBOOK.md).
-
-**En repo (Mayo 2026):**
+**Infra GCS:** bucket privado `yti-prod-storage`, SA `yti-backend-storage` — [`GOOGLE_CLOUD_RUNBOOK.md`](./GOOGLE_CLOUD_RUNBOOK.md).
 
 | Artefacto | Ubicación |
 |-----------|-----------|
-| Script | `scripts/ops/backup-postgres-to-gcs.sh` (`--help`, `--dry-run`) |
-| Runbook operativo | [`GCS_BACKUPS_RUNBOOK.md`](./GCS_BACKUPS_RUNBOOK.md) |
+| Script | `scripts/ops/backup-postgres-to-gcs.sh` |
+| Runbook | [`GCS_BACKUPS_RUNBOOK.md`](./GCS_BACKUPS_RUNBOOK.md) |
+| Credencial SA (VPS) | `/opt/yoteinvito/secrets/gcp-yti-backend-storage.json` (`600`) |
+| Env backup | `/opt/yoteinvito/.ops/backup-gcs.env` (`600`) |
+| `.pgpass` | `/home/deploy/.pgpass` (`600`) |
+| Timer systemd | `yti-postgres-backup.timer` — **diario 03:30** |
+| Destino GCS | `gs://yti-prod-storage/backups/postgres/YYYY/MM/` |
 
-**Pendiente en VPS (operador):**
+**Ejecución confirmada (2026-05-31):**
 
-- instalar JSON SA en `/opt/yoteinvito/secrets/` (`chmod 600`, sin commitear),
-- `.pgpass` para `yti_app` + `/opt/yoteinvito/.ops/backup-gcs.env`,
-- primer backup manual y verificación en `gs://yti-prod-storage/backups/postgres/YYYY/MM/`,
-- timer systemd (`yti-postgres-backup.timer`, 03:30) o cron,
-- restore drill sobre DB temporal `yo_te_invito_restore_test`,
-- política de retención / lifecycle en bucket.
+- Backup manual: `yo_te_invito_20260531_082114.sql.gz` (+ `.sha256`)
+- Backup vía systemd: `yo_te_invito_20260531_082817.sql.gz` (+ `.sha256`)
+- Restore drill OK en `yo_te_invito_restore_test` (`User`: 2, `Tenant`: 1, `Event`: 0)
 
-> La sección §18 describe estrategia histórica local (`pg_dump -Fc` en disco). Para producción off-site usar el script GCS anterior.
+**Pendiente:** lifecycle / retención automática en bucket (`backups/postgres/`).
+
+> §18 describe backup local histórico (`pg_dump -Fc` en disco). Producción off-site usa el script GCS anterior.
 
 ### 25.5 Hotfix migración `UserPushSubscription`
 
@@ -1248,4 +1250,4 @@ Durante rotación de secretos se detectó drift: modelo en `schema.prisma`, API 
 
 ---
 
-**Siguiente bloque recomendado:** instalar backups GCS en VPS ([`GCS_BACKUPS_RUNBOOK.md`](./GCS_BACKUPS_RUNBOOK.md)); luego upload storage real, Maps en web, SEO/GSC ([`GOOGLE_CLOUD_RUNBOOK.md`](./GOOGLE_CLOUD_RUNBOOK.md) §6). Después: hardening fino VPS, rate limiting, monitoreo, legales reales.
+**Siguiente bloque recomendado:** upload storage real + Maps en web + SEO/GSC ([`GOOGLE_CLOUD_RUNBOOK.md`](./GOOGLE_CLOUD_RUNBOOK.md) §6); lifecycle backups GCS; hardening fino VPS, rate limiting, monitoreo, legales reales.

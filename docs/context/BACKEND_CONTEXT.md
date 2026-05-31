@@ -280,7 +280,7 @@ Opcional cron: `NOTIFICATIONS_CRON_ENABLED=false`, `NOTIFICATION_REMINDER_HOURS`
 
 Detalle operativo: [`docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTION_RUNBOOK.md) §25. Auditoría: [`docs/audits/PRODUCTION_SECURITY_HARDENING_AUDIT.md`](../audits/PRODUCTION_SECURITY_HARDENING_AUDIT.md).
 
-**Google Cloud Storage (Etapa A — consola; backups script en repo):** bucket `yti-prod-storage` (`southamerica-east1`), privado; SA `yti-backend-storage` con acceso al bucket. Backups: `scripts/ops/backup-postgres-to-gcs.sh` + [`GCS_BACKUPS_RUNBOOK.md`](../deploy/GCS_BACKUPS_RUNBOOK.md) — pendiente instalación VPS. Variables futuras API: `GCS_BUCKET`, `GCS_PROJECT_ID`, `GOOGLE_APPLICATION_CREDENTIALS` (ruta JSON en VPS, no en repo). Runbook: [`docs/deploy/GOOGLE_CLOUD_RUNBOOK.md`](../deploy/GOOGLE_CLOUD_RUNBOOK.md).
+**Google Cloud Storage (Etapa A — consola; backups operativos VPS 2026-05-31):** bucket `yti-prod-storage` (`southamerica-east1`), privado; SA `yti-backend-storage`. Backups: timer systemd 03:30 → `gs://yti-prod-storage/backups/postgres/` — [`GCS_BACKUPS_RUNBOOK.md`](../deploy/GCS_BACKUPS_RUNBOOK.md). Pendiente: lifecycle/retención; credencial SA para upload API. Variables futuras API: `GCS_BUCKET`, `GCS_PROJECT_ID`, `GOOGLE_APPLICATION_CREDENTIALS`.
 
 ---
 
