@@ -107,4 +107,34 @@ export class ApiClient {
   ): Promise<T> {
     return this.request<T>('DELETE', path, { query, body });
   }
+
+  /** Multipart upload — do not set Content-Type; browser adds boundary. */
+  async postFormData<T>(path: string, formData: FormData): Promise<T> {
+    const url = new URL(path.startsWith('/') ? path : `/${path}`, this.baseUrl);
+    const headers: Record<string, string> = { Accept: 'application/json' };
+    if (this.getAuth) {
+      const auth = await this.getAuth();
+      if (auth.token) {
+        headers['Authorization'] = `Bearer ${auth.token}`;
+      } else if (auth.userId) {
+        headers['X-Dev-User-Id'] = auth.userId;
+      }
+    }
+    const res = await fetch(url.toString(), { method: 'POST', headers, body: formData });
+    const text = await res.text();
+    let body: unknown;
+    try {
+      body = text ? JSON.parse(text) : undefined;
+    } catch {
+      body = text;
+    }
+    if (!res.ok) {
+      const msg =
+        (body && typeof body === 'object' && 'message' in body
+          ? String((body as { message?: string }).message)
+          : null) || res.statusText || `HTTP ${res.status}`;
+      throw new ApiClientError(msg, res.status, body);
+    }
+    return body as T;
+  }
 }

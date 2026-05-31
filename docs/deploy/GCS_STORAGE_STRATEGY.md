@@ -358,14 +358,57 @@ Valida: login ADMIN → upload → `url` + `objectKey` → HEAD público 200. **
 | S1 | Crear bucket público + CORS | [x] |
 | S2 | Backend upload module (`POST /uploads/public-image`) | [x] V1 ADMIN |
 | S3 | Roles portal + ownership por entidad | [ ] |
-| S4 | Migración formularios (rentals primero) | [ ] |
-| S5 | Persistir URL en BD (sin data-URL) | [ ] |
+| S4 | Admin Rentals — formularios → GCS (cover + galería) | [x] Jun 2026 |
+| S5 | Otros verticales (eventos, gastro, hotel, productoras) | [ ] |
 | S6 | `next/image` + `NEXT_PUBLIC_GCS_PUBLIC_BASE_URL` | [ ] |
 | S7 | Signed URLs bucket privado (`private/*`) | [ ] |
-| S8 | Cleanup huérfanos | [ ] |
+| S8 | Cleanup huérfanos + migración data-URL legacy | [ ] |
 | S9 | CDN opcional | [ ] |
 
 **No mover backups** de `yti-prod-storage`. **No publicar** `yti-prod-storage`.
+
+---
+
+## 15. Admin Rentals — upload GCS (Storage 4, Jun 2026)
+
+**Alcance:** solo Admin Rentals (`/admin/rentals/locales/.../productos/nuevo|editar`). Otros formularios que reutilizan `RentalProductImagesForm` siguen con data-URL comprimida hasta slice posterior.
+
+### Decisión `entityId`
+
+Se usa **`rentalLocationId`** (disponible en crear y editar producto). No se usa `productId` aunque exista — simplifica paths y evita re-upload al crear:
+
+```
+public/rental/{rentalLocationId}/cover/YYYY/MM/{uuid}.ext
+public/rental/{rentalLocationId}/gallery/YYYY/MM/{uuid}.ext
+```
+
+### Frontend
+
+| Pieza | Ubicación |
+|-------|-----------|
+| Repo | `repos.uploads.uploadPublicImage` → `POST /uploads/public-image` |
+| Hook | `useUploadPublicImage()` — `lib/query/uploads.ts` |
+| Validación cliente | `lib/upload/validate-public-image-file.ts` (JPEG/PNG/WEBP, 5 MB) |
+| Form | `RentalProductImagesForm` con `uploadConfig={{ mode: 'gcs-rental', rentalLocationId }}` |
+
+**Reglas UX:**
+
+- Sin fallback silencioso a data-URL en modo GCS.
+- Progreso: «Subiendo imagen…» / «Subiendo 1/3…».
+- Guardar deshabilitado mientras sube.
+- URLs pegadas: solo `https://`; rechaza `data:image/`.
+- Imágenes legacy en BD (data-URL) siguen mostrándose en preview; no se migran en este slice.
+
+### Smoke manual (Admin)
+
+1. Login ADMIN → `/admin/rentals/locales/{locationId}/productos/nuevo`.
+2. Subir cover PNG/JPG/WEBP &lt; 5 MB → preview con URL `https://storage.googleapis.com/yti-prod-public-assets/...`.
+3. Guardar producto → verificar en API/BD que `coverImageUrl` y galería **no** empiezan con `data:image/`.
+4. `curl -I` a la URL pública → HTTP 200.
+5. Probar archivo &gt; 5 MB o SVG → error visible.
+6. Galería multi-upload → varias URLs GCS.
+
+**Próximo:** Storage 5 — `next/image` `remotePatterns` para `storage.googleapis.com/yti-prod-public-assets/**` si cards públicas usan `next/image`.
 
 ---
 

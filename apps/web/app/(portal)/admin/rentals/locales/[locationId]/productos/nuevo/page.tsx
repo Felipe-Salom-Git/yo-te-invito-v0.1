@@ -32,6 +32,7 @@ export default function AdminRentalProductoNuevoPage() {
   const [description, setDescription] = useState('');
   const [subcategoryId, setSubcategoryId] = useState('');
   const [images, setImages] = useState<RentalProductImagesValue>(emptyImages);
+  const [imagesUploading, setImagesUploading] = useState(false);
 
   const createMutation = useMutation({
     mutationFn: () =>
@@ -79,10 +80,15 @@ export default function AdminRentalProductoNuevoPage() {
           />
         </div>
         <SubcategorySelect category="rental" value={subcategoryId} onChange={setSubcategoryId} />
-        <RentalProductImagesForm value={images} onChange={setImages} />
+        <RentalProductImagesForm
+          value={images}
+          onChange={setImages}
+          uploadConfig={{ mode: 'gcs-rental', rentalLocationId: locationId }}
+          onUploadingChange={setImagesUploading}
+        />
 
         <div className="flex gap-3 pt-4">
-          <Button type="submit" disabled={createMutation.isPending}>
+          <Button type="submit" disabled={createMutation.isPending || imagesUploading}>
             {createMutation.isPending ? 'Creando…' : 'Crear producto'}
           </Button>
           <Link href={`/admin/rentals/locales/${locationId}`}>

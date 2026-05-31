@@ -153,7 +153,7 @@ pnpm run -w dev    # API :3001 + web :3000
 
 **Producción VPS (Mayo 2026):** `yoteinvito.club` — `npx prisma migrate deploy` en `apps/api` (no `pnpm db:migrate`). SSH: `ssh yoteinvito` → usuario `deploy`, puerto **5230**, solo clave (root/password SSH deshabilitados). API: `NODE_ENV=production`, `DEV_AUTH_ENABLED=false`; `.env` permisos `600`. Secretos críticos rotados (Mayo 2026). Runbook VPS: `docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md` §24–25; auditoría hardening: `docs/audits/PRODUCTION_SECURITY_HARDENING_AUDIT.md`.
 
-**Google Cloud:** buckets `yti-prod-storage` (privado) + `yti-prod-public-assets` (público). **Backups:** cerrados — [`GCS_BACKUPS_RUNBOOK.md`](../deploy/GCS_BACKUPS_RUNBOOK.md). **Upload API V1:** `POST /uploads/public-image` — [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md). Pendiente: formularios + BD.
+**Google Cloud:** buckets `yti-prod-storage` (privado) + `yti-prod-public-assets` (público). **Backups:** cerrados — [`GCS_BACKUPS_RUNBOOK.md`](../deploy/GCS_BACKUPS_RUNBOOK.md). **Upload:** API `POST /uploads/public-image`; **Admin Rentals** integrado (Storage 4) — [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §15. Pendiente: otros verticales + `next/image`.
 
 **Producción — no ejecutar salvo emergencia documentada:** `pnpm db:reset-dangerous`, `pnpm db:cleanup-content`, `pnpm db:migrate` (usar solo `npx prisma migrate deploy`).
 

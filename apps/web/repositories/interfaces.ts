@@ -2509,8 +2509,22 @@ export interface AdminProducersRepo {
   ): Promise<{ id: string; status: string }>;
 }
 
+export interface PublicImageUploadInput {
+  file: File;
+  scope: import('@yo-te-invito/shared').UploadScope;
+  purpose: import('@yo-te-invito/shared').UploadPurpose;
+  entityId?: string;
+}
+
+export interface UploadsRepo {
+  uploadPublicImage(
+    input: PublicImageUploadInput,
+  ): Promise<import('@yo-te-invito/shared').PublicImageUploadResponse>;
+}
+
 export interface Repositories {
   auth: AuthRepo;
+  uploads: UploadsRepo;
   events: EventsRepo;
   generalPublications: GeneralPublicationsRepo;
   adminProducers: AdminProducersRepo;

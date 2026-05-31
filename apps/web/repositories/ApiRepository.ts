@@ -1943,4 +1943,19 @@ export class ApiRepository implements Repositories {
       );
     },
   };
+
+  uploads: import('./interfaces').UploadsRepo = {
+    uploadPublicImage: async (input) => {
+      const formData = new FormData();
+      formData.append('file', input.file);
+      formData.append('scope', input.scope);
+      formData.append('purpose', input.purpose);
+      if (input.entityId) {
+        formData.append('entityId', input.entityId);
+      }
+      const raw = await this.client.postFormData<unknown>('/uploads/public-image', formData);
+      const { publicImageUploadResponseSchema } = await import('@yo-te-invito/shared');
+      return publicImageUploadResponseSchema.parse(raw);
+    },
+  };
 }

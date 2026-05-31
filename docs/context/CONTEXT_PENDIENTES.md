@@ -116,7 +116,8 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 **Pendiente:**
 
 - [x] **Backups automáticos** — PostgreSQL → GCS; VPS 2026-05-31; lifecycle `backups/postgres/` 30 días.
-- [ ] **Storage upload real** — API V1 lista (`POST /uploads/public-image`); pendiente formularios + URL en BD — [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md)
+- [x] **Admin Rentals upload GCS** — `RentalProductImagesForm` + `uploadConfig` en productos nuevo/editar; URL pública en BD al guardar.
+- [ ] **Storage upload otros verticales** — eventos, gastro, hotel, productoras — [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md)
 - [ ] Rate limiting Nginx; rate limiting Nest (slice código)
 - [ ] Monitoreo / alertas (disco, servicios, certificado TLS)
 - [ ] `certbot renew --dry-run` documentado
@@ -164,6 +165,10 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 - [x] Estrategia buckets público/privado — [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md)
 - [x] Bucket `yti-prod-public-assets` + CORS en GCP
 - [x] API upload V1 `POST /uploads/public-image` (ADMIN)
+- [x] Admin Rentals — formularios producto → GCS (`entityId` = `rentalLocationId`)
+- [ ] Otros formularios web (eventos, gastro, hotel, productoras)
+- [ ] Migración data-URL legacy en BD
+- [ ] `next/image` remotePatterns GCS
 - [ ] Integración formularios + persistir URL en BD
 - [ ] `next/image` remotePatterns
 - [ ] Smoke ampliado / cleanup huérfanos
@@ -209,7 +214,7 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 - [x] Ficha pública gastro pulida (`/restaurants/[id]`, `GastroPublicDetailContent`; sin ticketera; redirect `/events/:id` gastro → restaurants)
 - [x] Dashboard gastro V2 (`GET /gastro/dashboard`, KPIs reales, alertas, `/gastro/validaciones` con filtros y paginación)
 - [x] Gastro + Reviews V2 + follows + alerta `FOLLOWED_GASTRO_NEW_DISCOUNT` (Slice 7 — `docs/gastro/GASTRO_FOLLOWS_NOTIFICATIONS.md`)
-- [ ] Storage para imágenes (salir de data-URL) — estrategia [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md); pendiente implementación
+- [ ] Storage para imágenes (otros verticales + migración legacy) — [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md); Admin Rentals [x]
 - [x] Portal `/gastro/valoraciones` — listado + réplica (`POST /gastro/reviews/:id/reply`)
 
 ---
@@ -241,7 +246,7 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 
 ## G. Frontend — UX y calidad
 
-- [x] Compresión JPEG al subir galería/header (`RentalProductImagesForm` + `lib/image-compress.ts`) — evita error Zod `galleryUrls` > 2M chars
+- [x] Compresión JPEG al subir galería/header (`RentalProductImagesForm` + `lib/image-compress.ts`) — verticales no-rental; **Admin Rentals** usa GCS desde Storage 4
 - [x] Empty / loading / error consistentes en portal `/me/*` (QueryError, EmptyState, skeletons)
 - [ ] Empty / loading / error consistentes (resto del sitio)
 - [ ] `next/image` + dominios remotos

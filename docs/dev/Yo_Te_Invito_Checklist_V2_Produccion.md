@@ -348,8 +348,9 @@ _Footer público completo — bloque V2 cerrado. Smoke: `docs/audits/PUBLIC_FOOT
 - [x] Documentar CORS recomendado (bucket público) — [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §9.
 - [x] Crear bucket público `yti-prod-public-assets` en GCP + CORS aplicado.
 - [x] Implementar upload API (`POST /uploads/public-image`, módulo `uploads/`, ADMIN).
-- [ ] Integrar upload en formularios web + persistir URL en BD.
-- [ ] Reemplazar data-URL por URLs de storage.
+- [x] Integrar upload GCS en Admin Rentals (cover + galería; `entityId` = `rentalLocationId`).
+- [ ] Integrar upload en otros formularios web (eventos, gastro, hotel, productoras).
+- [ ] Reemplazar data-URL legacy existentes en BD.
 - [x] Configurar límites de peso/formato (5 MB; JPEG/PNG/WEBP) en API.
 - [ ] Configurar cleanup de imágenes huérfanas.
 - [ ] Configurar `next/image` con dominios remotos.
