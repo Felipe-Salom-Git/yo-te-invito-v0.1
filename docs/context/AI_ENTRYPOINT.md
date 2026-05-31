@@ -153,7 +153,7 @@ pnpm run -w dev    # API :3001 + web :3000
 
 **Producción VPS (Mayo 2026):** `yoteinvito.club` — `npx prisma migrate deploy` en `apps/api` (no `pnpm db:migrate`). SSH: `ssh yoteinvito` → usuario `deploy`, puerto **5230**, solo clave (root/password SSH deshabilitados). API: `NODE_ENV=production`, `DEV_AUTH_ENABLED=false`; `.env` permisos `600`. Secretos críticos rotados (Mayo 2026). Runbook VPS: `docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md` §24–25; auditoría hardening: `docs/audits/PRODUCTION_SECURITY_HARDENING_AUDIT.md`.
 
-**Google Cloud:** buckets + backups cerrados. **Storage V2:** upload GCS + ownership + portales web + audit/migrate data-URL + orphan cleanup tooling + `smoke:storage-global` — [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §22. Pendiente ops prod: migración data-URL masiva, cleanup huérfanos manual, CDN.
+**Google Cloud:** buckets + backups cerrados. **Storage V2 cerrado funcional prod (2026-05-31)** — upload GCS, portales web, smokes VPS PASS — [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §22 · [`DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTION_RUNBOOK.md) §24.9. Ops legacy no bloqueante: data-URL migrate, huérfanos, CDN, Maps/GSC pendiente.
 
 **Producción — no ejecutar salvo emergencia documentada:** `pnpm db:reset-dangerous`, `pnpm db:cleanup-content`, `pnpm db:migrate` (usar solo `npx prisma migrate deploy`).
 

@@ -1,7 +1,7 @@
 # Google Cloud Runbook — Yo Te Invito
 
 **Etapa A (manual):** cerrada — Mayo/Junio 2026.  
-**Etapa B (Cursor/código):** pendiente — ver §6.
+**Etapa B — Storage V2:** cerrado funcionalmente en producción (2026-05-31). **Maps / SEO / GSC:** pendiente — ver §6.
 
 > **Regla:** no guardar en el repo API keys completas, JSON de service account, passwords ni valores de `.env` productivos. Solo nombres, IDs públicos y variables esperadas.
 
@@ -69,7 +69,7 @@
 
 **Nota IAM:** el rol actual es aceptable para etapa inicial (upload, reemplazo, cleanup, backups). En hardening futuro valorar roles más restrictivos (p. ej. por prefijo o bucket dedicado backups vs media).
 
-### 2.4 Storage — estado y pendientes (Etapa B)
+### 2.4 Storage — estado (Etapa B)
 
 **Estrategia documentada:** [`GCS_STORAGE_STRATEGY.md`](./GCS_STORAGE_STRATEGY.md) — bucket privado + bucket público separado; upload vía backend; prefijos `public/` y `private/`.
 
@@ -80,19 +80,25 @@
 - [x] Lifecycle `backups/postgres/` → delete 30 días
 - [x] Checksum portable en script
 
-**Upload / media (Storage V2 — cerrado en código, Jun 2026):**
+**Upload / media — Storage V2 cerrado funcional en producción (2026-05-31):**
 
 - [x] Estrategia público vs privado documentada
-- [x] Bucket `yti-prod-public-assets` + CORS
-- [x] Módulo upload NestJS V1 — `POST /uploads/public-image` + ownership portal
-- [x] Integración formularios web (Admin + productora/gastro/hotel) → URLs GCS en BD
+- [x] Bucket `yti-prod-public-assets` + CORS en GCP
+- [x] Módulo upload NestJS — `POST /uploads/public-image` + ownership portal
+- [x] Formularios web (Admin + productora/gastro/hotel) → GCS en VPS
 - [x] `next/image` — `remotePatterns` en web
-- [x] Data-URL audit/migrate (`storage:audit-data-urls`, `storage:migrate-data-urls`)
-- [x] Orphan audit/cleanup (`storage:audit-orphans`, `storage:cleanup-orphans` — dry-run default)
-- [x] Smoke global `smoke:storage-global` — [`GCS_STORAGE_STRATEGY.md`](./GCS_STORAGE_STRATEGY.md) §22
-- [ ] Migración data-URL masiva producción (post-backup manual)
-- [ ] Cleanup huérfanos producción (manual post-audit; **no** `--confirm` desde CI)
-- [ ] CDN `cdn.yoteinvito.club` (opcional fase 2)
+- [x] `GCS_*` + credencial SA en `/opt/yoteinvito/apps/api/.env`
+- [x] Upload manual UI + `smoke:storage-upload` + `smoke:storage-upload-auth` PASS en VPS
+- [x] Tooling ops: audit/migrate data-URL, audit/cleanup huérfanos, `smoke:storage-global`
+
+**Pendientes operativos (no bloqueantes):**
+
+- [ ] Auditoría read-only data-URL legacy
+- [ ] Migración data-URL por lotes (post-backup)
+- [ ] Auditoría + cleanup huérfanos (manual post-revisión)
+- [ ] Smokes cross-owner con fixtures reales (`smoke:storage-global`)
+- [ ] CDN `cdn.yoteinvito.club` (fase 2)
+- [ ] Signed URLs ampliadas para `private/*`
 
 ### 2.5 Variables de entorno (API — referencia, sin valores)
 
@@ -191,7 +197,7 @@ OAuth login Google (distinto de Maps): ver [`CONFIG_GOOGLE_RESEND.md`](../guides
 | Deploy app, SSH, UFW, secretos rotados | [`DONWEB_PRODUCTION_RUNBOOK.md`](./DONWEB_PRODUCTION_RUNBOOK.md) §24–25 |
 | Hardening seguridad | [`PRODUCTION_SECURITY_HARDENING_AUDIT.md`](../audits/PRODUCTION_SECURITY_HARDENING_AUDIT.md) |
 
-El bucket privado **existe**; **backups cerrados**. **Upload API V1** operativo con `GCS_PUBLIC_BUCKET` — [`GCS_STORAGE_STRATEGY.md`](./GCS_STORAGE_STRATEGY.md). Pendiente: integración formularios y BD.
+El bucket privado **existe**; **backups cerrados**. **Storage V2** operativo en VPS — upload GCS, formularios web y smokes base PASS (2026-05-31) — [`GCS_STORAGE_STRATEGY.md`](./GCS_STORAGE_STRATEGY.md) §22. Pendiente ops no bloqueante: migración data-URL legacy, cleanup huérfanos, CDN.
 
 ---
 
@@ -204,7 +210,7 @@ Orden sugerido:
 | B1 | **Cloud docs + env** | Variables documentadas en runbook/VPS; plantillas `.env.example` sin valores reales |
 | B2 | **Backups GCS** | [x] Cerrado 2026-05-31 — [`GCS_BACKUPS_RUNBOOK.md`](./GCS_BACKUPS_RUNBOOK.md) |
 | B3 | **Storage strategy** | [x] Arquitectura documentada — [`GCS_STORAGE_STRATEGY.md`](./GCS_STORAGE_STRATEGY.md) |
-| B4 | **Storage backend** | [x] Storage V2 — API upload + portales web + audit/migrate data-URL + orphan cleanup + smoke global ([`GCS_STORAGE_STRATEGY.md`](./GCS_STORAGE_STRATEGY.md) §22); pendiente ops prod migración/cleanup |
+| B4 | **Storage backend** | [x] **Cerrado funcional prod** 2026-05-31 — upload + portales + smokes VPS ([`GCS_STORAGE_STRATEGY.md`](./GCS_STORAGE_STRATEGY.md) §22); ops legacy data-URL/huérfanos pendiente |
 | B5 | **Maps frontend** | Key en prod web, autocomplete, lat/lng, fichas públicas |
 | B6 | **SEO / GSC** | sitemap, robots, metadata, JSON-LD, no-index rutas privadas |
 

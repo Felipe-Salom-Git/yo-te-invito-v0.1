@@ -177,9 +177,9 @@ Requieren API `:3001` + **`SMOKE_USER_EMAIL`** + **`SMOKE_USER_PASSWORD`** (sin 
 | Notificaciones | `pnpm --filter api run smoke:notifications` | `e2e-demo:*` — cleanup auto |
 | Producer follows | `pnpm --filter api run smoke:producer-follows` | Borra follow al final |
 | Referidos V2 | `pnpm --filter api run smoke:referrals` | Requiere `SMOKE_PRODUCER_EMAIL` + `SMOKE_REFERRER_EMAIL`; órdenes/comisiones si hay evento APPROVED |
-| Storage upload GCS | `pnpm --filter api run smoke:storage-upload` | ADMIN + GCS env; objeto no se borra |
-| Storage upload auth | `pnpm --filter api run smoke:storage-upload-auth` | USER 403; opcional producer cross-owner |
-| Storage global smoke | `pnpm --filter api run smoke:storage-global` | Matriz vertical + 403/400 + HEAD 200 — §22 |
+| Storage upload GCS | `pnpm --filter api run smoke:storage-upload` | ADMIN + GCS env; **PASS prod 2026-05-31** |
+| Storage upload auth | `pnpm --filter api run smoke:storage-upload-auth` | USER 403; prod: `SMOKE_NON_ADMIN_*` — **PASS prod 2026-05-31** |
+| Storage global smoke | `pnpm --filter api run smoke:storage-global` | Matriz vertical + 403/400; opcional fixtures reales — §22 |
 
 **Tests util (sin BD):** `test:referral-proposals`, `test:referral-commission`, `test:referral-payment-requests`.
 
@@ -263,7 +263,7 @@ Opcional cron: `NOTIFICATIONS_CRON_ENABLED=false`, `NOTIFICATION_REMINDER_HOURS`
 ## 9. Debt / risks
 
 - Payments: demo only (`DEMO` + `demo-confirm`); Getnet no activo en prod (Mayo 2026).
-- Image uploads: portales productora/gastro/hotel + Admin → GCS. **Ops:** `storage:audit-data-urls`, `storage:migrate-data-urls` (§21); `storage:audit-orphans`, `storage:cleanup-orphans` (§22, dry-run default).
+- Image uploads: portales + Admin → GCS **cerrado funcional prod 2026-05-31.** Ops legacy no bloqueante: `storage:audit-data-urls`, `storage:migrate-data-urls` (§21), `storage:audit-orphans`, `storage:cleanup-orphans` (§22).
 - Public list `EventSummary` includes `fromPrice` (min active ticket/batch price, major units) and `producerName` (`ProducerProfile.displayName`, ACTIVE only) — see `public-event-summary.util.ts`.
 - Run `prisma migrate deploy` + `prisma generate` after schema changes — **prod:** `https://api.yoteinvito.club`, migraciones vía `migrate deploy` (no `pnpm db:migrate`).
 

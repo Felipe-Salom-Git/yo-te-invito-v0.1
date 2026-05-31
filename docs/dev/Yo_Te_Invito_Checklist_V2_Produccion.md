@@ -236,11 +236,11 @@ _Footer público completo — bloque V2 cerrado. Smoke: `docs/audits/PUBLIC_FOOT
 >
 > **Hotfix migración:** `20260531072000_restore_user_push_subscription` — tabla `UserPushSubscription` faltaba en prod; API fallaba hasta aplicar migración idempotente.
 >
-> **Pendiente:** crear bucket `yti-prod-public-assets`, upload NestJS, migración data-URL ([`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md)), monitoreo/rate limiting, bind interno apps, smoke E2E dominio real, legales reales. Runbooks: [`DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTION_RUNBOOK.md) · [`GOOGLE_CLOUD_RUNBOOK.md`](../deploy/GOOGLE_CLOUD_RUNBOOK.md) · [`GCS_BACKUPS_RUNBOOK.md`](../deploy/GCS_BACKUPS_RUNBOOK.md) · [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md).
+> **Pendiente (no Storage):** monitoreo/rate limiting, bind interno apps, smoke E2E dominio real (checkout/scanner), legales reales, Maps frontend, GSC/SEO. **Storage V2 — cerrado funcional 2026-05-31** ([`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §22). Runbooks: [`DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTION_RUNBOOK.md) · [`GOOGLE_CLOUD_RUNBOOK.md`](../deploy/GOOGLE_CLOUD_RUNBOOK.md) · [`GCS_BACKUPS_RUNBOOK.md`](../deploy/GCS_BACKUPS_RUNBOOK.md).
 
 ## Google Cloud — Maps y Storage
 
-> **Etapa A (manual) — cerrada:** proyecto GCP, billing, GCS bucket privado, SA backend, Maps API Key. **Backups — cerrados.** **Storage strategy — documentada** ([`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md)). **Etapa B código:** bucket público + upload + Maps.
+> **Etapa A (manual) — cerrada:** proyecto GCP, billing, GCS bucket privado, SA backend, Maps API Key. **Backups — cerrados.** **Storage V2 — cerrado funcional en producción (2026-05-31).** Pendiente Etapa B: Maps frontend, GSC/SEO.
 
 - [x] Crear proyecto Google Cloud del cliente para Yo Te Invito (`yoteinvito-1721413433327`).
 - [x] Activar billing en Google Cloud.
@@ -287,12 +287,18 @@ _Footer público completo — bloque V2 cerrado. Smoke: `docs/audits/PUBLIC_FOOT
 - [x] Integrar upload GCS en portal **productora** (perfil logo/cover/galería + eventos create/edit cover).
 - [x] Integrar upload GCS en portales **gastro** y **hotel** (frontend).
 - [x] Herramienta auditoría data-URL (`storage:audit-data-urls`) + migración controlada (`storage:migrate-data-urls`, dry-run / `--confirm`).
-- [ ] Ejecutar migración data-URL legacy en BD producción (post-audit).
+- [ ] Ejecutar migración data-URL legacy en BD producción (post-audit) — **ops no bloqueante**.
 - [x] Configurar límites de peso/formato (5 MB; JPEG/PNG/WEBP) en API.
 - [x] Configurar cleanup de imágenes huérfanas — `storage:audit-orphans` + `storage:cleanup-orphans` (dry-run default; §22).
 - [x] Configurar `next/image` con dominios remotos (`storage.googleapis.com/yti-prod-public-assets/**`).
-- [ ] Evaluar Cloud CDN o dominio `cdn.yoteinvito.club` si crece el tráfico.
-- [x] Smoke test storage upload ampliado — `smoke:storage-global` (roles portal, MIME inválido, >5MB; §22).
+- [ ] Evaluar Cloud CDN o dominio `cdn.yoteinvito.club` si crece el tráfico — **fase 2**.
+- [x] Smoke test storage upload ampliado — `smoke:storage-global` documentado (§22); smokes base prod PASS.
+- [x] Deploy Storage V2 en VPS (`main`, build, restart servicios). **Cerrado 2026-05-31.**
+- [x] `smoke:storage-upload` PASS en producción.
+- [x] `smoke:storage-upload-auth` PASS en producción (`SMOKE_NON_ADMIN_*`).
+- [x] Upload GCS manual UI + formularios verticales validados en producción.
+
+**Storage V2 — pendientes operativos (no bloqueantes):** auditoría data-URL read-only; migración por lotes; auditoría/cleanup huérfanos manual; smokes cross-owner con fixtures; CDN; signed URLs `private/*`.
 
 ## Google Search Console y SEO técnico
 

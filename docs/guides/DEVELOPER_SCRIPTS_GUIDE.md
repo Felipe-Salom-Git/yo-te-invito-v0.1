@@ -400,6 +400,8 @@ SMOKE_USER_EMAIL=felipe.e.salom@gmail.com SMOKE_USER_PASSWORD=<pass> \
 
 Doc: [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §12–13.
 
+**Producción (2026-05-31):** PASS en VPS con `GCS_*` configurado en API.
+
 ### `pnpm --filter api run smoke:storage-upload-auth`
 
 Valida autorización del endpoint (USER común → 403 en `platform`). Opcional: `SMOKE_PRODUCER_EMAIL` + `SMOKE_PRODUCER_OTHER_PROFILE_ID` (403 cross-owner), `SMOKE_PRODUCER_EVENT_ID` (200 evento propio).
@@ -424,6 +426,8 @@ pnpm --filter api run smoke:storage-upload-auth
 | **Env prod** | `SMOKE_NON_ADMIN_EMAIL` + `SMOKE_NON_ADMIN_PASSWORD` recomendados |
 
 Doc: [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §18.
+
+**Producción (2026-05-31):** PASS en VPS con `SMOKE_NON_ADMIN_EMAIL` + `SMOKE_NON_ADMIN_PASSWORD` (USER común → 403).
 
 ### `pnpm --filter api run storage:audit-data-urls`
 

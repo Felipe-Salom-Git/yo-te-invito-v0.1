@@ -724,19 +724,47 @@ SMOKE_USER_EMAIL=… SMOKE_USER_PASSWORD=… \
 2. **Uploads:** formularios web → `POST /uploads/public-image` → URLs en BD.
 3. **Data-URL legacy:** `storage:audit-data-urls` → `storage:migrate-data-urls` (dry-run) → `--confirm` post-backup manual.
 4. **Huérfanos:** `storage:audit-orphans` → `storage:cleanup-orphans` (dry-run) → revisar sample → `--confirm` solo en ventana ops (nunca automatizado).
-5. **QA:** `smoke:storage-global` en staging con env de ownership real.
+5. **QA:** `smoke:storage-upload` + `smoke:storage-upload-auth` en prod (PASS 2026-05-31); `smoke:storage-global` opcional con fixtures reales.
 
 ### Storage V2 — checklist cierre
+
+**Funcional (código + VPS producción, validado 2026-05-31):**
 
 - [x] Bucket público + API upload + auth ownership
 - [x] Admin + portales productora/gastro/hotel en GCS
 - [x] Audit/migrate data-URL tooling
 - [x] Audit/cleanup huérfanos (dry-run default)
 - [x] Smoke global documentado
-- [ ] Migración data-URL masiva producción (post-backup)
-- [ ] Cleanup huérfanos producción (manual post-audit)
+- [x] Deploy desde `main` en VPS (`/opt/yoteinvito`)
+- [x] `GCS_*` en API + credencial SA en VPS
+- [x] Upload manual UI + formularios verticales OK
+- [x] `smoke:storage-upload` PASS (ADMIN + GCS)
+- [x] `smoke:storage-upload-auth` PASS (USER → 403; prod con `SMOKE_NON_ADMIN_*`)
+
+**Pendientes operativos (no bloqueantes):**
+
+- [ ] Auditoría read-only data-URL legacy (`storage:audit-data-urls`)
+- [ ] Migración data-URL por lotes (`storage:migrate-data-urls --confirm`, post-backup)
+- [ ] Auditoría huérfanos (`storage:audit-orphans`)
+- [ ] Cleanup huérfanos solo tras revisión manual (`storage:cleanup-orphans --confirm`)
+- [ ] Smokes cross-owner / matriz completa con fixtures reales (`smoke:storage-global` + env opcional)
 - [ ] CDN `cdn.yoteinvito.club` (fase 2)
-- [ ] Signed URLs privadas ampliadas (tickets/facturas)
+- [ ] Signed URLs privadas ampliadas (`private/*` tickets/facturas)
+
+### Validación producción VPS (2026-05-31)
+
+Registro post-deploy Storage slices 6–11 en VPS DonWeb (`yoteinvito.club`):
+
+| Validación | Resultado |
+|------------|-----------|
+| Deploy `main` + build + restart `yti-api` / `yti-web` / `yti-scanner` | OK |
+| API `/health` + web pública | OK |
+| Upload GCS manual en UI (formularios verticales) | OK |
+| `smoke:storage-upload` | PASS |
+| `smoke:storage-upload-auth` | PASS (USER común → 403 platform; `SMOKE_NON_ADMIN_*` en prod) |
+| Residuos smoke | Sin cleanup destructivo requerido |
+
+Runbook VPS: [`DONWEB_PRODUCTION_RUNBOOK.md`](./DONWEB_PRODUCTION_RUNBOOK.md) §24.9.
 
 ---
 

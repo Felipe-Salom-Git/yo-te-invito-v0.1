@@ -138,7 +138,7 @@ Completar esta tabla **antes** del día de deploy. No commitear valores secretos
 | `ADMIN_EMAIL` alertas | email operaciones | Producto | ☐ |
 | Decisión **Redis** | Sí (recomendado) / No (día 1) | Infra | ☐ |
 | Decisión **PostgreSQL** | Local en VPS / Managed DonWeb u otro | Infra | ☐ |
-| Decisión **storage imágenes** | Pendiente data-URL (V2 GCS) | Producto | ☐ |
+| Decisión **storage imágenes** | **GCS Storage V2 operativo** (2026-05-31) | Producto | ☑ |
 | Tenant producción | `tenant-demo` (V2 actual) | Producto | ☐ |
 | Rama git a desplegar | ej. `main` | Dev | ☐ |
 | Pago checkout | **DEMO** (no Getnet prod) | Producto | ☐ |
@@ -1150,14 +1150,45 @@ pnpm build   # shared, api, web, scanner — OK
 | ~~Crítica~~ | SSH por clave; deshabilitar root/password | **Cerrado** §25.1 |
 | ~~Alta~~ | `.env` 600, `DEV_AUTH_ENABLED=false`, UFW base | **Cerrado** §25.3 |
 | Alta | Backups → GCS | **Cerrado** 2026-05-31 — ver §25.4 |
+| Alta | **Storage V2 GCS** (upload + formularios + smokes) | **Cerrado** 2026-05-31 — ver §24.9 |
 | Alta | Legales reales en admin (sustituir bootstrap) | Pendiente |
 | Alta | Smoke E2E dominio real (checkout **DEMO**, scanner QR) | Pendiente |
 | Media | Rate limiting Nginx + Nest; monitoreo/alertas | Pendiente |
 | Media | Bind apps `3000`/`3001`/`3002` a `127.0.0.1`; revisar postfix `:25`, snmpd `:161` | Pendiente |
 | Media | `certbot renew --dry-run`; health DB/Redis | Pendiente |
-| Baja | Resend producción; VAPID push; GCS imágenes; Getnet | Pendiente |
+| Baja | Resend producción; VAPID push; Getnet | Pendiente |
+| Baja | Storage V2 ops legacy (data-URL migrate, orphan cleanup, CDN) | No bloqueante — ver §24.9 |
 
 **Pagos:** provider **`DEMO`** mantenido; Getnet no activado.
+
+---
+
+### 24.9 Storage V2 — cierre producción (2026-05-31)
+
+**Estado:** Storage slices 6–11 desplegados y validados en VPS. Bloque **cerrado a nivel funcional**.
+
+| Validación | Resultado |
+|------------|-----------|
+| Deploy desde `main` + `pnpm build` | OK |
+| Restart `yti-api`, `yti-web`, `yti-scanner` | OK |
+| API `/health` + web pública | OK |
+| Upload GCS manual en UI (formularios verticales) | OK |
+| `pnpm --filter api run smoke:storage-upload` | PASS |
+| `pnpm --filter api run smoke:storage-upload-auth` | PASS (USER → 403; prod: `SMOKE_NON_ADMIN_EMAIL` + `SMOKE_NON_ADMIN_PASSWORD`) |
+| Residuos smoke | Sin cleanup destructivo requerido |
+
+**Alcance cerrado:** bucket `yti-prod-public-assets`, `POST /uploads/public-image`, ownership portal, formularios Admin + productora/gastro/hotel, `next/image` GCS.
+
+**Pendientes operativos (no bloqueantes):**
+
+- Auditoría read-only data-URL legacy (`storage:audit-data-urls`)
+- Migración data-URL por lotes con backup previo (`storage:migrate-data-urls --confirm`)
+- Auditoría huérfanos (`storage:audit-orphans`)
+- Cleanup huérfanos solo tras revisión manual
+- CDN `cdn.yoteinvito.club`; signed URLs `private/*`
+- Smokes cross-owner / `smoke:storage-global` con fixtures reales
+
+Doc: [`GCS_STORAGE_STRATEGY.md`](./GCS_STORAGE_STRATEGY.md) §22.
 
 ---
 

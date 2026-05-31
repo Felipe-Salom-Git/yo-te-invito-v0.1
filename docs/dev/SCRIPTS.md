@@ -26,8 +26,8 @@
 | `pnpm --filter api run user:*` | Bajo–Medio | Ver guía |
 | `pnpm --filter api run smoke:*` | Bajo–Alto | Ver SMOKE_TESTS_GUIDE |
 | `pnpm --filter api run smoke:referrals` | Alto | Referidos V2 — productor + referido + evento |
-| `pnpm --filter api run smoke:storage-upload` | Medio | GCS upload — ADMIN + GCS env en API |
-| `pnpm --filter api run smoke:storage-upload-auth` | Bajo | Auth upload — USER 403; prod: `SMOKE_NON_ADMIN_*` |
+| `pnpm --filter api run smoke:storage-upload` | Medio | GCS upload — ADMIN; **PASS prod 2026-05-31** |
+| `pnpm --filter api run smoke:storage-upload-auth` | Bajo | Auth upload — USER 403; prod: `SMOKE_NON_ADMIN_*`; **PASS prod** |
 | `pnpm --filter api run storage:audit-data-urls` | Bajo | Lee BD — detecta `data:image/` (read-only) |
 | `pnpm --filter api run storage:migrate-data-urls` | Alto | Dry-run default; `--confirm` escribe GCS + BD |
 | `pnpm --filter api run storage:audit-orphans` | Bajo | Lista GCS `public/` + lee BD (read-only) |
@@ -47,13 +47,13 @@
 |--------|--------|----------|--------|
 | `backup-postgres-to-gcs.sh` | Medio | Lectura PG + escritura GCS | `--help`, `--dry-run`, `--env-file`; runbook [`GCS_BACKUPS_RUNBOOK.md`](../deploy/GCS_BACKUPS_RUNBOOK.md) |
 
-**API upload (npm):** `pnpm --filter api run smoke:storage-upload` — ver [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §13.
+**API upload (npm):** `pnpm --filter api run smoke:storage-upload` — ver [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §13. **Storage V2 cerrado funcional prod 2026-05-31** (§22, DONWEB §24.9).
 
-**Data-URL ops:** `storage:audit-data-urls` (read-only), `storage:migrate-data-urls` (dry-run / `--confirm`) — §21.
+**Data-URL ops (no bloqueante):** `storage:audit-data-urls` (read-only), `storage:migrate-data-urls` (dry-run / `--confirm`) — §21.
 
-**Orphan ops:** `storage:audit-orphans` (read-only), `storage:cleanup-orphans` (dry-run / `--confirm`) — §22. **No** `--confirm` en producción desde CI.
+**Orphan ops (no bloqueante):** `storage:audit-orphans` (read-only), `storage:cleanup-orphans` (dry-run / `--confirm`) — §22. **No** `--confirm` en producción desde CI.
 
-**Smoke storage:** `smoke:storage-upload`, `smoke:storage-upload-auth` (prod: `SMOKE_NON_ADMIN_EMAIL` + `SMOKE_NON_ADMIN_PASSWORD`), `smoke:storage-global` — §22.
+**Smoke storage:** `smoke:storage-upload` + `smoke:storage-upload-auth` **PASS prod**; `smoke:storage-global` opcional con fixtures — §22.
 
 ---
 

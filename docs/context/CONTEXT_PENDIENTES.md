@@ -84,7 +84,7 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 > **Runbook:** [`docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTION_RUNBOOK.md) — §24 ejecución real, §25 seguridad post-deploy  
 > **Checklist V2:** `docs/dev/Yo_Te_Invito_Checklist_V2_Produccion.md` § Producción técnica
 
-**Estado actual:** VPS DonWeb productivo con systemd + Nginx + HTTPS. Web/API/Scanner en **`yoteinvito.club`**. Hardening base cerrado. **Backups GCS cerrados** (2026-05-31, lifecycle 30d). **Storage V2 cerrado en código** (upload + ops tooling) — [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §22. Pendiente ops prod: migración data-URL masiva, cleanup huérfanos manual, CDN. Pendiente VPS: monitoreo, rate limiting fino, legales reales, bind `127.0.0.1`, postfix/snmpd.
+**Estado actual:** VPS DonWeb productivo con systemd + Nginx + HTTPS. Web/API/Scanner en **`yoteinvito.club`**. Hardening base cerrado. **Backups GCS cerrados** (2026-05-31). **Storage V2 cerrado funcional en producción** (2026-05-31) — [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §22 · [`DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTION_RUNBOOK.md) §24.9. Pendiente VPS: monitoreo, rate limiting fino, legales reales, bind `127.0.0.1`, postfix/snmpd, Maps, GSC/SEO.
 
 | Ítem | Estado |
 |------|--------|
@@ -99,6 +99,7 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 | SSH hardening | [x] `ssh yoteinvito` → `deploy@…:5230`, clave, sin root/password |
 | UFW base | [x] Solo `5230`, `80`, `443`; regla `200.58.112.191` eliminada |
 | Backups automáticos | [x] GCS cerrado 2026-05-31 — timer 03:30, restore drill, lifecycle 30d — [`GCS_BACKUPS_RUNBOOK.md`](../deploy/GCS_BACKUPS_RUNBOOK.md) |
+| Storage V2 GCS (upload + formularios + smokes) | [x] Cerrado funcional prod 2026-05-31 — §24.9 DONWEB |
 | Logs / monitoreo | [ ] |
 | Rate limiting / hardening fino | [ ] Nginx/Nest; bind apps a `127.0.0.1`; revisar postfix `:25`, snmpd `:161` |
 
@@ -118,9 +119,8 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 - [x] **Backups automáticos** — PostgreSQL → GCS; VPS 2026-05-31; lifecycle `backups/postgres/` 30 días.
 - [x] **Admin Rentals upload GCS** — cover + galería productos.
 - [x] **Admin Eventos + Excursiones upload GCS** — publicaciones-generales (event/excursion) + operador excursiones.
-- [x] **Storage V2 código** — portales productora/gastro/hotel + audit/migrate data-URL + orphan tooling + `smoke:storage-global` (§22).
-- [ ] **Migración data-URL legacy en BD producción** — `storage:migrate-data-urls --confirm` post-backup manual (§21).
-- [ ] **Cleanup huérfanos producción** — `storage:audit-orphans` → dry-run → `--confirm` manual post-revisión (§22).
+- [x] **Storage V2 producción** — deploy slices 6–11, upload UI, `smoke:storage-upload` + `smoke:storage-upload-auth` PASS (2026-05-31).
+- [ ] **Storage V2 ops legacy (no bloqueante):** auditoría data-URL read-only; migración por lotes post-backup; auditoría/cleanup huérfanos manual; CDN; signed URLs `private/*`; smokes cross-owner con fixtures.
 - [ ] Rate limiting Nginx; rate limiting Nest (slice código)
 - [ ] Monitoreo / alertas (disco, servicios, certificado TLS)
 - [ ] `certbot renew --dry-run` documentado
@@ -129,9 +129,9 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 - [ ] Revisión `postfix` (puerto 25) y `snmpd` (puerto 161)
 - [ ] **Legales:** reemplazar bootstrap temporal por contenido aprobado en `/admin/legales`
 - [ ] Smoke completo desde dominio real (home, login, admin, checkout demo, scanner QR, emails si Resend)
-- [ ] Migración data-URL masiva prod + CDN/signed URLs (Storage V2 ops); Getnet/pagos reales fuera de este cierre
+- [ ] Getnet/pagos reales fuera de este cierre
 
-### Google Cloud — Etapa A manual (cerrada) / Etapa B código (pendiente)
+### Google Cloud — Etapa A manual (cerrada) / Etapa B (Storage cerrado; Maps/SEO pendiente)
 
 > **Runbook:** [`docs/deploy/GOOGLE_CLOUD_RUNBOOK.md`](../deploy/GOOGLE_CLOUD_RUNBOOK.md)  
 > **Checklist V2:** `docs/dev/Yo_Te_Invito_Checklist_V2_Produccion.md` § Google Cloud · GSC · SEO
@@ -163,23 +163,21 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 - [x] Ejecutar restore drill (2026-05-31)
 - [x] Definir lifecycle/retención automática en bucket (`backups/postgres/` → 30 días)
 
-#### Storage uploads (Storage V2 — cerrado en código, Jun 2026)
+#### Storage uploads — **cerrado funcional producción (2026-05-31)**
 
 - [x] Estrategia buckets público/privado — [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md)
-- [x] Bucket `yti-prod-public-assets` + CORS en GCP
-- [x] API upload V1 `POST /uploads/public-image`
-- [x] Upload auth portal + ownership (Storage 7) (ADMIN)
-- [x] Admin Rentals — formularios producto → GCS (`entityId` = `rentalLocationId`)
-- [x] Admin Eventos + Excursiones → GCS (Storage 6)
-- [x] Portal productora → GCS (Storage 8)
-- [x] Portales gastro + hotel → GCS (Storage 9)
-- [x] Data-URL audit + migrate tooling (Storage 10)
-- [x] Orphan audit + cleanup tooling (Storage 11, dry-run default)
-- [x] Smoke global `smoke:storage-global` (Storage 11)
-- [ ] Ejecutar migración data-URL legacy en BD producción (post-audit)
-- [ ] Ejecutar cleanup huérfanos en producción (manual post-audit)
-- [x] `next/image` remotePatterns GCS (`yti-prod-public-assets` only)
-- [ ] CDN `cdn.yoteinvito.club` (opcional fase 2)
+- [x] Bucket `yti-prod-public-assets` + CORS en GCP + env `GCS_*` en VPS
+- [x] API upload + ownership + formularios Admin/productora/gastro/hotel
+- [x] Tooling ops (audit/migrate data-URL, orphan audit/cleanup, smokes)
+- [x] Deploy VPS + upload UI + `smoke:storage-upload` + `smoke:storage-upload-auth` PASS
+
+**Ops legacy (no bloqueante):**
+
+- [ ] Auditoría read-only data-URL (`storage:audit-data-urls`)
+- [ ] Migración data-URL por lotes (`storage:migrate-data-urls --confirm`, post-backup)
+- [ ] Auditoría huérfanos + cleanup manual post-revisión
+- [ ] CDN `cdn.yoteinvito.club`; signed URLs `private/*`
+- [ ] `smoke:storage-global` / cross-owner con fixtures reales
 
 #### Otros Etapa B
 
@@ -212,7 +210,7 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 
 ## D. Gastro
 
-**Gastro y Hoteles V2 (2026-05-22):** bloque V2 operativo cerrado (QR, scanner, contenido, ficha, dashboard, reviews/follows). Pendientes: storage, `smoke:gastro-discounts` npm, E2E gastro dedicado.
+**Gastro y Hoteles V2 (2026-05-22):** bloque V2 operativo cerrado (QR, scanner, contenido, ficha, dashboard, reviews/follows). **Storage imágenes GCS — cerrado prod 2026-05-31.** Pendientes: `smoke:gastro-discounts` npm, E2E gastro dedicado.
 
 - [x] Payload QR descuentos v1 (`yti:gastro-discount:v1:discountId:token`) — emisión en claim/aprobación; ver `docs/gastro/GASTRO_DISCOUNT_QR.md`
 - [x] Scanner PWA: `POST /scanner/gastro-discounts/validate`, payload v1, `GastroDiscountValidation.claimId` (Slice 5)
@@ -220,7 +218,7 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 - [x] Ficha pública gastro pulida (`/restaurants/[id]`, `GastroPublicDetailContent`; sin ticketera; redirect `/events/:id` gastro → restaurants)
 - [x] Dashboard gastro V2 (`GET /gastro/dashboard`, KPIs reales, alertas, `/gastro/validaciones` con filtros y paginación)
 - [x] Gastro + Reviews V2 + follows + alerta `FOLLOWED_GASTRO_NEW_DISCOUNT` (Slice 7 — `docs/gastro/GASTRO_FOLLOWS_NOTIFICATIONS.md`)
-- [ ] Migración data-URL masiva prod + cleanup huérfanos manual — [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §21–22; código Storage V2 [x]
+- [ ] Storage V2 ops legacy (data-URL, huérfanos, CDN) — no bloqueante; funcional [x] prod 2026-05-31
 - [x] Portal `/gastro/valoraciones` — listado + réplica (`POST /gastro/reviews/:id/reply`)
 
 ---
@@ -246,7 +244,7 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 - [ ] Google Maps autocomplete (opcional; hoy OSM embed)
 - [x] Auditoría con filtros útiles en UI (`/admin/auditoria`, `GET /admin/audit-logs` extendido)
 
-**Bloque Admin Operativo (Slices 1–5, 2026-05):** cerrado — dashboard + cola pendientes, eventos/usuarios/auditoría con filtros API, subcategorías admin, hoteles «Próximamente» en dashboard y categorías. Fuera de bloque: pagos reales, storage, portal productor completo.
+**Bloque Admin Operativo (Slices 1–5, 2026-05):** cerrado — dashboard + cola pendientes, eventos/usuarios/auditoría con filtros API, subcategorías admin, hoteles «Próximamente» en dashboard y categorías. Fuera de bloque: pagos reales, portal productor completo. **Storage GCS admin — cerrado prod 2026-05-31.**
 
 ---
 
