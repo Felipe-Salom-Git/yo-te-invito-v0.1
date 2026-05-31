@@ -289,31 +289,41 @@ _Footer público completo — bloque V2 cerrado. Smoke: `docs/audits/PUBLIC_FOOT
 - [x] Ejecutar migraciones Prisma en producción.
 - [x] Crear/restaurar usuario admin real.
 - [x] Ejecutar seed de subcategorías.
-- [ ] Configurar backups automáticos.
+- [x] Rotar secretos críticos (root VPS, DB `yti_app`, `JWT_SECRET`, `NEXTAUTH_SECRET`).
+- [x] SSH por clave y hardening (`deploy`, puerto `5230`, sin root/password).
+- [x] Confirmar entorno producción (`NODE_ENV=production`, `DEV_AUTH_ENABLED=false`, `.env` permisos `600`).
+- [x] UFW base (solo `5230`, `80`, `443`).
+- [ ] Configurar backups automáticos. **Progreso (Mayo 2026):** script `scripts/ops/backup-postgres-to-gcs.sh` y runbook [`GCS_BACKUPS_RUNBOOK.md`](../deploy/GCS_BACKUPS_RUNBOOK.md) preparados. **Pendiente en VPS:** credencial SA, `.pgpass`, timer/cron, primer backup manual, restore drill, retención.
 - [ ] Configurar logs/monitoreo.
-- [ ] Configurar rate limiting y hardening.
+- [ ] Configurar rate limiting y hardening fino (Nginx/Nest, bind `127.0.0.1`, postfix/snmpd).
 
 > **Nota (Infra 2B — Mayo 2026):** Ejecutada en VPS DonWeb con dominio **`yoteinvito.club`** (IP `179.43.124.145`, Ubuntu 24.04). Stack: systemd (`yti-api`, `yti-web`, `yti-scanner`), Nginx, Certbot, PostgreSQL y Redis locales, repo en `/opt/yoteinvito`. Migraciones con `npx prisma migrate deploy` (no `pnpm db:migrate`). Seeds: `seed:subcategories`, `seed:legal-documents` + publicación legal **bootstrap temporal** para desbloquear registro admin. Admin maestro operativo (`felipe.e.salom@gmail.com`). Provider **`DEMO`** activo; Getnet no habilitado.
 >
-> **Pendiente cierre operativo:** backups, hardening fino, rotación de secretos expuestos en sesión de deploy, monitoreo/rate limiting, smoke E2E desde dominio real, reemplazo de legales bootstrap por versiones aprobadas en `/admin/legales`. Detalle: [`docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTION_RUNBOOK.md) § Ejecución real.
+> **Hardening seguridad (Mayo 2026 — cerrado):** rotación secretos (root VPS, DB `yti_app`, `JWT_SECRET`, `NEXTAUTH_SECRET`); SSH clave en puerto `5230` (`ssh yoteinvito`, usuario `deploy`, sin root/password); `.env` permisos `600`; `DEV_AUTH_ENABLED=false`; UFW solo `5230`/`80`/`443`. Auditoría: [`docs/audits/PRODUCTION_SECURITY_HARDENING_AUDIT.md`](../audits/PRODUCTION_SECURITY_HARDENING_AUDIT.md).
+>
+> **Hotfix migración:** `20260531072000_restore_user_push_subscription` — tabla `UserPushSubscription` faltaba en prod; API fallaba hasta aplicar migración idempotente.
+>
+> **Pendiente:** instalación backups en VPS ([`GCS_BACKUPS_RUNBOOK.md`](../deploy/GCS_BACKUPS_RUNBOOK.md)), monitoreo/rate limiting, bind interno apps, smoke E2E dominio real, legales reales en `/admin/legales`. Runbooks: [`DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTION_RUNBOOK.md) §24–25 · [`GOOGLE_CLOUD_RUNBOOK.md`](../deploy/GOOGLE_CLOUD_RUNBOOK.md) · [`GCS_BACKUPS_RUNBOOK.md`](../deploy/GCS_BACKUPS_RUNBOOK.md).
 
 ## Google Cloud — Maps y Storage
 
-- [ ] Crear proyecto Google Cloud del cliente para Yo Te Invito.
-- [ ] Activar billing en Google Cloud.
-- [ ] Configurar presupuesto/alertas de gasto.
-- [ ] Agregar colaborador técnico con rol suficiente para configuración inicial.
-- [ ] Definir ambientes: producción y staging.
-- [ ] Habilitar Google Maps Platform.
-- [ ] Habilitar Maps JavaScript API.
-- [ ] Habilitar Places API / Places API New si se usa autocomplete.
-- [ ] Habilitar Geocoding API si se convierten direcciones en coordenadas.
-- [ ] Habilitar Maps Embed API solo si se usan mapas embebidos simples.
-- [ ] Crear API Key pública para frontend.
-- [ ] Restringir API Key pública por dominio/referrer.
-- [ ] Restringir API Key pública solo a las APIs necesarias.
-- [ ] Definir si habrá key separada para staging.
-- [ ] Documentar variables de entorno Google Maps.
+> **Etapa A (manual) — cerrada:** proyecto GCP, billing, GCS bucket privado, SA backend, Maps API Key restringida. Detalle: [`GOOGLE_CLOUD_RUNBOOK.md`](../deploy/GOOGLE_CLOUD_RUNBOOK.md). **Etapa B:** integración código/VPS.
+
+- [x] Crear proyecto Google Cloud del cliente para Yo Te Invito (`yoteinvito-1721413433327`).
+- [x] Activar billing en Google Cloud.
+- [ ] Configurar presupuesto/alertas de gasto (recomendado: 50%, 80%, 100%).
+- [x] Agregar colaborador técnico con rol suficiente para configuración inicial (`felipe.e.salom@gmail.com`).
+- [x] Definir ambientes: producción directa (bucket prod; **sin** bucket staging por decisión operativa).
+- [x] Habilitar Google Maps Platform.
+- [x] Habilitar Maps JavaScript API.
+- [x] Habilitar Places API / Places API New si se usa autocomplete.
+- [x] Habilitar Geocoding API si se convierten direcciones en coordenadas.
+- [ ] Habilitar Maps Embed API solo si se usan mapas embebidos simples. — **No habilitada** (no requerida; OSM/Google JS según código).
+- [x] Crear API Key pública para frontend (`YTI Web Maps PROD` — valor solo en secretos).
+- [x] Restringir API Key pública por dominio/referrer (`yoteinvito.club`, `www`).
+- [x] Restringir API Key pública solo a las APIs necesarias (Maps JS, Places New, Geocoding).
+- [ ] Definir si habrá key separada para staging (hoy no hay entorno staging GCP).
+- [x] Documentar variables de entorno Google Maps (`NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` — ver runbook §3.4).
 - [ ] Integrar autocomplete de direcciones donde corresponda.
 - [ ] Guardar dirección legible + lat/lng en eventos, gastro, rentals, hoteles y productoras cuando aplique.
 - [ ] Mostrar botón “Ver ubicación” o mapa en fichas públicas con coordenadas reales.
@@ -323,14 +333,15 @@ _Footer público completo — bloque V2 cerrado. Smoke: `docs/audits/PUBLIC_FOOT
 
 ### Google Cloud Storage
 
-- [ ] Confirmar Google Cloud Storage como proveedor de storage V2.
-- [ ] Crear bucket de producción.
-- [ ] Crear bucket de staging si corresponde.
-- [ ] Definir región del bucket.
+- [x] Confirmar Google Cloud Storage como proveedor de storage V2.
+- [x] Crear bucket de producción (`yti-prod-storage`, `gs://yti-prod-storage`, `southamerica-east1`).
+- [ ] Crear bucket de staging si corresponde. — **Decisión actual: omitido**; producción directa.
+- [x] Definir región del bucket (`southamerica-east1`).
 - [ ] Definir estructura de carpetas: eventos, productoras, gastro, rentals, hoteles, tickets, facturas, sistema.
-- [ ] Crear Service Account para backend.
-- [ ] Asignar permisos mínimos sobre buckets del proyecto.
-- [ ] Configurar credenciales seguras para backend.
+- [x] Crear Service Account para backend (`yti-backend-storage@…`).
+- [x] Asignar permisos sobre bucket (rol actual: **Storage Object Admin** — aceptable etapa inicial; ver nota hardening IAM en runbook).
+- [ ] Configurar credenciales seguras para backend. **Backups:** pendiente instalar JSON SA en VPS — ver [`GCS_BACKUPS_RUNBOOK.md`](../deploy/GCS_BACKUPS_RUNBOOK.md).
+- [ ] Restore drill backups PostgreSQL. **Script/runbook listos;** pendiente ejecución en VPS.
 - [ ] Definir estrategia de archivos públicos vs privados.
 - [ ] Definir URLs públicas para imágenes.
 - [ ] Definir URLs firmadas para archivos privados si aplica.
@@ -371,8 +382,10 @@ _Footer público completo — bloque V2 cerrado. Smoke: `docs/audits/PUBLIC_FOOT
 
 ## Google Search Console y SEO técnico
 
-- [ ] Crear propiedad de Google Search Console para el dominio definitivo.
-- [ ] Verificar dominio mediante DNS TXT.
+> Verificación GSC: pendiente confirmación en consola — registro TXT en DonWeb según instrucciones de propiedad tipo **Dominio**.
+
+- [ ] Crear propiedad de Google Search Console para el dominio definitivo (`yoteinvito.club`).
+- [ ] Verificar dominio mediante DNS TXT en DonWeb.
 - [ ] Enviar sitemap público.
 - [ ] Validar robots.txt.
 - [ ] Revisar indexación de home, explore, categorías y fichas públicas.

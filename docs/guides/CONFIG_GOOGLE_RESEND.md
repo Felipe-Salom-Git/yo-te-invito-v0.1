@@ -6,9 +6,11 @@ Guía paso a paso para configurar Google Sign-In y el envío de emails.
 
 ## Google Cloud Console (OAuth)
 
+> **Proyecto producción Yo Te Invito:** `yoteinvito-1721413433327` (nombre visible: Yoteinvito Maps). Maps, GCS y operación GCP: [`docs/deploy/GOOGLE_CLOUD_RUNBOOK.md`](../deploy/GOOGLE_CLOUD_RUNBOOK.md). OAuth puede usar el mismo proyecto o credenciales separadas según decisión.
+
 ### 1. Crear proyecto
 1. Ir a [Google Cloud Console](https://console.cloud.google.com/)
-2. Crear proyecto nuevo o seleccionar uno existente
+2. Seleccionar proyecto **`yoteinvito-1721413433327`** o crear uno nuevo si aplica solo a OAuth legacy
 
 ### 2. Configurar OAuth consent screen
 1. **APIs & Services** → **OAuth consent screen**

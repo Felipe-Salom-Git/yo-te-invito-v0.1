@@ -824,7 +824,9 @@ TEST_USER_EMAIL=felipe.e.salom@gmail.com TENANT_ID=tenant-demo pnpm --filter api
 
 ## 18. Backups automáticos
 
-### 18.1 Estrategia `pg_dump`
+> **Producción off-site (recomendado):** script `scripts/ops/backup-postgres-to-gcs.sh` + runbook [`GCS_BACKUPS_RUNBOOK.md`](./GCS_BACKUPS_RUNBOOK.md). La subsección §18.1 describe backup **local** histórico (`pg_dump -Fc` en disco) como referencia complementaria.
+
+### 18.1 Estrategia `pg_dump` (local en disco — referencia)
 
 Script diario (ej. `/usr/local/bin/yti-pg-backup.sh`):
 
@@ -1140,20 +1142,93 @@ pnpm build   # shared, api, web, scanner — OK
 | Migración `NotificationKind` | Enum idempotente antes de `ALTER TYPE` |
 | Registro bloqueado | Legal bootstrap temporal publicado |
 
-### 24.8 Pendientes post-deploy (no cerrar Infra 2B sin esto)
+### 24.8 Pendientes post-deploy (actualizado tras hardening Mayo 2026)
 
-| Prioridad | Pendiente |
-|-----------|-----------|
-| **Crítica** | Rotar password root VPS, password DB `yti_app`, `JWT_SECRET`, `NEXTAUTH_SECRET` (expuestos en sesión) |
-| **Crítica** | SSH por clave; deshabilitar root password login |
-| Alta | Backups `pg_dump` + restore probado |
-| Alta | Legales reales en admin (sustituir bootstrap) |
-| Alta | Smoke E2E dominio real (checkout **DEMO**, scanner QR) |
-| Media | Rate limiting Nginx + Nest; monitoreo/alertas |
-| Media | `certbot renew --dry-run`; health DB/Redis |
-| Baja | Resend producción; VAPID push; GCS imágenes; Getnet |
+| Prioridad | Pendiente | Estado |
+|-----------|-----------|--------|
+| ~~Crítica~~ | Rotar password root VPS, DB `yti_app`, `JWT_SECRET`, `NEXTAUTH_SECRET` | **Cerrado** §25.2 |
+| ~~Crítica~~ | SSH por clave; deshabilitar root/password | **Cerrado** §25.1 |
+| ~~Alta~~ | `.env` 600, `DEV_AUTH_ENABLED=false`, UFW base | **Cerrado** §25.3 |
+| Alta | Backups → **Google Cloud Storage** (ver §25.4) | Pendiente |
+| Alta | Legales reales en admin (sustituir bootstrap) | Pendiente |
+| Alta | Smoke E2E dominio real (checkout **DEMO**, scanner QR) | Pendiente |
+| Media | Rate limiting Nginx + Nest; monitoreo/alertas | Pendiente |
+| Media | Bind apps `3000`/`3001`/`3002` a `127.0.0.1`; revisar postfix `:25`, snmpd `:161` | Pendiente |
+| Media | `certbot renew --dry-run`; health DB/Redis | Pendiente |
+| Baja | Resend producción; VAPID push; GCS imágenes; Getnet | Pendiente |
 
 **Pagos:** provider **`DEMO`** mantenido; Getnet no activado.
+
+---
+
+## 25. Seguridad post-deploy — cerrado (Mayo 2026)
+
+Registro del cierre operativo de hardening en VPS DonWeb. Sin passwords ni tokens. Detalle: [`PRODUCTION_SECURITY_HARDENING_AUDIT.md`](../audits/PRODUCTION_SECURITY_HARDENING_AUDIT.md).
+
+### 25.1 SSH hardening — cerrado
+
+- Acceso operativo: `ssh yoteinvito` (alias/config local del operador).
+- Usuario: `deploy`.
+- Puerto: `5230`.
+- Autenticación solo por clave (`PubkeyAuthentication yes`).
+- Login root por SSH deshabilitado (`PermitRootLogin no`).
+- Login por password deshabilitado (`PasswordAuthentication no`, `KbdInteractiveAuthentication no`).
+- `ssh.socket` deshabilitado; `ssh.service` habilitado y activo.
+- SSH escucha solo en `5230` (IPv4/IPv6); puerto `22` ya no escucha.
+
+### 25.2 Rotación de secretos — cerrado
+
+- Password root VPS rotada.
+- Password DB `yti_app` rotada.
+- `JWT_SECRET` rotado.
+- `NEXTAUTH_SECRET` rotado.
+- Validado: `GET /health`, web/scanner `200`, login admin OK.
+- Sesiones emitidas antes de la rotación pueden requerir re-login.
+
+### 25.3 Env / UFW hardening — cerrado
+
+| Archivo | Owner | Permisos |
+|---------|-------|------------|
+| `/opt/yoteinvito/apps/api/.env` | `deploy:deploy` | `600` |
+| `/opt/yoteinvito/apps/web/.env.production` | `deploy:deploy` | `600` |
+| `/opt/yoteinvito/apps/scanner/.env.production` | `deploy:deploy` | `600` |
+
+- API: `NODE_ENV=production`, `DEV_AUTH_ENABLED=false` (explícito).
+- UFW activo: `deny incoming`, `allow outgoing`; permite `5230/tcp`, `80/tcp`, `443/tcp` (+ IPv6).
+- Regla global `ufw allow from 200.58.112.191` eliminada (DonWeb confirmó que no era su IP).
+- Puertos internos no expuestos por UFW: `3000`, `3001`, `3002`, `5432`, `6379`.
+
+**Observaciones (slice posterior):** `yti-api` / `yti-web` / `yti-scanner` siguen escuchando en `*:3001` / `*:3000` / `*:3002`; ideal bind `127.0.0.1`. Revisar `postfix` (`25`) y `snmpd` (`161`).
+
+### 25.4 Backups PostgreSQL → GCS (Etapa B — script en repo)
+
+**Infra GCS (Etapa A manual):** bucket `yti-prod-storage`, SA `yti-backend-storage` — ver [`GOOGLE_CLOUD_RUNBOOK.md`](./GOOGLE_CLOUD_RUNBOOK.md).
+
+**En repo (Mayo 2026):**
+
+| Artefacto | Ubicación |
+|-----------|-----------|
+| Script | `scripts/ops/backup-postgres-to-gcs.sh` (`--help`, `--dry-run`) |
+| Runbook operativo | [`GCS_BACKUPS_RUNBOOK.md`](./GCS_BACKUPS_RUNBOOK.md) |
+
+**Pendiente en VPS (operador):**
+
+- instalar JSON SA en `/opt/yoteinvito/secrets/` (`chmod 600`, sin commitear),
+- `.pgpass` para `yti_app` + `/opt/yoteinvito/.ops/backup-gcs.env`,
+- primer backup manual y verificación en `gs://yti-prod-storage/backups/postgres/YYYY/MM/`,
+- timer systemd (`yti-postgres-backup.timer`, 03:30) o cron,
+- restore drill sobre DB temporal `yo_te_invito_restore_test`,
+- política de retención / lifecycle en bucket.
+
+> La sección §18 describe estrategia histórica local (`pg_dump -Fc` en disco). Para producción off-site usar el script GCS anterior.
+
+### 25.5 Hotfix migración `UserPushSubscription`
+
+Durante rotación de secretos se detectó drift: modelo en `schema.prisma`, API esperaba tabla, prod sin tabla y sin migración previa.
+
+- Migración repo: `apps/api/prisma/migrations/20260531072000_restore_user_push_subscription/migration.sql`
+- Idempotente (`CREATE TABLE IF NOT EXISTS`, FKs con manejo `duplicate_object`).
+- Producción: aplicada con `npx prisma migrate deploy`; `GET /health` OK.
 
 ---
 
@@ -1162,6 +1237,9 @@ pnpm build   # shared, api, web, scanner — OK
 | Documento | Uso |
 |-----------|-----|
 | [`PREPRODUCTION_DEPLOY_AUDIT.md`](../audits/PREPRODUCTION_DEPLOY_AUDIT.md) | Variables, riesgos, arquitectura |
+| [`PRODUCTION_SECURITY_HARDENING_AUDIT.md`](../audits/PRODUCTION_SECURITY_HARDENING_AUDIT.md) | SSH, secretos, UFW, hotfix `UserPushSubscription` |
+| [`GOOGLE_CLOUD_RUNBOOK.md`](./GOOGLE_CLOUD_RUNBOOK.md) | Proyecto GCP, GCS, Maps key, GSC, slices Etapa B |
+| [`GCS_BACKUPS_RUNBOOK.md`](./GCS_BACKUPS_RUNBOOK.md) | Backups PostgreSQL → GCS (instalación VPS, timer, restore drill) |
 | [`DEVELOPER_SCRIPTS_GUIDE.md`](../guides/DEVELOPER_SCRIPTS_GUIDE.md) | Comandos npm detallados |
 | [`SMOKE_TESTS_GUIDE.md`](../guides/SMOKE_TESTS_GUIDE.md) | Variables `SMOKE_*` |
 | [`SCRIPTS.md`](../dev/SCRIPTS.md) | Tabla riesgo scripts |
@@ -1170,4 +1248,4 @@ pnpm build   # shared, api, web, scanner — OK
 
 ---
 
-**Siguiente bloque recomendado:** **Infra 2C — Cierre operativo** (rotación secretos, backups, hardening, legales reales, smoke producción).
+**Siguiente bloque recomendado:** instalar backups GCS en VPS ([`GCS_BACKUPS_RUNBOOK.md`](./GCS_BACKUPS_RUNBOOK.md)); luego upload storage real, Maps en web, SEO/GSC ([`GOOGLE_CLOUD_RUNBOOK.md`](./GOOGLE_CLOUD_RUNBOOK.md) §6). Después: hardening fino VPS, rate limiting, monitoreo, legales reales.

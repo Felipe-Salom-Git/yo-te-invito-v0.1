@@ -6,7 +6,7 @@
 
 **Regla:** pago demo sí · datos demo automáticos no · usuario maestro `felipe.e.salom@gmail.com`
 
-**Producción:** usar `cd apps/api && npx prisma migrate deploy` — **no** `pnpm db:migrate`. Deploy VPS: [`docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTION_RUNBOOK.md).
+**Producción:** usar `cd apps/api && npx prisma migrate deploy` — **no** `pnpm db:migrate`, **no** `pnpm db:reset-dangerous`, **no** `pnpm db:cleanup-content` (salvo emergencia documentada). Hotfixes de schema deben quedar versionados en `apps/api/prisma/migrations/` (ej. `20260531072000_restore_user_push_subscription`). Deploy VPS: [`docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTION_RUNBOOK.md) §25.
 
 ---
 
@@ -31,6 +31,16 @@
 | `pnpm e2e:portal` / `e2e:notifications` | Bajo* | E2E UI |
 
 \* Requiere `E2E_USER_EMAIL` + `E2E_USER_PASSWORD`.
+
+---
+
+## Scripts ops VPS (`scripts/ops/` — no npm)
+
+| Script | Riesgo | DB / GCS | Notas |
+|--------|--------|----------|--------|
+| `backup-postgres-to-gcs.sh` | Medio | Lectura PG + escritura GCS | `--help`, `--dry-run`, `--env-file`; runbook [`GCS_BACKUPS_RUNBOOK.md`](../deploy/GCS_BACKUPS_RUNBOOK.md) |
+
+Producción VPS: [`DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTION_RUNBOOK.md) §25.4.
 
 ---
 

@@ -71,20 +71,20 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 
 ## A. Infraestructura y backend
 
-- [x] Ejecutar migraciones Prisma en producción VPS (`npx prisma migrate deploy` + `prisma generate`) — Mayo 2026, DB vacía → 69 migraciones OK
+- [x] Ejecutar migraciones Prisma en producción VPS (`npx prisma migrate deploy` + `prisma generate`) — Mayo 2026; incluye hotfix `20260531072000_restore_user_push_subscription`
 - [ ] Ejecutar migraciones Prisma en cada entorno futuro tras cambios de schema (mismo flujo: `migrate deploy`, no `pnpm db:migrate`)
 - [ ] Confirmar cliente Prisma alineado con DB (hotel, inbox, **RentalLocation**, opening hours JSON, etc.)
 - [ ] Rate limiting y hardening en producción (Nginx + Nest — pendiente post-deploy)
 - [x] Variables Web Push documentadas (`USER_PORTAL.md`, `AI_ENTRYPOINT.md`, `BACKEND_CONTEXT.md`)
-- [ ] Variables de entorno documentadas por app en plantilla centralizada (prod ya configuradas en servidor; rotar secretos pendiente)
+- [ ] Variables de entorno documentadas por app en plantilla centralizada (prod configuradas en servidor; valores no versionados)
 
-### Producción técnica — VPS DonWeb (Infra 2B ejecutada, Mayo 2026)
+### Producción técnica — VPS DonWeb (Infra 2B + hardening seguridad, Mayo 2026)
 
-> **Auditoría:** [`docs/audits/PREPRODUCTION_DEPLOY_AUDIT.md`](../audits/PREPRODUCTION_DEPLOY_AUDIT.md)  
-> **Runbook:** [`docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTION_RUNBOOK.md) — incluye § Ejecución real  
+> **Auditorías:** [`PREPRODUCTION_DEPLOY_AUDIT.md`](../audits/PREPRODUCTION_DEPLOY_AUDIT.md) · [`PRODUCTION_SECURITY_HARDENING_AUDIT.md`](../audits/PRODUCTION_SECURITY_HARDENING_AUDIT.md)  
+> **Runbook:** [`docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTION_RUNBOOK.md) — §24 ejecución real, §25 seguridad post-deploy  
 > **Checklist V2:** `docs/dev/Yo_Te_Invito_Checklist_V2_Produccion.md` § Producción técnica
 
-**Estado actual:** VPS DonWeb productivo base levantado con systemd + Nginx + HTTPS. Web/API/Scanner activos en **`yoteinvito.club`**. DB `yo_te_invito` migrada; seeds iniciales aplicados; admin maestro operativo. Pendiente cierre operativo de seguridad, backups, monitoreo y legales reales.
+**Estado actual:** VPS DonWeb productivo con systemd + Nginx + HTTPS. Web/API/Scanner en **`yoteinvito.club`**. Hardening base cerrado. **GCP Etapa A:** proyecto, bucket GCS privado y Maps key listos en consola — ver § Google Cloud. **Próximo bloque (Etapa B):** integración backups/upload en GCS + Maps en web. Pendiente VPS: monitoreo, rate limiting fino, legales reales, bind `127.0.0.1`, postfix/snmpd.
 
 | Ítem | Estado |
 |------|--------|
@@ -92,27 +92,81 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 | Configurar dominio | [x] `yoteinvito.club` + `www` / `api` / `scanner` (DNS DonWeb; correo MX/SPF/DKIM/DMARC preservados) |
 | PostgreSQL producción | [x] Local VPS — DB `yo_te_invito`, usuario `yti_app`, tenant `tenant-demo` |
 | Redis producción | [x] Local VPS |
-| Variables de entorno | [x] API / web / scanner en servidor (**rotar secretos** — ver pendientes) |
-| Migraciones Prisma | [x] `npx prisma migrate deploy` (no `pnpm db:migrate`) |
+| Variables de entorno | [x] API / web / scanner — permisos `600`, owner `deploy:deploy`; secretos rotados (Mayo 2026) |
+| Migraciones Prisma | [x] `npx prisma migrate deploy` (no `pnpm db:migrate`); hotfix `20260531072000_restore_user_push_subscription` |
 | Usuario admin real | [x] `felipe.e.salom@gmail.com` + `user:restore-master` |
 | Seed subcategorías | [x] `seed:subcategories` + `seed:legal-documents` |
-| Backups automáticos | [ ] |
+| SSH hardening | [x] `ssh yoteinvito` → `deploy@…:5230`, clave, sin root/password |
+| UFW base | [x] Solo `5230`, `80`, `443`; regla `200.58.112.191` eliminada |
+| Backups automáticos | [ ] Script + runbook en repo; pendiente VPS: credencial SA, timer, restore drill — [`GCS_BACKUPS_RUNBOOK.md`](../deploy/GCS_BACKUPS_RUNBOOK.md) |
 | Logs / monitoreo | [ ] |
-| Rate limiting / hardening | [ ] |
+| Rate limiting / hardening fino | [ ] Nginx/Nest; bind apps a `127.0.0.1`; revisar postfix `:25`, snmpd `:161` |
 
 #### Pendientes críticos post-deploy (producción)
 
-- [ ] **Rotar secretos** expuestos en sesión de deploy: password root VPS, password DB `yti_app`, `JWT_SECRET`, `NEXTAUTH_SECRET`
-- [ ] SSH por clave; deshabilitar login root por password tras validar usuario deploy
-- [ ] Confirmar `DEV_AUTH_ENABLED=false` y permisos `600` en `.env`
-- [ ] Backups `pg_dump` + retención + prueba de restore
+**Cerrado (hardening Mayo 2026):**
+
+- [x] **Rotar secretos:** password root VPS, password DB `yti_app`, `JWT_SECRET`, `NEXTAUTH_SECRET` (sesiones viejas pueden requerir re-login)
+- [x] SSH por clave; root SSH y login por password deshabilitados (`ssh yoteinvito`, puerto `5230`, usuario `deploy`)
+- [x] `DEV_AUTH_ENABLED=false`, `NODE_ENV=production` en API; permisos `600` en `.env`
+- [x] UFW: solo `5230` / `80` / `443`
+
+**Hotfix migración (Mayo 2026):** tabla `UserPushSubscription` faltaba en prod pese a modelo en `schema.prisma` — migración `20260531072000_restore_user_push_subscription` (idempotente). Ver auditoría de hardening.
+
+**Pendiente:**
+
+- [ ] **Backups automáticos** — script [`scripts/ops/backup-postgres-to-gcs.sh`](../../scripts/ops/backup-postgres-to-gcs.sh) + [`GCS_BACKUPS_RUNBOOK.md`](../deploy/GCS_BACKUPS_RUNBOOK.md) en repo; pendiente VPS: credencial SA, `.pgpass`, timer, primer backup, restore drill, retención
 - [ ] Rate limiting Nginx; rate limiting Nest (slice código)
 - [ ] Monitoreo / alertas (disco, servicios, certificado TLS)
 - [ ] `certbot renew --dry-run` documentado
 - [ ] Health check extendido (DB/Redis), no solo `GET /health`
+- [ ] Bind `yti-api` / `yti-web` / `yti-scanner` a `127.0.0.1` (hoy escuchan en `*`, UFW bloquea externo)
+- [ ] Revisión `postfix` (puerto 25) y `snmpd` (puerto 161)
 - [ ] **Legales:** reemplazar bootstrap temporal por contenido aprobado en `/admin/legales`
 - [ ] Smoke completo desde dominio real (home, login, admin, checkout demo, scanner QR, emails si Resend)
 - [ ] Storage imágenes (salir de data-URL); Getnet/pagos reales fuera de este cierre
+
+### Google Cloud — Etapa A manual (cerrada) / Etapa B código (pendiente)
+
+> **Runbook:** [`docs/deploy/GOOGLE_CLOUD_RUNBOOK.md`](../deploy/GOOGLE_CLOUD_RUNBOOK.md)  
+> **Checklist V2:** `docs/dev/Yo_Te_Invito_Checklist_V2_Produccion.md` § Google Cloud · GSC · SEO
+
+**Etapa A — hecho en consola GCP (sin integración en app aún):**
+
+| Ítem | Estado |
+|------|--------|
+| Proyecto GCP `yoteinvito-1721413433327` | [x] Billing activo; colaborador `felipe.e.salom@gmail.com` |
+| Presupuesto / alertas gasto | [ ] Recomendar 50% / 80% / 100% |
+| GCS bucket prod `yti-prod-storage` | [x] Privado, `southamerica-east1`, uniform access, soft delete 7d |
+| Service Account `yti-backend-storage` | [x] Rol Storage Object Admin sobre bucket |
+| Bucket staging | Omitido por decisión — prod directa |
+| Maps API Key `YTI Web Maps PROD` | [x] Referrers `yoteinvito.club` / `www`; APIs: Maps JS, Places New, Geocoding |
+| Variables Maps documentadas | [x] `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` (valor solo en VPS/secretos) |
+| Search Console dominio | [ ] Propiedad + verificación DNS TXT pendiente confirmar |
+
+**Etapa B — pendientes principales:**
+
+#### Backups PostgreSQL → GCS
+
+- [x] Bucket GCS productivo creado (`yti-prod-storage`)
+- [x] Service Account creada (`yti-backend-storage`)
+- [x] Script repo + runbook ([`GCS_BACKUPS_RUNBOOK.md`](../deploy/GCS_BACKUPS_RUNBOOK.md))
+- [ ] Instalar credencial GCP en VPS
+- [ ] Configurar `.pgpass` + `backup-gcs.env` en VPS
+- [ ] Configurar timer/cron
+- [ ] Ejecutar primer backup manual
+- [ ] Ejecutar restore drill
+- [ ] Definir lifecycle/retención
+
+#### Otros Etapa B
+
+- [ ] Budget alerts en GCP
+- [ ] Credenciales SA en VPS/API (`GOOGLE_APPLICATION_CREDENTIALS`) — sin JSON en repo
+- [ ] CORS + estructura carpetas GCS
+- [ ] Upload real backend + reemplazo data-URL + `next/image` remoto
+- [ ] Estrategia imágenes públicas (firmadas / CDN / bucket separado)
+- [ ] Maps: key en `.env.production` web, autocomplete, lat/lng, fichas públicas, smoke
+- [ ] SEO: sitemap, robots, metadata, JSON-LD, no-index privados, GSC sitemap/cobertura
 
 ---
 

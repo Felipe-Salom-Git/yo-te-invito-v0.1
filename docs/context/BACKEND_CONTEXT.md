@@ -273,8 +273,14 @@ Opcional cron: `NOTIFICATIONS_CRON_ENABLED=false`, `NOTIFICATION_REMINDER_HOURS`
 | BD | PostgreSQL local `yo_te_invito` |
 | Redis | Local (cola email) |
 | Deploy | systemd `yti-api` → `:3001` |
+| Auth prod | `DEV_AUTH_ENABLED=false` (sin `X-Dev-User-Id` en prod) |
+| Secretos | Rotados Mayo 2026 (root VPS, DB `yti_app`, `JWT_SECRET`, `NEXTAUTH_SECRET`) — no versionar valores |
+| `.env` API | `/opt/yoteinvito/apps/api/.env` — owner `deploy:deploy`, permisos `600` |
+| Migraciones prod | `npx prisma migrate deploy` — incluye hotfix `20260531072000_restore_user_push_subscription` (`UserPushSubscription`) |
 
-Detalle operativo: [`docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTION_RUNBOOK.md).
+Detalle operativo: [`docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTION_RUNBOOK.md) §25. Auditoría: [`docs/audits/PRODUCTION_SECURITY_HARDENING_AUDIT.md`](../audits/PRODUCTION_SECURITY_HARDENING_AUDIT.md).
+
+**Google Cloud Storage (Etapa A — consola; backups script en repo):** bucket `yti-prod-storage` (`southamerica-east1`), privado; SA `yti-backend-storage` con acceso al bucket. Backups: `scripts/ops/backup-postgres-to-gcs.sh` + [`GCS_BACKUPS_RUNBOOK.md`](../deploy/GCS_BACKUPS_RUNBOOK.md) — pendiente instalación VPS. Variables futuras API: `GCS_BUCKET`, `GCS_PROJECT_ID`, `GOOGLE_APPLICATION_CREDENTIALS` (ruta JSON en VPS, no en repo). Runbook: [`docs/deploy/GOOGLE_CLOUD_RUNBOOK.md`](../deploy/GOOGLE_CLOUD_RUNBOOK.md).
 
 ---
 

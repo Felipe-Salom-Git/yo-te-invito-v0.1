@@ -27,7 +27,11 @@ Yo Te Invito es un monorepo **Nx + pnpm** con tres aplicaciones desplegables (**
 
 **Recomendación de dominios:** subdominios separados — ver §7. **Aplicado en prod:** `yoteinvito.club`, `api.yoteinvito.club`, `scanner.yoteinvito.club`.
 
-**Siguiente bloque:** **Infra 2C — Cierre operativo** (secretos, backups, hardening, legales reales, smoke) — ver runbook §24.8.
+**Hardening base:** cerrado Mayo 2026 — [`PRODUCTION_SECURITY_HARDENING_AUDIT.md`](./PRODUCTION_SECURITY_HARDENING_AUDIT.md), runbook §25.
+
+**Google Cloud Etapa A:** proyecto + bucket `yti-prod-storage` + SA + Maps key — [`GOOGLE_CLOUD_RUNBOOK.md`](../deploy/GOOGLE_CLOUD_RUNBOOK.md).
+
+**Siguiente bloque:** **Etapa B** — backups `pg_dump` → GCS, upload real, Maps web, SEO/GSC. Luego: hardening fino VPS, legales, smoke.
 
 ---
 

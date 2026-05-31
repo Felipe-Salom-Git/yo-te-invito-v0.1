@@ -322,6 +322,8 @@ Módulo técnico **cerrado**; contenido base en `docs/legal/` importable como bo
 
 Runbook: [`docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTION_RUNBOOK.md). Pendiente: smoke dominio real, legales bootstrap → contenido aprobado.
 
+**Google Maps (Etapa A GCP):** key de consola `YTI Web Maps PROD` (valor **no** en repo) → `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` en `.env.production` del VPS. Código: `useGoogleMaps.ts`, fallback OSM. Integración prod pendiente Etapa B — [`GOOGLE_CLOUD_RUNBOOK.md`](../deploy/GOOGLE_CLOUD_RUNBOOK.md).
+
 - **Persistencia:** solo API — no `lib/local-db`, no `/dev/seed`, no `/dev/local-db`.
 - **Subcategorías (estructura):** `pnpm --filter api run seed:subcategories`.
 - **Documentos legales (catálogo):** `pnpm --filter api run seed:legal-documents` (idempotente; sin auto-publish).

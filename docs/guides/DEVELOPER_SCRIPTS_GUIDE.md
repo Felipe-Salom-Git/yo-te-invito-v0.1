@@ -92,7 +92,7 @@ Aplica migraciones en desarrollo (`prisma migrate dev`).
 pnpm db:migrate
 ```
 
-**Precaución:** modifica el schema de la BD local.
+**Precaución:** modifica el schema de la BD local. **Solo desarrollo** — en producción VPS usar `cd apps/api && npx prisma migrate deploy` (ver [`DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTION_RUNBOOK.md) §25). No usar `db:reset-dangerous` ni `db:cleanup-content` en prod salvo emergencia documentada.
 
 ### `pnpm db:studio`
 
@@ -356,7 +356,36 @@ Motivo: proteger `felipe.e.salom@gmail.com` y evitar repoblación accidental de 
 
 ---
 
-## 10. Checklist antes de scripts peligrosos
+## 10. Scripts ops VPS (producción — no npm)
+
+Scripts shell en `scripts/ops/` para operaciones en el VPS DonWeb. **No** forman parte de `pnpm`; no ejecutar en Windows salvo prueba de sintaxis.
+
+### `scripts/ops/backup-postgres-to-gcs.sh`
+
+Backup PostgreSQL (`pg_dump` SQL plano + `gzip`) → Google Cloud Storage con checksum `sha256`.
+
+```bash
+# En VPS, como usuario deploy:
+/opt/yoteinvito/scripts/ops/backup-postgres-to-gcs.sh \
+  --env-file /opt/yoteinvito/.ops/backup-gcs.env \
+  --dry-run
+
+/opt/yoteinvito/scripts/ops/backup-postgres-to-gcs.sh \
+  --env-file /opt/yoteinvito/.ops/backup-gcs.env
+```
+
+| | |
+|--|--|
+| **Riesgo** | Medio en prod (lectura completa BD; escribe objetos GCS) |
+| **Toca DB** | Solo lectura (`pg_dump`) |
+| **Secretos** | `.pgpass` + JSON SA **fuera del repo** |
+| **Restore** | Solo vía restore drill documentado — **no** restaurar sobre `yo_te_invito` sin ventana |
+
+Runbook completo: [`docs/deploy/GCS_BACKUPS_RUNBOOK.md`](../deploy/GCS_BACKUPS_RUNBOOK.md).
+
+---
+
+## 11. Checklist antes de scripts peligrosos
 
 Antes de `db:cleanup-content --confirm`, `db:reset-dangerous`, `smoke:user-portal` o `test:door-scan`:
 
@@ -375,4 +404,5 @@ Antes de `db:cleanup-content --confirm`, `db:reset-dangerous`, `smoke:user-porta
 - [DEVELOPER_USERS.md](./DEVELOPER_USERS.md) — roles y rutas
 - [DEMO_REMOVAL.md](./DEMO_REMOVAL.md) — política demo
 - [GUIA_PRUEBAS_FLUJOS_Y_API.md](./GUIA_PRUEBAS_FLUJOS_Y_API.md) — flujos manuales
+- [docs/deploy/GCS_BACKUPS_RUNBOOK.md](../deploy/GCS_BACKUPS_RUNBOOK.md) — backups PostgreSQL → GCS (VPS)
 - [docs/context/AI_ENTRYPOINT.md](../context/AI_ENTRYPOINT.md) — entrada IA
