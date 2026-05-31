@@ -5,6 +5,7 @@ import { createEmptyRentalOpeningHours } from '@yo-te-invito/shared';
 import { Button, Input, SectionTitle } from '@/components';
 import { OpeningHoursEditor } from '@/components/forms/OpeningHoursEditor';
 import { RentalProductImagesForm } from '@/components/rentals/RentalProductImagesForm';
+import type { GcsImageUploadConfig } from '@/lib/upload/gcs-image-upload-config';
 import {
   EventLocationFields,
   validateLocationValue,
@@ -18,6 +19,8 @@ type Props = {
   onSubmit: (payload: GastroLocalUpsertPayload) => void;
   submitting?: boolean;
   submitLabel: string;
+  /** GastroProfile.id — required for GCS uploads. */
+  gastroProfileId?: string;
 };
 
 function locationFromLocal(local: GastroLocal): LocationValue {
@@ -37,6 +40,7 @@ export function GastroLocalForm({
   onSubmit,
   submitting,
   submitLabel,
+  gastroProfileId,
 }: Props) {
   const [displayName, setDisplayName] = useState(initial?.displayName ?? '');
   const [summary, setSummary] = useState(initial?.summary ?? '');
@@ -67,7 +71,12 @@ export function GastroLocalForm({
   const [menuUrl, setMenuUrl] = useState(initial?.menuUrl ?? '');
   const [websiteUrl, setWebsiteUrl] = useState(initial?.websiteUrl ?? '');
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [isUploadingImages, setIsUploadingImages] = useState(false);
   const hydratedFromId = useRef<string | null>(null);
+
+  const uploadConfig: GcsImageUploadConfig | undefined = gastroProfileId
+    ? { scope: 'gastro', entityId: gastroProfileId }
+    : undefined;
 
   useEffect(() => {
     if (!initial?.id) return;
@@ -175,7 +184,12 @@ export function GastroLocalForm({
           </select>
         </div>
       )}
-      <RentalProductImagesForm value={images} onChange={setImages} />
+      <RentalProductImagesForm
+        value={images}
+        onChange={setImages}
+        uploadConfig={uploadConfig}
+        onUploadingChange={setIsUploadingImages}
+      />
       <EventLocationFields
         value={location}
         onChange={setLocation}
@@ -199,7 +213,7 @@ export function GastroLocalForm({
       <Input label="Menú digital (URL)" value={menuUrl} onChange={(e) => setMenuUrl(e.target.value)} />
       <Input label="Página web (URL)" value={websiteUrl} onChange={(e) => setWebsiteUrl(e.target.value)} />
       {locationError && <p className="text-sm text-red-500">{locationError}</p>}
-      <Button type="submit" disabled={submitting}>
+      <Button type="submit" disabled={submitting || isUploadingImages}>
         {submitLabel}
       </Button>
     </form>

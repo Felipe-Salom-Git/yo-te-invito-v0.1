@@ -2,11 +2,12 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRepositories } from '@/repositories/context';
 import { PageContainer, SectionTitle, useToast } from '@/components';
 import { GastroDiscountForm } from '@/components/gastro/GastroDiscountForm';
 import { getErrorMessage } from '@/lib/errors';
+import { useMe } from '@/hooks/useMe';
 import { gastroKeys } from '@/lib/query/keys';
 
 export default function GastroDescuentoNuevoPage() {
@@ -14,6 +15,17 @@ export default function GastroDescuentoNuevoPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { addToast } = useToast();
+
+  const { data: local } = useQuery({
+    queryKey: gastroKeys.local(),
+    queryFn: () => repos.gastro.getMyLocal(),
+    staleTime: 60_000,
+  });
+
+  const { user: me } = useMe();
+
+  const gastroProfileId =
+    local?.id ?? me?.availableProfiles?.gastro?.profiles?.[0]?.id;
 
   const createMutation = useMutation({
     mutationFn: repos.gastro.createMyDiscount,
@@ -35,6 +47,7 @@ export default function GastroDescuentoNuevoPage() {
       </Link>
       <SectionTitle>Nuevo ticket de descuento</SectionTitle>
       <GastroDiscountForm
+        gastroProfileId={gastroProfileId}
         submitting={createMutation.isPending}
         onSubmit={(payload) => createMutation.mutate(payload)}
       />

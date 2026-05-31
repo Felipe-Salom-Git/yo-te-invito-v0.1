@@ -1,7 +1,8 @@
 'use client';
 
-import type { ChangeEvent } from 'react';
-import { Input } from '@/components';
+import { useCallback, useEffect } from 'react';
+import { Input, useToast } from '@/components';
+import { ImageUrlPreview } from '@/components/admin/ImageUrlPreview';
 import { SubcategorySelect } from '@/components/forms/SubcategorySelect';
 import {
   EventLocationFields,
@@ -14,6 +15,12 @@ import {
   type EventFormCompletenessItem,
 } from '@/lib/producer/producer-event-form.utils';
 import { EVENT_STATUS_LABELS } from '@/lib/domainLabels';
+import {
+  IMAGE_ACCEPT_GCS,
+  type GcsImageUploadConfig,
+} from '@/lib/upload/gcs-image-upload-config';
+import { useGcsImageUpload } from '@/lib/upload/use-gcs-image-upload';
+import { isDataImageUrl } from '@/lib/upload/validate-public-image-file';
 import { ProducerEventFormCompleteness } from './ProducerEventFormCompleteness';
 
 function FormSection({
@@ -102,7 +109,9 @@ export type ProducerEventFormFieldsProps = {
   subcategoryId: string;
   onSubcategoryChange: (id: string) => void;
   errors: Record<string, string>;
-  onFileSelect: (e: ChangeEvent<HTMLInputElement>) => void;
+  /** GCS cover upload — create: scope producer; edit: scope event. */
+  uploadConfig?: GcsImageUploadConfig;
+  onUploadingChange?: (uploading: boolean) => void;
   apiStatus?: string | null;
   completenessItems: EventFormCompletenessItem[];
 };
@@ -117,12 +126,56 @@ export function ProducerEventFormFields({
   subcategoryId,
   onSubcategoryChange,
   errors,
-  onFileSelect,
+  uploadConfig,
+  onUploadingChange,
   apiStatus,
   completenessItems,
 }: ProducerEventFormFieldsProps) {
+  const { addToast } = useToast();
   const set = (patch: Partial<EventFormData>) =>
     onFormChange((p) => ({ ...p, ...patch }));
+
+  const { gcsMode, isUploading, uploadProgress, uploadSingleWithProgress } =
+    useGcsImageUpload(uploadConfig);
+
+  useEffect(() => {
+    onUploadingChange?.(isUploading);
+  }, [isUploading, onUploadingChange]);
+
+  const rejectDataUrlIfGcs = useCallback(
+    (url: string): boolean => {
+      if (gcsMode && isDataImageUrl(url)) {
+        addToast(
+          'Las imágenes embebidas (data-URL) no están permitidas. Subí un archivo o pegá una URL https.',
+          'error',
+        );
+        return true;
+      }
+      return false;
+    },
+    [addToast, gcsMode],
+  );
+
+  const handleCoverFileChange = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      e.target.value = '';
+      if (!file) return;
+
+      if (gcsMode) {
+        const url = await uploadSingleWithProgress(file, 'cover');
+        if (url) onFormChange((p) => ({ ...p, coverImageUrl: url }));
+        return;
+      }
+
+      if (!file.type.startsWith('image/')) return;
+      const reader = new FileReader();
+      reader.onload = () =>
+        onFormChange((p) => ({ ...p, coverImageUrl: reader.result as string }));
+      reader.readAsDataURL(file);
+    },
+    [gcsMode, uploadSingleWithProgress, onFormChange],
+  );
 
   const isTicketed = mode === 'TICKETED';
   const statusUpper = (apiStatus ?? 'DRAFT').toUpperCase();
@@ -216,32 +269,43 @@ export function ProducerEventFormFields({
         title="3. Imagen y presentación"
         description="La portada es lo primero que ve el público. Usá una imagen horizontal, buena luz y sin texto ilegible."
       >
+        {uploadProgress ? (
+          <p className="text-sm text-accent" role="status">
+            {uploadProgress}
+          </p>
+        ) : null}
+        {gcsMode ? (
+          <p className="text-xs text-text-muted">
+            Cover vía Google Cloud Storage (JPEG, PNG o WEBP, máx. 5 MB).
+          </p>
+        ) : null}
         <Input
           label="URL de la imagen"
           value={form.coverImageUrl ?? ''}
-          onChange={(e) => set({ coverImageUrl: e.target.value || null })}
+          onChange={(e) => {
+            const url = e.target.value;
+            if (rejectDataUrlIfGcs(url)) return;
+            set({ coverImageUrl: url || null });
+          }}
           error={errors.coverImageUrl}
           placeholder="https://…"
+          disabled={isUploading}
         />
-        <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-bg p-6 text-sm text-text-muted transition-colors hover:border-accent sm:p-8">
+        <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-bg p-6 text-sm text-text-muted transition-colors hover:border-accent disabled:opacity-50 sm:p-8">
           <span>Subir imagen desde tu dispositivo</span>
-          <span className="mt-1 text-xs">JPG o PNG, recomendado 16:9</span>
+          <span className="mt-1 text-xs">
+            {gcsMode ? 'JPEG, PNG o WEBP, recomendado 16:9' : 'JPG o PNG, recomendado 16:9'}
+          </span>
           <input
             type="file"
-            accept="image/*"
-            onChange={onFileSelect}
+            accept={gcsMode ? IMAGE_ACCEPT_GCS : 'image/*'}
+            onChange={handleCoverFileChange}
+            disabled={isUploading}
             className="hidden"
           />
         </label>
         {form.coverImageUrl ? (
-          <div className="overflow-hidden rounded-lg border border-border">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={form.coverImageUrl}
-              alt="Vista previa de portada"
-              className="max-h-48 w-full object-cover"
-            />
-          </div>
+          <ImageUrlPreview url={form.coverImageUrl} className="max-h-48 w-full object-cover" />
         ) : null}
       </FormSection>
 

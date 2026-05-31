@@ -7,6 +7,7 @@ import { useRepositories } from '@/repositories/context';
 import { PageContainer, SectionTitle, useToast } from '@/components';
 import { GastroLocalForm } from '@/components/gastro/GastroLocalForm';
 import { getErrorMessage } from '@/lib/errors';
+import { useMe } from '@/hooks/useMe';
 import { gastroKeys } from '@/lib/query/keys';
 
 const TENANT_ID = 'tenant-demo';
@@ -22,6 +23,11 @@ export default function GastroLocalEditarPage() {
     queryFn: () => repos.gastro.getMyLocal(),
     staleTime: 60_000,
   });
+
+  const { user: me } = useMe();
+
+  const gastroProfileId =
+    local?.id ?? me?.availableProfiles?.gastro?.profiles?.[0]?.id;
 
   const { data: subcategories = [] } = useQuery({
     queryKey: ['subcategories', 'gastro', TENANT_ID],
@@ -62,6 +68,7 @@ export default function GastroLocalEditarPage() {
         subcategories={subcategories.map((s) => ({ id: s.id, name: s.name }))}
         submitting={saveMutation.isPending}
         submitLabel={isCreate ? 'Guardar local' : 'Actualizar local'}
+        gastroProfileId={gastroProfileId}
         onSubmit={(payload) => saveMutation.mutate(payload)}
       />
     </PageContainer>

@@ -9,6 +9,7 @@ import { producersKeys } from '@/lib/query/keys';
 import { PageContainer, Button, useToast } from '@/components';
 import { getErrorMessage } from '@/lib/errors';
 import { RentalProductImagesForm } from '@/components/rentals/RentalProductImagesForm';
+import type { GcsImageUploadConfig } from '@/lib/upload/gcs-image-upload-config';
 import { normalizeGalleryForSave, parseGalleryUrls } from './utils';
 import { ProducerProfileFormIntro } from './ProducerProfileFormIntro';
 
@@ -30,6 +31,12 @@ export function ProducerImagesForm({ profile }: { profile: ProducerDetail }) {
   const { addToast } = useToast();
   const [coverImageUrl, setCoverImageUrl] = useState(profile.coverImageUrl ?? '');
   const [galleryUrls, setGalleryUrls] = useState<string[]>(parseGalleryUrls(profile));
+  const [isUploadingImages, setIsUploadingImages] = useState(false);
+
+  const uploadConfig: GcsImageUploadConfig = {
+    scope: 'producer',
+    entityId: profile.id,
+  };
 
   useEffect(() => {
     setCoverImageUrl(profile.coverImageUrl ?? '');
@@ -66,11 +73,17 @@ export function ProducerImagesForm({ profile }: { profile: ProducerDetail }) {
             setCoverImageUrl(headerImageUrl);
             setGalleryUrls(normalizeGalleryForSave(headerImageUrl, galleryImageUrls));
           }}
+          uploadConfig={uploadConfig}
+          onUploadingChange={setIsUploadingImages}
         />
       </div>
 
       <div className="mt-8 flex gap-3">
-        <Button type="button" disabled={mutation.isPending} onClick={() => mutation.mutate()}>
+        <Button
+          type="button"
+          disabled={mutation.isPending || isUploadingImages}
+          onClick={() => mutation.mutate()}
+        >
           {mutation.isPending ? 'Guardando…' : 'Guardar'}
         </Button>
         <Button type="button" variant="outline" onClick={() => router.push('/producer/profile')}>

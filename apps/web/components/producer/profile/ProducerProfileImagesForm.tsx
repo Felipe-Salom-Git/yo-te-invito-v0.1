@@ -1,8 +1,13 @@
 'use client';
 
+import { useCallback } from 'react';
 import { RentalProductImagesForm } from '@/components/rentals/RentalProductImagesForm';
 import { ImageUrlPreview } from '@/components/admin/ImageUrlPreview';
-import { compressImageFileToDataUrl } from '@/lib/image-compress';
+import {
+  IMAGE_ACCEPT_GCS,
+  type GcsImageUploadConfig,
+} from '@/lib/upload/gcs-image-upload-config';
+import { useGcsImageUpload } from '@/lib/upload/use-gcs-image-upload';
 
 type Props = {
   logoUrl: string;
@@ -10,21 +15,9 @@ type Props = {
   galleryUrls: string[];
   onLogoChange: (url: string) => void;
   onImagesChange: (value: { headerImageUrl: string; galleryImageUrls: string[] }) => void;
+  uploadConfig: GcsImageUploadConfig;
+  onUploadingChange?: (uploading: boolean) => void;
 };
-
-async function readLogoFile(
-  e: React.ChangeEvent<HTMLInputElement>,
-  onLogoChange: (url: string) => void,
-) {
-  const file = e.target.files?.[0];
-  e.target.value = '';
-  if (!file?.type.startsWith('image/')) return;
-  try {
-    onLogoChange(await compressImageFileToDataUrl(file, 800, 0.85));
-  } catch {
-    onLogoChange('');
-  }
-}
 
 export function ProducerProfileImagesForm({
   logoUrl,
@@ -32,9 +25,31 @@ export function ProducerProfileImagesForm({
   galleryUrls,
   onLogoChange,
   onImagesChange,
+  uploadConfig,
+  onUploadingChange,
 }: Props) {
+  const { isUploading, uploadProgress, uploadSingleWithProgress } =
+    useGcsImageUpload(uploadConfig);
+
+  const handleLogoFile = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      e.target.value = '';
+      if (!file) return;
+      const url = await uploadSingleWithProgress(file, 'logo');
+      if (url) onLogoChange(url);
+    },
+    [onLogoChange, uploadSingleWithProgress],
+  );
+
   return (
     <div className="space-y-8">
+      {uploadProgress ? (
+        <p className="text-sm text-accent" role="status">
+          {uploadProgress}
+        </p>
+      ) : null}
+
       <div>
         <p className="text-sm font-medium text-text">Logo</p>
         <p className="mt-1 text-xs text-text-muted">Cuadrado, se muestra en la página pública.</p>
@@ -50,12 +65,19 @@ export function ProducerProfileImagesForm({
           )}
           <label className="cursor-pointer rounded-md border border-border px-3 py-2 text-sm text-text hover:border-accent">
             Subir logo
-            <input type="file" accept="image/*" className="hidden" onChange={(e) => readLogoFile(e, onLogoChange)} />
+            <input
+              type="file"
+              accept={IMAGE_ACCEPT_GCS}
+              className="hidden"
+              disabled={isUploading}
+              onChange={handleLogoFile}
+            />
           </label>
           {logoUrl.trim() ? (
             <button
               type="button"
               className="text-sm text-text-muted hover:text-text"
+              disabled={isUploading}
               onClick={() => onLogoChange('')}
             >
               Quitar
@@ -67,6 +89,8 @@ export function ProducerProfileImagesForm({
       <RentalProductImagesForm
         value={{ headerImageUrl: coverImageUrl, galleryImageUrls: galleryUrls }}
         onChange={onImagesChange}
+        uploadConfig={uploadConfig}
+        onUploadingChange={onUploadingChange}
       />
     </div>
   );

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ProducerDetail } from '@/repositories/interfaces';
@@ -11,16 +11,12 @@ import { PageContainer, Button, Input, useToast } from '@/components';
 import { getErrorMessage } from '@/lib/errors';
 import { getProducerPublicPath } from '@/lib/producer/public-path';
 import { ImageUrlPreview } from '@/components/admin/ImageUrlPreview';
+import {
+  IMAGE_ACCEPT_GCS,
+  type GcsImageUploadConfig,
+} from '@/lib/upload/gcs-image-upload-config';
+import { useGcsImageUpload } from '@/lib/upload/use-gcs-image-upload';
 import { ProducerProfileFormIntro } from './ProducerProfileFormIntro';
-
-function readLogoFile(e: React.ChangeEvent<HTMLInputElement>, onLogo: (url: string) => void) {
-  const file = e.target.files?.[0];
-  e.target.value = '';
-  if (!file?.type.startsWith('image/')) return;
-  const reader = new FileReader();
-  reader.onload = () => onLogo(reader.result as string);
-  reader.readAsDataURL(file);
-}
 
 function invalidateProducerProfile(
   queryClient: ReturnType<typeof useQueryClient>,
@@ -43,6 +39,24 @@ export function ProducerIdentityForm({ profile }: { profile: ProducerDetail }) {
   const [shortDescription, setShortDescription] = useState(profile.shortDescription ?? '');
   const [longDescription, setLongDescription] = useState(profile.longDescription ?? '');
   const [logoUrl, setLogoUrl] = useState(profile.logoUrl ?? '');
+
+  const logoUploadConfig: GcsImageUploadConfig = {
+    scope: 'producer',
+    entityId: profile.id,
+  };
+  const { isUploading, uploadProgress, uploadSingleWithProgress } =
+    useGcsImageUpload(logoUploadConfig);
+
+  const handleLogoFile = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      e.target.value = '';
+      if (!file) return;
+      const url = await uploadSingleWithProgress(file, 'logo');
+      if (url) setLogoUrl(url);
+    },
+    [uploadSingleWithProgress],
+  );
 
   useEffect(() => {
     setDisplayName(profile.displayName);
@@ -84,6 +98,7 @@ export function ProducerIdentityForm({ profile }: { profile: ProducerDetail }) {
         className="mt-6 space-y-6"
         onSubmit={(e) => {
           e.preventDefault();
+          if (isUploading) return;
           if (!displayName.trim()) {
             addToast('El nombre es obligatorio', 'error');
             return;
@@ -93,7 +108,14 @@ export function ProducerIdentityForm({ profile }: { profile: ProducerDetail }) {
       >
         <div>
           <p className="text-sm font-medium text-text">Logo</p>
-          <p className="mt-1 text-xs text-text-muted">Recomendado cuadrado, visible en listados y ficha.</p>
+          <p className="mt-1 text-xs text-text-muted">
+            Recomendado cuadrado, visible en listados y ficha (JPEG, PNG o WEBP, máx. 5 MB).
+          </p>
+          {uploadProgress ? (
+            <p className="mt-2 text-sm text-accent" role="status">
+              {uploadProgress}
+            </p>
+          ) : null}
           <div className="mt-3 flex flex-wrap items-start gap-4">
             {logoUrl.trim() ? (
               <div className="h-20 w-20 overflow-hidden rounded-full border border-border">
@@ -111,9 +133,10 @@ export function ProducerIdentityForm({ profile }: { profile: ProducerDetail }) {
               Subir logo
               <input
                 type="file"
-                accept="image/*"
+                accept={IMAGE_ACCEPT_GCS}
                 className="hidden"
-                onChange={(e) => readLogoFile(e, setLogoUrl)}
+                disabled={isUploading}
+                onChange={handleLogoFile}
               />
             </label>
             {logoUrl.trim() ? (
@@ -171,7 +194,7 @@ export function ProducerIdentityForm({ profile }: { profile: ProducerDetail }) {
         </div>
 
         <div className="flex gap-3">
-          <Button type="submit" disabled={mutation.isPending}>
+          <Button type="submit" disabled={mutation.isPending || isUploading}>
             {mutation.isPending ? 'Guardando…' : 'Guardar'}
           </Button>
           <Button type="button" variant="outline" onClick={() => router.push('/producer/profile')}>

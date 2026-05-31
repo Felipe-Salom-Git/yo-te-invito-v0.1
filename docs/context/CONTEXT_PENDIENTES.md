@@ -118,7 +118,7 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 - [x] **Backups automáticos** — PostgreSQL → GCS; VPS 2026-05-31; lifecycle `backups/postgres/` 30 días.
 - [x] **Admin Rentals upload GCS** — cover + galería productos.
 - [x] **Admin Eventos + Excursiones upload GCS** — publicaciones-generales (event/excursion) + operador excursiones.
-- [ ] **Storage upload otros verticales** — gastro, hotel, productoras — [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md)
+- [ ] **Storage upload otros verticales** — migración legacy BD — [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §20
 - [ ] Rate limiting Nginx; rate limiting Nest (slice código)
 - [ ] Monitoreo / alertas (disco, servicios, certificado TLS)
 - [ ] `certbot renew --dry-run` documentado
@@ -169,7 +169,8 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 - [x] Upload auth portal + ownership (Storage 7) (ADMIN)
 - [x] Admin Rentals — formularios producto → GCS (`entityId` = `rentalLocationId`)
 - [x] Admin Eventos + Excursiones → GCS (Storage 6)
-- [ ] Otros formularios web (gastro, hotel, productoras)
+- [x] Portal productora → GCS (Storage 8)
+- [x] Portales gastro + hotel → GCS (Storage 9)
 - [ ] Migración data-URL legacy en BD
 - [x] `next/image` remotePatterns GCS (`yti-prod-public-assets` only)
 - [ ] Integración formularios + persistir URL en BD

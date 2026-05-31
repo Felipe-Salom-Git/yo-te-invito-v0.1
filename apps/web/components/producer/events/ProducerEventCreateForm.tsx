@@ -1,15 +1,17 @@
 'use client';
 
-import { useState, useCallback, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRepositories } from '@/repositories/context';
 import { useTenant } from '@/hooks/useTenant';
 import { useProducerId } from '@/hooks/useProducerId';
 import type { EventFormData } from '@/lib/schemas/event';
 import { Button, useToast } from '@/components';
 import { getErrorMessage } from '@/lib/errors';
+import { producersKeys } from '@/lib/query/keys';
+import type { GcsImageUploadConfig } from '@/lib/upload/gcs-image-upload-config';
 import {
   EMPTY_LOCATION_VALUE,
   eventFieldsFromLocationValue,
@@ -43,6 +45,17 @@ export function ProducerEventCreateForm({ mode }: { mode: ProducerEventMode }) {
   const [formError, setFormError] = useState<string | null>(null);
   const [subcategoryId, setSubcategoryId] = useState('');
   const [location, setLocation] = useState<LocationValue>(EMPTY_LOCATION_VALUE);
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
+
+  const { data: producerProfile } = useQuery({
+    queryKey: producersKeys.myProfile(),
+    queryFn: () => repos.producers.getMyProfile(),
+  });
+
+  const coverUploadConfig = useMemo((): GcsImageUploadConfig | undefined => {
+    if (!producerProfile?.id) return undefined;
+    return { scope: 'producer', entityId: producerProfile.id };
+  }, [producerProfile?.id]);
 
   const completenessItems = useMemo(
     () => computeEventFormCompleteness(form, location, subcategoryId),
@@ -102,14 +115,6 @@ export function ProducerEventCreateForm({ mode }: { mode: ProducerEventMode }) {
     },
   });
 
-  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file?.type.startsWith('image/')) return;
-    const reader = new FileReader();
-    reader.onload = () => setForm((p) => ({ ...p, coverImageUrl: reader.result as string }));
-    reader.readAsDataURL(file);
-  }, []);
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
@@ -137,7 +142,7 @@ export function ProducerEventCreateForm({ mode }: { mode: ProducerEventMode }) {
       </Link>
       <Button
         type="submit"
-        disabled={createMutation.isPending}
+        disabled={createMutation.isPending || isUploadingCover}
         className="w-full sm:w-auto"
       >
         {createMutation.isPending
@@ -171,7 +176,8 @@ export function ProducerEventCreateForm({ mode }: { mode: ProducerEventMode }) {
           subcategoryId={subcategoryId}
           onSubcategoryChange={setSubcategoryId}
           errors={errors}
-          onFileSelect={handleFileChange}
+          uploadConfig={coverUploadConfig}
+          onUploadingChange={setIsUploadingCover}
           completenessItems={completenessItems}
         />
       </ProducerEventFormLayout>

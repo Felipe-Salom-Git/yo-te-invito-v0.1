@@ -1,9 +1,13 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import type { CreateGastroPromotionRequestBody } from '@yo-te-invito/shared';
 import { Button, Input } from '@/components';
-import { compressImageFileToDataUrl } from '@/lib/image-compress';
+import {
+  IMAGE_ACCEPT_GCS,
+  type GcsImageUploadConfig,
+} from '@/lib/upload/gcs-image-upload-config';
+import { useGcsImageUpload } from '@/lib/upload/use-gcs-image-upload';
 
 const MAX_IMAGES = 6;
 
@@ -12,6 +16,7 @@ export function GastroPromoRequestModal({
   onClose,
   eventId,
   eventLabel,
+  gastroProfileId,
   onSubmit,
   isSubmitting,
 }: {
@@ -19,6 +24,7 @@ export function GastroPromoRequestModal({
   onClose: () => void;
   eventId: string;
   eventLabel: string;
+  gastroProfileId?: string;
   onSubmit: (body: CreateGastroPromotionRequestBody) => Promise<void>;
   isSubmitting: boolean;
 }) {
@@ -29,7 +35,13 @@ export function GastroPromoRequestModal({
   const [promoSuggestType, setPromoSuggestType] = useState<'PERCENT' | 'FIXED' | ''>('');
   const [promoSuggestValue, setPromoSuggestValue] = useState('');
   const [imageUrls, setImageUrls] = useState<string[]>([]);
-  const [compressError, setCompressError] = useState<string | null>(null);
+
+  const uploadConfig = useMemo((): GcsImageUploadConfig | undefined => {
+    if (!gastroProfileId) return undefined;
+    return { scope: 'gastro', entityId: gastroProfileId };
+  }, [gastroProfileId]);
+
+  const { isUploading, uploadProgress, uploadFilesSequential } = useGcsImageUpload(uploadConfig);
 
   const reset = useCallback(() => {
     setPromoTitle('');
@@ -39,7 +51,6 @@ export function GastroPromoRequestModal({
     setPromoSuggestType('');
     setPromoSuggestValue('');
     setImageUrls([]);
-    setCompressError(null);
   }, []);
 
   const handleClose = () => {
@@ -48,24 +59,14 @@ export function GastroPromoRequestModal({
   };
 
   const onPickFiles = async (files: FileList | null) => {
-    if (!files?.length) return;
-    setCompressError(null);
-    const next: string[] = [...imageUrls];
-    for (let i = 0; i < files.length && next.length < MAX_IMAGES; i += 1) {
-      const f = files[i];
-      if (!f.type.startsWith('image/')) continue;
-      try {
-        const dataUrl = await compressImageFileToDataUrl(f);
-        if (dataUrl.length > 850_000) {
-          setCompressError('Una imagen sigue siendo muy grande. Probá con otra foto o más chica.');
-          continue;
-        }
-        next.push(dataUrl);
-      } catch {
-        setCompressError('No se pudo procesar una imagen.');
-      }
+    if (!files?.length || !uploadConfig) return;
+    const remaining = MAX_IMAGES - imageUrls.length;
+    if (remaining <= 0) return;
+    const picked = Array.from(files).slice(0, remaining);
+    const uploaded = await uploadFilesSequential(picked, 'content');
+    if (uploaded.length > 0) {
+      setImageUrls((prev) => [...prev, ...uploaded].slice(0, MAX_IMAGES));
     }
-    setImageUrls(next.slice(0, MAX_IMAGES));
   };
 
   const removeImage = (idx: number) => {
@@ -99,7 +100,11 @@ export function GastroPromoRequestModal({
   if (!open) return null;
 
   const canSubmit =
-    promoTitle.trim().length > 0 && phonesOk(contactPhone) && !isSubmitting && !!eventId;
+    promoTitle.trim().length > 0 &&
+    phonesOk(contactPhone) &&
+    !isSubmitting &&
+    !isUploading &&
+    !!eventId;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
@@ -147,15 +152,22 @@ export function GastroPromoRequestModal({
         <p className="mt-1 text-xs text-text-muted">Podés agregar varios separados por coma.</p>
 
         <div className="mt-4">
-          <label className="block text-sm font-medium text-text">Imágenes (opcional, hasta {MAX_IMAGES})</label>
+          <label className="block text-sm font-medium text-text">
+            Imágenes (opcional, hasta {MAX_IMAGES})
+          </label>
+          {uploadProgress ? (
+            <p className="mt-1 text-sm text-accent" role="status">
+              {uploadProgress}
+            </p>
+          ) : null}
           <input
             type="file"
-            accept="image/*"
+            accept={IMAGE_ACCEPT_GCS}
             multiple
-            className="mt-1 block w-full text-sm text-text-muted file:mr-3 file:rounded file:border-0 file:bg-accent/20 file:px-3 file:py-1.5 file:text-text"
+            disabled={isUploading || !uploadConfig || imageUrls.length >= MAX_IMAGES}
+            className="mt-1 block w-full text-sm text-text-muted file:mr-3 file:rounded file:border-0 file:bg-accent/20 file:px-3 file:py-1.5 file:text-text disabled:opacity-50"
             onChange={(e) => void onPickFiles(e.target.files)}
           />
-          {compressError && <p className="mt-1 text-xs text-red-400">{compressError}</p>}
           {imageUrls.length > 0 && (
             <ul className="mt-2 flex flex-wrap gap-2">
               {imageUrls.map((src, idx) => (
@@ -165,6 +177,7 @@ export function GastroPromoRequestModal({
                   <button
                     type="button"
                     className="absolute right-0.5 top-0.5 rounded bg-black/60 px-1 text-[10px] text-white"
+                    disabled={isUploading}
                     onClick={() => removeImage(idx)}
                   >
                     ✕
@@ -209,7 +222,7 @@ export function GastroPromoRequestModal({
         </div>
 
         <div className="mt-6 flex justify-end gap-2">
-          <Button type="button" variant="outline" onClick={handleClose} disabled={isSubmitting}>
+          <Button type="button" variant="outline" onClick={handleClose} disabled={isSubmitting || isUploading}>
             Cancelar
           </Button>
           <Button type="button" onClick={() => void handleSubmit()} disabled={!canSubmit}>

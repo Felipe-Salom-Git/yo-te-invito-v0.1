@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { HotelProfileUpdateInput } from '@yo-te-invito/shared';
-import { Button, Input, SectionTitle } from '@/components';
+import { Button, Input, SectionTitle, useToast } from '@/components';
+import { ImageUrlPreview } from '@/components/admin/ImageUrlPreview';
 import { RentalProductImagesForm } from '@/components/rentals/RentalProductImagesForm';
 import {
   EventLocationFields,
@@ -10,6 +11,12 @@ import {
   type LocationValue,
 } from '@/components/location';
 import type { HotelProfile } from '@/repositories/interfaces';
+import {
+  IMAGE_ACCEPT_GCS,
+  type GcsImageUploadConfig,
+} from '@/lib/upload/gcs-image-upload-config';
+import { useGcsImageUpload } from '@/lib/upload/use-gcs-image-upload';
+import { isDataImageUrl } from '@/lib/upload/validate-public-image-file';
 
 type Props = {
   initial: HotelProfile;
@@ -41,6 +48,11 @@ function textToAmenities(text: string): string[] {
 }
 
 export function HotelProfileForm({ initial, onSubmit, submitting }: Props) {
+  const { addToast } = useToast();
+  const uploadConfig: GcsImageUploadConfig = { scope: 'hotel', entityId: initial.id };
+  const { isUploading: isUploadingLogo, uploadProgress, uploadSingleWithProgress } =
+    useGcsImageUpload(uploadConfig);
+  const [isUploadingImages, setIsUploadingImages] = useState(false);
   const [displayName, setDisplayName] = useState(initial.displayName);
   const [description, setDescription] = useState(initial.description ?? '');
   const [starCategory, setStarCategory] = useState(
@@ -88,8 +100,36 @@ export function HotelProfileForm({ initial, onSubmit, submitting }: Props) {
     setAmenitiesText(amenitiesToText(initial.amenities));
   }, [initial]);
 
+  const handleLogoFile = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      e.target.value = '';
+      if (!file) return;
+      const url = await uploadSingleWithProgress(file, 'logo');
+      if (url) setLogoUrl(url);
+    },
+    [uploadSingleWithProgress],
+  );
+
+  const rejectDataUrlIfGcs = useCallback(
+    (url: string): boolean => {
+      if (isDataImageUrl(url)) {
+        addToast(
+          'Las imágenes embebidas (data-URL) no están permitidas. Subí un archivo o pegá una URL https.',
+          'error',
+        );
+        return true;
+      }
+      return false;
+    },
+    [addToast],
+  );
+
+  const isUploading = isUploadingLogo || isUploadingImages;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isUploading) return;
     setFormError(null);
     if (!displayName.trim()) {
       setFormError('El nombre comercial es obligatorio.');
@@ -242,15 +282,50 @@ export function HotelProfileForm({ initial, onSubmit, submitting }: Props) {
 
       <section>
         <SectionTitle className="text-base">Imágenes</SectionTitle>
-        <p className="mt-1 text-sm text-text-muted">Logo, portada y galería (URLs o subida desde el dispositivo).</p>
+        <p className="mt-1 text-sm text-text-muted">
+          Logo, portada y galería vía Google Cloud Storage (JPEG, PNG o WEBP, máx. 5 MB).
+        </p>
+        {uploadProgress ? (
+          <p className="mt-2 text-sm text-accent" role="status">
+            {uploadProgress}
+          </p>
+        ) : null}
         <div className="mt-4 space-y-6">
-          <Input
-            label="Logo"
-            value={logoUrl}
-            onChange={(e) => setLogoUrl(e.target.value)}
-            placeholder="https://… o subí desde galería abajo"
+          <div>
+            <Input
+              label="Logo"
+              value={logoUrl}
+              onChange={(e) => {
+                const url = e.target.value;
+                if (rejectDataUrlIfGcs(url)) return;
+                setLogoUrl(url);
+              }}
+              placeholder="https://…"
+              disabled={isUploading}
+            />
+            <label className="mt-2 block text-sm text-text-muted">
+              <span className="mr-2">O subir archivo:</span>
+              <input
+                type="file"
+                accept={IMAGE_ACCEPT_GCS}
+                onChange={handleLogoFile}
+                disabled={isUploading}
+                className="text-sm disabled:opacity-50"
+              />
+            </label>
+            {logoUrl.trim() ? (
+              <ImageUrlPreview
+                url={logoUrl}
+                className="mt-2 h-20 w-20 rounded-full object-cover"
+              />
+            ) : null}
+          </div>
+          <RentalProductImagesForm
+            value={images}
+            onChange={setImages}
+            uploadConfig={uploadConfig}
+            onUploadingChange={setIsUploadingImages}
           />
-          <RentalProductImagesForm value={images} onChange={setImages} />
         </div>
       </section>
 
@@ -268,7 +343,7 @@ export function HotelProfileForm({ initial, onSubmit, submitting }: Props) {
 
       {formError ? <p className="text-sm text-red-400">{formError}</p> : null}
 
-      <Button type="submit" disabled={submitting}>
+      <Button type="submit" disabled={submitting || isUploading}>
         {submitting ? 'Guardando…' : 'Guardar ficha'}
       </Button>
     </form>

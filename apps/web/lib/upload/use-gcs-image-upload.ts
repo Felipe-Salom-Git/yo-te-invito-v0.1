@@ -2,6 +2,8 @@
 
 import { useCallback, useState } from 'react';
 import { useToast } from '@/components';
+import { ApiClientError } from '@/lib/api/client';
+import { getErrorMessage } from '@/lib/errors';
 import { useUploadPublicImage } from '@/lib/query/uploads';
 import type { UploadPurpose } from '@yo-te-invito/shared';
 import {
@@ -9,6 +11,9 @@ import {
   type GcsImageUploadConfig,
 } from '@/lib/upload/gcs-image-upload-config';
 import { validatePublicImageFile } from '@/lib/upload/validate-public-image-file';
+
+export const GCS_UPLOAD_FORBIDDEN =
+  'No tenés permiso para subir imágenes a esta entidad. Verificá que estés editando tu propio perfil o contenido.';
 
 export function useGcsImageUpload(config: GcsImageUploadConfig | undefined) {
   const { addToast } = useToast();
@@ -34,8 +39,12 @@ export function useGcsImageUpload(config: GcsImageUploadConfig | undefined) {
           entityId: config.entityId,
         });
         return result.url;
-      } catch {
-        addToast(GCS_UPLOAD_ERROR, 'error');
+      } catch (err) {
+        const msg =
+          err instanceof ApiClientError && err.status === 403
+            ? GCS_UPLOAD_FORBIDDEN
+            : getErrorMessage(err) || GCS_UPLOAD_ERROR;
+        addToast(msg, 'error');
         return null;
       }
     },

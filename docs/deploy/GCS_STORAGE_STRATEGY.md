@@ -419,8 +419,6 @@ public/rental/{rentalLocationId}/gallery/YYYY/MM/{uuid}.ext
 5. Probar archivo &gt; 5 MB o SVG → error visible.
 6. Galería multi-upload → varias URLs GCS.
 
-**Próximo:** Storage 7 — gastro / hotel / productoras portal.
-
 ---
 
 ## 17. Admin Eventos + Excursiones — upload GCS (Storage 6, Jun 2026)
@@ -501,6 +499,87 @@ pnpm --filter api run smoke:storage-upload-auth    # USER → 403 platform; opci
 ```
 
 Opcional auth smoke: `SMOKE_PRODUCER_EMAIL`, `SMOKE_PRODUCER_OTHER_PROFILE_ID`, `SMOKE_PRODUCER_EVENT_ID`.
+
+---
+
+## 19. Portal Productora — upload GCS (Storage 8, Jun 2026)
+
+**Alcance:** perfil productora (logo, cover, galería) y eventos creados/editados desde `/producer/events`. Sin admin, gastro, hotel ni ticket studio. Backend sin cambios (ownership Storage 7).
+
+### Decisión `entityId`
+
+| Flujo | scope | entityId | purpose |
+|-------|--------|----------|---------|
+| Perfil — logo (`/producer/profile/identity`) | `producer` | `producerProfileId` (`ProducerDetail.id`) | `logo` |
+| Perfil — cover + galería (`/producer/profile/images`) | `producer` | `producerProfileId` | `cover`, `gallery` |
+| Evento productor **create** (sin `eventId` aún) | `producer` | `producerProfileId` | `cover` (staging pre-save; URL guardada en `coverImageUrl` del evento al crear) |
+| Evento productor **edit** | `event` | `eventId` | `cover` |
+
+**Excursiones:** no hay flujo dedicado en portal productor V1; si el productor gestiona excursión como evento `category=excursion`, usar `scope=event` + `eventId` en edit (misma regla Storage 7).
+
+Paths GCS: `public/producers/{producerProfileId}/…`, `public/events/{eventId}/…`.
+
+### Frontend
+
+| Componente | GCS |
+|------------|-----|
+| `ProducerIdentityForm` | Logo — `useGcsImageUpload`, `purpose=logo` |
+| `ProducerImagesForm` | Cover + galería — `RentalProductImagesForm` + `uploadConfig` |
+| `ProducerEventCreateForm` | Cover — `ProducerEventFormFields` + `scope=producer` |
+| `ProducerEventEditForm` | Cover — `ProducerEventFormFields` + `scope=event` |
+
+**Infra:** `repos.uploads.uploadPublicImage`, `useUploadPublicImage`, `useGcsImageUpload`, validación MIME/tamaño. Error **403** → toast explícito de permisos (`GCS_UPLOAD_FORBIDDEN`).
+
+**Reglas:** sin nuevas data-URL; legacy visible en preview; guardar deshabilitado mientras sube; progreso «Subiendo imagen…» / «Subiendo 1/N…».
+
+### Smoke manual (PRODUCER)
+
+1. Login productor → `/producer/profile/identity` → subir logo → URL `storage.googleapis.com/yti-prod-public-assets/public/producers/…`.
+2. `/producer/profile/images` → cover + galería multi-upload → guardar → verificar BD sin `data:image/`.
+3. `/producer/events/new` → crear evento con cover subido → URL GCS bajo `producers/{id}` (create) o pegar https.
+4. Editar evento existente → subir cover → path bajo `events/{eventId}/`.
+5. (Opcional) Intentar upload con `entityId` ajeno vía API → **403** y mensaje claro en UI.
+
+**Próximo:** Storage 9 — gastro / hotel portal.
+
+---
+
+## 20. Portales Gastro + Hotel — upload GCS (Storage 9, Jun 2026)
+
+**Alcance:** formularios de imagen en `/gastro/*` y `/hotel/editar`. Sin admin, productora, rentals ni migración legacy. Backend sin cambios (ownership Storage 7: `scope=gastro|hotel` + perfil propio).
+
+### Decisión `entityId`
+
+| Flujo | scope | entityId | purpose |
+|-------|--------|----------|---------|
+| Local gastro — cover + galería (`GastroLocalForm`) | `gastro` | `GastroLocal.id` (= gastroProfileId) | `cover`, `gallery` |
+| Ticket descuento gastro (`GastroDiscountForm`) | `gastro` | gastroProfileId | `gallery` |
+| Contenido editorial (`/gastro/contenido`) | `gastro` | gastroProfileId (`local.id`) | `content` |
+| Solicitud promoción (`GastroPromoRequestModal`) | `gastro` | gastroProfileId | `content` |
+| Ficha hotel — logo | `hotel` | `HotelProfile.id` | `logo` |
+| Ficha hotel — cover + galería (`HotelProfileForm`) | `hotel` | hotelProfileId | `cover`, `gallery` |
+
+Paths GCS: `public/gastro/{gastroProfileId}/…`, `public/hotel/{hotelProfileId}/…`.
+
+**Resolución `gastroProfileId` en create local:** `getMyLocal()?.id` o fallback `users.getMe().availableProfiles.gastro.profiles[0].id`.
+
+### Frontend
+
+| Componente | GCS |
+|------------|-----|
+| `GastroLocalForm` | `RentalProductImagesForm` + `uploadConfig` |
+| `GastroDiscountForm` | Galería ticket — `galleryOnly` + GCS |
+| `gastro/contenido/page.tsx` | Imagen editorial — `useGcsImageUpload`, `purpose=content` |
+| `GastroPromoRequestModal` | Multi-upload promoción — `purpose=content` |
+| `HotelProfileForm` | Logo (`logo`) + cover/galería (`RentalProductImagesForm`) |
+
+**Reglas:** sin nuevas data-URL; legacy visible; MIME JPEG/PNG/WEBP ≤ 5 MB; **403** → `GCS_UPLOAD_FORBIDDEN`; guardar deshabilitado mientras sube.
+
+### Smoke manual
+
+**GASTRO_OWNER:** `/gastro/local/editar` → cover + galería → guardar → URLs GCS. `/gastro/descuentos/nuevo` → imágenes ticket. `/gastro/contenido` → crear bloque con imagen.
+
+**HOTEL_OWNER:** `/hotel/editar` → logo + portada + galería → guardar → URLs GCS en `PATCH /hotel/me`.
 
 ---
 

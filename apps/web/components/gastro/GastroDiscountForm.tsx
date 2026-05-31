@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Button, Input, SectionTitle } from '@/components';
 import { RentalProductImagesForm } from '@/components/rentals/RentalProductImagesForm';
+import type { GcsImageUploadConfig } from '@/lib/upload/gcs-image-upload-config';
 import type { GastroDiscountCreatePayload } from '@/repositories/interfaces';
 
 type Props = {
@@ -15,9 +16,11 @@ type Props = {
   };
   onSubmit: (payload: GastroDiscountCreatePayload) => void;
   submitting?: boolean;
+  /** GastroProfile.id — required for GCS uploads. */
+  gastroProfileId?: string;
 };
 
-export function GastroDiscountForm({ initial, onSubmit, submitting }: Props) {
+export function GastroDiscountForm({ initial, onSubmit, submitting, gastroProfileId }: Props) {
   const [title, setTitle] = useState(initial?.title ?? '');
   const [summary, setSummary] = useState(initial?.summary ?? '');
   const [detail, setDetail] = useState(initial?.detail ?? '');
@@ -29,6 +32,11 @@ export function GastroDiscountForm({ initial, onSubmit, submitting }: Props) {
     initial?.discountDate ? initial.discountDate.slice(0, 10) : '',
   );
   const [accepted, setAccepted] = useState(false);
+  const [isUploadingImages, setIsUploadingImages] = useState(false);
+
+  const uploadConfig: GcsImageUploadConfig | undefined = gastroProfileId
+    ? { scope: 'gastro', entityId: gastroProfileId }
+    : undefined;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,7 +80,13 @@ export function GastroDiscountForm({ initial, onSubmit, submitting }: Props) {
           required
         />
       </div>
-      <RentalProductImagesForm value={images} onChange={setImages} galleryOnly />
+      <RentalProductImagesForm
+        value={images}
+        onChange={setImages}
+        galleryOnly
+        uploadConfig={uploadConfig}
+        onUploadingChange={setIsUploadingImages}
+      />
       {imageUrls.length === 0 && (
         <p className="text-sm text-amber-400">Agregá al menos una imagen para el ticket.</p>
       )}
@@ -103,7 +117,10 @@ export function GastroDiscountForm({ initial, onSubmit, submitting }: Props) {
           </span>
         </label>
       </div>
-      <Button type="submit" disabled={!accepted || submitting || imageUrls.length === 0}>
+      <Button
+        type="submit"
+        disabled={!accepted || submitting || isUploadingImages || imageUrls.length === 0}
+      >
         Enviar ticket de descuento a revisión
       </Button>
     </form>

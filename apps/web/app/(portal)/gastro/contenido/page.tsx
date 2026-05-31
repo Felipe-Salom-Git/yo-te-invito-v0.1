@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { useRepositories } from '@/repositories/context';
@@ -11,6 +11,12 @@ import { LatLngMapPreview } from '@/components/admin/LatLngMapPreview';
 import { ImageUrlPreview } from '@/components/admin/ImageUrlPreview';
 import { gastroKeys } from '@/lib/query/keys';
 import { useGastroContentList, useGastroContentMutations } from '@/lib/query/gastro-content';
+import {
+  IMAGE_ACCEPT_GCS,
+  type GcsImageUploadConfig,
+} from '@/lib/upload/gcs-image-upload-config';
+import { useGcsImageUpload } from '@/lib/upload/use-gcs-image-upload';
+import { isDataImageUrl } from '@/lib/upload/validate-public-image-file';
 
 const TENANT_ID = 'tenant-demo';
 
@@ -59,17 +65,51 @@ export default function GastroContenidoPage() {
 
   const { createMutation, updateMutation } = useGastroContentMutations(currentEventId);
 
+  const uploadConfig = useMemo((): GcsImageUploadConfig | undefined => {
+    if (!local?.id) return undefined;
+    return { scope: 'gastro', entityId: local.id };
+  }, [local?.id]);
+
+  const { gcsMode, isUploading, uploadProgress, uploadSingleWithProgress } =
+    useGcsImageUpload(uploadConfig);
+
   useEffect(() => {
     if (!selectedEventId && defaultEventId) setSelectedEventId(defaultEventId);
   }, [defaultEventId, selectedEventId]);
 
-  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file?.type.startsWith('image/')) return;
-    const reader = new FileReader();
-    reader.onload = () => setNewImageUrl(reader.result as string);
-    reader.readAsDataURL(file);
-  }, []);
+  const handleFileChange = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      e.target.value = '';
+      if (!file) return;
+
+      if (gcsMode) {
+        const url = await uploadSingleWithProgress(file, 'content');
+        if (url) setNewImageUrl(url);
+        return;
+      }
+
+      if (!file.type.startsWith('image/')) return;
+      const reader = new FileReader();
+      reader.onload = () => setNewImageUrl(reader.result as string);
+      reader.readAsDataURL(file);
+    },
+    [gcsMode, uploadSingleWithProgress],
+  );
+
+  const rejectDataUrlIfGcs = useCallback(
+    (url: string): boolean => {
+      if (gcsMode && isDataImageUrl(url)) {
+        addToast(
+          'Las imágenes embebidas (data-URL) no están permitidas. Subí un archivo o pegá una URL https.',
+          'error',
+        );
+        return true;
+      }
+      return false;
+    },
+    [addToast, gcsMode],
+  );
 
   const buildBodyFromFields = () => {
     const locLine = newLocation.trim();
@@ -161,8 +201,7 @@ export default function GastroContenidoPage() {
         <span className="text-text">Publicado</span> aparece en el sitio.
       </p>
       <p className="mt-1 text-xs text-text-muted">
-        Imágenes: URL https o subida local (data-URL). Storage en la nube pendiente — ver checklist
-        § Storage.
+        Imágenes vía Google Cloud Storage (JPEG, PNG o WEBP, máx. 5 MB) o URL https.
       </p>
 
       <div className="mt-6">
@@ -199,16 +238,27 @@ export default function GastroContenidoPage() {
             </div>
             <div className="mt-3">
               <label className="mb-1.5 block text-sm font-medium text-text">Imagen</label>
+              {uploadProgress ? (
+                <p className="mb-2 text-sm text-accent" role="status">
+                  {uploadProgress}
+                </p>
+              ) : null}
               <Input
                 value={newImageUrl}
-                onChange={(e) => setNewImageUrl(e.target.value)}
-                placeholder="URL o subir abajo"
+                onChange={(e) => {
+                  const url = e.target.value;
+                  if (rejectDataUrlIfGcs(url)) return;
+                  setNewImageUrl(url);
+                }}
+                placeholder="https://…"
+                disabled={isUploading}
               />
               <input
                 type="file"
-                accept="image/*"
+                accept={gcsMode ? IMAGE_ACCEPT_GCS : 'image/*'}
                 onChange={handleFileChange}
-                className="mt-2 text-sm text-text-muted"
+                disabled={isUploading}
+                className="mt-2 text-sm text-text-muted disabled:opacity-50"
               />
               <ImageUrlPreview url={newImageUrl} />
             </div>
@@ -249,7 +299,7 @@ export default function GastroContenidoPage() {
               </select>
             </div>
             <div className="mt-3 flex gap-2">
-              <Button onClick={handleCreate} disabled={createMutation.isPending}>
+              <Button onClick={handleCreate} disabled={createMutation.isPending || isUploading}>
                 Crear
               </Button>
               <Button variant="outline" onClick={() => setShowCreate(false)}>

@@ -284,7 +284,8 @@ _Footer público completo — bloque V2 cerrado. Smoke: `docs/audits/PUBLIC_FOOT
 - [x] Integrar upload GCS en Admin Rentals (cover + galería; `entityId` = `rentalLocationId`).
 - [x] Integrar upload GCS en Admin Eventos (publicaciones-generales, categoría event).
 - [x] Integrar upload GCS en Admin Excursiones (operador + legacy edit + publicaciones-generales).
-- [ ] Integrar upload GCS en portales productora/gastro/hotel (frontend)
+- [x] Integrar upload GCS en portal **productora** (perfil logo/cover/galería + eventos create/edit cover).
+- [x] Integrar upload GCS en portales **gastro** y **hotel** (frontend).
 - [ ] Reemplazar data-URL legacy existentes en BD.
 - [x] Configurar límites de peso/formato (5 MB; JPEG/PNG/WEBP) en API.
 - [ ] Configurar cleanup de imágenes huérfanas.

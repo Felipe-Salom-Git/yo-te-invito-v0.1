@@ -121,7 +121,7 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`). Shared UI tokens:
 | `/admin/rentals/locales/[locationId]/productos/nuevo` | New product |
 | `/admin/rentals/locales/[locationId]/productos/[productId]/editar` | Edit product + images |
 
-**Forms**: `OpeningHoursEditor`, `RentalProductImagesForm` con `uploadConfig: GcsImageUploadConfig`. **GCS activo:** Admin Rentals (`rental` + `locationId`), Admin Eventos create (`event` + `tenant-demo`), Admin Excursiones (`excursion` + `operatorId` / `excursionId` / `tenant-demo`). **Legacy data-URL:** gastro, hotel, productoras, publicaciones gastro/hotel — [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §15–17.
+**Forms**: `OpeningHoursEditor`, `RentalProductImagesForm` con `uploadConfig: GcsImageUploadConfig`. **GCS activo:** Admin Rentals, Admin Eventos/Excursiones, **Portal Productora**, **Portales Gastro + Hotel** — [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §17–20. **Legacy data-URL:** publicaciones gastro/hotel admin, ticket studio — §20.
 
 ### Portal usuario (`/me/*`)
 
@@ -143,10 +143,10 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`). Shared UI tokens:
 - Componentes portal: `MeDashboardAlerts`, `MeRecommendationsSection`, `MePreferencesInterests` + **`InterestsDisclosure`** (acordeones reutilizables); órdenes: `MeOrderDetailSummary`, `MeOrderTicketsList`.
 - **Ticket comprador (V2.2):** `components/tickets/` (`BuyerTicketVisual`, `TicketTemplateRenderer`, `DefaultBuyerTicket`, `TicketQrImage`, `TicketEntryStatusBanner`); utilidades `lib/tickets/` (`qr-display.ts`, `qr-image-url.ts`, `ticket-status-ui.ts`); estilos impresión en `styles/globals.css` (`@media print`).
 - Ficha gastro pública: `components/gastro/GastroPublicDetailContent` + hooks `lib/query/gastro-public-detail.ts`; **`GastroFollowButton`** → `/me/gastro-follows` (sin favoritos/esperados de evento en ficha restaurante).
-- Portal gastro: dashboard + validaciones (Slice 6). Valoraciones: `ManagedReviewsCommentsPage` scope `gastro` + `ManagedPortalReviewAlerts`. Follows: `GastroFollowButton`, `MePreferencesGastro` (toggles web/email por local). Notificaciones descuento: kind `FOLLOWED_GASTRO_NEW_DISCOUNT` en bandeja `/me/notifications`.
+- Portal gastro: dashboard + validaciones (Slice 6). **Imágenes GCS:** `GastroLocalForm`, `GastroDiscountForm`, `/gastro/contenido`. Valoraciones: `ManagedReviewsCommentsPage` scope `gastro` + `ManagedPortalReviewAlerts`. Follows: `GastroFollowButton`, `MePreferencesGastro` (toggles web/email por local). Notificaciones descuento: kind `FOLLOWED_GASTRO_NEW_DISCOUNT` en bandeja `/me/notifications`.
 - Engagement eventos: `EventEngagementRow` en fichas de **eventos** (favoritos / expected-events).
 - Checkout autenticado: redirige a `/me/cart` (aceptación `CHECKOUT` vía `POST /me/legal/accept`); invitado `/checkout` y `/checkout/[eventId]` — checkbox obligatorio (declaración; persistencia al tener cuenta).
-- **Hoteles (discovery Próximamente, portal + ficha pública Slice 10–11):** `/hoteles` (Próximamente), **`/hoteles/[id]`** — `HotelLocationDetailView` + `GET /public/hotel-locations/by-event/:eventId` (fallback evento hotel); contacto real (WhatsApp/tel/email); sin reservas/checkout. Portal: `/hotel`, `/hotel/editar`. Valoraciones `/hotel/valoraciones`. `/categoria/hotel` → 404.
+- **Hoteles (discovery Próximamente, portal + ficha pública Slice 10–11):** `/hoteles` (Próximamente), **`/hoteles/[id]`** — `HotelLocationDetailView` + `GET /public/hotel-locations/by-event/:eventId` (fallback evento hotel); contacto real (WhatsApp/tel/email); sin reservas/checkout. Portal: `/hotel`, `/hotel/editar` (**`HotelProfileForm` con GCS**). Valoraciones `/hotel/valoraciones`. `/categoria/hotel` → 404.
 
 **Eliminado:** `/reventa`, `/dev/seed`, `/dev/local-db`, `lib/local-db/*`.
 
@@ -169,7 +169,7 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`). Shared UI tokens:
 | OpeningHoursEditor, RentalProductImagesForm | `components/forms/`, `components/rentals/` |
 | Reviews V2 (público + portales) | `components/reviews/` — filtros públicos `PublicReviewsFiltersBar` + hooks `usePublicEntityReviewsState` / `useUserPublicReviewsState`; `EventReviewsSection`; perfil `/users/[userId]`; portales `ManagedReviewsCommentsPage` (URL query en productor/gastro/hotel, chips + orden/respuesta/disputa/estado); `ReviewReplyModal` |
 | Comentarios productora | `components/producer/comments/` (`ProducerCommentsPage` → `ManagedReviewsCommentsPage`, filtros rápidos, resumen API) |
-| Perfil productor (portal) | `components/producer/profile/` (`ProducerProfilePage`, `ManagedReviewSummary`, `ProducerProfilePublicPreview`, `producer-profile-completeness.ts`) |
+| Perfil productor (portal) | `components/producer/profile/` (`ProducerProfilePage`, `ProducerIdentityForm` + `ProducerImagesForm` con GCS, `ManagedReviewSummary`, `ProducerProfilePublicPreview`, `producer-profile-completeness.ts`) |
 | Dashboard productor | `components/producer/dashboard/` (`ProducerDashboardClient`, KPIs, engagement, alertas estado evento; **sin** `ProducerDashboardQuickLinks`) |
 | Valoración B2B | `CommercialReviewPanel`, `CommercialAspectBreakdown` |
 | **Navbar V2** | `components/Navbar.tsx` — logo → `/categorias`, casita → `/home`, Explorar (`md+`), ciudad (`NavbarCitySelector` / drawer mobile), carro (`NavbarCartButton` + `useNavbarCart`), menú usuario (`NavbarUserMenu`) o drawer `NavbarMobileNav` + `MobilePublicNavDrawer`. Config: `lib/navigation/publicNavConfig.ts`, `userNavConfig.ts`. **Footer:** variantes por ruta (`footerVisibility.ts`, `RouteAwareFooter`); legales `footerLegalLinks.ts`; contacto `usePublicPlatformConfig` → `GET /public/platform-config` (no `/admin/config`). A11y: `useOverlayA11y`, `navA11yClasses`. Docs: `docs/audits/NAVBAR_RESPONSIVE_AUDIT.md`, `PUBLIC_FOOTER_AUDIT.md` |
@@ -324,7 +324,7 @@ Runbook: [`docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTIO
 
 **Google Maps (Etapa A GCP):** key de consola `YTI Web Maps PROD` (valor **no** en repo) → `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` en `.env.production` del VPS. Integración prod pendiente Etapa B — [`GOOGLE_CLOUD_RUNBOOK.md`](../deploy/GOOGLE_CLOUD_RUNBOOK.md).
 
-**Storage imágenes:** GCS en Admin Rentals, Eventos (create) y Excursiones. Hook `useGcsImageUpload`. Otros formularios aún data-URL — [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §17.
+**Storage imágenes:** GCS en Admin Rentals, Eventos, Excursiones, portal productora, **portales gastro y hotel**. Hook `useGcsImageUpload` — [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §20.
 
 - **Persistencia:** solo API — no `lib/local-db`, no `/dev/seed`, no `/dev/local-db`.
 - **Subcategorías (estructura):** `pnpm --filter api run seed:subcategories`.

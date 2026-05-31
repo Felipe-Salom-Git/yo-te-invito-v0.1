@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -18,6 +18,7 @@ import {
   eventDetailToFormData,
   validateProducerEventForm,
 } from '@/lib/producer/producer-event-form.utils';
+import type { GcsImageUploadConfig } from '@/lib/upload/gcs-image-upload-config';
 import { ProducerEventFormErrorSummary } from './ProducerEventFormErrorSummary';
 import { ProducerEventFormFields } from './ProducerEventFormFields';
 import { ProducerEventFormLayout } from './ProducerEventFormLayout';
@@ -48,6 +49,12 @@ export function ProducerEventEditForm({ eventId, eventData }: Props) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [subcategoryId, setSubcategoryId] = useState(eventData.subcategoryId ?? '');
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
+
+  const coverUploadConfig = useMemo(
+    (): GcsImageUploadConfig => ({ scope: 'event', entityId: eventId }),
+    [eventId],
+  );
 
   useEffect(() => {
     setForm(eventDetailToFormData(eventData));
@@ -83,14 +90,6 @@ export function ProducerEventEditForm({ eventId, eventData }: Props) {
     },
   });
 
-  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file?.type.startsWith('image/')) return;
-    const reader = new FileReader();
-    reader.onload = () => setForm((p) => ({ ...p, coverImageUrl: reader.result as string }));
-    reader.readAsDataURL(file);
-  }, []);
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
@@ -113,7 +112,7 @@ export function ProducerEventEditForm({ eventId, eventData }: Props) {
       </Link>
       <Button
         type="submit"
-        disabled={updateMutation.isPending}
+        disabled={updateMutation.isPending || isUploadingCover}
         className="w-full sm:w-auto"
       >
         {updateMutation.isPending ? 'Guardando…' : 'Guardar cambios'}
@@ -143,7 +142,8 @@ export function ProducerEventEditForm({ eventId, eventData }: Props) {
           subcategoryId={subcategoryId}
           onSubcategoryChange={setSubcategoryId}
           errors={errors}
-          onFileSelect={handleFileChange}
+          uploadConfig={coverUploadConfig}
+          onUploadingChange={setIsUploadingCover}
           apiStatus={eventData.status}
           completenessItems={completenessItems}
         />
