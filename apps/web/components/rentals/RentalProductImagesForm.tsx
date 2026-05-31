@@ -4,25 +4,18 @@ import { useCallback, useEffect, useState } from 'react';
 import { Input, useToast } from '@/components';
 import { ImageUrlPreview } from '@/components/admin/ImageUrlPreview';
 import { compressImageFileToDataUrl, compressImageFilesToDataUrls } from '@/lib/image-compress';
-import { useUploadPublicImage } from '@/lib/query/uploads';
 import {
-  isDataImageUrl,
-  validatePublicImageFile,
-} from '@/lib/upload/validate-public-image-file';
+  IMAGE_ACCEPT_GCS,
+  type GcsImageUploadConfig,
+} from '@/lib/upload/gcs-image-upload-config';
+import { useGcsImageUpload } from '@/lib/upload/use-gcs-image-upload';
+import { isDataImageUrl } from '@/lib/upload/validate-public-image-file';
+
+export type { GcsImageUploadConfig } from '@/lib/upload/gcs-image-upload-config';
 
 export type RentalProductImagesValue = {
   headerImageUrl: string;
   galleryImageUrls: string[];
-};
-
-/**
- * Admin Rentals: upload via POST /uploads/public-image (GCS).
- * Uses rentalLocationId as entityId (product may not exist yet on create).
- * Paths: public/rental/{locationId}/{cover|gallery}/YYYY/MM/{uuid}.ext
- */
-export type RentalGcsUploadConfig = {
-  mode: 'gcs-rental';
-  rentalLocationId: string;
 };
 
 export type RentalProductImagesFormProps = {
@@ -30,16 +23,12 @@ export type RentalProductImagesFormProps = {
   onChange: (value: RentalProductImagesValue) => void;
   /** When true, only the multi-image gallery is shown (no separate header field). */
   galleryOnly?: boolean;
-  /** When set (Admin Rentals), file uploads go to GCS — no new data-URLs. */
-  uploadConfig?: RentalGcsUploadConfig;
+  /** When set, file uploads go to GCS — no new data-URLs. */
+  uploadConfig?: GcsImageUploadConfig;
   /** Notifies parent while GCS uploads are in progress (disable save). */
   onUploadingChange?: (uploading: boolean) => void;
 };
 
-const GCS_UPLOAD_ERROR =
-  'No pudimos subir la imagen. Revisá el formato/peso e intentá nuevamente.';
-
-const IMAGE_ACCEPT_GCS = 'image/jpeg,image/png,image/webp';
 const IMAGE_ACCEPT_LEGACY = 'image/*';
 
 export function RentalProductImagesForm({
@@ -51,11 +40,14 @@ export function RentalProductImagesForm({
 }: RentalProductImagesFormProps) {
   const { addToast } = useToast();
   const [galleryUrlDraft, setGalleryUrlDraft] = useState('');
-  const [uploadProgress, setUploadProgress] = useState<string | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const uploadMutation = useUploadPublicImage();
+  const {
+    gcsMode,
+    isUploading,
+    uploadProgress,
+    uploadSingleWithProgress,
+    uploadFilesSequential,
+  } = useGcsImageUpload(uploadConfig);
 
-  const gcsMode = uploadConfig?.mode === 'gcs-rental';
   const fileAccept = gcsMode ? IMAGE_ACCEPT_GCS : IMAGE_ACCEPT_LEGACY;
 
   useEffect(() => {
@@ -75,32 +67,6 @@ export function RentalProductImagesForm({
     onChange({ ...value, galleryImageUrls: [...value.galleryImageUrls, ...urls] });
   };
 
-  const uploadToGcs = useCallback(
-    async (file: File, purpose: 'cover' | 'gallery'): Promise<string | null> => {
-      if (!uploadConfig || uploadConfig.mode !== 'gcs-rental') return null;
-
-      const validation = validatePublicImageFile(file);
-      if (!validation.ok) {
-        addToast(validation.message, 'error');
-        return null;
-      }
-
-      try {
-        const result = await uploadMutation.mutateAsync({
-          file,
-          scope: 'rental',
-          purpose,
-          entityId: uploadConfig.rentalLocationId,
-        });
-        return result.url;
-      } catch {
-        addToast(GCS_UPLOAD_ERROR, 'error');
-        return null;
-      }
-    },
-    [addToast, uploadConfig, uploadMutation],
-  );
-
   const handleHeaderFile = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
@@ -108,15 +74,8 @@ export function RentalProductImagesForm({
       if (!file) return;
 
       if (gcsMode) {
-        setIsUploading(true);
-        setUploadProgress('Subiendo imagen…');
-        try {
-          const url = await uploadToGcs(file, 'cover');
-          if (url) setHeader(url);
-        } finally {
-          setUploadProgress(null);
-          setIsUploading(false);
-        }
+        const url = await uploadSingleWithProgress(file, 'cover');
+        if (url) setHeader(url);
         return;
       }
 
@@ -130,7 +89,7 @@ export function RentalProductImagesForm({
         );
       }
     },
-    [addToast, gcsMode, uploadToGcs, value],
+    [addToast, gcsMode, uploadSingleWithProgress, value],
   );
 
   const handleGalleryFiles = useCallback(
@@ -140,19 +99,7 @@ export function RentalProductImagesForm({
       if (files.length === 0) return;
 
       if (gcsMode) {
-        setIsUploading(true);
-        const uploaded: string[] = [];
-        try {
-          for (let i = 0; i < files.length; i++) {
-            setUploadProgress(`Subiendo ${i + 1}/${files.length}…`);
-            const url = await uploadToGcs(files[i]!, 'gallery');
-            if (url) uploaded.push(url);
-          }
-          appendGalleryUrls(uploaded);
-        } finally {
-          setUploadProgress(null);
-          setIsUploading(false);
-        }
+        appendGalleryUrls(await uploadFilesSequential(files, 'gallery'));
         return;
       }
 
@@ -171,12 +118,15 @@ export function RentalProductImagesForm({
         );
       }
     },
-    [addToast, gcsMode, uploadToGcs, value],
+    [addToast, gcsMode, uploadFilesSequential, value],
   );
 
   const rejectDataUrlIfGcs = (url: string): boolean => {
     if (gcsMode && isDataImageUrl(url)) {
-      addToast('Las imágenes embebidas (data-URL) no están permitidas. Subí un archivo o pegá una URL https.', 'error');
+      addToast(
+        'Las imágenes embebidas (data-URL) no están permitidas. Subí un archivo o pegá una URL https.',
+        'error',
+      );
       return true;
     }
     return false;

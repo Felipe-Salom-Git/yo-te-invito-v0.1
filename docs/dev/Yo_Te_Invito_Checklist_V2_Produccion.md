@@ -212,73 +212,6 @@ _Footer público completo — bloque V2 cerrado. Smoke: `docs/audits/PUBLIC_FOOT
 
 > **Bloque Registro y onboarding por tipo de usuario cerrado (V2)** — ver `docs/onboarding/REGISTER_ONBOARDING_SMOKE.md` y slices 1–14 + 12.5–12.6 en `docs/onboarding/`.
 
-## QA responsive global
-
-- [ ] Hacer responsive polish general.
-- [ ] Revisar mobile de home, explore, detalle, checkout y portales.
-- [ ] Revisar navbar responsive en mobile real.
-- [ ] Revisar footer responsive en mobile real.
-- [ ] Revisar home pública en mobile real.
-- [ ] Revisar gateway/categorías en mobile real.
-- [ ] Revisar explore en mobile real.
-- [ ] Revisar fichas públicas de eventos en mobile real.
-- [ ] Revisar fichas públicas de gastronomía en mobile real.
-- [ ] Revisar fichas públicas de rentals en mobile real.
-- [ ] Revisar fichas públicas de excursiones en mobile real.
-- [ ] Revisar fichas públicas de hoteles en mobile real.
-- [ ] Revisar checkout en mobile real.
-- [ ] Revisar portal usuario `/me/*` en mobile real.
-- [ ] Revisar portal productor en mobile real.
-- [ ] Revisar portal admin en mobile real.
-- [ ] Revisar portal gastro en mobile real.
-- [ ] Revisar portal hotel en mobile real.
-- [ ] Revisar portal referido en mobile real.
-- [ ] Validar que no haya scroll horizontal accidental.
-- [ ] Validar que modales, menús y dropdowns cierren correctamente.
-- [ ] Validar accesibilidad básica: foco, teclado, aria-labels y contraste.
-
-## SEO y GEO
-
-- [ ] Agregar SEO metadata por ficha pública.
-- [ ] Agregar SEO por categoría.
-- [ ] Revisar GEO/localización para ciudad preferida y descubrimiento.
-- [ ] Configurar `next/image` con dominios remotos cuando haya storage.
-
-## Sistema de emails transaccionales y operativos
-
-- [ ] Auditar sistema actual de notificaciones in-app/email/push.
-- [ ] Definir matriz completa de emails por portal y tipo de evento.
-- [ ] Crear templates base de email con branding Yo Te Invito.
-- [ ] Definir layout común de email: header, contenido, CTA, soporte y footer legal.
-- [ ] Email de bienvenida para usuario comprador.
-- [ ] Email de bienvenida para productora.
-- [ ] Email de bienvenida para gastronómico.
-- [ ] Email de bienvenida para rental.
-- [ ] Email de bienvenida para hotel.
-- [ ] Email de bienvenida para referido.
-- [ ] Email de orden creada / pago pendiente.
-- [ ] Email de pago aprobado.
-- [ ] Email de ticket emitido con ticket adjunto o link al ticket.
-- [ ] Email de evento próximo / recordatorio.
-- [ ] Email de transferencia de ticket recibida.
-- [ ] Email de transferencia de ticket aceptada/rechazada/cancelada.
-- [ ] Email de evento aprobado para productora.
-- [ ] Email de evento rechazado para productora.
-- [ ] Email de nueva reseña recibida.
-- [ ] Email de respuesta oficial a reseña.
-- [ ] Email de disputa de reseña creada o actualizada.
-- [ ] Email de referido asociado a productora.
-- [ ] Email de propuesta productor ↔ referido.
-- [ ] Email de actualización de comisión/reporte de referido.
-- [ ] Email de alerta crítica para admins.
-- [ ] Email de nuevo evento pendiente para admins.
-- [ ] Email de error operativo crítico: pago, factura, webhook o scanner.
-- [ ] Panel/preferencias para activar o desactivar emails no críticos.
-- [ ] Mantener emails críticos siempre activos cuando sean necesarios por operación/legal.
-- [ ] Registrar logs de entrega de emails y reintentos.
-- [ ] Definir estrategia de reintentos ante fallo del proveedor de email.
-- [ ] Smoke test de emails principales.
-
 ## Producción técnica
 
 - [x] Contratar VPS.
@@ -349,39 +282,15 @@ _Footer público completo — bloque V2 cerrado. Smoke: `docs/audits/PUBLIC_FOOT
 - [x] Crear bucket público `yti-prod-public-assets` en GCP + CORS aplicado.
 - [x] Implementar upload API (`POST /uploads/public-image`, módulo `uploads/`, ADMIN).
 - [x] Integrar upload GCS en Admin Rentals (cover + galería; `entityId` = `rentalLocationId`).
-- [ ] Integrar upload en otros formularios web (eventos, gastro, hotel, productoras).
+- [x] Integrar upload GCS en Admin Eventos (publicaciones-generales, categoría event).
+- [x] Integrar upload GCS en Admin Excursiones (operador + legacy edit + publicaciones-generales).
+- [ ] Integrar upload en otros formularios web (gastro, hotel, productoras).
 - [ ] Reemplazar data-URL legacy existentes en BD.
 - [x] Configurar límites de peso/formato (5 MB; JPEG/PNG/WEBP) en API.
 - [ ] Configurar cleanup de imágenes huérfanas.
-- [ ] Configurar `next/image` con dominios remotos.
+- [x] Configurar `next/image` con dominios remotos (`storage.googleapis.com/yti-prod-public-assets/**`).
 - [ ] Evaluar Cloud CDN o dominio `cdn.yoteinvito.club` si crece el tráfico.
 - [ ] Smoke test storage upload ampliado (roles portal, MIME inválido).
-
-## Google Analytics 4
-
-- [ ] Crear propiedad Google Analytics 4 para Yo Te Invito.
-- [ ] Crear Web Data Stream para el dominio definitivo.
-- [ ] Obtener Measurement ID (`G-XXXXXXXXXX`).
-- [ ] Definir si se usará GA4 directo o Google Tag Manager.
-- [ ] Documentar variable `NEXT_PUBLIC_GA_MEASUREMENT_ID`.
-- [ ] Integrar GA4 en Next.js App Router.
-- [ ] Registrar page views en navegación cliente.
-- [ ] Definir eventos personalizados principales.
-- [ ] Medir vistas de fichas públicas.
-- [ ] Medir clicks en cards públicas.
-- [ ] Medir búsquedas en explore.
-- [ ] Medir filtros aplicados en explore.
-- [ ] Medir contacto por WhatsApp.
-- [ ] Medir agregar a favoritos / follow / evento esperado.
-- [ ] Medir inicio de checkout.
-- [ ] Medir compra completada cuando exista pago real.
-- [ ] Medir registro completado por tipo de perfil.
-- [ ] Medir errores críticos de checkout/pago cuando corresponda.
-- [ ] Configurar conversiones principales en GA4.
-- [ ] Excluir tráfico interno/admin si corresponde.
-- [ ] Revisar consentimiento/cookies antes de activar tracking completo.
-- [ ] Configurar Consent Mode si se implementa banner de consentimiento.
-- [ ] Smoke test: page view, evento custom y conversión en GA4 DebugView.
 
 ## Google Search Console y SEO técnico
 
@@ -418,8 +327,47 @@ _Footer público completo — bloque V2 cerrado. Smoke: `docs/audits/PUBLIC_FOOT
 - [ ] Notificar a admin ante errores críticos de webhook o reconciliación.
 - [ ] Smoke test checkout real: orden → pago → webhook → tickets.
 
+## Sistema de emails transaccionales y operativos
+
+- [ ] Auditar sistema actual de notificaciones in-app/email/push.
+- [ ] Definir matriz completa de emails por portal y tipo de evento.
+- [ ] Crear templates base de email con branding Yo Te Invito.
+- [ ] Definir layout común de email: header, contenido, CTA, soporte y footer legal.
+- [ ] Email de bienvenida para usuario comprador.
+- [ ] Email de bienvenida para productora.
+- [ ] Email de bienvenida para gastronómico.
+- [ ] Email de bienvenida para rental.
+- [ ] Email de bienvenida para hotel.
+- [ ] Email de bienvenida para referido.
+- [ ] Email de orden creada / pago pendiente.
+- [ ] Email de pago aprobado.
+- [ ] Email de ticket emitido con ticket adjunto o link al ticket.
+- [ ] Email de evento próximo / recordatorio.
+- [ ] Email de transferencia de ticket recibida.
+- [ ] Email de transferencia de ticket aceptada/rechazada/cancelada.
+- [ ] Email de evento aprobado para productora.
+- [ ] Email de evento rechazado para productora.
+- [ ] Email de nueva reseña recibida.
+- [ ] Email de respuesta oficial a reseña.
+- [ ] Email de disputa de reseña creada o actualizada.
+- [ ] Email de referido asociado a productora.
+- [ ] Email de propuesta productor ↔ referido.
+- [ ] Email de actualización de comisión/reporte de referido.
+- [ ] Email de alerta crítica para admins.
+- [ ] Email de nuevo evento pendiente para admins.
+- [ ] Email de error operativo crítico: pago, factura, webhook o scanner.
+- [ ] Panel/preferencias para activar o desactivar emails no críticos.
+- [ ] Mantener emails críticos siempre activos cuando sean necesarios por operación/legal.
+- [ ] Registrar logs de entrega de emails y reintentos.
+- [ ] Definir estrategia de reintentos ante fallo del proveedor de email.
+- [ ] Smoke test de emails principales.
+
 ## SEO, GEO y metadata social
 
+- [ ] Agregar SEO metadata por ficha pública.
+- [ ] Agregar SEO por categoría.
+- [ ] Revisar GEO/localización para ciudad preferida y descubrimiento.
+- [x] Configurar `next/image` con dominios remotos GCS — [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §11.
 - [ ] Agregar favicon / ícono de pestaña con la marca Yo Te Invito.
 - [ ] Agregar app icons para mobile/PWA cuando corresponda.
 - [ ] Configurar title template global: `Yo Te Invito | ...`.
@@ -456,7 +404,7 @@ _Footer público completo — bloque V2 cerrado. Smoke: `docs/audits/PUBLIC_FOOT
 - [ ] Agregar contenido semántico útil para IA/GEO en fichas públicas: resumen, ubicación, categoría, horarios, condiciones y datos clave.
 - [ ] Evaluar archivo `llms.txt` o equivalente informativo para orientar crawlers/IA, sin depender de él como garantía.
 - [ ] Documentar estrategia GEO/AEO: contenido claro, datos estructurados, fuentes internas consistentes y páginas públicas bien enlazadas.
-- [ ] Configurar `next/image` con dominios remotos cuando haya storage.
+- [x] Configurar `next/image` con dominios remotos GCS — [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §11.
 - [ ] Validar metadata con herramientas de preview social y rich results.
 
 ## QA responsive global
@@ -535,5 +483,32 @@ _Footer público completo — bloque V2 cerrado. Smoke: `docs/audits/PUBLIC_FOOT
 - [ ] Probar flujo completo comprador: checkout → pago aprobado → email → ticket → factura.
 - [ ] Probar flujo de error: pago aprobado pero factura fallida.
 - [ ] Probar flujo de error: pago aprobado pero email fallido.
+
+## Google Analytics 4
+
+- [ ] Crear propiedad Google Analytics 4 para Yo Te Invito.
+- [ ] Crear Web Data Stream para el dominio definitivo.
+- [ ] Obtener Measurement ID (`G-XXXXXXXXXX`).
+- [ ] Definir si se usará GA4 directo o Google Tag Manager.
+- [ ] Documentar variable `NEXT_PUBLIC_GA_MEASUREMENT_ID`.
+- [ ] Integrar GA4 en Next.js App Router.
+- [ ] Registrar page views en navegación cliente.
+- [ ] Definir eventos personalizados principales.
+- [ ] Medir vistas de fichas públicas.
+- [ ] Medir clicks en cards públicas.
+- [ ] Medir búsquedas en explore.
+- [ ] Medir filtros aplicados en explore.
+- [ ] Medir contacto por WhatsApp.
+- [ ] Medir agregar a favoritos / follow / evento esperado.
+- [ ] Medir inicio de checkout.
+- [ ] Medir compra completada cuando exista pago real.
+- [ ] Medir registro completado por tipo de perfil.
+- [ ] Medir errores críticos de checkout/pago cuando corresponda.
+- [ ] Configurar conversiones principales en GA4.
+- [ ] Excluir tráfico interno/admin si corresponde.
+- [ ] Revisar consentimiento/cookies antes de activar tracking completo.
+- [ ] Configurar Consent Mode si se implementa banner de consentimiento.
+- [ ] Smoke test: page view, evento custom y conversión en GA4 DebugView.
+
 
 

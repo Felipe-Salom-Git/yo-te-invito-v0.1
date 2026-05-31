@@ -369,11 +369,12 @@ Valida: login ADMIN → upload → `url` + `objectKey` → HEAD público 200. **
 | S2 | Backend upload module (`POST /uploads/public-image`) | [x] V1 ADMIN |
 | S3 | Roles portal + ownership por entidad | [ ] |
 | S4 | Admin Rentals — formularios → GCS (cover + galería) | [x] Jun 2026 |
-| S5 | Otros verticales (eventos, gastro, hotel, productoras) | [ ] |
-| S6 | `next/image` remotePatterns GCS | [x] Jun 2026 |
-| S7 | Signed URLs bucket privado (`private/*`) | [ ] |
-| S8 | Cleanup huérfanos + migración data-URL legacy | [ ] |
-| S9 | CDN opcional | [ ] |
+| S5 | `next/image` remotePatterns GCS | [x] Jun 2026 |
+| S6 | Admin Eventos + Excursiones → GCS | [x] Jun 2026 |
+| S7 | Otros verticales (gastro, hotel, productoras) | [ ] |
+| S8 | Signed URLs bucket privado (`private/*`) | [ ] |
+| S9 | Cleanup huérfanos + migración data-URL legacy | [ ] |
+| S10 | CDN opcional | [ ] |
 
 **No mover backups** de `yti-prod-storage`. **No publicar** `yti-prod-storage`.
 
@@ -418,7 +419,45 @@ public/rental/{rentalLocationId}/gallery/YYYY/MM/{uuid}.ext
 5. Probar archivo &gt; 5 MB o SVG → error visible.
 6. Galería multi-upload → varias URLs GCS.
 
-**Próximo:** Storage 6 — upload GCS en otro vertical (eventos/gastro) o `NEXT_PUBLIC_GCS_PUBLIC_BASE_URL` helper si hace falta.
+**Próximo:** Storage 7 — gastro / hotel / productoras portal.
+
+---
+
+## 17. Admin Eventos + Excursiones — upload GCS (Storage 6, Jun 2026)
+
+**Alcance:** formularios admin de eventos (publicaciones generales) y excursiones. Sin producer portal, gastro ni hotel.
+
+### Decisión `entityId`
+
+| Flujo | scope | entityId | purpose |
+|-------|--------|----------|---------|
+| Admin evento **create** (`/admin/publicaciones-generales/nuevo`, categoría event) | `event` | `tenant-demo` (tenant; evento aún no existe) | `cover` |
+| Admin excursión **create** (operador → nueva excursión) | `excursion` | `operatorId` (entidad padre, como rental + locationId) | `cover`, `gallery` |
+| Admin excursión **create** (publicaciones-generales, categoría excursion) | `excursion` | `tenant-demo` | `cover`, `gallery` |
+| Admin excursión **edit** (operador → editar) | `excursion` | `excursionId` | `cover`, `gallery` |
+| Admin excursión **edit** legacy (`/admin/excursiones/[id]/editar`) | `excursion` | `id` (event id) | `cover` |
+
+Paths GCS (backend): `public/events/{entityId}/…`, `public/excursions/{entityId}/…`.
+
+**Nota:** uploads bajo `tenant-demo` en create agrupan imágenes pre-save del tenant; al no existir `eventId` aún, no se inventan IDs. Edit con id real cuando está disponible.
+
+### Frontend
+
+| Pieza | Uso |
+|-------|-----|
+| `useGcsImageUpload` | Hook compartido — `lib/upload/use-gcs-image-upload.ts` |
+| `GcsImageUploadConfig` | `{ scope, entityId }` — `lib/upload/gcs-image-upload-config.ts` |
+| `EventCategoryPublicationFields` | Cover GCS en create evento admin |
+| `RentalProductImagesForm` + `uploadConfig` | Cover + galería excursiones (operador + publicaciones-generales) |
+| `/admin/excursiones/[id]/editar` | Cover GCS directo con hook |
+
+**Reglas:** sin fallback data-URL; legacy visible; `https://` pegado OK; `data:image/` rechazado en nuevas cargas.
+
+### Smoke manual
+
+**Eventos:** `/admin/publicaciones-generales/nuevo` → categoría Evento → subir cover → crear → verificar URL GCS en BD.
+
+**Excursiones:** operador → nueva/editar excursión → cover + galería; legacy edit `/admin/excursiones/{id}/editar` → cover GCS.
 
 ---
 

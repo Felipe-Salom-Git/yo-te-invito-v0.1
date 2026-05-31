@@ -1,8 +1,14 @@
 'use client';
 
-import { useCallback } from 'react';
-import { Input } from '@/components';
+import { useCallback, useEffect } from 'react';
+import { Input, useToast } from '@/components';
 import { ImageUrlPreview } from '@/components/admin/ImageUrlPreview';
+import {
+  IMAGE_ACCEPT_GCS,
+  type GcsImageUploadConfig,
+} from '@/lib/upload/gcs-image-upload-config';
+import { useGcsImageUpload } from '@/lib/upload/use-gcs-image-upload';
+import { isDataImageUrl } from '@/lib/upload/validate-public-image-file';
 import { SubcategorySelect } from '@/components/forms/SubcategorySelect';
 import {
   EMPTY_LOCATION_VALUE,
@@ -44,6 +50,9 @@ type EventCategoryPublicationFieldsProps = {
   value: EventCategoryPublicationValue;
   onChange: (value: EventCategoryPublicationValue) => void;
   showCapacity?: boolean;
+  /** Admin event create: GCS cover upload (entityId = tenant until event exists). */
+  uploadConfig?: GcsImageUploadConfig;
+  onUploadingChange?: (uploading: boolean) => void;
 };
 
 export function EventCategoryPublicationFields({
@@ -51,24 +60,59 @@ export function EventCategoryPublicationFields({
   value,
   onChange,
   showCapacity,
+  uploadConfig,
+  onUploadingChange,
 }: EventCategoryPublicationFieldsProps) {
+  const { addToast } = useToast();
   const patch = (partial: Partial<EventCategoryPublicationValue>) =>
     onChange({ ...value, ...partial });
 
+  const { gcsMode, isUploading, uploadProgress, uploadSingleWithProgress } =
+    useGcsImageUpload(uploadConfig);
+
+  useEffect(() => {
+    onUploadingChange?.(isUploading);
+  }, [isUploading, onUploadingChange]);
+
+  const rejectDataUrlIfGcs = (url: string): boolean => {
+    if (gcsMode && isDataImageUrl(url)) {
+      addToast(
+        'Las imágenes embebidas (data-URL) no están permitidas. Subí un archivo o pegá una URL https.',
+        'error',
+      );
+      return true;
+    }
+    return false;
+  };
+
   const handleFileChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
-      if (!file?.type.startsWith('image/')) return;
+      e.target.value = '';
+      if (!file) return;
+
+      if (gcsMode) {
+        const url = await uploadSingleWithProgress(file, 'cover');
+        if (url) patch({ coverImageUrl: url });
+        return;
+      }
+
+      if (!file.type.startsWith('image/')) return;
       const reader = new FileReader();
       reader.onload = () => patch({ coverImageUrl: reader.result as string });
       reader.readAsDataURL(file);
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- patch uses latest value via onChange
-    [onChange, value],
+    [gcsMode, uploadSingleWithProgress, value, onChange],
   );
 
   return (
     <div className="space-y-4">
+      {uploadProgress ? (
+        <p className="text-sm text-accent" role="status">
+          {uploadProgress}
+        </p>
+      ) : null}
+
       <Input
         label="Título"
         value={value.title}
@@ -118,14 +162,30 @@ export function EventCategoryPublicationFields({
       />
       <div>
         <label className="mb-1.5 block text-sm font-medium text-text">Imagen</label>
+        {gcsMode ? (
+          <p className="mb-2 text-xs text-text-muted">
+            Cover vía Google Cloud Storage (JPEG, PNG o WEBP, máx. 5 MB).
+          </p>
+        ) : null}
         <Input
           label="URL de imagen"
           value={value.coverImageUrl}
-          onChange={(e) => patch({ coverImageUrl: e.target.value })}
+          onChange={(e) => {
+            const url = e.target.value;
+            if (rejectDataUrlIfGcs(url)) return;
+            patch({ coverImageUrl: url });
+          }}
+          disabled={isUploading}
         />
         <label className="mt-2 block text-sm text-text-muted">
           <span className="mr-2">O subir archivo:</span>
-          <input type="file" accept="image/*" onChange={handleFileChange} className="text-sm" />
+          <input
+            type="file"
+            accept={gcsMode ? IMAGE_ACCEPT_GCS : 'image/*'}
+            onChange={handleFileChange}
+            disabled={isUploading}
+            className="text-sm disabled:opacity-50"
+          />
         </label>
         <ImageUrlPreview url={value.coverImageUrl} />
       </div>

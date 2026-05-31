@@ -114,7 +114,7 @@ export default function AdminRentalProductoEditarPage() {
         <RentalProductImagesForm
           value={images}
           onChange={setImages}
-          uploadConfig={{ mode: 'gcs-rental', rentalLocationId: locationId }}
+          uploadConfig={{ scope: 'rental', entityId: locationId }}
           onUploadingChange={setImagesUploading}
         />
 

@@ -44,6 +44,7 @@ export default function AdminExcursionEditarPage() {
   const [description, setDescription] = useState('');
   const [subcategoryId, setSubcategoryId] = useState('');
   const [images, setImages] = useState<RentalProductImagesValue>(emptyImages);
+  const [imagesUploading, setImagesUploading] = useState(false);
 
   useEffect(() => {
     if (event) {
@@ -109,10 +110,15 @@ export default function AdminExcursionEditarPage() {
           />
         </div>
         <SubcategorySelect category="excursion" value={subcategoryId} onChange={setSubcategoryId} />
-        <RentalProductImagesForm value={images} onChange={setImages} />
+        <RentalProductImagesForm
+          value={images}
+          onChange={setImages}
+          uploadConfig={{ scope: 'excursion', entityId: excursionId }}
+          onUploadingChange={setImagesUploading}
+        />
 
         <div className="flex gap-3 pt-4">
-          <Button type="submit" disabled={updateMutation.isPending}>
+          <Button type="submit" disabled={updateMutation.isPending || imagesUploading}>
             {updateMutation.isPending ? 'Guardando…' : 'Guardar'}
           </Button>
           <Link href={`/admin/excursiones/operadores/${operatorId}`}>

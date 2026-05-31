@@ -15,6 +15,9 @@ import {
   locationValueFromEventFields,
   type LocationValue,
 } from '@/components/location';
+import { IMAGE_ACCEPT_GCS } from '@/lib/upload/gcs-image-upload-config';
+import { useGcsImageUpload } from '@/lib/upload/use-gcs-image-upload';
+import { isDataImageUrl } from '@/lib/upload/validate-public-image-file';
 
 const TENANT_ID = 'tenant-demo';
 
@@ -41,13 +44,31 @@ export default function AdminExcursionEditarPage() {
   const [coverImageUrl, setCoverImageUrl] = useState('');
   const [subcategoryId, setSubcategoryId] = useState('');
 
-  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file?.type.startsWith('image/')) return;
-    const reader = new FileReader();
-    reader.onload = () => setCoverImageUrl(reader.result as string);
-    reader.readAsDataURL(file);
-  }, []);
+  const { isUploading, uploadProgress, uploadSingleWithProgress } = useGcsImageUpload(
+    id ? { scope: 'excursion', entityId: id } : undefined,
+  );
+
+  const handleFileChange = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      e.target.value = '';
+      if (!file) return;
+      const url = await uploadSingleWithProgress(file, 'cover');
+      if (url) setCoverImageUrl(url);
+    },
+    [uploadSingleWithProgress],
+  );
+
+  const handleCoverUrlChange = (url: string) => {
+    if (isDataImageUrl(url)) {
+      addToast(
+        'Las imágenes embebidas (data-URL) no están permitidas. Subí un archivo o pegá una URL https.',
+        'error',
+      );
+      return;
+    }
+    setCoverImageUrl(url);
+  };
 
   useEffect(() => {
     if (event) {
@@ -137,15 +158,30 @@ export default function AdminExcursionEditarPage() {
         />
         <div>
           <label className="mb-1.5 block text-sm font-medium text-text">Imagen</label>
+          {uploadProgress ? (
+            <p className="mb-2 text-sm text-accent" role="status">
+              {uploadProgress}
+            </p>
+          ) : null}
+          <p className="mb-2 text-xs text-text-muted">
+            Cover vía Google Cloud Storage (JPEG, PNG o WEBP, máx. 5 MB).
+          </p>
           <Input
             label="URL de imagen"
             value={coverImageUrl}
-            onChange={(e) => setCoverImageUrl(e.target.value)}
+            onChange={(e) => handleCoverUrlChange(e.target.value)}
             placeholder="https://…"
+            disabled={isUploading}
           />
           <label className="mt-2 block text-sm text-text-muted">
             <span className="mr-2">O subir archivo:</span>
-            <input type="file" accept="image/*" onChange={handleFileChange} className="text-sm" />
+            <input
+              type="file"
+              accept={IMAGE_ACCEPT_GCS}
+              onChange={handleFileChange}
+              disabled={isUploading}
+              className="text-sm disabled:opacity-50"
+            />
           </label>
           <ImageUrlPreview url={coverImageUrl} />
         </div>
@@ -159,7 +195,7 @@ export default function AdminExcursionEditarPage() {
           onChange={setSubcategoryId}
         />
         <div className="flex gap-3 pt-4">
-          <Button type="submit" disabled={updateMutation.isPending}>
+          <Button type="submit" disabled={updateMutation.isPending || isUploading}>
             {updateMutation.isPending ? 'Guardando…' : 'Guardar'}
           </Button>
           <Link href="/admin/excursiones">

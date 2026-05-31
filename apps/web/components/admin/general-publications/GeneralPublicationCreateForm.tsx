@@ -10,6 +10,7 @@ import { buildAdminEventDescription } from '@/lib/admin/event-description';
 import { eventFieldsFromLocationValue } from '@/components/location';
 import { rentalProductImagesToPayload } from '@/components/rentals/RentalProductImagesForm';
 import { getCategoryLabel } from '@/lib/home/contentRoutes';
+import { ADMIN_GCS_TENANT_ENTITY_ID } from '@/lib/upload/admin-tenant-id';
 import type { ContentCategory } from '@/repositories/interfaces';
 import {
   EventCategoryPublicationFields,
@@ -36,6 +37,7 @@ export function GeneralPublicationCreateForm({
   const [category, setCategory] = useState<ContentCategory>('event');
   const [eventFields, setEventFields] = useState(EMPTY_EVENT_PUBLICATION_VALUE);
   const [serviceFields, setServiceFields] = useState(EMPTY_SERVICE_PUBLICATION_VALUE);
+  const [imagesUploading, setImagesUploading] = useState(false);
 
   const createMutation = useMutation({
     mutationFn: () => {
@@ -118,6 +120,12 @@ export function GeneralPublicationCreateForm({
           category={category as 'rental' | 'excursion'}
           value={serviceFields}
           onChange={setServiceFields}
+          uploadConfig={
+            category === 'excursion'
+              ? { scope: 'excursion', entityId: ADMIN_GCS_TENANT_ENTITY_ID }
+              : undefined
+          }
+          onUploadingChange={setImagesUploading}
         />
       ) : (
         <EventCategoryPublicationFields
@@ -125,11 +133,17 @@ export function GeneralPublicationCreateForm({
           value={eventFields}
           onChange={setEventFields}
           showCapacity={category === 'event'}
+          uploadConfig={
+            category === 'event'
+              ? { scope: 'event', entityId: ADMIN_GCS_TENANT_ENTITY_ID }
+              : undefined
+          }
+          onUploadingChange={setImagesUploading}
         />
       )}
 
       <div className="flex gap-3 pt-4">
-        <Button type="submit" disabled={createMutation.isPending}>
+        <Button type="submit" disabled={createMutation.isPending || imagesUploading}>
           {createMutation.isPending ? 'Creando…' : 'Crear publicación'}
         </Button>
         <Button type="button" variant="outline" onClick={() => router.push(cancelHref)}>

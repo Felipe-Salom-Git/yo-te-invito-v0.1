@@ -121,7 +121,7 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`). Shared UI tokens:
 | `/admin/rentals/locales/[locationId]/productos/nuevo` | New product |
 | `/admin/rentals/locales/[locationId]/productos/[productId]/editar` | Edit product + images |
 
-**Forms**: `OpeningHoursEditor` (weekday / saturday / sunday + exceptions), `RentalProductImagesForm` (header + galería multi-upload). **Admin Rentals:** `uploadConfig={{ mode: 'gcs-rental', rentalLocationId }}` → `repos.uploads.uploadPublicImage` + `useUploadPublicImage` (GCS, sin data-URL nuevas). **Otros verticales** (gastro, hotel, productoras, excursiones): siguen comprimiendo vía `lib/image-compress.ts` hasta slice posterior — [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §15.
+**Forms**: `OpeningHoursEditor`, `RentalProductImagesForm` con `uploadConfig: GcsImageUploadConfig`. **GCS activo:** Admin Rentals (`rental` + `locationId`), Admin Eventos create (`event` + `tenant-demo`), Admin Excursiones (`excursion` + `operatorId` / `excursionId` / `tenant-demo`). **Legacy data-URL:** gastro, hotel, productoras, publicaciones gastro/hotel — [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §15–17.
 
 ### Portal usuario (`/me/*`)
 
@@ -324,7 +324,7 @@ Runbook: [`docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTIO
 
 **Google Maps (Etapa A GCP):** key de consola `YTI Web Maps PROD` (valor **no** en repo) → `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` en `.env.production` del VPS. Integración prod pendiente Etapa B — [`GOOGLE_CLOUD_RUNBOOK.md`](../deploy/GOOGLE_CLOUD_RUNBOOK.md).
 
-**Storage imágenes:** Admin Rentals sube a GCS (`UploadsRepo`, `useUploadPublicImage`). `next/image` permite `storage.googleapis.com/yti-prod-public-assets/**` — [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §11. Rentals público/admin preview usan `<img>` nativo por ahora.
+**Storage imágenes:** GCS en Admin Rentals, Eventos (create) y Excursiones. Hook `useGcsImageUpload`. Otros formularios aún data-URL — [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §17.
 
 - **Persistencia:** solo API — no `lib/local-db`, no `/dev/seed`, no `/dev/local-db`.
 - **Subcategorías (estructura):** `pnpm --filter api run seed:subcategories`.

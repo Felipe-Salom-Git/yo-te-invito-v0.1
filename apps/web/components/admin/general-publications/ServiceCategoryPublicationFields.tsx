@@ -5,6 +5,7 @@ import { SubcategorySelect } from '@/components/forms/SubcategorySelect';
 import {
   RentalProductImagesForm,
   type RentalProductImagesValue,
+  type GcsImageUploadConfig,
 } from '@/components/rentals/RentalProductImagesForm';
 import { RentalSummaryField } from '@/components/rentals/RentalSummaryField';
 import type { ContentMainCategory } from '@/repositories/interfaces';
@@ -29,12 +30,16 @@ type ServiceCategoryPublicationFieldsProps = {
   category: ContentMainCategory;
   value: ServiceCategoryPublicationValue;
   onChange: (value: ServiceCategoryPublicationValue) => void;
+  uploadConfig?: GcsImageUploadConfig;
+  onUploadingChange?: (uploading: boolean) => void;
 };
 
 export function ServiceCategoryPublicationFields({
   category,
   value,
   onChange,
+  uploadConfig,
+  onUploadingChange,
 }: ServiceCategoryPublicationFieldsProps) {
   const patch = (partial: Partial<ServiceCategoryPublicationValue>) =>
     onChange({ ...value, ...partial });
@@ -62,7 +67,12 @@ export function ServiceCategoryPublicationFields({
         value={value.subcategoryId}
         onChange={(subcategoryId) => patch({ subcategoryId })}
       />
-      <RentalProductImagesForm value={value.images} onChange={(images) => patch({ images })} />
+      <RentalProductImagesForm
+        value={value.images}
+        onChange={(images) => patch({ images })}
+        uploadConfig={uploadConfig}
+        onUploadingChange={onUploadingChange}
+      />
     </div>
   );
 }
