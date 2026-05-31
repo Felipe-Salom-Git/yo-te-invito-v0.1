@@ -402,11 +402,26 @@ Doc: [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §12–13.
 
 ### `pnpm --filter api run smoke:storage-upload-auth`
 
-Valida autorización del endpoint (USER efímero → 403 en `platform`). Opcional: `SMOKE_PRODUCER_EMAIL` + `SMOKE_PRODUCER_OTHER_PROFILE_ID` (403 cross-owner), `SMOKE_PRODUCER_EVENT_ID` (200 evento propio).
+Valida autorización del endpoint (USER común → 403 en `platform`). Opcional: `SMOKE_PRODUCER_EMAIL` + `SMOKE_PRODUCER_OTHER_PROFILE_ID` (403 cross-owner), `SMOKE_PRODUCER_EVENT_ID` (200 evento propio).
+
+**Producción:** usar un USER existente (no ADMIN) — el registro efímero falla si el signup público está bloqueado por legales:
+
+```bash
+SMOKE_NON_ADMIN_EMAIL=user@example.com SMOKE_NON_ADMIN_PASSWORD='…' \
+  pnpm --filter api run smoke:storage-upload-auth
+```
+
+Sin `SMOKE_NON_ADMIN_*`, intenta registrar `@smoke.yo-te-invito.test` y muestra diagnóstico (status, body, endpoint, causa probable) si falla. No borra usuarios. ADMIN upload: `smoke:storage-upload`.
 
 ```bash
 pnpm --filter api run smoke:storage-upload-auth
 ```
+
+| | |
+|--|--|
+| **Riesgo** | Bajo (solo lectura + un POST upload rechazado) |
+| **Toca DB** | No (login/register opcional; sin cleanup) |
+| **Env prod** | `SMOKE_NON_ADMIN_EMAIL` + `SMOKE_NON_ADMIN_PASSWORD` recomendados |
 
 Doc: [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §18.
 

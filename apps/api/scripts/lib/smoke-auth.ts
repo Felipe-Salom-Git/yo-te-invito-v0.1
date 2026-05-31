@@ -7,6 +7,7 @@
  *
  * Optional:
  *   SMOKE_SECOND_USER_EMAIL — transfer / second-party flows
+ *   SMOKE_NON_ADMIN_EMAIL + SMOKE_NON_ADMIN_PASSWORD — USER común para smokes auth (prod)
  *   SMOKE_SCANNER_EMAIL + SMOKE_SCANNER_PASSWORD — door scan in user-portal smoke
  *   SMOKE_ALLOW_DEV_AUTH=1 — fallback X-Dev-User-Id (API DEV_AUTH_ENABLED only)
  *   SMOKE_DEV_USER_ID — dev header user id (default user-admin)
@@ -34,6 +35,7 @@ export function smokeCredentialsHelp(): string {
     '  SMOKE_USER_PASSWORD=<your-password>',
     '',
     'Optional: SMOKE_SECOND_USER_EMAIL, SMOKE_SCANNER_EMAIL, SMOKE_SCANNER_PASSWORD',
+    'Production auth smokes: SMOKE_NON_ADMIN_EMAIL + SMOKE_NON_ADMIN_PASSWORD (USER común, no ADMIN)',
     'Dev-only fallback: SMOKE_ALLOW_DEV_AUTH=1 (requires API DEV_AUTH_ENABLED=true)',
   ].join('\n');
 }
@@ -61,13 +63,54 @@ export async function login(
   return { token: data.token, userId: data.user.id };
 }
 
-export async function registerSmokeUser(
-  prefix: string,
-): Promise<{ token: string; userId: string; email: string } | null> {
+function summarizeHttpBody(text: string, parsed: unknown): string {
+  if (typeof parsed === 'object' && parsed !== null) {
+    const record = parsed as Record<string, unknown>;
+    const parts: string[] = [];
+    if (record.code != null) parts.push(`code=${String(record.code)}`);
+    if (record.message != null) {
+      parts.push(`message=${String(record.message).slice(0, 240)}`);
+    }
+    if (parts.length > 0) return parts.join(' ');
+  }
+  const trimmed = text.trim();
+  return trimmed ? trimmed.slice(0, 300) : '(empty body)';
+}
+
+function probableRegisterFailureCause(status: number, parsed: unknown): string {
+  const code =
+    typeof parsed === 'object' && parsed !== null && 'code' in parsed
+      ? String((parsed as { code?: unknown }).code)
+      : '';
+
+  if (status === 400 && (code.includes('LEGAL') || code.includes('MISSING_LEGAL'))) {
+    return 'Registro público bloqueado (aceptación legal requerida). Use SMOKE_NON_ADMIN_EMAIL + SMOKE_NON_ADMIN_PASSWORD con un USER existente.';
+  }
+  if (status === 400 && code === 'VALIDATION_FAILED') {
+    return 'Payload de registro rechazado por validación.';
+  }
+  if (status === 409) {
+    return 'Email ya registrado.';
+  }
+  if (status === 403) {
+    return 'Registro público deshabilitado o prohibido.';
+  }
+  if (status >= 500) {
+    return 'Error del servidor durante el registro.';
+  }
+  return 'Registro efímero no disponible en este entorno. Configure SMOKE_NON_ADMIN_EMAIL + SMOKE_NON_ADMIN_PASSWORD.';
+}
+
+async function attemptRegisterSmokeUser(prefix: string): Promise<
+  | { ok: true; user: { token: string; userId: string; email: string } }
+  | { ok: false; endpoint: string; status: number; bodySummary: string; probableCause: string }
+> {
   const email = `smoke-${prefix}-${Date.now()}@smoke.yo-te-invito.test`;
   const password = process.env.SMOKE_REGISTER_PASSWORD ?? process.env.SMOKE_USER_PASSWORD ?? 'SmokeTest1!';
+  const endpoint = `${BASE}/auth/register`;
+
   try {
-    const res = await fetch(`${BASE}/auth/register`, {
+    const res = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -79,13 +122,162 @@ export async function registerSmokeUser(
         profileType: 'USER',
       }),
     });
-    const data = (await res.json()) as { token?: string; user?: { id?: string } };
-    if (!res.ok || !data.token || !data.user?.id) return null;
+    const text = await res.text();
+    let parsed: unknown;
+    try {
+      parsed = text ? JSON.parse(text) : undefined;
+    } catch {
+      parsed = text;
+    }
+
+    if (!res.ok) {
+      return {
+        ok: false,
+        endpoint,
+        status: res.status,
+        bodySummary: summarizeHttpBody(text, parsed),
+        probableCause: probableRegisterFailureCause(res.status, parsed),
+      };
+    }
+
+    const data = parsed as { token?: string; user?: { id?: string } };
+    if (!data.token || !data.user?.id) {
+      return {
+        ok: false,
+        endpoint,
+        status: res.status,
+        bodySummary: summarizeHttpBody(text, parsed),
+        probableCause: 'Respuesta 200 sin token/user.id — registro incompleto.',
+      };
+    }
+
     trackSmokeUserId(data.user.id);
-    return { token: data.token, userId: data.user.id, email };
-  } catch {
-    return null;
+    return {
+      ok: true,
+      user: { token: data.token, userId: data.user.id, email },
+    };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return {
+      ok: false,
+      endpoint,
+      status: 0,
+      bodySummary: msg,
+      probableCause: 'No se pudo contactar la API (red/DNS/TLS).',
+    };
   }
+}
+
+export type SmokeNonAdminUser = {
+  token: string;
+  userId: string;
+  email: string;
+  source: 'env' | 'registered';
+};
+
+/**
+ * USER común for auth smokes (403 platform). Prefers SMOKE_NON_ADMIN_* in production.
+ */
+export async function resolveSmokeNonAdminUser(prefix: string): Promise<
+  | { ok: true; user: SmokeNonAdminUser }
+  | { ok: false; lines: string[] }
+> {
+  const nonAdminEmail = process.env.SMOKE_NON_ADMIN_EMAIL?.trim().toLowerCase();
+  const nonAdminPassword = process.env.SMOKE_NON_ADMIN_PASSWORD;
+
+  if (nonAdminEmail && nonAdminPassword) {
+    const endpoint = `${BASE}/auth/login`;
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: nonAdminEmail, password: nonAdminPassword, tenantId: TENANT }),
+      });
+      const text = await res.text();
+      let parsed: unknown;
+      try {
+        parsed = text ? JSON.parse(text) : undefined;
+      } catch {
+        parsed = text;
+      }
+
+      if (!res.ok) {
+        return {
+          ok: false,
+          lines: [
+            'Could not login SMOKE_NON_ADMIN user.',
+            `  endpoint: POST ${endpoint}`,
+            `  status: ${res.status}`,
+            `  body: ${summarizeHttpBody(text, parsed)}`,
+            '  probable cause: credenciales incorrectas o usuario inexistente/inactivo.',
+          ],
+        };
+      }
+
+      const data = parsed as { token?: string; user?: { id?: string } };
+      if (!data.token || !data.user?.id) {
+        return {
+          ok: false,
+          lines: [
+            'SMOKE_NON_ADMIN login returned 200 without token/user.id.',
+            `  endpoint: POST ${endpoint}`,
+            `  body: ${summarizeHttpBody(text, parsed)}`,
+          ],
+        };
+      }
+
+      return {
+        ok: true,
+        user: {
+          token: data.token,
+          userId: data.user.id,
+          email: nonAdminEmail,
+          source: 'env',
+        },
+      };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return {
+        ok: false,
+        lines: [
+          'Could not login SMOKE_NON_ADMIN user.',
+          `  endpoint: POST ${endpoint}`,
+          `  error: ${msg}`,
+          '  probable cause: API unreachable from this host.',
+        ],
+      };
+    }
+  }
+
+  const registered = await attemptRegisterSmokeUser(prefix);
+  if (registered.ok) {
+    return {
+      ok: true,
+      user: { ...registered.user, source: 'registered' },
+    };
+  }
+
+  return {
+    ok: false,
+    lines: [
+      'Could not register ephemeral smoke USER.',
+      `  endpoint: POST ${registered.endpoint}`,
+      `  status: ${registered.status}`,
+      `  body: ${registered.bodySummary}`,
+      `  probable cause: ${registered.probableCause}`,
+      '',
+      'For production, set an existing non-admin account:',
+      '  SMOKE_NON_ADMIN_EMAIL=<user@example.com>',
+      '  SMOKE_NON_ADMIN_PASSWORD=<password>',
+    ],
+  };
+}
+
+export async function registerSmokeUser(
+  prefix: string,
+): Promise<{ token: string; userId: string; email: string } | null> {
+  const result = await attemptRegisterSmokeUser(prefix);
+  return result.ok ? result.user : null;
 }
 
 function devAuthFallback(): SmokeAuth {

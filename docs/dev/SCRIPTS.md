@@ -27,7 +27,7 @@
 | `pnpm --filter api run smoke:*` | Bajo–Alto | Ver SMOKE_TESTS_GUIDE |
 | `pnpm --filter api run smoke:referrals` | Alto | Referidos V2 — productor + referido + evento |
 | `pnpm --filter api run smoke:storage-upload` | Medio | GCS upload — ADMIN + GCS env en API |
-| `pnpm --filter api run smoke:storage-upload-auth` | Bajo | Auth upload — USER 403; opcional producer |
+| `pnpm --filter api run smoke:storage-upload-auth` | Bajo | Auth upload — USER 403; prod: `SMOKE_NON_ADMIN_*` |
 | `pnpm --filter api run storage:audit-data-urls` | Bajo | Lee BD — detecta `data:image/` (read-only) |
 | `pnpm --filter api run storage:migrate-data-urls` | Alto | Dry-run default; `--confirm` escribe GCS + BD |
 | `pnpm --filter api run storage:audit-orphans` | Bajo | Lista GCS `public/` + lee BD (read-only) |
@@ -53,7 +53,7 @@
 
 **Orphan ops:** `storage:audit-orphans` (read-only), `storage:cleanup-orphans` (dry-run / `--confirm`) — §22. **No** `--confirm` en producción desde CI.
 
-**Smoke storage:** `smoke:storage-upload`, `smoke:storage-upload-auth`, `smoke:storage-global` — §22.
+**Smoke storage:** `smoke:storage-upload`, `smoke:storage-upload-auth` (prod: `SMOKE_NON_ADMIN_EMAIL` + `SMOKE_NON_ADMIN_PASSWORD`), `smoke:storage-global` — §22.
 
 ---
 

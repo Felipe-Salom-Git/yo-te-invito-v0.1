@@ -498,6 +498,15 @@ pnpm --filter api run smoke:storage-upload        # ADMIN + GCS
 pnpm --filter api run smoke:storage-upload-auth    # USER → 403 platform; opcional producer cross-owner
 ```
 
+**Producción (`smoke:storage-upload-auth`):** el registro efímero suele fallar si el signup exige aceptación legal. Usar un USER existente:
+
+```bash
+SMOKE_NON_ADMIN_EMAIL=user@example.com SMOKE_NON_ADMIN_PASSWORD='…' \
+  pnpm --filter api run smoke:storage-upload-auth
+```
+
+Si no hay `SMOKE_NON_ADMIN_*`, el smoke intenta `POST /auth/register` y, al fallar, imprime status HTTP, body resumido, endpoint y causa probable.
+
 Opcional auth smoke: `SMOKE_PRODUCER_EMAIL`, `SMOKE_PRODUCER_OTHER_PROFILE_ID`, `SMOKE_PRODUCER_EVENT_ID`.
 
 ---

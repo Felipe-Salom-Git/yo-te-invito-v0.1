@@ -1,18 +1,21 @@
 /**
  * Smoke: upload authorization for POST /uploads/public-image.
  *
- * 1. Ephemeral USER → platform upload → expect 403
- * 2. Optional: SMOKE_PRODUCER_EMAIL + SMOKE_PRODUCER_PASSWORD + SMOKE_PRODUCER_OTHER_PROFILE_ID → producer scope → 403
- * 3. Optional: SMOKE_PRODUCER_EVENT_ID → event scope → 200 (requires GCS on API)
+ * 1. USER común → platform upload → expect 403
+ *    - Production: SMOKE_NON_ADMIN_EMAIL + SMOKE_NON_ADMIN_PASSWORD
+ *    - Dev fallback: ephemeral register (may fail if public signup blocked)
+ * 2. Optional: SMOKE_PRODUCER_EMAIL + SMOKE_PRODUCER_OTHER_PROFILE_ID → 403 cross-owner
+ * 3. Optional: SMOKE_PRODUCER_EVENT_ID → 200 own event (requires GCS on API)
  *
- * ADMIN full upload remains in smoke:storage-upload.
+ * ADMIN upload smoke: smoke:storage-upload (separate script).
+ * No destructive cleanup in this script.
  */
 
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import {
   login,
-  registerSmokeUser,
+  resolveSmokeNonAdminUser,
   smokeApiUrl,
   smokeApiBase,
 } from './lib/smoke-auth';
@@ -67,13 +70,22 @@ async function uploadWithAuth(
 
 async function main() {
   console.log('smoke:storage-upload-auth —', smokeApiBase());
+  console.log('  ADMIN upload: run smoke:storage-upload separately');
 
-  const user = await registerSmokeUser('upload-auth');
-  if (!user) {
-    console.error('Could not register ephemeral smoke USER');
+  const nonAdmin = await resolveSmokeNonAdminUser('upload-auth');
+  if (!nonAdmin.ok) {
+    for (const line of nonAdmin.lines) {
+      console.error(line);
+    }
     process.exit(1);
   }
-  console.log('  Ephemeral USER:', user.email);
+
+  const user = nonAdmin.user;
+  const userLabel =
+    user.source === 'env'
+      ? `SMOKE_NON_ADMIN (${user.email})`
+      : `Ephemeral USER (${user.email})`;
+  console.log('  Auth for 403 test:', userLabel);
 
   const forbiddenPlatform = await uploadWithAuth(
     { Authorization: `Bearer ${user.token}` },
