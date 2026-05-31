@@ -168,9 +168,8 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 - [x] Admin Rentals — formularios producto → GCS (`entityId` = `rentalLocationId`)
 - [ ] Otros formularios web (eventos, gastro, hotel, productoras)
 - [ ] Migración data-URL legacy en BD
-- [ ] `next/image` remotePatterns GCS
+- [x] `next/image` remotePatterns GCS (`yti-prod-public-assets` only)
 - [ ] Integración formularios + persistir URL en BD
-- [ ] `next/image` remotePatterns
 - [ ] Smoke ampliado / cleanup huérfanos
 
 #### Otros Etapa B
@@ -249,7 +248,7 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 - [x] Compresión JPEG al subir galería/header (`RentalProductImagesForm` + `lib/image-compress.ts`) — verticales no-rental; **Admin Rentals** usa GCS desde Storage 4
 - [x] Empty / loading / error consistentes en portal `/me/*` (QueryError, EmptyState, skeletons)
 - [ ] Empty / loading / error consistentes (resto del sitio)
-- [ ] `next/image` + dominios remotos
+- [x] `next/image` + dominios remotos GCS (Storage 5)
 - [ ] SEO metadata por ficha pública
 - [ ] Sidebar móvil para portales
 - [ ] Accesibilidad en modales

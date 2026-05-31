@@ -280,9 +280,9 @@ No documentar keys ni JSON en repo.
 
 ---
 
-## 11. Impacto en `next/image` (documentación — no implementar aún)
+## 11. `next/image` — remotePatterns GCS (Storage 5, Jun 2026)
 
-Cuando exista bucket público o CDN, actualizar `apps/web/next.config.js`:
+Configurado en `apps/web/next.config.js`:
 
 ```js
 images: {
@@ -292,11 +292,21 @@ images: {
       hostname: 'storage.googleapis.com',
       pathname: '/yti-prod-public-assets/**',
     },
-    // Fase CDN (opcional):
-    // { protocol: 'https', hostname: 'cdn.yoteinvito.club', pathname: '/**' },
   ],
 },
 ```
+
+**Restricciones:**
+
+- Solo bucket público `yti-prod-public-assets` — **no** `yti-prod-storage` ni wildcard `storage.googleapis.com/**`.
+- Ficha rental pública (`RentalProductHero`) y admin preview (`ImageUrlPreview`) usan `<img>` nativo hoy; la config habilita `next/image` cuando un componente lo adopte.
+- CDN futuro: agregar patrón `{ hostname: 'cdn.yoteinvito.club', pathname: '/**' }` en slice aparte.
+
+**Validación manual:**
+
+1. Producto rental con cover GCS (`https://storage.googleapis.com/yti-prod-public-assets/...`).
+2. Abrir `/rentals/{id}` — hero carga sin error.
+3. Si un componente usa `next/image` con esa URL, no aparece error *"hostname is not configured"* en consola/dev.
 
 Fallback UI: placeholder / imagen rota si URL 404 — ya parcialmente cubierto en componentes de cards.
 
@@ -360,7 +370,7 @@ Valida: login ADMIN → upload → `url` + `objectKey` → HEAD público 200. **
 | S3 | Roles portal + ownership por entidad | [ ] |
 | S4 | Admin Rentals — formularios → GCS (cover + galería) | [x] Jun 2026 |
 | S5 | Otros verticales (eventos, gastro, hotel, productoras) | [ ] |
-| S6 | `next/image` + `NEXT_PUBLIC_GCS_PUBLIC_BASE_URL` | [ ] |
+| S6 | `next/image` remotePatterns GCS | [x] Jun 2026 |
 | S7 | Signed URLs bucket privado (`private/*`) | [ ] |
 | S8 | Cleanup huérfanos + migración data-URL legacy | [ ] |
 | S9 | CDN opcional | [ ] |
@@ -408,7 +418,7 @@ public/rental/{rentalLocationId}/gallery/YYYY/MM/{uuid}.ext
 5. Probar archivo &gt; 5 MB o SVG → error visible.
 6. Galería multi-upload → varias URLs GCS.
 
-**Próximo:** Storage 5 — `next/image` `remotePatterns` para `storage.googleapis.com/yti-prod-public-assets/**` si cards públicas usan `next/image`.
+**Próximo:** Storage 6 — upload GCS en otro vertical (eventos/gastro) o `NEXT_PUBLIC_GCS_PUBLIC_BASE_URL` helper si hace falta.
 
 ---
 

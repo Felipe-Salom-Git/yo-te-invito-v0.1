@@ -324,7 +324,7 @@ Runbook: [`docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTIO
 
 **Google Maps (Etapa A GCP):** key de consola `YTI Web Maps PROD` (valor **no** en repo) → `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` en `.env.production` del VPS. Integración prod pendiente Etapa B — [`GOOGLE_CLOUD_RUNBOOK.md`](../deploy/GOOGLE_CLOUD_RUNBOOK.md).
 
-**Storage imágenes:** Admin Rentals sube a GCS (`UploadsRepo`, `useUploadPublicImage`). Otros formularios aún data-URL. `next/image` remoto pendiente (Storage 5) — [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md).
+**Storage imágenes:** Admin Rentals sube a GCS (`UploadsRepo`, `useUploadPublicImage`). `next/image` permite `storage.googleapis.com/yti-prod-public-assets/**` — [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §11. Rentals público/admin preview usan `<img>` nativo por ahora.
 
 - **Persistencia:** solo API — no `lib/local-db`, no `/dev/seed`, no `/dev/local-db`.
 - **Subcategorías (estructura):** `pnpm --filter api run seed:subcategories`.
