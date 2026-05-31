@@ -400,6 +400,16 @@ SMOKE_USER_EMAIL=felipe.e.salom@gmail.com SMOKE_USER_PASSWORD=<pass> \
 
 Doc: [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §12–13.
 
+### `pnpm --filter api run smoke:storage-upload-auth`
+
+Valida autorización del endpoint (USER efímero → 403 en `platform`). Opcional: `SMOKE_PRODUCER_EMAIL` + `SMOKE_PRODUCER_OTHER_PROFILE_ID` (403 cross-owner), `SMOKE_PRODUCER_EVENT_ID` (200 evento propio).
+
+```bash
+pnpm --filter api run smoke:storage-upload-auth
+```
+
+Doc: [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §18.
+
 ---
 
 ## 11. Checklist antes de scripts peligrosos

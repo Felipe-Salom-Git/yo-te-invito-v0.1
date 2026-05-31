@@ -7,25 +7,24 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { Role } from '@yo-te-invito/shared';
 import { JwtOrDevAuthGuard } from '../../auth/jwt-or-dev-auth.guard';
-import { RolesGuard } from '../../common/guards/roles.guard';
-import { RequireRole } from '../../common/decorators/require-role.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { readUploadConfig } from './upload-config';
 import { UploadsService } from './uploads.service';
+import type { UploadAuthUser } from './uploads-authorization.service';
 
 /**
  * Public image uploads to GCS.
  *
- * Auth V1: ADMIN only. Portal-scoped roles (producer, gastro, hotel) in a later slice.
+ * Auth: JWT (or dev header). ADMIN bypasses ownership checks.
+ * Portal roles: producer / gastro / hotel with entity ownership — see UploadsAuthorizationService.
  */
 @Controller('uploads')
 export class UploadsController {
   constructor(private readonly uploadsService: UploadsService) {}
 
   @Post('public-image')
-  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
-  @RequireRole(Role.ADMIN)
+  @UseGuards(JwtOrDevAuthGuard)
   @UseInterceptors(
     FileInterceptor('file', {
       limits: {
@@ -34,9 +33,10 @@ export class UploadsController {
     }),
   )
   uploadPublicImage(
+    @CurrentUser() user: UploadAuthUser,
     @UploadedFile() file: Express.Multer.File | undefined,
     @Body() body: Record<string, string>,
   ) {
-    return this.uploadsService.uploadPublicImage(file, body);
+    return this.uploadsService.uploadPublicImage(user, file, body);
   }
 }

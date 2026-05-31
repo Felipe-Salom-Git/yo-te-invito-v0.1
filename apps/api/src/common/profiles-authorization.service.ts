@@ -212,4 +212,50 @@ export class ProfilesAuthorizationService {
     });
     return membership?.profileId ?? null;
   }
+
+  async canManageGastroProfile(
+    tenantId: string,
+    userId: string,
+    gastroProfileId: string,
+  ): Promise<boolean> {
+    const membership = await this.prisma.userGastroMembership.findFirst({
+      where: {
+        tenantId,
+        userId,
+        profileId: gastroProfileId,
+        status: 'ACTIVE',
+        profile: { status: 'ACTIVE' },
+      },
+    });
+    if (membership) return true;
+
+    const profile = await this.prisma.gastroProfile.findFirst({
+      where: { id: gastroProfileId, tenantId },
+      select: { createdByUserId: true },
+    });
+    return profile?.createdByUserId === userId;
+  }
+
+  async canManageHotelProfile(
+    tenantId: string,
+    userId: string,
+    hotelProfileId: string,
+  ): Promise<boolean> {
+    const membership = await this.prisma.userHotelMembership.findFirst({
+      where: {
+        tenantId,
+        userId,
+        profileId: hotelProfileId,
+        status: 'ACTIVE',
+        profile: { status: 'ACTIVE' },
+      },
+    });
+    if (membership) return true;
+
+    const profile = await this.prisma.hotelProfile.findFirst({
+      where: { id: hotelProfileId, tenantId },
+      select: { createdByUserId: true },
+    });
+    return profile?.createdByUserId === userId;
+  }
 }

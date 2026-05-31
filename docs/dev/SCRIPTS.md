@@ -27,6 +27,7 @@
 | `pnpm --filter api run smoke:*` | Bajo–Alto | Ver SMOKE_TESTS_GUIDE |
 | `pnpm --filter api run smoke:referrals` | Alto | Referidos V2 — productor + referido + evento |
 | `pnpm --filter api run smoke:storage-upload` | Medio | GCS upload — ADMIN + GCS env en API |
+| `pnpm --filter api run smoke:storage-upload-auth` | Bajo | Auth upload — USER 403; opcional producer |
 | `pnpm --filter api run test:referral-*` | No | Util % / propuestas / solicitudes pago |
 | `pnpm --filter api run smoke:cleanup` | Medio | Artefactos smoke |
 | `pnpm e2e:portal` / `e2e:notifications` | Bajo* | E2E UI |

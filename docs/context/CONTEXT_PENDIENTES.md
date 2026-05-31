@@ -165,7 +165,8 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 
 - [x] Estrategia buckets público/privado — [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md)
 - [x] Bucket `yti-prod-public-assets` + CORS en GCP
-- [x] API upload V1 `POST /uploads/public-image` (ADMIN)
+- [x] API upload V1 `POST /uploads/public-image`
+- [x] Upload auth portal + ownership (Storage 7) (ADMIN)
 - [x] Admin Rentals — formularios producto → GCS (`entityId` = `rentalLocationId`)
 - [x] Admin Eventos + Excursiones → GCS (Storage 6)
 - [ ] Otros formularios web (gastro, hotel, productoras)

@@ -21,14 +21,22 @@ import {
   BLOCKED_MIMES,
 } from './upload-mime.util';
 import { isPublicUploadConfigured, resolvePublicBaseUrl, readUploadConfig } from './upload-config';
+import {
+  UploadsAuthorizationService,
+  type UploadAuthUser,
+} from './uploads-authorization.service';
 
 type MulterFile = Express.Multer.File;
 
 @Injectable()
 export class UploadsService {
-  constructor(private readonly gcs: GcsStorageService) {}
+  constructor(
+    private readonly gcs: GcsStorageService,
+    private readonly uploadAuth: UploadsAuthorizationService,
+  ) {}
 
   async uploadPublicImage(
+    user: UploadAuthUser,
     file: MulterFile | undefined,
     rawFields: Record<string, unknown>,
   ): Promise<PublicImageUploadResponse> {
@@ -43,6 +51,7 @@ export class UploadsService {
     }
 
     const fields = this.parseFields(rawFields);
+    await this.uploadAuth.assertCanUploadPublicImage(user, fields);
     const buffer = this.readFileBuffer(file, config.maxImageBytes);
     const contentType = this.validateImageBuffer(buffer, config);
 

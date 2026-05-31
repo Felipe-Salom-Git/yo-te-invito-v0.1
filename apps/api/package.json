@@ -46,7 +46,8 @@
     "debug:gastro-discounts": "tsx scripts/debug-gastro-discounts.ts",
     "debug:admin-api": "tsx scripts/debug-admin-api.ts",
     "migrate:user-portal-preferences": "tsx scripts/migrate-user-portal-preferences.ts",
-    "smoke:storage-upload": "tsx scripts/smoke-storage-upload.ts"
+    "smoke:storage-upload": "tsx scripts/smoke-storage-upload.ts",
+    "smoke:storage-upload-auth": "tsx scripts/smoke-storage-upload-auth.ts"
   },
   "dependencies": {
     "@google-cloud/storage": "^7.19.0",

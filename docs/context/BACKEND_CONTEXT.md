@@ -177,7 +177,8 @@ Requieren API `:3001` + **`SMOKE_USER_EMAIL`** + **`SMOKE_USER_PASSWORD`** (sin 
 | Notificaciones | `pnpm --filter api run smoke:notifications` | `e2e-demo:*` — cleanup auto |
 | Producer follows | `pnpm --filter api run smoke:producer-follows` | Borra follow al final |
 | Referidos V2 | `pnpm --filter api run smoke:referrals` | Requiere `SMOKE_PRODUCER_EMAIL` + `SMOKE_REFERRER_EMAIL`; órdenes/comisiones si hay evento APPROVED |
-| Storage upload GCS | `pnpm --filter api run smoke:storage-upload` | ADMIN + GCS env en API; opcional `SMOKE_UPLOAD_FILE`; objeto GCS no se borra |
+| Storage upload GCS | `pnpm --filter api run smoke:storage-upload` | ADMIN + GCS env; objeto no se borra |
+| Storage upload auth | `pnpm --filter api run smoke:storage-upload-auth` | USER 403; opcional producer cross-owner |
 
 **Tests util (sin BD):** `test:referral-proposals`, `test:referral-commission`, `test:referral-payment-requests`.
 
@@ -281,7 +282,7 @@ Opcional cron: `NOTIFICATIONS_CRON_ENABLED=false`, `NOTIFICATION_REMINDER_HOURS`
 
 Detalle operativo: [`docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTION_RUNBOOK.md) §25. Auditoría: [`docs/audits/PRODUCTION_SECURITY_HARDENING_AUDIT.md`](../audits/PRODUCTION_SECURITY_HARDENING_AUDIT.md).
 
-**Google Cloud Storage:** bucket privado `yti-prod-storage` (backups); bucket público `yti-prod-public-assets`. **Upload API:** `POST /uploads/public-image` (ADMIN, multipart) — módulo `apps/api/src/modules/uploads/`. **Web:** `UploadsRepo` + `useUploadPublicImage`; Admin Rentals productos. Doc: [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §12–15.
+**Google Cloud Storage:** bucket privado + público. **Upload API:** `POST /uploads/public-image` — auth ADMIN bypass + portal ownership (`UploadsAuthorizationService`). Doc: [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §12–18.
 
 ---
 

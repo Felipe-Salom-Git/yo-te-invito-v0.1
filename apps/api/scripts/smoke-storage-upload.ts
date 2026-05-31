@@ -3,7 +3,7 @@
  *
  * Requires:
  *   - API running with GCS_PUBLIC_BUCKET (+ credentials) configured
- *   - SMOKE_USER_EMAIL + SMOKE_USER_PASSWORD (ADMIN account)
+ *   - SMOKE_USER_EMAIL + SMOKE_USER_PASSWORD (ADMIN account recommended)
  *
  * Optional:
  *   SMOKE_UPLOAD_FILE — path to JPEG/PNG/WEBP (default: embedded 1×1 PNG)

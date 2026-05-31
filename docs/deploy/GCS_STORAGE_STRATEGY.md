@@ -320,7 +320,7 @@ Módulo NestJS: `apps/api/src/modules/uploads/`
 |-------|--------|
 | Endpoint | `POST /uploads/public-image` |
 | Content-Type | `multipart/form-data` |
-| Auth | JWT / dev auth — **solo `Role.ADMIN`** en V1 |
+| Auth | JWT / dev auth — **ADMIN** bypass; portal roles con ownership (Storage 7) |
 | Campos form | `file`, `scope`, `purpose`, `entityId` (opcional según scope) |
 
 **Respuesta:**
@@ -344,7 +344,7 @@ Módulo NestJS: `apps/api/src/modules/uploads/`
 - Sin persistencia en BD en este slice
 - Si `GCS_PUBLIC_BUCKET` falta → **503** al usar el endpoint (API arranca igual)
 
-**Auth futuro:** productor/gastro/hotel por ownership — slice posterior.
+**Autorización (Storage 7):** `UploadsAuthorizationService` — ver §18.
 
 ---
 
@@ -367,7 +367,7 @@ Valida: login ADMIN → upload → `url` + `objectKey` → HEAD público 200. **
 |---|--------|--------|
 | S1 | Crear bucket público + CORS | [x] |
 | S2 | Backend upload module (`POST /uploads/public-image`) | [x] V1 ADMIN |
-| S3 | Roles portal + ownership por entidad | [ ] |
+| S3 | Roles portal + ownership por entidad | [x] Jun 2026 |
 | S4 | Admin Rentals — formularios → GCS (cover + galería) | [x] Jun 2026 |
 | S5 | `next/image` remotePatterns GCS | [x] Jun 2026 |
 | S6 | Admin Eventos + Excursiones → GCS | [x] Jun 2026 |
@@ -458,6 +458,49 @@ Paths GCS (backend): `public/events/{entityId}/…`, `public/excursions/{entityI
 **Eventos:** `/admin/publicaciones-generales/nuevo` → categoría Evento → subir cover → crear → verificar URL GCS en BD.
 
 **Excursiones:** operador → nueva/editar excursión → cover + galería; legacy edit `/admin/excursiones/{id}/editar` → cover GCS.
+
+---
+
+## 18. Upload auth — roles y ownership (Storage 7, Jun 2026)
+
+Servicio: `apps/api/src/modules/uploads/uploads-authorization.service.ts`  
+Helpers: `ProfilesAuthorizationService` (`canManageProducerProfile`, `canManageEvent`, `canManageGastroProfile`, `canManageHotelProfile`).
+
+### Matriz de permisos
+
+| Rol / acceso | Scopes permitidos | Ownership |
+|--------------|-------------------|-----------|
+| **ADMIN** | Todos | Bypass |
+| **Producer** (`PRODUCER_OWNER`, `PRODUCER_STAFF`, o membership activa) | `producer`, `event`, `excursion` | `producer` → `entityId` = producerProfileId propio; `event` → evento gestionable; `excursion` → event id `category=excursion` gestionable |
+| **GASTRO_OWNER** (o membership gastro) | `gastro` | `entityId` = gastroProfileId propio |
+| **HOTEL_OWNER** (o membership hotel) | `hotel` | `entityId` = hotelProfileId propio |
+| **USER** / otros | — | **403** |
+
+### Admin-only (sin ownership portal)
+
+| Scope | Motivo |
+|-------|--------|
+| `platform` | Assets globales de plataforma |
+| `rental` | Sin modelo de owner de rental en portal V1 |
+| `excursion` + `entityId` = ExcursionOperator id | Operadores admin; productor debe usar event id de excursión propia |
+
+### Errores HTTP
+
+| Código | Caso |
+|--------|------|
+| 401 | Sin JWT / sesión inválida |
+| 403 | Rol/ownership no autorizado |
+| 400 | scope/purpose/entityId/MIME/tamaño inválido |
+| 503 | GCS no configurado |
+
+### Smoke
+
+```bash
+pnpm --filter api run smoke:storage-upload        # ADMIN + GCS
+pnpm --filter api run smoke:storage-upload-auth    # USER → 403 platform; opcional producer cross-owner
+```
+
+Opcional auth smoke: `SMOKE_PRODUCER_EMAIL`, `SMOKE_PRODUCER_OTHER_PROFILE_ID`, `SMOKE_PRODUCER_EVENT_ID`.
 
 ---
 
