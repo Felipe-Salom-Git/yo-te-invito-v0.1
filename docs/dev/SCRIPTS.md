@@ -26,6 +26,7 @@
 | `pnpm --filter api run user:*` | Bajo–Medio | Ver guía |
 | `pnpm --filter api run smoke:*` | Bajo–Alto | Ver SMOKE_TESTS_GUIDE |
 | `pnpm --filter api run smoke:referrals` | Alto | Referidos V2 — productor + referido + evento |
+| `pnpm --filter api run smoke:storage-upload` | Medio | GCS upload — ADMIN + GCS env en API |
 | `pnpm --filter api run test:referral-*` | No | Util % / propuestas / solicitudes pago |
 | `pnpm --filter api run smoke:cleanup` | Medio | Artefactos smoke |
 | `pnpm e2e:portal` / `e2e:notifications` | Bajo* | E2E UI |
@@ -40,7 +41,7 @@
 |--------|--------|----------|--------|
 | `backup-postgres-to-gcs.sh` | Medio | Lectura PG + escritura GCS | `--help`, `--dry-run`, `--env-file`; runbook [`GCS_BACKUPS_RUNBOOK.md`](../deploy/GCS_BACKUPS_RUNBOOK.md) |
 
-Producción VPS: [`DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTION_RUNBOOK.md) §25.4.
+**API upload (npm):** `pnpm --filter api run smoke:storage-upload` — ver [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §13.
 
 ---
 

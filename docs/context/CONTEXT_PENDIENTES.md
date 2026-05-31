@@ -84,7 +84,7 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 > **Runbook:** [`docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTION_RUNBOOK.md) — §24 ejecución real, §25 seguridad post-deploy  
 > **Checklist V2:** `docs/dev/Yo_Te_Invito_Checklist_V2_Produccion.md` § Producción técnica
 
-**Estado actual:** VPS DonWeb productivo con systemd + Nginx + HTTPS. Web/API/Scanner en **`yoteinvito.club`**. Hardening base cerrado. **Backups GCS operativos** (2026-05-31). **GCP Etapa A:** proyecto, bucket GCS privado y Maps key listos en consola. **Etapa B pendiente:** upload imágenes, Maps en web, lifecycle backups. Pendiente VPS: monitoreo, rate limiting fino, legales reales, bind `127.0.0.1`, postfix/snmpd.
+**Estado actual:** VPS DonWeb productivo con systemd + Nginx + HTTPS. Web/API/Scanner en **`yoteinvito.club`**. Hardening base cerrado. **Backups GCS cerrados** (2026-05-31, lifecycle 30d). **Estrategia storage documentada** — [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md). **Etapa B pendiente:** crear bucket público + upload NestJS + Maps en web. Pendiente VPS: monitoreo, rate limiting fino, legales reales, bind `127.0.0.1`, postfix/snmpd.
 
 | Ítem | Estado |
 |------|--------|
@@ -98,7 +98,7 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 | Seed subcategorías | [x] `seed:subcategories` + `seed:legal-documents` |
 | SSH hardening | [x] `ssh yoteinvito` → `deploy@…:5230`, clave, sin root/password |
 | UFW base | [x] Solo `5230`, `80`, `443`; regla `200.58.112.191` eliminada |
-| Backups automáticos | [x] GCS operativo 2026-05-31 — timer 03:30, restore drill OK — [`GCS_BACKUPS_RUNBOOK.md`](../deploy/GCS_BACKUPS_RUNBOOK.md); pendiente lifecycle/retención |
+| Backups automáticos | [x] GCS cerrado 2026-05-31 — timer 03:30, restore drill, lifecycle 30d — [`GCS_BACKUPS_RUNBOOK.md`](../deploy/GCS_BACKUPS_RUNBOOK.md) |
 | Logs / monitoreo | [ ] |
 | Rate limiting / hardening fino | [ ] Nginx/Nest; bind apps a `127.0.0.1`; revisar postfix `:25`, snmpd `:161` |
 
@@ -115,7 +115,8 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 
 **Pendiente:**
 
-- [x] **Backups automáticos** — PostgreSQL → `gs://yti-prod-storage/backups/postgres/` vía `scripts/ops/backup-postgres-to-gcs.sh`; VPS configurado 2026-05-31 (timer systemd 03:30, restore drill OK). Pendiente: lifecycle/retención en bucket.
+- [x] **Backups automáticos** — PostgreSQL → GCS; VPS 2026-05-31; lifecycle `backups/postgres/` 30 días.
+- [ ] **Storage upload real** — API V1 lista (`POST /uploads/public-image`); pendiente formularios + URL en BD — [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md)
 - [ ] Rate limiting Nginx; rate limiting Nest (slice código)
 - [ ] Monitoreo / alertas (disco, servicios, certificado TLS)
 - [ ] `certbot renew --dry-run` documentado
@@ -156,16 +157,22 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 - [x] Configurar timer systemd (`yti-postgres-backup.timer`, 03:30)
 - [x] Ejecutar primer backup manual
 - [x] Ejecutar restore drill (2026-05-31)
-- [ ] Definir lifecycle/retención automática en bucket
+- [x] Definir lifecycle/retención automática en bucket (`backups/postgres/` → 30 días)
+
+#### Storage uploads (Etapa B — estrategia documentada)
+
+- [x] Estrategia buckets público/privado — [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md)
+- [x] Bucket `yti-prod-public-assets` + CORS en GCP
+- [x] API upload V1 `POST /uploads/public-image` (ADMIN)
+- [ ] Integración formularios + persistir URL en BD
+- [ ] `next/image` remotePatterns
+- [ ] Smoke ampliado / cleanup huérfanos
 
 #### Otros Etapa B
 
 - [ ] Budget alerts en GCP
-- [x] Credenciales SA en VPS para backups (2026-05-31)
-- [ ] Credenciales SA en API NestJS para upload (`GOOGLE_APPLICATION_CREDENTIALS`)
-- [ ] CORS + estructura carpetas GCS
-- [ ] Upload real backend + reemplazo data-URL + `next/image` remoto
-- [ ] Estrategia imágenes públicas (firmadas / CDN / bucket separado)
+- [ ] Credenciales SA en API NestJS para upload (misma SA; IAM bucket público post-creación)
+- [ ] CDN `cdn.yoteinvito.club` (opcional)
 - [ ] Maps: key en `.env.production` web, autocomplete, lat/lng, fichas públicas, smoke
 - [ ] SEO: sitemap, robots, metadata, JSON-LD, no-index privados, GSC sitemap/cobertura
 
@@ -202,7 +209,7 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 - [x] Ficha pública gastro pulida (`/restaurants/[id]`, `GastroPublicDetailContent`; sin ticketera; redirect `/events/:id` gastro → restaurants)
 - [x] Dashboard gastro V2 (`GET /gastro/dashboard`, KPIs reales, alertas, `/gastro/validaciones` con filtros y paginación)
 - [x] Gastro + Reviews V2 + follows + alerta `FOLLOWED_GASTRO_NEW_DISCOUNT` (Slice 7 — `docs/gastro/GASTRO_FOLLOWS_NOTIFICATIONS.md`)
-- [ ] Storage para imágenes (salir de data-URL) — riesgo alto en prod con data-URL en PostgreSQL
+- [ ] Storage para imágenes (salir de data-URL) — estrategia [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md); pendiente implementación
 - [x] Portal `/gastro/valoraciones` — listado + réplica (`POST /gastro/reviews/:id/reply`)
 
 ---

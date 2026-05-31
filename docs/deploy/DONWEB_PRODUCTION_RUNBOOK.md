@@ -1220,7 +1220,9 @@ Registro del cierre operativo de hardening en VPS DonWeb. Sin passwords ni token
 - Backup vía systemd: `yo_te_invito_20260531_082817.sql.gz` (+ `.sha256`)
 - Restore drill OK en `yo_te_invito_restore_test` (`User`: 2, `Tenant`: 1, `Event`: 0)
 
-**Pendiente:** lifecycle / retención automática en bucket (`backups/postgres/`).
+- Lifecycle GCP: delete objetos en `backups/postgres/` a **30 días**
+
+**Upload imágenes:** no usar este bucket para assets públicos — [`GCS_STORAGE_STRATEGY.md`](./GCS_STORAGE_STRATEGY.md).
 
 > §18 describe backup local histórico (`pg_dump -Fc` en disco). Producción off-site usa el script GCS anterior.
 
@@ -1241,7 +1243,8 @@ Durante rotación de secretos se detectó drift: modelo en `schema.prisma`, API 
 | [`PREPRODUCTION_DEPLOY_AUDIT.md`](../audits/PREPRODUCTION_DEPLOY_AUDIT.md) | Variables, riesgos, arquitectura |
 | [`PRODUCTION_SECURITY_HARDENING_AUDIT.md`](../audits/PRODUCTION_SECURITY_HARDENING_AUDIT.md) | SSH, secretos, UFW, hotfix `UserPushSubscription` |
 | [`GOOGLE_CLOUD_RUNBOOK.md`](./GOOGLE_CLOUD_RUNBOOK.md) | Proyecto GCP, GCS, Maps key, GSC, slices Etapa B |
-| [`GCS_BACKUPS_RUNBOOK.md`](./GCS_BACKUPS_RUNBOOK.md) | Backups PostgreSQL → GCS (instalación VPS, timer, restore drill) |
+| [`GCS_BACKUPS_RUNBOOK.md`](./GCS_BACKUPS_RUNBOOK.md) | Backups PostgreSQL → GCS |
+| [`GCS_STORAGE_STRATEGY.md`](./GCS_STORAGE_STRATEGY.md) | Upload imágenes, buckets público/privado |
 | [`DEVELOPER_SCRIPTS_GUIDE.md`](../guides/DEVELOPER_SCRIPTS_GUIDE.md) | Comandos npm detallados |
 | [`SMOKE_TESTS_GUIDE.md`](../guides/SMOKE_TESTS_GUIDE.md) | Variables `SMOKE_*` |
 | [`SCRIPTS.md`](../dev/SCRIPTS.md) | Tabla riesgo scripts |
@@ -1250,4 +1253,4 @@ Durante rotación de secretos se detectó drift: modelo en `schema.prisma`, API 
 
 ---
 
-**Siguiente bloque recomendado:** upload storage real + Maps en web + SEO/GSC ([`GOOGLE_CLOUD_RUNBOOK.md`](./GOOGLE_CLOUD_RUNBOOK.md) §6); lifecycle backups GCS; hardening fino VPS, rate limiting, monitoreo, legales reales.
+**Siguiente bloque recomendado:** crear bucket `yti-prod-public-assets` (manual GCP) + módulo upload NestJS ([`GCS_STORAGE_STRATEGY.md`](./GCS_STORAGE_STRATEGY.md)); Maps en web; SEO/GSC. Después: hardening fino VPS, rate limiting, monitoreo, legales reales.

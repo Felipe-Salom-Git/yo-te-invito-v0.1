@@ -121,7 +121,7 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`). Shared UI tokens:
 | `/admin/rentals/locales/[locationId]/productos/nuevo` | New product |
 | `/admin/rentals/locales/[locationId]/productos/[productId]/editar` | Edit product + images |
 
-**Forms**: `OpeningHoursEditor` (weekday / saturday / sunday + exceptions), `RentalProductImagesForm` (header + galería multi-upload; comprime JPEG vía `lib/image-compress.ts` antes de enviar data-URL).
+**Forms**: `OpeningHoursEditor` (weekday / saturday / sunday + exceptions), `RentalProductImagesForm` (header + galería multi-upload; comprime JPEG vía `lib/image-compress.ts` antes de enviar data-URL — **pendiente migrar** a upload GCS según [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md)).
 
 ### Portal usuario (`/me/*`)
 
@@ -322,7 +322,9 @@ Módulo técnico **cerrado**; contenido base en `docs/legal/` importable como bo
 
 Runbook: [`docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTION_RUNBOOK.md). Pendiente: smoke dominio real, legales bootstrap → contenido aprobado.
 
-**Google Maps (Etapa A GCP):** key de consola `YTI Web Maps PROD` (valor **no** en repo) → `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` en `.env.production` del VPS. Código: `useGoogleMaps.ts`, fallback OSM. Integración prod pendiente Etapa B — [`GOOGLE_CLOUD_RUNBOOK.md`](../deploy/GOOGLE_CLOUD_RUNBOOK.md).
+**Google Maps (Etapa A GCP):** key de consola `YTI Web Maps PROD` (valor **no** en repo) → `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` en `.env.production` del VPS. Integración prod pendiente Etapa B — [`GOOGLE_CLOUD_RUNBOOK.md`](../deploy/GOOGLE_CLOUD_RUNBOOK.md).
+
+**Storage imágenes:** data-URL hoy; **API upload V1** `POST /uploads/public-image` (ADMIN) lista — integración formularios pendiente [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md). `next/image` remoto pendiente.
 
 - **Persistencia:** solo API — no `lib/local-db`, no `/dev/seed`, no `/dev/local-db`.
 - **Subcategorías (estructura):** `pnpm --filter api run seed:subcategories`.

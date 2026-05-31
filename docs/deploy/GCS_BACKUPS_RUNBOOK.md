@@ -1,7 +1,6 @@
 # Runbook — Backups PostgreSQL → Google Cloud Storage
 
-**Estado:** **operativo en VPS** (cerrado 2026-05-31).  
-**Pendiente:** lifecycle / retención automática en bucket (`backups/postgres/`).
+**Estado:** **operativo en VPS** (cerrado 2026-05-31). Lifecycle `backups/postgres/` configurado (delete 30 días).
 
 > **Regla:** no commitear JSON de service account, passwords de BD ni dumps. Solo nombres, IDs y rutas documentales.
 
@@ -27,9 +26,9 @@
 
 **Nota checksum:** backups del 2026-05-31 pueden tener `.sha256` con ruta absoluta local. Tras actualizar el script en VPS (`git pull`), los nuevos backups generan `.sha256` con **basename** portable (`sha256sum -c archivo.sql.gz.sha256` funciona en cualquier carpeta de descarga).
 
-**Pendiente operativo:**
+**Lifecycle (GCP):** regla `Delete` · `age: 30` · `matchesPrefix: backups/postgres/` — aplicada en consola.
 
-- [ ] Lifecycle rule o limpieza controlada por prefijo (retención sugerida: 14–30 días diarios)
+**Upload de imágenes:** fuera de alcance — ver [`GCS_STORAGE_STRATEGY.md`](./GCS_STORAGE_STRATEGY.md). No mezclar assets públicos en este bucket.
 
 ---
 
@@ -303,17 +302,19 @@ Documentar fecha del drill, tamaño del `.sql.gz` y duración de restore.
 
 ---
 
-## 9. Retención (pendiente definir)
+## 9. Retención
 
-El script **no** borra backups antiguos en GCS automáticamente en este slice.
+Lifecycle en bucket privado `yti-prod-storage`:
 
-| Pendiente | Notas |
-|-----------|--------|
-| Lifecycle rule en bucket | p. ej. eliminar objetos bajo `backups/postgres/` > 30 días |
-| Limpieza manual por prefijo | `gsutil ls` + revisión antes de `gsutil rm` |
-| Retención sugerida inicial | Diarios **14–30 días**; mensuales manuales si se decide más adelante |
+| Regla | Valor |
+|-------|--------|
+| Acción | `Delete` |
+| Edad | 30 días |
+| Prefijo | `backups/postgres/` |
 
 Soft delete del bucket (7 días) ofrece margen ante borrado accidental reciente.
+
+Retención mensual/archivado off-site: opcional futuro (export manual o segundo prefijo con regla distinta).
 
 ---
 
@@ -344,7 +345,7 @@ Soft delete del bucket (7 días) ofrece margen ante borrado accidental reciente.
 
 **Pendiente:**
 
-- [ ] Política de retención / lifecycle en bucket
+- [x] Política de retención / lifecycle en bucket — delete 30d en `backups/postgres/`
 
 ---
 
@@ -356,3 +357,4 @@ Soft delete del bucket (7 días) ofrece margen ante borrado accidental reciente.
 | [`DONWEB_PRODUCTION_RUNBOOK.md`](./DONWEB_PRODUCTION_RUNBOOK.md) | VPS, §25.4 backups |
 | [`CONTEXT_PENDIENTES.md`](../context/CONTEXT_PENDIENTES.md) | Backlog infra |
 | [`Yo_Te_Invito_Checklist_V2_Produccion.md`](../dev/Yo_Te_Invito_Checklist_V2_Produccion.md) | Checklist producción |
+| [`GCS_STORAGE_STRATEGY.md`](./GCS_STORAGE_STRATEGY.md) | Upload imágenes (bucket público separado) |

@@ -41,8 +41,8 @@
 |------|----------|
 | Bucket staging | **Omitido** — trabajo directo sobre producción en esta fase |
 | Acceso público al bucket | **No** — bucket privado; prevención de acceso público habilitada |
-| Imágenes públicas futuras | Pendiente: bucket público separado, URLs firmadas, proxy backend, CDN o `cdn.yoteinvito.club` |
-| Backups / tickets / facturas | Bucket privado actual es el contenedor objetivo |
+| Imágenes públicas futuras | Bucket separado **`yti-prod-public-assets`** — ver [`GCS_STORAGE_STRATEGY.md`](./GCS_STORAGE_STRATEGY.md) |
+| Backups / tickets / facturas | Bucket privado **`yti-prod-storage`** |
 
 ### 2.2 Bucket productivo
 
@@ -56,7 +56,7 @@
 | Acceso público | No público |
 | Soft delete | 7 días |
 | Versionado de objetos | Desactivado |
-| Política de retención | Ninguna |
+| Política de retención | Lifecycle `backups/postgres/` → delete a **30 días** |
 
 ### 2.3 Service Account (backend)
 
@@ -69,29 +69,44 @@
 
 **Nota IAM:** el rol actual es aceptable para etapa inicial (upload, reemplazo, cleanup, backups). En hardening futuro valorar roles más restrictivos (p. ej. por prefijo o bucket dedicado backups vs media).
 
-### 2.4 Pendientes Storage (Etapa B)
+### 2.4 Storage — estado y pendientes (Etapa B)
 
-- [ ] Estructura de carpetas (`eventos/`, `productoras/`, `gastro/`, `rentals/`, `hoteles/`, `tickets/`, `facturas/`, `sistema/`, `backups/`)
-- [ ] CORS del bucket (orígenes web/API)
-- [ ] Lifecycle rules (opcional)
-- [x] Credenciales SA en VPS para backups (`GOOGLE_APPLICATION_CREDENTIALS` en `/opt/yoteinvito/.ops/backup-gcs.env`)
-- [ ] Upload real NestJS + reemplazo data-URL
-- [ ] Estrategia URLs públicas vs firmadas
-- [ ] `next/image` — `images.remotePatterns` para dominio GCS o CDN
-- [x] Script repo `scripts/ops/backup-postgres-to-gcs.sh` + runbook [`GCS_BACKUPS_RUNBOOK.md`](./GCS_BACKUPS_RUNBOOK.md)
-- [x] Backups PostgreSQL → GCS operativos en VPS (2026-05-31): credencial SA, `.pgpass`, timer systemd 03:30, restore drill OK
-- [ ] Retención / lifecycle en bucket (`backups/postgres/`)
-- [ ] Smoke: subir, leer, borrar objeto de prueba
+**Estrategia documentada:** [`GCS_STORAGE_STRATEGY.md`](./GCS_STORAGE_STRATEGY.md) — bucket privado + bucket público separado; upload vía backend; prefijos `public/` y `private/`.
 
-### 2.5 Variables de entorno futuras (API — referencia, sin valores)
+**Backups (cerrado 2026-05-31):**
 
-Documentar en VPS al integrar; nombres sugeridos:
+- [x] Script + runbook [`GCS_BACKUPS_RUNBOOK.md`](./GCS_BACKUPS_RUNBOOK.md)
+- [x] VPS: credencial SA, `.pgpass`, timer systemd 03:30, restore drill
+- [x] Lifecycle `backups/postgres/` → delete 30 días
+- [x] Checksum portable en script
+
+**Upload / media:**
+
+- [x] Estrategia público vs privado documentada
+- [x] Bucket `yti-prod-public-assets` + CORS
+- [x] Módulo upload NestJS V1 — `POST /uploads/public-image`
+- [x] Smoke `smoke:storage-upload`
+- [ ] Integración formularios + URL en BD (reemplazo data-URL)
+- [ ] `next/image` — `remotePatterns` en web
+- [ ] Cleanup imágenes huérfanas
+- [ ] CDN `cdn.yoteinvito.club` (opcional)
+
+### 2.5 Variables de entorno (API — referencia, sin valores)
+
+Ver tabla completa en [`GCS_STORAGE_STRATEGY.md`](./GCS_STORAGE_STRATEGY.md) §5. Resumen:
 
 | Variable | Uso |
 |----------|-----|
-| `GCS_BUCKET` | `yti-prod-storage` |
 | `GCS_PROJECT_ID` | `yoteinvito-1721413433327` |
-| `GOOGLE_APPLICATION_CREDENTIALS` | Ruta absoluta al JSON de SA en servidor (no en repo) |
+| `GCS_PRIVATE_BUCKET` | `yti-prod-storage` |
+| `GCS_PUBLIC_BUCKET` | `yti-prod-public-assets` (pendiente crear) |
+| `GCS_SERVICE_ACCOUNT_KEY_FILE` | Ruta JSON SA en VPS |
+| `GCS_PUBLIC_BASE_URL` | Base URL assets públicos (vacío → storage.googleapis.com) |
+| `GCS_SIGNED_URL_TTL_SECONDS` | TTL URLs firmadas bucket privado |
+| `UPLOAD_MAX_IMAGE_MB` | Default 5 |
+| `UPLOAD_ALLOWED_IMAGE_MIME_TYPES` | `image/jpeg,image/png,image/webp` |
+
+**Backups (script ops):** `BACKUP_GCS_BUCKET` / `GOOGLE_APPLICATION_CREDENTIALS` en `/opt/yoteinvito/.ops/backup-gcs.env`.
 
 ---
 
@@ -173,7 +188,7 @@ OAuth login Google (distinto de Maps): ver [`CONFIG_GOOGLE_RESEND.md`](../guides
 | Deploy app, SSH, UFW, secretos rotados | [`DONWEB_PRODUCTION_RUNBOOK.md`](./DONWEB_PRODUCTION_RUNBOOK.md) §24–25 |
 | Hardening seguridad | [`PRODUCTION_SECURITY_HARDENING_AUDIT.md`](../audits/PRODUCTION_SECURITY_HARDENING_AUDIT.md) |
 
-El bucket GCS **existe**. **Backups PostgreSQL → GCS operativos** en VPS (2026-05-31) — [`GCS_BACKUPS_RUNBOOK.md`](./GCS_BACKUPS_RUNBOOK.md). Pendiente: lifecycle/retención en bucket; upload imágenes y credenciales API para NestJS (Etapa B).
+El bucket privado **existe**; **backups cerrados**. **Upload API V1** operativo con `GCS_PUBLIC_BUCKET` — [`GCS_STORAGE_STRATEGY.md`](./GCS_STORAGE_STRATEGY.md). Pendiente: integración formularios y BD.
 
 ---
 
@@ -184,10 +199,11 @@ Orden sugerido:
 | # | Slice | Alcance |
 |---|--------|---------|
 | B1 | **Cloud docs + env** | Variables documentadas en runbook/VPS; plantillas `.env.example` sin valores reales |
-| B2 | **Backups GCS** | [x] Operativo VPS 2026-05-31 — timer 03:30, restore drill OK; pendiente lifecycle/retención ([`GCS_BACKUPS_RUNBOOK.md`](./GCS_BACKUPS_RUNBOOK.md)) |
-| B3 | **Storage backend** | Módulo upload GCS, rutas por entidad, CORS, límites; reemplazo gradual data-URL |
-| B4 | **Maps frontend** | Key en prod web, autocomplete, lat/lng, fichas públicas |
-| B5 | **SEO / GSC** | sitemap, robots, metadata, JSON-LD, no-index rutas privadas |
+| B2 | **Backups GCS** | [x] Cerrado 2026-05-31 — [`GCS_BACKUPS_RUNBOOK.md`](./GCS_BACKUPS_RUNBOOK.md) |
+| B3 | **Storage strategy** | [x] Arquitectura documentada — [`GCS_STORAGE_STRATEGY.md`](./GCS_STORAGE_STRATEGY.md) |
+| B4 | **Storage backend** | [x] V1 API `POST /uploads/public-image` (ADMIN); pendiente formularios + BD ([`GCS_STORAGE_STRATEGY.md`](./GCS_STORAGE_STRATEGY.md)) |
+| B5 | **Maps frontend** | Key en prod web, autocomplete, lat/lng, fichas públicas |
+| B6 | **SEO / GSC** | sitemap, robots, metadata, JSON-LD, no-index rutas privadas |
 
 **No hacer en Etapa A:** SDK en código, cambios Prisma por storage, Nginx/systemd salvo lo que requiera un slice explícito.
 
@@ -199,6 +215,7 @@ Orden sugerido:
 |-----------|-----|
 | [`Yo_Te_Invito_Checklist_V2_Produccion.md`](../dev/Yo_Te_Invito_Checklist_V2_Produccion.md) | § Google Cloud, GSC, SEO |
 | [`GCS_BACKUPS_RUNBOOK.md`](./GCS_BACKUPS_RUNBOOK.md) | Backups PostgreSQL → GCS |
+| [`GCS_STORAGE_STRATEGY.md`](./GCS_STORAGE_STRATEGY.md) | Estrategia buckets público/privado, uploads, CORS |
 | [`CONTEXT_PENDIENTES.md`](../context/CONTEXT_PENDIENTES.md) | Backlog GCP |
 | [`AI_ENTRYPOINT.md`](../context/AI_ENTRYPOINT.md) | Resumen operativo |
 | [`PREPRODUCTION_DEPLOY_AUDIT.md`](../audits/PREPRODUCTION_DEPLOY_AUDIT.md) | Arquitectura storage/Maps |

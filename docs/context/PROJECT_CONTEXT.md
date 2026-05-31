@@ -33,7 +33,7 @@ yo-te-invito-v0.1/
 └── docs/
 ```
 
-**Producción:** VPS DonWeb (`yoteinvito.club`) + proyecto GCP `yoteinvito-1721413433327` (GCS `yti-prod-storage`, Maps key en consola). Runbooks: `docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`, `docs/deploy/GOOGLE_CLOUD_RUNBOOK.md`.
+**Producción:** VPS DonWeb (`yoteinvito.club`) + proyecto GCP `yoteinvito-1721413433327` (GCS privado `yti-prod-storage`; bucket público `yti-prod-public-assets` pendiente). Runbooks: `DONWEB_PRODUCTION_RUNBOOK.md`, `GOOGLE_CLOUD_RUNBOOK.md`, `GCS_STORAGE_STRATEGY.md`.
 
 - **Web** → API via `ApiRepository`.
 - **Shared** → single validation/contracts source.

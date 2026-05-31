@@ -383,6 +383,23 @@ Backup PostgreSQL (`pg_dump` SQL plano + `gzip`) → Google Cloud Storage con ch
 
 Runbook completo: [`docs/deploy/GCS_BACKUPS_RUNBOOK.md`](../deploy/GCS_BACKUPS_RUNBOOK.md).
 
+### `pnpm --filter api run smoke:storage-upload`
+
+Sube imagen de prueba vía `POST /uploads/public-image` (requiere cuenta **ADMIN** y GCS configurado en API).
+
+```bash
+SMOKE_USER_EMAIL=felipe.e.salom@gmail.com SMOKE_USER_PASSWORD=<pass> \
+  pnpm --filter api run smoke:storage-upload
+```
+
+| | |
+|--|--|
+| **Riesgo** | Medio (escribe objeto en bucket público) |
+| **Toca DB** | No |
+| **Env extra** | `GCS_PUBLIC_BUCKET` + credenciales en API; opcional `SMOKE_UPLOAD_FILE`, `SMOKE_SKIP_GCS_UPLOAD=1` |
+
+Doc: [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §12–13.
+
 ---
 
 ## 11. Checklist antes de scripts peligrosos

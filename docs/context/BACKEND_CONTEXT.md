@@ -177,6 +177,7 @@ Requieren API `:3001` + **`SMOKE_USER_EMAIL`** + **`SMOKE_USER_PASSWORD`** (sin 
 | Notificaciones | `pnpm --filter api run smoke:notifications` | `e2e-demo:*` — cleanup auto |
 | Producer follows | `pnpm --filter api run smoke:producer-follows` | Borra follow al final |
 | Referidos V2 | `pnpm --filter api run smoke:referrals` | Requiere `SMOKE_PRODUCER_EMAIL` + `SMOKE_REFERRER_EMAIL`; órdenes/comisiones si hay evento APPROVED |
+| Storage upload GCS | `pnpm --filter api run smoke:storage-upload` | ADMIN + GCS env en API; opcional `SMOKE_UPLOAD_FILE`; objeto GCS no se borra |
 
 **Tests util (sin BD):** `test:referral-proposals`, `test:referral-commission`, `test:referral-payment-requests`.
 
@@ -260,7 +261,7 @@ Opcional cron: `NOTIFICATIONS_CRON_ENABLED=false`, `NOTIFICATION_REMINDER_HOURS`
 ## 9. Debt / risks
 
 - Payments: demo only (`DEMO` + `demo-confirm`); Getnet no activo en prod (Mayo 2026).
-- Image uploads often data-URL in forms (límite Zod ~2M chars por URL); web comprime en `RentalProductImagesForm` — object storage pendiente; **riesgo alto en VPS prod**.
+- Image uploads often data-URL in forms (límite Zod ~2M chars por URL); web comprime en `RentalProductImagesForm` — **migración planificada** a GCS vía backend; ver [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md); **riesgo alto en VPS prod** hasta migrar.
 - Public list `EventSummary` includes `fromPrice` (min active ticket/batch price, major units) and `producerName` (`ProducerProfile.displayName`, ACTIVE only) — see `public-event-summary.util.ts`.
 - Run `prisma migrate deploy` + `prisma generate` after schema changes — **prod:** `https://api.yoteinvito.club`, migraciones vía `migrate deploy` (no `pnpm db:migrate`).
 
@@ -280,7 +281,7 @@ Opcional cron: `NOTIFICATIONS_CRON_ENABLED=false`, `NOTIFICATION_REMINDER_HOURS`
 
 Detalle operativo: [`docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTION_RUNBOOK.md) §25. Auditoría: [`docs/audits/PRODUCTION_SECURITY_HARDENING_AUDIT.md`](../audits/PRODUCTION_SECURITY_HARDENING_AUDIT.md).
 
-**Google Cloud Storage (Etapa A — consola; backups operativos VPS 2026-05-31):** bucket `yti-prod-storage` (`southamerica-east1`), privado; SA `yti-backend-storage`. Backups: timer systemd 03:30 → `gs://yti-prod-storage/backups/postgres/` — [`GCS_BACKUPS_RUNBOOK.md`](../deploy/GCS_BACKUPS_RUNBOOK.md). Pendiente: lifecycle/retención; credencial SA para upload API. Variables futuras API: `GCS_BUCKET`, `GCS_PROJECT_ID`, `GOOGLE_APPLICATION_CREDENTIALS`.
+**Google Cloud Storage:** bucket privado `yti-prod-storage` (backups); bucket público `yti-prod-public-assets`. **Upload API V1:** `POST /uploads/public-image` (ADMIN, multipart) — módulo `apps/api/src/modules/uploads/`; requiere `GCS_PUBLIC_BUCKET` + credenciales. Sin persistencia BD en V1. Doc: [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md).
 
 ---
 

@@ -109,7 +109,7 @@ Controllers: HTTP + Zod only. Services: business logic. Prisma: persistence only
 docs/context/     ← start here
 docs/dev/         ← SCRIPTS.md, Yo_Te_Invito_Checklist_V2_Produccion.md
 docs/guides/      ← README, DEVELOPER_SCRIPTS_GUIDE, SMOKE_TESTS_GUIDE
-docs/deploy/      ← DONWEB, GOOGLE_CLOUD, GCS_BACKUPS runbooks
+docs/deploy/      ← DONWEB, GOOGLE_CLOUD, GCS_BACKUPS, GCS_STORAGE_STRATEGY
 docs/legacy/guides/  ← histórico (slices, planes viejos)
 scripts/ops/      ← backup-postgres-to-gcs.sh (VPS, no npm)
 apps/api/src/     ← NestJS modules
@@ -153,7 +153,7 @@ pnpm run -w dev    # API :3001 + web :3000
 
 **Producción VPS (Mayo 2026):** `yoteinvito.club` — `npx prisma migrate deploy` en `apps/api` (no `pnpm db:migrate`). SSH: `ssh yoteinvito` → usuario `deploy`, puerto **5230**, solo clave (root/password SSH deshabilitados). API: `NODE_ENV=production`, `DEV_AUTH_ENABLED=false`; `.env` permisos `600`. Secretos críticos rotados (Mayo 2026). Runbook VPS: `docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md` §24–25; auditoría hardening: `docs/audits/PRODUCTION_SECURITY_HARDENING_AUDIT.md`.
 
-**Google Cloud (Etapa A — consola):** Project ID `yoteinvito-1721413433327` · GCS `gs://yti-prod-storage` (privado) · SA `yti-backend-storage@…` · Maps key **`YTI Web Maps PROD`** (sin valor en docs). **Backups GCS:** operativos VPS 2026-05-31 — timer systemd 03:30, restore drill OK — [`GCS_BACKUPS_RUNBOOK.md`](../deploy/GCS_BACKUPS_RUNBOOK.md). Pendiente: lifecycle/retención bucket. Upload imágenes / Maps prod: Etapa B. Runbook: [`GOOGLE_CLOUD_RUNBOOK.md`](../deploy/GOOGLE_CLOUD_RUNBOOK.md).
+**Google Cloud:** buckets `yti-prod-storage` (privado) + `yti-prod-public-assets` (público). **Backups:** cerrados — [`GCS_BACKUPS_RUNBOOK.md`](../deploy/GCS_BACKUPS_RUNBOOK.md). **Upload API V1:** `POST /uploads/public-image` — [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md). Pendiente: formularios + BD.
 
 **Producción — no ejecutar salvo emergencia documentada:** `pnpm db:reset-dangerous`, `pnpm db:cleanup-content`, `pnpm db:migrate` (usar solo `npx prisma migrate deploy`).
 

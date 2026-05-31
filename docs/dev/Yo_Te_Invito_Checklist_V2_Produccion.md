@@ -293,7 +293,7 @@ _Footer público completo — bloque V2 cerrado. Smoke: `docs/audits/PUBLIC_FOOT
 - [x] SSH por clave y hardening (`deploy`, puerto `5230`, sin root/password).
 - [x] Confirmar entorno producción (`NODE_ENV=production`, `DEV_AUTH_ENABLED=false`, `.env` permisos `600`).
 - [x] UFW base (solo `5230`, `80`, `443`).
-- [x] Configurar backups automáticos. **Cerrado 2026-05-31:** PostgreSQL → GCS (`gs://yti-prod-storage/backups/postgres/`), timer systemd diario 03:30, restore drill OK. Runbook: [`GCS_BACKUPS_RUNBOOK.md`](../deploy/GCS_BACKUPS_RUNBOOK.md). **Pendiente:** lifecycle/retención automática en bucket.
+- [x] Configurar backups automáticos. **Cerrado 2026-05-31:** PostgreSQL → GCS, timer 03:30, restore drill, lifecycle 30d — [`GCS_BACKUPS_RUNBOOK.md`](../deploy/GCS_BACKUPS_RUNBOOK.md).
 - [ ] Configurar logs/monitoreo.
 - [ ] Configurar rate limiting y hardening fino (Nginx/Nest, bind `127.0.0.1`, postfix/snmpd).
 
@@ -303,11 +303,11 @@ _Footer público completo — bloque V2 cerrado. Smoke: `docs/audits/PUBLIC_FOOT
 >
 > **Hotfix migración:** `20260531072000_restore_user_push_subscription` — tabla `UserPushSubscription` faltaba en prod; API fallaba hasta aplicar migración idempotente.
 >
-> **Pendiente:** lifecycle/retención backups GCS, monitoreo/rate limiting, bind interno apps, smoke E2E dominio real, legales reales en `/admin/legales`. Runbooks: [`DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTION_RUNBOOK.md) §24–25 · [`GOOGLE_CLOUD_RUNBOOK.md`](../deploy/GOOGLE_CLOUD_RUNBOOK.md) · [`GCS_BACKUPS_RUNBOOK.md`](../deploy/GCS_BACKUPS_RUNBOOK.md).
+> **Pendiente:** crear bucket `yti-prod-public-assets`, upload NestJS, migración data-URL ([`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md)), monitoreo/rate limiting, bind interno apps, smoke E2E dominio real, legales reales. Runbooks: [`DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTION_RUNBOOK.md) · [`GOOGLE_CLOUD_RUNBOOK.md`](../deploy/GOOGLE_CLOUD_RUNBOOK.md) · [`GCS_BACKUPS_RUNBOOK.md`](../deploy/GCS_BACKUPS_RUNBOOK.md) · [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md).
 
 ## Google Cloud — Maps y Storage
 
-> **Etapa A (manual) — cerrada:** proyecto GCP, billing, GCS bucket privado, SA backend, Maps API Key restringida. Detalle: [`GOOGLE_CLOUD_RUNBOOK.md`](../deploy/GOOGLE_CLOUD_RUNBOOK.md). **Etapa B:** integración código/VPS.
+> **Etapa A (manual) — cerrada:** proyecto GCP, billing, GCS bucket privado, SA backend, Maps API Key. **Backups — cerrados.** **Storage strategy — documentada** ([`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md)). **Etapa B código:** bucket público + upload + Maps.
 
 - [x] Crear proyecto Google Cloud del cliente para Yo Te Invito (`yoteinvito-1721413433327`).
 - [x] Activar billing en Google Cloud.
@@ -337,22 +337,24 @@ _Footer público completo — bloque V2 cerrado. Smoke: `docs/audits/PUBLIC_FOOT
 - [x] Crear bucket de producción (`yti-prod-storage`, `gs://yti-prod-storage`, `southamerica-east1`).
 - [ ] Crear bucket de staging si corresponde. — **Decisión actual: omitido**; producción directa.
 - [x] Definir región del bucket (`southamerica-east1`).
-- [ ] Definir estructura de carpetas: eventos, productoras, gastro, rentals, hoteles, tickets, facturas, sistema.
+- [x] Definir estructura de carpetas — [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §4 (`public/*`, `private/*`, `backups/postgres/`).
 - [x] Crear Service Account para backend (`yti-backend-storage@…`).
-- [x] Asignar permisos sobre bucket (rol actual: **Storage Object Admin** — aceptable etapa inicial; ver nota hardening IAM en runbook).
-- [x] Configurar credenciales seguras para backend (backups). JSON SA en VPS `/opt/yoteinvito/secrets/` — ver [`GCS_BACKUPS_RUNBOOK.md`](../deploy/GCS_BACKUPS_RUNBOOK.md). Pendiente: credencial para upload NestJS (Etapa B storage).
-- [x] Restore drill backups PostgreSQL. **OK 2026-05-31** — DB temporal `yo_te_invito_restore_test`; documentado en runbook.
-- [ ] Definir estrategia de archivos públicos vs privados.
-- [ ] Definir URLs públicas para imágenes.
-- [ ] Definir URLs firmadas para archivos privados si aplica.
-- [ ] Configurar CORS del bucket.
-- [ ] Implementar upload real de imágenes.
+- [x] Asignar permisos sobre bucket privado (rol actual: **Storage Object Admin**).
+- [x] Configurar credenciales seguras para backups. JSON SA en VPS — [`GCS_BACKUPS_RUNBOOK.md`](../deploy/GCS_BACKUPS_RUNBOOK.md).
+- [x] Restore drill backups PostgreSQL. **OK 2026-05-31**.
+- [x] Definir estrategia de archivos públicos vs privados — bucket privado + **`yti-prod-public-assets`** recomendado.
+- [x] Definir URLs públicas para imágenes — `https://storage.googleapis.com/yti-prod-public-assets/public/…` (fase 1); CDN opcional fase 2.
+- [x] Definir URLs firmadas para archivos privados — `GCS_SIGNED_URL_TTL_SECONDS` (bucket privado `private/*`).
+- [x] Documentar CORS recomendado (bucket público) — [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §9.
+- [x] Crear bucket público `yti-prod-public-assets` en GCP + CORS aplicado.
+- [x] Implementar upload API (`POST /uploads/public-image`, módulo `uploads/`, ADMIN).
+- [ ] Integrar upload en formularios web + persistir URL en BD.
 - [ ] Reemplazar data-URL por URLs de storage.
-- [ ] Configurar límites de peso/formato.
+- [x] Configurar límites de peso/formato (5 MB; JPEG/PNG/WEBP) en API.
 - [ ] Configurar cleanup de imágenes huérfanas.
-- [ ] Configurar `next/image` con dominios remotos de Google Cloud Storage.
-- [ ] Evaluar Cloud CDN o dominio `cdn.yoteinvito.com` si crece el tráfico.
-- [ ] Smoke test: subir imagen, mostrar imagen pública, borrar/reemplazar imagen y validar fallback.
+- [ ] Configurar `next/image` con dominios remotos.
+- [ ] Evaluar Cloud CDN o dominio `cdn.yoteinvito.club` si crece el tráfico.
+- [ ] Smoke test storage upload ampliado (roles portal, MIME inválido).
 
 ## Google Analytics 4
 
