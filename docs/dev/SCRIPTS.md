@@ -28,6 +28,11 @@
 | `pnpm --filter api run smoke:referrals` | Alto | Referidos V2 — productor + referido + evento |
 | `pnpm --filter api run smoke:storage-upload` | Medio | GCS upload — ADMIN + GCS env en API |
 | `pnpm --filter api run smoke:storage-upload-auth` | Bajo | Auth upload — USER 403; opcional producer |
+| `pnpm --filter api run storage:audit-data-urls` | Bajo | Lee BD — detecta `data:image/` (read-only) |
+| `pnpm --filter api run storage:migrate-data-urls` | Alto | Dry-run default; `--confirm` escribe GCS + BD |
+| `pnpm --filter api run storage:audit-orphans` | Bajo | Lista GCS `public/` + lee BD (read-only) |
+| `pnpm --filter api run storage:cleanup-orphans` | Alto | Dry-run default; `--confirm` borra en bucket público |
+| `pnpm --filter api run smoke:storage-global` | Medio | Matriz uploads + auth + validación — §22 |
 | `pnpm --filter api run test:referral-*` | No | Util % / propuestas / solicitudes pago |
 | `pnpm --filter api run smoke:cleanup` | Medio | Artefactos smoke |
 | `pnpm e2e:portal` / `e2e:notifications` | Bajo* | E2E UI |
@@ -43,6 +48,12 @@
 | `backup-postgres-to-gcs.sh` | Medio | Lectura PG + escritura GCS | `--help`, `--dry-run`, `--env-file`; runbook [`GCS_BACKUPS_RUNBOOK.md`](../deploy/GCS_BACKUPS_RUNBOOK.md) |
 
 **API upload (npm):** `pnpm --filter api run smoke:storage-upload` — ver [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §13.
+
+**Data-URL ops:** `storage:audit-data-urls` (read-only), `storage:migrate-data-urls` (dry-run / `--confirm`) — §21.
+
+**Orphan ops:** `storage:audit-orphans` (read-only), `storage:cleanup-orphans` (dry-run / `--confirm`) — §22. **No** `--confirm` en producción desde CI.
+
+**Smoke storage:** `smoke:storage-upload`, `smoke:storage-upload-auth`, `smoke:storage-global` — §22.
 
 ---
 

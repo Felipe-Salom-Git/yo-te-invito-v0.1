@@ -583,6 +583,154 @@ Paths GCS: `public/gastro/{gastroProfileId}/…`, `public/hotel/{hotelProfileId}
 
 ---
 
+## 21. Data-URL audit + controlled migration (Storage 10, Jun 2026)
+
+**Objetivo:** detectar `data:image/` en BD y migrar opcionalmente a GCS **sin cambios destructivos por defecto**.
+
+### Campos auditados
+
+| Tabla | Campos |
+|-------|--------|
+| `Event` | `coverImageUrl` (eventos, rentals, excursiones, gastro/hotel public events) |
+| `EventMedia` | `url` (type `IMAGE`) |
+| `ProducerProfile` | `logoUrl`, `coverImageUrl`, `galleryUrls[]` |
+| `GastroProfile` | `logoUrl`, `bannerUrl`, `galleryUrls[]` |
+| `GastroContent` | `imageUrl` |
+| `GastroDiscount` | `displayImageUrls[]`, `submittedImageUrls[]` |
+| `HotelProfile` | `logoUrl`, `bannerUrl`, `galleryUrls[]` |
+| `ContentSubcategory` | `imageUrl` (taxonomía plataforma) |
+
+**Fuera de alcance V1:** `TicketTemplate` JSON, `PlatformConfig.categories` (sin URLs), `RentalLocation` (sin imágenes).
+
+### Comandos (ops)
+
+```bash
+pnpm --filter api run storage:audit-data-urls
+pnpm --filter api run storage:audit-data-urls -- --tenant=tenant-demo --limit=20
+
+pnpm --filter api run storage:migrate-data-urls              # dry-run (default)
+pnpm --filter api run storage:migrate-data-urls -- --confirm # aplica (backup DB manual primero)
+```
+
+**Implementación:** `apps/api/scripts/lib/storage-data-url.util.ts`, `storage-audit-data-urls.ts`, `storage-migrate-data-urls.ts`.
+
+### Reglas
+
+| Regla | Detalle |
+|-------|---------|
+| Dry-run default | Sin `--confirm` → no escribe BD ni GCS |
+| `--confirm` | Sube buffer validado a `GCS_PUBLIC_BUCKET`, actualiza campo en PostgreSQL |
+| Seguridad logs | Solo hash SHA-256 (16 chars), MIME, tamaño — **nunca** base64 |
+| Validación | Magic bytes JPEG/PNG/WEBP, ≤ 5 MB, rechaza SVG |
+| Ownership paths | Misma convención scope/entityId que uploads portal (§18–20) |
+| Sin borrado | No elimina objetos GCS ni filas |
+| Skip seguro | Sin entityId (ej. `GastroDiscount` sin `gastroProfileId`), parse inválido, MIME no permitido |
+
+### Migración — mapping log (stdout)
+
+```
+MIGRATED table=Event id=… field=coverImageUrl hash=abc… oldLen=12345 url=https://… objectKey=public/events/…
+```
+
+### Smoke manual
+
+1. `storage:audit-data-urls` en dev/staging → reporte por tabla.campo.
+2. `storage:migrate-data-urls` (sin flags) → líneas `DRY_RUN`, cero cambios en BD.
+3. Con filas de prueba + GCS configurado: `--confirm --limit=1` → URL GCS en BD, campo ya no empieza con `data:image/`.
+
+**Pendiente post-V1:** migración masiva prod, `TicketTemplate` assets.
+
+---
+
+## 22. Orphan cleanup + global smoke + Storage V2 closure (Storage 11, Jun 2026)
+
+**Objetivo:** detectar objetos en `gs://yti-prod-public-assets/public/` no referenciados en PostgreSQL; cleanup seguro (dry-run default); smoke global de uploads; cierre operativo Storage V2.
+
+### Alcance del scan
+
+| Incluye | Excluye |
+|---------|---------|
+| Prefijo `public/` en `GCS_PUBLIC_BUCKET` | `yti-prod-storage` |
+| Keys bajo `public/{events,producers,gastro,rentals,hotels,excursions,platform}/…` | `backups/postgres/` |
+| Comparación vs URLs en campos imagen (mismos que §21) | `private/*` en cualquier bucket |
+
+**Referencias BD:** `Event.coverImageUrl`, `EventMedia.url`, perfiles producer/gastro/hotel, `GastroContent`, `GastroDiscount`, `ContentSubcategory`.
+
+**Advertencia:** `TicketTemplate` JSON no se escanea — objetos bajo `public/` usados solo por ticket-studio pueden aparecer como huérfanos; **revisar manualmente** antes de `--confirm`.
+
+### Comandos (ops)
+
+```bash
+pnpm --filter api run storage:audit-orphans
+pnpm --filter api run storage:audit-orphans -- --min-age-hours=24 --limit=50
+
+pnpm --filter api run storage:cleanup-orphans              # dry-run (default)
+pnpm --filter api run storage:cleanup-orphans -- --dry-run
+pnpm --filter api run storage:cleanup-orphans -- --confirm # borra (solo tras revisar audit)
+```
+
+**Implementación:** `apps/api/scripts/lib/storage-orphans.util.ts`, `storage-audit-orphans.ts`, `storage-cleanup-orphans.ts`.
+
+### Reglas de cleanup
+
+| Regla | Detalle |
+|-------|---------|
+| Dry-run default | Sin `--confirm` → solo log `DRY_DELETE`, cero borrados |
+| Grace period | Default **48 h** (`--min-age-hours=`); objetos recientes se omiten |
+| Path seguro | Solo keys que matchean layout conocido `public/{scope}/{entityId}/…` |
+| Incertidumbre | Key fuera de layout → audit only, no borrar |
+| Logs | `objectKey`, edad (h), motivo; en delete real hash corto del key |
+| Producción | **No** ejecutar `--confirm` desde CI/Cursor; ops manual post-audit |
+
+### Smoke global (`smoke:storage-global`)
+
+Matriz automatizada (API levantada + GCS configurado; skips si `503` o env opcional ausente):
+
+| Caso | Esperado |
+|------|----------|
+| ADMIN platform banner | 200 + URL pública HEAD 200 |
+| ADMIN rental cover | 200 (`SMOKE_RENTAL_LOCATION_ID`) |
+| ADMIN event cover | 200 (staging `tenant-demo`) |
+| ADMIN excursion cover | 200 (`SMOKE_EXCURSION_OPERATOR_ID`) |
+| PRODUCER perfil/evento propio | 200 |
+| PRODUCER perfil ajeno | 403 |
+| GASTRO perfil propio | 200 |
+| GASTRO perfil ajeno | 403 |
+| HOTEL perfil propio | 200 |
+| HOTEL perfil ajeno | 403 |
+| USER común platform | 403 |
+| MIME inválido (`text/plain`) | 400 |
+| Archivo > 5 MB | 400 |
+
+```bash
+SMOKE_USER_EMAIL=… SMOKE_USER_PASSWORD=… \
+  pnpm --filter api run smoke:storage-global
+```
+
+**Env opcional:** `SMOKE_RENTAL_LOCATION_ID`, `SMOKE_PRODUCER_*`, `SMOKE_GASTRO_*`, `SMOKE_HOTEL_*`, `SMOKE_EXCURSION_OPERATOR_ID`. Smokes parciales: `smoke:storage-upload`, `smoke:storage-upload-auth`.
+
+### Runbook operación Storage V2
+
+1. **Backups:** timer 03:30 → `gs://yti-prod-storage/backups/postgres/` (lifecycle 30d) — [`GCS_BACKUPS_RUNBOOK.md`](./GCS_BACKUPS_RUNBOOK.md).
+2. **Uploads:** formularios web → `POST /uploads/public-image` → URLs en BD.
+3. **Data-URL legacy:** `storage:audit-data-urls` → `storage:migrate-data-urls` (dry-run) → `--confirm` post-backup manual.
+4. **Huérfanos:** `storage:audit-orphans` → `storage:cleanup-orphans` (dry-run) → revisar sample → `--confirm` solo en ventana ops (nunca automatizado).
+5. **QA:** `smoke:storage-global` en staging con env de ownership real.
+
+### Storage V2 — checklist cierre
+
+- [x] Bucket público + API upload + auth ownership
+- [x] Admin + portales productora/gastro/hotel en GCS
+- [x] Audit/migrate data-URL tooling
+- [x] Audit/cleanup huérfanos (dry-run default)
+- [x] Smoke global documentado
+- [ ] Migración data-URL masiva producción (post-backup)
+- [ ] Cleanup huérfanos producción (manual post-audit)
+- [ ] CDN `cdn.yoteinvito.club` (fase 2)
+- [ ] Signed URLs privadas ampliadas (tickets/facturas)
+
+---
+
 ## Referencias
 
 | Documento | Uso |

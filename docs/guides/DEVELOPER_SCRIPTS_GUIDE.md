@@ -410,6 +410,82 @@ pnpm --filter api run smoke:storage-upload-auth
 
 Doc: [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §18.
 
+### `pnpm --filter api run storage:audit-data-urls`
+
+Auditoría **read-only** de campos imagen en PostgreSQL que contienen `data:image/`. Reporte por tabla/campo; muestra hash y tamaño, **nunca** base64.
+
+```bash
+pnpm --filter api run storage:audit-data-urls
+pnpm --filter api run storage:audit-data-urls -- --tenant=tenant-demo --limit=20
+```
+
+| | |
+|--|--|
+| **Riesgo** | Bajo (solo lectura) |
+| **Toca DB** | Lectura |
+| **Toca GCS** | No |
+
+### `pnpm --filter api run storage:migrate-data-urls`
+
+Migra data-URLs válidas (JPEG/PNG/WEBP ≤ 5 MB) a GCS y reemplaza el campo en BD. **Dry-run por defecto**; requiere `--confirm` para aplicar.
+
+```bash
+pnpm --filter api run storage:migrate-data-urls              # dry-run
+pnpm --filter api run storage:migrate-data-urls -- --confirm
+```
+
+| | |
+|--|--|
+| **Riesgo** | Alto con `--confirm` |
+| **Toca DB** | Escritura solo con `--confirm` |
+| **Toca GCS** | Upload solo con `--confirm` |
+| **Precaución** | Backup manual de PostgreSQL antes de `--confirm`; no borra objetos GCS |
+
+Doc: [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §21.
+
+### `pnpm --filter api run storage:audit-orphans`
+
+Auditoría **read-only**: lista objetos bajo `public/` en `GCS_PUBLIC_BUCKET` y compara con URLs referenciadas en PostgreSQL. Grace period default 48 h.
+
+```bash
+pnpm --filter api run storage:audit-orphans
+pnpm --filter api run storage:audit-orphans -- --min-age-hours=24 --limit=50
+```
+
+| | |
+|--|--|
+| **Riesgo** | Bajo (solo lectura GCS + BD) |
+| **Toca DB** | Lectura |
+| **Toca GCS** | Listado `public/` only |
+
+### `pnpm --filter api run storage:cleanup-orphans`
+
+Elimina objetos huérfanos elegibles. **Dry-run por defecto**; requiere `--confirm` para borrar. No toca `yti-prod-storage`, `backups/postgres/`, ni `private/*`.
+
+```bash
+pnpm --filter api run storage:cleanup-orphans              # dry-run
+pnpm --filter api run storage:cleanup-orphans -- --dry-run
+pnpm --filter api run storage:cleanup-orphans -- --confirm # borra (revisar audit primero)
+```
+
+| | |
+|--|--|
+| **Riesgo** | Alto con `--confirm` |
+| **Toca DB** | Lectura |
+| **Toca GCS** | Delete solo con `--confirm` en bucket público |
+| **Precaución** | Ejecutar `storage:audit-orphans` antes; nunca `--confirm` en prod desde CI/Cursor |
+
+### `pnpm --filter api run smoke:storage-global`
+
+Smoke integral de uploads: ADMIN + verticales (env opcional), USER 403, MIME inválido 400, >5 MB 400, HEAD 200 en URL pública.
+
+```bash
+SMOKE_USER_EMAIL=… SMOKE_USER_PASSWORD=… \
+  pnpm --filter api run smoke:storage-global
+```
+
+Doc: [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §22.
+
 ---
 
 ## 11. Checklist antes de scripts peligrosos
@@ -421,6 +497,8 @@ Antes de `db:cleanup-content --confirm`, `db:reset-dangerous`, `smoke:user-porta
 - [ ] Entiendo **qué filas se borran**
 - [ ] Para cleanup: confirmé que **preserva** `felipe.e.salom@gmail.com`
 - [ ] Tengo backup o acepto perder datos locales de prueba
+- [ ] Para `storage:migrate-data-urls --confirm`: backup PostgreSQL manual reciente (GCS backups ≠ rollback de URLs en BD)
+- [ ] Para `storage:cleanup-orphans --confirm`: ejecuté `storage:audit-orphans` y revisé sample; **no** en producción desde CI/Cursor
 - [ ] Para smokes: tengo `SMOKE_USER_EMAIL` / `SMOKE_USER_PASSWORD` (no `@demo.local`)
 - [ ] Sé si el smoke puede crear usuarios `@smoke.yo-te-invito.test` y que `smoke:cleanup` los quita
 

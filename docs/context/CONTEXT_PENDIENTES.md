@@ -84,7 +84,7 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 > **Runbook:** [`docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTION_RUNBOOK.md) — §24 ejecución real, §25 seguridad post-deploy  
 > **Checklist V2:** `docs/dev/Yo_Te_Invito_Checklist_V2_Produccion.md` § Producción técnica
 
-**Estado actual:** VPS DonWeb productivo con systemd + Nginx + HTTPS. Web/API/Scanner en **`yoteinvito.club`**. Hardening base cerrado. **Backups GCS cerrados** (2026-05-31, lifecycle 30d). **Estrategia storage documentada** — [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md). **Etapa B pendiente:** crear bucket público + upload NestJS + Maps en web. Pendiente VPS: monitoreo, rate limiting fino, legales reales, bind `127.0.0.1`, postfix/snmpd.
+**Estado actual:** VPS DonWeb productivo con systemd + Nginx + HTTPS. Web/API/Scanner en **`yoteinvito.club`**. Hardening base cerrado. **Backups GCS cerrados** (2026-05-31, lifecycle 30d). **Storage V2 cerrado en código** (upload + ops tooling) — [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §22. Pendiente ops prod: migración data-URL masiva, cleanup huérfanos manual, CDN. Pendiente VPS: monitoreo, rate limiting fino, legales reales, bind `127.0.0.1`, postfix/snmpd.
 
 | Ítem | Estado |
 |------|--------|
@@ -118,7 +118,9 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 - [x] **Backups automáticos** — PostgreSQL → GCS; VPS 2026-05-31; lifecycle `backups/postgres/` 30 días.
 - [x] **Admin Rentals upload GCS** — cover + galería productos.
 - [x] **Admin Eventos + Excursiones upload GCS** — publicaciones-generales (event/excursion) + operador excursiones.
-- [ ] **Storage upload otros verticales** — migración legacy BD — [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §20
+- [x] **Storage V2 código** — portales productora/gastro/hotel + audit/migrate data-URL + orphan tooling + `smoke:storage-global` (§22).
+- [ ] **Migración data-URL legacy en BD producción** — `storage:migrate-data-urls --confirm` post-backup manual (§21).
+- [ ] **Cleanup huérfanos producción** — `storage:audit-orphans` → dry-run → `--confirm` manual post-revisión (§22).
 - [ ] Rate limiting Nginx; rate limiting Nest (slice código)
 - [ ] Monitoreo / alertas (disco, servicios, certificado TLS)
 - [ ] `certbot renew --dry-run` documentado
@@ -127,7 +129,7 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 - [ ] Revisión `postfix` (puerto 25) y `snmpd` (puerto 161)
 - [ ] **Legales:** reemplazar bootstrap temporal por contenido aprobado en `/admin/legales`
 - [ ] Smoke completo desde dominio real (home, login, admin, checkout demo, scanner QR, emails si Resend)
-- [ ] Storage imágenes (salir de data-URL); Getnet/pagos reales fuera de este cierre
+- [ ] Migración data-URL masiva prod + CDN/signed URLs (Storage V2 ops); Getnet/pagos reales fuera de este cierre
 
 ### Google Cloud — Etapa A manual (cerrada) / Etapa B código (pendiente)
 
@@ -161,7 +163,7 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 - [x] Ejecutar restore drill (2026-05-31)
 - [x] Definir lifecycle/retención automática en bucket (`backups/postgres/` → 30 días)
 
-#### Storage uploads (Etapa B — estrategia documentada)
+#### Storage uploads (Storage V2 — cerrado en código, Jun 2026)
 
 - [x] Estrategia buckets público/privado — [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md)
 - [x] Bucket `yti-prod-public-assets` + CORS en GCP
@@ -171,16 +173,17 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 - [x] Admin Eventos + Excursiones → GCS (Storage 6)
 - [x] Portal productora → GCS (Storage 8)
 - [x] Portales gastro + hotel → GCS (Storage 9)
-- [ ] Migración data-URL legacy en BD
+- [x] Data-URL audit + migrate tooling (Storage 10)
+- [x] Orphan audit + cleanup tooling (Storage 11, dry-run default)
+- [x] Smoke global `smoke:storage-global` (Storage 11)
+- [ ] Ejecutar migración data-URL legacy en BD producción (post-audit)
+- [ ] Ejecutar cleanup huérfanos en producción (manual post-audit)
 - [x] `next/image` remotePatterns GCS (`yti-prod-public-assets` only)
-- [ ] Integración formularios + persistir URL en BD
-- [ ] Smoke ampliado / cleanup huérfanos
+- [ ] CDN `cdn.yoteinvito.club` (opcional fase 2)
 
 #### Otros Etapa B
 
 - [ ] Budget alerts en GCP
-- [ ] Credenciales SA en API NestJS para upload (misma SA; IAM bucket público post-creación)
-- [ ] CDN `cdn.yoteinvito.club` (opcional)
 - [ ] Maps: key en `.env.production` web, autocomplete, lat/lng, fichas públicas, smoke
 - [ ] SEO: sitemap, robots, metadata, JSON-LD, no-index privados, GSC sitemap/cobertura
 
@@ -217,7 +220,7 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 - [x] Ficha pública gastro pulida (`/restaurants/[id]`, `GastroPublicDetailContent`; sin ticketera; redirect `/events/:id` gastro → restaurants)
 - [x] Dashboard gastro V2 (`GET /gastro/dashboard`, KPIs reales, alertas, `/gastro/validaciones` con filtros y paginación)
 - [x] Gastro + Reviews V2 + follows + alerta `FOLLOWED_GASTRO_NEW_DISCOUNT` (Slice 7 — `docs/gastro/GASTRO_FOLLOWS_NOTIFICATIONS.md`)
-- [ ] Storage para imágenes (otros verticales + migración legacy) — [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md); Admin Rentals [x]
+- [ ] Migración data-URL masiva prod + cleanup huérfanos manual — [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §21–22; código Storage V2 [x]
 - [x] Portal `/gastro/valoraciones` — listado + réplica (`POST /gastro/reviews/:id/reply`)
 
 ---

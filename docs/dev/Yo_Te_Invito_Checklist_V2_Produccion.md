@@ -286,12 +286,13 @@ _Footer público completo — bloque V2 cerrado. Smoke: `docs/audits/PUBLIC_FOOT
 - [x] Integrar upload GCS en Admin Excursiones (operador + legacy edit + publicaciones-generales).
 - [x] Integrar upload GCS en portal **productora** (perfil logo/cover/galería + eventos create/edit cover).
 - [x] Integrar upload GCS en portales **gastro** y **hotel** (frontend).
-- [ ] Reemplazar data-URL legacy existentes en BD.
+- [x] Herramienta auditoría data-URL (`storage:audit-data-urls`) + migración controlada (`storage:migrate-data-urls`, dry-run / `--confirm`).
+- [ ] Ejecutar migración data-URL legacy en BD producción (post-audit).
 - [x] Configurar límites de peso/formato (5 MB; JPEG/PNG/WEBP) en API.
-- [ ] Configurar cleanup de imágenes huérfanas.
+- [x] Configurar cleanup de imágenes huérfanas — `storage:audit-orphans` + `storage:cleanup-orphans` (dry-run default; §22).
 - [x] Configurar `next/image` con dominios remotos (`storage.googleapis.com/yti-prod-public-assets/**`).
 - [ ] Evaluar Cloud CDN o dominio `cdn.yoteinvito.club` si crece el tráfico.
-- [ ] Smoke test storage upload ampliado (roles portal, MIME inválido).
+- [x] Smoke test storage upload ampliado — `smoke:storage-global` (roles portal, MIME inválido, >5MB; §22).
 
 ## Google Search Console y SEO técnico
 

@@ -47,7 +47,12 @@
     "debug:admin-api": "tsx scripts/debug-admin-api.ts",
     "migrate:user-portal-preferences": "tsx scripts/migrate-user-portal-preferences.ts",
     "smoke:storage-upload": "tsx scripts/smoke-storage-upload.ts",
-    "smoke:storage-upload-auth": "tsx scripts/smoke-storage-upload-auth.ts"
+    "smoke:storage-upload-auth": "tsx scripts/smoke-storage-upload-auth.ts",
+    "storage:audit-data-urls": "tsx scripts/storage-audit-data-urls.ts",
+    "storage:migrate-data-urls": "tsx scripts/storage-migrate-data-urls.ts",
+    "storage:audit-orphans": "tsx scripts/storage-audit-orphans.ts",
+    "storage:cleanup-orphans": "tsx scripts/storage-cleanup-orphans.ts",
+    "smoke:storage-global": "tsx scripts/smoke-storage-global.ts"
   },
   "dependencies": {
     "@google-cloud/storage": "^7.19.0",
