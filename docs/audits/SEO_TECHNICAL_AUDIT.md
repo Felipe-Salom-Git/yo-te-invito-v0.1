@@ -17,7 +17,7 @@
 | Canonical | **Mejorado (SEO 6 aplicado)** | Canonical en rutas base + fichas; dedupe gastro vía redirect |
 | Open Graph | **Mejorado (SEO 3 aplicado)** | Global con imagen fallback; dinámico eventos + legales |
 | Twitter Cards | **Mejorado (SEO 3 aplicado)** | Global + eventos |
-| JSON-LD | **Ausente** | Cero `application/ld+json` en el repo web |
+| JSON-LD | **Parcial (SEO 7 aplicado)** | `Event` en `/events/[id]` y `Organization` en `/producers/[id]` |
 | `robots.txt` | **Implementado (SEO 4)** | `apps/web/app/robots.ts` (bloquea portales/auth/dev/checkout) |
 | `sitemap.xml` | **Implementado (SEO 4)** | `apps/web/app/sitemap.ts` mínimo (rutas públicas estables) |
 | No-index privados | **Crítico** | Solo **checkout** tiene `noindex`; portales/auth/dev indexables por defecto |
@@ -151,7 +151,14 @@ Solo en layout de eventos: `summary_large_image` + title/description/images. **N
 
 ### 3.6 JSON-LD
 
-**No implementado.** Sin `Event`, `Restaurant`, `LocalBusiness`, `Product`, `Organization`, `BreadcrumbList`, ni `AggregateRating`.
+**SEO 7 aplicado (parcial):**
+
+- **Eventos:** se inyecta JSON‑LD `Event` en `apps/web/app/(public)/events/[eventId]/layout.tsx`.
+- **Productoras:** se inyecta JSON‑LD `Organization` en `apps/web/app/(public)/producers/[id]/layout.tsx`.
+
+**Reglas cumplidas:** no se inventan ratings, availability ni offers si no hay precio real; campos se omiten cuando faltan datos.
+
+**Pendiente (SEO 8):** JSON‑LD para gastro, rentals, excursiones, hoteles + ratings/reviews solo si hay datos suficientes.
 
 ### 3.7 Sitemap
 

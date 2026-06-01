@@ -402,12 +402,12 @@ _Footer público completo — bloque V2 cerrado. Smoke: `docs/audits/PUBLIC_FOOT
 - [x] Agregar Open Graph dinámico para productoras (SEO 5) — `producers/[id]/layout.tsx` (cover/logo; fallback global).
 - [ ] Definir fallback Open Graph cuando una ficha no tenga imagen: logo Yo Te Invito o imagen institucional.
 - [ ] Validar que al compartir links se vea título, descripción e imagen correcta.
-- [ ] Agregar JSON-LD / structured data para eventos.
-- [ ] Agregar JSON-LD / structured data para gastronomía/locales.
+- [x] Agregar JSON-LD / structured data para eventos (SEO 7) — schema.org `Event` en `events/[id]/layout.tsx`.
+- [ ] Agregar JSON-LD / structured data para gastronomía/locales (SEO 8).
 - [ ] Agregar JSON-LD / structured data para rentals/productos de alquiler.
 - [ ] Agregar JSON-LD / structured data para excursiones.
 - [ ] Agregar JSON-LD / structured data para hoteles.
-- [ ] Agregar JSON-LD / structured data para productoras/organizaciones.
+- [x] Agregar JSON-LD / structured data para productoras/organizaciones (SEO 7) — schema.org `Organization` en `producers/[id]/layout.tsx`.
 - [ ] Agregar structured data de reviews/rating donde corresponda y sea válido.
 - [ ] Revisar GEO/localización para ciudad preferida y descubrimiento.
 - [ ] Agregar metadata contextual por ciudad cuando aplique.
