@@ -11,6 +11,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     alternates: {
       canonical: `/gastronomicos/${encodeURIComponent(id)}`,
     },
+    robots: { index: false, follow: false },
   };
 }
 

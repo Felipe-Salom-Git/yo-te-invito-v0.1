@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import { cache } from 'react';
+import { buildEventJsonLd } from '@/lib/seo/jsonld';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001';
 const DEFAULT_TENANT = 'tenant-demo';
@@ -6,20 +8,25 @@ const FALLBACK_OG_IMAGE = '/brand/logo_2.png';
 
 type Props = { params: Promise<{ id: string }> };
 
+const fetchPublicEvent = cache(async (id: string) => {
+  const url = new URL(`/public/events/${encodeURIComponent(id)}`, API_BASE);
+  url.searchParams.set('tenantId', DEFAULT_TENANT);
+  const res = await fetch(url.toString(), { next: { revalidate: 60 } });
+  if (!res.ok) return null;
+  return (await res.json()) as any;
+});
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   const tenantId = DEFAULT_TENANT;
 
   try {
     // Excursions detail is currently backed by the public Event detail endpoint (category=excursion).
-    const url = new URL(`/public/events/${encodeURIComponent(id)}`, API_BASE);
-    url.searchParams.set('tenantId', tenantId);
-    const res = await fetch(url.toString(), { next: { revalidate: 60 } });
-    if (!res.ok) {
+    const event = await fetchPublicEvent(id);
+    if (!event) {
       return { title: 'Excursión no encontrada', robots: { index: false, follow: false } };
     }
 
-    const event = (await res.json()) as any;
     const title = event?.title ? String(event.title) : 'Excursión';
     const rawDescription = typeof event?.description === 'string' ? event.description : '';
     const description =
@@ -54,7 +61,47 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
-export default function ExcursionDetailLayout({ children }: { children: React.ReactNode }) {
-  return children;
+export default async function ExcursionDetailLayout({
+  children,
+  params,
+}: {
+  children: React.ReactNode;
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  return (
+    <>
+      <ExcursionJsonLd id={id} />
+      {children}
+    </>
+  );
+}
+
+async function ExcursionJsonLd({ id }: { id: string }) {
+  const event = await fetchPublicEvent(id);
+  if (!event) return null;
+
+  const title =
+    typeof event?.title === 'string' && event.title.trim() ? event.title : 'Excursión';
+  const jsonLd = buildEventJsonLd({
+    url: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://yoteinvito.club'}/excursiones/${encodeURIComponent(id)}`,
+    name: title,
+    description: typeof event?.description === 'string' ? event.description : null,
+    image: typeof event?.coverImageUrl === 'string' ? event.coverImageUrl : null,
+    startAt: typeof event?.startAt === 'string' ? event.startAt : null,
+    endAt: typeof event?.endAt === 'string' ? event.endAt : null,
+    venueName: typeof event?.venueName === 'string' ? event.venueName : null,
+    venueAddress: typeof event?.venueAddress === 'string' ? event.venueAddress : null,
+    city: typeof event?.city === 'string' ? event.city : null,
+    geoLat: typeof event?.geoLat === 'number' ? event.geoLat : null,
+    geoLng: typeof event?.geoLng === 'number' ? event.geoLng : null,
+    producer: event?.producer ? { displayName: event.producer.displayName } : null,
+    fromPrice: typeof event?.fromPrice === 'number' ? event.fromPrice : null,
+    currency: 'ARS',
+  });
+
+  return (
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+  );
 }
 

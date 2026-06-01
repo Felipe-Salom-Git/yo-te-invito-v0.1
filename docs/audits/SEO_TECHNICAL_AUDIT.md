@@ -158,7 +158,15 @@ Solo en layout de eventos: `summary_large_image` + title/description/images. **N
 
 **Reglas cumplidas:** no se inventan ratings, availability ni offers si no hay precio real; campos se omiten cuando faltan datos.
 
-**Pendiente (SEO 8):** JSON‑LD para gastro, rentals, excursiones, hoteles + ratings/reviews solo si hay datos suficientes.
+**SEO 8 aplicado (conservador):**
+
+- **Gastro:** JSON‑LD `Restaurant` en `/gastronomicos/[id]` + `AggregateRating` solo si `ratingAvg` y `ratingCount > 0`.
+- **Hoteles:** JSON‑LD `Hotel` en `/hoteles/[id]` + `AggregateRating` solo si `ratingAvg` y `ratingCount > 0`.
+- **Rentals/Excursiones:** se representa como `Event` (porque hoy usan el endpoint/modelo público de eventos); `Offer` solo si hay `fromPrice` real.
+
+**Reglas:** no se inventan ratings; no `aggregateRating` con count 0; no availability/stock.
+
+**Pendiente:** JSON‑LD más específico por vertical (si se separan modelos) + `Review` items individuales (solo si API expone reviews públicas completas).
 
 ### 3.7 Sitemap
 

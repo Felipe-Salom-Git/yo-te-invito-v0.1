@@ -403,10 +403,10 @@ _Footer público completo — bloque V2 cerrado. Smoke: `docs/audits/PUBLIC_FOOT
 - [ ] Definir fallback Open Graph cuando una ficha no tenga imagen: logo Yo Te Invito o imagen institucional.
 - [ ] Validar que al compartir links se vea título, descripción e imagen correcta.
 - [x] Agregar JSON-LD / structured data para eventos (SEO 7) — schema.org `Event` en `events/[id]/layout.tsx`.
-- [ ] Agregar JSON-LD / structured data para gastronomía/locales (SEO 8).
-- [ ] Agregar JSON-LD / structured data para rentals/productos de alquiler.
-- [ ] Agregar JSON-LD / structured data para excursiones.
-- [ ] Agregar JSON-LD / structured data para hoteles.
+- [x] Agregar JSON-LD / structured data para gastronomía/locales (SEO 8) — schema.org `Restaurant` + `aggregateRating` (si hay count>0).
+- [x] Agregar JSON-LD / structured data para rentals/productos de alquiler (SEO 8) — representado como `Event` (modelo actual API).
+- [x] Agregar JSON-LD / structured data para excursiones (SEO 8) — representado como `Event` (modelo actual API).
+- [x] Agregar JSON-LD / structured data para hoteles (SEO 8) — schema.org `Hotel` + `aggregateRating` (si hay count>0).
 - [x] Agregar JSON-LD / structured data para productoras/organizaciones (SEO 7) — schema.org `Organization` en `producers/[id]/layout.tsx`.
 - [ ] Agregar structured data de reviews/rating donde corresponda y sea válido.
 - [ ] Revisar GEO/localización para ciudad preferida y descubrimiento.

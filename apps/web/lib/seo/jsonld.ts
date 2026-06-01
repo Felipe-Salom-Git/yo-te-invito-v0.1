@@ -18,6 +18,20 @@ function pickNumber(value: unknown): number | null {
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
 
+export function buildAggregateRating(input: {
+  ratingValue: number | null;
+  ratingCount: number | null;
+}): JsonLdNode | null {
+  const ratingValue = input.ratingValue != null && input.ratingValue > 0 ? input.ratingValue : null;
+  const ratingCount = input.ratingCount != null && input.ratingCount > 0 ? input.ratingCount : null;
+  if (ratingValue == null || ratingCount == null) return null;
+  return {
+    '@type': 'AggregateRating',
+    ratingValue,
+    ratingCount,
+  };
+}
+
 export function buildEventJsonLd(input: {
   url: string;
   name: string;
@@ -120,6 +134,119 @@ export function buildProducerJsonLd(input: {
     (x): x is string => Boolean(x),
   );
   if (sameAs.length > 0) node.sameAs = sameAs;
+
+  return node;
+}
+
+export function buildGastroJsonLd(input: {
+  url: string;
+  name: string;
+  description?: string | null;
+  imageUrl?: string | null;
+  logoUrl?: string | null;
+  address?: string | null;
+  city?: string | null;
+  province?: string | null;
+  geoLat?: number | null;
+  geoLng?: number | null;
+  websiteUrl?: string | null;
+  menuUrl?: string | null;
+  ratingAvg?: number | null;
+  ratingCount?: number | null;
+}): JsonLdNode {
+  const node: JsonLdNode = {
+    '@context': 'https://schema.org',
+    '@type': 'Restaurant',
+    name: input.name,
+    url: input.url,
+  };
+
+  const description = input.description ? stripHtml(input.description) : null;
+  if (description) node.description = description.slice(0, 3000);
+
+  const image = pickString(input.imageUrl);
+  if (image) node.image = [image];
+
+  const logo = pickString(input.logoUrl);
+  if (logo) node.logo = logo;
+
+  if (input.address || input.city || input.province) {
+    const postal: JsonLdNode = { '@type': 'PostalAddress' };
+    if (input.address) postal.streetAddress = input.address;
+    if (input.city) postal.addressLocality = input.city;
+    if (input.province) postal.addressRegion = input.province;
+    node.address = postal;
+  }
+
+  if (input.geoLat != null && input.geoLng != null) {
+    node.geo = { '@type': 'GeoCoordinates', latitude: input.geoLat, longitude: input.geoLng };
+  }
+
+  const sameAs = [pickString(input.websiteUrl), pickString(input.menuUrl)].filter(
+    (x): x is string => Boolean(x),
+  );
+  if (sameAs.length > 0) node.sameAs = sameAs;
+
+  const agg = buildAggregateRating({
+    ratingValue: pickNumber(input.ratingAvg),
+    ratingCount: typeof input.ratingCount === 'number' ? input.ratingCount : null,
+  });
+  if (agg) node.aggregateRating = agg;
+
+  return node;
+}
+
+export function buildHotelJsonLd(input: {
+  url: string;
+  name: string;
+  description?: string | null;
+  imageUrl?: string | null;
+  logoUrl?: string | null;
+  address?: string | null;
+  city?: string | null;
+  province?: string | null;
+  geoLat?: number | null;
+  geoLng?: number | null;
+  websiteUrl?: string | null;
+  ratingAvg?: number | null;
+  ratingCount?: number | null;
+}): JsonLdNode {
+  const node: JsonLdNode = {
+    '@context': 'https://schema.org',
+    '@type': 'Hotel',
+    name: input.name,
+    url: input.url,
+  };
+
+  const description = input.description ? stripHtml(input.description) : null;
+  if (description) node.description = description.slice(0, 3000);
+
+  const image = pickString(input.imageUrl);
+  if (image) node.image = [image];
+
+  const logo = pickString(input.logoUrl);
+  if (logo) node.logo = logo;
+
+  if (input.address || input.city || input.province) {
+    const postal: JsonLdNode = { '@type': 'PostalAddress' };
+    if (input.address) postal.streetAddress = input.address;
+    if (input.city) postal.addressLocality = input.city;
+    if (input.province) postal.addressRegion = input.province;
+    node.address = postal;
+  }
+
+  if (input.geoLat != null && input.geoLng != null) {
+    node.geo = { '@type': 'GeoCoordinates', latitude: input.geoLat, longitude: input.geoLng };
+  }
+
+  const website = pickString(input.websiteUrl);
+  if (website) node.sameAs = [website];
+
+  const agg = buildAggregateRating({
+    ratingValue: pickNumber(input.ratingAvg),
+    ratingCount: typeof input.ratingCount === 'number' ? input.ratingCount : null,
+  });
+  if (agg) node.aggregateRating = agg;
 
   return node;
 }
