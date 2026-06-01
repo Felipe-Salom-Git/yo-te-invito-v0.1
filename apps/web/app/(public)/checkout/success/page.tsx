@@ -55,8 +55,12 @@ function CheckoutSuccessContent() {
 
   const checkPaid = async () => {
     for (const oid of orderIds) {
-      const statusRes = await repos.orders.getOrderPaymentStatus(oid, t);
-      if (statusRes.orderStatus === 'PAID' || statusRes.orderStatus === 'paid') {
+      const statusRes = await repos.orders.getCheckoutPaymentStatus(oid, t);
+      if (
+        statusRes.displayPhase === 'approved' ||
+        statusRes.orderStatus === 'PAID' ||
+        statusRes.orderStatus === 'paid'
+      ) {
         return true;
       }
     }

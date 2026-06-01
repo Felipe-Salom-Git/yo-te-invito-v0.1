@@ -893,6 +893,25 @@ export class ApiRepository implements Repositories {
         { tenantId: t }
       );
     },
+    getCheckoutPaymentStatus: async (orderId, tenantId, options) => {
+      const t = tenantId ?? this.defaultTenantId;
+      return this.client.get<import('@yo-te-invito/shared').CheckoutPaymentStatusResponse>(
+        `/public/orders/${encodeURIComponent(orderId)}/checkout-status`,
+        {
+          tenantId: t,
+          ...(options?.paymentId ? { paymentId: options.paymentId } : {}),
+          ...(options?.cancelled ? { cancelled: '1' } : {}),
+        },
+      );
+    },
+    refreshCheckoutPaymentStatus: async (paymentId, tenantId) => {
+      const t = tenantId ?? this.defaultTenantId;
+      return this.client.post<import('@yo-te-invito/shared').CheckoutPaymentStatusResponse>(
+        `/public/payments/${encodeURIComponent(paymentId)}/refresh-status`,
+        {},
+        { tenantId: t },
+      );
+    },
   };
 
   users: UsersRepo = {
@@ -1326,6 +1345,31 @@ export class ApiRepository implements Repositories {
       return this.client.patch<User | null>(
         `/admin/users/${encodeURIComponent(userId)}/role`,
         { role },
+      );
+    },
+  };
+
+  adminPayments: import('./interfaces').AdminPaymentsRepo = {
+    list: async (query) => {
+      return this.client.get<import('./interfaces').AdminPaymentsListResponse>(
+        '/admin/payments',
+        query as Record<string, string | number | boolean | undefined>,
+      );
+    },
+    getDetail: async (paymentId) => {
+      return this.client.get<import('./interfaces').AdminPaymentDetail>(
+        `/admin/payments/${encodeURIComponent(paymentId)}`,
+      );
+    },
+    reconcile: async (paymentId) => {
+      return this.client.post<import('./interfaces').AdminPaymentReconcileResponse>(
+        `/admin/payments/${encodeURIComponent(paymentId)}/reconcile`,
+      );
+    },
+    markReviewed: async (paymentId, input) => {
+      return this.client.post<import('./interfaces').AdminPaymentMarkReviewedResponse>(
+        `/admin/payments/${encodeURIComponent(paymentId)}/mark-reviewed`,
+        input,
       );
     },
   };

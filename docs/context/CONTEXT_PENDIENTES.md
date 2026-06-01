@@ -97,13 +97,13 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 
 ## Emails transaccionales (DonWeb SMTP)
 
-> Auditoría Slice 1 (2026-06-01): [`docs/emails/EMAILS_ARCHITECTURE.md`](../emails/EMAILS_ARCHITECTURE.md) · matriz [`EMAIL_MATRIX.md`](../emails/EMAIL_MATRIX.md)
+> **Bloque cerrado PROD OK (2026-06):** [`EMAILS_CLOSING_AUDIT.md`](../emails/EMAILS_CLOSING_AUDIT.md) · arquitectura [`EMAILS_ARCHITECTURE.md`](../emails/EMAILS_ARCHITECTURE.md) · matriz [`EMAIL_MATRIX.md`](../emails/EMAIL_MATRIX.md)
 
 - [x] Auditar sistema actual (Resend, cola, `NotificationDeliveryLog`, callers, env, frontend prefs)
 - [x] Propuesta arquitectura `MailProvider` + SMTP DonWeb `@yoteinvito.club` (Slice 1)
 - [x] Slice 2: `MailProvider`, `ResendMailProvider`, `SmtpMailProvider`, `MAIL_PROVIDER`, `smoke:email`
 - [x] Validación SMTP DonWeb **local** — `smoke:email` OK (`messageId`; host `c2821613.ferozo.com:465`, `no_reply@yoteinvito.club`)
-- [ ] Activar `MAIL_PROVIDER=smtp` en **VPS prod** (env API) + `smoke:email` desde servidor (secretos solo en servidor)
+- [x] **Producción VPS:** `MAIL_PROVIDER=smtp`, API `/health` OK, smokes por familia OK, pruebas manuales OK; password SMTP rotada en servidor (no en repo)
 - [x] Slice 3: layout base + registry + renderer + 3 templates piloto + `sendTemplate` + `smoke:email-template`
 - [x] Slice 3b: callers piloto — `AUTH_WELCOME_BUYER` (registro USER), `PRODUCER_EVENT_APPROVED` (aprobación admin), `OperationalAlertsEmailService` (`ADMIN_CRITICAL_ALERT`)
 - [x] Slice 4 (tanda 1): `AUTH_WELCOME_PRODUCER|GASTRO|HOTEL|REFERRER`, `AUTH_VERIFY_EMAIL`, `PRODUCER_EVENT_REJECTED` + callers en `AuthService` / `ProducerEventStatusNotificationsService`
@@ -183,7 +183,7 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 - [ ] Revisión `postfix` (puerto 25) y `snmpd` (puerto 161)
 - [ ] **Legales:** reemplazar bootstrap temporal por contenido aprobado en `/admin/legales`
 - [ ] Smoke completo desde dominio real (home, login, admin, checkout demo, scanner QR, emails si Resend)
-- [ ] Getnet/pagos reales fuera de este cierre
+- [ ] Getnet **go-live** en producción — código/docs slices A–G en [GETNET_CLOSING_AUDIT.md](../payments/GETNET_CLOSING_AUDIT.md); ejecutar deploy VPS + [GETNET_ACTIVATION_CHECKLIST.md](../payments/GETNET_ACTIVATION_CHECKLIST.md). Pendiente: firma webhook oficial, service fee, facturación, reembolsos, prueba monto mínimo.
 - [ ] **SEO técnico (SEO 2–9):** robots/sitemap, no-index portales, metadata dinámica, JSON-LD, GSC — baseline [`SEO_TECHNICAL_AUDIT.md`](../audits/SEO_TECHNICAL_AUDIT.md)
 
 ### Google Cloud — Etapa A manual (cerrada) / Etapa B (Storage cerrado; Maps/SEO pendiente)

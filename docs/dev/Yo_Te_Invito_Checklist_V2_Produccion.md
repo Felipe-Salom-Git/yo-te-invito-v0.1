@@ -355,7 +355,7 @@ _Footer público completo — bloque V2 cerrado. Smoke: `docs/audits/PUBLIC_FOOT
 
 ## Sistema de emails transaccionales y operativos
 
-> **Cierre técnico Slices 1–10:** [`docs/emails/EMAILS_CLOSING_AUDIT.md`](../emails/EMAILS_CLOSING_AUDIT.md). Detalle ítem a ítem: [`Yo_Te_Invito_Checklist_V2_2_Pendientes_Produccion.md`](./Yo_Te_Invito_Checklist_V2_2_Pendientes_Produccion.md) §4. **Fuera de cierre:** checkout real, pago pendiente/rechazado, factura, webhooks, migración registry de confirmación de compra.
+> **Bloque cerrado — PROD OK (2026-06):** [`docs/emails/EMAILS_CLOSING_AUDIT.md`](../emails/EMAILS_CLOSING_AUDIT.md) §0. Detalle ítem a ítem: [`Yo_Te_Invito_Checklist_V2_2_Pendientes_Produccion.md`](./Yo_Te_Invito_Checklist_V2_2_Pendientes_Produccion.md) §4. **Fuera de cierre (bloque pagos/facturación):** checkout real, pago pendiente/rechazado, factura, webhooks, migración registry de confirmación de compra.
 
 - [x] Auditar sistema actual de notificaciones in-app/email/push.
 - [x] Definir matriz de emails (`EMAIL_MATRIX.md`, 38 templates registry).
@@ -369,7 +369,9 @@ _Footer público completo — bloque V2 cerrado. Smoke: `docs/audits/PUBLIC_FOOT
 - [x] Alerta crítica admin, evento pendiente admin, fallo entrega/storage.
 - [ ] Error operativo pago/factura/webhook; scanner con caller automático.
 - [ ] Panel preferencias email granulares; `EmailOutboundLog` + reintentos BullMQ.
-- [x] Smoke `smoke:email` / `smoke:email-template` documentado.
+- [x] SMTP DonWeb en VPS (`MAIL_PROVIDER=smtp`), `/health` API OK, password rotada en servidor.
+- [x] Smoke `smoke:email` / `smoke:email-template` (local + VPS, por familias).
+- [x] Pruebas manuales flujos del bloque emails en producción.
 
 ## SEO, GEO y metadata social
 

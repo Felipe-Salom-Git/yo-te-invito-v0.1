@@ -159,7 +159,12 @@ export default function CheckoutEventPage() {
     mutationFn: () => repos.orders.createPayment(orderId!, tenantId, 'GETNET'),
     onError: (err) => addToast(getErrorMessage(err), 'error'),
     onSuccess: (result) => {
-      if (result.checkoutUrl) {
+      if (result.checkoutUrl && orderId) {
+        try {
+          sessionStorage.setItem(`getnet-payment:${orderId}`, result.paymentId);
+        } catch {
+          /* ignore quota / private mode */
+        }
         window.location.href = result.checkoutUrl;
       } else {
         addToast('No se pudo obtener el link de pago', 'error');

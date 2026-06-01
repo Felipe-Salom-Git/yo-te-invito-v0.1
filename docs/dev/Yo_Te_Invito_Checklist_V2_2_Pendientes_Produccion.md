@@ -7,10 +7,12 @@
 
 ## 1. Pagos reales y checkout productivo
 
+> **Implementación Getnet (código):** slices A–G — [GETNET_CLOSING_AUDIT.md](../payments/GETNET_CLOSING_AUDIT.md). Activación prod: [GETNET_ACTIVATION_CHECKLIST.md](../payments/GETNET_ACTIVATION_CHECKLIST.md), smoke: [GETNET_PRODUCTION_SMOKE.md](../payments/GETNET_PRODUCTION_SMOKE.md). **No** marcar go-live hasta smokes en VPS.
+
 ### Definición proveedor y flujo
 
-- [ ] Elegir proveedor de pago real.
-- [ ] Confirmar si el proveedor elegido será Getnet u otro.
+- [x] Elegir proveedor de pago real — **Getnet** (integración en repo).
+- [x] Confirmar si el proveedor elegido será Getnet u otro — **Getnet**.
 - [ ] Definir flujo final de checkout productivo.
 - [ ] Definir estados finales de pago:
   - pendiente
@@ -27,26 +29,27 @@
 
 ### Implementación checkout real
 
-- [ ] Implementar checkout real.
-- [ ] Mantener pago demo solo en desarrollo/staging.
-- [ ] Implementar webhooks del proveedor de pago.
-- [ ] Reconciliar pagos con órdenes/tickets.
-- [ ] Asegurar idempotencia ante webhooks repetidos.
-- [ ] Evitar doble emisión de tickets ante reintentos o webhooks duplicados.
-- [ ] Mostrar estado de pago en detalle de orden.
-- [ ] Mostrar errores claros si el pago falla o queda pendiente.
+- [x] Implementar checkout real — Getnet + demo (`POST …/payments`).
+- [ ] Mantener pago demo solo en desarrollo/staging — **política operativa** (botón aún visible en UI dev).
+- [x] Implementar webhooks del proveedor de pago — `POST /public/payments/getnet/webhook`.
+- [x] Reconciliar pagos con órdenes/tickets — `GetnetReconciliationService` + script batch.
+- [x] Asegurar idempotencia ante webhooks repetidos.
+- [x] Evitar doble emisión de tickets ante reintentos o webhooks duplicados — `OrderFulfillmentService`.
+- [x] Mostrar estado de pago en detalle de orden — `/me/orders/[orderId]`, `/checkout/return`.
+- [x] Mostrar errores claros si el pago falla o queda pendiente — return flow Slice D.
 
 ### Tickets y auditoría de pagos
 
-- [ ] Emitir tickets automáticamente cuando el pago sea aprobado.
-- [ ] Registrar eventos críticos de pago en auditoría/admin.
-- [ ] Notificar al comprador cuando el pago sea aprobado, rechazado o quede pendiente.
-- [ ] Notificar a admin ante errores críticos de webhook o reconciliación.
-- [ ] Smoke test checkout real:
+- [x] Emitir tickets automáticamente cuando el pago sea aprobado — fulfill unificado.
+- [x] Registrar eventos críticos de pago en auditoría/admin — `PAYMENT_*` + `/admin/pagos` (migración `20260601140000_audit_payment_actions`).
+- [ ] Notificar al comprador cuando el pago sea aprobado, rechazado o quede pendiente — email confirmación en aprobado (legacy); **sin** emails por estado pendiente/rechazado dedicados.
+- [x] Notificar a admin ante errores críticos de webhook o reconciliación — alertas operativas.
+- [ ] Smoke test checkout real en **producción** (manual):
   - orden
   - pago
   - webhook
-  - emisión de tickets
+  - emisión de tickets  
+  → [GETNET_PRODUCTION_SMOKE.md](../payments/GETNET_PRODUCTION_SMOKE.md)
 
 ---
 
@@ -120,7 +123,7 @@
 
 ## 4. Sistema de emails transaccionales y operativos
 
-> **Bloque emails cerrado técnicamente (Slices 1–10, 2026-06-01):** [`docs/emails/EMAILS_CLOSING_AUDIT.md`](../emails/EMAILS_CLOSING_AUDIT.md). **Pendiente de producto:** checkout real, pago pendiente/rechazado, factura, webhooks, migración completa legacy checkout/payouts.
+> **Bloque emails cerrado — PROD OK (2026-06):** [`docs/emails/EMAILS_CLOSING_AUDIT.md`](../emails/EMAILS_CLOSING_AUDIT.md) §0 (SMTP VPS, `/health`, smokes, manuales). **Pendiente otro bloque:** checkout real, pago pendiente/rechazado, factura, webhooks, migración legacy checkout/payouts al registry.
 
 ### Auditoría y arquitectura
 
@@ -172,7 +175,8 @@
 - [ ] Email de error operativo crítico **pago / factura / webhook** — **bloque pagos/facturación**.
 - [x] Email fallo entrega / storage GCS (`ADMIN_EMAIL_DELIVERY_FAILED`, `ADMIN_STORAGE_UPLOAD_FAILED`).
 - [ ] Email error scanner crítico con caller automático (`ADMIN_SCANNER_CRITICAL_ERROR` listo, sin hook).
-- [x] Smoke test de emails principales (`smoke:email`, `smoke:email-template`; ver cierre audit §10).
+- [x] Smoke test de emails principales (`smoke:email`, `smoke:email-template`; local + VPS por familias).
+- [x] Producción: `MAIL_PROVIDER=smtp` DonWeb, API `/health` OK, pruebas manuales OK (password SMTP solo en servidor, rotada).
 
 ---
 

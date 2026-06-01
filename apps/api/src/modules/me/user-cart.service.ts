@@ -267,6 +267,7 @@ export class UserCartService {
     }
 
     const orderIds: string[] = [];
+    const checkoutUrls: string[] = [];
     for (const [eventId, items] of byEvent) {
       const order = await this.publicOrders.create(tenantId, {
         eventId,
@@ -283,13 +284,16 @@ export class UserCartService {
         buyerUserId: userId,
       });
       orderIds.push(order.id);
+      checkoutUrls.push(
+        `/checkout/${encodeURIComponent(eventId)}?tenantId=${encodeURIComponent(tenantId)}&orderId=${encodeURIComponent(order.id)}`,
+      );
     }
 
     await this.prisma.userCartItem.deleteMany({ where: { cartId: cart.id } });
 
     return {
       orderIds,
-      checkoutUrls: orderIds.map((id) => `/checkout/orders/${id}?tenantId=${tenantId}`),
+      checkoutUrls,
     };
   }
 }

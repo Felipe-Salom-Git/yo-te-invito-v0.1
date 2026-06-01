@@ -6,23 +6,17 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
-import { EmailQueueService } from '../../email/email-queue.service';
-import { renderOrderConfirmationEmail } from '../../email/email-templates';
-import { EventCapacityGuardService } from '../../common/event-capacity-guard.service';
-import { randomBytes } from 'crypto';
 import type { OrderResponse } from '@yo-te-invito/shared';
 import { ErrorCode } from '@yo-te-invito/shared';
 import type { PaymentProviderApi } from '@yo-te-invito/shared';
 import { GetnetCheckoutService } from './providers/getnet/getnet-checkout.service';
-import { mapGetnetStatusToLocal } from './providers/getnet/getnet.mapper';
 import { loadGetnetConfig } from './providers/getnet/getnet.config';
 import { TicketBatchService } from '../../ticketing/ticket-batch.service';
-import { ReferralCommissionService } from '../referrals/referral-commission.service';
+import { OrderFulfillmentService } from './order-fulfillment.service';
+import { GetnetReconciliationService } from './getnet-reconciliation.service';
 import { ReferralEmailsService } from '../referrals/referral-emails.service';
-
-function generateQrPayload(): string {
-  return 'yti:v1:' + randomBytes(24).toString('hex');
-}
+import { mapOrderToResponse } from './order-response.mapper';
+import { buildCheckoutReturnUrl } from './getnet-return-url.util';
 
 export interface CreatePaymentResult {
   paymentId: string;
@@ -46,11 +40,10 @@ export class PublicPaymentsService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly capacityGuard: EventCapacityGuardService,
-    private readonly emailQueue: EmailQueueService,
     private readonly getnetCheckout: GetnetCheckoutService,
     private readonly ticketBatches: TicketBatchService,
-    private readonly referralCommissions: ReferralCommissionService,
+    private readonly orderFulfillment: OrderFulfillmentService,
+    private readonly getnetReconciliation: GetnetReconciliationService,
     private readonly referralEmails: ReferralEmailsService,
   ) {}
 
@@ -218,7 +211,36 @@ export class PublicPaymentsService {
         currency: order.currency,
         externalReference: getnetResult.uuid,
         paymentUrl: getnetResult.checkoutUrl,
-        metadata: getnetResult.raw ? (getnetResult.raw as object) : undefined,
+        metadata: {
+          ...(getnetResult.raw && typeof getnetResult.raw === 'object'
+            ? (getnetResult.raw as object)
+            : {}),
+        },
+      },
+    });
+
+    const returnUrl = buildCheckoutReturnUrl({
+      orderId,
+      paymentId: payment.id,
+      tenantId,
+    });
+    const cancelUrl = buildCheckoutReturnUrl({
+      orderId,
+      paymentId: payment.id,
+      tenantId,
+      cancelled: true,
+    });
+    await this.prisma.payment.update({
+      where: { id: payment.id },
+      data: {
+        metadata: {
+          ...(getnetResult.raw && typeof getnetResult.raw === 'object'
+            ? (getnetResult.raw as object)
+            : {}),
+          returnUrl,
+          cancelUrl,
+          getnetReturnConfiguredAt: new Date().toISOString(),
+        },
       },
     });
 
@@ -254,8 +276,21 @@ export class PublicPaymentsService {
       });
     }
 
+    if (payment.provider !== 'DEMO' && payment.provider !== 'MERCADOPAGO') {
+      throw new ConflictException({
+        code: ErrorCode.CONFLICT,
+        message: 'Payment is not a demo payment',
+      });
+    }
+
     if (payment.status === 'APPROVED') {
-      return this.mapOrderToResponse(payment.order);
+      const fulfillResult = await this.orderFulfillment.fulfillPaidOrder({
+        tenantId,
+        orderId: payment.orderId,
+        paymentId,
+        source: 'DEMO_CONFIRM',
+      });
+      return fulfillResult.order ?? mapOrderToResponse(payment.order);
     }
 
     if (payment.order.status !== 'PENDING_PAYMENT') {
@@ -272,139 +307,43 @@ export class PublicPaymentsService {
     }
 
     const now = new Date();
-    if (
-      payment.order.expiresAt &&
-      payment.order.expiresAt < now
-    ) {
+    if (payment.order.expiresAt && payment.order.expiresAt < now) {
       throw new ConflictException({
         code: ErrorCode.ORDER_EXPIRED,
         message: 'Order expired',
       });
     }
 
-    const totalTickets = payment.order.orderItems.reduce(
-      (s, oi) => s + oi.quantity,
-      0,
-    );
-
-    let newCommissionId: string | null = null;
-
-    const orderResult = await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const orderUpdate = await tx.order.updateMany({
-        where: {
-          id: payment.orderId,
-          status: 'PENDING_PAYMENT',
-          OR: [
-            { expiresAt: null },
-            { expiresAt: { gte: now } },
-          ],
-        },
-        data: { status: 'PAID', paidAt: now },
-      });
-      if (orderUpdate.count === 0) {
-        throw new ConflictException({
-          code: ErrorCode.ORDER_EXPIRED,
-          message: 'Order expired',
-        });
-      }
-
-      await this.capacityGuard.assertEventCapacityAvailable(
-        tx,
-        tenantId,
-        payment.order.eventId,
-        totalTickets,
-      );
-
-      await tx.payment.update({
-        where: { id: paymentId },
-        data: { status: 'APPROVED' },
-      });
-
-      // Assign tickets: prefer Order.buyerUserId (checkout logged-in), else match by buyer email
-      const ownerUser = await tx.user.findFirst({
-        where: {
-          tenantId: payment.order.tenantId,
-          email: { equals: payment.order.buyerEmail, mode: 'insensitive' },
-          deletedAt: null,
-        },
-        select: { id: true },
-      });
-      const ownerUserId = payment.order.buyerUserId ?? ownerUser?.id ?? null;
-
-      const seenPayloads = new Set<string>();
-      for (const oi of payment.order.orderItems) {
-        await this.ticketBatches.confirmReservedAsSold(
-          tx,
-          oi.ticketBatchId ?? null,
-          oi.quantity,
-        );
-        for (let i = 0; i < oi.quantity; i++) {
-          let qrPayload = generateQrPayload();
-          while (seenPayloads.has(qrPayload)) {
-            qrPayload = generateQrPayload();
-          }
-          seenPayloads.add(qrPayload);
-
-          await tx.ticket.create({
-            data: {
-              orderId: payment.orderId,
-              orderItemId: oi.id,
-              ticketTypeId: oi.ticketTypeId,
-              ticketBatchId: oi.ticketBatchId ?? null,
-              eventId: payment.order.eventId,
-              qrPayload,
-              status: 'VALID',
-              ownerUserId,
-            },
-          });
-        }
-      }
-
-      const commissionResult = await this.referralCommissions.processOrderPaidInTransaction(
-        tx,
-        payment.orderId,
-        tenantId,
-      );
-      if (commissionResult.created && commissionResult.commissionId) {
-        newCommissionId = commissionResult.commissionId;
-      }
-
-      const updatedOrder = await tx.order.findUniqueOrThrow({
-        where: { id: payment.orderId },
-        include: {
-          event: { select: { title: true } },
-          orderItems: {
-            include: {
-              ticketType: true,
-              tickets: true,
-            },
-          },
-          tickets: true,
-        },
-      });
-
-      const result = this.mapOrderToResponse(updatedOrder);
-      const eventTitle = (updatedOrder as { event?: { title: string } }).event?.title ?? 'Evento';
-      const { html, text } = renderOrderConfirmationEmail(
-        updatedOrder.buyerFirstName,
-        updatedOrder.id,
-        eventTitle,
-      );
-      this.emailQueue.enqueue({
-        to: updatedOrder.buyerEmail,
-        subject: 'Tu compra fue confirmada',
-        html,
-        text,
-      });
-
-      return result;
+    const fulfillResult = await this.orderFulfillment.fulfillPaidOrder({
+      tenantId,
+      orderId: payment.orderId,
+      paymentId,
+      source: 'DEMO_CONFIRM',
+      rejectIfExpired: true,
     });
 
-    if (newCommissionId) {
-      this.referralEmails.notifyCommissionGenerated(tenantId, newCommissionId);
+    if (fulfillResult.outcome === 'skipped') {
+      throw new ConflictException({
+        code: ErrorCode.CONFLICT,
+        message: 'Order cannot be fulfilled',
+      });
     }
 
-    return orderResult;
+    if (fulfillResult.newCommissionId) {
+      this.referralEmails.notifyCommissionGenerated(
+        tenantId,
+        fulfillResult.newCommissionId,
+      );
+    }
+
+    if (!fulfillResult.order) {
+      throw new ConflictException({
+        code: ErrorCode.CONFLICT,
+        message: 'Order fulfillment did not return order',
+      });
+    }
+
+    return fulfillResult.order;
   }
 
   async getOrderPaymentStatus(
@@ -460,18 +399,12 @@ export class PublicPaymentsService {
       const remote = await this.getnetCheckout.getOrderStatus(
         payment.externalReference,
       );
-      const localStatus = mapGetnetStatusToLocal(remote.status);
 
-      if (localStatus !== payment.status) {
-        await this.prisma.payment.update({
-          where: { id: paymentId },
-          data: { status: localStatus },
-        });
-      }
-
-      if (localStatus === 'APPROVED' && payment.order.status === 'PENDING_PAYMENT') {
-        await this.completeOrderFromGetnet(payment.orderId, tenantId, paymentId);
-      }
+      await this.getnetReconciliation.reconcilePayment(paymentId, {
+        source: 'GETNET_POLL',
+        tenantId,
+        remoteStatusOverride: remote.status,
+      });
 
       const updated = await this.prisma.payment.findUniqueOrThrow({
         where: { id: paymentId },
@@ -495,213 +428,5 @@ export class PublicPaymentsService {
         orderStatus: payment.order.status,
       };
     }
-  }
-
-  private async completeOrderFromGetnet(
-    orderId: string,
-    tenantId: string,
-    paymentId: string,
-  ): Promise<void> {
-    const payment = await this.prisma.payment.findFirst({
-      where: { id: paymentId, tenantId },
-      include: {
-        order: {
-          include: {
-            orderItems: { include: { ticketType: true } },
-          },
-        },
-      },
-    });
-
-    if (!payment || payment.order.status !== 'PENDING_PAYMENT') {
-      return;
-    }
-
-    const now = new Date();
-    const totalTickets = payment.order.orderItems.reduce(
-      (s, oi) => s + oi.quantity,
-      0,
-    );
-
-    let newCommissionId: string | null = null;
-
-    await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const orderUpdate = await tx.order.updateMany({
-        where: {
-          id: orderId,
-          status: 'PENDING_PAYMENT',
-          tenantId,
-          OR: [
-            { expiresAt: null },
-            { expiresAt: { gte: now } },
-          ],
-        },
-        data: { status: 'PAID', paidAt: now },
-      });
-
-      if (orderUpdate.count === 0) return;
-
-      await this.capacityGuard.assertEventCapacityAvailable(
-        tx,
-        tenantId,
-        payment.order.eventId,
-        totalTickets,
-      );
-
-      const ownerUser = await tx.user.findFirst({
-        where: {
-          tenantId: payment.order.tenantId,
-          email: { equals: payment.order.buyerEmail, mode: 'insensitive' },
-          deletedAt: null,
-        },
-        select: { id: true },
-      });
-      const ownerUserId = payment.order.buyerUserId ?? ownerUser?.id ?? null;
-      const seenPayloads = new Set<string>();
-
-      for (const oi of payment.order.orderItems) {
-        await this.ticketBatches.confirmReservedAsSold(
-          tx,
-          oi.ticketBatchId ?? null,
-          oi.quantity,
-        );
-        for (let i = 0; i < oi.quantity; i++) {
-          let qrPayload = generateQrPayload();
-          while (seenPayloads.has(qrPayload)) {
-            qrPayload = generateQrPayload();
-          }
-          seenPayloads.add(qrPayload);
-
-          await tx.ticket.create({
-            data: {
-              orderId: payment.orderId,
-              orderItemId: oi.id,
-              ticketTypeId: oi.ticketTypeId,
-              ticketBatchId: oi.ticketBatchId ?? null,
-              eventId: payment.order.eventId,
-              qrPayload,
-              status: 'VALID',
-              ownerUserId,
-            },
-          });
-        }
-      }
-
-      const commissionResult = await this.referralCommissions.processOrderPaidInTransaction(
-        tx,
-        orderId,
-        tenantId,
-      );
-      if (commissionResult.created && commissionResult.commissionId) {
-        newCommissionId = commissionResult.commissionId;
-      }
-
-      const updatedOrder = await tx.order.findUniqueOrThrow({
-        where: { id: orderId },
-        include: { event: { select: { title: true } } },
-      });
-      const eventTitle = (updatedOrder as { event?: { title: string } }).event?.title ?? 'Evento';
-      const { html, text } = renderOrderConfirmationEmail(
-        payment.order.buyerFirstName,
-        orderId,
-        eventTitle,
-      );
-      this.emailQueue.enqueue({
-        to: payment.order.buyerEmail,
-        subject: 'Tu compra fue confirmada',
-        html,
-        text,
-      });
-    });
-
-    if (newCommissionId) {
-      this.referralEmails.notifyCommissionGenerated(tenantId, newCommissionId);
-    }
-  }
-
-  private mapOrderToResponse(order: {
-    id: string;
-    tenantId: string;
-    eventId: string;
-    status: string;
-    buyerEmail: string;
-    buyerFirstName: string;
-    buyerLastName: string;
-    buyerDocument: string | null;
-    totalAmount: { toString: () => string };
-    currency: string;
-    createdAt: Date;
-    orderItems: Array<{
-      id: string;
-      ticketTypeId: string;
-      ticketBatchId: string | null;
-      ticketType: { name: string };
-      quantity: number;
-      unitPrice: { toString: () => string };
-      subtotal: { toString: () => string };
-      tickets: Array<{
-        id: string;
-        ticketTypeId: string | null;
-        ticketBatchId: string | null;
-        qrPayload: string;
-        status: string;
-      }>;
-    }>;
-    tickets: Array<{
-      id: string;
-      ticketTypeId: string | null;
-      ticketBatchId: string | null;
-      orderItemId: string | null;
-      qrPayload: string;
-      status: string;
-    }>;
-  }): OrderResponse {
-    const orderItems = order.orderItems.map((oi) => ({
-      id: oi.id,
-      ticketTypeId: oi.ticketTypeId,
-      ticketBatchId: oi.ticketBatchId ?? undefined,
-      ticketTypeName: oi.ticketType.name,
-      quantity: oi.quantity,
-      unitPrice: oi.unitPrice.toString(),
-      subtotal: oi.subtotal.toString(),
-      tickets: oi.tickets.map((t) => ({
-        id: t.id,
-        ticketTypeId: t.ticketTypeId ?? oi.ticketTypeId,
-        ticketBatchId: t.ticketBatchId ?? oi.ticketBatchId ?? undefined,
-        ticketTypeName: oi.ticketType.name,
-        qrPayload: t.qrPayload,
-        status: t.status as 'VALID' | 'USED' | 'REVOKED',
-      })),
-    }));
-
-    const tickets = order.tickets
-      .filter((t) => t.orderItemId)
-      .map((t) => {
-        const oi = order.orderItems.find((o) => o.id === t.orderItemId!);
-        return {
-          id: t.id,
-          ticketTypeId: t.ticketTypeId ?? oi?.ticketTypeId ?? null,
-          ticketBatchId: t.ticketBatchId ?? oi?.ticketBatchId ?? undefined,
-          ticketTypeName: oi?.ticketType.name ?? null,
-          qrPayload: t.qrPayload,
-          status: t.status as 'VALID' | 'USED' | 'REVOKED',
-        };
-      });
-
-    return {
-      id: order.id,
-      tenantId: order.tenantId,
-      eventId: order.eventId,
-      status: order.status as OrderResponse['status'],
-      buyerEmail: order.buyerEmail,
-      buyerFirstName: order.buyerFirstName,
-      buyerLastName: order.buyerLastName,
-      buyerDocument: order.buyerDocument,
-      totalAmount: order.totalAmount.toString(),
-      currency: order.currency,
-      orderItems,
-      tickets,
-      createdAt: order.createdAt.toISOString(),
-    };
   }
 }

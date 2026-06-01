@@ -1254,6 +1254,28 @@ export interface AdminUsersRepo {
   updateRole(userId: string, role: string): Promise<User | null>;
 }
 
+export type AdminPaymentsListQuery = import('@yo-te-invito/shared').AdminPaymentsListQuery;
+export type AdminPaymentsListResponse =
+  import('@yo-te-invito/shared').AdminPaymentsListResponse;
+export type AdminPaymentListItem = import('@yo-te-invito/shared').AdminPaymentListItem;
+export type AdminPaymentDetail = import('@yo-te-invito/shared').AdminPaymentDetail;
+export type AdminPaymentReconcileResponse =
+  import('@yo-te-invito/shared').AdminPaymentReconcileResponse;
+export type AdminPaymentMarkReviewedInput =
+  import('@yo-te-invito/shared').AdminPaymentMarkReviewedInput;
+export type AdminPaymentMarkReviewedResponse =
+  import('@yo-te-invito/shared').AdminPaymentMarkReviewedResponse;
+
+export interface AdminPaymentsRepo {
+  list(query: AdminPaymentsListQuery): Promise<AdminPaymentsListResponse>;
+  getDetail(paymentId: string): Promise<AdminPaymentDetail>;
+  reconcile(paymentId: string): Promise<AdminPaymentReconcileResponse>;
+  markReviewed(
+    paymentId: string,
+    input: AdminPaymentMarkReviewedInput,
+  ): Promise<AdminPaymentMarkReviewedResponse>;
+}
+
 export type AdminLegalDocumentListQuery =
   import('@yo-te-invito/shared').AdminLegalDocumentListQuery;
 export type AdminLegalDocumentListItem =
@@ -1424,6 +1446,8 @@ export interface PaymentStatusResult {
   orderStatus: string;
 }
 
+export type { CheckoutPaymentStatusResponse } from '@yo-te-invito/shared';
+
 export interface OrdersRepo {
   get(orderId: string, tenantId: string): Promise<Order | null>;
   listByBuyer(userId: string, tenantId?: string): Promise<Order[]>;
@@ -1444,6 +1468,15 @@ export interface OrdersRepo {
   confirmDemoPayment(orderId: string, tenantId: string): Promise<Order>;
   refreshPaymentStatus(paymentId: string, tenantId: string): Promise<PaymentStatusResult>;
   getOrderPaymentStatus(orderId: string, tenantId: string): Promise<PaymentStatusResult>;
+  getCheckoutPaymentStatus(
+    orderId: string,
+    tenantId: string,
+    options?: { paymentId?: string; cancelled?: boolean },
+  ): Promise<import('@yo-te-invito/shared').CheckoutPaymentStatusResponse>;
+  refreshCheckoutPaymentStatus(
+    paymentId: string,
+    tenantId: string,
+  ): Promise<import('@yo-te-invito/shared').CheckoutPaymentStatusResponse>;
 }
 
 export interface CreateReferrerInput {
@@ -2570,6 +2603,7 @@ export interface Repositories {
   adminEvents: AdminEventsRepo;
   adminAudit: AdminAuditRepo;
   adminUsers: AdminUsersRepo;
+  adminPayments: AdminPaymentsRepo;
   legalDocuments: LegalDocumentsRepo;
   producerDashboard: ProducerDashboardRepo;
   producers: ProducersRepo;

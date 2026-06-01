@@ -36,6 +36,12 @@
 | `pnpm --filter api run smoke:maps-location` | Bajo | Maps Etapa B — entidades públicas con address/coords/placeId/province — audit §23 |
 | `pnpm --filter api run smoke:email` | Bajo* | Un email; `SMOKE_EMAIL_TO` + SMTP/Resend. DonWeb SMTP OK en local (`c2821613.ferozo.com:465`). Sin password en repo |
 | `pnpm --filter api run smoke:email-template` | Bajo* | Un email por template ID (**38** en registry); `SMOKE_EMAIL_TO` + `SMOKE_EMAIL_TEMPLATE_ID`. Ver `docs/emails/EMAILS_CLOSING_AUDIT.md` §10 |
+| `pnpm --filter api run payments:reconcile-getnet` | Medio | Getnet — dry-run default; `--confirm` muta |
+| `pnpm --filter api run smoke:getnet` | Bajo–Medio | Getnet activación — `--config` read-only; `--simulate-webhook` muta |
+| `pnpm --filter api run test:getnet-reconciliation` | No | Policy reconciliación Getnet |
+| `pnpm --filter api run test:getnet-webhook` | No | Helpers webhook Getnet |
+| `pnpm --filter api run test:getnet-auth` | Bajo | OAuth Getnet (red) |
+| `pnpm --filter api run test:order-fulfillment` | No | Helpers fulfill idempotente |
 | `pnpm --filter api run test:referral-*` | No | Util % / propuestas / solicitudes pago |
 | `pnpm --filter api run smoke:cleanup` | Medio | Artefactos smoke |
 | `pnpm e2e:portal` / `e2e:notifications` | Bajo* | E2E UI |

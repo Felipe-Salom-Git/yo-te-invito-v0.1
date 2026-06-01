@@ -308,6 +308,11 @@ pnpm --filter api run smoke:cleanup -- --confirm
 | Comando | Notas |
 |---------|--------|
 | `test:getnet-auth` | OAuth Getnet; solo red |
+| `test:order-fulfillment` | Helpers idempotencia fulfill |
+| `test:getnet-webhook` | Helpers webhook Getnet |
+| `test:getnet-reconciliation` | Política reconciliación Getnet |
+| `payments:reconcile-getnet` | Reconciliación batch Getnet — **dry-run por defecto**; `--confirm` muta |
+| `smoke:getnet` | Activación Getnet — `--config` (env/health, sin secretos); `--simulate-webhook --payment-id` (QA) |
 | `test:door-scan` | **Alto** — deja fixture `door-scan-test-*` en BD |
 
 ### E2E Playwright
@@ -385,6 +390,11 @@ Motivo: proteger `felipe.e.salom@gmail.com` y evitar repoblación accidental de 
 | `smoke:api` | Bajo | Casi no | Health API |
 | `smoke:producer-follows` | Bajo | Mínimo | Follows |
 | `test:getnet-auth` | Bajo | No | Integración Getnet |
+| `test:order-fulfillment` | Bajo | No | Fulfill idempotente |
+| `test:getnet-webhook` | Bajo | No | Webhook helpers |
+| `test:getnet-reconciliation` | Bajo | No | Reconciliación policy |
+| `payments:reconcile-getnet` | Medio | Con `--confirm` | Ops pagos Getnet |
+| `smoke:getnet` | Bajo–Medio | `--simulate-webhook` muta | Pre-prod Getnet — ver `docs/payments/GETNET_ACTIVATION_CHECKLIST.md` |
 | `db:migrate` | Medio | Schema | Nuevas migraciones |
 | `db:studio` | Medio | RW manual | Inspección |
 | `db:cleanup-content` | Medio | Sí | Limpiar contenido prueba |

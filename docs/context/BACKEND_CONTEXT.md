@@ -107,7 +107,7 @@ See previous full endpoint tables in git history; key groups:
 - **Gastro reviews V2:** `GET /gastro/reviews/summary`, `GET /gastro/reviews`, `POST /gastro/reviews/:id/reply` — `ReviewDisputesService` (sin duplicar motor de reviews).
 - **Transferencia personal**: `TicketTransferOffer` — sin marketplace `/resale/*` (eliminado `20260605120000_remove_resale_marketplace`).
 - **Notificaciones usuario**: `GET/PATCH /me/notifications`, `POST .../mark-all-read` (`UserNotificationsService`, `NotificationsSchedulerService`, email vía `EmailQueueService` → `EmailService` → `MailProvider`).
-  - **Emails (Slices 2–10, cierre):** `MailProvider`; registry **38** templates (`EMAIL_TEMPLATE_IDS`). Legacy activo: `renderOrderConfirmationEmail` (checkout), payouts en `email-templates.ts`; gastro QR inline. Smokes `smoke:email`, `smoke:email-template`. Doc: `docs/emails/EMAILS_ARCHITECTURE.md`, cierre `docs/emails/EMAILS_CLOSING_AUDIT.md`.
+  - **Emails (Slices 2–10, PROD OK):** `MailProvider` (`MAIL_PROVIDER=smtp` en VPS DonWeb); registry **38** templates. Legacy activo: `renderOrderConfirmationEmail` (checkout), payouts en `email-templates.ts`; gastro QR inline — **bloque pagos/facturación pendiente**. Smokes `smoke:email`, `smoke:email-template` validados local y VPS. Doc: `docs/emails/EMAILS_CLOSING_AUDIT.md` (§0 validación prod).
   - **Entrega unificada** `deliver()`: canales `IN_APP`, `EMAIL`, `PUSH` (log idempotente `NotificationDeliveryLog`).
   - **Kinds:** `TICKET_REMINDER_24H`, `FAVORITE_EVENT_SOON`, `EXPECTED_EVENT_SOON`, `TRANSFER_OFFER_PENDING`, `REVIEW_PENDING`, `FOLLOWED_PRODUCER_NEW_EVENT`, `FAVORITE_INTEREST_NEW_CONTENT`, **`EVENT_APPROVED_BY_ADMIN`**, **`EVENT_REJECTED_BY_ADMIN`**, **`REVIEW_RECEIVED`**, **`REVIEW_OFFICIAL_REPLY`**, **`REVIEW_DISPUTE_CREATED`**, **`REVIEW_DISPUTE_ACCEPTED`**, **`REVIEW_DISPUTE_REJECTED`**, **`REVIEW_MODERATION_HIDDEN`**, **`REVIEW_MODERATION_RESTORED`**.
   - **Productor evento admin:** `ProducerEventStatusNotificationsService` (hook en `approveEvent` / `rejectEvent`); no falla moderación si email/push fallan; preferencia `notifyProducerEventStatus` en `User.preferences`.
@@ -266,7 +266,7 @@ Opcional cron: `NOTIFICATIONS_CRON_ENABLED=false`, `NOTIFICATION_REMINDER_HOURS`
 
 ## 9. Debt / risks
 
-- Payments: demo only (`DEMO` + `demo-confirm`); Getnet no activo en prod (Mayo 2026).
+- Payments: `DEMO` + `demo-confirm`; Getnet implementado (webhook, reconcile, return UI, `/admin/pagos`) — cierre código/docs [GETNET_CLOSING_AUDIT.md](../payments/GETNET_CLOSING_AUDIT.md); **go-live** VPS según [GETNET_ACTIVATION_CHECKLIST.md](../payments/GETNET_ACTIVATION_CHECKLIST.md).
 - Image uploads: portales + Admin → GCS **cerrado funcional prod 2026-05-31.** Ops legacy no bloqueante: `storage:audit-data-urls`, `storage:migrate-data-urls` (§21), `storage:audit-orphans`, `storage:cleanup-orphans` (§22).
 - Public list `EventSummary` includes `fromPrice` (min active ticket/batch price, major units) and `producerName` (`ProducerProfile.displayName`, ACTIVE only) — see `public-event-summary.util.ts`.
 - Run `prisma migrate deploy` + `prisma generate` after schema changes — **prod:** `https://api.yoteinvito.club`, migraciones vía `migrate deploy` (no `pnpm db:migrate`). **Build monorepo:** `pnpm build` desde raíz (genera Prisma client, compila `shared` con schemas Maps, luego api/web/scanner); no compilar `api` aislado sin `shared` recién buildado.

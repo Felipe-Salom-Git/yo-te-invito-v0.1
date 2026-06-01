@@ -23,6 +23,10 @@ import { EmailModule } from '../../email/email.module';
 import { AdminGastroService } from './admin-gastro.service';
 import { AdminDashboardService } from './admin-dashboard.service';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { PublicPaymentsModule } from '../public-payments/public-payments.module';
+import { AuditModule } from '../audit/audit.module';
+import { AdminPaymentsController } from './admin-payments.controller';
+import { AdminPaymentsService } from './admin-payments.service';
 
 @Module({
   imports: [
@@ -36,8 +40,10 @@ import { NotificationsModule } from '../notifications/notifications.module';
     ProducerModule,
     EmailModule,
     NotificationsModule,
+    PublicPaymentsModule,
+    AuditModule,
   ],
-  controllers: [AdminController],
+  controllers: [AdminController, AdminPaymentsController],
   providers: [
     AdminEventsService,
     AdminProfilesService,
@@ -52,6 +58,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
     AdminGeneralPublicationsService,
     AdminGastroService,
     AdminDashboardService,
+    AdminPaymentsService,
   ],
 })
 export class AdminModule {}
