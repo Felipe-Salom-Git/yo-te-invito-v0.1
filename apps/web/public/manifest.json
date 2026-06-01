@@ -1,10 +1,24 @@
 {
   "name": "Yo Te Invito",
   "short_name": "Yo Te Invito",
-  "description": "Plataforma de ticketera y venta de entradas",
+  "description": "Eventos, gastronomía, excursiones y rentals. Comprá entradas y descubrí experiencias.",
   "start_url": "/home",
   "display": "standalone",
   "background_color": "#0a0a0a",
   "theme_color": "#0a0a0a",
-  "lang": "es-AR"
+  "lang": "es-AR",
+  "icons": [
+    {
+      "src": "/brand/logo.png",
+      "sizes": "771x775",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/brand/logo_2.png",
+      "sizes": "1884x1550",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
 }

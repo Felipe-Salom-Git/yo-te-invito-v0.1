@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Explorar eventos',
-  description: 'Busca eventos, gastronomía, excursiones y alquileres',
+  title: 'Explorar',
+  description:
+    'Explorá eventos, excursiones, gastronomía, hoteles y servicios disponibles en Yo Te Invito.',
 };
 
 export default function ExploreLayout({ children }: { children: React.ReactNode }) {

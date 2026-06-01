@@ -84,7 +84,7 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 > **Runbook:** [`docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTION_RUNBOOK.md) — §24 ejecución real, §25 seguridad post-deploy  
 > **Checklist V2:** `docs/dev/Yo_Te_Invito_Checklist_V2_Produccion.md` § Producción técnica
 
-**Estado actual:** VPS DonWeb productivo con systemd + Nginx + HTTPS. Web/API/Scanner en **`yoteinvito.club`**. Hardening base cerrado. **Backups GCS cerrados** (2026-05-31). **Storage V2 cerrado funcional en producción** (2026-05-31) — [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §22 · [`DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTION_RUNBOOK.md) §24.9. Pendiente VPS: monitoreo, rate limiting fino, legales reales, bind `127.0.0.1`, postfix/snmpd, Maps, GSC/SEO.
+**Estado actual:** VPS DonWeb productivo con systemd + Nginx + HTTPS. Web/API/Scanner en **`yoteinvito.club`**. **Storage V2 cerrado funcional (2026-05-31).** **SEO baseline:** auditoría SEO 1 — [`SEO_TECHNICAL_AUDIT.md`](../audits/SEO_TECHNICAL_AUDIT.md). **SEO 3 aplicado:** OG/Twitter global + icons/manifest con assets existentes. **SEO 4 aplicado:** metadata estática en rutas base + `robots.ts` + sitemap mínimo. Pendiente: GSC envío sitemap, `noindex` portales (SEO 2), metadata dinámica (SEO 5+), JSON‑LD (SEO 7+).
 
 | Ítem | Estado |
 |------|--------|
@@ -130,6 +130,7 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 - [ ] **Legales:** reemplazar bootstrap temporal por contenido aprobado en `/admin/legales`
 - [ ] Smoke completo desde dominio real (home, login, admin, checkout demo, scanner QR, emails si Resend)
 - [ ] Getnet/pagos reales fuera de este cierre
+- [ ] **SEO técnico (SEO 2–9):** robots/sitemap, no-index portales, metadata dinámica, JSON-LD, GSC — baseline [`SEO_TECHNICAL_AUDIT.md`](../audits/SEO_TECHNICAL_AUDIT.md)
 
 ### Google Cloud — Etapa A manual (cerrada) / Etapa B (Storage cerrado; Maps/SEO pendiente)
 
@@ -183,7 +184,8 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 
 - [ ] Budget alerts en GCP
 - [ ] Maps: key en `.env.production` web, autocomplete, lat/lng, fichas públicas, smoke
-- [ ] SEO: sitemap, robots, metadata, JSON-LD, no-index privados, GSC sitemap/cobertura
+- [x] SEO técnico — auditoría baseline (SEO 1) [`SEO_TECHNICAL_AUDIT.md`](../audits/SEO_TECHNICAL_AUDIT.md)
+- [ ] SEO implementación slices 2–9 (robots, sitemap, metadata, JSON-LD, GSC)
 
 ---
 

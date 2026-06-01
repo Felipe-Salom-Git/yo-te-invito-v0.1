@@ -23,7 +23,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const image = event?.coverImageUrl ?? undefined;
 
     return {
-      title: `${title} | Yo Te Invito`,
+      title,
       description: description ?? `Descubrí ${title} en Yo Te Invito`,
       openGraph: {
         title,

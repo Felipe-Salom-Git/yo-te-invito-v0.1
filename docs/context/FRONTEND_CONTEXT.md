@@ -324,7 +324,9 @@ Runbook: [`docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTIO
 
 **Google Maps (Etapa A GCP):** key de consola `YTI Web Maps PROD` (valor **no** en repo) → `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` en `.env.production` del VPS. Integración prod pendiente Etapa B — [`GOOGLE_CLOUD_RUNBOOK.md`](../deploy/GOOGLE_CLOUD_RUNBOOK.md).
 
-**Storage imágenes:** GCS en Admin Rentals, Eventos, Excursiones, portal productora, **portales gastro y hotel** — **cerrado funcional prod 2026-05-31.** Hook `useGcsImageUpload` — [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §20.
+**Storage imágenes:** GCS en Admin + portales — cerrado funcional prod 2026-05-31. Hook `useGcsImageUpload` — [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §20. URLs GCS válidas para OG en eventos (metadata dinámica parcial).
+
+**SEO (web):** auditoría baseline SEO 1 — [`SEO_TECHNICAL_AUDIT.md`](../audits/SEO_TECHNICAL_AUDIT.md). **SEO 3 aplicado:** metadata global OG/Twitter + icons + `manifest.json` icons; eventos ajustado para evitar doble sufijo title. **SEO 4 aplicado:** metadata estática en `/`, `/home`, `/explore`, `/categorias`, `/categoria/[category]` + `robots.ts` + sitemap mínimo (`sitemap.ts`). **Pendiente:** `noindex` portales (SEO 2) y metadata dinámica por vertical (SEO 5+), JSON‑LD (SEO 7+).
 
 - **Persistencia:** solo API — no `lib/local-db`, no `/dev/seed`, no `/dev/local-db`.
 - **Subcategorías (estructura):** `pnpm --filter api run seed:subcategories`.

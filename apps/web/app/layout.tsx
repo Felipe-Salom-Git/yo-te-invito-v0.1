@@ -4,11 +4,38 @@ import { Providers } from './providers';
 import { Navbar } from '@/components';
 import { RouteAwareFooter } from '@/components/RouteAwareFooter';
 
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://yoteinvito.club';
+
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'),
+  metadataBase: new URL(APP_URL),
   title: { default: 'Yo Te Invito', template: '%s | Yo Te Invito' },
-  description: 'Plataforma de ticketera y venta de entradas para eventos',
-  openGraph: { type: 'website', locale: 'es_AR' },
+  description: 'Eventos, gastronomía, excursiones y rentals. Comprá entradas y descubrí experiencias en tu ciudad.',
+  openGraph: {
+    type: 'website',
+    locale: 'es_AR',
+    siteName: 'Yo Te Invito',
+    url: '/',
+    title: 'Yo Te Invito',
+    description: 'Eventos, gastronomía, excursiones y rentals. Comprá entradas y descubrí experiencias en tu ciudad.',
+    images: [
+      {
+        url: '/brand/logo_2.png',
+        width: 1884,
+        height: 1550,
+        alt: 'Yo Te Invito',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Yo Te Invito',
+    description: 'Eventos, gastronomía, excursiones y rentals. Comprá entradas y descubrí experiencias en tu ciudad.',
+    images: ['/brand/logo_2.png'],
+  },
+  icons: {
+    icon: '/brand/logo.png',
+    apple: '/brand/logo.png',
+  },
   manifest: '/manifest.json',
 };
 

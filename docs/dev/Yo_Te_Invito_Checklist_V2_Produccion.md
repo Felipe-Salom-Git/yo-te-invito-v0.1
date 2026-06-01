@@ -302,12 +302,18 @@ _Footer público completo — bloque V2 cerrado. Smoke: `docs/audits/PUBLIC_FOOT
 
 ## Google Search Console y SEO técnico
 
+> **Auditoría baseline (SEO 1 — 2026-05-31):** [`docs/audits/SEO_TECHNICAL_AUDIT.md`](../audits/SEO_TECHNICAL_AUDIT.md). Sin `robots.ts`/`sitemap.ts`; metadata dinámica solo eventos + legales; portales privados sin `noindex` — ver riesgos críticos §6.
+
 > Verificación GSC: pendiente confirmación en consola — registro TXT en DonWeb según instrucciones de propiedad tipo **Dominio**.
+
+- [x] Auditoría SEO técnica baseline (SEO 1) — [`SEO_TECHNICAL_AUDIT.md`](../audits/SEO_TECHNICAL_AUDIT.md).
 
 - [ ] Crear propiedad de Google Search Console para el dominio definitivo (`yoteinvito.club`).
 - [ ] Verificar dominio mediante DNS TXT en DonWeb.
-- [ ] Enviar sitemap público.
-- [ ] Validar robots.txt.
+- [x] Generar `sitemap.xml` mínimo (SEO 4) — `apps/web/app/sitemap.ts` (rutas públicas estables).
+- [x] Generar `robots.txt` (SEO 4) — `apps/web/app/robots.ts` (bloquea portales/auth/dev/checkout).
+- [ ] Enviar sitemap público (GSC) — **pendiente** post-deploy y verificación DNS.
+- [ ] Validar robots.txt en producción (curl) post-deploy.
 - [ ] Revisar indexación de home, explore, categorías y fichas públicas.
 - [ ] Validar que portales privados, checkout privado, órdenes, tickets y admin no se indexen.
 - [ ] Revisar errores de cobertura/indexación.
@@ -372,21 +378,23 @@ _Footer público completo — bloque V2 cerrado. Smoke: `docs/audits/PUBLIC_FOOT
 
 ## SEO, GEO y metadata social
 
-- [ ] Agregar SEO metadata por ficha pública.
+> **Estado actual:** ver [`SEO_TECHNICAL_AUDIT.md`](../audits/SEO_TECHNICAL_AUDIT.md). Plan slices SEO 2–9 en §8 de la auditoría.
+
+- [x] Auditoría SEO técnica (SEO 1) — baseline documentada.
 - [ ] Agregar SEO por categoría.
 - [ ] Revisar GEO/localización para ciudad preferida y descubrimiento.
 - [x] Configurar `next/image` con dominios remotos GCS — [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §11.
-- [ ] Agregar favicon / ícono de pestaña con la marca Yo Te Invito.
-- [ ] Agregar app icons para mobile/PWA cuando corresponda.
-- [ ] Configurar title template global: `Yo Te Invito | ...`.
-- [ ] Configurar metadata base global de la plataforma.
+- [x] Configurar icons globales (SEO 3) usando assets existentes en `public/brand/` (`logo.png`, `logo_2.png`).
+- [ ] Agregar set estándar de app icons (180/192/512) y/o `favicon.ico` dedicado (pendiente).
+- [x] Configurar title template global — parcial: `%s | Yo Te Invito` en `app/layout.tsx` (auditoría SEO 1).
+- [x] Configurar metadata base global de la plataforma — **mejorado SEO 3** (OG/Twitter global + fallback image).
 - [ ] Agregar SEO metadata por ficha pública.
 - [ ] Agregar SEO metadata por categoría.
 - [ ] Agregar SEO metadata para home, explore y gateway de categorías.
 - [ ] Agregar canonical URLs para páginas públicas indexables.
-- [ ] Agregar metadata Open Graph global.
-- [ ] Agregar metadata Twitter/X Card global.
-- [ ] Agregar Open Graph dinámico para eventos: imagen de cabecera, título, descripción, ciudad y fecha.
+- [x] Agregar metadata Open Graph global (SEO 3) — fallback `/brand/logo_2.png`.
+- [x] Agregar metadata Twitter/X Card global (SEO 3) — fallback `/brand/logo_2.png`.
+- [x] Agregar Open Graph dinámico para eventos — parcial en `events/[eventId]/layout.tsx` (SEO 3: evita doble sufijo title).
 - [ ] Agregar Open Graph dinámico para gastronomía: imagen de cabecera, título, descripción, ciudad y tipo de local.
 - [ ] Agregar Open Graph dinámico para rentals: imagen de cabecera, título, descripción, ciudad, local y subcategoría.
 - [ ] Agregar Open Graph dinámico para excursiones: imagen de cabecera, título, descripción, ciudad y fecha/temporada si aplica.
@@ -404,10 +412,11 @@ _Footer público completo — bloque V2 cerrado. Smoke: `docs/audits/PUBLIC_FOOT
 - [ ] Revisar GEO/localización para ciudad preferida y descubrimiento.
 - [ ] Agregar metadata contextual por ciudad cuando aplique.
 - [ ] Mejorar URLs públicas para que sean legibles cuando sea posible: slug + id o slug estable.
-- [ ] Generar sitemap público.
-- [ ] Generar robots.txt.
+- [x] Generar sitemap público (mínimo) — `apps/web/app/sitemap.ts` (SEO 4).
+- [x] Generar robots.txt — `apps/web/app/robots.ts` (SEO 4).
 - [ ] Definir qué rutas públicas se indexan y cuáles no.
-- [ ] Evitar indexar portales privados, checkout privado, órdenes, tickets y admin.
+- [x] Evitar indexar checkout privado — `checkout/layout.tsx` `noindex` (SEO 1).
+- [ ] Evitar indexar portales privados, órdenes, tickets y admin — **pendiente SEO 2** (hoy indexables por defecto).
 - [ ] Mejorar contenido visible para SEO/GEO: títulos claros, descripciones completas, ubicación, categoría, fechas, precios desde, productor/local y preguntas frecuentes cuando aplique.
 - [ ] Agregar contenido semántico útil para IA/GEO en fichas públicas: resumen, ubicación, categoría, horarios, condiciones y datos clave.
 - [ ] Evaluar archivo `llms.txt` o equivalente informativo para orientar crawlers/IA, sin depender de él como garantía.
