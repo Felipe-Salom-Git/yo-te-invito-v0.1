@@ -194,6 +194,8 @@ Registrar resultado en sección «Ejecución real» de ese doc cuando se ejecute
 ## 14. Estado final del bloque
 
 **Código:** listo para activación controlada en VPS.  
+**Release commit:** `26eb70e` (`feat: prepare getnet payments production activation`) en `main`.  
+**Deploy VPS:** pendiente de ejecución manual (SSH desde máquina con clave `yoteinvito`).  
 **Go-live cobro real:** pendiente de checklist VPS + prueba monto mínimo autorizada.  
 **Documentación índice:** [GETNET_PAYMENTS_AUDIT.md](./GETNET_PAYMENTS_AUDIT.md).
 
