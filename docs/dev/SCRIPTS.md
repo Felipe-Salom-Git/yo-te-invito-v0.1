@@ -33,6 +33,7 @@
 | `pnpm --filter api run storage:audit-orphans` | Bajo | Lista GCS `public/` + lee BD (read-only) |
 | `pnpm --filter api run storage:cleanup-orphans` | Alto | Dry-run default; `--confirm` borra en bucket público |
 | `pnpm --filter api run smoke:storage-global` | Medio | Matriz uploads + auth + validación — §22 |
+| `pnpm --filter api run smoke:maps-location` | Bajo | Maps Etapa B — entidades públicas con address/coords/placeId/province — audit §23 |
 | `pnpm --filter api run test:referral-*` | No | Util % / propuestas / solicitudes pago |
 | `pnpm --filter api run smoke:cleanup` | Medio | Artefactos smoke |
 | `pnpm e2e:portal` / `e2e:notifications` | Bajo* | E2E UI |

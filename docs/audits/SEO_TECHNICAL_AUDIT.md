@@ -166,6 +166,8 @@ Solo en layout de eventos: `summary_large_image` + title/description/images. **N
 
 **Reglas:** no se inventan ratings; no `aggregateRating` con count 0; no availability/stock.
 
+**Maps 9 (2026-06-01):** JSON‑LD local en `apps/web/lib/seo/jsonld.ts` — `PostalAddress.addressRegion` (province) y `addressCountry: AR` cuando hay datos reales; `GeoCoordinates` solo si hay `geoLat`/`geoLng`. Productoras: city/country textual sin geo inventado. Validar con [Rich Results Test](https://search.google.com/test/rich-results) post-deploy.
+
 **Pendiente:** JSON‑LD más específico por vertical (si se separan modelos) + `Review` items individuales (solo si API expone reviews públicas completas).
 
 ### 3.7 Sitemap

@@ -153,7 +153,7 @@ pnpm run -w dev    # API :3001 + web :3000
 
 **Producción VPS (Mayo 2026):** `yoteinvito.club` — `npx prisma migrate deploy` en `apps/api` (no `pnpm db:migrate`). SSH: `ssh yoteinvito` → usuario `deploy`, puerto **5230**, solo clave (root/password SSH deshabilitados). API: `NODE_ENV=production`, `DEV_AUTH_ENABLED=false`; `.env` permisos `600`. Secretos críticos rotados (Mayo 2026). Runbook VPS: `docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md` §24–25; auditoría hardening: `docs/audits/PRODUCTION_SECURITY_HARDENING_AUDIT.md`.
 
-**Google Cloud:** buckets + backups cerrados. **Storage V2 cerrado funcional prod (2026-05-31).** **SEO/GSC:** runbook — [`SEARCH_CONSOLE_SEO_RUNBOOK.md`](../deploy/SEARCH_CONSOLE_SEO_RUNBOOK.md). **Maps 3–4:** auditoría + activación prod/smoke doc — [`MAPS_LOCATION_AUDIT.md`](../audits/MAPS_LOCATION_AUDIT.md) · [`GOOGLE_CLOUD_RUNBOOK.md`](../deploy/GOOGLE_CLOUD_RUNBOOK.md) §3.6–3.7. Pendiente operador: key VPS + smoke PASS + budget alerts.
+**Google Cloud:** buckets + backups cerrados. **Storage V2 cerrado funcional prod (2026-05-31).** **SEO/GSC:** runbook — [`SEARCH_CONSOLE_SEO_RUNBOOK.md`](../deploy/SEARCH_CONSOLE_SEO_RUNBOOK.md). **Maps 5–10 (2026-06-01):** persistencia `googlePlaceId`/`province`, validación eventos/excursiones, `lib/maps`, JSON-LD local, smoke `smoke:maps-location` — [`MAPS_LOCATION_AUDIT.md`](../audits/MAPS_LOCATION_AUDIT.md) §18–23 · [`GOOGLE_CLOUD_RUNBOOK.md`](../deploy/GOOGLE_CLOUD_RUNBOOK.md) §3.6–3.7. Pendiente operador: `prisma migrate deploy` VPS + smoke PASS + budget alerts.
 
 **Producción — no ejecutar salvo emergencia documentada:** `pnpm db:reset-dangerous`, `pnpm db:cleanup-content`, `pnpm db:migrate` (usar solo `npx prisma migrate deploy`).
 

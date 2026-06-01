@@ -505,6 +505,22 @@ SMOKE_USER_EMAIL=… SMOKE_USER_PASSWORD=… \
 
 Doc: [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §22.
 
+### `pnpm --filter api run smoke:maps-location`
+
+Valida entidades públicas con datos de ubicación persistidos (Event, Gastro, Hotel, RentalLocation, ExcursionOperator). Read-only contra API; requiere API levantada y datos reales en BD.
+
+```bash
+pnpm --filter api run smoke:maps-location
+```
+
+| | |
+|--|--|
+| **Riesgo** | Bajo (solo lectura) |
+| **Toca DB** | No |
+| **Doc** | [`MAPS_LOCATION_AUDIT.md`](../audits/MAPS_LOCATION_AUDIT.md) §18, §23 |
+
+Checklist manual frontend (autocomplete, pin, Ver ubicación, fallback sin placeId): audit §18.
+
 ---
 
 ## 11. Checklist antes de scripts peligrosos

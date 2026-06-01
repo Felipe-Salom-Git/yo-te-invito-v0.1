@@ -210,6 +210,8 @@ Script cleanup: `apps/api/prisma/scripts/cleanup-content.ts` (preserva `felipe.e
 
 Guías: `docs/guides/README.md`, `DEVELOPER_SCRIPTS_GUIDE.md`, `SMOKE_TESTS_GUIDE.md`, `DEMO_REMOVAL.md`. Histórico: `docs/legacy/guides/`.
 
+**Maps / ubicación (Etapa B, 2026-06-01):** campos `address`, `geoLat`, `geoLng`, `googlePlaceId`, `province` (y `city` en rentals) en Event, Gastro, Hotel, RentalLocation, ExcursionOperator. UI: `LocationPickerMap` + fallback manual; público: `apps/web/lib/maps/public-location.ts` (Ver ubicación). Smoke API: `pnpm --filter api run smoke:maps-location`. Auditoría: `docs/audits/MAPS_LOCATION_AUDIT.md` §18–23.
+
 ---
 
 ## 9. AI Guidance
