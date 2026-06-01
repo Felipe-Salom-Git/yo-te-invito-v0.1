@@ -5,6 +5,9 @@ export const metadata: Metadata = {
   description:
     'Hoteles y alojamientos estarán disponibles próximamente en Yo Te Invito.',
   robots: { index: false, follow: false },
+  alternates: {
+    canonical: '/hoteles',
+  },
 };
 
 export default function HotelsLayout({ children }: { children: React.ReactNode }) {

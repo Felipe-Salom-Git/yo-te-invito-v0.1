@@ -14,7 +14,7 @@
 |------|--------|------|
 | Metadata global | **Mejorado (SEO 3 aplicado)** | OG/Twitter global + icons + manifest icons (ver §1.1) |
 | Metadata dinámica | **Mejorado (SEO 5 aplicado)** | Eventos + fichas públicas principales vía `layout.tsx` server (ver §3.2) |
-| Canonical | **Casi ausente** | Solo `/legal/[slug]` |
+| Canonical | **Mejorado (SEO 6 aplicado)** | Canonical en rutas base + fichas; dedupe gastro vía redirect |
 | Open Graph | **Mejorado (SEO 3 aplicado)** | Global con imagen fallback; dinámico eventos + legales |
 | Twitter Cards | **Mejorado (SEO 3 aplicado)** | Global + eventos |
 | JSON-LD | **Ausente** | Cero `application/ld+json` en el repo web |
@@ -38,7 +38,7 @@
 | ¿Descripción base global? | **Sí** — ticketera genérica |
 | ¿Favicon / app icons reales? | **Parcial** — `icons` usa `/brand/logo.png`; `manifest.json` tiene `icons[]`; falta set estándar (180/192/512) |
 | ¿`metadataBase` con `https://yoteinvito.club`? | **Condicional** — `NEXT_PUBLIC_APP_URL`; **no** documentado en `.env.example` |
-| ¿Canonical URLs? | **Casi no** — solo legales |
+| ¿Canonical URLs? | **Sí (parcial)** — legales + rutas base + fichas principales (SEO 6) |
 | ¿Home metadata adecuada? | **No** — `/` y `/home` son `'use client'`; heredan root genérico |
 | ¿Explore metadata adecuada? | **Parcial** — título/descripción estáticos en `explore/layout.tsx` |
 | ¿Categorías metadata dinámica? | **No** — `/categorias`, `/categoria/[category]` client-only |
@@ -80,7 +80,7 @@ manifest: '/manifest.json'
 | `openGraph.siteName`, default image, `url` | **Faltan** |
 | `twitter` global (`card`, `site`) | **Mejorado (SEO 3)** — `summary_large_image` + fallback image |
 | `robots` global | **No definido** (default index) |
-| `alternates.canonical` | **No** |
+| `alternates.canonical` | **Sí (parcial)** — rutas base + fichas principales (SEO 6) |
 | `keywords`, `authors` | **No** |
 
 #### 3.1.1 SEO 3 aplicado (2026-06-01)
@@ -117,9 +117,22 @@ manifest: '/manifest.json'
 
 | Ruta | Canonical |
 |------|-----------|
-| `/legal/[slug]` | Sí (`alternates.canonical`) |
-| Resto público | **No** |
-| Query params (`?tenantId=`, `?subcategory=`) | Sin canonical → riesgo duplicados |
+| `/` | Canonical → `/home` (gateway/intro) |
+| `/home` | Sí |
+| `/explore` | Sí (aplica también con query params) |
+| `/categorias` | Sí |
+| `/categoria/[category]` | Sí |
+| `/legal/[slug]` | Sí |
+| `/events/[eventId]` | Sí |
+| `/rentals/[id]` | Sí |
+| `/excursiones/[id]` | Sí |
+| `/gastronomicos/[id]` | Sí (ruta canónica) |
+| `/restaurants/[id]` | Redirect permanente → `/gastronomicos/[id]` |
+| `/hoteles/[id]` | Sí |
+| `/producers` | Sí |
+| `/producers/[id]` | Sí |
+
+**Query params:** se usa canonical fijo en `/explore` para evitar duplicados por `?category=` / `?city=` (SEO 6). En fichas, se define canonical al path sin `tenantId`.
 
 ### 3.4 Open Graph
 
@@ -269,7 +282,7 @@ Rutas que **deberían** indexarse cuando el contenido es público y completo:
 | **Alto** | `NEXT_PUBLIC_APP_URL` no garantizado | OG/canonical con host incorrecto |
 | **Medio** | Sin JSON-LD | Sin rich results (eventos, ratings) |
 | **Medio** | `/hoteles` Próximamente indexable | Thin content |
-| **Medio** | Duplicado `/gastronomicos` vs `/restaurants` | Duplicate content |
+| **Mitigado (SEO 6)** | Duplicado `/gastronomicos` vs `/restaurants` | Redirect permanente `/restaurants/:id` → `/gastronomicos/:id` + canonical |
 | **Medio** | Sin favicon | Branding SERP / tabs |
 | **Bajo** | Title evento con doble template | UX SERP fea |
 | **Bajo** | IDs opacos en URLs | CTR menor (no bloqueante V1) |

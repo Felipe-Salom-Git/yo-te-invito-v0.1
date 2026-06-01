@@ -22,6 +22,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: meta.title,
     description: meta.editorialDescription,
+    alternates: {
+      canonical: `/categoria/${encodeURIComponent(category)}`,
+    },
   };
 }
 

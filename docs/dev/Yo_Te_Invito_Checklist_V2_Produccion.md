@@ -391,7 +391,7 @@ _Footer público completo — bloque V2 cerrado. Smoke: `docs/audits/PUBLIC_FOOT
 - [x] Agregar SEO metadata por ficha pública (SEO 5) — `generateMetadata` en layouts server para rentals/excursiones/gastro/hoteles/productoras.
 - [ ] Agregar SEO metadata por categoría.
 - [ ] Agregar SEO metadata para home, explore y gateway de categorías.
-- [ ] Agregar canonical URLs para páginas públicas indexables.
+- [x] Agregar canonical URLs para páginas públicas indexables (SEO 6) — rutas base + fichas; gateway `/` canonical → `/home`; redirect `/restaurants/:id` → `/gastronomicos/:id`.
 - [x] Agregar metadata Open Graph global (SEO 3) — fallback `/brand/logo_2.png`.
 - [x] Agregar metadata Twitter/X Card global (SEO 3) — fallback `/brand/logo_2.png`.
 - [x] Agregar Open Graph dinámico para eventos — parcial en `events/[eventId]/layout.tsx` (SEO 3: evita doble sufijo title).

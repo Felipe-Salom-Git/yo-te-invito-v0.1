@@ -4,6 +4,9 @@ export const metadata: Metadata = {
   title: 'Explorar',
   description:
     'Explorá eventos, excursiones, gastronomía, hoteles y servicios disponibles en Yo Te Invito.',
+  alternates: {
+    canonical: '/explore',
+  },
 };
 
 export default function ExploreLayout({ children }: { children: React.ReactNode }) {
