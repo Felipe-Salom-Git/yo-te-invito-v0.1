@@ -388,18 +388,18 @@ _Footer público completo — bloque V2 cerrado. Smoke: `docs/audits/PUBLIC_FOOT
 - [ ] Agregar set estándar de app icons (180/192/512) y/o `favicon.ico` dedicado (pendiente).
 - [x] Configurar title template global — parcial: `%s | Yo Te Invito` en `app/layout.tsx` (auditoría SEO 1).
 - [x] Configurar metadata base global de la plataforma — **mejorado SEO 3** (OG/Twitter global + fallback image).
-- [ ] Agregar SEO metadata por ficha pública.
+- [x] Agregar SEO metadata por ficha pública (SEO 5) — `generateMetadata` en layouts server para rentals/excursiones/gastro/hoteles/productoras.
 - [ ] Agregar SEO metadata por categoría.
 - [ ] Agregar SEO metadata para home, explore y gateway de categorías.
 - [ ] Agregar canonical URLs para páginas públicas indexables.
 - [x] Agregar metadata Open Graph global (SEO 3) — fallback `/brand/logo_2.png`.
 - [x] Agregar metadata Twitter/X Card global (SEO 3) — fallback `/brand/logo_2.png`.
 - [x] Agregar Open Graph dinámico para eventos — parcial en `events/[eventId]/layout.tsx` (SEO 3: evita doble sufijo title).
-- [ ] Agregar Open Graph dinámico para gastronomía: imagen de cabecera, título, descripción, ciudad y tipo de local.
-- [ ] Agregar Open Graph dinámico para rentals: imagen de cabecera, título, descripción, ciudad, local y subcategoría.
-- [ ] Agregar Open Graph dinámico para excursiones: imagen de cabecera, título, descripción, ciudad y fecha/temporada si aplica.
-- [ ] Agregar Open Graph dinámico para hoteles: imagen de cabecera o galería principal, título, descripción y ciudad.
-- [ ] Agregar Open Graph dinámico para productoras: logo/imagen de perfil, nombre, descripción y ciudad/base operativa si aplica.
+- [x] Agregar Open Graph dinámico para gastronomía (SEO 5) — `gastronomicos/[id]/layout.tsx` (banner/logo; fallback global).
+- [x] Agregar Open Graph dinámico para rentals (SEO 5) — `rentals/[id]/layout.tsx` (cover; fallback global).
+- [x] Agregar Open Graph dinámico para excursiones (SEO 5) — `excursiones/[id]/layout.tsx` (cover; fallback global).
+- [x] Agregar Open Graph dinámico para hoteles (SEO 5) — `hoteles/[id]/layout.tsx` (banner/logo; fallback global).
+- [x] Agregar Open Graph dinámico para productoras (SEO 5) — `producers/[id]/layout.tsx` (cover/logo; fallback global).
 - [ ] Definir fallback Open Graph cuando una ficha no tenga imagen: logo Yo Te Invito o imagen institucional.
 - [ ] Validar que al compartir links se vea título, descripción e imagen correcta.
 - [ ] Agregar JSON-LD / structured data para eventos.

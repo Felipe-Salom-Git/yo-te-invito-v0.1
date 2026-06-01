@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001';
 const DEFAULT_TENANT = 'tenant-demo';
+const FALLBACK_OG_IMAGE = '/brand/logo_2.png';
 
 type Props = { params: Promise<{ eventId: string }> };
 
@@ -28,13 +29,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       openGraph: {
         title,
         description: description ?? `Descubrí ${title} en Yo Te Invito`,
-        images: image ? [{ url: image, alt: title }] : undefined,
+        url: `/events/${encodeURIComponent(eventId)}`,
+        images: image
+          ? [{ url: image, alt: title }]
+          : [{ url: FALLBACK_OG_IMAGE, alt: 'Yo Te Invito' }],
       },
       twitter: {
         card: 'summary_large_image',
         title,
         description: description ?? `Descubrí ${title} en Yo Te Invito`,
-        images: image ? [image] : undefined,
+        images: image ? [image] : [FALLBACK_OG_IMAGE],
+      },
+      alternates: {
+        canonical: `/events/${encodeURIComponent(eventId)}`,
       },
     };
   } catch {

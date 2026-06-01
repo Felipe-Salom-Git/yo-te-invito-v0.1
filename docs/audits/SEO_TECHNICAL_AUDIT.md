@@ -13,7 +13,7 @@
 | Área | Estado | Nota |
 |------|--------|------|
 | Metadata global | **Mejorado (SEO 3 aplicado)** | OG/Twitter global + icons + manifest icons (ver §1.1) |
-| Metadata dinámica | **Muy limitada** | Solo **eventos** (`generateMetadata` en layout) y **legales** (`/legal/[slug]`) |
+| Metadata dinámica | **Mejorado (SEO 5 aplicado)** | Eventos + fichas públicas principales vía `layout.tsx` server (ver §3.2) |
 | Canonical | **Casi ausente** | Solo `/legal/[slug]` |
 | Open Graph | **Mejorado (SEO 3 aplicado)** | Global con imagen fallback; dinámico eventos + legales |
 | Twitter Cards | **Mejorado (SEO 3 aplicado)** | Global + eventos |
@@ -42,7 +42,7 @@
 | ¿Home metadata adecuada? | **No** — `/` y `/home` son `'use client'`; heredan root genérico |
 | ¿Explore metadata adecuada? | **Parcial** — título/descripción estáticos en `explore/layout.tsx` |
 | ¿Categorías metadata dinámica? | **No** — `/categorias`, `/categoria/[category]` client-only |
-| ¿Fichas públicas metadata dinámica? | **Solo eventos** (+ legales) |
+| ¿Fichas públicas metadata dinámica? | **Sí (SEO 5)** — eventos, rentals, excursiones, gastro, hoteles y productoras |
 | ¿Open Graph configurado? | **Parcial** — global `type`/`locale`; dinámico eventos/legales |
 | ¿Twitter Cards? | **Parcial** — solo eventos (`summary_large_image`) |
 | ¿OG por ficha o fallback? | Eventos: imagen cover si existe; **sin fallback** global de marca |
@@ -97,9 +97,17 @@ manifest: '/manifest.json'
 |--------------|-----------|---------|
 | `/events/[eventId]` | `generateMetadata` (fetch API) | `(public)/events/[eventId]/layout.tsx` |
 | `/legal/[slug]` | `generateMetadata` + canonical | `(public)/legal/[slug]/page.tsx` |
+| `/rentals/[id]` | `generateMetadata` (fetch API) | `(public)/rentals/[id]/layout.tsx` |
+| `/excursiones/[id]` | `generateMetadata` (fetch API) | `(public)/excursiones/[id]/layout.tsx` |
+| `/gastronomicos/[id]` | `generateMetadata` (fetch API) | `(public)/gastronomicos/[id]/layout.tsx` |
+| `/restaurants/[id]` | canonical alias (SEO 6 pendiente dedupe) | `(public)/restaurants/[id]/layout.tsx` |
+| `/hoteles/[id]` | `generateMetadata` (fetch API) | `(public)/hoteles/[id]/layout.tsx` |
+| `/producers/[id]` | `generateMetadata` (fetch API) | `(public)/producers/[id]/layout.tsx` |
 | `/explore` | Estático | `(public)/explore/layout.tsx` |
 | `/checkout/*` | Estático + `noindex` | `(public)/checkout/layout.tsx` |
 | Home `/`, `/home`, categorías, fichas gastro/rental/excursion/hotel/productor, explore content | **Ninguno** (pages `'use client'`) |
+
+> **Nota (SEO 5):** para mantener las páginas como `'use client'` sin refactor visual, la metadata dinámica se implementa en `layout.tsx` server que envuelve al page client.
 
 **Eventos — detalle:** título devuelto como `` `${title} | Yo Te Invito` `` con template global → riesgo de **“Evento X \| Yo Te Invito \| Yo Te Invito”** en `<title>`.
 
@@ -257,7 +265,7 @@ Rutas que **deberían** indexarse cuando el contenido es público y completo:
 | **Crítico** | Portales `/admin`, `/me`, `/producer`, etc. sin `noindex` | URLs privadas en Google |
 | **Crítico** | Sin `robots.txt` | Crawl sin guía; no bloqueo de `/admin` a nivel archivo |
 | **Alto** | Sin sitemap | Descubrimiento lento; GSC incompleto |
-| **Alto** | Fichas públicas sin metadata dinámica (salvo eventos) | Snippets genéricos; shares sin imagen |
+| **Medio** | Metadata dinámica incompleta o con dedupe pendiente | Queda SEO 6 (canonicals / dedupe) + SEO 7 (JSON‑LD) |
 | **Alto** | `NEXT_PUBLIC_APP_URL` no garantizado | OG/canonical con host incorrecto |
 | **Medio** | Sin JSON-LD | Sin rich results (eventos, ratings) |
 | **Medio** | `/hoteles` Próximamente indexable | Thin content |
