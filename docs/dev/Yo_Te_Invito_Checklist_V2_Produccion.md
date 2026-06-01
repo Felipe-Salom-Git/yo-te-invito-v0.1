@@ -240,11 +240,13 @@ _Footer público completo — bloque V2 cerrado. Smoke: `docs/audits/PUBLIC_FOOT
 
 ## Google Cloud — Maps y Storage
 
-> **Etapa A (manual) — cerrada:** proyecto GCP, billing, GCS bucket privado, SA backend, Maps API Key. **Backups — cerrados.** **Storage V2 — cerrado funcional en producción (2026-05-31).** Pendiente Etapa B: Maps frontend, GSC/SEO.
+> **Etapa A (manual) — cerrada:** proyecto GCP, billing, GCS bucket privado, SA backend, Maps API Key. **Backups — cerrados.** **Storage V2 — cerrado funcional en producción (2026-05-31).** **Maps 3:** auditoría — [`MAPS_LOCATION_AUDIT.md`](../audits/MAPS_LOCATION_AUDIT.md). **Maps 4:** activación prod + smoke documentados — [`GOOGLE_CLOUD_RUNBOOK.md`](../deploy/GOOGLE_CLOUD_RUNBOOK.md) §3.6–3.7. Pendiente operador: confirmar key VPS + smoke PASS.
+
+> **Hallazgo Maps 3:** frontend ya incluye `LocationPickerMap` + Places Autocomplete + fallback OSM; falta confirmar `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` en VPS y persistir `googlePlaceId` (no existe en Prisma).
 
 - [x] Crear proyecto Google Cloud del cliente para Yo Te Invito (`yoteinvito-1721413433327`).
 - [x] Activar billing en Google Cloud.
-- [ ] Configurar presupuesto/alertas de gasto (recomendado: 50%, 80%, 100%).
+- [ ] Configurar presupuesto/alertas de gasto (recomendado: **50%, 80%, 100%** — manual GCP Billing §3.5 runbook).
 - [x] Agregar colaborador técnico con rol suficiente para configuración inicial (`felipe.e.salom@gmail.com`).
 - [x] Definir ambientes: producción directa (bucket prod; **sin** bucket staging por decisión operativa).
 - [x] Habilitar Google Maps Platform.
@@ -256,13 +258,18 @@ _Footer público completo — bloque V2 cerrado. Smoke: `docs/audits/PUBLIC_FOOT
 - [x] Restringir API Key pública por dominio/referrer (`yoteinvito.club`, `www`).
 - [x] Restringir API Key pública solo a las APIs necesarias (Maps JS, Places New, Geocoding).
 - [ ] Definir si habrá key separada para staging (hoy no hay entorno staging GCP).
-- [x] Documentar variables de entorno Google Maps (`NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` — ver runbook §3.4).
-- [ ] Integrar autocomplete de direcciones donde corresponda.
-- [ ] Guardar dirección legible + lat/lng en eventos, gastro, rentals, hoteles y productoras cuando aplique.
-- [ ] Mostrar botón “Ver ubicación” o mapa en fichas públicas con coordenadas reales.
-- [ ] Mantener fallback manual si Google Maps no está configurado o falla.
+- [x] Documentar variables de entorno Google Maps (`NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` — `.env.example` + runbook §3.4; VPS: `/opt/yoteinvito/apps/web/.env.production`).
+- [x] Auditoría Maps/ubicación baseline (Maps 3) — [`MAPS_LOCATION_AUDIT.md`](../audits/MAPS_LOCATION_AUDIT.md).
+- [x] Documentar activación prod Maps + smoke manual (Maps 4) — [`GOOGLE_CLOUD_RUNBOOK.md`](../deploy/GOOGLE_CLOUD_RUNBOOK.md) §3.6–3.7.
+- [ ] Confirmar `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` en VPS + rebuild `yti-web` (operador post-deploy).
+- [ ] Ejecutar smoke manual Maps en producción (operador — runbook §3.7 PASS).
+- [ ] Integrar autocomplete de direcciones — código base listo (`LocationPickerMapGoogle`); pendiente key prod y cobertura signup/productora sede.
+- [ ] Guardar dirección legible + lat/lng — parcial: eventos/gastro/hotel/rental local/excursion operador sí; productora solo `city`; `googlePlaceId` no persiste.
+- [ ] Mostrar botón “Ver ubicación” o mapa en fichas públicas — parcial: eventos/gastro/hotel/rentals/excursiones sí; productoras no.
+- [x] Mantener fallback manual si Google Maps no está configurado o falla — `LocationPickerMapFallback` + OSM preview.
 - [ ] Revisar privacidad si se usa ubicación actual del usuario.
-- [ ] Smoke test: autocomplete, guardado de dirección, mapa público y botón de ubicación.
+- [x] Documentar smoke test Maps (autocomplete, guardado, mapa público, fallback) — runbook §3.7.
+- [ ] Ejecutar smoke test Maps en producción (operador).
 
 ### Google Cloud Storage
 
