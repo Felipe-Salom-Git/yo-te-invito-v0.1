@@ -236,13 +236,13 @@ _Footer público completo — bloque V2 cerrado. Smoke: `docs/audits/PUBLIC_FOOT
 >
 > **Hotfix migración:** `20260531072000_restore_user_push_subscription` — tabla `UserPushSubscription` faltaba en prod; API fallaba hasta aplicar migración idempotente.
 >
-> **Pendiente (no Storage):** monitoreo/rate limiting, bind interno apps, smoke E2E dominio real (checkout/scanner), legales reales, Maps frontend, GSC/SEO. **Storage V2 — cerrado funcional 2026-05-31** ([`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §22). Runbooks: [`DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTION_RUNBOOK.md) · [`GOOGLE_CLOUD_RUNBOOK.md`](../deploy/GOOGLE_CLOUD_RUNBOOK.md) · [`GCS_BACKUPS_RUNBOOK.md`](../deploy/GCS_BACKUPS_RUNBOOK.md).
+> **Bloque Google Cloud / Storage / SEO / Maps — cerrado operativo (2026-06-01):** proyecto GCP, GCS privado/público, backups, upload GCS, SEO técnico base, GSC propiedad + sitemap enviado, Maps prod (key, autocomplete, persistencia, Ver ubicación, JSON-LD local). Runbooks: [`GOOGLE_CLOUD_RUNBOOK.md`](../deploy/GOOGLE_CLOUD_RUNBOOK.md) · [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) · [`SEARCH_CONSOLE_SEO_RUNBOOK.md`](../deploy/SEARCH_CONSOLE_SEO_RUNBOOK.md) · [`MAPS_LOCATION_AUDIT.md`](../audits/MAPS_LOCATION_AUDIT.md).
+>
+> **Pendiente infra general (fuera de este bloque):** monitoreo/rate limiting, bind interno apps, smoke E2E dominio real (checkout/scanner), legales reales en admin.
 
 ## Google Cloud — Maps y Storage
 
-> **Etapa A (manual) — cerrada:** proyecto GCP, billing, GCS bucket privado, SA backend, Maps API Key. **Backups — cerrados.** **Storage V2 — cerrado funcional en producción (2026-05-31).** **Maps 3:** auditoría — [`MAPS_LOCATION_AUDIT.md`](../audits/MAPS_LOCATION_AUDIT.md). **Maps 4:** activación prod + smoke documentados — [`GOOGLE_CLOUD_RUNBOOK.md`](../deploy/GOOGLE_CLOUD_RUNBOOK.md) §3.6–3.7. **Maps 5:** persistencia `googlePlaceId` + `province` — migración `20260601190000_add_maps_place_id_and_province`; deploy VPS: `npx prisma migrate deploy`.
-
-> **Hallazgo Maps 3 (parcialmente resuelto Maps 5):** UI `LocationPickerMap` persiste `googlePlaceId` y `province` en eventos, gastro, hotel, rental local y operador excursión. Legacy sin placeId sigue compatible.
+> **Cierre bloque (2026-06-01):** Etapa A GCP + Storage V2 + Maps 5–10 + SEO técnico base + GSC iniciales. Auditorías: [`MAPS_LOCATION_AUDIT.md`](../audits/MAPS_LOCATION_AUDIT.md) · [`SEO_TECHNICAL_AUDIT.md`](../audits/SEO_TECHNICAL_AUDIT.md). **Pendientes no bloqueantes** listados al final de cada subsección.
 
 - [x] Crear proyecto Google Cloud del cliente para Yo Te Invito (`yoteinvito-1721413433327`).
 - [x] Activar billing en Google Cloud.
@@ -262,18 +262,20 @@ _Footer público completo — bloque V2 cerrado. Smoke: `docs/audits/PUBLIC_FOOT
 - [x] Auditoría Maps/ubicación baseline (Maps 3) — [`MAPS_LOCATION_AUDIT.md`](../audits/MAPS_LOCATION_AUDIT.md).
 - [x] Documentar activación prod Maps + smoke manual (Maps 4) — [`GOOGLE_CLOUD_RUNBOOK.md`](../deploy/GOOGLE_CLOUD_RUNBOOK.md) §3.6–3.7.
 - [x] Persistir `googlePlaceId` + `province` en entidades con ubicación (Maps 5) — migración Prisma + API + formularios; smoke §18 audit.
-- [x] Maps 5–10 código + docs (audit §19–23)
-- [ ] Deploy migración Maps 5 en VPS (`npx prisma migrate deploy` en `apps/api`) — **después** del fix build §24 audit (`pnpm build` raíz OK)
-- [ ] Smoke API Maps: `pnpm --filter api run smoke:maps-location`
-- [ ] Confirmar `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` en VPS + rebuild `yti-web` (operador post-deploy).
-- [ ] Ejecutar smoke manual Maps en producción (operador — runbook §3.7 + audit §18).
-- [ ] Integrar autocomplete de direcciones — código base listo (`LocationPickerMapGoogle`); pendiente cobertura signup/productora sede.
-- [x] Guardar dirección legible + lat/lng + placeId/province — eventos/gastro/hotel/rental local/excursion operador (Maps 5); productora perfil solo `city` (pendiente).
-- [ ] Mostrar botón “Ver ubicación” o mapa en fichas públicas — parcial: eventos/gastro/hotel/rentals/excursiones sí; productoras no.
-- [x] Mantener fallback manual si Google Maps no está configurado o falla — `LocationPickerMapFallback` + OSM preview.
-- [ ] Revisar privacidad si se usa ubicación actual del usuario.
-- [x] Documentar smoke test Maps (autocomplete, guardado, mapa público, fallback) — runbook §3.7.
-- [ ] Ejecutar smoke test Maps en producción (operador).
+- [x] Maps 5–10 código + docs (audit §19–24)
+- [x] Deploy migración Maps 5 en VPS (`npx prisma migrate deploy` en `apps/api`)
+- [x] Build VPS OK tras fix shared types (audit §24 — `pnpm build` raíz)
+- [x] Confirmar `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` en VPS + rebuild `yti-web`
+- [x] Autocomplete y mapa interactivo en producción (`LocationPickerMapGoogle`)
+- [x] Fallback manual operativo (`LocationPickerMapFallback` + OSM preview)
+- [x] Guardar dirección + lat/lng + `googlePlaceId` + `province` (+ `city` en rentals) — eventos/gastro/hotel/rental local/excursion operador
+- [x] Botón «Ver ubicación» en fichas públicas — eventos, gastro, hotel, rentals, excursiones (helper `lib/maps`)
+- [x] Helper público unificado + JSON-LD local (address/geo/province cuando hay datos reales)
+- [x] Smoke/validación Maps general OK (manual + `smoke:maps-location` documentado)
+- [ ] Productoras: sede exacta con mapa (solo `city`/`country` hoy — decisión futura)
+- [ ] Backfill legacy `googlePlaceId`/`province`
+- [ ] Unificar `ARGENTINA_PROVINCES` en shared
+- [ ] Revisar privacidad si se usa ubicación actual del usuario (no implementado)
 
 ### Google Cloud Storage
 
@@ -313,24 +315,23 @@ _Footer público completo — bloque V2 cerrado. Smoke: `docs/audits/PUBLIC_FOOT
 
 ## Google Search Console y SEO técnico
 
-> **Auditoría baseline (SEO 1 — 2026-05-31):** [`docs/audits/SEO_TECHNICAL_AUDIT.md`](../audits/SEO_TECHNICAL_AUDIT.md). Sin `robots.ts`/`sitemap.ts`; metadata dinámica solo eventos + legales; portales privados sin `noindex` — ver riesgos críticos §6.
+> **Cierre SEO técnico base (2026-06-01):** [`SEO_TECHNICAL_AUDIT.md`](../audits/SEO_TECHNICAL_AUDIT.md) · runbook [`SEARCH_CONSOLE_SEO_RUNBOOK.md`](../deploy/SEARCH_CONSOLE_SEO_RUNBOOK.md). **Decisión producto:** `/home` se mantiene en sitemap; no modificar `/` ni `/home` por ahora.
 
-> Verificación GSC: pendiente confirmación en consola — registro TXT en DonWeb según instrucciones de propiedad tipo **Dominio**.
-
-- [x] Auditoría SEO técnica baseline (SEO 1) — [`SEO_TECHNICAL_AUDIT.md`](../audits/SEO_TECHNICAL_AUDIT.md).
-
-- [ ] Crear propiedad de Google Search Console para el dominio definitivo (`yoteinvito.club`).
-- [ ] Verificar dominio mediante DNS TXT en DonWeb.
-- [x] Generar `sitemap.xml` final (SEO 9) — `apps/web/app/sitemap.ts` (rutas públicas estables + fichas públicas desde endpoints públicos).
-- [x] Generar `robots.txt` (SEO 4) — `apps/web/app/robots.ts` (bloquea portales/auth/dev/checkout).
-- [ ] Enviar sitemap público (GSC) — **pendiente** post-deploy y verificación DNS.
-- [ ] Validar robots.txt en producción (curl) post-deploy.
-- [ ] Revisar indexación de home, explore, categorías y fichas públicas.
-- [ ] Validar que portales privados, checkout privado, órdenes, tickets y admin no se indexen.
-- [ ] Revisar errores de cobertura/indexación.
-- [ ] Revisar Core Web Vitals cuando haya tráfico real.
-- [ ] Revisar rich results cuando se agregue JSON-LD.
-- [x] Documentar procedimiento de revisión SEO post-deploy — `docs/deploy/SEARCH_CONSOLE_SEO_RUNBOOK.md`.
+- [x] Auditoría SEO técnica baseline (SEO 1) — [`SEO_TECHNICAL_AUDIT.md`](../audits/SEO_TECHNICAL_AUDIT.md)
+- [x] Crear propiedad Google Search Console — dominio `yoteinvito.club`
+- [x] Verificar dominio (DNS TXT DonWeb)
+- [x] `robots.txt` activo — `apps/web/app/robots.ts` (bloquea `/admin`, `/me`, `/producer`, `/gastro`, `/hotel`, `/referrer`, auth, checkout, tickets, scanner, `/api`, `/dev`; **`/_next` no bloqueado**)
+- [x] `sitemap.xml` activo — `apps/web/app/sitemap.ts` (200, `Content-Type: application/xml`, sin rutas privadas)
+- [x] Enviar sitemap en GSC (`https://yoteinvito.club/sitemap.xml`)
+- [x] Validación técnica externa robots/sitemap (curl / navegador / Googlebot)
+- [x] Metadata global + fichas públicas + canonical + JSON-LD base (SEO 3–9)
+- [x] JSON-LD local Maps — address/geo/province cuando hay datos reales
+- [x] Documentar procedimiento SEO post-deploy — [`SEARCH_CONSOLE_SEO_RUNBOOK.md`](../deploy/SEARCH_CONSOLE_SEO_RUNBOOK.md)
+- [ ] GSC: esperar procesamiento del sitemap (estado inicial puede mostrar «No se pudo obtener» hasta indexación)
+- [ ] Reinspeccionar URLs clave en GSC (URL Inspection)
+- [ ] Revisar cobertura/indexación cuando haya datos en GSC
+- [ ] Core Web Vitals cuando haya tráfico real
+- [ ] Rich Results Test post-deploy (JSON-LD local + verticales)
 
 ## Pagos reales y checkout productivo
 
@@ -419,15 +420,16 @@ _Footer público completo — bloque V2 cerrado. Smoke: `docs/audits/PUBLIC_FOOT
 - [x] Agregar JSON-LD / structured data para excursiones (SEO 8) — representado como `Event` (modelo actual API).
 - [x] Agregar JSON-LD / structured data para hoteles (SEO 8) — schema.org `Hotel` + `aggregateRating` (si hay count>0).
 - [x] Agregar JSON-LD / structured data para productoras/organizaciones (SEO 7) — schema.org `Organization` en `producers/[id]/layout.tsx`.
+- [x] JSON-LD local Maps — `address`/`geo`/`province`/`addressCountry: AR` cuando hay datos reales (`lib/seo/jsonld.ts`, Maps 9).
 - [ ] Agregar structured data de reviews/rating donde corresponda y sea válido.
 - [ ] Revisar GEO/localización para ciudad preferida y descubrimiento.
 - [ ] Agregar metadata contextual por ciudad cuando aplique.
 - [ ] Mejorar URLs públicas para que sean legibles cuando sea posible: slug + id o slug estable.
 - [x] Generar sitemap público (mínimo) — `apps/web/app/sitemap.ts` (SEO 4).
 - [x] Generar robots.txt — `apps/web/app/robots.ts` (SEO 4).
-- [ ] Definir qué rutas públicas se indexan y cuáles no.
-- [x] Evitar indexar checkout privado — `checkout/layout.tsx` `noindex` (SEO 1).
-- [ ] Evitar indexar portales privados, órdenes, tickets y admin — **pendiente SEO 2** (hoy indexables por defecto).
+- [x] Definir qué rutas públicas se indexan y cuáles no — `robots.ts` + sitemap (2026-06-01).
+- [x] Evitar indexar checkout privado — `checkout/layout.tsx` `noindex` + `robots` disallow `/checkout`.
+- [x] Evitar indexar portales privados, órdenes, tickets y admin — `robots.ts` disallow `/admin`, `/me`, `/producer`, `/gastro`, `/hotel`, `/referrer`, `/tickets`, `/scanner`, `/api`, `/dev`.
 - [ ] Mejorar contenido visible para SEO/GEO: títulos claros, descripciones completas, ubicación, categoría, fechas, precios desde, productor/local y preguntas frecuentes cuando aplique.
 - [ ] Agregar contenido semántico útil para IA/GEO en fichas públicas: resumen, ubicación, categoría, horarios, condiciones y datos clave.
 - [ ] Evaluar archivo `llms.txt` o equivalente informativo para orientar crawlers/IA, sin depender de él como garantía.

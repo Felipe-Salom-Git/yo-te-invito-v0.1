@@ -6,7 +6,7 @@
 
 **Regla:** pago demo sí · datos demo automáticos no · usuario maestro `felipe.e.salom@gmail.com`
 
-**Producción:** usar `cd apps/api && npx prisma migrate deploy` — **no** `pnpm db:migrate`, **no** `pnpm db:reset-dangerous`, **no** `pnpm db:cleanup-content` (salvo emergencia documentada). Hotfixes de schema deben quedar versionados en `apps/api/prisma/migrations/` (ej. `20260531072000_restore_user_push_subscription`). Deploy VPS: [`docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTION_RUNBOOK.md) §25.
+**Producción:** usar `cd apps/api && npx prisma migrate deploy` — **no** `pnpm db:migrate`, **no** `pnpm db:reset-dangerous`, **no** `pnpm db:cleanup-content` (salvo emergencia documentada). **Build:** `pnpm build` desde raíz (incluye `db:generate` + `shared` + apps). Bloque GCP/Storage/SEO/Maps cerrado 2026-06-01. Hotfixes de schema en `apps/api/prisma/migrations/`. Deploy VPS: [`docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTION_RUNBOOK.md) §25.
 
 ---
 

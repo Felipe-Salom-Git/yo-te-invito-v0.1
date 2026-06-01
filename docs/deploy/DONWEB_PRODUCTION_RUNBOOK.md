@@ -1284,4 +1284,6 @@ Durante rotación de secretos se detectó drift: modelo en `schema.prisma`, API 
 
 ---
 
-**Siguiente bloque recomendado:** crear bucket `yti-prod-public-assets` (manual GCP) + módulo upload NestJS ([`GCS_STORAGE_STRATEGY.md`](./GCS_STORAGE_STRATEGY.md)); Maps en web; SEO/GSC. Después: hardening fino VPS, rate limiting, monitoreo, legales reales.
+**Bloque Google Cloud / Storage / SEO / Maps:** cerrado operativo 2026-06-01 — ver [`GOOGLE_CLOUD_RUNBOOK.md`](./GOOGLE_CLOUD_RUNBOOK.md), [`GCS_STORAGE_STRATEGY.md`](./GCS_STORAGE_STRATEGY.md), [`SEARCH_CONSOLE_SEO_RUNBOOK.md`](./SEARCH_CONSOLE_SEO_RUNBOOK.md), [`MAPS_LOCATION_AUDIT.md`](../audits/MAPS_LOCATION_AUDIT.md) §25.
+
+**Siguiente foco recomendado:** hardening fino VPS, rate limiting, monitoreo, legales reales en admin, pagos reales.

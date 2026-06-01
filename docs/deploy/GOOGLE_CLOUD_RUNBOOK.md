@@ -1,7 +1,8 @@
 # Google Cloud Runbook — Yo Te Invito
 
 **Etapa A (manual):** cerrada — Mayo/Junio 2026.  
-**Etapa B — Storage V2:** cerrado funcionalmente en producción (2026-05-31). **Maps / SEO / GSC:** pendiente — ver §6.
+**Etapa B — Storage V2:** cerrado funcionalmente en producción (2026-05-31).  
+**Maps / SEO / GSC:** cerrado operativo en producción (2026-06-01) — ver §3–4 y [`MAPS_LOCATION_AUDIT.md`](../audits/MAPS_LOCATION_AUDIT.md) §25.
 
 > **Regla:** no guardar en el repo API keys completas, JSON de service account, passwords ni valores de `.env` productivos. Solo nombres, IDs públicos y variables esperadas.
 
@@ -247,8 +248,8 @@ Ejecutar tras activar key y rebuild. Rutas sugeridas (requieren login según rol
 
 - [ ] **Operador:** confirmar key activa en VPS + smoke §3.7 PASS
 - [ ] **Operador:** budget alerts §3.5
-- [x] Maps 5–10: persistencia, validación, helper público, JSON-LD, smoke — [`MAPS_LOCATION_AUDIT.md`](../audits/MAPS_LOCATION_AUDIT.md) §19–23
-- [ ] Maps deploy VPS: `npx prisma migrate deploy` + smoke §18 + `pnpm --filter api run smoke:maps-location`
+- [x] Maps 5–10: persistencia, validación, helper público, JSON-LD — [`MAPS_LOCATION_AUDIT.md`](../audits/MAPS_LOCATION_AUDIT.md) §19–25
+- [x] Maps prod: migración Prisma aplicada, key VPS, autocomplete/fallback, Ver ubicación, build VPS OK
 
 ---
 
@@ -257,24 +258,26 @@ Ejecutar tras activar key y rebuild. Rutas sugeridas (requieren login según rol
 | Campo | Valor |
 |-------|--------|
 | Dominio | `yoteinvito.club` |
-| Tipo de propiedad esperado | **Dominio** (DNS) |
-| Verificación | Registro **TXT** en DNS DonWeb |
+| Tipo de propiedad | **Dominio** (DNS TXT DonWeb) |
+| Estado propiedad | **Verificada** (2026-06-01) |
+| Sitemap enviado | `https://yoteinvito.club/sitemap.xml` |
 
-| Estado | Nota |
-|--------|------|
-| **Pendiente confirmar en repo** | Crear propiedad y verificar TXT en consola; marcar checklist cuando esté verde en GSC |
+| Estado GSC | Nota |
+|------------|------|
+| Procesamiento sitemap | Puede mostrar «No se pudo obtener» al inicio; validación técnica externa (curl/Googlebot) OK |
 
-### 4.1 Pendientes SEO técnico (Etapa B)
+### 4.1 SEO técnico — completado (base)
 
-- [ ] Verificación DNS TXT confirmada
-- [ ] `sitemap.xml` público y envío en GSC
-- [ ] `robots.txt` validado
-- [ ] Indexación home, explore, categorías, fichas públicas
-- [ ] `noindex` en portales privados, checkout, órdenes, tickets, admin
-- [ ] Cobertura / errores en GSC
-- [ ] Core Web Vitals (con tráfico)
-- [ ] JSON-LD / rich results cuando corresponda
-- [ ] Procedimiento SEO post-deploy
+- [x] `robots.txt` — portales privados bloqueados; `/_next` **no** bloqueado
+- [x] `sitemap.xml` — 200, `application/xml`, sin rutas privadas; `/home` incluido por decisión producto
+- [x] Metadata global + fichas + canonical + JSON-LD (incl. local Maps)
+- [x] Procedimiento post-deploy — [`SEARCH_CONSOLE_SEO_RUNBOOK.md`](./SEARCH_CONSOLE_SEO_RUNBOOK.md)
+
+### 4.2 Pendientes no bloqueantes
+
+- [ ] GSC: esperar procesamiento sitemap y revisar cobertura
+- [ ] Reinspección URLs clave; Core Web Vitals con tráfico
+- [ ] Rich Results Test (JSON-LD local)
 
 ---
 
@@ -299,8 +302,8 @@ Orden sugerido:
 | B2 | **Backups GCS** | [x] Cerrado 2026-05-31 — [`GCS_BACKUPS_RUNBOOK.md`](./GCS_BACKUPS_RUNBOOK.md) |
 | B3 | **Storage strategy** | [x] Arquitectura documentada — [`GCS_STORAGE_STRATEGY.md`](./GCS_STORAGE_STRATEGY.md) |
 | B4 | **Storage backend** | [x] **Cerrado funcional prod** 2026-05-31 — upload + portales + smokes VPS ([`GCS_STORAGE_STRATEGY.md`](./GCS_STORAGE_STRATEGY.md) §22); ops legacy data-URL/huérfanos pendiente |
-| B5 | **Maps frontend** | [x] Maps 4 doc: activación VPS + smoke §3.6–3.7; pendiente confirmación operador + Maps 5+ |
-| B6 | **SEO / GSC** | sitemap, robots, metadata, JSON-LD, no-index rutas privadas |
+| B5 | **Maps frontend** | [x] Cerrado prod 2026-06-01 — Maps 5–10, key, autocomplete, Ver ubicación, JSON-LD |
+| B6 | **SEO / GSC** | [x] Cerrado base 2026-06-01 — robots, sitemap, metadata, JSON-LD, GSC verificado + sitemap enviado |
 
 **No hacer en Etapa A:** SDK en código, cambios Prisma por storage, Nginx/systemd salvo lo que requiera un slice explícito.
 

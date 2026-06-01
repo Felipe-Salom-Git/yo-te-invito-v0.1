@@ -21,6 +21,8 @@ Esta guía lista los comandos developer **activos** después de la limpieza de d
 
 Contenido de prueba: cargar **manualmente** desde la cuenta principal y portales (admin, producer, gastro, etc.).
 
+**Build producción (VPS):** desde raíz del monorepo, `pnpm build` (Prisma generate → `shared` → api/web/scanner). No compilar solo `apps/api` sin `shared` buildado. Bloque GCP/Storage/SEO/Maps cerrado 2026-06-01 — [`GOOGLE_CLOUD_RUNBOOK.md`](../deploy/GOOGLE_CLOUD_RUNBOOK.md).
+
 ---
 
 ## 2. Comandos de desarrollo

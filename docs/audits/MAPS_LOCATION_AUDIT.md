@@ -504,4 +504,19 @@ curl -I https://yoteinvito.club
 - `apps/api` build: `prisma generate && nest build`; Nx `dependsOn: ["^build"]`.
 
 **VPS:** tras `git pull`, ejecutar `pnpm build` desde raíz (no solo `nest build` en `apps/api` sin shared previo).
-- [ ] Producer sede con mapa (futuro)
+
+## 25. Cierre bloque Google Cloud / Storage / SEO / Maps (2026-06-01)
+
+**Estado producción confirmado:**
+
+| Área | Cerrado |
+|------|---------|
+| GCP base | Proyecto, billing, Maps APIs, key restringida |
+| GCS privado | `yti-prod-storage`, backups PG, lifecycle 30d, restore drill |
+| GCS público | `yti-prod-public-assets`, CORS, upload API, formularios, smokes |
+| SEO técnico | `robots.txt`, `sitemap.xml`, metadata, JSON-LD, GSC verificado + sitemap enviado |
+| Maps | Key prod, autocomplete, fallback, persistencia, Ver ubicación, migración Prisma, JSON-LD local |
+
+**Pendientes no bloqueantes:** budget alerts GCP; storage data-URL/orphans ops; CDN; signed URLs `private/*`; GSC indexación/CWV/Rich Results; backfill Maps; productoras sede exacta; unificar `ARGENTINA_PROVINCES`.
+
+**Documentación alineada:** checklist V2, contextos, runbooks — sin tareas Front/UX en este bloque.

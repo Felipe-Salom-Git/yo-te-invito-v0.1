@@ -4,6 +4,32 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 
 **Convención:** `- [ ]` pendiente · `- [x]` hecho
 
+## Google Cloud / Storage / SEO / Maps — bloque cerrado (2026-06-01)
+
+> Checklist V2 § Google Cloud · § GSC/SEO · Runbooks: [`GOOGLE_CLOUD_RUNBOOK.md`](../deploy/GOOGLE_CLOUD_RUNBOOK.md) · [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) · [`SEARCH_CONSOLE_SEO_RUNBOOK.md`](../deploy/SEARCH_CONSOLE_SEO_RUNBOOK.md) · Auditorías: [`MAPS_LOCATION_AUDIT.md`](../audits/MAPS_LOCATION_AUDIT.md) · [`SEO_TECHNICAL_AUDIT.md`](../audits/SEO_TECHNICAL_AUDIT.md)
+
+- [x] Proyecto GCP `yoteinvito-1721413433327` + billing + colaborador técnico
+- [x] Maps APIs + key restringida + `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` en prod
+- [x] GCS bucket privado `yti-prod-storage` + backups PG (timer 03:30, restore drill, lifecycle 30d)
+- [x] GCS bucket público `yti-prod-public-assets` + CORS + `POST /uploads/public-image` + ownership + smokes PASS
+- [x] Formularios GCS: rentals, admin eventos/excursiones, productora, gastro, hotel
+- [x] SEO técnico base: `robots.txt`, `sitemap.xml`, metadata, JSON-LD, portales privados en robots
+- [x] GSC: propiedad `yoteinvito.club` verificada + sitemap enviado
+- [x] Maps prod: autocomplete, fallback manual, persistencia placeId/province, Ver ubicación, migración Prisma, JSON-LD local
+
+**Pendientes no bloqueantes (ops):**
+
+- [ ] Budget alerts GCP (50% / 80% / 100%)
+- [ ] `storage:audit-data-urls` read-only en prod
+- [ ] Migración data-URL legacy por lotes (post-backup)
+- [ ] `storage:audit-orphans` read-only + cleanup huérfanos tras revisión manual
+- [ ] CDN `cdn.yoteinvito.club` (fase 2)
+- [ ] Signed URLs ampliadas para `private/*`
+- [ ] GSC: procesamiento sitemap, cobertura, CWV con tráfico, Rich Results Test
+- [ ] Backfill Maps legacy; productoras sede exacta (si se decide); unificar `ARGENTINA_PROVINCES`
+
+---
+
 ## Perfiles y registro (2026-05)
 
 - [x] Auditar flujo actual de registro con elección de perfil — `docs/audits/REGISTER_ONBOARDING_AUDIT.md` (Slice 1, 2026-05-24)
@@ -220,7 +246,7 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 - [x] Ficha pública gastro pulida (`/restaurants/[id]`, `GastroPublicDetailContent`; sin ticketera; redirect `/events/:id` gastro → restaurants)
 - [x] Dashboard gastro V2 (`GET /gastro/dashboard`, KPIs reales, alertas, `/gastro/validaciones` con filtros y paginación)
 - [x] Gastro + Reviews V2 + follows + alerta `FOLLOWED_GASTRO_NEW_DISCOUNT` (Slice 7 — `docs/gastro/GASTRO_FOLLOWS_NOTIFICATIONS.md`)
-- [ ] Storage V2 ops legacy (data-URL, huérfanos, CDN) — no bloqueante; funcional [x] prod 2026-05-31
+- [ ] Storage V2 ops legacy (data-URL audit/migrate, huérfanos, CDN) — no bloqueante; upload GCS [x] prod 2026-05-31
 - [x] Portal `/gastro/valoraciones` — listado + réplica (`POST /gastro/reviews/:id/reply`)
 
 ---
@@ -243,7 +269,7 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 - [x] Mejorar filtros de eventos admin (`/admin/eventos`, `GET /admin/events` extendido, filtros URL + tabs)
 - [x] Mejorar filtros de usuarios admin (`/admin/usuarios`, `GET /admin/users` extendido, filtros URL + paginación, perfiles en listado)
 - [x] Confirmar gestión completa de subcategorías (`/admin/categorias`, CRUD 4 verticales activas, hotel Próximamente, `seed:subcategories` intacto)
-- [ ] Maps Etapa B — deploy migración + smoke §18 + `pnpm --filter api run smoke:maps-location`; ver audit §23–24 (build fix: `pnpm build` raíz)
+- [x] Maps Etapa B — prod OK (migración, build, autocomplete, Ver ubicación, JSON-LD) — audit §23–25
 - [x] Auditoría con filtros útiles en UI (`/admin/auditoria`, `GET /admin/audit-logs` extendido)
 
 **Bloque Admin Operativo (Slices 1–5, 2026-05):** cerrado — dashboard + cola pendientes, eventos/usuarios/auditoría con filtros API, subcategorías admin, hoteles «Próximamente» en dashboard y categorías. Fuera de bloque: pagos reales, portal productor completo. **Storage GCS admin — cerrado prod 2026-05-31.**
