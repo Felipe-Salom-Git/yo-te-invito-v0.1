@@ -243,7 +243,7 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 - [x] Mejorar filtros de eventos admin (`/admin/eventos`, `GET /admin/events` extendido, filtros URL + tabs)
 - [x] Mejorar filtros de usuarios admin (`/admin/usuarios`, `GET /admin/users` extendido, filtros URL + paginación, perfiles en listado)
 - [x] Confirmar gestión completa de subcategorías (`/admin/categorias`, CRUD 4 verticales activas, hotel Próximamente, `seed:subcategories` intacto)
-- [ ] Maps Etapa B — deploy migración + smoke §18 + `pnpm --filter api run smoke:maps-location`; ver audit §23
+- [ ] Maps Etapa B — deploy migración + smoke §18 + `pnpm --filter api run smoke:maps-location`; ver audit §23–24 (build fix: `pnpm build` raíz)
 - [x] Auditoría con filtros útiles en UI (`/admin/auditoria`, `GET /admin/audit-logs` extendido)
 
 **Bloque Admin Operativo (Slices 1–5, 2026-05):** cerrado — dashboard + cola pendientes, eventos/usuarios/auditoría con filtros API, subcategorías admin, hoteles «Próximamente» en dashboard y categorías. Fuera de bloque: pagos reales, portal productor completo. **Storage GCS admin — cerrado prod 2026-05-31.**

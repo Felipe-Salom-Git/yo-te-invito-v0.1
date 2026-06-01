@@ -4,6 +4,10 @@ node_modules
 .env*.local
 .next
 dist
+# Accidental tsc output under shared/src (emit must go to packages/shared/dist only)
+packages/shared/src/**/*.js
+packages/shared/src/**/*.js.map
+packages/shared/src/**/*.d.ts
 *.tsbuildinfo
 .nx/cache
 .nx/workspace-data

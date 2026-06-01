@@ -492,4 +492,16 @@ curl -I https://yoteinvito.club
 - [x] Maps 10 — smoke script + docs
 - [ ] Operador: `prisma migrate deploy` VPS + smoke PASS
 - [ ] Budget alerts GCP
+
+## 24. Build fix — shared types stale (2026-06-01)
+
+**Causa:** artefactos `.js`/`.d.ts` legacy en `packages/shared/src/` (p. ej. `schemas/events.d.ts` sin `province`/`googlePlaceId`) sombreaban los schemas Maps 5 al compilar `@yo-te-invito/shared`.
+
+**Fix:**
+
+- Eliminar outputs accidentales bajo `packages/shared/src/` (gitignore).
+- `pnpm build` raíz: `pnpm db:generate && nx run shared:build && nx run-many -t build -p api web scanner`.
+- `apps/api` build: `prisma generate && nest build`; Nx `dependsOn: ["^build"]`.
+
+**VPS:** tras `git pull`, ejecutar `pnpm build` desde raíz (no solo `nest build` en `apps/api` sin shared previo).
 - [ ] Producer sede con mapa (futuro)

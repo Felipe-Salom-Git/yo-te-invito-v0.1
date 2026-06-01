@@ -61,6 +61,9 @@ export class ProducerEventsCrudService {
       id: string;
       name: string;
       address: string | null;
+      city?: string | null;
+      province?: string | null;
+      googlePlaceId?: string | null;
       openingHours: unknown;
       openingHoursNote: string | null;
       whatsappPhone: string | null;
@@ -73,6 +76,9 @@ export class ProducerEventsCrudService {
       id: loc.id,
       name: loc.name,
       address: loc.address,
+      city: loc.city ?? null,
+      province: loc.province ?? null,
+      googlePlaceId: loc.googlePlaceId ?? null,
       openingHours: parseRentalOpeningHours(loc.openingHours),
       openingHoursNote: loc.openingHoursNote,
       whatsappPhone: loc.whatsappPhone,
@@ -95,6 +101,9 @@ export class ProducerEventsCrudService {
       id: string;
       name: string;
       address: string | null;
+      city?: string | null;
+      province?: string | null;
+      googlePlaceId?: string | null;
       openingHours: unknown;
       openingHoursNote: string | null;
       whatsappPhone: string | null;

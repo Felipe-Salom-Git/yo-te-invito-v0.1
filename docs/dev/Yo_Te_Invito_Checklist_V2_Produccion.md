@@ -263,7 +263,7 @@ _Footer público completo — bloque V2 cerrado. Smoke: `docs/audits/PUBLIC_FOOT
 - [x] Documentar activación prod Maps + smoke manual (Maps 4) — [`GOOGLE_CLOUD_RUNBOOK.md`](../deploy/GOOGLE_CLOUD_RUNBOOK.md) §3.6–3.7.
 - [x] Persistir `googlePlaceId` + `province` en entidades con ubicación (Maps 5) — migración Prisma + API + formularios; smoke §18 audit.
 - [x] Maps 5–10 código + docs (audit §19–23)
-- [ ] Deploy migración Maps 5 en VPS (`npx prisma migrate deploy` en `apps/api`)
+- [ ] Deploy migración Maps 5 en VPS (`npx prisma migrate deploy` en `apps/api`) — **después** del fix build §24 audit (`pnpm build` raíz OK)
 - [ ] Smoke API Maps: `pnpm --filter api run smoke:maps-location`
 - [ ] Confirmar `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` en VPS + rebuild `yti-web` (operador post-deploy).
 - [ ] Ejecutar smoke manual Maps en producción (operador — runbook §3.7 + audit §18).
