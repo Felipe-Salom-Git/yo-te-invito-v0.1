@@ -1,6 +1,34 @@
 import type { EmailTemplateId } from './email-template.types';
-import { getAppUrl, getCurrentYear } from './email-template.util';
+import { getAppUrl, getCurrentYear, getDefaultSupportEmail } from './email-template.util';
 import { resolveMailOperationsTo } from '../mail-config';
+
+export type AdminEmailDeliveryFailedVariablesInput = {
+  templateId: string;
+  recipient: string;
+  provider: string;
+  errorCode?: string;
+  errorMessage?: string;
+  occurredAt?: string;
+  context?: string;
+  adminUrl?: string;
+};
+
+/** Variables for `ADMIN_EMAIL_DELIVERY_FAILED` (shared by queue + operational alerts). */
+export function buildAdminEmailDeliveryFailedVariables(
+  input: AdminEmailDeliveryFailedVariablesInput,
+): Record<string, unknown> {
+  return {
+    templateId: input.templateId,
+    recipient: input.recipient,
+    provider: input.provider,
+    errorCode: input.errorCode ?? 'SEND_FAILED',
+    errorMessage: input.errorMessage,
+    occurredAt: input.occurredAt ?? new Date().toISOString(),
+    context: input.context,
+    adminUrl: input.adminUrl ?? adminPanelUrl(),
+    supportEmail: getDefaultSupportEmail(),
+  };
+}
 
 const INTERNAL_OPERATIONAL_TEMPLATE_IDS: ReadonlySet<EmailTemplateId> = new Set([
   'ADMIN_CRITICAL_ALERT',

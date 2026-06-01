@@ -3,6 +3,7 @@ import { resolveMailOperationsTo } from './mail-config';
 import { EmailQueueService } from './email-queue.service';
 import {
   adminPanelUrl,
+  buildAdminEmailDeliveryFailedVariables,
   operationsRecipient,
 } from './templates/admin-operational-email.util';
 import { getDefaultSupportEmail } from './templates/email-template.util';
@@ -126,17 +127,20 @@ export class OperationalAlertsEmailService {
   }
 
   notifyEmailDeliveryFailed(input: EnqueueEmailDeliveryFailedInput): void {
-    void this.enqueueToOperations('ADMIN_EMAIL_DELIVERY_FAILED', input.to, {
-      templateId: input.templateId,
-      recipient: input.recipient,
-      provider: input.provider,
-      errorCode: input.errorCode ?? 'SEND_FAILED',
-      errorMessage: input.errorMessage,
-      occurredAt: input.occurredAt ?? new Date().toISOString(),
-      context: input.context,
-      adminUrl: input.adminUrl ?? adminPanelUrl(),
-      supportEmail: getDefaultSupportEmail(),
-    });
+    void this.enqueueToOperations(
+      'ADMIN_EMAIL_DELIVERY_FAILED',
+      input.to,
+      buildAdminEmailDeliveryFailedVariables({
+        templateId: input.templateId,
+        recipient: input.recipient,
+        provider: input.provider,
+        errorCode: input.errorCode,
+        errorMessage: input.errorMessage,
+        occurredAt: input.occurredAt,
+        context: input.context,
+        adminUrl: input.adminUrl,
+      }),
+    );
   }
 
   notifyScannerCriticalError(input: EnqueueScannerCriticalErrorInput): void {

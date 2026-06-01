@@ -2,15 +2,17 @@
  * Email queue using BullMQ + Redis.
  * If REDIS_URL is not set, falls back to sending synchronously via EmailService.
  */
-import { Inject, Injectable, OnModuleDestroy, forwardRef } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { Queue, Worker } from 'bullmq';
-import { resolveMailFrom, resolveMailReplyTo } from './mail-config';
+import { resolveMailFrom, resolveMailOperationsTo, resolveMailReplyTo } from './mail-config';
 import { EmailService } from './email.service';
 import type { SendEmailOptions } from './send-email-options';
 import { renderEmailTemplate } from './templates/email-template.renderer';
 import type { EmailTemplateId } from './templates/email-template.types';
-import { isInternalOperationalEmailTemplate } from './templates/admin-operational-email.util';
-import { OperationalAlertsEmailService } from './operational-alerts-email.service';
+import {
+  buildAdminEmailDeliveryFailedVariables,
+  isInternalOperationalEmailTemplate,
+} from './templates/admin-operational-email.util';
 
 const QUEUE_NAME = 'emails';
 const REDIS_URL = process.env.REDIS_URL ?? '';
@@ -22,14 +24,11 @@ export interface EmailJobData extends SendEmailOptions {
 
 @Injectable()
 export class EmailQueueService implements OnModuleDestroy {
+  private readonly logger = new Logger(EmailQueueService.name);
   private queue: Queue<EmailJobData> | null = null;
   private worker: Worker<EmailJobData> | null = null;
 
-  constructor(
-    private readonly email: EmailService,
-    @Inject(forwardRef(() => OperationalAlertsEmailService))
-    private readonly operationalAlerts: OperationalAlertsEmailService,
-  ) {
+  constructor(private readonly email: EmailService) {
     if (REDIS_URL) {
       const connection = { url: REDIS_URL };
       this.queue = new Queue<EmailJobData>(QUEUE_NAME, { connection });
@@ -80,7 +79,7 @@ export class EmailQueueService implements OnModuleDestroy {
       data.sourceTemplateId &&
       !isInternalOperationalEmailTemplate(data.sourceTemplateId)
     ) {
-      this.operationalAlerts.notifyEmailDeliveryFailed({
+      this.enqueueEmailDeliveryFailedAlert({
         templateId: data.sourceTemplateId,
         recipient: data.to,
         provider: this.email.getProviderName(),
@@ -88,6 +87,34 @@ export class EmailQueueService implements OnModuleDestroy {
         context: `subject=${data.subject}`,
       });
     }
+  }
+
+  /**
+   * Anti-loop: `sourceTemplateId` is `ADMIN_EMAIL_DELIVERY_FAILED` (internal ADMIN_*).
+   * No dependency on OperationalAlertsEmailService (avoids Nest DI cycle).
+   */
+  private enqueueEmailDeliveryFailedAlert(params: {
+    templateId: string;
+    recipient: string;
+    provider: string;
+    errorCode?: string;
+    context?: string;
+  }): void {
+    const to = resolveMailOperationsTo();
+    if (!to) {
+      this.logger.warn(
+        'ADMIN_EMAIL_DELIVERY_FAILED: no recipient (set MAIL_OPERATIONS_TO)',
+      );
+      return;
+    }
+
+    void this.enqueueTemplate({
+      templateId: 'ADMIN_EMAIL_DELIVERY_FAILED',
+      to,
+      variables: buildAdminEmailDeliveryFailedVariables(params),
+    }).catch((err) => {
+      this.logger.error('enqueue ADMIN_EMAIL_DELIVERY_FAILED failed', err);
+    });
   }
 
   async onModuleDestroy() {
