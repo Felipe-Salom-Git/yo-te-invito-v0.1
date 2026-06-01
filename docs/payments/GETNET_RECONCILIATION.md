@@ -142,6 +142,10 @@ pnpm --filter api run payments:reconcile-getnet -- --tenant-id tenant-demo --con
 
 Producción con `--confirm`: además `GETNET_RECONCILE_CONFIRM_PROD=yes`.
 
+`payments:reconcile-getnet --dry-run` debe poder ejecutarse como verificación operativa **aunque Getnet aún no tenga credenciales cargadas**. Si faltan `GETNET_CLIENT_ID` / `GETNET_CLIENT_SECRET`, el script lista candidatos desde DB y, al reconciliar cada pago, devuelve `REMOTE_STATUS_UNAVAILABLE` en lugar de lanzar error. `--confirm` sin credenciales termina con mensaje claro antes de mutar.
+
+El script usa `GetnetReconcileScriptModule` (Nest mínimo) + `reflect-metadata` + `@Inject()` explícito en el servicio para evitar `prisma` undefined en CLI.
+
 ---
 
 ## 11. Alertas operativas

@@ -9,6 +9,10 @@ import {
 } from '../src/modules/public-payments/getnet-reconciliation.policy.util';
 import { shouldApplyPaymentStatusUpdate } from '../src/modules/public-payments/providers/getnet/getnet-webhook.util';
 import { shouldSendReconciliationAlert } from '../src/modules/public-payments/getnet-reconciliation.metadata.util';
+import {
+  isGetnetRemoteConfigured,
+  shouldSkipRemoteStatusFetch,
+} from '../src/modules/public-payments/getnet-reconciliation.remote.util';
 
 function assert(cond: boolean, msg: string) {
   if (!cond) {
@@ -94,5 +98,15 @@ assert(
   shouldSendReconciliationAlert({}, 'X'),
   'alert first time',
 );
+
+const savedClientId = process.env.GETNET_CLIENT_ID;
+const savedClientSecret = process.env.GETNET_CLIENT_SECRET;
+delete process.env.GETNET_CLIENT_ID;
+delete process.env.GETNET_CLIENT_SECRET;
+assert(!isGetnetRemoteConfigured(), 'no creds → not configured');
+assert(shouldSkipRemoteStatusFetch(undefined), 'skip remote without override');
+assert(!shouldSkipRemoteStatusFetch('APPROVED'), 'override skips credential check');
+if (savedClientId) process.env.GETNET_CLIENT_ID = savedClientId;
+if (savedClientSecret) process.env.GETNET_CLIENT_SECRET = savedClientSecret;
 
 console.log('OK: getnet-reconciliation util tests passed');

@@ -8,11 +8,14 @@
  *   pnpm --filter api run payments:reconcile-getnet -- --confirm --limit 20
  *   pnpm --filter api run payments:reconcile-getnet -- --payment-id <id> --dry-run
  */
+import 'reflect-metadata';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from '../src/app.module';
+import { PrismaService } from '../src/prisma/prisma.service';
 import { GetnetReconciliationService } from '../src/modules/public-payments/getnet-reconciliation.service';
+import { isGetnetRemoteConfigured } from '../src/modules/public-payments/getnet-reconciliation.remote.util';
+import { GetnetReconcileScriptModule } from './getnet-reconcile-script.module';
 
 function loadEnvFile() {
   try {
@@ -84,17 +87,20 @@ function parseArgs(argv: string[]) {
   return out;
 }
 
-function printSummary(label: string, summary: {
-  reviewed: number;
-  fulfilled: number;
-  alreadyFulfilled: number;
-  pending: number;
-  rejected: number;
-  requiresManualReview: number;
-  skipped: number;
-  errors: number;
-  dryRun: boolean;
-}) {
+function printSummary(
+  label: string,
+  summary: {
+    reviewed: number;
+    fulfilled: number;
+    alreadyFulfilled: number;
+    pending: number;
+    rejected: number;
+    requiresManualReview: number;
+    skipped: number;
+    errors: number;
+    dryRun: boolean;
+  },
+) {
   console.log(`\n=== ${label} ===`);
   console.log(`dryRun: ${summary.dryRun}`);
   console.log(`reviewed: ${summary.reviewed}`);
@@ -117,12 +123,36 @@ async function main() {
     console.log('MODO DRY-RUN — sin mutaciones');
   }
 
-  const app = await NestFactory.createApplicationContext(AppModule, {
-    logger: ['error', 'warn'],
-  });
+  if (!isGetnetRemoteConfigured()) {
+    console.warn(
+      'Getnet credentials missing (GETNET_CLIENT_ID / GETNET_CLIENT_SECRET); ' +
+        'remote status checks will return REMOTE_STATUS_UNAVAILABLE.',
+    );
+    if (!args.dryRun) {
+      console.error(
+        'No se puede usar --confirm sin credenciales Getnet para consultar estado remoto.',
+      );
+      process.exit(1);
+    }
+  }
+
+  const app = await NestFactory.createApplicationContext(
+    GetnetReconcileScriptModule,
+    {
+      logger: ['error', 'warn'],
+    },
+  );
 
   try {
+    const prisma = app.get(PrismaService);
     const reconciliation = app.get(GetnetReconciliationService);
+
+    if (!prisma?.payment?.findMany) {
+      throw new Error(
+        'PrismaService is not available in script context. Check DATABASE_URL and Nest bootstrap.',
+      );
+    }
+    reconciliation.assertDatabaseReady();
 
     if (args.paymentId) {
       const result = await reconciliation.reconcilePayment(args.paymentId, {
@@ -150,6 +180,8 @@ async function main() {
           `  ${r.paymentId} → ${r.outcome}${r.reconciliationReason ? ` (${r.reconciliationReason})` : ''}`,
         );
       }
+    } else {
+      console.log('\nSin pagos Getnet pendientes en el lote.');
     }
   } finally {
     await app.close();

@@ -36,7 +36,7 @@
     "test:order-fulfillment": "tsx scripts/test-order-fulfillment.util.ts",
     "test:getnet-webhook": "tsx scripts/test-getnet-webhook.util.ts",
     "test:getnet-reconciliation": "tsx scripts/test-getnet-reconciliation.util.ts",
-    "payments:reconcile-getnet": "tsx scripts/payments-reconcile-getnet.ts",
+    "payments:reconcile-getnet": "tsx --tsconfig tsconfig.scripts.json scripts/payments-reconcile-getnet.ts",
     "smoke:getnet": "tsx scripts/smoke-getnet.ts",
     "smoke:notifications": "tsx scripts/smoke-notifications.ts",
     "smoke:producer-follows": "tsx scripts/smoke-producer-follows.ts",

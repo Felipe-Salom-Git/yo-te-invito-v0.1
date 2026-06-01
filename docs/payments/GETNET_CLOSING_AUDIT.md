@@ -132,6 +132,9 @@ Mínimas prod: `GETNET_ENV`, `GETNET_CLIENT_ID`, `GETNET_CLIENT_SECRET`, `GETNET
 | `test:getnet-reconciliation` | OK (fix: `now` opcional en policy; no era bug productivo) |
 | `test:order-fulfillment` | OK |
 | `smoke:getnet --config` | FAIL local esperado: `GETNET_WEBHOOK_SECRET`, `WEB_APP_URL`, API `/health` no levantada |
+| `payments:reconcile-getnet --dry-run` | Debe correr sin credenciales Getnet (REMOTE_STATUS_UNAVAILABLE por pago si aplica remoto) |
+
+**Hotfix 2026-06-01:** script reconcile — `GetnetReconcileScriptModule`, `reflect-metadata`, `@Inject(PrismaService)`; dry-run sin credenciales OK.
 
 ---
 

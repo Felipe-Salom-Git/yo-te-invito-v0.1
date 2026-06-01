@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { PaymentStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { OperationalAlertsEmailService } from '../../email/operational-alerts-email.service';
@@ -27,6 +27,7 @@ import type {
   ReconcilePendingPaymentsOptions,
 } from './getnet-reconciliation.types';
 import { toFulfillSource } from './getnet-reconciliation.types';
+import { shouldSkipRemoteStatusFetch } from './getnet-reconciliation.remote.util';
 import { ErrorCode } from '@yo-te-invito/shared';
 
 @Injectable()
@@ -34,12 +35,26 @@ export class GetnetReconciliationService {
   private readonly logger = new Logger(GetnetReconciliationService.name);
 
   constructor(
-    private readonly prisma: PrismaService,
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(GetnetCheckoutService)
     private readonly getnetCheckout: GetnetCheckoutService,
+    @Inject(OrderFulfillmentService)
     private readonly orderFulfillment: OrderFulfillmentService,
+    @Inject(ReferralEmailsService)
     private readonly referralEmails: ReferralEmailsService,
+    @Inject(OperationalAlertsEmailService)
     private readonly operationalAlerts: OperationalAlertsEmailService,
   ) {}
+
+  /** Used by CLI scripts to fail fast when Nest DI did not wire Prisma. */
+  assertDatabaseReady(): void {
+    if (!this.prisma?.payment?.findMany) {
+      throw new Error(
+        'GetnetReconciliationService: PrismaService is not injected. ' +
+          'Run payments:reconcile-getnet via Nest ApplicationContext (see scripts/payments-reconcile-getnet.ts).',
+      );
+    }
+  }
 
   async reconcilePayment(
     paymentId: string,
@@ -88,6 +103,18 @@ export class GetnetReconciliationService {
           localPaymentStatus: payment.status,
           dryRun,
           message: 'No externalReference',
+        };
+      }
+      if (shouldSkipRemoteStatusFetch(options.remoteStatusOverride)) {
+        return {
+          paymentId: payment.id,
+          orderId: order.id,
+          outcome: 'REMOTE_STATUS_UNAVAILABLE',
+          orderStatus: order.status,
+          localPaymentStatus: payment.status,
+          dryRun,
+          message:
+            'Getnet credentials not configured; remote status checks skipped',
         };
       }
       try {
@@ -339,6 +366,8 @@ export class GetnetReconciliationService {
   async reconcilePendingPayments(
     options: ReconcilePendingPaymentsOptions = {},
   ): Promise<ReconcileBatchSummary> {
+    this.assertDatabaseReady();
+
     const dryRun = options.dryRun ?? true;
     const limit = options.limit ?? 50;
     const olderThanMinutes = options.olderThanMinutes ?? 10;

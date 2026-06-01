@@ -15,6 +15,8 @@ pnpm --filter api run build
 pnpm --filter web run build
 pnpm --filter api run smoke:getnet -- --config
 pnpm --filter api run payments:reconcile-getnet -- --dry-run --limit 10
+
+> Debe completar sin TypeError aunque falten credenciales Getnet; pagos con consulta remota pendiente reportan `REMOTE_STATUS_UNAVAILABLE`.
 ```
 
 Opcional OAuth:
