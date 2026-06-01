@@ -84,7 +84,7 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 > **Runbook:** [`docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTION_RUNBOOK.md) — §24 ejecución real, §25 seguridad post-deploy  
 > **Checklist V2:** `docs/dev/Yo_Te_Invito_Checklist_V2_Produccion.md` § Producción técnica
 
-**Estado actual:** VPS DonWeb productivo con systemd + Nginx + HTTPS. Web/API/Scanner en **`yoteinvito.club`**. **Storage V2 cerrado funcional (2026-05-31).** **SEO baseline:** auditoría SEO 1 — [`SEO_TECHNICAL_AUDIT.md`](../audits/SEO_TECHNICAL_AUDIT.md). **SEO 3–5 aplicado:** OG/Twitter global + icons/manifest, metadata estática rutas base, `robots.ts` + sitemap mínimo, metadata dinámica fichas públicas principales. Pendiente: GSC envío sitemap, `noindex` portales (SEO 2), canonical/dedupe (SEO 6), JSON‑LD (SEO 7+).
+**Estado actual:** VPS DonWeb productivo con systemd + Nginx + HTTPS. Web/API/Scanner en **`yoteinvito.club`**. **Storage V2 cerrado funcional (2026-05-31).** **SEO baseline:** auditoría SEO 1 — [`SEO_TECHNICAL_AUDIT.md`](../audits/SEO_TECHNICAL_AUDIT.md). **SEO 3–8 aplicado:** OG/Twitter global + icons/manifest, metadata estática rutas base, `robots.ts`, **sitemap final (SEO 9)**, metadata dinámica fichas públicas principales, canonical/dedupe, JSON‑LD. Pendiente: **GSC manual** (propiedad + TXT + envío sitemap), `noindex` portales (SEO 2).
 
 | Ítem | Estado |
 |------|--------|

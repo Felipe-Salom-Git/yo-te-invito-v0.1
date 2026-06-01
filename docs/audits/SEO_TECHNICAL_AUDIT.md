@@ -170,13 +170,22 @@ Solo en layout de eventos: `summary_large_image` + title/description/images. **N
 
 ### 3.7 Sitemap
 
-**SEO 4 aplicado:** existe `apps/web/app/sitemap.ts` con un sitemap **mínimo** de rutas públicas estables.
+**SEO 9 aplicado:** `apps/web/app/sitemap.ts` ahora genera un sitemap **final** con:
 
-Incluye (mínimo): `/`, `/home`, `/explore`, `/categorias`, `/categoria/{event,gastro,rental,excursion}`, `/legal/*` (slugs públicos).
+- rutas públicas estables (home/explore/categorías/legal);
+- fichas públicas **listadas desde endpoints públicos** (con límites + fallback si falla el fetch):
+  - eventos `/events/[id]` (category=event)
+  - rentals `/rentals/[id]` (category=rental)
+  - excursiones `/excursiones/[id]` (category=excursion)
+  - hoteles `/hoteles/[id]` (category=hotel; detalle por `publicEventId`)
+  - gastro `/gastronomicos/[id]` (por `public/gastro-locations`)
+  - productoras `/producers/[id]` (paginado)
 
-Excluye (a propósito): fichas dinámicas (eventos/perfiles) hasta sitemap dinámico seguro (SEO 9) y `/hoteles` (Próximamente, `noindex`).
+Incluye (base): `/home`, `/explore`, `/categorias`, `/categoria/{event,gastro,rental,excursion}`, `/producers`, `/legal/*` (slugs públicos).
 
-**Rutas candidatas a incluir (futuro):** estáticas + dinámicas vía API (`/public/events/search`, listados productoras, perfiles gastro/hotel/rental/excursion publicados).
+Excluye (a propósito): portales privados + auth + checkout + dev + scanner + API + `/_next` y **el listado** `/hoteles` (Próximamente, `noindex`).
+
+**Pendiente:** ejecutar el flujo manual de GSC (propiedad dominio + TXT + envío sitemap) y cerrar `noindex` de portales (SEO 2).
 
 ### 3.8 Robots
 

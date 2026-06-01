@@ -310,7 +310,7 @@ _Footer público completo — bloque V2 cerrado. Smoke: `docs/audits/PUBLIC_FOOT
 
 - [ ] Crear propiedad de Google Search Console para el dominio definitivo (`yoteinvito.club`).
 - [ ] Verificar dominio mediante DNS TXT en DonWeb.
-- [x] Generar `sitemap.xml` mínimo (SEO 4) — `apps/web/app/sitemap.ts` (rutas públicas estables).
+- [x] Generar `sitemap.xml` final (SEO 9) — `apps/web/app/sitemap.ts` (rutas públicas estables + fichas públicas desde endpoints públicos).
 - [x] Generar `robots.txt` (SEO 4) — `apps/web/app/robots.ts` (bloquea portales/auth/dev/checkout).
 - [ ] Enviar sitemap público (GSC) — **pendiente** post-deploy y verificación DNS.
 - [ ] Validar robots.txt en producción (curl) post-deploy.
@@ -319,7 +319,7 @@ _Footer público completo — bloque V2 cerrado. Smoke: `docs/audits/PUBLIC_FOOT
 - [ ] Revisar errores de cobertura/indexación.
 - [ ] Revisar Core Web Vitals cuando haya tráfico real.
 - [ ] Revisar rich results cuando se agregue JSON-LD.
-- [ ] Documentar procedimiento de revisión SEO post-deploy.
+- [x] Documentar procedimiento de revisión SEO post-deploy — `docs/deploy/SEARCH_CONSOLE_SEO_RUNBOOK.md`.
 
 ## Pagos reales y checkout productivo
 
