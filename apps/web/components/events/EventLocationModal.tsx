@@ -1,7 +1,10 @@
 'use client';
 
 import { useEffect, useCallback } from 'react';
-import { buildEventGoogleMapsHref } from '@/lib/events/maps';
+import {
+  buildPublicGoogleMapsHref,
+  hasPublicLocationForMapLink,
+} from '@/lib/maps';
 
 export interface EventLocationModalProps {
   isOpen: boolean;
@@ -42,14 +45,20 @@ export function EventLocationModal({
 
   if (!isOpen) return null;
 
-  const mapsHref = buildEventGoogleMapsHref({
+  const mapsHref = buildPublicGoogleMapsHref({
     geoLat,
     geoLng,
-    venueAddress,
+    address: venueAddress,
     venueName,
     city,
   });
-  const hasLocation = venueName || venueAddress || city;
+  const hasLocation = hasPublicLocationForMapLink({
+    geoLat,
+    geoLng,
+    address: venueAddress,
+    venueName,
+    city,
+  });
 
   return (
     <div

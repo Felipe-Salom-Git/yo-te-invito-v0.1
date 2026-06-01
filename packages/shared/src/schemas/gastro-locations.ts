@@ -35,8 +35,9 @@ export const gastroLocalLocationSchema = z.object({
   province: z.string().min(1).max(100),
   city: z.string().min(1).max(120),
   address: z.string().min(1).max(500),
-  lat: z.number(),
-  lng: z.number(),
+  lat: z.number().min(-90).max(90).nullable().optional(),
+  lng: z.number().min(-180).max(180).nullable().optional(),
+  googlePlaceId: z.string().max(255).nullable().optional(),
 });
 
 export const gastroLocalResponseSchema = z.object({
@@ -53,6 +54,7 @@ export const gastroLocalResponseSchema = z.object({
   province: z.string().nullable(),
   city: z.string().nullable(),
   address: z.string().nullable(),
+  googlePlaceId: z.string().nullable().optional(),
   geoLat: z.number().nullable(),
   geoLng: z.number().nullable(),
   openingHours: rentalOpeningHoursSchema.nullable(),

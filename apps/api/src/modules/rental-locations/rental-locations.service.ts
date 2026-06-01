@@ -98,6 +98,9 @@ export class RentalLocationsService {
       tenantId: row.tenantId,
       name: row.name,
       address: row.address,
+      city: row.city,
+      province: row.province,
+      googlePlaceId: row.googlePlaceId,
       openingHours: this.readOpeningHours(row),
       openingHoursNote: row.openingHoursNote,
       contactPhone: row.contactPhone,
@@ -117,6 +120,9 @@ export class RentalLocationsService {
       id: row.id,
       name: row.name,
       address: row.address,
+      city: row.city,
+      province: row.province,
+      googlePlaceId: row.googlePlaceId,
       openingHours: this.readOpeningHours(row),
       openingHoursNote: row.openingHoursNote,
       whatsappPhone: row.whatsappPhone,
@@ -203,6 +209,9 @@ export class RentalLocationsService {
         tenantId: effectiveTenant,
         name: body.name.trim(),
         address: body.address?.trim() || null,
+        city: body.city?.trim() || null,
+        province: body.province?.trim() || null,
+        googlePlaceId: body.googlePlaceId?.trim() || null,
         openingHours: this.writeOpeningHours(body.openingHours ?? null),
         openingHoursNote: body.openingHoursNote?.trim() || null,
         contactPhone: this.normalizePhone(body.contactPhone) ?? null,
@@ -226,6 +235,13 @@ export class RentalLocationsService {
         ...(body.name !== undefined && { name: body.name.trim() }),
         ...(body.address !== undefined && {
           address: body.address?.trim() || null,
+        }),
+        ...(body.city !== undefined && { city: body.city?.trim() || null }),
+        ...(body.province !== undefined && {
+          province: body.province?.trim() || null,
+        }),
+        ...(body.googlePlaceId !== undefined && {
+          googlePlaceId: body.googlePlaceId?.trim() || null,
         }),
         ...(body.openingHours !== undefined && {
           openingHours: this.writeOpeningHours(body.openingHours),

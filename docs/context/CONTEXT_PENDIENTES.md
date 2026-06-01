@@ -243,7 +243,7 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 - [x] Mejorar filtros de eventos admin (`/admin/eventos`, `GET /admin/events` extendido, filtros URL + tabs)
 - [x] Mejorar filtros de usuarios admin (`/admin/usuarios`, `GET /admin/users` extendido, filtros URL + paginación, perfiles en listado)
 - [x] Confirmar gestión completa de subcategorías (`/admin/categorias`, CRUD 4 verticales activas, hotel Próximamente, `seed:subcategories` intacto)
-- [ ] Google Maps Etapa B — confirmar key VPS + smoke §3.7 PASS; budget alerts GCP 50/80/100%; ver [`GOOGLE_CLOUD_RUNBOOK.md`](../deploy/GOOGLE_CLOUD_RUNBOOK.md) §3.5–3.7 y [`MAPS_LOCATION_AUDIT.md`](../audits/MAPS_LOCATION_AUDIT.md)
+- [ ] Maps Etapa B — deploy migración + smoke §18 + `pnpm --filter api run smoke:maps-location`; ver audit §23
 - [x] Auditoría con filtros útiles en UI (`/admin/auditoria`, `GET /admin/audit-logs` extendido)
 
 **Bloque Admin Operativo (Slices 1–5, 2026-05):** cerrado — dashboard + cola pendientes, eventos/usuarios/auditoría con filtros API, subcategorías admin, hoteles «Próximamente» en dashboard y categorías. Fuera de bloque: pagos reales, portal productor completo. **Storage GCS admin — cerrado prod 2026-05-31.**

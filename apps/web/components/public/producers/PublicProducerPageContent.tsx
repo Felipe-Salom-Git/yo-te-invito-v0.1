@@ -13,6 +13,7 @@ import { PublicProducerEventsSection } from './PublicProducerEventsSection';
 import { ProducerRatingSummary } from './ProducerRatingSummary';
 import { ProducerPublicCommentsSection } from './ProducerPublicCommentsSection';
 import { ProducerFollowButton } from '@/components/me/ProducerFollowButton';
+import { formatProducerLocationText } from '@/lib/maps';
 
 type Props = {
   producer: ProducerDetail;
@@ -49,6 +50,20 @@ export function PublicProducerPageContent({ producer, tenantId }: Props) {
           displayName={producer.displayName}
         />
       </div>
+
+      {formatProducerLocationText(producer.city, producer.country) ? (
+        <section className="mt-6">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-text-muted">
+            Ubicación
+          </h2>
+          <p className="mt-2 text-text-muted">
+            {formatProducerLocationText(producer.city, producer.country)}
+          </p>
+          <p className="mt-1 text-xs text-text-muted">
+            Referencia general — sin mapa exacto de sede en esta versión.
+          </p>
+        </section>
+      ) : null}
 
       {description ? (
         <section className="mt-10">

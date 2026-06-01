@@ -133,6 +133,8 @@ export class AdminGeneralPublicationsService {
         city: body.city?.trim() || null,
         venueName: body.venueName?.trim() || null,
         venueAddress: body.venueAddress?.trim() || null,
+        province: body.province?.trim() || null,
+        googlePlaceId: body.googlePlaceId?.trim() || null,
         geoLat: body.geoLat ?? null,
         geoLng: body.geoLng ?? null,
         capacityTotal: body.capacityTotal ?? null,

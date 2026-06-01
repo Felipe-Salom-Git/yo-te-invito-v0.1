@@ -3,6 +3,10 @@ import { EventStatus, EventMediaType } from '../enums';
 import { eventMediaSchema, eventSummarySchema } from './events';
 import { rentalOpeningHoursSchema } from './opening-hours';
 
+const googlePlaceIdOptional = z.string().max(255).nullable().optional();
+const provinceOptional = z.string().max(100).nullable().optional();
+const cityOptional = z.string().max(120).nullable().optional();
+
 const rentalPhoneOptional = z.string().max(40).nullable().optional();
 
 const rentalUrlOptional = z
@@ -24,6 +28,9 @@ export const rentalLocationSummarySchema = z.object({
   tenantId: z.string(),
   name: z.string(),
   address: z.string().nullable(),
+  city: cityOptional,
+  province: provinceOptional,
+  googlePlaceId: googlePlaceIdOptional,
   openingHours: rentalOpeningHoursSchema.nullable(),
   openingHoursNote: z.string().nullable(),
   contactPhone: z.string().nullable(),
@@ -49,6 +56,9 @@ export const publicRentalLocationSchema = z.object({
   id: z.string(),
   name: z.string(),
   address: z.string().nullable(),
+  city: cityOptional,
+  province: provinceOptional,
+  googlePlaceId: googlePlaceIdOptional,
   openingHours: rentalOpeningHoursSchema.nullable(),
   openingHoursNote: z.string().nullable(),
   whatsappPhone: z.string().nullable(),
@@ -77,6 +87,9 @@ export const createRentalLocationBodySchema = z.object({
   tenantId: z.string().min(1).optional(),
   name: z.string().min(1).max(200),
   address: z.string().max(500).nullable().optional(),
+  city: cityOptional,
+  province: provinceOptional,
+  googlePlaceId: googlePlaceIdOptional,
   openingHours: rentalOpeningHoursSchema.nullable().optional(),
   openingHoursNote: z.string().max(500).nullable().optional(),
   contactPhone: rentalPhoneOptional,
@@ -93,6 +106,9 @@ export type CreateRentalLocationBody = z.infer<typeof createRentalLocationBodySc
 export const updateRentalLocationBodySchema = z.object({
   name: z.string().min(1).max(200).optional(),
   address: z.string().max(500).nullable().optional(),
+  city: cityOptional,
+  province: provinceOptional,
+  googlePlaceId: googlePlaceIdOptional,
   openingHours: rentalOpeningHoursSchema.nullable().optional(),
   openingHoursNote: z.string().max(500).nullable().optional(),
   contactPhone: rentalPhoneOptional,

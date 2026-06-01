@@ -240,9 +240,9 @@ _Footer público completo — bloque V2 cerrado. Smoke: `docs/audits/PUBLIC_FOOT
 
 ## Google Cloud — Maps y Storage
 
-> **Etapa A (manual) — cerrada:** proyecto GCP, billing, GCS bucket privado, SA backend, Maps API Key. **Backups — cerrados.** **Storage V2 — cerrado funcional en producción (2026-05-31).** **Maps 3:** auditoría — [`MAPS_LOCATION_AUDIT.md`](../audits/MAPS_LOCATION_AUDIT.md). **Maps 4:** activación prod + smoke documentados — [`GOOGLE_CLOUD_RUNBOOK.md`](../deploy/GOOGLE_CLOUD_RUNBOOK.md) §3.6–3.7. Pendiente operador: confirmar key VPS + smoke PASS.
+> **Etapa A (manual) — cerrada:** proyecto GCP, billing, GCS bucket privado, SA backend, Maps API Key. **Backups — cerrados.** **Storage V2 — cerrado funcional en producción (2026-05-31).** **Maps 3:** auditoría — [`MAPS_LOCATION_AUDIT.md`](../audits/MAPS_LOCATION_AUDIT.md). **Maps 4:** activación prod + smoke documentados — [`GOOGLE_CLOUD_RUNBOOK.md`](../deploy/GOOGLE_CLOUD_RUNBOOK.md) §3.6–3.7. **Maps 5:** persistencia `googlePlaceId` + `province` — migración `20260601190000_add_maps_place_id_and_province`; deploy VPS: `npx prisma migrate deploy`.
 
-> **Hallazgo Maps 3:** frontend ya incluye `LocationPickerMap` + Places Autocomplete + fallback OSM; falta confirmar `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` en VPS y persistir `googlePlaceId` (no existe en Prisma).
+> **Hallazgo Maps 3 (parcialmente resuelto Maps 5):** UI `LocationPickerMap` persiste `googlePlaceId` y `province` en eventos, gastro, hotel, rental local y operador excursión. Legacy sin placeId sigue compatible.
 
 - [x] Crear proyecto Google Cloud del cliente para Yo Te Invito (`yoteinvito-1721413433327`).
 - [x] Activar billing en Google Cloud.
@@ -261,10 +261,14 @@ _Footer público completo — bloque V2 cerrado. Smoke: `docs/audits/PUBLIC_FOOT
 - [x] Documentar variables de entorno Google Maps (`NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` — `.env.example` + runbook §3.4; VPS: `/opt/yoteinvito/apps/web/.env.production`).
 - [x] Auditoría Maps/ubicación baseline (Maps 3) — [`MAPS_LOCATION_AUDIT.md`](../audits/MAPS_LOCATION_AUDIT.md).
 - [x] Documentar activación prod Maps + smoke manual (Maps 4) — [`GOOGLE_CLOUD_RUNBOOK.md`](../deploy/GOOGLE_CLOUD_RUNBOOK.md) §3.6–3.7.
+- [x] Persistir `googlePlaceId` + `province` en entidades con ubicación (Maps 5) — migración Prisma + API + formularios; smoke §18 audit.
+- [x] Maps 5–10 código + docs (audit §19–23)
+- [ ] Deploy migración Maps 5 en VPS (`npx prisma migrate deploy` en `apps/api`)
+- [ ] Smoke API Maps: `pnpm --filter api run smoke:maps-location`
 - [ ] Confirmar `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` en VPS + rebuild `yti-web` (operador post-deploy).
-- [ ] Ejecutar smoke manual Maps en producción (operador — runbook §3.7 PASS).
-- [ ] Integrar autocomplete de direcciones — código base listo (`LocationPickerMapGoogle`); pendiente key prod y cobertura signup/productora sede.
-- [ ] Guardar dirección legible + lat/lng — parcial: eventos/gastro/hotel/rental local/excursion operador sí; productora solo `city`; `googlePlaceId` no persiste.
+- [ ] Ejecutar smoke manual Maps en producción (operador — runbook §3.7 + audit §18).
+- [ ] Integrar autocomplete de direcciones — código base listo (`LocationPickerMapGoogle`); pendiente cobertura signup/productora sede.
+- [x] Guardar dirección legible + lat/lng + placeId/province — eventos/gastro/hotel/rental local/excursion operador (Maps 5); productora perfil solo `city` (pendiente).
 - [ ] Mostrar botón “Ver ubicación” o mapa en fichas públicas — parcial: eventos/gastro/hotel/rentals/excursiones sí; productoras no.
 - [x] Mantener fallback manual si Google Maps no está configurado o falla — `LocationPickerMapFallback` + OSM preview.
 - [ ] Revisar privacidad si se usa ubicación actual del usuario.

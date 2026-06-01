@@ -247,8 +247,8 @@ Ejecutar tras activar key y rebuild. Rutas sugeridas (requieren login según rol
 
 - [ ] **Operador:** confirmar key activa en VPS + smoke §3.7 PASS
 - [ ] **Operador:** budget alerts §3.5
-- [ ] Maps 5: migración `googlePlaceId` + `province` (Prisma)
-- [ ] Maps 6–10: ver [`MAPS_LOCATION_AUDIT.md`](../audits/MAPS_LOCATION_AUDIT.md) §12
+- [x] Maps 5–10: persistencia, validación, helper público, JSON-LD, smoke — [`MAPS_LOCATION_AUDIT.md`](../audits/MAPS_LOCATION_AUDIT.md) §19–23
+- [ ] Maps deploy VPS: `npx prisma migrate deploy` + smoke §18 + `pnpm --filter api run smoke:maps-location`
 
 ---
 

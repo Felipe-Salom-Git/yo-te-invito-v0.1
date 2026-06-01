@@ -65,6 +65,8 @@ export function GeneralPublicationCreateForm({
         city: loc.city,
         venueName: eventFields.venueName.trim() || null,
         venueAddress: loc.venueAddress,
+        province: loc.province,
+        googlePlaceId: loc.googlePlaceId,
         geoLat: loc.geoLat,
         geoLng: loc.geoLng,
         startAt: eventFields.startAt

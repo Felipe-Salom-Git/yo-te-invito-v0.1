@@ -52,7 +52,8 @@
     "storage:migrate-data-urls": "tsx scripts/storage-migrate-data-urls.ts",
     "storage:audit-orphans": "tsx scripts/storage-audit-orphans.ts",
     "storage:cleanup-orphans": "tsx scripts/storage-cleanup-orphans.ts",
-    "smoke:storage-global": "tsx scripts/smoke-storage-global.ts"
+    "smoke:storage-global": "tsx scripts/smoke-storage-global.ts",
+    "smoke:maps-location": "tsx scripts/smoke-maps-location.ts"
   },
   "dependencies": {
     "@google-cloud/storage": "^7.19.0",

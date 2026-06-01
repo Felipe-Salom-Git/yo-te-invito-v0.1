@@ -41,12 +41,10 @@ export default function AdminRentalLocalNuevoPage() {
       return repos.rentalLocations.create({
         tenantId: TENANT_ID,
         name: name.trim(),
-        address: geo.address,
         openingHours,
         openingHoursNote: openingHoursNote.trim() || null,
         ...rentalContactPayload(contact),
-        geoLat: geo.geoLat,
-        geoLng: geo.geoLng,
+        ...geo,
       });
     },
     onError: (err) => addToast(getErrorMessage(err), 'error'),

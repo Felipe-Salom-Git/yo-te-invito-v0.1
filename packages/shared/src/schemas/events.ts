@@ -2,6 +2,10 @@ import { z } from 'zod';
 import { EventMediaType } from '../enums';
 import { rentalOpeningHoursSchema } from './opening-hours';
 
+/** Optional Google Places id and province for location-backed entities (Maps 5). */
+const googlePlaceIdOptional = z.string().max(255).nullable().optional();
+const provinceOptional = z.string().max(100).nullable().optional();
+
 /** Producer intent when creating an event (stored as isGeneralPublication + isTicketingEnabled). */
 export const producerEventModeSchema = z.enum(['PUBLICITY_ONLY', 'TICKETED']);
 export type ProducerEventMode = z.infer<typeof producerEventModeSchema>;
@@ -119,6 +123,8 @@ export const eventDetailSchema = eventSummarySchema.extend({
   description: z.string().nullable(),
   endAt: z.string().datetime().nullable(),
   venueAddress: z.string().nullable(),
+  province: provinceOptional,
+  googlePlaceId: googlePlaceIdOptional,
   geoLat: z.number().nullable(),
   geoLng: z.number().nullable(),
   capacityTotal: z.number().nullable(),
@@ -134,6 +140,9 @@ export const eventDetailSchema = eventSummarySchema.extend({
       id: z.string(),
       name: z.string(),
       address: z.string().nullable(),
+      city: z.string().nullable().optional(),
+      province: provinceOptional,
+      googlePlaceId: googlePlaceIdOptional,
       openingHours: rentalOpeningHoursSchema.nullable(),
       openingHoursNote: z.string().nullable(),
       whatsappPhone: z.string().nullable(),
@@ -148,6 +157,8 @@ export const eventDetailSchema = eventSummarySchema.extend({
       name: z.string(),
       address: z.string().nullable(),
       city: z.string().nullable(),
+      province: provinceOptional,
+      googlePlaceId: googlePlaceIdOptional,
       openingHours: rentalOpeningHoursSchema.nullable(),
       openingHoursNote: z.string().nullable(),
       contactPhone: z.string().nullable(),
@@ -203,6 +214,8 @@ export const eventCreateDtoSchema = z.object({
   city: z.string().nullish(),
   venueName: z.string().nullish(),
   venueAddress: z.string().nullish(),
+  province: provinceOptional,
+  googlePlaceId: googlePlaceIdOptional,
   capacityTotal: eventCapacityTotalSchema.optional(),
   coverImageUrl: z.string().nullish(),
   geoLat: z.number().nullish(),
@@ -312,6 +325,8 @@ export const eventUpdateDtoSchema = z.object({
   city: z.string().nullable().optional(),
   venueName: z.string().nullable().optional(),
   venueAddress: z.string().nullable().optional(),
+  province: provinceOptional,
+  googlePlaceId: googlePlaceIdOptional,
   capacityTotal: eventCapacityTotalSchema.optional(),
   coverImageUrl: z.string().optional().nullable(),
   geoLat: z.number().optional().nullable(),

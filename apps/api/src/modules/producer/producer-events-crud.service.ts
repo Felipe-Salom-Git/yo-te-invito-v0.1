@@ -105,6 +105,8 @@ export class ProducerEventsCrudService {
     summary?: string | null;
     endAt: Date | null;
     venueAddress: string | null;
+    province: string | null;
+    googlePlaceId: string | null;
     geoLat: number | null;
     geoLng: number | null;
     capacityTotal: number | null;
@@ -128,6 +130,8 @@ export class ProducerEventsCrudService {
       summary: event.summary ?? null,
       endAt: event.endAt?.toISOString() ?? null,
       venueAddress: event.venueAddress,
+      province: event.province ?? null,
+      googlePlaceId: event.googlePlaceId ?? null,
       geoLat: event.geoLat,
       geoLng: event.geoLng,
       capacityTotal: event.capacityTotal,
@@ -298,6 +302,8 @@ export class ProducerEventsCrudService {
         city: body.city ?? null,
         venueName: body.venueName ?? null,
         venueAddress: body.venueAddress ?? null,
+        province: body.province?.trim() || null,
+        googlePlaceId: body.googlePlaceId?.trim() || null,
         capacityTotal: body.capacityTotal ?? null,
         coverImageUrl: body.coverImageUrl ?? null,
         geoLat: body.geoLat ?? null,
@@ -383,6 +389,12 @@ export class ProducerEventsCrudService {
         ...(body.venueName !== undefined && { venueName: body.venueName }),
         ...(body.venueAddress !== undefined && {
           venueAddress: body.venueAddress,
+        }),
+        ...(body.province !== undefined && {
+          province: body.province?.trim() || null,
+        }),
+        ...(body.googlePlaceId !== undefined && {
+          googlePlaceId: body.googlePlaceId?.trim() || null,
         }),
         ...(body.capacityTotal !== undefined && {
           capacityTotal: body.capacityTotal,

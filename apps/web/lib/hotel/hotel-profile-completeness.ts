@@ -22,9 +22,7 @@ const EDIT = '/hotel/editar';
 export function getHotelProfileCompleteness(profile: HotelProfile): HotelProfileCompleteness {
   const hasName = Boolean(profile.displayName?.trim());
   const hasDescription = Boolean(profile.description?.trim());
-  const hasLocation = Boolean(
-    profile.address?.trim() && profile.city?.trim() && profile.geoLat != null && profile.geoLng != null,
-  );
+  const hasLocation = Boolean(profile.address?.trim() && profile.city?.trim());
   const hasContact = Boolean(
     profile.contactPhone?.trim() ||
       profile.whatsappPhone?.trim() ||

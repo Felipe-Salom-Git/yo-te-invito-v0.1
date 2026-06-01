@@ -13,6 +13,7 @@ import {
   EventLocationFields,
   eventFieldsFromLocationValue,
   locationValueFromEventFields,
+  validateOptionalEntityLocation,
   type LocationValue,
 } from '@/components/location';
 import { IMAGE_ACCEPT_GCS } from '@/lib/upload/gcs-image-upload-config';
@@ -43,6 +44,7 @@ export default function AdminExcursionEditarPage() {
   const [capacityTotal, setCapacityTotal] = useState('');
   const [coverImageUrl, setCoverImageUrl] = useState('');
   const [subcategoryId, setSubcategoryId] = useState('');
+  const [locationError, setLocationError] = useState<string | null>(null);
 
   const { isUploading, uploadProgress, uploadSingleWithProgress } = useGcsImageUpload(
     id ? { scope: 'excursion', entityId: id } : undefined,
@@ -95,6 +97,14 @@ export default function AdminExcursionEditarPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
+    if (location) {
+      const locErr = validateOptionalEntityLocation(location);
+      if (locErr) {
+        setLocationError(locErr);
+        return;
+      }
+    }
+    setLocationError(null);
     const cover = coverImageUrl.trim();
     const loc = location ? eventFieldsFromLocationValue(location) : null;
     updateMutation.mutate({
@@ -103,6 +113,8 @@ export default function AdminExcursionEditarPage() {
       city: loc?.city ?? null,
       venueName: venueName.trim() || null,
       venueAddress: loc?.venueAddress ?? null,
+      province: loc?.province ?? null,
+      googlePlaceId: loc?.googlePlaceId ?? null,
       geoLat: loc?.geoLat ?? null,
       geoLng: loc?.geoLng ?? null,
       startAt: startAt ? new Date(startAt).toISOString() : null,
@@ -187,7 +199,7 @@ export default function AdminExcursionEditarPage() {
         </div>
         <div>
           <label className="mb-1.5 block text-sm font-medium text-text">Ubicación (opcional)</label>
-          <EventLocationFields value={location} onChange={setLocation} />
+          <EventLocationFields value={location} onChange={setLocation} mapError={locationError ?? undefined} />
         </div>
         <SubcategorySelect
           category="excursion"

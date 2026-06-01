@@ -3,12 +3,17 @@ import { EventStatus, EventMediaType } from '../enums';
 import { eventMediaSchema, eventSummarySchema } from './events';
 import { rentalOpeningHoursSchema } from './opening-hours';
 
+const googlePlaceIdOptional = z.string().max(255).nullable().optional();
+const provinceOptional = z.string().max(100).nullable().optional();
+
 export const excursionOperatorSummarySchema = z.object({
   id: z.string(),
   tenantId: z.string(),
   name: z.string(),
   address: z.string().nullable(),
   city: z.string().nullable(),
+  province: provinceOptional,
+  googlePlaceId: googlePlaceIdOptional,
   openingHours: rentalOpeningHoursSchema.nullable(),
   openingHoursNote: z.string().nullable(),
   contactPhone: z.string().nullable(),
@@ -32,6 +37,8 @@ export const publicExcursionOperatorSchema = z.object({
   name: z.string(),
   address: z.string().nullable(),
   city: z.string().nullable(),
+  province: provinceOptional,
+  googlePlaceId: googlePlaceIdOptional,
   openingHours: rentalOpeningHoursSchema.nullable(),
   openingHoursNote: z.string().nullable(),
   contactPhone: z.string().nullable(),
@@ -63,6 +70,8 @@ export const createExcursionOperatorBodySchema = z.object({
   name: z.string().min(1).max(200),
   address: z.string().max(500).nullable().optional(),
   city: z.string().max(120).nullable().optional(),
+  province: provinceOptional,
+  googlePlaceId: googlePlaceIdOptional,
   openingHours: rentalOpeningHoursSchema.nullable().optional(),
   openingHoursNote: z.string().max(500).nullable().optional(),
   contactPhone: z.string().max(40).nullable().optional(),
@@ -77,6 +86,8 @@ export const updateExcursionOperatorBodySchema = z.object({
   name: z.string().min(1).max(200).optional(),
   address: z.string().max(500).nullable().optional(),
   city: z.string().max(120).nullable().optional(),
+  province: provinceOptional,
+  googlePlaceId: googlePlaceIdOptional,
   openingHours: rentalOpeningHoursSchema.nullable().optional(),
   openingHoursNote: z.string().max(500).nullable().optional(),
   contactPhone: z.string().max(40).nullable().optional(),

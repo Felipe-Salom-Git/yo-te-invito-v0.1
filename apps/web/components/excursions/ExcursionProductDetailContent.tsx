@@ -18,6 +18,7 @@ import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { useToast } from '@/components';
 import { EventEngagementRow } from '@/components/events/EventEngagementRow';
 import { getErrorMessage } from '@/lib/errors';
+import { hasPublicLocationForMapLink } from '@/lib/maps';
 import {
   buildRentalGalleryOnlyImages,
   getRentalHeaderImageUrl,
@@ -147,10 +148,13 @@ export function ExcursionProductDetailContent({
   const locationCity = operator?.city ?? event.city;
   const locationGeoLat = operator?.geoLat ?? event.geoLat;
   const locationGeoLng = operator?.geoLng ?? event.geoLng;
-  const hasLocation =
-    Boolean(locationAddress?.trim()) ||
-    Boolean(locationCity?.trim()) ||
-    (locationGeoLat != null && locationGeoLng != null);
+  const hasLocation = hasPublicLocationForMapLink({
+    address: locationAddress,
+    city: locationCity,
+    venueName: locationVenueName,
+    geoLat: locationGeoLat,
+    geoLng: locationGeoLng,
+  });
 
   const whatsAppHref = buildExcursionWhatsAppHref(operator?.contactPhone, event.title);
 

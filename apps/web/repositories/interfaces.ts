@@ -114,6 +114,9 @@ export interface RentalLocationsRepo {
     tenantId?: string;
     name: string;
     address?: string | null;
+    city?: string | null;
+    province?: string | null;
+    googlePlaceId?: string | null;
     openingHours?: import('@yo-te-invito/shared').RentalOpeningHours | null;
     openingHoursNote?: string | null;
     contactPhone?: string | null;
@@ -130,6 +133,9 @@ export interface RentalLocationsRepo {
     patch: {
       name?: string;
       address?: string | null;
+      city?: string | null;
+      province?: string | null;
+      googlePlaceId?: string | null;
       openingHours?: import('@yo-te-invito/shared').RentalOpeningHours | null;
       openingHoursNote?: string | null;
       contactPhone?: string | null;
@@ -217,6 +223,8 @@ export interface ExcursionOperatorsRepo {
     name: string;
     address?: string | null;
     city?: string | null;
+    province?: string | null;
+    googlePlaceId?: string | null;
     openingHours?: import('@yo-te-invito/shared').RentalOpeningHours | null;
     openingHoursNote?: string | null;
     contactPhone?: string | null;
@@ -231,6 +239,8 @@ export interface ExcursionOperatorsRepo {
       name?: string;
       address?: string | null;
       city?: string | null;
+      province?: string | null;
+      googlePlaceId?: string | null;
       openingHours?: import('@yo-te-invito/shared').RentalOpeningHours | null;
       openingHoursNote?: string | null;
       contactPhone?: string | null;
@@ -601,6 +611,8 @@ export interface EventDetail extends EventSummary {
   summary?: string | null;
   endAt: string | null;
   venueAddress: string | null;
+  province?: string | null;
+  googlePlaceId?: string | null;
   geoLat: number | null;
   geoLng: number | null;
   capacityTotal: number | null;
@@ -1963,6 +1975,7 @@ export interface GastroLocal {
   province: string | null;
   city: string | null;
   address: string | null;
+  googlePlaceId?: string | null;
   geoLat: number | null;
   geoLng: number | null;
   openingHours: import('@yo-te-invito/shared').RentalOpeningHours | null;
@@ -2018,8 +2031,9 @@ export interface GastroLocalUpsertPayload {
     province: string;
     city: string;
     address: string;
-    lat: number;
-    lng: number;
+    lat?: number | null;
+    lng?: number | null;
+    googlePlaceId?: string | null;
   };
   openingHours?: import('@yo-te-invito/shared').RentalOpeningHours | null;
   openingHoursNote?: string | null;
@@ -2458,6 +2472,8 @@ export interface GeneralPublicationsRepo {
     venueName?: string | null;
     city?: string | null;
     venueAddress?: string | null;
+    province?: string | null;
+    googlePlaceId?: string | null;
     geoLat?: number | null;
     geoLng?: number | null;
     startAt?: string;

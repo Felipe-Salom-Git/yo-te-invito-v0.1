@@ -322,7 +322,7 @@ Módulo técnico **cerrado**; contenido base en `docs/legal/` importable como bo
 
 Runbook: [`docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTION_RUNBOOK.md). Pendiente: smoke dominio real, legales bootstrap → contenido aprobado.
 
-**Google Maps (Etapa A GCP):** key de consola `YTI Web Maps PROD` (valor **no** en repo) → `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` en `/opt/yoteinvito/apps/web/.env.production` (VPS). **Maps 3 audit:** [`MAPS_LOCATION_AUDIT.md`](../audits/MAPS_LOCATION_AUDIT.md). **Maps 4:** activación prod + smoke — [`GOOGLE_CLOUD_RUNBOOK.md`](../deploy/GOOGLE_CLOUD_RUNBOOK.md) §3.6–3.7. UI `LocationPickerMap` + Places Autocomplete + fallback OSM; fichas con «Ver ubicación». Pendiente operador: confirmar key VPS + smoke PASS.
+**Google Maps (Etapa A GCP):** key → VPS. **Maps 5–10:** persistencia + validación + `lib/maps` + JSON-LD — [`MAPS_LOCATION_AUDIT.md`](../audits/MAPS_LOCATION_AUDIT.md) §18–23. UI mapea `placeId` → `googlePlaceId`; fallback manual sin coords OK en gastro/hotel.
 
 **Storage imágenes:** GCS en Admin + portales — cerrado funcional prod 2026-05-31. Hook `useGcsImageUpload` — [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §20. URLs GCS válidas para OG en eventos (metadata dinámica parcial).
 

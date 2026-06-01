@@ -18,6 +18,7 @@ import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { useToast } from '@/components';
 import { EventEngagementRow } from '@/components/events/EventEngagementRow';
 import { getErrorMessage } from '@/lib/errors';
+import { hasPublicLocationForMapLink } from '@/lib/maps';
 import {
   buildRentalGalleryOnlyImages,
   getRentalHeaderImageUrl,
@@ -37,6 +38,8 @@ type RentalLocationOnEvent = {
   id: string;
   name: string;
   address?: string | null;
+  city?: string | null;
+  province?: string | null;
   openingHours?: RentalOpeningHours | null;
   openingHoursNote?: string | null;
   whatsappPhone?: string | null;
@@ -151,9 +154,13 @@ export function RentalProductDetailContent({
   const locationAddress = rentalLoc?.address ?? event.venueAddress;
   const locationGeoLat = rentalLoc?.geoLat ?? event.geoLat;
   const locationGeoLng = rentalLoc?.geoLng ?? event.geoLng;
-  const hasLocation =
-    Boolean(locationAddress?.trim()) ||
-    (locationGeoLat != null && locationGeoLng != null);
+  const hasLocation = hasPublicLocationForMapLink({
+    address: locationAddress,
+    city: rentalLoc?.city ?? event.city,
+    venueName: locationVenueName,
+    geoLat: locationGeoLat,
+    geoLng: locationGeoLng,
+  });
 
   const whatsAppHref = buildRentalWhatsAppHref(rentalLoc?.whatsappPhone, event.title);
 

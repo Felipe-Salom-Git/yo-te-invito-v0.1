@@ -8,7 +8,8 @@ import { RentalProductImagesForm } from '@/components/rentals/RentalProductImage
 import type { GcsImageUploadConfig } from '@/lib/upload/gcs-image-upload-config';
 import {
   EventLocationFields,
-  validateLocationValue,
+  gastroLocationPayloadFromLocationValue,
+  validateGastroLocationValue,
   type LocationValue,
 } from '@/components/location';
 import type { GastroLocal, GastroLocalUpsertPayload } from '@/repositories/interfaces';
@@ -30,7 +31,7 @@ function locationFromLocal(local: GastroLocal): LocationValue {
     city: local.city ?? '',
     lat: local.geoLat,
     lng: local.geoLng,
-    placeId: null,
+    placeId: local.googlePlaceId ?? null,
   };
 }
 
@@ -102,17 +103,9 @@ export function GastroLocalForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!displayName.trim() || !contactEmail.trim()) return;
-    const locErr = validateLocationValue(location, {
-      requireProvince: true,
-      requireAddress: true,
-      requireCoords: true,
-    });
+    const locErr = validateGastroLocationValue(location);
     if (locErr) {
       setLocationError(locErr);
-      return;
-    }
-    if (location.lat == null || location.lng == null) {
-      setLocationError('Seleccioná la ubicación en el mapa.');
       return;
     }
     if (subcategories.length > 0 && !subcategoryId) {
@@ -127,13 +120,7 @@ export function GastroLocalForm({
       subcategoryId: subcategoryId || null,
       bannerUrl: images.headerImageUrl.trim() || null,
       galleryUrls: images.galleryImageUrls.filter(Boolean),
-      location: {
-        province: location.province,
-        city: location.city,
-        address: location.address,
-        lat: location.lat,
-        lng: location.lng,
-      },
+      location: gastroLocationPayloadFromLocationValue(location),
       openingHours,
       openingHoursNote: openingHoursNote.trim() || null,
       contactPhone: contactPhone.trim() || null,

@@ -24,6 +24,8 @@ export const createGeneralPublicationBodySchema = z.object({
   venueName: z.string().nullish(),
   city: z.string().nullish(),
   venueAddress: z.string().nullish(),
+  province: z.string().max(100).nullish(),
+  googlePlaceId: z.string().max(255).nullish(),
   geoLat: z.number().nullish(),
   geoLng: z.number().nullish(),
   startAt: z.string().datetime().optional(),

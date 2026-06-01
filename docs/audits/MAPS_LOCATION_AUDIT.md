@@ -1,7 +1,9 @@
 # Auditoría Maps / Ubicación — Yo Te Invito (Maps 3)
 
-**Fecha:** 2026-06-01  
-**Alcance:** auditoría técnica de campos de ubicación, formularios, fichas públicas, Google Maps/Places y SEO local. **Sin cambios funcionales** en este slice.
+**Fecha:** 2026-06-01 · **Actualizado Maps 5:** 2026-06-01  
+**Alcance:** auditoría técnica de campos de ubicación, formularios, fichas públicas, Google Maps/Places y SEO local.
+
+**Maps 5 (2026-06-01):** migración `20260601190000_add_maps_place_id_and_province` — `googlePlaceId` + `province` (+ `city` en `RentalLocation`) en Prisma, schemas shared, API y formularios. **Deploy VPS:** `npx prisma migrate deploy` en `apps/api` antes de usar en prod. Sin backfill legacy.
 
 **Producción:** `https://yoteinvito.club` · GCP proyecto `yoteinvito-1721413433327` · Key `YTI Web Maps PROD` (referrer-restricted).
 
@@ -16,10 +18,10 @@ Yo Te Invito **ya tiene una base significativa de Maps en frontend**, más avanz
 | **Infra GCP** | Etapa A cerrada: Maps JS + Places (New) + Geocoding habilitados; key restringida por referrer y APIs. |
 | **Env** | `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` documentada en `.env.example` y runbook; valor **solo en VPS** (pendiente confirmar activación prod). |
 | **UI formularios** | Componentes `EventLocationFields`, `RentalLocationFields`, `LocationPickerMap` con **autocomplete Places + mapa + geocoder** cuando hay key; fallback manual + OSM preview sin key. |
-| **Persistencia DB** | `address` + `geoLat`/`geoLng` en eventos, gastro, hotel, rentals (local), excursiones (operador). **No existe `googlePlaceId` en Prisma.** |
+| **Persistencia DB** | `address` + `geoLat`/`geoLng` + **`googlePlaceId`** + **`province`** (y `city` en rental local) desde Maps 5. Legacy sin placeId/province sigue válido (nullable). |
 | **Fichas públicas** | Botón «Ver ubicación», modal con embed Google Maps (sin API key) y link externo en eventos, gastro, hotel, rentals, excursiones. |
-| **JSON-LD** | Event/Gastro/Hotel incluyen `Place`/`PostalAddress`/`GeoCoordinates` cuando hay datos; sin `province` en varios modelos. |
-| **Gaps principales** | Key en VPS no verificada en repo; `placeId` UI no persiste; `province` inconsistente (Event/Hotel/Rental sin columna); producer solo `city` texto; duplicación `argentina-locations` web vs shared. |
+| **JSON-LD** | Event/Gastro/Hotel incluyen `Place`/`PostalAddress`/`GeoCoordinates` cuando hay datos; `province` ya persistible — JSON-LD `addressRegion` pendiente (Maps 9). |
+| **Gaps principales** | Backfill legacy; producer solo `city` texto; duplicación `argentina-locations` web vs shared; JSON-LD province; smoke automatizado. |
 
 **Conclusión:** el trabajo pendiente no es «crear Maps desde cero», sino **activar key en prod**, **cerrar gaps de modelo/normalización**, **extender cobertura** (producer, signup flows) y **smokes/documentación**.
 
@@ -306,12 +308,12 @@ El código usa `google.maps.places.Autocomplete` (library clásica en Maps JS). 
 | Slice | Objetivo | DB | Prioridad |
 |-------|----------|-----|-----------|
 | **Maps 4** | Env VPS + verificación prod + helper URL shared + smoke doc | No | **Alta** |
-| **Maps 5** | Migración opcional `googlePlaceId` + `province` + persistir placeId desde UI | Sí | Media |
-| **Maps 6** | Endurecer eventos/excursiones admin+productora (validación coords, backfill doc) | No* | Alta |
-| **Maps 7** | Gastro/hotel/rental: province en rental payload; hotel province; signup con mapa | Parcial | Alta |
-| **Maps 8** | Fichas: unificar helper maps all verticals; producer «Ver ubicación» si hay sede | Parcial | Media |
-| **Maps 9** | JSON-LD local (`addressRegion`, geo) + checklist SEO local | No* | Media |
-| **Maps 10** | Smoke automatizado + runbook cierre Maps Etapa B | No | Media |
+| **Maps 5** | Migración `googlePlaceId` + `province` + persistir placeId desde UI | Sí | **Hecho (2026-06-01)** — deploy migración VPS pendiente |
+| **Maps 6** | Endurecer eventos/excursiones (validación presencial, fallback manual) | No | **Hecho (2026-06-01)** |
+| **Maps 7** | Gastro/hotel/rentals: coords opcionales + fallback manual | No | **Hecho (2026-06-01)** |
+| **Maps 8** | Helper `lib/maps` + fichas públicas + productoras texto | No | **Hecho (2026-06-01)** |
+| **Maps 9** | JSON-LD province/addressCountry/geo | No | **Hecho (2026-06-01)** |
+| **Maps 10** | Smoke `smoke:maps-location` + cierre docs | No | **Hecho (2026-06-01)** |
 
 \*Maps 6/9 mejoran calidad sin migración obligatoria; Maps 5 desbloquea placeId/province consistente.
 
@@ -364,7 +366,11 @@ El código usa `google.maps.places.Autocomplete` (library clásica en Maps JS). 
 - [ ] Confirmar key activa en VPS producción (operador)
 - [ ] Ejecutar smoke manual §3.7 PASS (operador)
 - [ ] Budget alerts GCP 50/80/100% (operador)
-- [ ] Decidir migración `googlePlaceId` + `province` (Maps 5)
+- [x] Migración `googlePlaceId` + `province` (Maps 5 — código + migración en repo)
+- [x] Maps 5 smoke manual documentado (§18)
+- [x] Maps 6–10 implementados (audit §19–23)
+- [ ] **Operador:** `npx prisma migrate deploy` en VPS + smoke §18 PASS
+- [ ] Smoke API: `pnpm --filter api run smoke:maps-location` (con API + datos)
 - [ ] Backfill coords en registros legacy sin geo
 - [ ] Unificar catálogo provincias (shared)
 - [ ] Producer sede pública (opcional)
@@ -381,3 +387,109 @@ El código usa `google.maps.places.Autocomplete` (library clásica en Maps JS). 
 - Maps URLs: `apps/web/lib/events/maps.ts`
 - JSON-LD: `apps/web/lib/seo/jsonld.ts`
 - Env: `apps/web/.env.example`
+
+---
+
+## 18. Maps 5 — persistencia placeId y province (2026-06-01)
+
+### Migración
+
+- **Nombre:** `20260601190000_add_maps_place_id_and_province`
+- **SQL:** columnas nullable `googlePlaceId`, `province` en `Event`, `HotelProfile`, `RentalLocation`, `ExcursionOperator`; `googlePlaceId` en `GastroProfile` (province ya existía); `city` en `RentalLocation`.
+
+### Entidades cubiertas
+
+| Modelo | googlePlaceId | province | city |
+|--------|---------------|----------|------|
+| Event | ✅ nuevo | ✅ nuevo | ya existía |
+| GastroProfile | ✅ nuevo | ya existía | ya existía |
+| HotelProfile | ✅ nuevo | ✅ nuevo | ya existía |
+| RentalLocation | ✅ nuevo | ✅ nuevo | ✅ nuevo |
+| ExcursionOperator | ✅ nuevo | ✅ nuevo | ya existía |
+
+### UI → API
+
+- `LocationValue.placeId` → `googlePlaceId` al guardar (mappers en `location.utils.ts`).
+- Fallback manual: `googlePlaceId = null`, coords/address opcionales como antes.
+
+### Deploy VPS
+
+```bash
+cd /opt/yoteinvito/apps/api
+npx prisma migrate deploy
+pnpm run build   # o rebuild contenedor según runbook
+# reiniciar API
+cd ../web && pnpm run build && # reiniciar web
+```
+
+### Smoke manual Maps 5
+
+1. **Admin evento / productora:** autocomplete → guardar → API/DB: `venueAddress`, `geoLat`, `geoLng`, `googlePlaceId`, `province`.
+2. **Gastro local:** editar → guardar → `province`, `googlePlaceId`, coords.
+3. **Hotel:** editar ficha → mismos campos.
+4. **Rental local admin:** provincia/ciudad del form + mapa → `city`, `province`, `googlePlaceId`.
+5. **Excursión operador:** crear/editar → `province`, `googlePlaceId`.
+6. **Fallback manual:** dirección sin Places → guardar OK con `googlePlaceId = null`.
+
+### Pendiente post-Maps 5
+
+- **ProducerProfile** sede (address/geo/province) — no incluido.
+- **JSON-LD `addressRegion`** — Maps 9.
+- **Backfill** registros legacy — fuera de scope Maps 5.
+- **Unificar** `ARGENTINA_PROVINCES` en shared — Maps 7.
+
+---
+
+## 19. Maps 6 — Endurecer eventos y excursiones (2026-06-01)
+
+- Validación `validatePresencialEventLocation` — requiere dirección/ciudad/venue al publicar (pending/approved); **coords y placeId opcionales**.
+- Productora: `validateProducerEventSubmit` en edit; borradores pueden omitir ubicación.
+- Admin excursión: validación coords inválidas + errores en formulario.
+- **Fuente de verdad evento:** `venueAddress` (calle) + `city` (label) + `province` + `googlePlaceId` + coords; `venueName` aparte.
+
+## 20. Maps 7 — Gastro, hotel, rentals (2026-06-01)
+
+- Gastro/hotel: coords **opcionales** en schema shared + backend (`geoLat/geoLng` null si fallback manual).
+- Validadores `validateGastroLocationValue` / `validateHotelLocationValue` (sin exigir pin).
+- Rental/excursion operador: payload completo Maps 5 + validación opcional.
+- Ficha hotel: botón ubicación con solo address+city (antes exigía coords).
+
+## 21. Maps 8 — Ver ubicación unificado (2026-06-01)
+
+- Nuevo `apps/web/lib/maps/public-location.ts` + re-export en `lib/events/maps.ts`.
+- Helpers: `hasPublicLocationData`, `hasPublicLocationForMapLink`, `buildPublicGoogleMapsHref`.
+- Fichas gastro/hotel/rental/excursión usan helper unificado.
+- **Productoras:** texto city/country en ficha; sin botón mapa (sin sede exacta — pendiente migración ProducerProfile).
+
+## 22. Maps 9 — JSON-LD local (2026-06-01)
+
+- `buildEventJsonLd`: `province`, `addressCountry: AR`.
+- Gastro/hotel: `addressCountry` cuando hay postal.
+- Productoras: `PostalAddress` con city/country si existen (sin geo inventado).
+- Layouts eventos/excursiones/rentals pasan `province` desde API.
+
+## 23. Maps 10 — Smoke y cierre (2026-06-01)
+
+- Script: `pnpm --filter api run smoke:maps-location` — verifica entidades públicas con address o coords.
+- Checklist manual §18 + deploy VPS en runbook §3.8.
+- **Deploy post-Maps 5+:**
+
+```bash
+cd /opt/yoteinvito/apps/api && npx prisma migrate deploy
+cd /opt/yoteinvito && pnpm build
+sudo systemctl restart yti-api yti-web
+curl https://api.yoteinvito.club/health
+curl -I https://yoteinvito.club
+```
+
+### Checklist Maps (Etapa B)
+
+- [x] Maps 5 — migración + persistencia placeId/province
+- [x] Maps 6 — validación eventos/excursiones
+- [x] Maps 7 — gastro/hotel/rentals fallback manual
+- [x] Maps 8 — helper público unificado
+- [x] Maps 9 — JSON-LD address/geo/province
+- [x] Maps 10 — smoke script + docs
+- [ ] Operador: `prisma migrate deploy` VPS + smoke PASS
+- [ ] Budget alerts GCP
+- [ ] Producer sede con mapa (futuro)
