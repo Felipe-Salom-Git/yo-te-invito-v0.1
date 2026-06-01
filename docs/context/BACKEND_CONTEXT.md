@@ -12,8 +12,8 @@ Current state of `apps/api` as verified from the repository.
 | Prisma 5 | ORM |
 | PostgreSQL | Database |
 | Zod | Validation (`packages/shared`) |
-| BullMQ + Redis | Jobs (email) |
-| Resend | Email |
+| BullMQ + Redis | Jobs (email queue `emails`) |
+| Resend / SMTP (Nodemailer) | Email vía `MailProvider` (`MAIL_PROVIDER` = `resend` o `smtp`; ver `docs/emails/EMAILS_ARCHITECTURE.md`) |
 | web-push | Web Push (VAPID; opcional si faltan keys) |
 
 ---
@@ -106,14 +106,16 @@ See previous full endpoint tables in git history; key groups:
 - **Gastro follows + alertas:** `UserGastroFollow`; al activar descuento (`ACTIVE`) → `GastroFollowDiscountAlertsService` + kind `FOLLOWED_GASTRO_NEW_DISCOUNT` (idempotente, throttling). Doc: `docs/gastro/GASTRO_FOLLOWS_NOTIFICATIONS.md`.
 - **Gastro reviews V2:** `GET /gastro/reviews/summary`, `GET /gastro/reviews`, `POST /gastro/reviews/:id/reply` — `ReviewDisputesService` (sin duplicar motor de reviews).
 - **Transferencia personal**: `TicketTransferOffer` — sin marketplace `/resale/*` (eliminado `20260605120000_remove_resale_marketplace`).
-- **Notificaciones usuario**: `GET/PATCH /me/notifications`, `POST .../mark-all-read` (`UserNotificationsService`, `NotificationsSchedulerService`, Resend email).
+- **Notificaciones usuario**: `GET/PATCH /me/notifications`, `POST .../mark-all-read` (`UserNotificationsService`, `NotificationsSchedulerService`, email vía `EmailQueueService` → `EmailService` → `MailProvider`).
+  - **Emails (Slices 2–10, cierre):** `MailProvider`; registry **38** templates (`EMAIL_TEMPLATE_IDS`). Legacy activo: `renderOrderConfirmationEmail` (checkout), payouts en `email-templates.ts`; gastro QR inline. Smokes `smoke:email`, `smoke:email-template`. Doc: `docs/emails/EMAILS_ARCHITECTURE.md`, cierre `docs/emails/EMAILS_CLOSING_AUDIT.md`.
   - **Entrega unificada** `deliver()`: canales `IN_APP`, `EMAIL`, `PUSH` (log idempotente `NotificationDeliveryLog`).
   - **Kinds:** `TICKET_REMINDER_24H`, `FAVORITE_EVENT_SOON`, `EXPECTED_EVENT_SOON`, `TRANSFER_OFFER_PENDING`, `REVIEW_PENDING`, `FOLLOWED_PRODUCER_NEW_EVENT`, `FAVORITE_INTEREST_NEW_CONTENT`, **`EVENT_APPROVED_BY_ADMIN`**, **`EVENT_REJECTED_BY_ADMIN`**, **`REVIEW_RECEIVED`**, **`REVIEW_OFFICIAL_REPLY`**, **`REVIEW_DISPUTE_CREATED`**, **`REVIEW_DISPUTE_ACCEPTED`**, **`REVIEW_DISPUTE_REJECTED`**, **`REVIEW_MODERATION_HIDDEN`**, **`REVIEW_MODERATION_RESTORED`**.
   - **Productor evento admin:** `ProducerEventStatusNotificationsService` (hook en `approveEvent` / `rejectEvent`); no falla moderación si email/push fallan; preferencia `notifyProducerEventStatus` en `User.preferences`.
   - **Reviews/disputas:** `ReviewNotificationsService` (crear reseña, réplica oficial, disputa, hide/restore); preferencias `notifyManagedReviews`, `notifyReviewEngagement`; email/push best-effort.
   - **Push:** `WebPushService` (`web-push`, VAPID); `GET/POST/DELETE /me/push-subscriptions`, `GET /config`, `POST /test` (`UserPushSubscriptionsService`).
   - **Preferencias push** en `User.preferences` (portal): `pushAlertsEnabled`, `notifyUpcomingEvents`, `notifyTransferOffers`, etc. — ver `user-portal-preferences.util.ts` + `shouldSendPushForKind`.
-  - **Alertas inteligentes:** transfer al crear oferta; cron reviews; publicación evento → `EventPublicationAlertsService` (approve admin, publicaciones generales, rental/excursion APPROVED); kinds `FOLLOWED_PRODUCER_NEW_EVENT`, `FAVORITE_INTEREST_NEW_CONTENT`; throttling `SMART_ALERTS_MAX_PER_USER_HOUR` (default 5).
+  - **Alertas inteligentes:** transfer al crear oferta; cron reviews; publicación evento → `SmartAlertsPreparedService` / `EventPublicationAlertsService`; kinds `FOLLOWED_PRODUCER_NEW_EVENT`, `FAVORITE_INTEREST_NEW_CONTENT`; cron favorito/esperado; gastro `FOLLOWED_GASTRO_NEW_DISCOUNT`; templates email Slice 8 (`smart-alert-email-template.util.ts`); throttling `SMART_ALERTS_MAX_PER_USER_HOUR` (default 5).
+  - **Emails operaciones (Slice 9):** `OperationalAlertsEmailService` → `MAIL_OPERATIONS_TO`; `ADMIN_NEW_EVENT_PENDING` al enviar evento a revisión; `ADMIN_STORAGE_UPLOAD_FAILED` en fallo GCS; `ADMIN_EMAIL_DELIVERY_FAILED` en cola (anti-loop `ADMIN_*`).
 - **Seguir productoras**: `GET/POST/DELETE/PATCH /me/producer-follows*`, `GET /me/recommendations`.
 
 ### Scripts eliminados (2026)
@@ -136,7 +138,7 @@ See previous full endpoint tables in git history; key groups:
 - **TicketType**, **TicketTemplate**, **TicketBatch**, **Order**, **OrderItem**, **Payment**, **Ticket** (`TRANSFER_PENDING`, `TRANSFERRED`; **TicketTransferOffer**)
 - **UserCart**, **UserCartItem**, **UserFavorite**, **UserExpectedEvent**, **UserGastroFollow**, **UserPushSubscription**
 - **UserNotification**, **NotificationDeliveryLog** (`NotificationChannel`: `IN_APP`, `EMAIL`, `PUSH`)
-- **Referidos V2:** **ReferrerProfile**, **ProducerReferrerRelationship**, **ReferralLink**, **ReferralAttribution**, **ReferralCommercialProposal**, **ReferralCommercialAgreement**, **ReferralCommission** (`CONFIRMED` / `MARKED_AS_PAID`), **ReferralPaymentRequest** — liquidación externa (sin custodia). Doc: `docs/referrals/REFERRALS_V2.md`
+- **Referidos V2:** **ReferrerProfile**, **ProducerReferrerRelationship**, **ReferralLink**, **ReferralAttribution**, **ReferralCommercialProposal**, **ReferralCommercialAgreement**, **ReferralCommission** (`CONFIRMED` / `MARKED_AS_PAID`), **ReferralPaymentRequest** — liquidación externa (sin custodia). Emails transaccionales Slice 7: `ReferralEmailsService` → `REFERRAL_*` templates (`enqueueTemplate`). Doc: `docs/referrals/REFERRALS_V2.md`, `docs/emails/EMAIL_MATRIX.md` §6
 - **GastroDiscount**, **GastroDiscountValidation**, **InboxItem** (kind incl. `REVIEW_DISPUTE_REQUEST`)
 - **HotelProfile** (`galleryUrls`, `geoLat`/`geoLng`, `province`, `googlePlaceId`, `whatsappPhone`, `amenities`, `publicEventId`), memberships, **GastroContent**, **ProducerProfile**, **GastroProfile** (`province`, `googlePlaceId`)
 - **Event**, **GastroProfile**, **HotelProfile**, **RentalLocation**, **ExcursionOperator**: `address`, coords, `province`, `googlePlaceId` (Maps 5, nullable); `city` en RentalLocation — **prod OK 2026-06-01**

@@ -17,12 +17,15 @@ import { deriveProducerEventMode } from '@yo-te-invito/shared';
 import { ErrorCode, parseRentalOpeningHours } from '@yo-te-invito/shared';
 import { SubcategoriesService } from '../subcategories/subcategories.service';
 import { RentalLocationsService } from '../rental-locations/rental-locations.service';
+import { OperationalAlertsEmailService } from '../../email/operational-alerts-email.service';
+import { categoryLabel } from '../notifications/smart-alerts-matching.util';
 
 @Injectable()
 export class ProducerEventsCrudService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly profilesAuth: ProfilesAuthorizationService,
+    private readonly operationalAlerts: OperationalAlertsEmailService,
     private readonly subcategories: SubcategoriesService,
     private readonly rentalLocations: RentalLocationsService,
   ) {}
@@ -379,6 +382,9 @@ export class ProducerEventsCrudService {
       );
     }
 
+    const becamePending =
+      body.status === 'PENDING' && existing.status !== 'PENDING';
+
     const event = await this.prisma.event.update({
       where: { id: eventId },
       data: {
@@ -424,10 +430,49 @@ export class ProducerEventsCrudService {
       },
     });
 
+    if (becamePending) {
+      void this.notifyAdminsEventPending(tenantId, event);
+    }
+
     return this.toEventDetail({
       ...event,
       media: event.media,
       rentalLocation: event.rentalLocation,
     });
+  }
+
+  private async notifyAdminsEventPending(
+    tenantId: string,
+    event: {
+      id: string;
+      title: string;
+      category: string | null;
+      city: string | null;
+      updatedAt: Date;
+      producerProfileId: string | null;
+    },
+  ): Promise<void> {
+    try {
+      const producer = event.producerProfileId
+        ? await this.prisma.producerProfile.findFirst({
+            where: { id: event.producerProfileId, tenantId },
+            select: { displayName: true },
+          })
+        : null;
+
+      this.operationalAlerts.notifyNewEventPending({
+        eventId: event.id,
+        eventTitle: event.title,
+        producerName: producer?.displayName?.trim() || 'Productora',
+        categoryName: categoryLabel(event.category ?? 'event'),
+        city: event.city,
+        createdAt: event.updatedAt.toLocaleString('es-AR', {
+          dateStyle: 'medium',
+          timeStyle: 'short',
+        }),
+      });
+    } catch {
+      // fire-and-forget: no bloquear actualización del evento
+    }
   }
 }

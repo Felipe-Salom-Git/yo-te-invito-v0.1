@@ -6,6 +6,7 @@ import {
   shouldSendEmailForProducerEventStatus,
   shouldSendPushForKind,
 } from '../me/user-portal-preferences.util';
+import { getAppUrl, getDefaultSupportEmail } from '../../email/templates/email-template.util';
 import { UserNotificationsService } from './user-notifications.service';
 
 type EventRecipientContext = {
@@ -55,8 +56,17 @@ export class ProducerEventStatusNotificationsService {
       return;
     }
 
+    const appUrl = getAppUrl();
     const href = `/producer/events/${event.id}`;
     const referenceKey = `producer-event-status:${event.id}:${status}`;
+
+    const eventDetails =
+      status === 'APPROVED'
+        ? await this.prisma.event.findFirst({
+            where: { id: event.id, tenantId },
+            select: { startAt: true, venueName: true },
+          })
+        : null;
     const kind =
       status === 'APPROVED'
         ? NotificationKind.EVENT_APPROVED_BY_ADMIN
@@ -77,7 +87,7 @@ export class ProducerEventStatusNotificationsService {
     for (const userId of recipientIds) {
       const user = await this.prisma.user.findFirst({
         where: { id: userId, tenantId, deletedAt: null },
-        select: { email: true, preferences: true },
+        select: { email: true, preferences: true, firstName: true, lastName: true },
       });
       if (!user) continue;
 
@@ -85,6 +95,19 @@ export class ProducerEventStatusNotificationsService {
       const sendEmail =
         shouldSendEmailForProducerEventStatus(prefs) && Boolean(user.email?.trim());
       const sendPush = shouldSendPushForKind(prefs, kind);
+
+      const producerName =
+        [user.firstName, user.lastName].filter(Boolean).join(' ').trim() || 'Productor/a';
+
+      const eventDate = eventDetails?.startAt
+        ? eventDetails.startAt.toLocaleDateString('es-AR', { dateStyle: 'medium' })
+        : undefined;
+      const eventTime = eventDetails?.startAt
+        ? eventDetails.startAt.toLocaleTimeString('es-AR', {
+            hour: '2-digit',
+            minute: '2-digit',
+          })
+        : undefined;
 
       await this.notifications.deliver({
         tenantId,
@@ -99,6 +122,34 @@ export class ProducerEventStatusNotificationsService {
         sendEmail,
         sendPush,
         preferences: prefs,
+        ...(status === 'APPROVED' && sendEmail
+          ? {
+              emailTemplateId: 'PRODUCER_EVENT_APPROVED' as const,
+              emailTemplateVariables: {
+                producerName,
+                eventTitle: event.title,
+                eventUrl: `${appUrl}${href}`,
+                dashboardUrl: `${appUrl}/producer`,
+                supportEmail: getDefaultSupportEmail(),
+                ...(eventDate ? { eventDate } : {}),
+                ...(eventTime ? { eventTime } : {}),
+                ...(eventDetails?.venueName ? { venueName: eventDetails.venueName } : {}),
+              },
+            }
+          : {}),
+        ...(status === 'REJECTED' && sendEmail
+          ? {
+              emailTemplateId: 'PRODUCER_EVENT_REJECTED' as const,
+              emailTemplateVariables: {
+                producerName,
+                eventTitle: event.title,
+                rejectionReason: reason ?? '',
+                eventEditUrl: `${appUrl}${href}/edit`,
+                dashboardUrl: `${appUrl}/producer`,
+                supportEmail: getDefaultSupportEmail(),
+              },
+            }
+          : {}),
       });
     }
   }

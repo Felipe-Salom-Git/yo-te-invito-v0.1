@@ -20,6 +20,7 @@ import type {
 import { ErrorCode } from '@yo-te-invito/shared';
 import { Prisma, ReferralCommissionStatus } from '@prisma/client';
 import { referralCheckoutUrl } from '../../common/referral-checkout-url';
+import { ReferralEmailsService } from './referral-emails.service';
 
 /** Referidor pidió asociación a la productora (la productora acepta/rechaza el pendiente) */
 const REFERRER_INITIATED_ORIGINS = new Set<string>(['REQUESTED_BY_REFERRER']);
@@ -44,7 +45,10 @@ function isProducerInitiatedOrigin(origin: string): boolean {
 
 @Injectable()
 export class ReferralsService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly referralEmails: ReferralEmailsService,
+  ) {}
 
   async create(
     tenantId: string,
@@ -579,11 +583,19 @@ export class ReferralsService {
         message: 'No podés responder esta solicitud',
       });
     }
-    return this.prisma.producerReferrerRelationship.update({
+    const updated = await this.prisma.producerReferrerRelationship.update({
       where: { id: existing.id },
       data: { status: targetStatus, notes: notes ?? existing.notes },
       include: { producerProfile: true, referrerProfile: true },
     });
+    if (targetStatus === 'ACTIVE') {
+      this.referralEmails.notifyProducerAssociated(
+        tenantId,
+        updated.referrerProfileId,
+        updated.producerProfileId,
+      );
+    }
+    return updated;
   }
 
   /**
@@ -654,11 +666,19 @@ export class ReferralsService {
     if (from === 'PENDING') {
       if (isReferrerInitiatedOrigin(origin)) {
         if (targetStatus === 'ACTIVE' || targetStatus === 'REJECTED') {
-          return this.prisma.producerReferrerRelationship.update({
+          const updated = await this.prisma.producerReferrerRelationship.update({
             where: { id: existing.id },
             data: { status: targetStatus, notes: notes ?? existing.notes },
-            include: relInclude,
+            include: { ...relInclude, producerProfile: { select: { tenantId: true } } },
           });
+          if (targetStatus === 'ACTIVE') {
+            this.referralEmails.notifyProducerAssociated(
+              updated.producerProfile.tenantId,
+              updated.referrerProfileId,
+              updated.producerProfileId,
+            );
+          }
+          return updated;
         }
         throw new BadRequestException({
           code: ErrorCode.ASSOCIATION_INVALID_TRANSITION,

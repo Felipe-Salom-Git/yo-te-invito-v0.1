@@ -18,6 +18,7 @@ import { mapGetnetStatusToLocal } from './providers/getnet/getnet.mapper';
 import { loadGetnetConfig } from './providers/getnet/getnet.config';
 import { TicketBatchService } from '../../ticketing/ticket-batch.service';
 import { ReferralCommissionService } from '../referrals/referral-commission.service';
+import { ReferralEmailsService } from '../referrals/referral-emails.service';
 
 function generateQrPayload(): string {
   return 'yti:v1:' + randomBytes(24).toString('hex');
@@ -50,6 +51,7 @@ export class PublicPaymentsService {
     private readonly getnetCheckout: GetnetCheckoutService,
     private readonly ticketBatches: TicketBatchService,
     private readonly referralCommissions: ReferralCommissionService,
+    private readonly referralEmails: ReferralEmailsService,
   ) {}
 
   async createPayment(
@@ -285,7 +287,9 @@ export class PublicPaymentsService {
       0,
     );
 
-    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    let newCommissionId: string | null = null;
+
+    const orderResult = await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const orderUpdate = await tx.order.updateMany({
         where: {
           id: payment.orderId,
@@ -356,11 +360,14 @@ export class PublicPaymentsService {
         }
       }
 
-      await this.referralCommissions.processOrderPaidInTransaction(
+      const commissionResult = await this.referralCommissions.processOrderPaidInTransaction(
         tx,
         payment.orderId,
         tenantId,
       );
+      if (commissionResult.created && commissionResult.commissionId) {
+        newCommissionId = commissionResult.commissionId;
+      }
 
       const updatedOrder = await tx.order.findUniqueOrThrow({
         where: { id: payment.orderId },
@@ -392,6 +399,12 @@ export class PublicPaymentsService {
 
       return result;
     });
+
+    if (newCommissionId) {
+      this.referralEmails.notifyCommissionGenerated(tenantId, newCommissionId);
+    }
+
+    return orderResult;
   }
 
   async getOrderPaymentStatus(
@@ -510,6 +523,8 @@ export class PublicPaymentsService {
       0,
     );
 
+    let newCommissionId: string | null = null;
+
     await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const orderUpdate = await tx.order.updateMany({
         where: {
@@ -572,7 +587,14 @@ export class PublicPaymentsService {
         }
       }
 
-      await this.referralCommissions.processOrderPaidInTransaction(tx, orderId, tenantId);
+      const commissionResult = await this.referralCommissions.processOrderPaidInTransaction(
+        tx,
+        orderId,
+        tenantId,
+      );
+      if (commissionResult.created && commissionResult.commissionId) {
+        newCommissionId = commissionResult.commissionId;
+      }
 
       const updatedOrder = await tx.order.findUniqueOrThrow({
         where: { id: orderId },
@@ -591,6 +613,10 @@ export class PublicPaymentsService {
         text,
       });
     });
+
+    if (newCommissionId) {
+      this.referralEmails.notifyCommissionGenerated(tenantId, newCommissionId);
+    }
   }
 
   private mapOrderToResponse(order: {

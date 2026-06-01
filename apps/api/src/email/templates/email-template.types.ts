@@ -1,0 +1,67 @@
+export const EMAIL_TEMPLATE_IDS = [
+  'AUTH_WELCOME_BUYER',
+  'AUTH_WELCOME_PRODUCER',
+  'AUTH_WELCOME_GASTRO',
+  'AUTH_WELCOME_HOTEL',
+  'AUTH_WELCOME_REFERRER',
+  'AUTH_VERIFY_EMAIL',
+  'PRODUCER_EVENT_APPROVED',
+  'PRODUCER_EVENT_REJECTED',
+  'ADMIN_CRITICAL_ALERT',
+  'TICKET_TRANSFER_RECEIVED',
+  'TICKET_TRANSFER_ACCEPTED',
+  'TICKET_TRANSFER_REJECTED',
+  'TICKET_TRANSFER_CANCELLED',
+  'EVENT_REMINDER_24H',
+  'REVIEW_RECEIVED',
+  'REVIEW_OFFICIAL_REPLY',
+  'REVIEW_DISPUTE_CREATED',
+  'REVIEW_DISPUTE_ACCEPTED',
+  'REVIEW_DISPUTE_REJECTED',
+  'REVIEW_MODERATION_HIDDEN',
+  'REVIEW_MODERATION_RESTORED',
+  'REFERRAL_PRODUCER_ASSOCIATED',
+  'REFERRAL_PROPOSAL_RECEIVED',
+  'REFERRAL_PROPOSAL_ACCEPTED',
+  'REFERRAL_PROPOSAL_REJECTED',
+  'REFERRAL_COMMISSION_GENERATED',
+  'REFERRAL_PAYMENT_REQUEST_CREATED',
+  'REFERRAL_PAYMENT_MARKED_AS_PAID',
+  'FAVORITE_EVENT_SOON',
+  'EXPECTED_EVENT_SOON',
+  'FOLLOWED_PRODUCER_NEW_EVENT',
+  'FAVORITE_INTEREST_NEW_CONTENT',
+  'FOLLOWED_GASTRO_NEW_DISCOUNT',
+  'ADMIN_NEW_EVENT_PENDING',
+  'ADMIN_OPERATIONAL_ERROR',
+  'ADMIN_EMAIL_DELIVERY_FAILED',
+  'ADMIN_SCANNER_CRITICAL_ERROR',
+  'ADMIN_STORAGE_UPLOAD_FAILED',
+] as const;
+
+export type EmailTemplateId = (typeof EMAIL_TEMPLATE_IDS)[number];
+
+export function isEmailTemplateId(value: string): value is EmailTemplateId {
+  return (EMAIL_TEMPLATE_IDS as readonly string[]).includes(value);
+}
+
+export type RenderEmailTemplateInput = {
+  templateId: EmailTemplateId;
+  variables: Record<string, unknown>;
+};
+
+export type RenderedEmailTemplate = {
+  subject: string;
+  previewText: string;
+  html: string;
+  text: string;
+};
+
+export type SendTemplateEmailOptions = {
+  templateId: EmailTemplateId;
+  /** Required for most templates; optional for `ADMIN_*` (defaults to `MAIL_OPERATIONS_TO`). */
+  to?: string;
+  variables: Record<string, unknown>;
+  from?: string;
+  replyTo?: string;
+};

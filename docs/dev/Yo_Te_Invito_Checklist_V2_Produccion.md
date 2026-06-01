@@ -355,38 +355,21 @@ _Footer público completo — bloque V2 cerrado. Smoke: `docs/audits/PUBLIC_FOOT
 
 ## Sistema de emails transaccionales y operativos
 
-- [ ] Auditar sistema actual de notificaciones in-app/email/push.
-- [ ] Definir matriz completa de emails por portal y tipo de evento.
-- [ ] Crear templates base de email con branding Yo Te Invito.
-- [ ] Definir layout común de email: header, contenido, CTA, soporte y footer legal.
-- [ ] Email de bienvenida para usuario comprador.
-- [ ] Email de bienvenida para productora.
-- [ ] Email de bienvenida para gastronómico.
-- [ ] Email de bienvenida para rental.
-- [ ] Email de bienvenida para hotel.
-- [ ] Email de bienvenida para referido.
-- [ ] Email de orden creada / pago pendiente.
-- [ ] Email de pago aprobado.
-- [ ] Email de ticket emitido con ticket adjunto o link al ticket.
-- [ ] Email de evento próximo / recordatorio.
-- [ ] Email de transferencia de ticket recibida.
-- [ ] Email de transferencia de ticket aceptada/rechazada/cancelada.
-- [ ] Email de evento aprobado para productora.
-- [ ] Email de evento rechazado para productora.
-- [ ] Email de nueva reseña recibida.
-- [ ] Email de respuesta oficial a reseña.
-- [ ] Email de disputa de reseña creada o actualizada.
-- [ ] Email de referido asociado a productora.
-- [ ] Email de propuesta productor ↔ referido.
-- [ ] Email de actualización de comisión/reporte de referido.
-- [ ] Email de alerta crítica para admins.
-- [ ] Email de nuevo evento pendiente para admins.
-- [ ] Email de error operativo crítico: pago, factura, webhook o scanner.
-- [ ] Panel/preferencias para activar o desactivar emails no críticos.
-- [ ] Mantener emails críticos siempre activos cuando sean necesarios por operación/legal.
-- [ ] Registrar logs de entrega de emails y reintentos.
-- [ ] Definir estrategia de reintentos ante fallo del proveedor de email.
-- [ ] Smoke test de emails principales.
+> **Cierre técnico Slices 1–10:** [`docs/emails/EMAILS_CLOSING_AUDIT.md`](../emails/EMAILS_CLOSING_AUDIT.md). Detalle ítem a ítem: [`Yo_Te_Invito_Checklist_V2_2_Pendientes_Produccion.md`](./Yo_Te_Invito_Checklist_V2_2_Pendientes_Produccion.md) §4. **Fuera de cierre:** checkout real, pago pendiente/rechazado, factura, webhooks, migración registry de confirmación de compra.
+
+- [x] Auditar sistema actual de notificaciones in-app/email/push.
+- [x] Definir matriz de emails (`EMAIL_MATRIX.md`, 38 templates registry).
+- [x] Crear templates base + layout común Yo Te Invito.
+- [x] Bienvenidas comprador, productora, gastro, hotel, referido (registry).
+- [ ] Bienvenida rental (perfil no en registro V2).
+- [ ] Orden creada / pago pendiente — bloque pagos.
+- [ ] Pago aprobado en registry (legacy `renderOrderConfirmationEmail` activo).
+- [ ] Ticket emitido adjunto/link — bloque checkout.
+- [x] Recordatorio evento, transferencias ticket, evento aprobado/rechazado, reviews/disputas, referidos V2.
+- [x] Alerta crítica admin, evento pendiente admin, fallo entrega/storage.
+- [ ] Error operativo pago/factura/webhook; scanner con caller automático.
+- [ ] Panel preferencias email granulares; `EmailOutboundLog` + reintentos BullMQ.
+- [x] Smoke `smoke:email` / `smoke:email-template` documentado.
 
 ## SEO, GEO y metadata social
 

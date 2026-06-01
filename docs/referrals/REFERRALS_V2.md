@@ -66,6 +66,13 @@
 - Métricas: `GET /producer/referrals/metrics`, `GET /producer/events/:eventId/referrals/metrics`, `GET /referrer/metrics`, `GET /referrer/agreements/:id/metrics`.
 - Legacy (convivencia): `GET /me/commissions`, `POST /me/commissions/request`, `confirmCommissionPayout` en evento — deprecación opcional.
 
+### Emails transaccionales (Slice Emails 7)
+
+- Servicio: `ReferralEmailsService` → cola `enqueueTemplate` (sin in-app/push; sin `NotificationKind`).
+- Templates: `REFERRAL_PRODUCER_ASSOCIATED`, `REFERRAL_PROPOSAL_*`, `REFERRAL_COMMISSION_GENERATED`, `REFERRAL_PAYMENT_REQUEST_CREATED`, `REFERRAL_PAYMENT_MARKED_AS_PAID`.
+- Copy con disclaimer de no custodia (mismo espíritu que UI). Comisión: solo al **crear** fila nueva tras orden `PAID` (`created: true`).
+- Matriz y smoke: `docs/emails/EMAIL_MATRIX.md`, `pnpm --filter api run smoke:email-template`.
+
 ### UI
 
 | Superficie | Estado |

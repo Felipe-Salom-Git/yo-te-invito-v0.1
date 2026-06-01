@@ -12,7 +12,7 @@ This document defines the official architecture for the **Tiketera – Yo Te Inv
 - API: NestJS + Prisma + PostgreSQL
 - Redis (V2 recommended): rate limiting, cache, queues
 - Jobs (V2 recommended): BullMQ
-- Emails: Resend (optional SMTP fallback)
+- Emails: `MailProvider` — Resend or DonWeb SMTP (`MAIL_PROVIDER`)
 - File Storage: S3-compatible (Cloudflare R2 / AWS S3) or Cloudinary (client-defined)
 - Observability: Sentry (frontend + backend), Pino structured logs, optional OpenTelemetry
 

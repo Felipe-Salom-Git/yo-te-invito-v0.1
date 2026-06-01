@@ -2,7 +2,10 @@ import { Injectable, UnauthorizedException, ConflictException, BadRequestExcepti
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailQueueService } from '../email/email-queue.service';
-import { renderWelcomeEmail, renderVerificationEmail } from '../email/email-templates';
+import {
+  buildWelcomeTemplateVariables,
+  welcomeTemplateIdForProfile,
+} from './auth-register-email.util';
 import * as crypto from 'crypto';
 import type {
   AuthLoginRequest,
@@ -210,20 +213,27 @@ export class AuthService {
     });
 
     const verifyUrl = `${this.appUrl}/verify-email?token=${verificationToken}`;
-    const { html, text } = renderVerificationEmail(user.firstName, verifyUrl);
-    await this.emailQueue.enqueue({
+    await this.emailQueue.enqueueTemplate({
+      templateId: 'AUTH_VERIFY_EMAIL',
       to: user.email,
-      subject: 'Verifica tu email — Yo Te Invito',
-      html,
-      text,
+      variables: {
+        userName: user.firstName,
+        verifyUrl,
+        expiresIn: '24 horas',
+        supportEmail:
+          process.env.MAIL_REPLY_TO?.trim() || 'soporte@yoteinvito.club',
+      },
     });
 
-    const welcomeHtml = renderWelcomeEmail(user.firstName);
-    await this.emailQueue.enqueue({
+    await this.emailQueue.enqueueTemplate({
+      templateId: welcomeTemplateIdForProfile(profileType),
       to: user.email,
-      subject: 'Bienvenido a Yo Te Invito',
-      html: welcomeHtml.html,
-      text: welcomeHtml.text,
+      variables: buildWelcomeTemplateVariables(
+        profileType,
+        user.firstName,
+        body.profileData,
+        this.appUrl,
+      ),
     });
 
     const payload = { sub: user.id, tenantId: user.tenantId, role: user.role };

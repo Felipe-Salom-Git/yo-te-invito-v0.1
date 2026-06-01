@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EmailQueueService } from '../../email/email-queue.service';
+import { resolveMailOperationsTo } from '../../email/mail-config';
 import { renderPayoutRequestEmail, renderPayoutReceivedConfirmation } from '../../email/email-templates';
 import type { PayoutRequest } from './payouts.types';
 
@@ -121,7 +122,7 @@ export class PayoutsService {
       ? `${producerUser.firstName} ${producerUser.lastName}`
       : 'Productor';
 
-    const adminEmail = process.env.ADMIN_EMAIL ?? process.env.EMAIL_FROM;
+    const adminEmail = resolveMailOperationsTo();
     if (adminEmail) {
       const { html, text } = renderPayoutRequestEmail(producerName, amountCents, eventTitle);
       await this.emailQueue.enqueue({

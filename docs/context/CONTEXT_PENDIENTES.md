@@ -95,6 +95,34 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 
 ---
 
+## Emails transaccionales (DonWeb SMTP)
+
+> Auditoría Slice 1 (2026-06-01): [`docs/emails/EMAILS_ARCHITECTURE.md`](../emails/EMAILS_ARCHITECTURE.md) · matriz [`EMAIL_MATRIX.md`](../emails/EMAIL_MATRIX.md)
+
+- [x] Auditar sistema actual (Resend, cola, `NotificationDeliveryLog`, callers, env, frontend prefs)
+- [x] Propuesta arquitectura `MailProvider` + SMTP DonWeb `@yoteinvito.club` (Slice 1)
+- [x] Slice 2: `MailProvider`, `ResendMailProvider`, `SmtpMailProvider`, `MAIL_PROVIDER`, `smoke:email`
+- [x] Validación SMTP DonWeb **local** — `smoke:email` OK (`messageId`; host `c2821613.ferozo.com:465`, `no_reply@yoteinvito.club`)
+- [ ] Activar `MAIL_PROVIDER=smtp` en **VPS prod** (env API) + `smoke:email` desde servidor (secretos solo en servidor)
+- [x] Slice 3: layout base + registry + renderer + 3 templates piloto + `sendTemplate` + `smoke:email-template`
+- [x] Slice 3b: callers piloto — `AUTH_WELCOME_BUYER` (registro USER), `PRODUCER_EVENT_APPROVED` (aprobación admin), `OperationalAlertsEmailService` (`ADMIN_CRITICAL_ALERT`)
+- [x] Slice 4 (tanda 1): `AUTH_WELCOME_PRODUCER|GASTRO|HOTEL|REFERRER`, `AUTH_VERIFY_EMAIL`, `PRODUCER_EVENT_REJECTED` + callers en `AuthService` / `ProducerEventStatusNotificationsService`
+- [x] Slice 5: `TICKET_TRANSFER_*` (4) + `EVENT_REMINDER_24H`; callers transfer + cron; migración `NotificationKind` transfer status
+- [x] Slice 6: `REVIEW_*` (7 templates) + `ReviewNotificationsService` con `emailTemplateId` (sin migración Prisma nueva)
+- [x] Slice 7 (emails): `REFERRAL_*` (7 templates) + `ReferralEmailsService` + callers proposals/payments/association/commission; sin migración Prisma; sin automatizar pagos
+- [x] Slice 8 (emails): `FAVORITE_EVENT_SOON`, `EXPECTED_EVENT_SOON`, `FOLLOWED_GASTRO_NEW_DISCOUNT` con template en callers; `FOLLOWED_PRODUCER_NEW_EVENT` / `FAVORITE_INTEREST_NEW_CONTENT` template listo (email sigue off)
+- [x] Slice 9 (emails): `ADMIN_*` operaciones (5 templates + `ADMIN_CRITICAL_ALERT`); callers: evento `PENDING`, fallo GCS, fallo cola email; scanner/pago/factura pendientes
+- [x] Slice 10 (emails): cierre técnico — [`EMAILS_CLOSING_AUDIT.md`](../emails/EMAILS_CLOSING_AUDIT.md); eliminado legacy muerto (`renderWelcomeEmail`, `renderVerificationEmail`); legacy checkout/payouts conservado
+- [ ] Slice 4b: `AUTH_PASSWORD_RESET` cuando exista flujo API de reset con email
+- [ ] `REVIEW_PENDING_REMINDER` template + email en cron reviews (hoy solo in-app; `sendEmail: false` a propósito)
+- [ ] Conectar `OperationalAlertsEmailService` a flujos críticos reales (email/pago/storage) cuando existan
+- [ ] **Bloque pagos/checkout/facturación:** importar templates checkout/pagos/factura; migrar `renderOrderConfirmationEmail`, payouts, webhooks; ver `EMAILS_CLOSING_AUDIT.md` §7
+- [ ] `EmailOutboundLog` + idempotencia checkout/auth + reintentos BullMQ explícitos
+- [ ] Matriz completa checklist V2 §4 (bienvenidas por perfil, referidos, admin alertas, factura)
+- [ ] UI preferencias email granulares (`notifyProducerEventStatus`, reviews, etc.)
+
+---
+
 ## A. Infraestructura y backend
 
 - [x] Ejecutar migraciones Prisma en producción VPS (`npx prisma migrate deploy` + `prisma generate`) — Mayo 2026; incluye hotfix `20260531072000_restore_user_push_subscription`
@@ -457,5 +485,7 @@ _(Trending con `viewCount`: ver ítem Slice 2 arriba en § K.)_
 | `docs/gastro/GASTRO_DISCOUNT_QR.md` | QR descuentos gastro v1 |
 | `docs/audits/PREPRODUCTION_DEPLOY_AUDIT.md` | Preproducción / plan Producción técnica (Infra 1) |
 | `docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md` | Runbook DonWeb + §24 ejecución real (Infra 2B) |
+| `docs/emails/EMAILS_ARCHITECTURE.md` | Emails: auditoría + plan SMTP DonWeb |
+| `docs/emails/EMAIL_MATRIX.md` | Matriz inicial de envíos por clase |
 | `docs/user/USER_PORTAL_PRISMA_PROPOSAL.md` | Diff modelo (pre-migrate) |
 

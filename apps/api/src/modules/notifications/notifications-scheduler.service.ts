@@ -6,7 +6,14 @@ import {
   isTicketReminderEnabled,
   readPortalPreferences,
 } from '../me/user-portal-preferences.util';
+import {
+  buildEventReminder24hVariables,
+  buildTransferEventContext,
+  formatPersonName,
+} from '../me/ticket-transfer-notification.util';
+import { buildFavoriteOrExpectedEventSoonVariables } from './smart-alert-email-template.util';
 import { UserNotificationsService } from './user-notifications.service';
+import { getAppUrl } from '../../email/templates/email-template.util';
 
 function eventWindowBounds(now: Date): { from: Date; to: Date } {
   const hours = Number(process.env.NOTIFICATION_REMINDER_HOURS ?? 24);
@@ -75,9 +82,25 @@ export class NotificationsSchedulerService {
         },
       },
       include: {
-        event: { select: { id: true, title: true, startAt: true, venueName: true } },
+        event: {
+          select: {
+            id: true,
+            title: true,
+            startAt: true,
+            venueName: true,
+            venueAddress: true,
+            city: true,
+          },
+        },
         ownerUser: {
-          select: { id: true, tenantId: true, email: true, preferences: true },
+          select: {
+            id: true,
+            tenantId: true,
+            email: true,
+            preferences: true,
+            firstName: true,
+            lastName: true,
+          },
         },
       },
     });
@@ -93,6 +116,8 @@ export class NotificationsSchedulerService {
         timeStyle: 'short',
       });
       const venue = t.event.venueName ? ` · ${t.event.venueName}` : '';
+      const appUrl = getAppUrl();
+      const ticketHref = `/me/tickets/${t.id}`;
       const result = await this.notifications.deliver({
         tenantId: user.tenantId,
         userId: user.id,
@@ -101,9 +126,16 @@ export class NotificationsSchedulerService {
         referenceKey: `ticket:${t.id}`,
         title: `Recordatorio: ${t.event.title}`,
         body: `Tu evento comienza el ${startLabel}${venue}. Tené listo tu ticket con QR.`,
-        href: `/me/tickets/${t.id}`,
+        href: ticketHref,
         sendInApp: prefs.webNotificationsEnabled,
         sendEmail: prefs.emailNotificationsEnabled,
+        preferences: prefs,
+        emailTemplateId: 'EVENT_REMINDER_24H',
+        emailTemplateVariables: buildEventReminder24hVariables({
+          userName: formatPersonName(user.firstName, user.lastName),
+          ticketUrl: `${appUrl}${ticketHref}`,
+          event: buildTransferEventContext(t.event),
+        }),
       });
       if (result.inApp || result.email || result.push) sent += 1;
     }
@@ -122,7 +154,16 @@ export class NotificationsSchedulerService {
         webNotificationsEnabled: true,
       },
       include: {
-        user: { select: { id: true, tenantId: true, email: true, preferences: true } },
+        user: {
+          select: {
+            id: true,
+            tenantId: true,
+            email: true,
+            preferences: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
       },
     });
 
@@ -137,7 +178,13 @@ export class NotificationsSchedulerService {
           deletedAt: null,
           startAt: { gte: from, lte: to },
         },
-        select: { id: true, title: true, startAt: true },
+        select: {
+          id: true,
+          title: true,
+          startAt: true,
+          venueName: true,
+          city: true,
+        },
       });
       if (!event) continue;
 
@@ -145,6 +192,7 @@ export class NotificationsSchedulerService {
         dateStyle: 'medium',
         timeStyle: 'short',
       });
+      const sendEmail = fav.emailNotificationsEnabled && prefs.emailNotificationsEnabled;
       const result = await this.notifications.deliver({
         tenantId: user.tenantId,
         userId: user.id,
@@ -155,7 +203,16 @@ export class NotificationsSchedulerService {
         body: `Un evento de tus favoritos comienza el ${startLabel}.`,
         href: `/events/${event.id}`,
         sendInApp: fav.webNotificationsEnabled && prefs.webNotificationsEnabled,
-        sendEmail: fav.emailNotificationsEnabled && prefs.emailNotificationsEnabled,
+        sendEmail,
+        preferences: prefs,
+        emailTemplateId: sendEmail ? 'FAVORITE_EVENT_SOON' : undefined,
+        emailTemplateVariables: sendEmail
+          ? buildFavoriteOrExpectedEventSoonVariables({
+              userName: formatPersonName(user.firstName, user.lastName),
+              event,
+              variant: 'favorite',
+            })
+          : undefined,
       });
       if (result.inApp || result.email || result.push) sent += 1;
     }
@@ -171,9 +228,25 @@ export class NotificationsSchedulerService {
     const expected = await this.prisma.userExpectedEvent.findMany({
       where: { webNotificationsEnabled: true },
       include: {
-        user: { select: { id: true, tenantId: true, email: true, preferences: true } },
+        user: {
+          select: {
+            id: true,
+            tenantId: true,
+            email: true,
+            preferences: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
         event: {
-          select: { id: true, title: true, startAt: true, deletedAt: true },
+          select: {
+            id: true,
+            title: true,
+            startAt: true,
+            deletedAt: true,
+            venueName: true,
+            city: true,
+          },
         },
       },
     });
@@ -191,6 +264,7 @@ export class NotificationsSchedulerService {
         dateStyle: 'medium',
         timeStyle: 'short',
       });
+      const sendEmail = row.emailNotificationsEnabled && prefs.emailNotificationsEnabled;
       const result = await this.notifications.deliver({
         tenantId: user.tenantId,
         userId: user.id,
@@ -201,7 +275,16 @@ export class NotificationsSchedulerService {
         body: `Comienza el ${startLabel}. Revisá si ya hay entradas disponibles.`,
         href: `/events/${event.id}`,
         sendInApp: row.webNotificationsEnabled && prefs.webNotificationsEnabled,
-        sendEmail: row.emailNotificationsEnabled && prefs.emailNotificationsEnabled,
+        sendEmail,
+        preferences: prefs,
+        emailTemplateId: sendEmail ? 'EXPECTED_EVENT_SOON' : undefined,
+        emailTemplateVariables: sendEmail
+          ? buildFavoriteOrExpectedEventSoonVariables({
+              userName: formatPersonName(user.firstName, user.lastName),
+              event,
+              variant: 'expected',
+            })
+          : undefined,
       });
       if (result.inApp || result.email || result.push) sent += 1;
     }

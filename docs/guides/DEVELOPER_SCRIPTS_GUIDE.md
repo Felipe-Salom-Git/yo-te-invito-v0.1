@@ -235,6 +235,8 @@ Detalle completo: [SMOKE_TESTS_GUIDE.md](./SMOKE_TESTS_GUIDE.md).
 |---------|----------------|
 | `smoke:api` | Casi no |
 | `smoke:producer-follows` | Mínimo (follow se borra) |
+| `smoke:email` | No (1 email; `SMOKE_EMAIL_TO` + provider; DonWeb SMTP validado en local) |
+| `smoke:email-template` | No (1 email; `SMOKE_EMAIL_TO` + `SMOKE_EMAIL_TEMPLATE_ID`) |
 
 ### Smokes protegidos (credenciales + posible basura)
 
@@ -251,6 +253,49 @@ SMOKE_USER_EMAIL=felipe.e.salom@gmail.com SMOKE_USER_PASSWORD=<pass> pnpm --filt
 | `smoke:referrals` | Propuestas, comisiones, solicitudes de pago (productor + referido) |
 | `smoke:user-portal` | Órdenes, usuarios `@smoke.yo-te-invito.test`, transfers |
 | `test:referral-proposals` / `test:referral-commission` / `test:referral-payment-requests` | Util Referidos V2 (sin BD) |
+
+### Smoke email (DonWeb / Resend)
+
+Envío controlado de **un** correo de prueba. No usa API HTTP ni pagos.
+
+**Validado en local (2026-06):** `MAIL_PROVIDER=smtp`, `SMTP_HOST=c2821613.ferozo.com`, puerto `465`, `SMTP_SECURE=true`, `SMTP_USER=no_reply@yoteinvito.club` → salida OK con `messageId`.
+
+```bash
+SMOKE_EMAIL_TO=soporte@yoteinvito.club \
+MAIL_PROVIDER=smtp \
+SMTP_HOST=c2821613.ferozo.com SMTP_PORT=465 SMTP_SECURE=true \
+SMTP_USER=no_reply@yoteinvito.club SMTP_PASSWORD=<secret> \
+MAIL_FROM="Yo Te Invito <no_reply@yoteinvito.club>" \
+MAIL_REPLY_TO=soporte@yoteinvito.club \
+pnpm --filter api run smoke:email
+```
+
+No commitear `SMTP_PASSWORD`. Rollback: `MAIL_PROVIDER=resend` + `RESEND_API_KEY`. En VPS prod: mismas variables en env del API + deploy (`docs/emails/EMAILS_CLOSING_AUDIT.md` §8–9).
+
+### Smoke email template (Slices 3–10)
+
+**38** IDs en registry (`EMAIL_TEMPLATE_IDS` en `email-template.types.ts`). Cierre: `docs/emails/EMAILS_CLOSING_AUDIT.md`.
+
+```bash
+MAIL_PROVIDER=smtp \
+SMTP_HOST=c2821613.ferozo.com \
+SMTP_PORT=465 \
+SMTP_SECURE=true \
+SMTP_USER=no_reply@yoteinvito.club \
+SMTP_PASSWORD='***' \
+MAIL_FROM='Yo Te Invito <no_reply@yoteinvito.club>' \
+MAIL_REPLY_TO=soporte@yoteinvito.club \
+MAIL_OPERATIONS_TO=operaciones@yoteinvito.club \
+SMOKE_EMAIL_TO=soporte@yoteinvito.club \
+SMOKE_EMAIL_TEMPLATE_ID=AUTH_VERIFY_EMAIL \
+pnpm --filter api run smoke:email-template
+```
+
+Usa variables de ejemplo del script; **no enviar masivamente** — un ID por ejecución.
+
+**Smoke por familia (recomendado):** `AUTH_VERIFY_EMAIL`, `PRODUCER_EVENT_APPROVED`, `TICKET_TRANSFER_RECEIVED`, `REVIEW_RECEIVED`, `REFERRAL_PROPOSAL_RECEIVED`, `FOLLOWED_GASTRO_NEW_DISCOUNT`, `ADMIN_NEW_EVENT_PENDING`, `ADMIN_CRITICAL_ALERT`.
+
+**Callers en prod:** registro; evento productor; transferencias; recordatorio 24h; reviews; referidos; alertas favorito/esperado/gastro; admin pending/storage/delivery-failed. **Legacy (sin registry):** checkout confirmación, payouts, gastro QR inline.
 
 Cleanup automático al finalizar (configurable). Manual:
 

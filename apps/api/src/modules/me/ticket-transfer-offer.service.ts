@@ -22,6 +22,16 @@ import {
 import { ErrorCode } from '@yo-te-invito/shared';
 import { readPortalPreferences } from './user-portal-preferences.util';
 import { UserNotificationsService } from '../notifications/user-notifications.service';
+import {
+  buildTicketTransferCancelledVariables,
+  buildTicketTransferReceivedVariables,
+  buildTicketTransferSenderVariables,
+  buildTransferEventContext,
+  formatPersonName,
+  TRANSFER_EMAIL_TEMPLATES,
+  transferOfferUrl,
+  transferTicketsUrl,
+} from './ticket-transfer-notification.util';
 
 const DEFAULT_EXPIRY_HOURS = 72;
 
@@ -40,13 +50,21 @@ type OfferRow = {
   message?: string | null;
   createdAt: Date;
   sellerUser?: { firstName: string; lastName: string; email: string } | null;
-  buyerUser?: { email: string } | null;
+  buyerUser?: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+  } | null;
   sourceTicket?: {
+    ticketType?: { name: string } | null;
     event: {
       id: string;
       title: string;
       startAt: Date;
       venueName: string | null;
+      venueAddress?: string | null;
+      city?: string | null;
       category: string | null;
     };
   } | null;
@@ -93,9 +111,12 @@ export class TicketTransferOfferService {
   private offerInclude() {
     return {
       sellerUser: { select: { firstName: true, lastName: true, email: true } },
-      buyerUser: { select: { email: true } },
+      buyerUser: {
+        select: { id: true, email: true, firstName: true, lastName: true },
+      },
       sourceTicket: {
         include: {
+          ticketType: { select: { name: true } },
           event: {
             select: {
               id: true,
@@ -103,12 +124,26 @@ export class TicketTransferOfferService {
               startAt: true,
               endAt: true,
               venueName: true,
+              venueAddress: true,
+              city: true,
               category: true,
             },
           },
         },
       },
     } as const;
+  }
+
+  private ticketNameFromOffer(offer: OfferRow): string | undefined {
+    return offer.sourceTicket?.ticketType?.name?.trim() || undefined;
+  }
+
+  private eventContextFromOffer(offer: OfferRow) {
+    const event = offer.sourceTicket?.event;
+    if (!event) {
+      return { eventTitle: 'Evento' };
+    }
+    return buildTransferEventContext(event);
   }
 
   private async writeTransferAudit(
@@ -325,11 +360,22 @@ export class TicketTransferOfferService {
     if (buyerUserId) {
       const buyer = await this.prisma.user.findFirst({
         where: { id: buyerUserId, tenantId },
-        select: { id: true, tenantId: true, email: true, preferences: true },
+        select: {
+          id: true,
+          tenantId: true,
+          email: true,
+          preferences: true,
+          firstName: true,
+          lastName: true,
+        },
       });
       if (buyer) {
         const prefs = readPortalPreferences(buyer.id, buyer.preferences);
-        const eventTitle = offer.sourceTicket?.event?.title;
+        const eventTitle = offer.sourceTicket?.event?.title ?? 'un evento';
+        const senderName = formatPersonName(
+          offer.sellerUser?.firstName,
+          offer.sellerUser?.lastName,
+        );
         await this.notifications.deliver({
           tenantId: buyer.tenantId,
           userId: buyer.id,
@@ -337,13 +383,20 @@ export class TicketTransferOfferService {
           kind: NotificationKind.TRANSFER_OFFER_PENDING,
           referenceKey: `transfer:${offer.id}`,
           title: 'Tenés una transferencia pendiente',
-          body: eventTitle
-            ? `Te enviaron un ticket para «${eventTitle}».`
-            : 'Te enviaron un ticket para transferir.',
+          body: `Te enviaron un ticket para «${eventTitle}».`,
           href: `/me/ticket-transfer/${offer.acceptToken}`,
           sendInApp: prefs.webNotificationsEnabled,
           sendEmail: prefs.emailNotificationsEnabled,
           preferences: prefs,
+          emailTemplateId: TRANSFER_EMAIL_TEMPLATES.received,
+          emailTemplateVariables: buildTicketTransferReceivedVariables({
+            recipientName: formatPersonName(buyer.firstName, buyer.lastName),
+            senderName,
+            transferUrl: transferOfferUrl(offer.acceptToken),
+            expiresAt: offer.expiresAt,
+            ticketName: this.ticketNameFromOffer(offer),
+            event: this.eventContextFromOffer(offer),
+          }),
         });
       }
     }
@@ -419,6 +472,10 @@ export class TicketTransferOfferService {
       { offerId },
     );
 
+    if (offer.buyerUserId) {
+      void this.notifyTransferCancelled(tenantId, offer, updated).catch(() => undefined);
+    }
+
     return this.mapOffer(updated);
   }
 
@@ -475,6 +532,8 @@ export class TicketTransferOfferService {
       { status: 'VALID' },
       { offerId },
     );
+
+    void this.notifyTransferRejected(tenantId, offer, buyerUserId).catch(() => undefined);
 
     return this.mapOffer(updated);
   }
@@ -667,6 +726,10 @@ export class TicketTransferOfferService {
       },
     );
 
+    void this.notifyTransferAccepted(tenantId, result.completed, buyerUserId).catch(
+      () => undefined,
+    );
+
     return {
       offer: this.mapOffer(result.completed),
       destinationTicket: {
@@ -677,6 +740,131 @@ export class TicketTransferOfferService {
       },
       message: 'Transferencia completada. El QR anterior ya no es válido; usá tu nuevo ticket.',
     };
+  }
+
+  private async notifyTransferAccepted(
+    tenantId: string,
+    offer: OfferRow,
+    buyerUserId: string,
+  ): Promise<void> {
+    const seller = await this.prisma.user.findFirst({
+      where: { id: offer.sellerUserId, tenantId },
+      select: { id: true, tenantId: true, email: true, preferences: true, firstName: true, lastName: true },
+    });
+    if (!seller?.email?.trim()) return;
+
+    const buyer = await this.prisma.user.findFirst({
+      where: { id: buyerUserId, tenantId },
+      select: { firstName: true, lastName: true },
+    });
+    const prefs = readPortalPreferences(seller.id, seller.preferences);
+    const eventTitle = offer.sourceTicket?.event?.title ?? 'tu evento';
+
+    await this.notifications.deliver({
+      tenantId: seller.tenantId,
+      userId: seller.id,
+      userEmail: seller.email,
+      kind: NotificationKind.TICKET_TRANSFER_ACCEPTED,
+      referenceKey: `transfer:${offer.id}:accepted`,
+      title: 'Transferencia aceptada',
+      body: `${formatPersonName(buyer?.firstName, buyer?.lastName)} aceptó tu transferencia para «${eventTitle}».`,
+      href: '/me/tickets',
+      sendInApp: prefs.webNotificationsEnabled,
+      sendEmail: prefs.emailNotificationsEnabled,
+      preferences: prefs,
+      emailTemplateId: TRANSFER_EMAIL_TEMPLATES.accepted,
+      emailTemplateVariables: buildTicketTransferSenderVariables({
+        senderName: formatPersonName(seller.firstName, seller.lastName),
+        recipientName: formatPersonName(buyer?.firstName, buyer?.lastName),
+        ticketsUrl: transferTicketsUrl(),
+        ticketName: this.ticketNameFromOffer(offer),
+        event: this.eventContextFromOffer(offer),
+      }),
+    });
+  }
+
+  private async notifyTransferRejected(
+    tenantId: string,
+    offer: OfferRow,
+    buyerUserId: string,
+  ): Promise<void> {
+    const seller = await this.prisma.user.findFirst({
+      where: { id: offer.sellerUserId, tenantId },
+      select: { id: true, tenantId: true, email: true, preferences: true, firstName: true, lastName: true },
+    });
+    if (!seller?.email?.trim()) return;
+
+    const buyer = await this.prisma.user.findFirst({
+      where: { id: buyerUserId, tenantId },
+      select: { firstName: true, lastName: true },
+    });
+    const prefs = readPortalPreferences(seller.id, seller.preferences);
+    const eventTitle = offer.sourceTicket?.event?.title ?? 'tu evento';
+
+    await this.notifications.deliver({
+      tenantId: seller.tenantId,
+      userId: seller.id,
+      userEmail: seller.email,
+      kind: NotificationKind.TICKET_TRANSFER_REJECTED,
+      referenceKey: `transfer:${offer.id}:rejected`,
+      title: 'Transferencia rechazada',
+      body: `${formatPersonName(buyer?.firstName, buyer?.lastName)} rechazó tu transferencia para «${eventTitle}».`,
+      href: '/me/tickets',
+      sendInApp: prefs.webNotificationsEnabled,
+      sendEmail: prefs.emailNotificationsEnabled,
+      preferences: prefs,
+      emailTemplateId: TRANSFER_EMAIL_TEMPLATES.rejected,
+      emailTemplateVariables: buildTicketTransferSenderVariables({
+        senderName: formatPersonName(seller.firstName, seller.lastName),
+        recipientName: formatPersonName(buyer?.firstName, buyer?.lastName),
+        ticketsUrl: transferTicketsUrl(),
+        ticketName: this.ticketNameFromOffer(offer),
+        event: this.eventContextFromOffer(offer),
+      }),
+    });
+  }
+
+  private async notifyTransferCancelled(
+    tenantId: string,
+    offer: OfferRow,
+    _updated: OfferRow,
+  ): Promise<void> {
+    if (!offer.buyerUserId) return;
+
+    const buyer = await this.prisma.user.findFirst({
+      where: { id: offer.buyerUserId, tenantId },
+      select: { id: true, tenantId: true, email: true, preferences: true, firstName: true, lastName: true },
+    });
+    if (!buyer?.email?.trim()) return;
+
+    const prefs = readPortalPreferences(buyer.id, buyer.preferences);
+    const eventTitle = offer.sourceTicket?.event?.title ?? 'un evento';
+    const senderName = formatPersonName(
+      offer.sellerUser?.firstName,
+      offer.sellerUser?.lastName,
+    );
+
+    await this.notifications.deliver({
+      tenantId: buyer.tenantId,
+      userId: buyer.id,
+      userEmail: buyer.email,
+      kind: NotificationKind.TICKET_TRANSFER_CANCELLED,
+      referenceKey: `transfer:${offer.id}:cancelled`,
+      title: 'Transferencia cancelada',
+      body: `${senderName} canceló la transferencia para «${eventTitle}».`,
+      href: '/me/tickets',
+      sendInApp: prefs.webNotificationsEnabled,
+      sendEmail: prefs.emailNotificationsEnabled,
+      preferences: prefs,
+      emailTemplateId: TRANSFER_EMAIL_TEMPLATES.cancelled,
+      emailTemplateVariables: buildTicketTransferCancelledVariables({
+        recipientName: formatPersonName(buyer.firstName, buyer.lastName),
+        senderName,
+        ticketsUrl: transferTicketsUrl(),
+        ticketName: this.ticketNameFromOffer(offer),
+        event: this.eventContextFromOffer(offer),
+      }),
+    });
   }
 
   async expireDueOffers(): Promise<number> {

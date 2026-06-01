@@ -7,6 +7,11 @@ import {
   shouldSendEmailForReviewEngagement,
   shouldSendPushForKind,
 } from '../me/user-portal-preferences.util';
+import {
+  buildReviewEmailTemplateVariables,
+  reviewEmailTemplateId,
+  type ReviewEmailIds,
+} from './review-email-template.util';
 import { UserNotificationsService } from './user-notifications.service';
 
 type ReviewEventContext = {
@@ -52,6 +57,7 @@ export class ReviewNotificationsService {
         href: managedReviewsHref(event.category, event.id),
         sendEmail: true,
         sendPush: true,
+        emailIds: { reviewId },
       },
     ).catch((err) => {
       this.logger.error(`notifyReviewReceived failed review=${reviewId}`, err);
@@ -75,6 +81,8 @@ export class ReviewNotificationsService {
       sendEmail: true,
       sendPush: true,
       emailPref: 'engagement',
+      emailIds: { reviewId },
+      event,
     }).catch((err) => {
       this.logger.error(`notifyOfficialReply failed review=${reviewId}`, err);
     });
@@ -95,6 +103,7 @@ export class ReviewNotificationsService {
       href: managedReviewsHref(event.category, event.id),
       sendEmail: true,
       sendPush: false,
+      emailIds: { disputeId },
     }).catch((err) => {
       this.logger.error(`notifyDisputeCreated failed dispute=${disputeId}`, err);
     });
@@ -115,6 +124,7 @@ export class ReviewNotificationsService {
       href: managedReviewsHref(event.category, event.id),
       sendEmail: true,
       sendPush: true,
+      emailIds: { disputeId, reviewId },
     }).catch((err) => {
       this.logger.error(`notifyDisputeAccepted failed dispute=${disputeId}`, err);
     });
@@ -144,6 +154,7 @@ export class ReviewNotificationsService {
       href: managedReviewsHref(event.category, event.id),
       sendEmail: true,
       sendPush: false,
+      emailIds: { disputeId },
     }).catch((err) => {
       this.logger.error(`notifyDisputeRejected failed dispute=${disputeId}`, err);
     });
@@ -166,6 +177,8 @@ export class ReviewNotificationsService {
       sendEmail: true,
       sendPush: false,
       emailPref: 'engagement',
+      emailIds: { reviewId },
+      event,
     }).catch((err) => {
       this.logger.error(`notifyReviewHidden failed review=${reviewId}`, err);
     });
@@ -187,6 +200,8 @@ export class ReviewNotificationsService {
       sendEmail: true,
       sendPush: false,
       emailPref: 'engagement',
+      emailIds: { reviewId },
+      event,
     }).catch((err) => {
       this.logger.error(`notifyReviewRestored failed review=${reviewId}`, err);
     });
@@ -204,6 +219,7 @@ export class ReviewNotificationsService {
       href: string;
       sendEmail: boolean;
       sendPush: boolean;
+      emailIds: ReviewEmailIds;
     },
   ): Promise<void> {
     const exclude = new Set(excludeUserIds);
@@ -216,6 +232,7 @@ export class ReviewNotificationsService {
         sendEmail: payload.sendEmail,
         sendPush: payload.sendPush,
         emailPref: 'managed',
+        event,
       });
     }
   }
@@ -233,11 +250,13 @@ export class ReviewNotificationsService {
       sendEmail: boolean;
       sendPush: boolean;
       emailPref: 'managed' | 'engagement';
+      emailIds: ReviewEmailIds;
+      event: ReviewEventContext;
     },
   ): Promise<void> {
     const user = await this.prisma.user.findFirst({
       where: { id: userId, tenantId, deletedAt: null },
-      select: { email: true, preferences: true },
+      select: { email: true, preferences: true, firstName: true, lastName: true },
     });
     if (!user) return;
 
@@ -250,6 +269,19 @@ export class ReviewNotificationsService {
         : shouldSendEmailForReviewEngagement(prefs));
     const sendPush =
       input.sendPush && shouldSendPushForKind(prefs, input.kind);
+
+    const templateId = sendEmail ? reviewEmailTemplateId(input.kind) : null;
+    const emailTemplateVariables =
+      templateId != null
+        ? await buildReviewEmailTemplateVariables(
+            this.prisma,
+            input.kind,
+            input.event,
+            input.href,
+            user,
+            input.emailIds,
+          )
+        : undefined;
 
     await this.notifications.deliver({
       tenantId,
@@ -264,6 +296,9 @@ export class ReviewNotificationsService {
       sendEmail,
       sendPush,
       preferences: prefs,
+      ...(templateId && emailTemplateVariables
+        ? { emailTemplateId: templateId, emailTemplateVariables }
+        : {}),
     });
   }
 

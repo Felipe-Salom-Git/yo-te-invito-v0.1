@@ -15,6 +15,7 @@ import {
 } from '@yo-te-invito/shared';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ReferralsService } from './referrals.service';
+import { ReferralEmailsService } from './referral-emails.service';
 import { referralCheckoutUrl } from '../../common/referral-checkout-url';
 import {
   hasBlockingActiveProposal,
@@ -41,6 +42,7 @@ export class ReferralProposalsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly referrals: ReferralsService,
+    private readonly referralEmails: ReferralEmailsService,
   ) {}
 
   async createForProducer(
@@ -109,6 +111,7 @@ export class ReferralProposalsService {
       include: proposalInclude,
     });
 
+    this.referralEmails.notifyProposalReceived(tenantId, row.id);
     return this.toDto(tenantId, row);
   }
 
@@ -266,6 +269,7 @@ export class ReferralProposalsService {
       return { proposal, agreement };
     });
 
+    this.referralEmails.notifyProposalAccepted(tenantId, proposalId);
     const proposalDto = this.toDto(tenantId, result.proposal);
     return {
       proposal: proposalDto,
@@ -311,6 +315,7 @@ export class ReferralProposalsService {
       data: { status: 'REJECTED', respondedAt: new Date() },
       include: proposalInclude,
     });
+    this.referralEmails.notifyProposalRejected(tenantId, proposalId);
     return this.toDto(tenantId, updated);
   }
 
