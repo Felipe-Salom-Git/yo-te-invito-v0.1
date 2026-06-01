@@ -1,4 +1,4 @@
-import nodemailer from 'nodemailer';
+import { createTransport } from 'nodemailer';
 import type { Transporter } from 'nodemailer';
 import { resolveMailFrom, resolveMailReplyTo } from '../mail-config';
 import type { SendEmailOptions, SendEmailResult } from '../send-email-options';
@@ -29,7 +29,7 @@ export class SmtpMailProvider implements MailProvider {
     const port = Number(process.env.SMTP_PORT ?? 465);
     const secure = parseSmtpSecure();
 
-    this.transporter = nodemailer.createTransport({
+    this.transporter = createTransport({
       host,
       port: Number.isFinite(port) ? port : 465,
       secure,
