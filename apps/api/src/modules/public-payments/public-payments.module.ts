@@ -8,14 +8,13 @@ import { OrderFulfillmentService } from './order-fulfillment.service';
 import { GetnetWebhookService } from './getnet-webhook.service';
 import { GetnetReconciliationService } from './getnet-reconciliation.service';
 import { CheckoutPaymentStatusService } from './checkout-payment-status.service';
-import { GetnetAuthService } from './providers/getnet/getnet-auth.service';
-import { GetnetCheckoutService } from './providers/getnet/getnet-checkout.service';
+import { GetnetModule } from './providers/getnet/getnet.module';
 import { TicketingModule } from '../../ticketing/ticketing.module';
 import { ReferralsModule } from '../referrals/referrals.module';
 import { EmailModule } from '../../email/email.module';
 
 @Module({
-  imports: [TicketingModule, ReferralsModule, EmailModule],
+  imports: [TicketingModule, ReferralsModule, EmailModule, GetnetModule],
   controllers: [
     PublicPaymentsGetnetWebhookController,
     PublicOrderPaymentsController,
@@ -28,8 +27,6 @@ import { EmailModule } from '../../email/email.module';
     GetnetWebhookService,
     GetnetReconciliationService,
     CheckoutPaymentStatusService,
-    GetnetAuthService,
-    GetnetCheckoutService,
   ],
   exports: [
     OrderFulfillmentService,
