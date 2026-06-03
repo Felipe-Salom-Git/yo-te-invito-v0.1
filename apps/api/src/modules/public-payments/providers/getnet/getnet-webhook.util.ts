@@ -66,7 +66,14 @@ export function extractGetnetWebhookEventId(body: GetnetWebhookBody): string | n
 export function extractGetnetExternalPaymentId(
   body: GetnetWebhookBody,
 ): string | null {
+  const raw = body as Record<string, unknown>;
+  const paymentIntentId =
+    (typeof raw.paymentIntentId === 'string' && raw.paymentIntentId.trim()) ||
+    (typeof raw.payment_intent_id === 'string' && raw.payment_intent_id.trim()) ||
+    null;
+
   return (
+    paymentIntentId ||
     body.externalPaymentId?.trim() ||
     body.externalReference?.trim() ||
     body.uuid?.trim() ||
@@ -95,6 +102,31 @@ export function verifyWebhookSecret(
   const b = Buffer.from(expected, 'utf8');
   if (a.length !== b.length) return false;
   return timingSafeEqual(a, b);
+}
+
+export function verifyWebhookBasicAuth(
+  authorizationHeader: string | undefined,
+  expectedUser: string,
+  expectedPassword: string,
+): boolean {
+  if (!expectedUser || !expectedPassword) return false;
+  if (!authorizationHeader?.startsWith('Basic ')) return false;
+  try {
+    const decoded = Buffer.from(
+      authorizationHeader.slice('Basic '.length).trim(),
+      'base64',
+    ).toString('utf8');
+    const sep = decoded.indexOf(':');
+    if (sep < 0) return false;
+    const user = decoded.slice(0, sep);
+    const pass = decoded.slice(sep + 1);
+    return (
+      verifyWebhookSecret(user, expectedUser) &&
+      verifyWebhookSecret(pass, expectedPassword)
+    );
+  } catch {
+    return false;
+  }
 }
 
 export type StoredWebhookEvent = {

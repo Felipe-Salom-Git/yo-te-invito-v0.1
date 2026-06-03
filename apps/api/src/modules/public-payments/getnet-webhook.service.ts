@@ -23,6 +23,7 @@ import {
   readPaymentWebhookMetadata,
   sanitizeWebhookBodyForStorage,
   verifyWebhookSecret,
+  verifyWebhookBasicAuth,
   type StoredWebhookEvent,
 } from './providers/getnet/getnet-webhook.util';
 
@@ -171,6 +172,39 @@ export class GetnetWebhookService {
     headers: Record<string, string | string[] | undefined>,
   ): void {
     const config = loadGetnetWebhookConfig();
+
+    if (config.authMode === 'basic') {
+      const authHeader = this.readHeader(headers, 'authorization');
+      if (config.requireSecret) {
+        if (!config.basicUser || !config.basicPassword) {
+          this.logger.error(
+            'GETNET_WEBHOOK_BASIC_USER/PASSWORD required for basic auth mode',
+          );
+          throw new UnauthorizedException('Webhook not configured');
+        }
+        if (
+          !verifyWebhookBasicAuth(
+            authHeader,
+            config.basicUser,
+            config.basicPassword,
+          )
+        ) {
+          throw new UnauthorizedException('Invalid webhook basic auth');
+        }
+      } else if (config.basicUser && config.basicPassword) {
+        if (
+          !verifyWebhookBasicAuth(
+            authHeader,
+            config.basicUser,
+            config.basicPassword,
+          )
+        ) {
+          throw new UnauthorizedException('Invalid webhook basic auth');
+        }
+      }
+      return;
+    }
+
     if (!config.requireSecret) {
       if (config.secret) {
         const provided = this.readHeader(headers, config.headerName);
@@ -209,10 +243,14 @@ export class GetnetWebhookService {
     externalPaymentId: string,
     tenantId?: string,
   ) {
-    return this.prisma.payment.findFirst({
+    const baseWhere = {
+      provider: 'GETNET' as const,
+      ...(tenantId ? { tenantId } : {}),
+    };
+
+    const direct = await this.prisma.payment.findFirst({
       where: {
-        provider: 'GETNET',
-        ...(tenantId ? { tenantId } : {}),
+        ...baseWhere,
         OR: [
           { externalReference: externalPaymentId },
           { externalPaymentId: externalPaymentId },
@@ -224,6 +262,26 @@ export class GetnetWebhookService {
         metadata: true,
       },
     });
+    if (direct) return direct;
+
+    const candidates = await this.prisma.payment.findMany({
+      where: baseWhere,
+      select: {
+        id: true,
+        orderId: true,
+        metadata: true,
+      },
+      take: 200,
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return (
+      candidates.find((p) => {
+        if (!p.metadata || typeof p.metadata !== 'object') return false;
+        const meta = p.metadata as Record<string, unknown>;
+        return meta.paymentIntentId === externalPaymentId;
+      }) ?? null
+    );
   }
 
   private async persistWebhookEvent(

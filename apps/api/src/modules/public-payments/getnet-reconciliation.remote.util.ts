@@ -1,8 +1,9 @@
 import { loadGetnetConfig } from './providers/getnet/getnet.config';
+import { loadGetnetWebCheckoutConfig } from './providers/getnet/webcheckout/getnet-webcheckout.config';
 
 /** True when OAuth/client credentials are present for remote Getnet API calls. */
 export function isGetnetRemoteConfigured(): boolean {
-  return loadGetnetConfig().enabled;
+  return loadGetnetConfig().enabled || loadGetnetWebCheckoutConfig().enabled;
 }
 
 /**

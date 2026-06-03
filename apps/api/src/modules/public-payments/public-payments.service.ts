@@ -11,6 +11,11 @@ import { ErrorCode } from '@yo-te-invito/shared';
 import type { PaymentProviderApi } from '@yo-te-invito/shared';
 import { GetnetCheckoutService } from './providers/getnet/getnet-checkout.service';
 import { loadGetnetConfig } from './providers/getnet/getnet.config';
+import {
+  loadGetnetWebCheckoutConfig,
+  isWebCheckoutPaymentMetadata,
+} from './providers/getnet/webcheckout/getnet-webcheckout.config';
+import { GetnetWebCheckoutClientService } from './providers/getnet/webcheckout/getnet-webcheckout-client.service';
 import { TicketBatchService } from '../../ticketing/ticket-batch.service';
 import { OrderFulfillmentService } from './order-fulfillment.service';
 import { GetnetReconciliationService } from './getnet-reconciliation.service';
@@ -24,6 +29,8 @@ export interface CreatePaymentResult {
   status: string;
   /** For Getnet: external checkout URL to redirect user */
   checkoutUrl?: string;
+  /** Web Checkout Redirect URL (same as checkoutUrl when using Web Checkout) */
+  redirectUrl?: string;
   provider?: string;
 }
 
@@ -41,6 +48,7 @@ export class PublicPaymentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly getnetCheckout: GetnetCheckoutService,
+    private readonly getnetWebCheckout: GetnetWebCheckoutClientService,
     private readonly ticketBatches: TicketBatchService,
     private readonly orderFulfillment: OrderFulfillmentService,
     private readonly getnetReconciliation: GetnetReconciliationService,
@@ -162,6 +170,17 @@ export class PublicPaymentsService {
     amountCents: number,
     providerTyped: 'GETNET',
   ): Promise<CreatePaymentResult> {
+    const webCheckoutConfig = loadGetnetWebCheckoutConfig();
+    if (webCheckoutConfig.enabled) {
+      return this.createGetnetWebCheckoutPayment(
+        orderId,
+        tenantId,
+        order,
+        amountCents,
+        providerTyped,
+      );
+    }
+
     const config = loadGetnetConfig();
     if (!config.enabled) {
       throw new NotFoundException({
@@ -249,6 +268,110 @@ export class PublicPaymentsService {
       paymentUrl: getnetResult.checkoutUrl,
       status: payment.status,
       checkoutUrl: getnetResult.checkoutUrl,
+      provider: providerTyped,
+    };
+  }
+
+  private async createGetnetWebCheckoutPayment(
+    orderId: string,
+    tenantId: string,
+    order: { id: string; totalAmount: unknown; currency: string },
+    amountCents: number,
+    providerTyped: 'GETNET',
+  ): Promise<CreatePaymentResult> {
+    const config = loadGetnetWebCheckoutConfig();
+    if (!config.enabled) {
+      throw new NotFoundException({
+        code: ErrorCode.NOT_FOUND,
+        message: 'Getnet Web Checkout is not configured',
+      });
+    }
+
+    const fullOrder = await this.prisma.order.findUniqueOrThrow({
+      where: { id: orderId },
+      include: { orderItems: { include: { ticketType: true } } },
+    });
+
+    const payment = await this.prisma.payment.create({
+      data: {
+        tenantId,
+        orderId,
+        provider: providerTyped,
+        status: 'PENDING',
+        amount: amountCents,
+        currency: order.currency,
+      },
+    });
+
+    const returnUrl = buildCheckoutReturnUrl({
+      orderId,
+      paymentId: payment.id,
+      tenantId,
+    });
+    const errorUrl = buildCheckoutReturnUrl({
+      orderId,
+      paymentId: payment.id,
+      tenantId,
+      cancelled: true,
+    });
+
+    const products = fullOrder.orderItems.map((oi) => ({
+      productType: 'service',
+      title: oi.ticketType.name,
+      description: 'Entrada Yo Te Invito',
+      valueMinor: Math.round(Number(oi.unitPrice) * 100),
+      quantity: oi.quantity,
+    }));
+
+    let intentResult;
+    try {
+      intentResult = await this.getnetWebCheckout.createPaymentIntent({
+        orderId,
+        currency: order.currency,
+        amountMinor: amountCents,
+        successUrl: returnUrl,
+        errorUrl,
+        products,
+        expiresAt: '15m',
+      });
+    } catch (e) {
+      await this.prisma.payment.update({
+        where: { id: payment.id },
+        data: { status: 'REJECTED' },
+      });
+      const msg = e instanceof Error ? e.message : String(e);
+      this.logger.warn(`Getnet Web Checkout payment-intent failed: ${msg}`);
+      throw new ConflictException({
+        code: ErrorCode.CONFLICT,
+        message: `Payment provider error: ${msg}`,
+      });
+    }
+
+    await this.prisma.payment.update({
+      where: { id: payment.id },
+      data: {
+        externalReference: intentResult.paymentIntentId,
+        paymentUrl: intentResult.redirectUrl,
+        metadata: {
+          getnetIntegration: 'webcheckout',
+          webCheckoutEnv: config.env,
+          paymentIntentId: intentResult.paymentIntentId,
+          redirectUrl: intentResult.redirectUrl,
+          getnetOrderId: orderId,
+          returnUrl,
+          errorUrl,
+          webCheckoutResponse: intentResult.raw,
+          getnetReturnConfiguredAt: new Date().toISOString(),
+        } as Prisma.InputJsonValue,
+      },
+    });
+
+    return {
+      paymentId: payment.id,
+      paymentUrl: intentResult.redirectUrl,
+      status: 'PENDING',
+      checkoutUrl: intentResult.redirectUrl,
+      redirectUrl: intentResult.redirectUrl,
       provider: providerTyped,
     };
   }
@@ -387,6 +510,15 @@ export class PublicPaymentsService {
     }
 
     if (payment.provider !== 'GETNET' || !payment.externalReference) {
+      return {
+        paymentId: payment.id,
+        orderId: payment.orderId,
+        status: payment.status,
+        orderStatus: payment.order.status,
+      };
+    }
+
+    if (isWebCheckoutPaymentMetadata(payment.metadata)) {
       return {
         paymentId: payment.id,
         orderId: payment.orderId,

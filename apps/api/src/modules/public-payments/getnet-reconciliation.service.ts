@@ -28,6 +28,7 @@ import type {
 } from './getnet-reconciliation.types';
 import { toFulfillSource } from './getnet-reconciliation.types';
 import { shouldSkipRemoteStatusFetch } from './getnet-reconciliation.remote.util';
+import { isWebCheckoutPaymentMetadata } from './providers/getnet/webcheckout/getnet-webcheckout.config';
 import { ErrorCode } from '@yo-te-invito/shared';
 
 @Injectable()
@@ -115,6 +116,18 @@ export class GetnetReconciliationService {
           dryRun,
           message:
             'Getnet credentials not configured; remote status checks skipped',
+        };
+      }
+      if (isWebCheckoutPaymentMetadata(payment.metadata)) {
+        return {
+          paymentId: payment.id,
+          orderId: order.id,
+          outcome: 'REMOTE_STATUS_UNAVAILABLE',
+          orderStatus: order.status,
+          localPaymentStatus: payment.status,
+          dryRun,
+          message:
+            'Web Checkout remote poll not implemented; rely on webhook or manual reconcile with status override',
         };
       }
       try {

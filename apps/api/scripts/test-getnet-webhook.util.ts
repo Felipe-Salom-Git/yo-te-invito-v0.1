@@ -9,6 +9,7 @@ import {
   mapGetnetWebhookStatusToLocal,
   shouldApplyPaymentStatusUpdate,
   verifyWebhookSecret,
+  verifyWebhookBasicAuth,
   appendWebhookEventMetadata,
   extractGetnetExternalPaymentId,
   hashWebhookPayload,
@@ -42,6 +43,16 @@ assert(shouldApplyPaymentStatusUpdate('PENDING', 'APPROVED'), 'PENDING to APPROV
 assert(verifyWebhookSecret('secret', 'secret'), 'secret match');
 assert(!verifyWebhookSecret('wrong', 'secret'), 'secret mismatch');
 
+const basicToken = Buffer.from('user:pass').toString('base64');
+assert(
+  verifyWebhookBasicAuth(`Basic ${basicToken}`, 'user', 'pass'),
+  'basic auth match',
+);
+assert(
+  !verifyWebhookBasicAuth(`Basic ${basicToken}`, 'user', 'wrong'),
+  'basic auth mismatch',
+);
+
 const key1 = buildWebhookIdempotencyKey({
   eventId: 'evt_1',
   externalPaymentId: 'ext',
@@ -72,6 +83,14 @@ assert(
     uuid: 'uuid-123',
   }) === 'uuid-123',
   'extract uuid',
+);
+
+assert(
+  extractGetnetExternalPaymentId({
+    status: 'APPROVED',
+    payment_intent_id: 'pi_abc',
+  }) === 'pi_abc',
+  'extract payment_intent_id',
 );
 
 console.log('OK: getnet-webhook util tests passed');

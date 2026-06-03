@@ -32,9 +32,23 @@ Integración de Getnet Checkout para pagos reales en Yo Te Invito.
 
 No usar hosts `*.preprod.geopagos.com` / `api-santander.preprod.geopagos.com` — responden **404**.
 
-## GETNET_WEB_CHECKOUT_* Credentials
+## Getnet Web Checkout Redirect (`GETNET_WEBCHECKOUT_*`)
 
-**Not used** in this integration. The standard checkout-link flow uses only `GETNET_CLIENT_ID` and `GETNET_CLIENT_SECRET` with `client_credentials` OAuth. If Getnet provides separate web-checkout credentials in the future, they can be wired via these env vars; for now they are not required.
+When `GETNET_WEBCHECKOUT_CLIENT_ID`, `SECRET_KEY`, and `SELLER_ID` are set, **Web Checkout Redirect** takes precedence over legacy Checkout API v2.
+
+See [GETNET_WEBCHECKOUT_REDIRECT_IMPLEMENTATION.md](../payments/GETNET_WEBCHECKOUT_REDIRECT_IMPLEMENTATION.md).
+
+| Variable | Description |
+|----------|-------------|
+| `GETNET_WEBCHECKOUT_ENV` | `pre` (default), `sandbox`, `production` |
+| `GETNET_WEBCHECKOUT_*` | Auth + payment-intent on `api.pre` / `api.globalgetnet.com` |
+| `GETNET_WEBHOOK_AUTH_MODE` | `basic` for portal webhook user/password |
+
+Legacy `GETNET_CLIENT_*` remains as fallback when Web Checkout env is not configured.
+
+## GETNET_WEB_CHECKOUT_* (legacy note)
+
+Previously documented as unused. Superseded by `GETNET_WEBCHECKOUT_*` (see above).
 
 ## DB Fields Used
 
