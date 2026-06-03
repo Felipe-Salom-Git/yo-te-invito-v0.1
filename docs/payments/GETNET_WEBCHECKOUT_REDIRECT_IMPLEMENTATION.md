@@ -118,6 +118,8 @@ En `Payment.metadata`:
 
 `/checkout/return` sin cambios de contrato: poll `refresh-status` + `CheckoutPaymentStatusView`.
 
+**Portal URLs fijas:** alias en web — ver [GETNET_PORTAL_URL_COMPATIBILITY.md](./GETNET_PORTAL_URL_COMPATIBILITY.md) (`/checkout/success`, `/checkout/error`, `/api/getnet/callback` → return + API webhook).
+
 Web Checkout: poll remoto **no implementado** (pendiente GET payment-intent status); confiar en webhook o refresh con override manual.
 
 ---
@@ -156,6 +158,7 @@ GETNET_WEBCHECKOUT_CONFIRM_PRE=yes pnpm --filter api run smoke:getnet-webcheckou
 
 ## Referencias
 
+- [GETNET_PORTAL_URL_COMPATIBILITY.md](./GETNET_PORTAL_URL_COMPATIBILITY.md)
 - [GETNET_WEBCHECKOUT_REDIRECT_CLOSING.md](./GETNET_WEBCHECKOUT_REDIRECT_CLOSING.md)
 - [NEXT_CHAT_GETNET_WEBCHECKOUT_HANDOFF.md](../context/NEXT_CHAT_GETNET_WEBCHECKOUT_HANDOFF.md)
 - [GETNET_CHECKOUT_RETURN_FLOW.md](./GETNET_CHECKOUT_RETURN_FLOW.md)

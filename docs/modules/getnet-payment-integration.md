@@ -113,7 +113,9 @@ Al crear un pago Getnet, la API guarda en `Payment.metadata`:
 
 Detalle: [GETNET_CHECKOUT_RETURN_FLOW.md](../payments/GETNET_CHECKOUT_RETURN_FLOW.md).
 
-Si el dashboard de Getnet permite URLs fijas, apuntar al mismo patrón. El frontend no confía en query `status`.
+**Portal Getnet (URLs no editables):** alias web documentados en [GETNET_PORTAL_URL_COMPATIBILITY.md](../payments/GETNET_PORTAL_URL_COMPATIBILITY.md) — `/checkout/success` y `/checkout/error` redirigen a `/checkout/return`; `/api/getnet/callback` en Next.js hace proxy al webhook API (incl. `Authorization: Basic`).
+
+Si el dashboard permite cambiar URLs, usar directamente return + `api.yoteinvito.club/.../webhook`. El frontend no confía en query `status`.
 
 ## Checkout UI
 

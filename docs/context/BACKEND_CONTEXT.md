@@ -259,6 +259,8 @@ Opcional cron: `NOTIFICATIONS_CRON_ENABLED=false`, `NOTIFICATION_REMINDER_HOURS`
 
 **Smokes:** `pnpm --filter api run smoke:legal` | `test:legal-documents` | `test:me-legal-acceptance`. Requiere API + `DEV_AUTH_ENABLED=true` (o JWT) y usuario ADMIN para tests admin.
 
+**Getnet portal callback:** el webhook real sigue en `POST /public/payments/getnet/webhook` (Basic Auth / header). La URL fija del portal `https://yoteinvito.club/api/getnet/callback` la atiende Next.js y reenvía al API — ver [GETNET_PORTAL_URL_COMPATIBILITY.md](../payments/GETNET_PORTAL_URL_COMPATIBILITY.md).
+
 **Docs:** `docs/legal/LEGAL_ADMIN_MODULE.md`, `docs/dev/LEGAL_ADMIN_QA_SMOKE.md`, `docs/audits/LEGAL_ADMIN_AUDIT.md`. UI: `FRONTEND_CONTEXT.md` §8e.
 
 **Pendiente:** redacción legal; bloqueos duros portal; disclaimers hardcoded → documentos publicados.

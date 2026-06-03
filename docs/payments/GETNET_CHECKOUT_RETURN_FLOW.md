@@ -10,7 +10,8 @@ Cerrar la experiencia del comprador después de pagar con Getnet (o volver del c
 |------|-----|
 | `/checkout/return` | Retorno principal desde Getnet (y consulta manual de estado) |
 | `/checkout/[eventId]` | Checkout por evento; `?tenantId=&orderId=` |
-| `/checkout/success` | Multi-orden / demo legacy (`orderIds` o `orderId`) |
+| `/checkout/success` | Demo carrito invitado si `orderIds`; si no, alias → `/checkout/return` (portal Getnet) |
+| `/checkout/error` | Alias portal → `/checkout/return?cancelled=1` |
 | `/me/orders/[orderId]` | Detalle autenticado con enlace a `/checkout/return` |
 
 Query params en retorno (no son fuente de verdad del estado):

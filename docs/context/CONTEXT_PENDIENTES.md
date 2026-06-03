@@ -184,6 +184,7 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 - [ ] **Legales:** reemplazar bootstrap temporal por contenido aprobado en `/admin/legales`
 - [ ] Smoke completo desde dominio real (home, login, admin, checkout demo, scanner QR, emails si Resend)
 - [ ] Getnet **go-live** en producción — código/docs slices A–G en [GETNET_CLOSING_AUDIT.md](../payments/GETNET_CLOSING_AUDIT.md) (`main`); Web Checkout Redirect en `feat/v1-s03-api-foundation` — [NEXT_CHAT_GETNET_WEBCHECKOUT_HANDOFF.md](./NEXT_CHAT_GETNET_WEBCHECKOUT_HANDOFF.md); ejecutar deploy VPS + [GETNET_ACTIVATION_CHECKLIST.md](../payments/GETNET_ACTIVATION_CHECKLIST.md). Pendiente: smoke PRE credenciales válidas, webhook Basic Auth portal, prueba monto mínimo, merge `main` explícito.
+- [x] Alias URLs fijas portal Getnet (`/checkout/success`, `/checkout/error`, `/api/getnet/callback`) — [GETNET_PORTAL_URL_COMPATIBILITY.md](../payments/GETNET_PORTAL_URL_COMPATIBILITY.md).
 - [ ] **SEO técnico (SEO 2–9):** robots/sitemap, no-index portales, metadata dinámica, JSON-LD, GSC — baseline [`SEO_TECHNICAL_AUDIT.md`](../audits/SEO_TECHNICAL_AUDIT.md)
 
 ### Google Cloud — Etapa A manual (cerrada) / Etapa B (Storage cerrado; Maps/SEO pendiente)
