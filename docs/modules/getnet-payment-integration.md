@@ -55,6 +55,8 @@ Legacy `GETNET_CLIENT_*` remains as fallback when Web Checkout env is not config
 
 Smoke: `pnpm --filter api run smoke:getnet-webcheckout -- --config|--auth|--payment-intent --dry-run`
 
+**Smoke productivo payment-intent (validado):** con `GETNET_WEBCHECKOUT_CONFIRM_PROD=yes` y `--confirm --amount 50000` → auth + intent OK en `api.globalgetnet.com`; `payment_intent_id` recibido; `redirect_url` recibido (salida smoke sanitizada, sin URL completa). No captura pago. Ver [GETNET_PRODUCTION_SMOKE.md](../payments/GETNET_PRODUCTION_SMOKE.md).
+
 ## GETNET_WEB_CHECKOUT_* (legacy note)
 
 Previously documented as unused. Superseded by `GETNET_WEBCHECKOUT_*` (see above).

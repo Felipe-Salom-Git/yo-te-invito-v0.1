@@ -157,6 +157,26 @@ GETNET_WEBCHECKOUT_CONFIRM_PROD=yes pnpm --filter api run smoke:getnet-webchecko
 
 POST producción exige `GETNET_WEBCHECKOUT_CONFIRM_PROD=yes` explícito.
 
+El script **no imprime** `redirect_url` completo ni tokens; en éxito muestra `redirect_url: received`, `redirect_host` y `redirect_path` enmascarado (`scripts/smoke-getnet-webcheckout-output.util.ts`).
+
+### Smoke productivo payment-intent (validado 2026-06)
+
+Comando (solo con autorización explícita):
+
+```bash
+GETNET_WEBCHECKOUT_CONFIRM_PROD=yes pnpm --filter api run smoke:getnet-webcheckout -- --payment-intent --confirm --amount 50000
+```
+
+| Resultado | Estado |
+|-----------|--------|
+| Auth producción (`api.globalgetnet.com`) | OK |
+| Payment intent producción | OK |
+| Monto usado | `50000` centavos / $500,00 ARS |
+| `payment_intent_id` | Recibido (se loguea en smoke) |
+| `redirect_url` | Recibido; salida sanitizada (no URL completa) |
+| Pago confirmado / capturado | **No** — este smoke solo crea intent |
+| Próximo paso | Flujo app local: checkout Yo Te Invito → redirect comprador → return + webhook |
+
 ---
 
 ## 11. Código
@@ -168,6 +188,8 @@ POST producción exige `GETNET_WEBCHECKOUT_CONFIRM_PROD=yes` explícito.
 | `providers/getnet/webcheckout/getnet-webcheckout-client.service.ts` | payment-intent |
 | `public-payments.service.ts` | Orquestación + metadata |
 | `getnet-webhook.service.ts` | Basic auth + lookup intent |
+| `scripts/smoke-getnet-webcheckout.ts` | Smoke config/auth/intent |
+| `scripts/smoke-getnet-webcheckout-output.util.ts` | Sanitización logs smoke |
 
 ---
 

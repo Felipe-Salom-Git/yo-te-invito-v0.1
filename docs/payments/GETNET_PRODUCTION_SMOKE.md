@@ -27,7 +27,31 @@ Opcional OAuth:
 ```bash
 pnpm --filter api run test:getnet-auth
 pnpm --filter api run smoke:getnet -- --config --check-auth
+pnpm --filter api run smoke:getnet-webcheckout -- --auth
+pnpm --filter api run smoke:getnet-webcheckout -- --payment-intent --dry-run
 ```
+
+### Smoke productivo payment-intent (Web Checkout Redirect)
+
+Solo con autorización explícita y `GETNET_WEBCHECKOUT_CONFIRM_PROD=yes`:
+
+```bash
+GETNET_WEBCHECKOUT_CONFIRM_PROD=yes pnpm --filter api run smoke:getnet-webcheckout -- --payment-intent --confirm --amount 50000
+```
+
+Validado en desarrollo (rama `feat/v1-s03-api-foundation`):
+
+| Check | Resultado |
+|-------|-----------|
+| Auth producción | OK |
+| Payment intent producción | OK |
+| Monto | 50000 centavos ($500,00 ARS) |
+| `payment_intent_id` | Recibido |
+| `redirect_url` | Recibido (log sanitizado: host + path enmascarado) |
+| Cobro capturado | No — solo creación de intent |
+| Siguiente paso | Checkout real en app → redirect → `/checkout/return` + webhook |
+
+No re-ejecutar `--confirm` en CI ni sin checklist; el smoke no imprime URLs completas ni tokens.
 
 Tests unitarios helpers:
 

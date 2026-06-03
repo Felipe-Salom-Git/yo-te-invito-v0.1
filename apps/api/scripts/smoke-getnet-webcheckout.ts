@@ -19,6 +19,10 @@ import {
   buildSmokeWebCheckoutCustomer,
   SMOKE_WEBCHECKOUT_AMOUNT_DEFAULT,
 } from '../src/modules/public-payments/providers/getnet/webcheckout/getnet-webcheckout-customer.util';
+import {
+  logSanitizedRedirectUrl,
+  sanitizeSmokeLogText,
+} from './smoke-getnet-webcheckout-output.util';
 
 function loadEnvFile() {
   try {
@@ -144,7 +148,8 @@ async function runAuth(): Promise<number> {
     console.log('OK: OAuth token obtained (value not printed).');
     return 0;
   } catch (e) {
-    console.error(`FAIL: ${e instanceof Error ? e.message : String(e)}`);
+    const raw = e instanceof Error ? e.message : String(e);
+    console.error(`FAIL: ${sanitizeSmokeLogText(raw)}`);
     return 1;
   }
 }
@@ -270,9 +275,10 @@ async function main() {
       });
       console.log('\nOK: payment-intent created');
       console.log(`payment_intent_id: ${result.paymentIntentId}`);
-      console.log(`redirect_url: ${result.redirectUrl}`);
+      logSanitizedRedirectUrl(result.redirectUrl);
     } catch (e) {
-      console.error(`FAIL: ${e instanceof Error ? e.message : String(e)}`);
+      const raw = e instanceof Error ? e.message : String(e);
+      console.error(`FAIL: ${sanitizeSmokeLogText(raw)}`);
       process.exit(1);
     }
   }

@@ -141,15 +141,28 @@ Smoke legacy (GeoPagos / webhook simulado): `pnpm --filter api run smoke:getnet 
 | `pnpm --filter web run build` | OK |
 | `pnpm --filter api run test:getnet-webhook` | OK |
 
-**No ejecutado en este cierre:** auth PRE OK, POST payment-intent PRE con credenciales válidas (pendiente operativo).
+**Validado en rama `feat/v1-s03-api-foundation` (smoke local con credenciales en `.env`, no commitear):**
+
+- [x] Auth producción (`smoke:getnet-webcheckout -- --auth`) — OK.
+- [x] POST payment-intent producción controlado (`GETNET_WEBCHECKOUT_CONFIRM_PROD=yes`, `--amount 50000`) — OK; `payment_intent_id` + `redirect_url` recibidos; logs sanitizados.
+
+### Smoke productivo payment-intent
+
+- Auth producción: OK
+- Payment intent producción: OK
+- Monto usado: 50000 centavos / $500,00 ARS
+- `payment_intent_id`: recibido
+- `redirect_url`: recibido y sanitizado en consola
+- Pago no confirmado desde este smoke
+- Próximo paso: probar flujo app local / checkout real Yo Te Invito
 
 ---
 
 ## 9. Pendientes
 
-- [ ] Credenciales PRE válidas en `apps/api/.env` local (no commitear).
-- [ ] `smoke:getnet-webcheckout -- --auth` → HTTP 200 en `api.pre`.
-- [ ] POST payment-intent PRE controlado → `payment_intent_id` + `redirect_url`.
+- [ ] Credenciales PRE válidas en `apps/api/.env` local (no commitear) — opcional si prod ya validado.
+- [ ] `smoke:getnet-webcheckout -- --auth` en PRE si se requiere homologación separada.
+- [ ] POST payment-intent PRE controlado (opcional si prod OK).
 - [ ] Configurar webhook Basic Auth en portal Getnet (URL + user/password).
 - [ ] Flujo E2E: checkout → redirect → return → webhook → tickets.
 - [ ] Implementar poll remoto payment-intent status si Getnet documenta GET (hoy webhook es camino principal).
