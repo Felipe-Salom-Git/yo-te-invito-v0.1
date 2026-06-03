@@ -38,3 +38,42 @@ export function buildWebCheckoutCustomer(order: {
     checked_email: true,
   };
 }
+
+/** Default smoke amount: 50000 = $500,00 ARS (centavos). */
+export const SMOKE_WEBCHECKOUT_AMOUNT_DEFAULT = 50000;
+
+/** Realistic buyer data for `smoke:getnet-webcheckout` (not production orders). */
+export const SMOKE_WEBCHECKOUT_CUSTOMER_DEFAULTS = {
+  documentNumber: '35123456',
+  firstName: 'Smoke',
+  lastName: 'Test',
+  email: 'smoke@yoteinvito.club',
+} as const;
+
+export function buildSmokeWebCheckoutCustomer(overrides?: {
+  documentNumber?: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+}): WebCheckoutCustomerPayload {
+  const documentNumber =
+    overrides?.documentNumber?.trim() ||
+    SMOKE_WEBCHECKOUT_CUSTOMER_DEFAULTS.documentNumber;
+  const firstName =
+    overrides?.firstName?.trim() || SMOKE_WEBCHECKOUT_CUSTOMER_DEFAULTS.firstName;
+  const lastName =
+    overrides?.lastName?.trim() || SMOKE_WEBCHECKOUT_CUSTOMER_DEFAULTS.lastName;
+  const email =
+    overrides?.email?.trim() || SMOKE_WEBCHECKOUT_CUSTOMER_DEFAULTS.email;
+
+  return {
+    customer_id: documentNumber,
+    first_name: firstName,
+    last_name: lastName,
+    name: `${firstName} ${lastName}`.trim(),
+    email,
+    document_type: 'DNI',
+    document_number: documentNumber,
+    checked_email: true,
+  };
+}

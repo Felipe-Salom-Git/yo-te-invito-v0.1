@@ -4,7 +4,7 @@
  *   pnpm --filter api run smoke:getnet-webcheckout -- --config
  *   pnpm --filter api run smoke:getnet-webcheckout -- --auth
  *   pnpm --filter api run smoke:getnet-webcheckout -- --payment-intent --dry-run
- *   GETNET_WEBCHECKOUT_CONFIRM_PRE=yes pnpm --filter api run smoke:getnet-webcheckout -- --payment-intent --confirm --amount 100
+ *   GETNET_WEBCHECKOUT_CONFIRM_PRE=yes pnpm --filter api run smoke:getnet-webcheckout -- --payment-intent --confirm
  *   GETNET_WEBCHECKOUT_CONFIRM_PROD=yes pnpm --filter api run smoke:getnet-webcheckout -- --payment-intent --confirm --amount 50000
  */
 import { readFileSync } from 'fs';
@@ -15,7 +15,10 @@ import {
 } from '../src/modules/public-payments/providers/getnet/webcheckout/getnet-webcheckout.config';
 import { GetnetWebCheckoutAuthService } from '../src/modules/public-payments/providers/getnet/webcheckout/getnet-webcheckout-auth.service';
 import { GetnetWebCheckoutClientService } from '../src/modules/public-payments/providers/getnet/webcheckout/getnet-webcheckout-client.service';
-import { buildWebCheckoutCustomer } from '../src/modules/public-payments/providers/getnet/webcheckout/getnet-webcheckout-customer.util';
+import {
+  buildSmokeWebCheckoutCustomer,
+  SMOKE_WEBCHECKOUT_AMOUNT_DEFAULT,
+} from '../src/modules/public-payments/providers/getnet/webcheckout/getnet-webcheckout-customer.util';
 
 function loadEnvFile() {
   try {
@@ -59,7 +62,11 @@ function parseArgs(argv: string[]) {
     paymentIntent: false,
     confirm: false,
     dryRun: false,
-    amount: 100,
+    amount: SMOKE_WEBCHECKOUT_AMOUNT_DEFAULT,
+    documentNumber: undefined as string | undefined,
+    email: undefined as string | undefined,
+    firstName: undefined as string | undefined,
+    lastName: undefined as string | undefined,
   };
 
   for (let i = 0; i < argv.length; i++) {
@@ -70,13 +77,24 @@ function parseArgs(argv: string[]) {
     else if (a === '--confirm') out.confirm = true;
     else if (a === '--dry-run') out.dryRun = true;
     else if (a === '--amount' && argv[i + 1]) {
-      out.amount = parseInt(argv[++i], 10) || 100;
+      out.amount = parseInt(argv[++i], 10) || SMOKE_WEBCHECKOUT_AMOUNT_DEFAULT;
+    } else if (a === '--document-number' && argv[i + 1]) {
+      out.documentNumber = argv[++i];
+    } else if (a === '--email' && argv[i + 1]) {
+      out.email = argv[++i];
+    } else if (a === '--first-name' && argv[i + 1]) {
+      out.firstName = argv[++i];
+    } else if (a === '--last-name' && argv[i + 1]) {
+      out.lastName = argv[++i];
     } else if (a === '--help' || a === '-h') {
       console.log(`Usage:
   smoke:getnet-webcheckout -- --config
   smoke:getnet-webcheckout -- --auth
   smoke:getnet-webcheckout -- --payment-intent --dry-run
-  GETNET_WEBCHECKOUT_CONFIRM_PRE=yes ... --payment-intent --confirm --amount 100
+  smoke:getnet-webcheckout -- --payment-intent --dry-run [--amount 50000]
+    [--document-number 35123456] [--email smoke@yoteinvito.club]
+    [--first-name Smoke] [--last-name Test]
+  GETNET_WEBCHECKOUT_CONFIRM_PRE=yes ... --payment-intent --confirm
   GETNET_WEBCHECKOUT_CONFIRM_PROD=yes ... --payment-intent --confirm --amount 50000`);
       process.exit(0);
     }
@@ -182,12 +200,11 @@ async function main() {
     }
 
     const orderId = `yti_smoke_${Date.now()}`;
-    const customer = buildWebCheckoutCustomer({
-      id: orderId,
-      buyerEmail: 'smoke@yoteinvito.club',
-      buyerFirstName: 'Smoke',
-      buyerLastName: 'Test',
-      buyerDocument: null,
+    const customer = buildSmokeWebCheckoutCustomer({
+      documentNumber: args.documentNumber,
+      email: args.email,
+      firstName: args.firstName,
+      lastName: args.lastName,
     });
 
     const payloadPreview = {
