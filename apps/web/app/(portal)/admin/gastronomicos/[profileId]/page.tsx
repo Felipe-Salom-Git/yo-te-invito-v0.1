@@ -51,12 +51,34 @@ export default function AdminGastroLocationDetailPage() {
         <p className="text-text-muted">Local no encontrado</p>
       ) : (
         <>
-          <SectionTitle>{location.displayName}</SectionTitle>
-          <p className="mt-1 text-text-muted">
-            {location.owner.email}
-            {location.owner.name ? ` · ${location.owner.name}` : ''}
-            {location.city ? ` · ${location.city}` : ''}
-          </p>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <SectionTitle>{location.displayName}</SectionTitle>
+              <p className="mt-1 text-text-muted">
+                {location.owner.email ?? 'Sin dueño (admin)'}
+                {location.owner.name ? ` · ${location.owner.name}` : ''}
+                {location.city ? ` · ${location.city}` : ''}
+              </p>
+            </div>
+            <div className="flex shrink-0 flex-wrap gap-2">
+              <Link
+                href={`/admin/gastronomicos/${profileId}/editar`}
+                className="rounded border border-accent px-3 py-1.5 text-sm text-accent hover:bg-accent/10"
+              >
+                Editar local
+              </Link>
+              {location.status === 'active' && location.publicEventId ? (
+                <Link
+                  href={`/gastronomicos/${profileId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded border border-border px-3 py-1.5 text-sm text-text-muted hover:border-accent hover:text-accent"
+                >
+                  Ver ficha pública
+                </Link>
+              ) : null}
+            </div>
+          </div>
 
           <div className="mt-6 grid gap-4 rounded-lg border border-border bg-bg-muted p-4 sm:grid-cols-2 lg:grid-cols-3">
             <Info label="Teléfono" value={location.contactPhone} />

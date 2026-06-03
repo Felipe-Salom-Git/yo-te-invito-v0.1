@@ -1,6 +1,11 @@
 import { z } from 'zod';
 import { gastroDiscountStatusSchema } from './gastro-discounts';
 import { gastroDiscountQrPayloadV1Schema } from '../gastro-discount-qr';
+import {
+  gastroLocalCreateSchema,
+  gastroLocalUpdateSchema,
+  gastroLocalResponseSchema,
+} from './gastro-locations';
 
 export const adminGastroProfileStatusSchema = z.enum([
   'draft',
@@ -67,10 +72,22 @@ export type AdminGastroLocationsListResponse = z.infer<
   typeof adminGastroLocationsListResponseSchema
 >;
 
+/** Admin detail includes fields needed for edit form (aligned with gastro local response). */
 export const adminGastroLocationDetailSchema = adminGastroLocationListItemSchema.extend({
+  tenantId: z.string(),
+  legalName: z.string().nullable(),
   summary: z.string().nullable(),
+  detail: z.string().nullable(),
   address: z.string().nullable(),
   bannerUrl: z.string().nullable(),
+  galleryUrls: gastroLocalResponseSchema.shape.galleryUrls,
+  googlePlaceId: gastroLocalResponseSchema.shape.googlePlaceId,
+  geoLat: gastroLocalResponseSchema.shape.geoLat,
+  geoLng: gastroLocalResponseSchema.shape.geoLng,
+  openingHours: gastroLocalResponseSchema.shape.openingHours,
+  openingHoursNote: gastroLocalResponseSchema.shape.openingHoursNote,
+  subcategoryId: z.string().nullable(),
+  subcategoryName: z.string().nullable(),
   menuUrl: z.string().nullable(),
   websiteUrl: z.string().nullable(),
   updatedAt: z.string().datetime(),
@@ -157,3 +174,38 @@ export const adminGastroDiscountPublicationSchema = z.object({
   displayImageUrls: z.array(z.string().min(1).max(2_000_000)).max(30),
 });
 export type AdminGastroDiscountPublication = z.infer<typeof adminGastroDiscountPublicationSchema>;
+
+/** ProfileStatus values for admin write operations (uppercase, Prisma-aligned). */
+export const adminGastroLocationStatusInputSchema = z.enum([
+  'DRAFT',
+  'PENDING',
+  'ACTIVE',
+  'REJECTED',
+  'SUSPENDED',
+]);
+export type AdminGastroLocationStatusInput = z.infer<
+  typeof adminGastroLocationStatusInputSchema
+>;
+
+export const adminGastroLocationCreateSchema = gastroLocalCreateSchema.extend({
+  tenantId: z.string().min(1).optional(),
+  legalName: z.string().max(200).nullable().optional(),
+  ownerUserId: z.string().min(1).optional(),
+  status: adminGastroLocationStatusInputSchema.optional(),
+  /** When false, skip public event sync even if status is ACTIVE. Default: sync when ACTIVE. */
+  publish: z.boolean().optional(),
+});
+export type AdminGastroLocationCreateInput = z.infer<typeof adminGastroLocationCreateSchema>;
+
+export const adminGastroLocationUpdateSchema = gastroLocalUpdateSchema.extend({
+  legalName: z.string().max(200).nullable().optional(),
+  ownerUserId: z.string().min(1).optional(),
+});
+export type AdminGastroLocationUpdateInput = z.infer<typeof adminGastroLocationUpdateSchema>;
+
+export const adminGastroLocationStatusPatchSchema = z.object({
+  status: adminGastroLocationStatusInputSchema,
+});
+export type AdminGastroLocationStatusPatchInput = z.infer<
+  typeof adminGastroLocationStatusPatchSchema
+>;

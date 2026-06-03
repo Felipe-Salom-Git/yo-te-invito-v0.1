@@ -61,10 +61,17 @@ import {
   type AdminGastroDiscountActionNote,
   type AdminGastroDiscountReject,
   type AdminGastroDiscountCancel,
+  adminGastroLocationCreateSchema,
+  adminGastroLocationUpdateSchema,
+  adminGastroLocationStatusPatchSchema,
+  type AdminGastroLocationCreateInput,
+  type AdminGastroLocationUpdateInput,
+  type AdminGastroLocationStatusPatchInput,
   adminEventsListQuerySchema,
   type AdminEventsListQuery,
 } from '@yo-te-invito/shared';
 import { AdminGastroService } from './admin-gastro.service';
+import { AdminGastroLocationsService } from './admin-gastro-locations.service';
 import { AdminProducersService } from './admin-producers.service';
 import { AdminGeneralPublicationsService } from './admin-general-publications.service';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
@@ -104,6 +111,7 @@ export class AdminController {
     private readonly adminProducers: AdminProducersService,
     private readonly generalPublications: AdminGeneralPublicationsService,
     private readonly adminGastro: AdminGastroService,
+    private readonly adminGastroLocations: AdminGastroLocationsService,
   ) {}
 
   @Get('general-publications')
@@ -792,6 +800,51 @@ export class AdminController {
     query: AdminGastroLocationsListQuery,
   ) {
     return this.adminGastro.listLocations(user.tenantId, query);
+  }
+
+  @Post('gastronomicos')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async createGastroLocation(
+    @CurrentUser() user: { id: string; tenantId: string },
+    @Body(new ZodValidationPipe(adminGastroLocationCreateSchema))
+    body: AdminGastroLocationCreateInput,
+  ) {
+    return this.adminGastroLocations.create(user.tenantId, user.id, body);
+  }
+
+  @Patch('gastronomicos/:profileId/status')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async updateGastroLocationStatus(
+    @CurrentUser() user: { id: string; tenantId: string },
+    @Param(new ZodValidationPipe(adminGastroProfileIdParamsSchema)) params: AdminGastroProfileIdParams,
+    @Body(new ZodValidationPipe(adminGastroLocationStatusPatchSchema))
+    body: AdminGastroLocationStatusPatchInput,
+  ) {
+    return this.adminGastroLocations.updateStatus(
+      user.tenantId,
+      user.id,
+      params.profileId,
+      body,
+    );
+  }
+
+  @Patch('gastronomicos/:profileId')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async updateGastroLocation(
+    @CurrentUser() user: { id: string; tenantId: string },
+    @Param(new ZodValidationPipe(adminGastroProfileIdParamsSchema)) params: AdminGastroProfileIdParams,
+    @Body(new ZodValidationPipe(adminGastroLocationUpdateSchema))
+    body: AdminGastroLocationUpdateInput,
+  ) {
+    return this.adminGastroLocations.update(
+      user.tenantId,
+      user.id,
+      params.profileId,
+      body,
+    );
   }
 
   @Get('gastronomicos/:profileId')

@@ -1885,6 +1885,18 @@ export class ApiRepository implements Repositories {
         {},
         { profileId },
       ),
+    updateLocationStatus: async (profileId, body) =>
+      this.client.patch<AdminGastroLocationDetail>(
+        `/admin/gastronomicos/${encodeURIComponent(profileId)}/status`,
+        body,
+      ),
+    createLocation: async (body) =>
+      this.client.post<AdminGastroLocationDetail>('/admin/gastronomicos', body),
+    updateLocation: async (profileId, body) =>
+      this.client.patch<AdminGastroLocationDetail>(
+        `/admin/gastronomicos/${encodeURIComponent(profileId)}`,
+        body,
+      ),
   };
 
   mePortal: MePortalRepo = {

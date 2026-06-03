@@ -62,6 +62,7 @@ Controllers: HTTP + Zod only. Services: business logic. Prisma: persistence only
 | **`docs/audits/PUBLIC_FOOTER_AUDIT.md`** | Footer público — Slices 1–5 + cierre |
 | **`docs/audits/PUBLIC_FOOTER_SMOKE.md`** | Smoke / QA footer |
 | **`docs/audits/PUBLIC_FOOTER_CLOSING_AUDIT.md`** | Auditoría de cierre footer |
+| **`docs/audits/ADMIN_GASTRO_LOCATIONS_AUDIT.md`** | Admin Gastro Locations — bloque cerrado (CRUD admin + smoke Slice 5) |
 | **`CONTEXT_PENDIENTES.md`** | Checkbox backlog — mark `[x]` when done |
 | **`docs/legal/LEGAL_ADMIN_MODULE.md`** | Legal Admin — modelos, endpoints, flujos, staging (módulo cerrado 2026-05-24) |
 | **`docs/onboarding/`** | Registro V2 por perfil — wizard, schemas, legales signup, slices 12.5–12.6 |

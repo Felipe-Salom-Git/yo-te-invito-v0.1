@@ -122,7 +122,21 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`). Shared UI tokens:
 | `/admin/rentals/locales/[locationId]/productos/nuevo` | New product |
 | `/admin/rentals/locales/[locationId]/productos/[productId]/editar` | Edit product + images |
 
-**Forms**: `OpeningHoursEditor`, `RentalProductImagesForm` con `uploadConfig: GcsImageUploadConfig`. **GCS activo:** Admin Rentals, Admin Eventos/Excursiones, **Portal Productora**, **Portales Gastro + Hotel** — [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §17–20. **Legacy data-URL:** publicaciones gastro/hotel admin, ticket studio — §20.
+**Forms**: `OpeningHoursEditor`, `RentalProductImagesForm` con `uploadConfig: GcsImageUploadConfig`. **GCS activo:** Admin Rentals, Admin Eventos/Excursiones, **Portal Productora**, **Portales Gastro + Hotel** — [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §17–20.
+
+### Gastro admin (Slices 3–5, cerrado 2026-06-02)
+
+| Route | Purpose |
+|-------|---------|
+| `/admin/gastronomicos` | List locales — tabla desktop + cards mobile, filtros URL, activar/suspender |
+| `/admin/gastronomicos/nuevo` | Alta local — `AdminGastroLocationFormClient` + `POST /admin/gastronomicos` |
+| `/admin/gastronomicos/[profileId]` | Detalle + descuentos + editar + CTA ficha pública (si ACTIVE) |
+| `/admin/gastronomicos/[profileId]/editar` | Edición — `GastroLocalForm` mode `admin` + `PATCH` + GCS |
+| `/admin/gastronomicos/[profileId]/descuentos/[discountId]` | Moderación ticket descuento |
+
+**Ficha pública canónica (admin CTA):** `/gastronomicos/[profileId]`. Alias discovery en cards: `/restaurants/[publicEventId]` (`contentRoutes.ts`).
+
+**Hooks:** `lib/query/admin-gastro.ts` — list, detail, create, update, status mutations. **UI:** `AdminGastroLocations*` (listado), `AdminGastroLocationFormClient` (form). **`GastroLocalForm`:** `mode="owner"` (portal) | `mode="admin"` (campos extra + labels). Doc + smoke: `docs/audits/ADMIN_GASTRO_LOCATIONS_AUDIT.md` § Slice 5.
 
 ### Portal usuario (`/me/*`)
 

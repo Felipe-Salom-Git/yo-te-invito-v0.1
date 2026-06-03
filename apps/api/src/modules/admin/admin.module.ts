@@ -25,8 +25,10 @@ import { AdminDashboardService } from './admin-dashboard.service';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { PublicPaymentsModule } from '../public-payments/public-payments.module';
 import { AuditModule } from '../audit/audit.module';
+import { GastroModule } from '../gastro/gastro.module';
 import { AdminPaymentsController } from './admin-payments.controller';
 import { AdminPaymentsService } from './admin-payments.service';
+import { AdminGastroLocationsService } from './admin-gastro-locations.service';
 
 @Module({
   imports: [
@@ -42,6 +44,7 @@ import { AdminPaymentsService } from './admin-payments.service';
     NotificationsModule,
     PublicPaymentsModule,
     AuditModule,
+    GastroModule,
   ],
   controllers: [AdminController, AdminPaymentsController],
   providers: [
@@ -57,6 +60,7 @@ import { AdminPaymentsService } from './admin-payments.service';
     AdminProducersService,
     AdminGeneralPublicationsService,
     AdminGastroService,
+    AdminGastroLocationsService,
     AdminDashboardService,
     AdminPaymentsService,
   ],

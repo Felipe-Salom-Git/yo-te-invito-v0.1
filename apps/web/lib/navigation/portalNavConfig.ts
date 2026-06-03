@@ -51,7 +51,7 @@ export const PORTAL_NAV_BY_KEY: Record<PortalNavKey, PortalNavDefinition> = {
       { href: '/admin/review-disputes', label: 'Reseñas (disputas)' },
       { href: '/admin/productoras', label: 'Productoras' },
       { href: '/admin/publicaciones-generales', label: 'Publicaciones Generales' },
-      { href: '/admin/gastronomicos', label: 'Gastronómicos' },
+      { href: '/admin/gastronomicos', label: 'Locales gastronómicos' },
       { href: '/admin/excursiones', label: 'Excursiones' },
       { href: '/admin/rentals', label: 'Rentals' },
       { href: '/admin/payouts', label: 'Payouts' },

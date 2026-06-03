@@ -9,7 +9,6 @@ import { Prisma, type GastroProfile } from '@prisma/client';
 import {
   ErrorCode,
   parseRentalOpeningHours,
-  rentalOpeningHoursSchema,
   type GastroLocalCreateInput,
   type GastroLocalResponse,
   type GastroLocalUpdateInput,
@@ -17,6 +16,13 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { ProfilesAuthorizationService } from '../../common/profiles-authorization.service';
 import { SubcategoriesService } from '../subcategories/subcategories.service';
+import {
+  normalizeGastroSummary,
+  readGastroGallery,
+  shouldSyncGastroPublicEventAfterUpdate,
+  writeGastroOpeningHours,
+} from './gastro-profile-fields.util';
+import { GastroPublicEventSyncService } from './gastro-public-event-sync.service';
 
 @Injectable()
 export class GastroLocalService {
@@ -24,19 +30,8 @@ export class GastroLocalService {
     private readonly prisma: PrismaService,
     private readonly profiles: ProfilesAuthorizationService,
     private readonly subcategories: SubcategoriesService,
+    private readonly publicEventSync: GastroPublicEventSyncService,
   ) {}
-
-  private normalizeSummary(value: string | null | undefined): string | null {
-    if (value == null) return null;
-    const t = value.trim();
-    if (!t) return null;
-    return t.slice(0, 220);
-  }
-
-  private readGallery(row: GastroProfile): string[] | null {
-    if (!row.galleryUrls || !Array.isArray(row.galleryUrls)) return null;
-    return (row.galleryUrls as string[]).filter((u) => typeof u === 'string');
-  }
 
   private toResponse(
     row: GastroProfile & { subcategory?: { name: string } | null },
@@ -51,7 +46,7 @@ export class GastroLocalService {
       description: row.description,
       logoUrl: row.logoUrl,
       bannerUrl: row.bannerUrl,
-      galleryUrls: this.readGallery(row),
+      galleryUrls: readGastroGallery(row),
       province: row.province,
       city: row.city,
       address: row.address,
@@ -100,78 +95,6 @@ export class GastroLocalService {
       });
     }
     return membership.profile;
-  }
-
-  private writeOpeningHours(
-    value: GastroLocalCreateInput['openingHours'] | undefined,
-  ): Prisma.InputJsonValue | typeof Prisma.JsonNull | undefined {
-    if (value === undefined) return undefined;
-    if (value == null) return Prisma.JsonNull;
-    return rentalOpeningHoursSchema.parse(value) as Prisma.InputJsonValue;
-  }
-
-  private async syncPublicEvent(
-    profile: GastroProfile,
-    userId: string,
-    galleryUrls: string[] | null,
-  ): Promise<string> {
-    const now = new Date();
-    const eventData = {
-      tenantId: profile.tenantId,
-      producerId: userId,
-      category: 'gastro',
-      subcategoryId: profile.subcategoryId,
-      title: profile.displayName,
-      summary: profile.summary,
-      description: profile.detail ?? profile.description,
-      startAt: now,
-      endAt: null as Date | null,
-      city: profile.city,
-      province: profile.province,
-      venueName: profile.displayName,
-      venueAddress: profile.address,
-      googlePlaceId: profile.googlePlaceId,
-      geoLat: profile.geoLat,
-      geoLng: profile.geoLng,
-      coverImageUrl: profile.bannerUrl,
-      status: 'APPROVED' as const,
-      isTicketingEnabled: false,
-      publishedAt: now,
-    };
-
-    let eventId = profile.publicEventId;
-    if (eventId) {
-      await this.prisma.event.update({
-        where: { id: eventId },
-        data: eventData,
-      });
-    } else {
-      const created = await this.prisma.event.create({ data: eventData });
-      eventId = created.id;
-      await this.prisma.gastroProfile.update({
-        where: { id: profile.id },
-        data: { publicEventId: eventId },
-      });
-    }
-
-    if (galleryUrls) {
-      await this.prisma.eventMedia.updateMany({
-        where: { eventId, deletedAt: null },
-        data: { deletedAt: now },
-      });
-      if (galleryUrls.length > 0) {
-        await this.prisma.eventMedia.createMany({
-          data: galleryUrls.map((url, i) => ({
-            eventId,
-            type: 'IMAGE',
-            url,
-            sortOrder: i,
-          })),
-        });
-      }
-    }
-
-    return eventId;
   }
 
   async getMyLocal(
@@ -224,7 +147,7 @@ export class GastroLocalService {
       where: { id: existing.profile.id },
       data: {
         displayName: body.displayName.trim(),
-        summary: this.normalizeSummary(body.summary),
+        summary: normalizeGastroSummary(body.summary),
         detail: body.detail?.trim() || null,
         subcategoryId,
         bannerUrl: body.bannerUrl ?? null,
@@ -235,7 +158,7 @@ export class GastroLocalService {
         googlePlaceId: body.location.googlePlaceId?.trim() || null,
         geoLat: body.location.lat ?? null,
         geoLng: body.location.lng ?? null,
-        openingHours: this.writeOpeningHours(body.openingHours),
+        openingHours: writeGastroOpeningHours(body.openingHours),
         openingHoursNote: body.openingHoursNote?.trim() || null,
         contactPhone: body.contactPhone?.trim() || null,
         contactEmail: body.contactEmail.trim(),
@@ -244,7 +167,7 @@ export class GastroLocalService {
       },
     });
 
-    await this.syncPublicEvent(profile, userId, gallery);
+    await this.publicEventSync.syncPublicEvent(profile, userId, gallery);
     const refreshed = await this.prisma.gastroProfile.findUniqueOrThrow({
       where: { id: profile.id },
     });
@@ -279,7 +202,7 @@ export class GastroLocalService {
       data: {
         ...(body.displayName !== undefined && { displayName: body.displayName.trim() }),
         ...(body.summary !== undefined && {
-          summary: this.normalizeSummary(body.summary),
+          summary: normalizeGastroSummary(body.summary),
         }),
         ...(body.detail !== undefined && { detail: body.detail?.trim() || null }),
         ...(subcategoryId !== undefined && { subcategoryId }),
@@ -296,7 +219,7 @@ export class GastroLocalService {
           geoLng: body.location.lng ?? null,
         }),
         ...(body.openingHours !== undefined && {
-          openingHours: this.writeOpeningHours(body.openingHours),
+          openingHours: writeGastroOpeningHours(body.openingHours),
         }),
         ...(body.openingHoursNote !== undefined && {
           openingHoursNote: body.openingHoursNote?.trim() || null,
@@ -312,19 +235,11 @@ export class GastroLocalService {
       },
     });
 
-    if (
-      body.displayName !== undefined ||
-      body.summary !== undefined ||
-      body.detail !== undefined ||
-      body.bannerUrl !== undefined ||
-      body.location !== undefined ||
-      gallery !== undefined ||
-      subcategoryId !== undefined
-    ) {
-      await this.syncPublicEvent(
+    if (shouldSyncGastroPublicEventAfterUpdate({ ...body, subcategoryId })) {
+      await this.publicEventSync.syncPublicEvent(
         updated,
         userId,
-        gallery !== undefined ? gallery : this.readGallery(updated),
+        gallery !== undefined ? gallery : this.publicEventSync.readGallery(updated),
       );
     }
 

@@ -2280,9 +2280,20 @@ export interface AdminGastroLocationListItem {
 }
 
 export interface AdminGastroLocationDetail extends AdminGastroLocationListItem {
+  tenantId: string;
+  legalName: string | null;
   summary: string | null;
+  detail: string | null;
   address: string | null;
   bannerUrl: string | null;
+  galleryUrls: string[] | null;
+  googlePlaceId?: string | null;
+  geoLat?: number | null;
+  geoLng?: number | null;
+  openingHours: import('@yo-te-invito/shared').RentalOpeningHours | null;
+  openingHoursNote: string | null;
+  subcategoryId: string | null;
+  subcategoryName: string | null;
   menuUrl: string | null;
   websiteUrl: string | null;
   updatedAt: string;
@@ -2379,6 +2390,17 @@ export interface AdminGastroRepo {
     note?: string | null,
   ): Promise<AdminGastroDiscountDetail>;
   sendQrEmail(profileId: string, discountId: string): Promise<AdminGastroDiscountDetail>;
+  updateLocationStatus(
+    profileId: string,
+    body: { status: string },
+  ): Promise<AdminGastroLocationDetail>;
+  createLocation(
+    body: import('@yo-te-invito/shared').AdminGastroLocationCreateInput,
+  ): Promise<AdminGastroLocationDetail>;
+  updateLocation(
+    profileId: string,
+    body: import('@yo-te-invito/shared').AdminGastroLocationUpdateInput,
+  ): Promise<AdminGastroLocationDetail>;
 }
 
 export interface PlatformConfig {

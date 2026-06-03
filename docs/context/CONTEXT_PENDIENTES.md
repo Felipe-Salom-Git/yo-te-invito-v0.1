@@ -266,6 +266,13 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 
 ## D. Gastro
 
+**Admin Gastro Locations (2026-06-02):** bloque cerrado (slices 2–5) — `docs/audits/ADMIN_GASTRO_LOCATIONS_AUDIT.md`. CRUD admin + QA smoke documentado.
+
+- [x] Admin Gastro Slice 2 — backend CRUD locales (`GastroProfile`, `GastroPublicEventSyncService`, schemas shared)
+- [x] Admin Gastro Slice 3 — listado `/admin/gastronomicos` (tabla + cards mobile, filtros URL, status patch)
+- [x] Admin Gastro Slice 4 — formularios `/admin/gastronomicos/nuevo` y `…/editar` (`GastroLocalForm` mode admin, mutations POST/PATCH)
+- [x] Admin Gastro Slice 5 — QA smoke + ajuste fino (ruta canónica `/gastronomicos/[profileId]`, CTA solo ACTIVE+publicado, guía manual en auditoría)
+
 **Gastro y Hoteles V2 (2026-05-22):** bloque V2 operativo cerrado (QR, scanner, contenido, ficha, dashboard, reviews/follows). **Storage imágenes GCS — cerrado prod 2026-05-31.** Pendientes: `smoke:gastro-discounts` npm, E2E gastro dedicado.
 
 - [x] Payload QR descuentos v1 (`yti:gastro-discount:v1:discountId:token`) — emisión en claim/aprobación; ver `docs/gastro/GASTRO_DISCOUNT_QR.md`
