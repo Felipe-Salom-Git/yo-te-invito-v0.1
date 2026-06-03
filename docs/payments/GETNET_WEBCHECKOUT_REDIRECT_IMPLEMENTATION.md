@@ -1,6 +1,11 @@
 # Getnet Web Checkout Redirect Implementation
 
 **Branch:** `feat/v1-s03-api-foundation`  
+**Commit:** `5a5c794` — `feat(getnet): integrate webcheckout redirect payment intent`  
+**Cierre documental:** [GETNET_WEBCHECKOUT_REDIRECT_CLOSING.md](./GETNET_WEBCHECKOUT_REDIRECT_CLOSING.md) · [Handoff](../context/NEXT_CHAT_GETNET_WEBCHECKOUT_HANDOFF.md)
+
+> **Ramas:** desarrollo en `feat/v1-s03-api-foundation`. `main` sin cambios por este slice. Rama `development` **descartada y eliminada** — no usar spikes ni commits de esa rama.
+
 **V1 decision:** Redirect only — no iFrame, no Lightbox, no WooCommerce.
 
 ---
@@ -151,6 +156,8 @@ GETNET_WEBCHECKOUT_CONFIRM_PRE=yes pnpm --filter api run smoke:getnet-webcheckou
 
 ## Referencias
 
+- [GETNET_WEBCHECKOUT_REDIRECT_CLOSING.md](./GETNET_WEBCHECKOUT_REDIRECT_CLOSING.md)
+- [NEXT_CHAT_GETNET_WEBCHECKOUT_HANDOFF.md](../context/NEXT_CHAT_GETNET_WEBCHECKOUT_HANDOFF.md)
 - [GETNET_CHECKOUT_RETURN_FLOW.md](./GETNET_CHECKOUT_RETURN_FLOW.md)
 - [GETNET_WEBHOOK.md](./GETNET_WEBHOOK.md)
 - [GETNET_RECONCILIATION.md](./GETNET_RECONCILIATION.md)

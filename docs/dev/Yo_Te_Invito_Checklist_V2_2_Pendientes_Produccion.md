@@ -7,7 +7,7 @@
 
 ## 1. Pagos reales y checkout productivo
 
-> **Implementación Getnet (código):** slices A–G — [GETNET_CLOSING_AUDIT.md](../payments/GETNET_CLOSING_AUDIT.md). Activación prod: [GETNET_ACTIVATION_CHECKLIST.md](../payments/GETNET_ACTIVATION_CHECKLIST.md), smoke: [GETNET_PRODUCTION_SMOKE.md](../payments/GETNET_PRODUCTION_SMOKE.md). **No** marcar go-live hasta smokes en VPS.
+> **Implementación Getnet (código):** slices A–G en `main` — [GETNET_CLOSING_AUDIT.md](../payments/GETNET_CLOSING_AUDIT.md). **Web Checkout Redirect** en `feat/v1-s03-api-foundation` (`5a5c794`) — [GETNET_WEBCHECKOUT_REDIRECT_CLOSING.md](../payments/GETNET_WEBCHECKOUT_REDIRECT_CLOSING.md). Activación prod: [GETNET_ACTIVATION_CHECKLIST.md](../payments/GETNET_ACTIVATION_CHECKLIST.md), smoke: [GETNET_PRODUCTION_SMOKE.md](../payments/GETNET_PRODUCTION_SMOKE.md). **No** marcar go-live hasta smokes PRE/VPS. **No** usar rama `development` (eliminada).
 
 ### Definición proveedor y flujo
 
@@ -30,6 +30,13 @@
 ### Implementación checkout real
 
 - [x] Implementar checkout real — Getnet + demo (`POST …/payments`).
+- [x] Implementación base **Web Checkout Redirect** en rama de desarrollo (`feat/v1-s03-api-foundation`, commit `5a5c794`) — ver [GETNET_WEBCHECKOUT_REDIRECT_CLOSING.md](../payments/GETNET_WEBCHECKOUT_REDIRECT_CLOSING.md).
+- [ ] Smoke Web Checkout PRE con credenciales válidas (`smoke:getnet-webcheckout -- --auth`).
+- [ ] POST payment-intent PRE controlado (`GETNET_WEBCHECKOUT_CONFIRM_PRE=yes` + `--confirm`).
+- [ ] Confirmar webhook **Basic Auth** desde portal Getnet (`GETNET_WEBHOOK_AUTH_MODE=basic`).
+- [ ] Deploy VPS (rama de desarrollo cuando corresponda).
+- [ ] Prueba real/homologación con monto mínimo autorizado.
+- [ ] Merge a `main` (solo con instrucción explícita).
 - [ ] Mantener pago demo solo en desarrollo/staging — **política operativa** (botón aún visible en UI dev).
 - [x] Implementar webhooks del proveedor de pago — `POST /public/payments/getnet/webhook`.
 - [x] Reconciliar pagos con órdenes/tickets — `GetnetReconciliationService` + script batch.

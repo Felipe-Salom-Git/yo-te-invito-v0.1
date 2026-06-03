@@ -48,6 +48,16 @@
 
 Este documento, test reconciliación corregido (`now` en policy para tests), commit/push, deploy VPS (procedimiento).
 
+### Slice Web Checkout Redirect — `feat/v1-s03-api-foundation` (2026-06-01)
+
+Integración limpia **Web Checkout Redirect** (Global API `payment-intent`), commit `5a5c794`.
+
+- **Rama:** `feat/v1-s03-api-foundation` — **no** mergeado a `main` al cierre de este doc.
+- **Rama `development`:** descartada y eliminada; spikes **no** incorporados al código productivo.
+- **Camino activo en dev:** `GETNET_WEBCHECKOUT_*` → `redirect_url`; fallback `GETNET_CLIENT_*` (GeoPagos v2).
+- **Docs:** [GETNET_WEBCHECKOUT_REDIRECT_IMPLEMENTATION.md](./GETNET_WEBCHECKOUT_REDIRECT_IMPLEMENTATION.md), [GETNET_WEBCHECKOUT_REDIRECT_CLOSING.md](./GETNET_WEBCHECKOUT_REDIRECT_CLOSING.md), [NEXT_CHAT_GETNET_WEBCHECKOUT_HANDOFF.md](../context/NEXT_CHAT_GETNET_WEBCHECKOUT_HANDOFF.md).
+- **Smoke:** `pnpm --filter api run smoke:getnet-webcheckout`.
+
 ---
 
 ## 3. Archivos principales
@@ -63,6 +73,7 @@ Este documento, test reconciliación corregido (`now` en policy para tests), com
 | Web UI | `checkout/return`, `admin/pagos`, `CheckoutPaymentStatusView.tsx` |
 | Shared | `checkout-payment-status.ts`, `getnet-webhook.ts`, `admin-payments.ts` |
 | Scripts | `smoke-getnet.ts`, `payments-reconcile-getnet.ts`, `test:*-getnet*` |
+| Web Checkout Redirect | `providers/getnet/webcheckout/*`, `smoke-getnet-webcheckout.ts` |
 
 ---
 
@@ -97,6 +108,7 @@ Legacy (sin eliminar): `GET /public/orders/:orderId/payment-status`, `GET /publi
 | Script | Comando |
 |--------|---------|
 | Smoke Getnet | `pnpm --filter api run smoke:getnet` |
+| Smoke Web Checkout Redirect | `pnpm --filter api run smoke:getnet-webcheckout` |
 | Reconcile batch | `pnpm --filter api run payments:reconcile-getnet` |
 | Tests util | `test:getnet-webhook`, `test:getnet-reconciliation`, `test:order-fulfillment` |
 | Auth probe | `test:getnet-auth` |

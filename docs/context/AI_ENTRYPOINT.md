@@ -12,11 +12,24 @@ Read this file **before generating or modifying code**.
 | **Pago demo sí** | `POST /public/payments/:id/demo-confirm`, provider `DEMO` en checkout — no eliminar |
 | **Datos demo automáticos no** | Sin `demo:seed`, `demo:load`, LocalDB, usuarios `@demo.local` por defecto |
 | **Usuario maestro** | `felipe.e.salom@gmail.com` — preservado por `db:cleanup-content`; no borrar en scripts |
-| **Fuente de datos** | API + PostgreSQL únicamente en web (`ApiRepository`) |
-| **Usuario estándar** | Portal unificado **`/me/*`** (carrito API, favoritos, transferencias, bandeja + **push Web/Mobile**). `/cuenta/*` solo redirects temporales |
-| **Inventario scripts** | `docs/guides/DEVELOPER_SCRIPTS_GUIDE.md` + `docs/dev/SCRIPTS.md` |
+| **No commitear secretos** | `.env` local; usar `.env.example` |
+| **Rama Getnet activa** | `feat/v1-s03-api-foundation` — **no** `development` (eliminada); **no** tocar `main` salvo instrucción explícita |
 
 Detalle histórico demo: [guides/DEMO_REMOVAL.md](../guides/DEMO_REMOVAL.md). Portal: [user/USER_PORTAL.md](../user/USER_PORTAL.md).
+
+---
+
+## Getnet Web Checkout Redirect — estado actual
+
+- **Rama activa:** `feat/v1-s03-api-foundation`.
+- **`main`:** sin cambios por slice Web Checkout (`5a5c794` solo en feat).
+- **`development`:** descartada y eliminada — no mergear spikes ni commits.
+- **V1:** Redirect (`redirect_url`); iFrame/Lightbox fuera de V1.
+- **WooCommerce / VTEX:** descartados como integración final.
+- **Webhook:** Basic Auth según portal (`GETNET_WEBHOOK_AUTH_MODE=basic`).
+- **Fulfillment/reconciliación:** reutilizados (`OrderFulfillmentService`).
+- **Handoff:** [NEXT_CHAT_GETNET_WEBCHECKOUT_HANDOFF.md](./NEXT_CHAT_GETNET_WEBCHECKOUT_HANDOFF.md) · cierre [GETNET_WEBCHECKOUT_REDIRECT_CLOSING.md](../payments/GETNET_WEBCHECKOUT_REDIRECT_CLOSING.md).
+- **Pendiente:** `smoke:getnet-webcheckout` con credenciales PRE válidas.
 
 ---
 
@@ -64,6 +77,8 @@ Controllers: HTTP + Zod only. Services: business logic. Prisma: persistence only
 | **`docs/audits/PUBLIC_FOOTER_CLOSING_AUDIT.md`** | Auditoría de cierre footer |
 | **`docs/audits/ADMIN_GASTRO_LOCATIONS_AUDIT.md`** | Admin Gastro Locations — bloque cerrado (CRUD admin + smoke Slice 5) |
 | **`CONTEXT_PENDIENTES.md`** | Checkbox backlog — mark `[x]` when done |
+| **`NEXT_CHAT_GETNET_WEBCHECKOUT_HANDOFF.md`** | Handoff Getnet Web Checkout Redirect |
+| **`docs/payments/GETNET_WEBCHECKOUT_REDIRECT_CLOSING.md`** | Cierre slice Redirect |
 | **`docs/legal/LEGAL_ADMIN_MODULE.md`** | Legal Admin — modelos, endpoints, flujos, staging (módulo cerrado 2026-05-24) |
 | **`docs/onboarding/`** | Registro V2 por perfil — wizard, schemas, legales signup, slices 12.5–12.6 |
 | **`FRONTEND_DEMO_NOTES.md`** | Legacy demo mapping (not current persistence) |

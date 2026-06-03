@@ -3,6 +3,8 @@
 Checklist operativa para activar pagos Getnet en staging o producción con riesgo controlado.  
 Complementa: [GETNET_PRODUCTION_SMOKE.md](./GETNET_PRODUCTION_SMOKE.md), [getnet-payment-integration.md](../modules/getnet-payment-integration.md).
 
+> **Rama de desarrollo vigente:** `feat/v1-s03-api-foundation`. **Web Checkout Redirect** es el camino preferido cuando `GETNET_WEBCHECKOUT_*` está configurado. **No** usar rama `development` (eliminada). **`main`** solo con instrucción explícita.
+
 ---
 
 ## 1. Precondiciones
@@ -44,6 +46,33 @@ Complementa: [GETNET_PRODUCTION_SMOKE.md](./GETNET_PRODUCTION_SMOKE.md), [getnet
 | `NEXT_PUBLIC_PAYMENT_PROVIDER_DEFAULT` | Web | No | `DEMO` | Default UI; no fuerza backend |
 | `MAIL_PROVIDER` | API | Sí p/ emails | `smtp` | Confirmación orden |
 | `SMOKE_GETNET_CONFIRM_PROD` | Scripts | Solo smokes mutantes | `yes` | `smoke:getnet --simulate-webhook` en prod |
+
+### Web Checkout Redirect (`GETNET_WEBCHECKOUT_*` — preferido en `feat/v1-s03-api-foundation`)
+
+| Variable | App | Requerida PRE/prod | Uso |
+|----------|-----|-------------------:|-----|
+| `GETNET_WEBCHECKOUT_ENV` | API | Sí | `pre` / `production` |
+| `GETNET_WEBCHECKOUT_AUTH_BASE_URL` | API | Recomendado | OAuth PRE/prod |
+| `GETNET_WEBCHECKOUT_API_BASE_URL` | API | Recomendado | Host API |
+| `GETNET_WEBCHECKOUT_PAYMENT_INTENT_PATH` | API | No | Default `/dpy/web-checkout/v1/payment-intent` |
+| `GETNET_WEBCHECKOUT_MERCHANT_ID` | API | Sí | `x-merchant-id` |
+| `GETNET_WEBCHECKOUT_SELLER_ID` | API | Sí | `x-seller-id` |
+| `GETNET_WEBCHECKOUT_CLIENT_ID` | API | Sí | OAuth |
+| `GETNET_WEBCHECKOUT_SECRET_KEY` | API | Sí | OAuth |
+| `GETNET_WEBCHECKOUT_SCOPE` | API | No | Scope opcional |
+| `GETNET_WEBHOOK_AUTH_MODE` | API | Sí portal WC | `basic` o `header` |
+| `GETNET_WEBHOOK_BASIC_USER` | API | Si `basic` | Webhook portal |
+| `GETNET_WEBHOOK_BASIC_PASSWORD` | API | Si `basic` | Webhook portal |
+| `GETNET_WEBCHECKOUT_CONFIRM_PRE` | Scripts | Solo POST smoke PRE | `yes` + `--confirm` |
+
+Validación Web Checkout:
+
+```bash
+pnpm --filter api run smoke:getnet-webcheckout -- --config
+pnpm --filter api run smoke:getnet-webcheckout -- --auth
+```
+
+Doc: [GETNET_WEBCHECKOUT_REDIRECT_IMPLEMENTATION.md](./GETNET_WEBCHECKOUT_REDIRECT_IMPLEMENTATION.md).
 
 **Provider:** no hay `PAYMENT_PROVIDER` global en API; cada checkout elige `DEMO` o `GETNET` en `POST /public/orders/:id/payments`. En prod, **no** ofrecer botón demo al público (solo QA interno).
 

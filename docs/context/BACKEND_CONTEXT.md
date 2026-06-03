@@ -267,7 +267,7 @@ Opcional cron: `NOTIFICATIONS_CRON_ENABLED=false`, `NOTIFICATION_REMINDER_HOURS`
 
 ## 9. Debt / risks
 
-- Payments: `DEMO` + `demo-confirm`; Getnet implementado (webhook, reconcile, return UI, `/admin/pagos`) — cierre código/docs [GETNET_CLOSING_AUDIT.md](../payments/GETNET_CLOSING_AUDIT.md); **go-live** VPS según [GETNET_ACTIVATION_CHECKLIST.md](../payments/GETNET_ACTIVATION_CHECKLIST.md).
+- Payments: `DEMO` + `demo-confirm`; Getnet implementado (webhook, reconcile, return UI, `/admin/pagos`) — cierre código/docs [GETNET_CLOSING_AUDIT.md](../payments/GETNET_CLOSING_AUDIT.md) (bloque A–G en `main`); **Web Checkout Redirect** en `feat/v1-s03-api-foundation` (`5a5c794`) — [GETNET_WEBCHECKOUT_REDIRECT_IMPLEMENTATION.md](../payments/GETNET_WEBCHECKOUT_REDIRECT_IMPLEMENTATION.md); **go-live** VPS según [GETNET_ACTIVATION_CHECKLIST.md](../payments/GETNET_ACTIVATION_CHECKLIST.md). Rama `development` **eliminada** — no usar.
 - Image uploads: portales + Admin → GCS **cerrado funcional prod 2026-05-31.** Ops legacy no bloqueante: `storage:audit-data-urls`, `storage:migrate-data-urls` (§21), `storage:audit-orphans`, `storage:cleanup-orphans` (§22).
 - Public list `EventSummary` includes `fromPrice` (min active ticket/batch price, major units) and `producerName` (`ProducerProfile.displayName`, ACTIVE only) — see `public-event-summary.util.ts`.
 - Run `prisma migrate deploy` + `prisma generate` after schema changes — **prod:** `https://api.yoteinvito.club`, migraciones vía `migrate deploy` (no `pnpm db:migrate`). **Build monorepo:** `pnpm build` desde raíz (genera Prisma client, compila `shared` con schemas Maps, luego api/web/scanner); no compilar `api` aislado sin `shared` recién buildado.

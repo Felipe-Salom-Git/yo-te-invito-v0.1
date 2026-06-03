@@ -3,6 +3,8 @@
 Guía paso a paso para validar pagos Getnet antes y después del go-live.  
 Checklist de activación: [GETNET_ACTIVATION_CHECKLIST.md](./GETNET_ACTIVATION_CHECKLIST.md).
 
+> **Rama activa:** `feat/v1-s03-api-foundation` con **Web Checkout Redirect** (`5a5c794`). `main` puede seguir en flujo legacy GeoPagos hasta merge explícito. **No** usar `development`.
+
 **Regla:** no ejecutar cobros reales sin checklist completa y autorización del negocio.
 
 ---
@@ -14,6 +16,7 @@ pnpm --filter @yo-te-invito/shared build
 pnpm --filter api run build
 pnpm --filter web run build
 pnpm --filter api run smoke:getnet -- --config
+pnpm --filter api run smoke:getnet-webcheckout -- --config
 pnpm --filter api run payments:reconcile-getnet -- --dry-run --limit 10
 
 > Debe completar sin TypeError aunque falten credenciales Getnet; pagos con consulta remota pendiente reportan `REMOTE_STATUS_UNAVAILABLE`.

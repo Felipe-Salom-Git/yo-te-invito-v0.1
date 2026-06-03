@@ -36,7 +36,13 @@ No usar hosts `*.preprod.geopagos.com` / `api-santander.preprod.geopagos.com` �
 
 When `GETNET_WEBCHECKOUT_CLIENT_ID`, `SECRET_KEY`, and `SELLER_ID` are set, **Web Checkout Redirect** takes precedence over legacy Checkout API v2.
 
-See [GETNET_WEBCHECKOUT_REDIRECT_IMPLEMENTATION.md](../payments/GETNET_WEBCHECKOUT_REDIRECT_IMPLEMENTATION.md).
+| Doc | Uso |
+|-----|-----|
+| [GETNET_WEBCHECKOUT_REDIRECT_IMPLEMENTATION.md](../payments/GETNET_WEBCHECKOUT_REDIRECT_IMPLEMENTATION.md) | Implementación |
+| [GETNET_WEBCHECKOUT_REDIRECT_CLOSING.md](../payments/GETNET_WEBCHECKOUT_REDIRECT_CLOSING.md) | Cierre slice |
+| [NEXT_CHAT_GETNET_WEBCHECKOUT_HANDOFF.md](../context/NEXT_CHAT_GETNET_WEBCHECKOUT_HANDOFF.md) | Handoff próximo chat |
+
+**Rama:** `feat/v1-s03-api-foundation` · commit `5a5c794` · **`main` sin cambios** · **`development` eliminada — no usar**
 
 | Variable | Description |
 |----------|-------------|
@@ -45,6 +51,8 @@ See [GETNET_WEBCHECKOUT_REDIRECT_IMPLEMENTATION.md](../payments/GETNET_WEBCHECKO
 | `GETNET_WEBHOOK_AUTH_MODE` | `basic` for portal webhook user/password |
 
 Legacy `GETNET_CLIENT_*` remains as fallback when Web Checkout env is not configured.
+
+Smoke: `pnpm --filter api run smoke:getnet-webcheckout -- --config|--auth|--payment-intent --dry-run`
 
 ## GETNET_WEB_CHECKOUT_* (legacy note)
 

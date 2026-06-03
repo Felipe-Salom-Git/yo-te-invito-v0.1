@@ -212,6 +212,8 @@ Guías: `docs/guides/README.md`, `DEVELOPER_SCRIPTS_GUIDE.md`, `SMOKE_TESTS_GUID
 
 **Google Cloud / Storage / SEO / Maps (bloque cerrado prod 2026-06-01):** GCP + GCS privado/público + backups; upload GCS en portales admin/productora/gastro/hotel; SEO técnico base + GSC; Maps con key prod, persistencia `googlePlaceId`/`province`, Ver ubicación, JSON-LD local. Docs: `docs/deploy/GOOGLE_CLOUD_RUNBOOK.md`, `GCS_STORAGE_STRATEGY.md`, `SEARCH_CONSOLE_SEO_RUNBOOK.md`, `docs/audits/MAPS_LOCATION_AUDIT.md`, `SEO_TECHNICAL_AUDIT.md`. Build VPS: `pnpm build` desde raíz (`db:generate` + `shared` + apps).
 
+**Getnet Web Checkout Redirect (2026-06-01):** integración limpia en `feat/v1-s03-api-foundation` (`5a5c794`); V1 Redirect; rama `development` eliminada. Handoff: `docs/context/NEXT_CHAT_GETNET_WEBCHECKOUT_HANDOFF.md`.
+
 ---
 
 ## 9. AI Guidance
@@ -230,4 +232,5 @@ Guías: `docs/guides/README.md`, `DEVELOPER_SCRIPTS_GUIDE.md`, `SMOKE_TESTS_GUID
 - `docs/context/FRONTEND_CONTEXT.md`
 - `docs/dev/Yo_Te_Invito_Checklist_V2_Produccion.md`
 - `docs/legal/LEGAL_ADMIN_MODULE.md`
-- `docs/tickets/TICKET_CANVAS_STUDIO.md`
+- `docs/context/NEXT_CHAT_GETNET_WEBCHECKOUT_HANDOFF.md`
+- `docs/payments/GETNET_WEBCHECKOUT_REDIRECT_CLOSING.md`
