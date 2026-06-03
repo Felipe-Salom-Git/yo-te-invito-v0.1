@@ -57,6 +57,8 @@ Smoke: `pnpm --filter api run smoke:getnet-webcheckout -- --config|--auth|--paym
 
 **Smoke productivo payment-intent (validado):** con `GETNET_WEBCHECKOUT_CONFIRM_PROD=yes` y `--confirm --amount 50000` → auth + intent OK en `api.globalgetnet.com`; `payment_intent_id` recibido; `redirect_url` recibido (salida smoke sanitizada, sin URL completa). No captura pago. Ver [GETNET_PRODUCTION_SMOKE.md](../payments/GETNET_PRODUCTION_SMOKE.md).
 
+**VPS Redirect Smoke:** deploy `feat/v1-s03-api-foundation` OK; smokes + aliases + redirect app OK; pago real no ejecutado; webhook Portal Getnet pendiente — [GETNET_WEBCHECKOUT_VPS_REDIRECT_SMOKE.md](../payments/GETNET_WEBCHECKOUT_VPS_REDIRECT_SMOKE.md).
+
 ## GETNET_WEB_CHECKOUT_* (legacy note)
 
 Previously documented as unused. Superseded by `GETNET_WEBCHECKOUT_*` (see above).

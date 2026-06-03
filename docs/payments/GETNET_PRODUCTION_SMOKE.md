@@ -53,6 +53,21 @@ Validado en desarrollo (rama `feat/v1-s03-api-foundation`):
 
 No re-ejecutar `--confirm` en CI ni sin checklist; el smoke no imprime URLs completas ni tokens.
 
+## VPS Redirect Smoke
+
+Estado (VPS, rama `feat/v1-s03-api-foundation`):
+
+| Check | Resultado |
+|-------|-----------|
+| Deploy controlado VPS | OK |
+| Smokes config / auth / dry-run | OK |
+| Aliases portal | OK |
+| Redirect app → `hosted-web-checkout` Getnet | OK |
+| Pago real | No ejecutado |
+| Webhook Portal Getnet | Pendiente |
+
+**Riesgo:** no pagar hasta registrar webhook en portal. Ver [GETNET_WEBCHECKOUT_VPS_REDIRECT_SMOKE.md](./GETNET_WEBCHECKOUT_VPS_REDIRECT_SMOKE.md).
+
 Tests unitarios helpers:
 
 ```bash

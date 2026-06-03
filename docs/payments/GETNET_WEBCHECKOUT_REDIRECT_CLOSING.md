@@ -154,20 +154,30 @@ Smoke legacy (GeoPagos / webhook simulado): `pnpm --filter api run smoke:getnet 
 - `payment_intent_id`: recibido
 - `redirect_url`: recibido y sanitizado en consola
 - Pago no confirmado desde este smoke
-- Próximo paso: probar flujo app local / checkout real Yo Te Invito
+- Próximo paso: webhook Portal Getnet + pago mínimo autorizado
+
+## VPS Redirect Smoke
+
+Estado:
+
+- Deploy controlado en `feat/v1-s03-api-foundation`: OK
+- Smokes config/auth/dry-run (VPS): OK
+- Aliases portal: OK
+- Redirección a Getnet hosted checkout desde app: OK
+- Pago real: no ejecutado
+- Webhook Portal Getnet: pendiente
+
+Detalle: [GETNET_WEBCHECKOUT_VPS_REDIRECT_SMOKE.md](./GETNET_WEBCHECKOUT_VPS_REDIRECT_SMOKE.md).
 
 ---
 
 ## 9. Pendientes
 
-- [ ] Credenciales PRE válidas en `apps/api/.env` local (no commitear) — opcional si prod ya validado.
-- [ ] `smoke:getnet-webcheckout -- --auth` en PRE si se requiere homologación separada.
-- [ ] POST payment-intent PRE controlado (opcional si prod OK).
-- [ ] Configurar webhook Basic Auth en portal Getnet (URL + user/password).
-- [ ] Flujo E2E: checkout → redirect → return → webhook → tickets.
+- [x] Deploy VPS `feat/v1-s03-api-foundation` — redirect smoke OK ([GETNET_WEBCHECKOUT_VPS_REDIRECT_SMOKE.md](./GETNET_WEBCHECKOUT_VPS_REDIRECT_SMOKE.md)).
+- [ ] Configurar webhook Basic Auth en portal Getnet (URL + user/password = `GETNET_WEBHOOK_BASIC_*` en API).
+- [ ] Flujo E2E cerrado: checkout → redirect → return → **webhook** → tickets.
+- [ ] Prueba homologación / pago mínimo autorizado (solo tras webhook portal).
 - [ ] Implementar poll remoto payment-intent status si Getnet documenta GET (hoy webhook es camino principal).
-- [ ] Deploy VPS en rama de desarrollo cuando corresponda.
-- [ ] Prueba homologación con monto mínimo autorizado.
 - [ ] Merge a `main` solo con instrucción explícita.
 
 ---
@@ -188,6 +198,7 @@ Smoke legacy (GeoPagos / webhook simulado): `pnpm --filter api run smoke:getnet 
 
 | Doc | Uso |
 |-----|-----|
+| [GETNET_WEBCHECKOUT_VPS_REDIRECT_SMOKE.md](./GETNET_WEBCHECKOUT_VPS_REDIRECT_SMOKE.md) | VPS redirect smoke |
 | [GETNET_WEBCHECKOUT_REDIRECT_IMPLEMENTATION.md](./GETNET_WEBCHECKOUT_REDIRECT_IMPLEMENTATION.md) | Implementación |
 | [NEXT_CHAT_GETNET_WEBCHECKOUT_HANDOFF.md](../context/NEXT_CHAT_GETNET_WEBCHECKOUT_HANDOFF.md) | Handoff próximo chat |
 | [GETNET_CLOSING_AUDIT.md](./GETNET_CLOSING_AUDIT.md) | Bloque A–G (`main`) + nota Web Checkout |

@@ -21,15 +21,14 @@ Detalle histórico demo: [guides/DEMO_REMOVAL.md](../guides/DEMO_REMOVAL.md). Po
 
 ## Getnet Web Checkout Redirect — estado actual
 
-- **Rama activa:** `feat/v1-s03-api-foundation`.
-- **`main`:** sin cambios por slice Web Checkout (`5a5c794` solo en feat).
+- **Rama activa:** `feat/v1-s03-api-foundation` (desplegada en VPS para redirect smoke).
+- **`main`:** sin cambios.
 - **`development`:** descartada y eliminada — no mergear spikes ni commits.
 - **V1:** Redirect (`redirect_url`); iFrame/Lightbox fuera de V1.
-- **WooCommerce / VTEX:** descartados como integración final.
-- **Webhook:** Basic Auth según portal (`GETNET_WEBHOOK_AUTH_MODE=basic`).
-- **Fulfillment/reconciliación:** reutilizados (`OrderFulfillmentService`).
+- **VPS:** smokes config/auth/dry-run OK; aliases portal OK; redirect app → Getnet hosted checkout OK — [GETNET_WEBCHECKOUT_VPS_REDIRECT_SMOKE.md](../payments/GETNET_WEBCHECKOUT_VPS_REDIRECT_SMOKE.md).
+- **Webhook Portal Getnet:** pendiente registrar URL + Basic Auth (no pago real hasta entonces).
+- **Fulfillment/reconciliación:** reutilizados (`OrderFulfillmentService`); ciclo cerrado solo tras webhook validado.
 - **Handoff:** [NEXT_CHAT_GETNET_WEBCHECKOUT_HANDOFF.md](./NEXT_CHAT_GETNET_WEBCHECKOUT_HANDOFF.md) · cierre [GETNET_WEBCHECKOUT_REDIRECT_CLOSING.md](../payments/GETNET_WEBCHECKOUT_REDIRECT_CLOSING.md).
-- **Pendiente:** `smoke:getnet-webcheckout` con credenciales PRE válidas.
 
 ---
 

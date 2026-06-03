@@ -21,6 +21,12 @@ El portal Getnet tiene configuradas URLs fijas que no se pueden modificar actual
 
 V1 Redirect: Getnet devuelve `redirect_url`; retorno del comprador vía portal fijo o `/checkout/return` (`returnUrl`/`errorUrl` en metadata YTI). Los alias cubren URLs fijas del portal Getnet.
 
+## VPS Redirect Smoke
+
+- `/checkout/success`, `/checkout/error`, `/api/getnet/callback`: validados en VPS (307/200).
+- Redirect productivo a Getnet hosted checkout desde app: OK.
+- Webhook portal + pago real: pendiente — [GETNET_WEBCHECKOUT_VPS_REDIRECT_SMOKE.md](./GETNET_WEBCHECKOUT_VPS_REDIRECT_SMOKE.md).
+
 ## 4. Solución
 
 | Alias | Comportamiento |

@@ -183,10 +183,23 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 - [ ] Revisión `postfix` (puerto 25) y `snmpd` (puerto 161)
 - [ ] **Legales:** reemplazar bootstrap temporal por contenido aprobado en `/admin/legales`
 - [ ] Smoke completo desde dominio real (home, login, admin, checkout demo, scanner QR, emails si Resend)
-- [ ] Getnet **go-live** en producción — código/docs slices A–G en [GETNET_CLOSING_AUDIT.md](../payments/GETNET_CLOSING_AUDIT.md) (`main`); Web Checkout Redirect en `feat/v1-s03-api-foundation` — [NEXT_CHAT_GETNET_WEBCHECKOUT_HANDOFF.md](./NEXT_CHAT_GETNET_WEBCHECKOUT_HANDOFF.md); ejecutar deploy VPS + [GETNET_ACTIVATION_CHECKLIST.md](../payments/GETNET_ACTIVATION_CHECKLIST.md). Pendiente: smoke PRE credenciales válidas, webhook Basic Auth portal, prueba monto mínimo, merge `main` explícito.
+- [ ] Getnet **go-live cerrado** — redirect VPS OK; pendiente webhook Portal Getnet + pago mínimo + tickets automáticos + merge `main` — [GETNET_WEBCHECKOUT_VPS_REDIRECT_SMOKE.md](../payments/GETNET_WEBCHECKOUT_VPS_REDIRECT_SMOKE.md), [GETNET_ACTIVATION_CHECKLIST.md](../payments/GETNET_ACTIVATION_CHECKLIST.md).
+- [x] Deploy VPS `feat/v1-s03-api-foundation` — servicios `yti-*` active; smokes config/auth/dry-run OK.
 - [x] Alias URLs fijas portal Getnet (`/checkout/success`, `/checkout/error`, `/api/getnet/callback`) — [GETNET_PORTAL_URL_COMPATIBILITY.md](../payments/GETNET_PORTAL_URL_COMPATIBILITY.md).
 - [x] Web Checkout contrato producción (OAuth body, `GETNET_GLOBAL_*` fallback, payload `customer` + `physical_goods`, `merchant_id` opcional) — [GETNET_WEBCHECKOUT_REDIRECT_IMPLEMENTATION.md](../payments/GETNET_WEBCHECKOUT_REDIRECT_IMPLEMENTATION.md).
-- [x] Smoke productivo payment-intent (`GETNET_WEBCHECKOUT_CONFIRM_PROD=yes`, amount 50000): auth + intent OK; `payment_intent_id` + `redirect_url` recibidos; logs smoke sanitizados — [GETNET_PRODUCTION_SMOKE.md](../payments/GETNET_PRODUCTION_SMOKE.md). Pendiente: checkout app E2E + webhook en flujo real.
+- [x] Smoke productivo payment-intent local (`GETNET_WEBCHECKOUT_CONFIRM_PROD=yes`, amount 50000) — [GETNET_PRODUCTION_SMOKE.md](../payments/GETNET_PRODUCTION_SMOKE.md).
+- [x] Redirect productivo app → Getnet hosted checkout (VPS, sin pago real) — [GETNET_WEBCHECKOUT_VPS_REDIRECT_SMOKE.md](../payments/GETNET_WEBCHECKOUT_VPS_REDIRECT_SMOKE.md).
+- [ ] Webhook Basic Auth registrado en Portal Getnet (mismo user/password que API).
+- [ ] Pago mínimo autorizado + webhook recibido + emisión tickets automática.
+
+## Getnet Web Checkout Redirect — VPS smoke OK
+
+- Rama desplegada: `feat/v1-s03-api-foundation`.
+- `main` sigue sin cambios.
+- Redirección productiva a Getnet hosted checkout validada desde la app.
+- Webhook Basic Auth pendiente de registrar/configurar en Portal Getnet.
+- No se realizó pago real.
+- No considerar el bloque cerrado hasta validar webhook + emisión automática de tickets.
 - [ ] **SEO técnico (SEO 2–9):** robots/sitemap, no-index portales, metadata dinámica, JSON-LD, GSC — baseline [`SEO_TECHNICAL_AUDIT.md`](../audits/SEO_TECHNICAL_AUDIT.md)
 
 ### Google Cloud — Etapa A manual (cerrada) / Etapa B (Storage cerrado; Maps/SEO pendiente)

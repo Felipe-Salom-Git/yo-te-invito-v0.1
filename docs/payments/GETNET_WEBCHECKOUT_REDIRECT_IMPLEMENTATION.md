@@ -177,6 +177,21 @@ GETNET_WEBCHECKOUT_CONFIRM_PROD=yes pnpm --filter api run smoke:getnet-webchecko
 | Pago confirmado / capturado | **No** — este smoke solo crea intent |
 | Próximo paso | Flujo app local: checkout Yo Te Invito → redirect comprador → return + webhook |
 
+## VPS Redirect Smoke
+
+Estado (deploy controlado `feat/v1-s03-api-foundation` en VPS):
+
+| Check | Estado |
+|-------|--------|
+| Deploy controlado VPS | OK |
+| Smokes config / auth / dry-run (VPS) | OK |
+| Aliases portal (`/checkout/success`, `/checkout/error`, `/api/getnet/callback`) | OK |
+| Redirección a Getnet hosted checkout desde app (`yoteinvito.club`) | OK |
+| Pago real | No ejecutado |
+| Webhook Portal Getnet (Basic Auth registrado) | **Pendiente** |
+
+Detalle: [GETNET_WEBCHECKOUT_VPS_REDIRECT_SMOKE.md](./GETNET_WEBCHECKOUT_VPS_REDIRECT_SMOKE.md).
+
 ---
 
 ## 11. Código
@@ -206,6 +221,7 @@ GETNET_WEBCHECKOUT_CONFIRM_PROD=yes pnpm --filter api run smoke:getnet-webchecko
 
 ## Referencias
 
+- [GETNET_WEBCHECKOUT_VPS_REDIRECT_SMOKE.md](./GETNET_WEBCHECKOUT_VPS_REDIRECT_SMOKE.md)
 - [GETNET_PORTAL_URL_COMPATIBILITY.md](./GETNET_PORTAL_URL_COMPATIBILITY.md)
 - [GETNET_WEBCHECKOUT_REDIRECT_CLOSING.md](./GETNET_WEBCHECKOUT_REDIRECT_CLOSING.md)
 - [NEXT_CHAT_GETNET_WEBCHECKOUT_HANDOFF.md](../context/NEXT_CHAT_GETNET_WEBCHECKOUT_HANDOFF.md)
