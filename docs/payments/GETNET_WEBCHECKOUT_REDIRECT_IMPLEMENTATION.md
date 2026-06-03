@@ -61,10 +61,10 @@ Ver `apps/api/.env.example`.
 | `GETNET_WEBCHECKOUT_AUTH_BASE_URL` | OAuth token |
 | `GETNET_WEBCHECKOUT_API_BASE_URL` | Host API |
 | `GETNET_WEBCHECKOUT_PAYMENT_INTENT_PATH` | `/dpy/web-checkout/v1/payment-intent` |
-| `GETNET_WEBCHECKOUT_MERCHANT_ID` | Header `x-merchant-id` |
-| `GETNET_WEBCHECKOUT_SELLER_ID` | Header `x-seller-id` (requerido) |
-| `GETNET_WEBCHECKOUT_CLIENT_ID` | OAuth Basic user |
-| `GETNET_WEBCHECKOUT_SECRET_KEY` | OAuth Basic password |
+| `GETNET_WEBCHECKOUT_MERCHANT_ID` | Opcional — header `x-merchant-id` solo si está definido |
+| `GETNET_WEBCHECKOUT_SELLER_ID` | Requerido — header `x-seller-id` |
+| `GETNET_WEBCHECKOUT_CLIENT_ID` | Requerido — OAuth Basic user |
+| `GETNET_WEBCHECKOUT_SECRET_KEY` | Requerido — OAuth Basic password |
 | `GETNET_WEBHOOK_AUTH_MODE` | `basic` o `header` |
 | `GETNET_WEBHOOK_BASIC_USER` / `PASSWORD` | Portal Web Checkout |
 | `WEB_APP_URL` | `success_url` / `error_url` |

@@ -81,7 +81,7 @@ main → producción (solo con instrucción explícita)
 | `GETNET_WEBCHECKOUT_AUTH_BASE_URL` | OAuth `.../authentication/oauth2/access_token` |
 | `GETNET_WEBCHECKOUT_API_BASE_URL` | Host API (`api.pre` / `api.globalgetnet.com`) |
 | `GETNET_WEBCHECKOUT_PAYMENT_INTENT_PATH` | `/dpy/web-checkout/v1/payment-intent` |
-| `GETNET_WEBCHECKOUT_MERCHANT_ID` | Header `x-merchant-id` |
+| `GETNET_WEBCHECKOUT_MERCHANT_ID` | Opcional — header `x-merchant-id` si definido |
 | `GETNET_WEBCHECKOUT_SELLER_ID` | Header `x-seller-id` (requerido) |
 | `GETNET_WEBCHECKOUT_CLIENT_ID` | OAuth Basic user |
 | `GETNET_WEBCHECKOUT_SECRET_KEY` | OAuth Basic password |

@@ -51,7 +51,8 @@ export function loadGetnetWebCheckoutConfig(): GetnetWebCheckoutConfig {
   const clientId = getEnv('GETNET_WEBCHECKOUT_CLIENT_ID');
   const secretKey = getEnv('GETNET_WEBCHECKOUT_SECRET_KEY');
   const sellerId = getEnv('GETNET_WEBCHECKOUT_SELLER_ID');
-  const merchantId = getEnv('GETNET_WEBCHECKOUT_MERCHANT_ID');
+  const merchantIdRaw = getEnv('GETNET_WEBCHECKOUT_MERCHANT_ID');
+  const merchantId = merchantIdRaw || undefined;
 
   return {
     env,
@@ -60,7 +61,7 @@ export function loadGetnetWebCheckoutConfig(): GetnetWebCheckoutConfig {
     paymentIntentPath: paymentIntentPath.startsWith('/')
       ? paymentIntentPath
       : `/${paymentIntentPath}`,
-    merchantId,
+    ...(merchantId ? { merchantId } : {}),
     sellerId,
     clientId,
     secretKey,

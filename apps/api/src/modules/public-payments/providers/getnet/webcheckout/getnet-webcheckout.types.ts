@@ -5,7 +5,8 @@ export interface GetnetWebCheckoutConfig {
   authBaseUrl: string;
   apiBaseUrl: string;
   paymentIntentPath: string;
-  merchantId: string;
+  /** Optional — sent as `x-merchant-id` only when set. */
+  merchantId?: string;
   sellerId: string;
   clientId: string;
   secretKey: string;

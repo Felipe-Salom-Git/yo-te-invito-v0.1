@@ -46,6 +46,11 @@ function maskSecret(value: string | undefined): string {
   return `${v.slice(0, 2)}…${v.slice(-2)} (${v.length} chars)`;
 }
 
+function formatOptionalMerchantId(value: string | undefined): string {
+  if (!value?.trim()) return 'optional / not set';
+  return maskSecret(value);
+}
+
 function parseArgs(argv: string[]) {
   const out = {
     config: false,
@@ -89,7 +94,7 @@ function runConfig(): number {
   console.log(`GETNET_WEBCHECKOUT_API_BASE_URL: ${config.apiBaseUrl}`);
   console.log(`GETNET_WEBCHECKOUT_PAYMENT_INTENT_PATH: ${config.paymentIntentPath}`);
   console.log(`Payment-intent URL: ${buildWebCheckoutPaymentIntentUrl(config)}`);
-  console.log(`GETNET_WEBCHECKOUT_MERCHANT_ID: ${maskSecret(config.merchantId)}`);
+  console.log(`GETNET_WEBCHECKOUT_MERCHANT_ID: ${formatOptionalMerchantId(config.merchantId)}`);
   console.log(`GETNET_WEBCHECKOUT_SELLER_ID: ${maskSecret(config.sellerId)}`);
   console.log(`GETNET_WEBCHECKOUT_CLIENT_ID: ${maskSecret(config.clientId)}`);
   console.log(`GETNET_WEBCHECKOUT_SECRET_KEY: ${maskSecret(config.secretKey)}`);
@@ -99,7 +104,9 @@ function runConfig(): number {
   );
 
   if (!config.enabled) {
-    console.error('\nFAIL: set GETNET_WEBCHECKOUT_CLIENT_ID, SECRET_KEY, SELLER_ID');
+    console.error(
+      '\nFAIL: set GETNET_WEBCHECKOUT_CLIENT_ID, GETNET_WEBCHECKOUT_SECRET_KEY, GETNET_WEBCHECKOUT_SELLER_ID (MERCHANT_ID optional)',
+    );
     return 1;
   }
   console.log('\nOK: Web Checkout credentials present.');

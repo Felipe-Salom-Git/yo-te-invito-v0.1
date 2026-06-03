@@ -362,6 +362,7 @@ export class PublicPaymentsService {
           errorUrl,
           webCheckoutResponse: intentResult.raw,
           getnetReturnConfiguredAt: new Date().toISOString(),
+          ...(config.merchantId ? { merchantId: config.merchantId } : {}),
         } as Prisma.InputJsonValue,
       },
     });
