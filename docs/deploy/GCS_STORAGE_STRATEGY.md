@@ -1,6 +1,6 @@
 # Estrategia Google Cloud Storage — Yo Te Invito
 
-**Estado:** arquitectura documentada + **API upload V1** (Junio 2026). Formularios frontend pendientes.  
+**Estado:** **cerrado funcional en producción (2026-05-31)** — bucket público `yti-prod-public-assets`, `POST /uploads/public-image`, formularios web (rentals, admin, productora, gastro, hotel), smokes PASS. Ops legacy data-URL/huérfanos/CDN: no bloqueante.  
 **Relacionado:** [`GOOGLE_CLOUD_RUNBOOK.md`](./GOOGLE_CLOUD_RUNBOOK.md) · [`GCS_BACKUPS_RUNBOOK.md`](./GCS_BACKUPS_RUNBOOK.md)
 
 > **Regla:** no commitear JSON de service account, API keys ni `.env` productivos. Solo nombres, IDs y variables esperadas.

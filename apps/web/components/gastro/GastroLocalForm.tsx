@@ -8,10 +8,13 @@ import { RentalProductImagesForm } from '@/components/rentals/RentalProductImage
 import type { GcsImageUploadConfig } from '@/lib/upload/gcs-image-upload-config';
 import {
   EventLocationFields,
-  validateLocationValue,
+  gastroLocationPayloadFromLocationValue,
+  validateGastroLocationValue,
   type LocationValue,
 } from '@/components/location';
 import type { GastroLocal, GastroLocalUpsertPayload } from '@/repositories/interfaces';
+
+export type GastroLocalFormMode = 'owner' | 'admin';
 
 type Props = {
   initial?: GastroLocal | null;
@@ -19,8 +22,15 @@ type Props = {
   onSubmit: (payload: GastroLocalUpsertPayload) => void;
   submitting?: boolean;
   submitLabel: string;
-  /** GastroProfile.id — required for GCS uploads. */
+  /** GastroProfile.id — required for GCS file uploads. */
   gastroProfileId?: string;
+  mode?: GastroLocalFormMode;
+  /** Admin create/edit — razón social. */
+  legalName?: string;
+  onLegalNameChange?: (value: string) => void;
+  /** When false, subcategory is optional even if options exist (admin). */
+  requireSubcategory?: boolean;
+  imagesHelperText?: string;
 };
 
 function locationFromLocal(local: GastroLocal): LocationValue {
@@ -30,7 +40,7 @@ function locationFromLocal(local: GastroLocal): LocationValue {
     city: local.city ?? '',
     lat: local.geoLat,
     lng: local.geoLng,
-    placeId: null,
+    placeId: local.googlePlaceId ?? null,
   };
 }
 
@@ -41,7 +51,15 @@ export function GastroLocalForm({
   submitting,
   submitLabel,
   gastroProfileId,
+  mode = 'owner',
+  legalName: legalNameProp,
+  onLegalNameChange,
+  requireSubcategory,
+  imagesHelperText,
 }: Props) {
+  const isAdmin = mode === 'admin';
+  const mustPickSubcategory =
+    requireSubcategory ?? (!isAdmin && subcategories.length > 0);
   const [displayName, setDisplayName] = useState(initial?.displayName ?? '');
   const [summary, setSummary] = useState(initial?.summary ?? '');
   const [detail, setDetail] = useState(initial?.detail ?? '');
@@ -102,21 +120,13 @@ export function GastroLocalForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!displayName.trim() || !contactEmail.trim()) return;
-    const locErr = validateLocationValue(location, {
-      requireProvince: true,
-      requireAddress: true,
-      requireCoords: true,
-    });
+    const locErr = validateGastroLocationValue(location);
     if (locErr) {
       setLocationError(locErr);
       return;
     }
-    if (location.lat == null || location.lng == null) {
-      setLocationError('Seleccioná la ubicación en el mapa.');
-      return;
-    }
-    if (subcategories.length > 0 && !subcategoryId) {
-      setLocationError('Seleccioná una subcategoría.');
+    if (mustPickSubcategory && !subcategoryId) {
+      setLocationError('Seleccioná una subcategoría gastronómica.');
       return;
     }
     setLocationError(null);
@@ -127,13 +137,7 @@ export function GastroLocalForm({
       subcategoryId: subcategoryId || null,
       bannerUrl: images.headerImageUrl.trim() || null,
       galleryUrls: images.galleryImageUrls.filter(Boolean),
-      location: {
-        province: location.province,
-        city: location.city,
-        address: location.address,
-        lat: location.lat,
-        lng: location.lng,
-      },
+      location: gastroLocationPayloadFromLocationValue(location),
       openingHours,
       openingHoursNote: openingHoursNote.trim() || null,
       contactPhone: contactPhone.trim() || null,
@@ -145,8 +149,20 @@ export function GastroLocalForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <SectionTitle>Datos del local</SectionTitle>
-      <Input label="Nombre" value={displayName} onChange={(e) => setDisplayName(e.target.value)} required />
+      <SectionTitle>{isAdmin ? 'Identidad' : 'Datos del local'}</SectionTitle>
+      {isAdmin && onLegalNameChange != null && (
+        <Input
+          label="Razón social / nombre legal (opcional)"
+          value={legalNameProp ?? ''}
+          onChange={(e) => onLegalNameChange(e.target.value)}
+        />
+      )}
+      <Input
+        label="Nombre comercial"
+        value={displayName}
+        onChange={(e) => setDisplayName(e.target.value)}
+        required
+      />
       <div>
         <label className="mb-1 block text-sm text-text-muted">Resumen (máx. 220 caracteres)</label>
         <textarea
@@ -166,14 +182,14 @@ export function GastroLocalForm({
           onChange={(e) => setDetail(e.target.value)}
         />
       </div>
-      {subcategories.length > 0 && (
+      {subcategories.length > 0 ? (
         <div>
-          <label className="mb-1 block text-sm text-text-muted">Subcategoría</label>
+          <label className="mb-1 block text-sm text-text-muted">Subcategoría gastronómica</label>
           <select
             className="w-full rounded-lg border border-border bg-bg px-3 py-2 text-sm text-text placeholder:text-text-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
             value={subcategoryId}
             onChange={(e) => setSubcategoryId(e.target.value)}
-            required
+            required={mustPickSubcategory}
           >
             <option value="">Seleccionar…</option>
             {subcategories.map((s) => (
@@ -183,26 +199,43 @@ export function GastroLocalForm({
             ))}
           </select>
         </div>
-      )}
-      <RentalProductImagesForm
-        value={images}
-        onChange={setImages}
-        uploadConfig={uploadConfig}
-        onUploadingChange={setIsUploadingImages}
-      />
+      ) : isAdmin ? (
+        <p className="rounded-lg border border-dashed border-border px-3 py-2 text-sm text-text-muted">
+          No hay subcategorías gastro activas. Configuralas en{' '}
+          <span className="text-accent">/admin/categorias</span> antes de asignar una.
+        </p>
+      ) : null}
+      <div>
+        {isAdmin ? <p className="mb-2 text-sm font-medium text-text">Imágenes</p> : null}
+        {imagesHelperText ? (
+          <p className="mb-2 text-xs text-text-muted">{imagesHelperText}</p>
+        ) : null}
+        <RentalProductImagesForm
+          value={images}
+          onChange={setImages}
+          uploadConfig={uploadConfig}
+          onUploadingChange={setIsUploadingImages}
+        />
+      </div>
+      {isAdmin ? <p className="text-sm font-medium text-text">Ubicación</p> : null}
       <EventLocationFields
         value={location}
         onChange={setLocation}
         required
         provinceError={locationError ?? undefined}
       />
+      {isAdmin ? <p className="text-sm font-medium text-text">Horarios y contacto</p> : null}
       <OpeningHoursEditor value={openingHours} onChange={setOpeningHours} />
       <Input
         label="Nota horarios (opcional)"
         value={openingHoursNote}
         onChange={(e) => setOpeningHoursNote(e.target.value)}
       />
-      <Input label="Teléfono" value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} />
+      <Input
+        label={isAdmin ? 'Teléfono / WhatsApp' : 'Teléfono'}
+        value={contactPhone}
+        onChange={(e) => setContactPhone(e.target.value)}
+      />
       <Input
         label="Email de contacto"
         type="email"
@@ -210,8 +243,16 @@ export function GastroLocalForm({
         onChange={(e) => setContactEmail(e.target.value)}
         required
       />
-      <Input label="Menú digital (URL)" value={menuUrl} onChange={(e) => setMenuUrl(e.target.value)} />
-      <Input label="Página web (URL)" value={websiteUrl} onChange={(e) => setWebsiteUrl(e.target.value)} />
+      <Input
+        label={isAdmin ? 'Menú / carta (URL)' : 'Menú digital (URL)'}
+        value={menuUrl}
+        onChange={(e) => setMenuUrl(e.target.value)}
+      />
+      <Input
+        label={isAdmin ? 'Web / redes (URL)' : 'Página web (URL)'}
+        value={websiteUrl}
+        onChange={(e) => setWebsiteUrl(e.target.value)}
+      />
       {locationError && <p className="text-sm text-red-500">{locationError}</p>}
       <Button type="submit" disabled={submitting || isUploadingImages}>
         {submitLabel}

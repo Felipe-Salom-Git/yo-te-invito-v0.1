@@ -92,6 +92,7 @@ async function RentalJsonLd({ id }: { id: string }) {
     venueName: typeof event?.venueName === 'string' ? event.venueName : null,
     venueAddress: typeof event?.venueAddress === 'string' ? event.venueAddress : null,
     city: typeof event?.city === 'string' ? event.city : null,
+    province: typeof event?.province === 'string' ? event.province : null,
     geoLat: typeof event?.geoLat === 'number' ? event.geoLat : null,
     geoLng: typeof event?.geoLng === 'number' ? event.geoLng : null,
     producer: event?.producer ? { displayName: event.producer.displayName } : null,

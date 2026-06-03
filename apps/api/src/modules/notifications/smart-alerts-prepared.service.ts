@@ -151,7 +151,15 @@ export class SmartAlertsPreparedService {
       where: { tenantId: event.tenantId, producerProfileId },
       include: {
         user: {
-          select: { id: true, tenantId: true, email: true, preferences: true, status: true },
+          select: {
+            id: true,
+            tenantId: true,
+            email: true,
+            preferences: true,
+            status: true,
+            firstName: true,
+            lastName: true,
+          },
         },
       },
     });
@@ -163,6 +171,7 @@ export class SmartAlertsPreparedService {
       if (!prefs.notifyFollowedProducers) continue;
       if (await this.isContentAlertThrottled(row.user.id)) continue;
 
+      // Email: sendEmail=false por decisión producto (in-app/push). Template `FOLLOWED_PRODUCER_NEW_EVENT` en registry para smoke.
       const result = await this.notifications.deliver({
         tenantId: row.user.tenantId,
         userId: row.user.id,
@@ -231,6 +240,7 @@ export class SmartAlertsPreparedService {
         continue;
       }
 
+      // Email: sendEmail=false por decisión producto. Template `FAVORITE_INTEREST_NEW_CONTENT` en registry para smoke.
       const result = await this.notifications.deliver({
         tenantId: user.tenantId,
         userId: user.id,

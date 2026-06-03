@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { useOrderDetail, useOrderPaymentStatus } from '@/lib/query/orders';
+import { useOrderDetail } from '@/lib/query/orders';
+import { useCheckoutPaymentStatus } from '@/lib/query/checkout-payment-status';
 import { useEventDetail } from '@/lib/query/events';
 import {
   PageContainer,
@@ -37,7 +38,7 @@ export default function OrderDetailPage() {
     enabled: sessionStatus === 'authenticated' && !!orderId,
   });
 
-  const { data: payment } = useOrderPaymentStatus(orderId, TENANT_ID, {
+  const { data: checkoutStatus } = useCheckoutPaymentStatus(orderId, TENANT_ID, {
     enabled: sessionStatus === 'authenticated' && !!orderId && !!order,
   });
 
@@ -143,8 +144,20 @@ export default function OrderDetailPage() {
                 }
               : null
           }
-          paymentStatus={payment?.status ?? null}
+          paymentStatus={checkoutStatus?.paymentStatus ?? null}
+          paymentProvider={checkoutStatus?.paymentProvider ?? null}
+          requiresManualReview={checkoutStatus?.requiresManualReview}
+          reconciliationReason={checkoutStatus?.reconciliationReason ?? null}
         />
+
+        {checkoutStatus?.paymentId && (
+          <Link
+            href={`/checkout/return?orderId=${encodeURIComponent(orderId)}&paymentId=${encodeURIComponent(checkoutStatus.paymentId)}&tenantId=${encodeURIComponent(TENANT_ID)}`}
+            className="inline-block text-sm text-accent hover:underline"
+          >
+            Ver estado del pago en tiempo real →
+          </Link>
+        )}
 
         <MeOrderDetailActions order={order} tenantId={TENANT_ID} />
 

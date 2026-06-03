@@ -165,6 +165,9 @@ export function shouldSendPushForKind(
     case 'EXPECTED_EVENT_SOON':
       return prefs.expectedEventNotificationsEnabled;
     case 'TRANSFER_OFFER_PENDING':
+    case 'TICKET_TRANSFER_ACCEPTED':
+    case 'TICKET_TRANSFER_REJECTED':
+    case 'TICKET_TRANSFER_CANCELLED':
       return prefs.notifyTransferOffers;
     case 'REVIEW_PENDING':
       return prefs.notifyPendingReviews;
@@ -204,6 +207,9 @@ export function pushTypeForKind(kind: NotificationKind): string {
     case 'EXPECTED_EVENT_SOON':
       return 'EXPECTED_EVENT';
     case 'TRANSFER_OFFER_PENDING':
+    case 'TICKET_TRANSFER_ACCEPTED':
+    case 'TICKET_TRANSFER_REJECTED':
+    case 'TICKET_TRANSFER_CANCELLED':
       return 'TRANSFER_OFFER';
     case 'REVIEW_PENDING':
       return 'REVIEW_PENDING';

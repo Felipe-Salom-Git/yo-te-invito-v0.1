@@ -4,6 +4,7 @@ import type { PublicReviewListFilters, PublicReviewItemV2 } from '@yo-te-invito/
 import { getCategoryGatewayHref } from '@/lib/home/categoryGatewayConfig';
 import { getCategoryLabel, getRelatedSectionTitle } from '@/lib/home/contentRoutes';
 import { buildGastroGalleryImages, buildGastroWhatsAppHref } from '@/lib/gastro/gallery';
+import { hasPublicLocationForMapLink } from '@/lib/maps';
 import { GastroPublicHero } from './GastroPublicHero';
 import { GastroDiscountsSection } from './GastroDiscountsSection';
 import { GastroLocationLinksCard } from './GastroLocationLinksCard';
@@ -74,9 +75,13 @@ export function GastroPublicDetailContent({
 }: GastroPublicDetailContentProps) {
   const galleryImages = buildGastroGalleryImages(location.bannerUrl, location.galleryUrls);
   const description = location.detail?.trim() || location.description?.trim() || null;
-  const hasLocation =
-    Boolean(location.address?.trim()) ||
-    (location.geoLat != null && location.geoLng != null);
+  const hasLocation = hasPublicLocationForMapLink({
+    address: location.address,
+    city: location.city,
+    venueName: location.displayName,
+    geoLat: location.geoLat,
+    geoLng: location.geoLng,
+  });
   const whatsAppHref = buildGastroWhatsAppHref(location.displayName, location.contactPhone);
   const reviewEventId = location.publicEventId;
   const publishedContent = location.content ?? [];

@@ -2,6 +2,8 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { NotificationChannel, NotificationKind, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EmailQueueService } from '../../email/email-queue.service';
+import { renderEmailTemplate } from '../../email/templates/email-template.renderer';
+import type { EmailTemplateId } from '../../email/templates/email-template.types';
 import type {
   MeNotificationsResponse,
   MeNotificationsUnread,
@@ -31,6 +33,9 @@ export type DeliverNotificationInput = {
   /** Si se omite, se calcula desde preferencias del usuario. */
   sendPush?: boolean;
   preferences?: UserPortalPreferences;
+  /** Canal email: template registrado en lugar de HTML inline. */
+  emailTemplateId?: EmailTemplateId;
+  emailTemplateVariables?: Record<string, unknown>;
 };
 
 @Injectable()
@@ -197,13 +202,30 @@ export class UserNotificationsService {
         },
       });
       if (!alreadyEmail) {
-        const appUrl = process.env.APP_URL ?? 'http://localhost:3000';
-        const link = input.href ? `${appUrl}${input.href}` : appUrl;
+        let subject = input.title;
+        let html: string;
+        let text: string | undefined;
+
+        if (input.emailTemplateId) {
+          const rendered = renderEmailTemplate({
+            templateId: input.emailTemplateId,
+            variables: input.emailTemplateVariables ?? {},
+          });
+          subject = rendered.subject;
+          html = rendered.html;
+          text = rendered.text;
+        } else {
+          const appUrl = process.env.APP_URL ?? 'http://localhost:3000';
+          const link = input.href ? `${appUrl}${input.href}` : appUrl;
+          html = `<p>${input.body}</p><p><a href="${link}">Ver en Yo Te Invito</a></p>`;
+          text = `${input.body}\n\n${link}`;
+        }
+
         await this.emailQueue.enqueue({
           to: input.userEmail,
-          subject: input.title,
-          html: `<p>${input.body}</p><p><a href="${link}">Ver en Yo Te Invito</a></p>`,
-          text: `${input.body}\n\n${link}`,
+          subject,
+          html,
+          text,
         });
         await this.prisma.notificationDeliveryLog.create({
           data: {

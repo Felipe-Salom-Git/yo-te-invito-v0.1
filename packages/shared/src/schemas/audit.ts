@@ -32,6 +32,8 @@ export const auditActionSchema = z.enum([
   'LEGAL_DOCUMENT_DRAFT_SAVED',
   'LEGAL_DOCUMENT_PUBLISHED',
   'LEGAL_DOCUMENT_ARCHIVED',
+  'PAYMENT_ADMIN_RECONCILED',
+  'PAYMENT_MANUAL_REVIEWED',
 ]);
 export type AuditActionValue = z.infer<typeof auditActionSchema>;
 

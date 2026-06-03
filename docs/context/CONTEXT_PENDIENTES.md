@@ -4,6 +4,32 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 
 **Convención:** `- [ ]` pendiente · `- [x]` hecho
 
+## Google Cloud / Storage / SEO / Maps — bloque cerrado (2026-06-01)
+
+> Checklist V2 § Google Cloud · § GSC/SEO · Runbooks: [`GOOGLE_CLOUD_RUNBOOK.md`](../deploy/GOOGLE_CLOUD_RUNBOOK.md) · [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) · [`SEARCH_CONSOLE_SEO_RUNBOOK.md`](../deploy/SEARCH_CONSOLE_SEO_RUNBOOK.md) · Auditorías: [`MAPS_LOCATION_AUDIT.md`](../audits/MAPS_LOCATION_AUDIT.md) · [`SEO_TECHNICAL_AUDIT.md`](../audits/SEO_TECHNICAL_AUDIT.md)
+
+- [x] Proyecto GCP `yoteinvito-1721413433327` + billing + colaborador técnico
+- [x] Maps APIs + key restringida + `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` en prod
+- [x] GCS bucket privado `yti-prod-storage` + backups PG (timer 03:30, restore drill, lifecycle 30d)
+- [x] GCS bucket público `yti-prod-public-assets` + CORS + `POST /uploads/public-image` + ownership + smokes PASS
+- [x] Formularios GCS: rentals, admin eventos/excursiones, productora, gastro, hotel
+- [x] SEO técnico base: `robots.txt`, `sitemap.xml`, metadata, JSON-LD, portales privados en robots
+- [x] GSC: propiedad `yoteinvito.club` verificada + sitemap enviado
+- [x] Maps prod: autocomplete, fallback manual, persistencia placeId/province, Ver ubicación, migración Prisma, JSON-LD local
+
+**Pendientes no bloqueantes (ops):**
+
+- [ ] Budget alerts GCP (50% / 80% / 100%)
+- [ ] `storage:audit-data-urls` read-only en prod
+- [ ] Migración data-URL legacy por lotes (post-backup)
+- [ ] `storage:audit-orphans` read-only + cleanup huérfanos tras revisión manual
+- [ ] CDN `cdn.yoteinvito.club` (fase 2)
+- [ ] Signed URLs ampliadas para `private/*`
+- [ ] GSC: procesamiento sitemap, cobertura, CWV con tráfico, Rich Results Test
+- [ ] Backfill Maps legacy; productoras sede exacta (si se decide); unificar `ARGENTINA_PROVINCES`
+
+---
+
 ## Perfiles y registro (2026-05)
 
 - [x] Auditar flujo actual de registro con elección de perfil — `docs/audits/REGISTER_ONBOARDING_AUDIT.md` (Slice 1, 2026-05-24)
@@ -69,6 +95,34 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 
 ---
 
+## Emails transaccionales (DonWeb SMTP)
+
+> **Bloque cerrado PROD OK (2026-06):** [`EMAILS_CLOSING_AUDIT.md`](../emails/EMAILS_CLOSING_AUDIT.md) · arquitectura [`EMAILS_ARCHITECTURE.md`](../emails/EMAILS_ARCHITECTURE.md) · matriz [`EMAIL_MATRIX.md`](../emails/EMAIL_MATRIX.md)
+
+- [x] Auditar sistema actual (Resend, cola, `NotificationDeliveryLog`, callers, env, frontend prefs)
+- [x] Propuesta arquitectura `MailProvider` + SMTP DonWeb `@yoteinvito.club` (Slice 1)
+- [x] Slice 2: `MailProvider`, `ResendMailProvider`, `SmtpMailProvider`, `MAIL_PROVIDER`, `smoke:email`
+- [x] Validación SMTP DonWeb **local** — `smoke:email` OK (`messageId`; host `c2821613.ferozo.com:465`, `no_reply@yoteinvito.club`)
+- [x] **Producción VPS:** `MAIL_PROVIDER=smtp`, API `/health` OK, smokes por familia OK, pruebas manuales OK; password SMTP rotada en servidor (no en repo)
+- [x] Slice 3: layout base + registry + renderer + 3 templates piloto + `sendTemplate` + `smoke:email-template`
+- [x] Slice 3b: callers piloto — `AUTH_WELCOME_BUYER` (registro USER), `PRODUCER_EVENT_APPROVED` (aprobación admin), `OperationalAlertsEmailService` (`ADMIN_CRITICAL_ALERT`)
+- [x] Slice 4 (tanda 1): `AUTH_WELCOME_PRODUCER|GASTRO|HOTEL|REFERRER`, `AUTH_VERIFY_EMAIL`, `PRODUCER_EVENT_REJECTED` + callers en `AuthService` / `ProducerEventStatusNotificationsService`
+- [x] Slice 5: `TICKET_TRANSFER_*` (4) + `EVENT_REMINDER_24H`; callers transfer + cron; migración `NotificationKind` transfer status
+- [x] Slice 6: `REVIEW_*` (7 templates) + `ReviewNotificationsService` con `emailTemplateId` (sin migración Prisma nueva)
+- [x] Slice 7 (emails): `REFERRAL_*` (7 templates) + `ReferralEmailsService` + callers proposals/payments/association/commission; sin migración Prisma; sin automatizar pagos
+- [x] Slice 8 (emails): `FAVORITE_EVENT_SOON`, `EXPECTED_EVENT_SOON`, `FOLLOWED_GASTRO_NEW_DISCOUNT` con template en callers; `FOLLOWED_PRODUCER_NEW_EVENT` / `FAVORITE_INTEREST_NEW_CONTENT` template listo (email sigue off)
+- [x] Slice 9 (emails): `ADMIN_*` operaciones (5 templates + `ADMIN_CRITICAL_ALERT`); callers: evento `PENDING`, fallo GCS, fallo cola email; scanner/pago/factura pendientes
+- [x] Slice 10 (emails): cierre técnico — [`EMAILS_CLOSING_AUDIT.md`](../emails/EMAILS_CLOSING_AUDIT.md); eliminado legacy muerto (`renderWelcomeEmail`, `renderVerificationEmail`); legacy checkout/payouts conservado
+- [ ] Slice 4b: `AUTH_PASSWORD_RESET` cuando exista flujo API de reset con email
+- [ ] `REVIEW_PENDING_REMINDER` template + email en cron reviews (hoy solo in-app; `sendEmail: false` a propósito)
+- [ ] Conectar `OperationalAlertsEmailService` a flujos críticos reales (email/pago/storage) cuando existan
+- [ ] **Bloque pagos/checkout/facturación:** importar templates checkout/pagos/factura; migrar `renderOrderConfirmationEmail`, payouts, webhooks; ver `EMAILS_CLOSING_AUDIT.md` §7
+- [ ] `EmailOutboundLog` + idempotencia checkout/auth + reintentos BullMQ explícitos
+- [ ] Matriz completa checklist V2 §4 (bienvenidas por perfil, referidos, admin alertas, factura)
+- [ ] UI preferencias email granulares (`notifyProducerEventStatus`, reviews, etc.)
+
+---
+
 ## A. Infraestructura y backend
 
 - [x] Ejecutar migraciones Prisma en producción VPS (`npx prisma migrate deploy` + `prisma generate`) — Mayo 2026; incluye hotfix `20260531072000_restore_user_push_subscription`
@@ -129,7 +183,7 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 - [ ] Revisión `postfix` (puerto 25) y `snmpd` (puerto 161)
 - [ ] **Legales:** reemplazar bootstrap temporal por contenido aprobado en `/admin/legales`
 - [ ] Smoke completo desde dominio real (home, login, admin, checkout demo, scanner QR, emails si Resend)
-- [ ] Getnet/pagos reales fuera de este cierre
+- [ ] Getnet **go-live** en producción — código/docs slices A–G en [GETNET_CLOSING_AUDIT.md](../payments/GETNET_CLOSING_AUDIT.md); ejecutar deploy VPS + [GETNET_ACTIVATION_CHECKLIST.md](../payments/GETNET_ACTIVATION_CHECKLIST.md). Pendiente: firma webhook oficial, service fee, facturación, reembolsos, prueba monto mínimo.
 - [ ] **SEO técnico (SEO 2–9):** robots/sitemap, no-index portales, metadata dinámica, JSON-LD, GSC — baseline [`SEO_TECHNICAL_AUDIT.md`](../audits/SEO_TECHNICAL_AUDIT.md)
 
 ### Google Cloud — Etapa A manual (cerrada) / Etapa B (Storage cerrado; Maps/SEO pendiente)
@@ -142,7 +196,7 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 | Ítem | Estado |
 |------|--------|
 | Proyecto GCP `yoteinvito-1721413433327` | [x] Billing activo; colaborador `felipe.e.salom@gmail.com` |
-| Presupuesto / alertas gasto | [ ] Recomendar 50% / 80% / 100% |
+| Budget alerts GCP (50/80/100%) | [ ] Manual Billing — runbook §3.5 |
 | GCS bucket prod `yti-prod-storage` | [x] Privado, `southamerica-east1`, uniform access, soft delete 7d |
 | Service Account `yti-backend-storage` | [x] Rol Storage Object Admin sobre bucket |
 | Bucket staging | Omitido por decisión — prod directa |
@@ -212,6 +266,13 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 
 ## D. Gastro
 
+**Admin Gastro Locations (2026-06-02):** bloque cerrado (slices 2–5) — `docs/audits/ADMIN_GASTRO_LOCATIONS_AUDIT.md`. CRUD admin + QA smoke documentado.
+
+- [x] Admin Gastro Slice 2 — backend CRUD locales (`GastroProfile`, `GastroPublicEventSyncService`, schemas shared)
+- [x] Admin Gastro Slice 3 — listado `/admin/gastronomicos` (tabla + cards mobile, filtros URL, status patch)
+- [x] Admin Gastro Slice 4 — formularios `/admin/gastronomicos/nuevo` y `…/editar` (`GastroLocalForm` mode admin, mutations POST/PATCH)
+- [x] Admin Gastro Slice 5 — QA smoke + ajuste fino (ruta canónica `/gastronomicos/[profileId]`, CTA solo ACTIVE+publicado, guía manual en auditoría)
+
 **Gastro y Hoteles V2 (2026-05-22):** bloque V2 operativo cerrado (QR, scanner, contenido, ficha, dashboard, reviews/follows). **Storage imágenes GCS — cerrado prod 2026-05-31.** Pendientes: `smoke:gastro-discounts` npm, E2E gastro dedicado.
 
 - [x] Payload QR descuentos v1 (`yti:gastro-discount:v1:discountId:token`) — emisión en claim/aprobación; ver `docs/gastro/GASTRO_DISCOUNT_QR.md`
@@ -220,7 +281,7 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 - [x] Ficha pública gastro pulida (`/restaurants/[id]`, `GastroPublicDetailContent`; sin ticketera; redirect `/events/:id` gastro → restaurants)
 - [x] Dashboard gastro V2 (`GET /gastro/dashboard`, KPIs reales, alertas, `/gastro/validaciones` con filtros y paginación)
 - [x] Gastro + Reviews V2 + follows + alerta `FOLLOWED_GASTRO_NEW_DISCOUNT` (Slice 7 — `docs/gastro/GASTRO_FOLLOWS_NOTIFICATIONS.md`)
-- [ ] Storage V2 ops legacy (data-URL, huérfanos, CDN) — no bloqueante; funcional [x] prod 2026-05-31
+- [ ] Storage V2 ops legacy (data-URL audit/migrate, huérfanos, CDN) — no bloqueante; upload GCS [x] prod 2026-05-31
 - [x] Portal `/gastro/valoraciones` — listado + réplica (`POST /gastro/reviews/:id/reply`)
 
 ---
@@ -243,7 +304,7 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 - [x] Mejorar filtros de eventos admin (`/admin/eventos`, `GET /admin/events` extendido, filtros URL + tabs)
 - [x] Mejorar filtros de usuarios admin (`/admin/usuarios`, `GET /admin/users` extendido, filtros URL + paginación, perfiles en listado)
 - [x] Confirmar gestión completa de subcategorías (`/admin/categorias`, CRUD 4 verticales activas, hotel Próximamente, `seed:subcategories` intacto)
-- [ ] Google Maps autocomplete (opcional; hoy OSM embed)
+- [x] Maps Etapa B — prod OK (migración, build, autocomplete, Ver ubicación, JSON-LD) — audit §23–25
 - [x] Auditoría con filtros útiles en UI (`/admin/auditoria`, `GET /admin/audit-logs` extendido)
 
 **Bloque Admin Operativo (Slices 1–5, 2026-05):** cerrado — dashboard + cola pendientes, eventos/usuarios/auditoría con filtros API, subcategorías admin, hoteles «Próximamente» en dashboard y categorías. Fuera de bloque: pagos reales, portal productor completo. **Storage GCS admin — cerrado prod 2026-05-31.**
@@ -431,5 +492,7 @@ _(Trending con `viewCount`: ver ítem Slice 2 arriba en § K.)_
 | `docs/gastro/GASTRO_DISCOUNT_QR.md` | QR descuentos gastro v1 |
 | `docs/audits/PREPRODUCTION_DEPLOY_AUDIT.md` | Preproducción / plan Producción técnica (Infra 1) |
 | `docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md` | Runbook DonWeb + §24 ejecución real (Infra 2B) |
+| `docs/emails/EMAILS_ARCHITECTURE.md` | Emails: auditoría + plan SMTP DonWeb |
+| `docs/emails/EMAIL_MATRIX.md` | Matriz inicial de envíos por clase |
 | `docs/user/USER_PORTAL_PRISMA_PROPOSAL.md` | Diff modelo (pre-migrate) |
 

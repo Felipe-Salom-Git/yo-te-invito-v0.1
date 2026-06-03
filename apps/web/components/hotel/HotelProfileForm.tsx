@@ -7,7 +7,8 @@ import { ImageUrlPreview } from '@/components/admin/ImageUrlPreview';
 import { RentalProductImagesForm } from '@/components/rentals/RentalProductImagesForm';
 import {
   EventLocationFields,
-  validateLocationValue,
+  hotelLocationPayloadFromLocationValue,
+  validateHotelLocationValue,
   type LocationValue,
 } from '@/components/location';
 import type { HotelProfile } from '@/repositories/interfaces';
@@ -27,11 +28,11 @@ type Props = {
 function locationFromProfile(profile: HotelProfile): LocationValue {
   return {
     address: profile.address ?? '',
-    province: '',
+    province: profile.province ?? '',
     city: profile.city ?? '',
     lat: profile.geoLat,
     lng: profile.geoLng,
-    placeId: null,
+    placeId: profile.googlePlaceId ?? null,
   };
 }
 
@@ -135,11 +136,7 @@ export function HotelProfileForm({ initial, onSubmit, submitting }: Props) {
       setFormError('El nombre comercial es obligatorio.');
       return;
     }
-    const locErr = validateLocationValue(location, {
-      requireAddress: true,
-      requireCity: true,
-      requireCoords: true,
-    });
+    const locErr = validateHotelLocationValue(location);
     if (locErr) {
       setLocationError(locErr);
       return;
@@ -159,12 +156,7 @@ export function HotelProfileForm({ initial, onSubmit, submitting }: Props) {
       logoUrl: logoUrl.trim() || null,
       bannerUrl: images.headerImageUrl.trim() || null,
       galleryUrls: images.galleryImageUrls.filter(Boolean),
-      location: {
-        address: location.address.trim(),
-        city: location.city.trim(),
-        lat: location.lat!,
-        lng: location.lng!,
-      },
+      location: hotelLocationPayloadFromLocationValue(location),
       starCategory: star,
       contactPhone: contactPhone.trim() || null,
       whatsappPhone: whatsappPhone.trim() || null,

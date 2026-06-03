@@ -5,7 +5,7 @@ Integración de Getnet Checkout para pagos reales en Yo Te Invito.
 ## Summary / Resumen
 
 - **Provider**: Getnet (GeoPagos/Santander)
-- **Flow**: Backend creates payment intent → returns checkout URL → frontend redirects user → user pays at Getnet → returns to success page → backend syncs status
+- **Flow**: Backend creates payment intent → returns checkout URL → frontend redirects user → user pays at Getnet → returns to `/checkout/return` → `POST refresh-status` / webhook / poll reconciles
 - **Demo mode**: Unchanged; use `DEMO` provider or `PAYMENT_PROVIDER_DEFAULT=DEMO`
 
 ## Environment Variables
@@ -21,6 +21,7 @@ Integración de Getnet Checkout para pagos reales en Yo Te Invito.
 
 **Probar credenciales:** `pnpm --filter api run test:getnet-auth` (debe responder `OK: token obtenido`). Si devuelve **401**, las claves no son válidas para ese ambiente — pedir nuevas a Getnet/Santander (`support@santander.com.ar`).
 | `NEXT_PUBLIC_PAYMENT_PROVIDER_DEFAULT` | No | Frontend default: `DEMO` or `GETNET` |
+| `WEB_APP_URL` / `APP_URL` | No | Base URL for `Payment.metadata.returnUrl` / `cancelUrl` (see [GETNET_CHECKOUT_RETURN_FLOW.md](../payments/GETNET_CHECKOUT_RETURN_FLOW.md)) |
 
 **URLs oficiales** ([Ambientes Getnet](https://developers-sdk-documentation-site-santander.preprod.geopagos.com/page/environments)):
 
@@ -61,18 +62,36 @@ No usar hosts `*.preprod.geopagos.com` / `api-santander.preprod.geopagos.com` �
 - `apps/api/src/modules/public-payments/providers/getnet/getnet.module.ts`
 - `apps/api/src/modules/public-payments/public-payments.service.ts` (extended)
 - `apps/api/src/modules/public-payments/public-payments-refresh.controller.ts`
+- `apps/api/src/modules/public-payments/checkout-payment-status.service.ts`
+- `apps/api/src/modules/public-payments/getnet-return-url.util.ts`
 
 ## API Endpoints
 
 - `POST /public/orders/:orderId/payments` — create payment (provider: DEMO | GETNET)
-- `GET /public/orders/:orderId/payment-status` — refresh and return status (for success page)
-- `GET /public/payments/:paymentId/status` — refresh by payment ID
+- `GET /public/orders/:orderId/checkout-status` — **read-only** buyer status (Slice D)
+- `POST /public/payments/:paymentId/refresh-status` — sync Getnet + checkout status response
+- `GET /public/orders/:orderId/payment-status` — legacy refresh (poll)
+- `GET /public/payments/:paymentId/status` — legacy refresh by payment ID
+- `POST /public/payments/getnet/webhook` — Getnet async notifications (see [GETNET_WEBHOOK.md](../payments/GETNET_WEBHOOK.md))
+
+## Webhook env (Slice B)
+
+| Variable | Description |
+|----------|-------------|
+| `GETNET_WEBHOOK_SECRET` | Shared secret in header |
+| `GETNET_WEBHOOK_HEADER_NAME` | Default `x-getnet-webhook-secret` |
+| `GETNET_WEBHOOK_REQUIRE_SECRET` | Force secret check (`true` / auto in production) |
 
 ## Return URLs (Getnet)
 
-Configure success/failure URLs in the Getnet dashboard so users return to:
-- Success: `{APP_URL}/checkout/success?orderIds={order_id}` (if Getnet supports dynamic placeholders)
-- Or a static success URL; document how orderId is passed back if different.
+Al crear un pago Getnet, la API guarda en `Payment.metadata`:
+
+- `returnUrl`: `{WEB_APP_URL}/checkout/return?orderId=&paymentId=&tenantId=&provider=getnet`
+- `cancelUrl`: mismo path con `cancelled=1`
+
+Detalle: [GETNET_CHECKOUT_RETURN_FLOW.md](../payments/GETNET_CHECKOUT_RETURN_FLOW.md).
+
+Si el dashboard de Getnet permite URLs fijas, apuntar al mismo patrón. El frontend no confía en query `status`.
 
 ## Checkout UI
 
@@ -86,6 +105,21 @@ En el paso de pago se muestran dos botones:
 
 ## Remaining for Production
 
-- Webhooks (if Getnet supports them) for real-time status updates
-- Reconciliation jobs (periodic status sync)
+- Confirm official Getnet webhook signature scheme (today: shared secret header)
+- ~~Admin UI for manual review queue~~ — Slice E: `/admin/pagos` ([GETNET_ADMIN_PAYMENTS.md](../payments/GETNET_ADMIN_PAYMENTS.md))
 - Refunds (if not yet supported)
+
+Reconciliation batch: `pnpm --filter api run payments:reconcile-getnet` — see [GETNET_RECONCILIATION.md](../payments/GETNET_RECONCILIATION.md).
+
+## Block closure
+
+[GETNET_CLOSING_AUDIT.md](../payments/GETNET_CLOSING_AUDIT.md) — índice slices A–G, endpoints, migraciones, pendientes.
+
+## Activation & production smoke (Slice F)
+
+| Doc / command | Purpose |
+|---------------|---------|
+| [GETNET_ACTIVATION_CHECKLIST.md](../payments/GETNET_ACTIVATION_CHECKLIST.md) | Pre-go-live checklist |
+| [GETNET_PRODUCTION_SMOKE.md](../payments/GETNET_PRODUCTION_SMOKE.md) | Manual smoke scenarios |
+| `pnpm --filter api run smoke:getnet -- --config` | Env + health (no secrets printed) |
+| `pnpm --filter api run smoke:getnet -- --simulate-webhook --payment-id <id>` | QA webhook (staging; prod needs `SMOKE_GETNET_CONFIRM_PROD=yes`) |

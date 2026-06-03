@@ -2,6 +2,7 @@ import type { ZodError } from 'zod';
 import { eventFormSchema, type EventFormData } from '@/lib/schemas/event';
 import {
   eventFieldsFromLocationValue,
+  validatePresencialEventLocation,
   type LocationValue,
 } from '@/components/location';
 import type { ProducerEventMode } from '@/lib/producer/event-mode';
@@ -48,6 +49,24 @@ export function validateProducerEventForm(
     }
   }
   return { ok: true, data: parsed.data };
+}
+
+/** Location check when publishing (pending/approved). Drafts may omit location. */
+export function validateProducerEventSubmit(
+  form: EventFormData,
+  location: LocationValue,
+): { ok: true } | { ok: false; errors: Record<string, string> } {
+  const validated = validateProducerEventForm(form);
+  if (!validated.ok) return validated;
+
+  const status = mapProducerFormStatusToApi(validated.data.status);
+  if (status === 'PENDING' || status === 'APPROVED') {
+    const locErr = validatePresencialEventLocation(location, validated.data.venueName);
+    if (locErr) {
+      return { ok: false, errors: { venueAddress: locErr } };
+    }
+  }
+  return { ok: true };
 }
 
 export type EventFormCompletenessItem = {
@@ -151,6 +170,8 @@ export function buildUpdatePayload(
     city: loc.city ?? (data.city || null),
     venueName: data.venueName || null,
     venueAddress: loc.venueAddress ?? (data.venueAddress || null),
+    province: loc.province,
+    googlePlaceId: loc.googlePlaceId,
     capacityTotal: data.capacityTotal ?? null,
     coverImageUrl: data.coverImageUrl || null,
     geoLat: loc.geoLat ?? data.geoLat ?? null,

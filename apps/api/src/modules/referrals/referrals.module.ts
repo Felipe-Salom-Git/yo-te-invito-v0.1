@@ -10,6 +10,7 @@ import { ReferralProposalsService } from './referral-proposals.service';
 import { ReferralCommissionService } from './referral-commission.service';
 import { ReferralPaymentRequestsService } from './referral-payment-requests.service';
 import { ReferralMetricsService } from './referral-metrics.service';
+import { ReferralEmailsService } from './referral-emails.service';
 import { AuditModule } from '../audit/audit.module';
 
 @Module({
@@ -30,6 +31,7 @@ import { AuditModule } from '../audit/audit.module';
     ReferralCommissionService,
     ReferralPaymentRequestsService,
     ReferralMetricsService,
+    ReferralEmailsService,
     JwtOrDevAuthGuard,
   ],
   exports: [
@@ -38,6 +40,7 @@ import { AuditModule } from '../audit/audit.module';
     ReferralCommissionService,
     ReferralPaymentRequestsService,
     ReferralMetricsService,
+    ReferralEmailsService,
   ],
 })
 export class ReferralsModule {}

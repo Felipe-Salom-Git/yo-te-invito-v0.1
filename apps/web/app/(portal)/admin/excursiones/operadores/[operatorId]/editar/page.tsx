@@ -63,13 +63,10 @@ export default function AdminExcursionOperadorEditarPage() {
       const geo = excursionOperatorPayloadFromLocationValue(locationValue);
       return repos.excursionOperators.update(operatorId, {
         name: name.trim(),
-        address: geo.address,
-        city: geo.city,
         contactPhone: contactPhone.trim() || null,
         openingHours,
         openingHoursNote: openingHoursNote.trim() || null,
-        geoLat: geo.geoLat,
-        geoLng: geo.geoLng,
+        ...geo,
       });
     },
     onError: (err) => addToast(getErrorMessage(err), 'error'),

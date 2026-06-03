@@ -10,6 +10,7 @@
   "targetDefaults": {
     "build": {
       "cache": true,
+      "dependsOn": ["^build"],
       "outputs": [
         "{options.outputPath}"
       ],

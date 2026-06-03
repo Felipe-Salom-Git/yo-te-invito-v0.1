@@ -36,13 +36,10 @@ export default function AdminExcursionOperadorNuevoPage() {
       return repos.excursionOperators.create({
         tenantId: TENANT_ID,
         name: name.trim(),
-        address: geo.address,
-        city: geo.city,
         contactPhone: contactPhone.trim() || null,
         openingHours,
         openingHoursNote: openingHoursNote.trim() || null,
-        geoLat: geo.geoLat,
-        geoLng: geo.geoLng,
+        ...geo,
       });
     },
     onError: (err) => addToast(getErrorMessage(err), 'error'),

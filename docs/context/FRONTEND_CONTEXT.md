@@ -77,6 +77,7 @@ ApiClient → HTTP (NEXT_PUBLIC_API_BASE_URL)
 | **adminEvents** | ✓ | `GET /admin/events` — listado operativo con filtros |
 | **adminAudit** | ✓ | `GET /admin/audit-logs` — auditoría con filtros |
 | **adminUsers** | ✓ | `GET /admin/users`, `PATCH /admin/users/:id/role` — listado operativo con filtros |
+| **adminPayments** | ✓ | `GET /admin/payments`, reconcile, mark-reviewed — ops Getnet |
 | **LegalDocumentsRepo** | ✓ | Admin CRUD + publish; público `/public/legal/*`; aceptación `/me/legal/*` |
 | ProfilesRepo, ApplicationsRepo, PlatformConfigRepo | ✓ | Admin `GET/PATCH /admin/config` |
 | **PublicPlatformConfigRepo** | ✓ | `GET /public/platform-config` — contacto footer (sin auth) |
@@ -94,7 +95,7 @@ ApiClient → HTTP (NEXT_PUBLIC_API_BASE_URL)
 | Public | `/`, `/home`, **`/explore`** (filtros URL: `q`, `category`, `subcategoryId`, `city`, `from`, `to`, `page`; `?category=hotel` → banner Próximamente), `/events/[id]`, **`/restaurants/[id]`** (ficha gastro `GastroPublicDetailContent`, no ticketera), `/gastronomicos/[id]`, `/excursiones/[id]`, **`/rentals/[id]`**, **`/hoteles`** + **`/hoteles/[id]`** (vertical Próximamente; ver abajo), **`/users/[userId]`** (perfil comentarista), **`/legal/[slug]`** (documentos publicados, ISR), checkout, `/me/tickets`, `/referrers`, `/r/[code]` |
 | Account | `/login`, **`/register`** (wizard `RegisterWizard`: cuenta → perfil → paso por tipo → legales SIGNUP → `POST /auth/register` + `signIn`), **`/cuenta/solicitar-gastro`** (mismos campos mínimos + opcionales), **`/me/*`** (portal usuario estándar) |
 | Cuenta (legacy) | `/cuenta/*` → **redirects** a `/me/*` (no mantener lógica duplicada) |
-| Admin | `/admin/*` (**solo rol `ADMIN`**, `ProfileProtectedLayout` en `admin/layout.tsx`), sidebar operaciones; **`/admin`** dashboard; **`/admin/eventos`** listado filtrado; **`/admin/legales`** documentos legales versionados; **`/admin/reviews`** reporte reputación (KPIs, CSV); **`/admin/review-disputes`** cola disputas; **`/admin/usuarios`** listado usuarios con filtros URL; **`/admin/categorias`** subcategorías + banners (`/admin/subcategorias` redirige); **`/admin/auditoria`** logs operativos; acceso: `/profiles` o sidebar maestro (usuario maestro) |
+| Admin | `/admin/*` (**solo rol `ADMIN`**, `ProfileProtectedLayout` en `admin/layout.tsx`), sidebar operaciones; **`/admin`** dashboard; **`/admin/eventos`** listado filtrado; **`/admin/pagos`** pagos Getnet + revisión manual; **`/admin/legales`** documentos legales versionados; **`/admin/reviews`** reporte reputación (KPIs, CSV); **`/admin/review-disputes`** cola disputas; **`/admin/usuarios`** listado usuarios con filtros URL; **`/admin/categorias`** subcategorías + banners (`/admin/subcategorias` redirige); **`/admin/auditoria`** logs operativos; acceso: `/profiles` o sidebar maestro (usuario maestro) |
 | Producer | `/producer` (hub: KPIs, engagement, **`ProducerDashboardEventStatusAlerts`**, eventos; nav en sidebar), `/producer/events`, ticket studio, **`/producer/profile`** (hub por bloques + completitud frontend), **`/producer/profile/create`** (solo nombre; slug en servidor), **`/producer/profile/identity|images|contact`**, **`/producer/comments`** (`ManagedReviewsCommentsPage`), referidos, payouts |
 | Gastro / Hotel / Referrer | `/gastro/*`, **`/gastro/contenido`** (editorial Prisma), **`/gastro/valoraciones`**, `/hotel`, **`/hotel/valoraciones`**, `/referrer`, `/cuenta/solicitar-referrer` |
 
@@ -121,7 +122,21 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`). Shared UI tokens:
 | `/admin/rentals/locales/[locationId]/productos/nuevo` | New product |
 | `/admin/rentals/locales/[locationId]/productos/[productId]/editar` | Edit product + images |
 
-**Forms**: `OpeningHoursEditor`, `RentalProductImagesForm` con `uploadConfig: GcsImageUploadConfig`. **GCS activo:** Admin Rentals, Admin Eventos/Excursiones, **Portal Productora**, **Portales Gastro + Hotel** — [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §17–20. **Legacy data-URL:** publicaciones gastro/hotel admin, ticket studio — §20.
+**Forms**: `OpeningHoursEditor`, `RentalProductImagesForm` con `uploadConfig: GcsImageUploadConfig`. **GCS activo:** Admin Rentals, Admin Eventos/Excursiones, **Portal Productora**, **Portales Gastro + Hotel** — [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §17–20.
+
+### Gastro admin (Slices 3–5, cerrado 2026-06-02)
+
+| Route | Purpose |
+|-------|---------|
+| `/admin/gastronomicos` | List locales — tabla desktop + cards mobile, filtros URL, activar/suspender |
+| `/admin/gastronomicos/nuevo` | Alta local — `AdminGastroLocationFormClient` + `POST /admin/gastronomicos` |
+| `/admin/gastronomicos/[profileId]` | Detalle + descuentos + editar + CTA ficha pública (si ACTIVE) |
+| `/admin/gastronomicos/[profileId]/editar` | Edición — `GastroLocalForm` mode `admin` + `PATCH` + GCS |
+| `/admin/gastronomicos/[profileId]/descuentos/[discountId]` | Moderación ticket descuento |
+
+**Ficha pública canónica (admin CTA):** `/gastronomicos/[profileId]`. Alias discovery en cards: `/restaurants/[publicEventId]` (`contentRoutes.ts`).
+
+**Hooks:** `lib/query/admin-gastro.ts` — list, detail, create, update, status mutations. **UI:** `AdminGastroLocations*` (listado), `AdminGastroLocationFormClient` (form). **`GastroLocalForm`:** `mode="owner"` (portal) | `mode="admin"` (campos extra + labels). Doc + smoke: `docs/audits/ADMIN_GASTRO_LOCATIONS_AUDIT.md` § Slice 5.
 
 ### Portal usuario (`/me/*`)
 
@@ -145,7 +160,7 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`). Shared UI tokens:
 - Ficha gastro pública: `components/gastro/GastroPublicDetailContent` + hooks `lib/query/gastro-public-detail.ts`; **`GastroFollowButton`** → `/me/gastro-follows` (sin favoritos/esperados de evento en ficha restaurante).
 - Portal gastro: dashboard + validaciones (Slice 6). **Imágenes GCS:** `GastroLocalForm`, `GastroDiscountForm`, `/gastro/contenido`. Valoraciones: `ManagedReviewsCommentsPage` scope `gastro` + `ManagedPortalReviewAlerts`. Follows: `GastroFollowButton`, `MePreferencesGastro` (toggles web/email por local). Notificaciones descuento: kind `FOLLOWED_GASTRO_NEW_DISCOUNT` en bandeja `/me/notifications`.
 - Engagement eventos: `EventEngagementRow` en fichas de **eventos** (favoritos / expected-events).
-- Checkout autenticado: redirige a `/me/cart` (aceptación `CHECKOUT` vía `POST /me/legal/accept`); invitado `/checkout` y `/checkout/[eventId]` — checkbox obligatorio (declaración; persistencia al tener cuenta).
+- Checkout autenticado: redirige a `/me/cart` (aceptación `CHECKOUT` vía `POST /me/legal/accept`); invitado `/checkout` y `/checkout/[eventId]` — checkbox obligatorio (declaración; persistencia al tener cuenta). Post-Getnet: **`/checkout/return`** (estado + polling).
 - **Hoteles (discovery Próximamente, portal + ficha pública Slice 10–11):** `/hoteles` (Próximamente), **`/hoteles/[id]`** — `HotelLocationDetailView` + `GET /public/hotel-locations/by-event/:eventId` (fallback evento hotel); contacto real (WhatsApp/tel/email); sin reservas/checkout. Portal: `/hotel`, `/hotel/editar` (**`HotelProfileForm` con GCS**). Valoraciones `/hotel/valoraciones`. `/categoria/hotel` → 404.
 
 **Eliminado:** `/reventa`, `/dev/seed`, `/dev/local-db`, `lib/local-db/*`.
@@ -322,11 +337,11 @@ Módulo técnico **cerrado**; contenido base en `docs/legal/` importable como bo
 
 Runbook: [`docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTION_RUNBOOK.md). Pendiente: smoke dominio real, legales bootstrap → contenido aprobado.
 
-**Google Maps (Etapa A GCP):** key de consola `YTI Web Maps PROD` (valor **no** en repo) → `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` en `.env.production` del VPS. Integración prod pendiente Etapa B — [`GOOGLE_CLOUD_RUNBOOK.md`](../deploy/GOOGLE_CLOUD_RUNBOOK.md).
+**Google Maps (prod 2026-06-01):** `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` en VPS; autocomplete + mapa + fallback manual OK. Persistencia `googlePlaceId`/`province` (+ `city` rentals); `lib/maps/public-location.ts` (Ver ubicación); JSON-LD local en `lib/seo/jsonld.ts`. Productoras: solo texto city/country (sin mapa exacto). [`MAPS_LOCATION_AUDIT.md`](../audits/MAPS_LOCATION_AUDIT.md) §18–25.
 
-**Storage imágenes:** GCS en Admin + portales — cerrado funcional prod 2026-05-31. Hook `useGcsImageUpload` — [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §20. URLs GCS válidas para OG en eventos (metadata dinámica parcial).
+**Storage imágenes (prod 2026-05-31):** GCS `yti-prod-public-assets`; `useGcsImageUpload` en rentals, admin eventos/excursiones, productora, gastro, hotel. [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §17–22. Ops pendiente: data-URL/orphans (no bloqueante).
 
-**SEO (web):** auditoría baseline SEO 1 — [`SEO_TECHNICAL_AUDIT.md`](../audits/SEO_TECHNICAL_AUDIT.md). **SEO 3 aplicado:** metadata global OG/Twitter + icons + `manifest.json` icons; eventos ajustado para evitar doble sufijo title. **SEO 4 aplicado:** metadata estática en `/`, `/home`, `/explore`, `/categorias`, `/categoria/[category]` + `robots.ts` + sitemap mínimo (`sitemap.ts`). **SEO 5 aplicado:** metadata dinámica en fichas públicas principales vía `layout.tsx` server (rentals/excursiones/gastro/hoteles/productoras). **SEO 6 aplicado:** canonical consistente en rutas base + fichas y redirect permanente `/restaurants/:id` → `/gastronomicos/:id`. **SEO 7 aplicado:** JSON‑LD `Event` (eventos) + `Organization` (productoras). **SEO 8 aplicado:** JSON‑LD gastro (`Restaurant`), hoteles (`Hotel`) y ratings agregados solo con datos reales; rentals/excursiones se representan como `Event` (modelo actual API). **SEO 9 aplicado:** sitemap final (`apps/web/app/sitemap.ts`) + runbook GSC/SEO (`docs/deploy/SEARCH_CONSOLE_SEO_RUNBOOK.md`). **Pendiente:** `noindex` portales (SEO 2), `Review` items individuales y/o JSON‑LD más específico si cambia el modelo.
+**SEO técnico (prod 2026-06-01):** `robots.ts` + `sitemap.ts` activos; metadata global y fichas; canonical; JSON‑LD verticales + local Maps. GSC: propiedad `yoteinvito.club` verificada, sitemap enviado. Pendiente no bloqueante: procesamiento GSC, CWV, Rich Results Test. [`SEO_TECHNICAL_AUDIT.md`](../audits/SEO_TECHNICAL_AUDIT.md) · [`SEARCH_CONSOLE_SEO_RUNBOOK.md`](../deploy/SEARCH_CONSOLE_SEO_RUNBOOK.md).
 
 - **Persistencia:** solo API — no `lib/local-db`, no `/dev/seed`, no `/dev/local-db`.
 - **Subcategorías (estructura):** `pnpm --filter api run seed:subcategories`.

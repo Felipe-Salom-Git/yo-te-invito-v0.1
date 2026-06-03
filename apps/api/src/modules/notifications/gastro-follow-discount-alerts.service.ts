@@ -1,8 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { NotificationKind } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { formatPersonName } from '../me/ticket-transfer-notification.util';
 import { readPortalPreferences } from '../me/user-portal-preferences.util';
+import { getAppUrl } from '../../email/templates/email-template.util';
 import { UserNotificationsService } from './user-notifications.service';
+import {
+  buildFollowedGastroNewDiscountVariables,
+  formatGastroDiscountValue,
+} from './smart-alert-email-template.util';
 
 const GASTRO_CONTENT_ALERT_KINDS: NotificationKind[] = [
   NotificationKind.FOLLOWED_GASTRO_NEW_DISCOUNT,
@@ -47,6 +53,9 @@ export class GastroFollowDiscountAlertsService {
         id: true,
         displayTitle: true,
         code: true,
+        type: true,
+        value: true,
+        validTo: true,
         gastroProfileId: true,
         gastroProfile: { select: { id: true, displayName: true } },
       },
@@ -59,6 +68,11 @@ export class GastroFollowDiscountAlertsService {
     const localName = discount.gastroProfile?.displayName?.trim() || 'Un local';
     const discountTitle = discount.displayTitle?.trim() || discount.code;
     const href = `/descuentos/${discount.id}?tenantId=${encodeURIComponent(tenantId)}`;
+    const gastroUrl = `${getAppUrl()}${href}`;
+    const validUntil = discount.validTo
+      ? discount.validTo.toLocaleString('es-AR', { dateStyle: 'medium', timeStyle: 'short' })
+      : undefined;
+    const discountValue = formatGastroDiscountValue(discount.type, discount.value);
     const referenceKey = `gastro-discount-active:${discount.id}`;
 
     const follows = await this.prisma.userGastroFollow.findMany({
@@ -71,6 +85,8 @@ export class GastroFollowDiscountAlertsService {
             email: true,
             preferences: true,
             status: true,
+            firstName: true,
+            lastName: true,
           },
         },
       },
@@ -84,6 +100,9 @@ export class GastroFollowDiscountAlertsService {
       const prefs = readPortalPreferences(row.user.id, row.user.preferences);
       if (await this.isThrottled(row.user.id)) continue;
 
+      const sendEmail =
+        prefs.emailNotificationsEnabled && row.emailNotificationsEnabled;
+
       const result = await this.notifications.deliver({
         tenantId: row.user.tenantId,
         userId: row.user.id,
@@ -94,10 +113,19 @@ export class GastroFollowDiscountAlertsService {
         body: `${localName} publicó: ${discountTitle}`,
         href,
         sendInApp: prefs.webNotificationsEnabled && row.webNotificationsEnabled,
-        sendEmail:
-          prefs.emailNotificationsEnabled &&
-          row.emailNotificationsEnabled,
+        sendEmail,
         preferences: prefs,
+        emailTemplateId: sendEmail ? 'FOLLOWED_GASTRO_NEW_DISCOUNT' : undefined,
+        emailTemplateVariables: sendEmail
+          ? buildFollowedGastroNewDiscountVariables({
+              userName: formatPersonName(row.user.firstName, row.user.lastName),
+              gastroName: localName,
+              discountTitle,
+              discountValue,
+              validUntil,
+              gastroUrl,
+            })
+          : undefined,
       });
       if (result.inApp || result.email || result.push) delivered += 1;
     }

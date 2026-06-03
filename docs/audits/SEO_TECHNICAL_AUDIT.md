@@ -166,6 +166,8 @@ Solo en layout de eventos: `summary_large_image` + title/description/images. **N
 
 **Reglas:** no se inventan ratings; no `aggregateRating` con count 0; no availability/stock.
 
+**Maps 9 (2026-06-01):** JSON‑LD local en `apps/web/lib/seo/jsonld.ts` — `PostalAddress.addressRegion` (province) y `addressCountry: AR` cuando hay datos reales; `GeoCoordinates` solo si hay `geoLat`/`geoLng`. Productoras: city/country textual sin geo inventado. Validar con [Rich Results Test](https://search.google.com/test/rich-results) post-deploy.
+
 **Pendiente:** JSON‑LD más específico por vertical (si se separan modelos) + `Review` items individuales (solo si API expone reviews públicas completas).
 
 ### 3.7 Sitemap
@@ -345,38 +347,29 @@ Rutas que **deberían** indexarse cuando el contenido es público y completo:
 
 ## 9. Checklist V2 — estado recomendado (post-auditoría)
 
-### Google Search Console y SEO técnico
+### Google Search Console y SEO técnico — cierre base prod (2026-06-01)
 
 - [x] **Auditoría SEO técnica (SEO 1)** — este documento
-- [ ] Crear propiedad GSC dominio `yoteinvito.club`
-- [ ] Verificar DNS TXT DonWeb
-- [ ] Enviar sitemap (bloqueado hasta SEO 2)
-- [ ] Validar robots.txt (bloqueado hasta SEO 2)
-- [ ] Revisar indexación fichas públicas (post GSC)
-- [ ] Validar no-index privados (bloqueado hasta SEO 2)
-- [ ] Core Web Vitals (con tráfico)
-- [ ] Rich results (bloqueado hasta SEO 7–8)
-- [ ] Procedimiento SEO post-deploy (SEO 9)
+- [x] Propiedad GSC dominio `yoteinvito.club` + verificación DNS TXT DonWeb
+- [x] `robots.txt` + `sitemap.xml` en producción
+- [x] Sitemap enviado en GSC
+- [x] Portales privados en `robots` (no indexación vía disallow)
+- [x] Procedimiento SEO post-deploy — [`SEARCH_CONSOLE_SEO_RUNBOOK.md`](../deploy/SEARCH_CONSOLE_SEO_RUNBOOK.md)
+- [ ] GSC: procesamiento sitemap / cobertura (esperar datos)
+- [ ] Core Web Vitals (con tráfico real)
+- [ ] Rich Results Test post-deploy (JSON-LD local + verticales)
 
-### SEO, GEO y metadata social
+### SEO, GEO y metadata social — implementado (base)
 
 - [x] `next/image` GCS remoto
-- [x] Title template global (parcial — orden `%s | Yo Te Invito`)
-- [x] Metadata base global (parcial — sin OG/Twitter completos)
-- [x] OG dinámico eventos (parcial — sin fallback imagen)
-- [x] Twitter eventos (`summary_large_image`)
-- [x] Canonical legales
-- [x] No-index checkout
-- [ ] Favicon / app icons
-- [ ] Metadata home, explore, categorías
-- [ ] Metadata dinámica gastro/rental/excursion/hotel/productor
-- [ ] OG/Twitter global + fallback imagen
-- [ ] Canonical fichas públicas
-- [ ] JSON-LD todas las verticales
-- [ ] Sitemap + robots
-- [ ] No-index portales privados
-- [ ] GEO/metadata ciudad
-- [ ] Validación preview social / rich results
+- [x] Metadata global OG/Twitter + icons
+- [x] Metadata home, explore, categorías, fichas públicas (SEO 4–5)
+- [x] Canonical fichas + redirect `/restaurants/` → `/gastronomicos/`
+- [x] JSON-LD eventos, productoras, gastro, hotel, rentals/excursiones (modelo Event API)
+- [x] JSON-LD local Maps (province, geo, addressCountry AR cuando hay datos)
+- [x] Sitemap + robots (SEO 4/9)
+- [ ] Review items JSON-LD individuales (si API expone reviews públicas completas)
+- [ ] Validación preview social / rich results en herramientas externas (pendiente operador)
 
 ---
 

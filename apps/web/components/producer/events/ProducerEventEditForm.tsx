@@ -17,6 +17,7 @@ import {
   computeEventFormCompleteness,
   eventDetailToFormData,
   validateProducerEventForm,
+  validateProducerEventSubmit,
 } from '@/lib/producer/producer-event-form.utils';
 import type { GcsImageUploadConfig } from '@/lib/upload/gcs-image-upload-config';
 import { ProducerEventFormErrorSummary } from './ProducerEventFormErrorSummary';
@@ -93,14 +94,20 @@ export function ProducerEventEditForm({ eventId, eventData }: Props) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
-    const validated = validateProducerEventForm(form);
+    const validated = validateProducerEventSubmit(form, location);
     if (!validated.ok) {
       setErrors(validated.errors);
       errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       return;
     }
+    const parsed = validateProducerEventForm(form);
+    if (!parsed.ok) {
+      setErrors(parsed.errors);
+      errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
     setErrors({});
-    updateMutation.mutate(validated.data);
+    updateMutation.mutate(parsed.data);
   };
 
   const footer = (

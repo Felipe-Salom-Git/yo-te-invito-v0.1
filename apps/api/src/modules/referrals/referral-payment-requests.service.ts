@@ -16,6 +16,7 @@ import {
 } from '@yo-te-invito/shared';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
+import { ReferralEmailsService } from './referral-emails.service';
 import {
   allCommissionsSameProducer,
   hasOpenRequestCommissionOverlap,
@@ -51,6 +52,7 @@ export class ReferralPaymentRequestsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly referralEmails: ReferralEmailsService,
   ) {}
 
   async listEligibleCommissionsForReferrer(
@@ -215,6 +217,7 @@ export class ReferralPaymentRequestsService {
       after: { status: created.status, amountRequestedCents, commissionIds: uniqueIds },
     });
 
+    this.referralEmails.notifyPaymentRequestCreated(tenantId, created.id);
     return this.toDto(created);
   }
 
@@ -322,6 +325,7 @@ export class ReferralPaymentRequestsService {
     await this.auditStatusChange(tenantId, actorId, actorRole, existing, updated, {
       commissionsMarkedPaid: commissionIds.length,
     });
+    this.referralEmails.notifyPaymentMarkedAsPaid(tenantId, updated.id);
     return this.toDto(updated);
   }
 

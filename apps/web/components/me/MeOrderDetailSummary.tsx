@@ -16,9 +16,19 @@ type Props = {
   order: Order;
   event?: EventInfo | null;
   paymentStatus?: string | null;
+  paymentProvider?: string | null;
+  requiresManualReview?: boolean;
+  reconciliationReason?: string | null;
 };
 
-export function MeOrderDetailSummary({ order, event, paymentStatus }: Props) {
+export function MeOrderDetailSummary({
+  order,
+  event,
+  paymentStatus,
+  paymentProvider,
+  requiresManualReview,
+  reconciliationReason,
+}: Props) {
   const currency = order.currency ?? 'ARS';
   const total =
     typeof order.totalAmount === 'string' ? order.totalAmount : String(order.totalAmount);
@@ -58,11 +68,32 @@ export function MeOrderDetailSummary({ order, event, paymentStatus }: Props) {
           )}
         </div>
 
+        {requiresManualReview && (
+          <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-800 dark:text-amber-200">
+            Recibimos confirmación de pago, pero el pedido requiere revisión manual. No vuelvas a
+            pagar;{' '}
+            <a href="/#footer-support" className="font-medium underline">
+              contactá soporte
+            </a>
+            .
+            {reconciliationReason ? (
+              <span className="mt-1 block font-mono text-xs opacity-80">
+                Ref: {reconciliationReason}
+              </span>
+            ) : null}
+          </p>
+        )}
+
         <div className="flex flex-wrap gap-2">
           <StatusBadge status={order.status} kind="order" />
           {paymentStatus && (
             <span className="inline-flex rounded border border-border bg-bg px-2 py-0.5 text-xs text-text-muted">
               {PAYMENT_STATUS_LABELS[paymentStatus] ?? `Pago: ${paymentStatus}`}
+            </span>
+          )}
+          {paymentProvider && (
+            <span className="inline-flex rounded border border-border bg-bg px-2 py-0.5 text-xs text-text-muted">
+              {paymentProvider === 'GETNET' ? 'Getnet' : paymentProvider === 'DEMO' ? 'Demo' : paymentProvider}
             </span>
           )}
         </div>

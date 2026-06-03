@@ -1,21 +1,9 @@
+/**
+ * Legacy HTML renderers — solo funciones aún usadas por checkout/payouts.
+ * Auth (welcome/verify) migró a registry (`AUTH_*`) en Slice 4; funciones eliminadas en Slice 10.
+ * Checkout/pagos/facturación: migrar en bloque pagos reales (no tocar aquí salvo callers rotos).
+ */
 const APP_URL = process.env.APP_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
-
-export function renderWelcomeEmail(firstName: string, contactEmail?: string): { html: string; text: string } {
-  const html = `
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><title>Bienvenido</title></head>
-<body style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#333">
-  <h1 style="color:#111">Bienvenido a Yo Te Invito</h1>
-  <p>Hola ${firstName},</p>
-  <p>Tu cuenta fue creada correctamente.</p>
-  <p><a href="${APP_URL}/home" style="display:inline-block;background:#0ea5e9;color:white;padding:12px 24px;text-decoration:none;border-radius:8px">Ver eventos</a></p>
-  ${contactEmail ? `<p style="margin-top:32px;font-size:12px;color:#666">¿Preguntas? Contactanos: ${contactEmail}</p>` : ''}
-</body>
-</html>`;
-  const text = `Hola ${firstName},\n\nTu cuenta fue creada correctamente.\nVer eventos: ${APP_URL}/home`;
-  return { html, text };
-}
 
 export function renderOrderConfirmationEmail(
   firstName: string,
@@ -36,23 +24,6 @@ export function renderOrderConfirmationEmail(
 </body>
 </html>`;
   const text = `Hola ${firstName},\n\nTu compra para ${eventTitle} fue confirmada. Orden: ${orderId}\nVer tickets: ${ticketsUrl}`;
-  return { html, text };
-}
-
-export function renderVerificationEmail(firstName: string, verifyUrl: string): { html: string; text: string } {
-  const html = `
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><title>Verifica tu email</title></head>
-<body style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#333">
-  <h1 style="color:#111">Verifica tu email</h1>
-  <p>Hola ${firstName},</p>
-  <p>Para activar tu cuenta, hace click en el siguiente enlace:</p>
-  <p><a href="${verifyUrl}" style="display:inline-block;background:#0ea5e9;color:white;padding:12px 24px;text-decoration:none;border-radius:8px">Verificar email</a></p>
-  <p style="font-size:12px;color:#666">El enlace expira en 24 horas.</p>
-</body>
-</html>`;
-  const text = `Hola ${firstName},\n\nVerifica tu email: ${verifyUrl}\n\nEl enlace expira en 24 horas.`;
   return { html, text };
 }
 

@@ -42,6 +42,7 @@ export function buildEventJsonLd(input: {
   venueName?: string | null;
   venueAddress?: string | null;
   city?: string | null;
+  province?: string | null;
   geoLat?: number | null;
   geoLng?: number | null;
   producer?: { displayName?: string | null; id?: string | null; slug?: string | null } | null;
@@ -73,10 +74,12 @@ export function buildEventJsonLd(input: {
   if (placeName || address || (input.geoLat != null && input.geoLng != null)) {
     const place: JsonLdNode = { '@type': 'Place' };
     if (placeName) place.name = placeName;
-    if (address || input.city) {
+    if (address || input.city || input.province) {
       const postal: JsonLdNode = { '@type': 'PostalAddress' };
       if (address) postal.streetAddress = address;
       if (input.city) postal.addressLocality = input.city;
+      if (input.province) postal.addressRegion = input.province;
+      postal.addressCountry = 'AR';
       place.address = postal;
     }
     if (input.geoLat != null && input.geoLng != null) {
@@ -113,6 +116,8 @@ export function buildProducerJsonLd(input: {
   imageUrl?: string | null;
   websiteUrl?: string | null;
   instagramUrl?: string | null;
+  city?: string | null;
+  country?: string | null;
 }): JsonLdNode {
   const node: JsonLdNode = {
     '@context': 'https://schema.org',
@@ -134,6 +139,14 @@ export function buildProducerJsonLd(input: {
     (x): x is string => Boolean(x),
   );
   if (sameAs.length > 0) node.sameAs = sameAs;
+
+  if (input.city || input.country) {
+    const postal: JsonLdNode = { '@type': 'PostalAddress' };
+    if (input.city) postal.addressLocality = input.city;
+    if (input.country) postal.addressCountry = input.country;
+    else if (input.city) postal.addressCountry = 'AR';
+    node.address = postal;
+  }
 
   return node;
 }
@@ -175,6 +188,7 @@ export function buildGastroJsonLd(input: {
     if (input.address) postal.streetAddress = input.address;
     if (input.city) postal.addressLocality = input.city;
     if (input.province) postal.addressRegion = input.province;
+    postal.addressCountry = 'AR';
     node.address = postal;
   }
 
@@ -232,6 +246,7 @@ export function buildHotelJsonLd(input: {
     if (input.address) postal.streetAddress = input.address;
     if (input.city) postal.addressLocality = input.city;
     if (input.province) postal.addressRegion = input.province;
+    postal.addressCountry = 'AR';
     node.address = postal;
   }
 

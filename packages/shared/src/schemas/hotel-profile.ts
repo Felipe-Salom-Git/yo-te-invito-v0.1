@@ -42,8 +42,10 @@ export const hotelProfileSocialLinksSchema = z
 export const hotelProfileLocationSchema = z.object({
   address: z.string().min(1).max(500),
   city: z.string().min(1).max(120),
-  lat: z.number().min(-90).max(90),
-  lng: z.number().min(-180).max(180),
+  province: z.string().max(100).optional(),
+  lat: z.number().min(-90).max(90).nullable().optional(),
+  lng: z.number().min(-180).max(180).nullable().optional(),
+  googlePlaceId: z.string().max(255).nullable().optional(),
 });
 
 export const hotelProfileResponseSchema = z.object({
@@ -57,6 +59,8 @@ export const hotelProfileResponseSchema = z.object({
   galleryUrls: z.array(z.string()).nullable(),
   address: z.string().nullable(),
   city: z.string().nullable(),
+  province: z.string().nullable().optional(),
+  googlePlaceId: z.string().nullable().optional(),
   geoLat: z.number().nullable(),
   geoLng: z.number().nullable(),
   starCategory: z.number().int().min(1).max(5).nullable(),

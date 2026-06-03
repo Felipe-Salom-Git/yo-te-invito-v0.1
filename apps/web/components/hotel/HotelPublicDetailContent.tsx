@@ -3,6 +3,7 @@
 import type { PublicReviewListFilters, PublicReviewItemV2 } from '@yo-te-invito/shared';
 import { buildHotelGalleryImages } from '@/lib/hotel/hotelPublicGallery';
 import { buildHotelTelHref, buildHotelWhatsAppHref } from '@/lib/hotel/hotelPublicContact';
+import { hasPublicLocationForMapLink } from '@/lib/maps';
 import { HotelPublicHero } from '@/components/hotel/HotelPublicHero';
 import { HotelContactCard } from '@/components/hotel/HotelContactCard';
 import { HotelLinksCard } from '@/components/hotel/HotelLinksCard';
@@ -70,8 +71,13 @@ export function HotelPublicDetailContent({
     hotel.logoUrl,
     hotel.galleryUrls,
   );
-  const hasLocation =
-    Boolean(hotel.address?.trim()) && hotel.geoLat != null && hotel.geoLng != null;
+  const hasLocation = hasPublicLocationForMapLink({
+    address: hotel.address,
+    city: hotel.city,
+    venueName: hotel.displayName,
+    geoLat: hotel.geoLat,
+    geoLng: hotel.geoLng,
+  });
   const whatsAppHref = buildHotelWhatsAppHref(
     hotel.displayName,
     hotel.whatsappPhone,

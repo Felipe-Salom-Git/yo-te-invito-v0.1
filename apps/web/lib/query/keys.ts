@@ -172,6 +172,8 @@ export const ordersKeys = {
   all: ['orders'] as const,
   detail: (orderId: string) => [...ordersKeys.all, orderId] as const,
   paymentStatus: (orderId: string) => [...ordersKeys.all, orderId, 'payment-status'] as const,
+  checkoutStatus: (orderId: string, paymentId?: string) =>
+    [...ordersKeys.all, orderId, 'checkout-status', paymentId ?? ''] as const,
   byBuyer: (userId: string) => [...ordersKeys.all, 'buyer', userId] as const,
 };
 
@@ -304,6 +306,12 @@ export const adminAuditKeys = {
 export const adminUsersKeys = {
   all: ['admin', 'users'] as const,
   list: (filtersKey: string) => [...adminUsersKeys.all, 'list', filtersKey] as const,
+};
+
+export const adminPaymentsKeys = {
+  all: ['admin', 'payments'] as const,
+  list: (filtersKey: string) => [...adminPaymentsKeys.all, 'list', filtersKey] as const,
+  detail: (paymentId: string) => [...adminPaymentsKeys.all, 'detail', paymentId] as const,
 };
 
 export const adminLegalDocumentsKeys = {

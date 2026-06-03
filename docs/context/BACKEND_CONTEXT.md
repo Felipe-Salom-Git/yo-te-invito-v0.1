@@ -12,8 +12,8 @@ Current state of `apps/api` as verified from the repository.
 | Prisma 5 | ORM |
 | PostgreSQL | Database |
 | Zod | Validation (`packages/shared`) |
-| BullMQ + Redis | Jobs (email) |
-| Resend | Email |
+| BullMQ + Redis | Jobs (email queue `emails`) |
+| Resend / SMTP (Nodemailer) | Email vía `MailProvider` (`MAIL_PROVIDER` = `resend` o `smtp`; ver `docs/emails/EMAILS_ARCHITECTURE.md`) |
 | web-push | Web Push (VAPID; opcional si faltan keys) |
 
 ---
@@ -105,15 +105,18 @@ See previous full endpoint tables in git history; key groups:
 - **Portal gastro dashboard:** `GET /gastro/dashboard` (KPIs, alertas, validaciones recientes); `GET /gastro/validations` paginado con filtros `discountId`, `from`, `to` — scope por perfil del dueño (`GastroDashboardService`).
 - **Gastro follows + alertas:** `UserGastroFollow`; al activar descuento (`ACTIVE`) → `GastroFollowDiscountAlertsService` + kind `FOLLOWED_GASTRO_NEW_DISCOUNT` (idempotente, throttling). Doc: `docs/gastro/GASTRO_FOLLOWS_NOTIFICATIONS.md`.
 - **Gastro reviews V2:** `GET /gastro/reviews/summary`, `GET /gastro/reviews`, `POST /gastro/reviews/:id/reply` — `ReviewDisputesService` (sin duplicar motor de reviews).
+- **Admin gastro locations (Slices 2–5, cerrado 2026-06-02):** `POST /admin/gastronomicos`, `PATCH /admin/gastronomicos/:profileId`, `PATCH /admin/gastronomicos/:profileId/status` — `AdminGastroLocationsService` + `GastroPublicEventSyncService` (`publish: false` / no ACTIVE evita sync en alta; suspender → evento `PAUSED`, `publicEventId` intacto). `GET /admin/gastronomicos/:profileId` — detalle edición. Schemas `packages/shared`. Smoke: `docs/audits/ADMIN_GASTRO_LOCATIONS_AUDIT.md` § Slice 5.
 - **Transferencia personal**: `TicketTransferOffer` — sin marketplace `/resale/*` (eliminado `20260605120000_remove_resale_marketplace`).
-- **Notificaciones usuario**: `GET/PATCH /me/notifications`, `POST .../mark-all-read` (`UserNotificationsService`, `NotificationsSchedulerService`, Resend email).
+- **Notificaciones usuario**: `GET/PATCH /me/notifications`, `POST .../mark-all-read` (`UserNotificationsService`, `NotificationsSchedulerService`, email vía `EmailQueueService` → `EmailService` → `MailProvider`).
+  - **Emails (Slices 2–10, PROD OK):** `MailProvider` (`MAIL_PROVIDER=smtp` en VPS DonWeb); registry **38** templates. Legacy activo: `renderOrderConfirmationEmail` (checkout), payouts en `email-templates.ts`; gastro QR inline — **bloque pagos/facturación pendiente**. Smokes `smoke:email`, `smoke:email-template` validados local y VPS. Doc: `docs/emails/EMAILS_CLOSING_AUDIT.md` (§0 validación prod).
   - **Entrega unificada** `deliver()`: canales `IN_APP`, `EMAIL`, `PUSH` (log idempotente `NotificationDeliveryLog`).
   - **Kinds:** `TICKET_REMINDER_24H`, `FAVORITE_EVENT_SOON`, `EXPECTED_EVENT_SOON`, `TRANSFER_OFFER_PENDING`, `REVIEW_PENDING`, `FOLLOWED_PRODUCER_NEW_EVENT`, `FAVORITE_INTEREST_NEW_CONTENT`, **`EVENT_APPROVED_BY_ADMIN`**, **`EVENT_REJECTED_BY_ADMIN`**, **`REVIEW_RECEIVED`**, **`REVIEW_OFFICIAL_REPLY`**, **`REVIEW_DISPUTE_CREATED`**, **`REVIEW_DISPUTE_ACCEPTED`**, **`REVIEW_DISPUTE_REJECTED`**, **`REVIEW_MODERATION_HIDDEN`**, **`REVIEW_MODERATION_RESTORED`**.
   - **Productor evento admin:** `ProducerEventStatusNotificationsService` (hook en `approveEvent` / `rejectEvent`); no falla moderación si email/push fallan; preferencia `notifyProducerEventStatus` en `User.preferences`.
   - **Reviews/disputas:** `ReviewNotificationsService` (crear reseña, réplica oficial, disputa, hide/restore); preferencias `notifyManagedReviews`, `notifyReviewEngagement`; email/push best-effort.
   - **Push:** `WebPushService` (`web-push`, VAPID); `GET/POST/DELETE /me/push-subscriptions`, `GET /config`, `POST /test` (`UserPushSubscriptionsService`).
   - **Preferencias push** en `User.preferences` (portal): `pushAlertsEnabled`, `notifyUpcomingEvents`, `notifyTransferOffers`, etc. — ver `user-portal-preferences.util.ts` + `shouldSendPushForKind`.
-  - **Alertas inteligentes:** transfer al crear oferta; cron reviews; publicación evento → `EventPublicationAlertsService` (approve admin, publicaciones generales, rental/excursion APPROVED); kinds `FOLLOWED_PRODUCER_NEW_EVENT`, `FAVORITE_INTEREST_NEW_CONTENT`; throttling `SMART_ALERTS_MAX_PER_USER_HOUR` (default 5).
+  - **Alertas inteligentes:** transfer al crear oferta; cron reviews; publicación evento → `SmartAlertsPreparedService` / `EventPublicationAlertsService`; kinds `FOLLOWED_PRODUCER_NEW_EVENT`, `FAVORITE_INTEREST_NEW_CONTENT`; cron favorito/esperado; gastro `FOLLOWED_GASTRO_NEW_DISCOUNT`; templates email Slice 8 (`smart-alert-email-template.util.ts`); throttling `SMART_ALERTS_MAX_PER_USER_HOUR` (default 5).
+  - **Emails operaciones (Slice 9):** `OperationalAlertsEmailService` → `MAIL_OPERATIONS_TO`; `ADMIN_NEW_EVENT_PENDING` al enviar evento a revisión; `ADMIN_STORAGE_UPLOAD_FAILED` en fallo GCS; `ADMIN_EMAIL_DELIVERY_FAILED` en cola (anti-loop `ADMIN_*`).
 - **Seguir productoras**: `GET/POST/DELETE/PATCH /me/producer-follows*`, `GET /me/recommendations`.
 
 ### Scripts eliminados (2026)
@@ -136,9 +139,10 @@ See previous full endpoint tables in git history; key groups:
 - **TicketType**, **TicketTemplate**, **TicketBatch**, **Order**, **OrderItem**, **Payment**, **Ticket** (`TRANSFER_PENDING`, `TRANSFERRED`; **TicketTransferOffer**)
 - **UserCart**, **UserCartItem**, **UserFavorite**, **UserExpectedEvent**, **UserGastroFollow**, **UserPushSubscription**
 - **UserNotification**, **NotificationDeliveryLog** (`NotificationChannel`: `IN_APP`, `EMAIL`, `PUSH`)
-- **Referidos V2:** **ReferrerProfile**, **ProducerReferrerRelationship**, **ReferralLink**, **ReferralAttribution**, **ReferralCommercialProposal**, **ReferralCommercialAgreement**, **ReferralCommission** (`CONFIRMED` / `MARKED_AS_PAID`), **ReferralPaymentRequest** — liquidación externa (sin custodia). Doc: `docs/referrals/REFERRALS_V2.md`
+- **Referidos V2:** **ReferrerProfile**, **ProducerReferrerRelationship**, **ReferralLink**, **ReferralAttribution**, **ReferralCommercialProposal**, **ReferralCommercialAgreement**, **ReferralCommission** (`CONFIRMED` / `MARKED_AS_PAID`), **ReferralPaymentRequest** — liquidación externa (sin custodia). Emails transaccionales Slice 7: `ReferralEmailsService` → `REFERRAL_*` templates (`enqueueTemplate`). Doc: `docs/referrals/REFERRALS_V2.md`, `docs/emails/EMAIL_MATRIX.md` §6
 - **GastroDiscount**, **GastroDiscountValidation**, **InboxItem** (kind incl. `REVIEW_DISPUTE_REQUEST`)
-- **HotelProfile** (`galleryUrls`, `geoLat`/`geoLng`, `whatsappPhone`, `amenities`, `publicEventId`), memberships, **GastroContent**, **ProducerProfile**, **GastroProfile**
+- **HotelProfile** (`galleryUrls`, `geoLat`/`geoLng`, `province`, `googlePlaceId`, `whatsappPhone`, `amenities`, `publicEventId`), memberships, **GastroContent**, **ProducerProfile**, **GastroProfile** (`province`, `googlePlaceId`)
+- **Event**, **GastroProfile**, **HotelProfile**, **RentalLocation**, **ExcursionOperator**: `address`, coords, `province`, `googlePlaceId` (Maps 5, nullable); `city` en RentalLocation — **prod OK 2026-06-01**
 - **Review** (V2: `overallRating`, `aspectRatings` JSON, `publicStatus`, `officialReply`, `replyAuthorType`), **ReviewDisputeRequest**, **CommercialRelationshipReview** (aspectos B2B JSON)
 - **Event**: `bayesianRating`, `rankingScore` (cache; `ReviewRankingService` al crear/ocultar/restaurar reviews)
 - **CourtesyGrant**, **TicketScanLog**, **FraudSignal**, **Payout**, **AuditLog** (acciones review-dispute), **PlatformConfig**
@@ -180,6 +184,7 @@ Requieren API `:3001` + **`SMOKE_USER_EMAIL`** + **`SMOKE_USER_PASSWORD`** (sin 
 | Storage upload GCS | `pnpm --filter api run smoke:storage-upload` | ADMIN + GCS env; **PASS prod 2026-05-31** |
 | Storage upload auth | `pnpm --filter api run smoke:storage-upload-auth` | USER 403; prod: `SMOKE_NON_ADMIN_*` — **PASS prod 2026-05-31** |
 | Storage global smoke | `pnpm --filter api run smoke:storage-global` | Matriz vertical + 403/400; opcional fixtures reales — §22 |
+| Maps location smoke | `pnpm --filter api run smoke:maps-location` | Read-only; entidades con address/coords/placeId — audit §23 |
 
 **Tests util (sin BD):** `test:referral-proposals`, `test:referral-commission`, `test:referral-payment-requests`.
 
@@ -262,10 +267,10 @@ Opcional cron: `NOTIFICATIONS_CRON_ENABLED=false`, `NOTIFICATION_REMINDER_HOURS`
 
 ## 9. Debt / risks
 
-- Payments: demo only (`DEMO` + `demo-confirm`); Getnet no activo en prod (Mayo 2026).
+- Payments: `DEMO` + `demo-confirm`; Getnet implementado (webhook, reconcile, return UI, `/admin/pagos`) — cierre código/docs [GETNET_CLOSING_AUDIT.md](../payments/GETNET_CLOSING_AUDIT.md); **go-live** VPS según [GETNET_ACTIVATION_CHECKLIST.md](../payments/GETNET_ACTIVATION_CHECKLIST.md).
 - Image uploads: portales + Admin → GCS **cerrado funcional prod 2026-05-31.** Ops legacy no bloqueante: `storage:audit-data-urls`, `storage:migrate-data-urls` (§21), `storage:audit-orphans`, `storage:cleanup-orphans` (§22).
 - Public list `EventSummary` includes `fromPrice` (min active ticket/batch price, major units) and `producerName` (`ProducerProfile.displayName`, ACTIVE only) — see `public-event-summary.util.ts`.
-- Run `prisma migrate deploy` + `prisma generate` after schema changes — **prod:** `https://api.yoteinvito.club`, migraciones vía `migrate deploy` (no `pnpm db:migrate`).
+- Run `prisma migrate deploy` + `prisma generate` after schema changes — **prod:** `https://api.yoteinvito.club`, migraciones vía `migrate deploy` (no `pnpm db:migrate`). **Build monorepo:** `pnpm build` desde raíz (genera Prisma client, compila `shared` con schemas Maps, luego api/web/scanner); no compilar `api` aislado sin `shared` recién buildado.
 
 ### Producción VPS (Mayo 2026)
 

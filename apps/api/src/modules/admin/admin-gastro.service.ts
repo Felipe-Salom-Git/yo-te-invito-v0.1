@@ -8,10 +8,12 @@ import { randomBytes } from 'crypto';
 import {
   buildGastroDiscountQrPayload,
   ErrorCode,
+  parseRentalOpeningHours,
   type AdminGastroDiscountMetrics,
   type AdminGastroDiscountPublication,
   type AdminGastroLocationsListQuery,
 } from '@yo-te-invito/shared';
+import { readGastroGallery } from '../gastro/gastro-profile-fields.util';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../../email/email.service';
 import { GastroFollowDiscountAlertsService } from '../notifications/gastro-follow-discount-alerts.service';
@@ -318,6 +320,7 @@ export class AdminGastroService {
     const profile = await this.prisma.gastroProfile.findFirst({
       where: { id: profileId, tenantId },
       include: {
+        subcategory: { select: { name: true } },
         memberships: {
           where: { membershipRole: 'OWNER' },
           take: 1,
@@ -354,6 +357,7 @@ export class AdminGastroService {
     const owner = p.memberships[0]?.user;
     return {
       id: p.id,
+      tenantId: p.tenantId,
       displayName: p.displayName,
       status: this.toProfileStatus(p.status),
       city: p.city,
@@ -361,9 +365,19 @@ export class AdminGastroService {
       contactEmail: p.contactEmail,
       contactPhone: p.contactPhone,
       publicEventId: p.publicEventId,
+      legalName: p.legalName,
       summary: p.summary,
+      detail: p.detail,
       address: p.address,
       bannerUrl: p.bannerUrl,
+      galleryUrls: readGastroGallery(p),
+      googlePlaceId: p.googlePlaceId,
+      geoLat: p.geoLat,
+      geoLng: p.geoLng,
+      openingHours: parseRentalOpeningHours(p.openingHours),
+      openingHoursNote: p.openingHoursNote,
+      subcategoryId: p.subcategoryId,
+      subcategoryName: p.subcategory?.name ?? null,
       menuUrl: p.menuUrl,
       websiteUrl: p.websiteUrl,
       owner: {

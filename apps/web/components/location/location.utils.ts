@@ -1,6 +1,15 @@
 import { ARGENTINA_PROVINCES } from './argentina-locations';
 import type { LocationValue } from './location.types';
 
+/**
+ * Event location field mapping (Maps 6):
+ * - UI `LocationValue.address` → API `venueAddress` (dirección calle / Places)
+ * - UI `LocationValue.city` + province select → API `city` (label) + `province` (slug)
+ * - UI `LocationValue.placeId` → API `googlePlaceId`
+ * - UI `LocationValue.lat/lng` → API `geoLat/geoLng` (opcional con fallback manual)
+ * - Form `venueName` → API `venueName` (nombre del venue, independiente del mapa)
+ */
+
 export function parseGeoCoord(raw: string | number | null | undefined): number | null {
   if (raw === null || raw === undefined || raw === '') return null;
   const n = typeof raw === 'number' ? raw : Number.parseFloat(String(raw).trim());
@@ -41,6 +50,16 @@ export function resolveProvinceCityFromCityLabel(cityLabel: string | null | unde
   return { province: '', city: '' };
 }
 
+function googlePlaceIdFromLocationValue(value: LocationValue): string | null {
+  const id = value.placeId?.trim();
+  return id || null;
+}
+
+function provinceFromLocationValue(value: LocationValue): string | null {
+  const p = value.province.trim();
+  return p || null;
+}
+
 export function validateLocationValue(
   value: LocationValue,
   opts: { requireAddress?: boolean; requireCoords?: boolean; requireCity?: boolean; requireProvince?: boolean } = {},
@@ -58,20 +77,80 @@ export function validateLocationValue(
   return null;
 }
 
+/** At least street address or city/venue text for presencial events (coords optional). */
+export function hasPresencialLocationText(
+  location: LocationValue,
+  venueName?: string | null,
+): boolean {
+  if (location.address.trim()) return true;
+  if (location.city.trim()) return true;
+  if (venueName?.trim()) return true;
+  return false;
+}
+
+/**
+ * Validate presencial event/excursion location before publish.
+ * Does not require coords or googlePlaceId — manual fallback is allowed.
+ */
+export function validatePresencialEventLocation(
+  location: LocationValue,
+  venueName?: string | null,
+): string | null {
+  const base = validateLocationValue(location);
+  if (base) return base;
+  if (!hasPresencialLocationText(location, venueName)) {
+    return 'Indicá al menos una dirección, ciudad o nombre del lugar para eventos presenciales.';
+  }
+  return null;
+}
+
+/** Gastro portal: province + address required; coords optional (manual fallback). */
+export function validateGastroLocationValue(value: LocationValue): string | null {
+  return (
+    validateLocationValue(value, {
+      requireProvince: true,
+      requireAddress: true,
+    }) ??
+    null
+  );
+}
+
+/** Hotel portal: city + address required; coords optional (manual fallback). */
+export function validateHotelLocationValue(value: LocationValue): string | null {
+  return (
+    validateLocationValue(value, {
+      requireAddress: true,
+      requireCity: true,
+    }) ?? null
+  );
+}
+
+/** Rental / excursion operator admin: optional location; validate coords if partially set. */
+export function validateOptionalEntityLocation(value: LocationValue): string | null {
+  return validateLocationValue(value);
+}
+
 export function locationValueFromEventFields(input: {
   city?: string | null;
   venueAddress?: string | null;
   geoLat?: number | null;
   geoLng?: number | null;
+  province?: string | null;
+  googlePlaceId?: string | null;
 }): LocationValue {
-  const { province, city } = resolveProvinceCityFromCityLabel(input.city);
+  const fromProvince = input.province?.trim()
+    ? {
+        province: input.province.trim(),
+        city: resolveProvinceCityFromCityLabel(input.city).city,
+      }
+    : resolveProvinceCityFromCityLabel(input.city);
   return {
     address: input.venueAddress ?? '',
-    province,
-    city: city || '',
+    province: fromProvince.province,
+    city: fromProvince.city || '',
     lat: input.geoLat ?? null,
     lng: input.geoLng ?? null,
-    placeId: null,
+    placeId: input.googlePlaceId ?? null,
   };
 }
 
@@ -80,6 +159,8 @@ export function eventFieldsFromLocationValue(value: LocationValue): {
   venueAddress: string | null;
   geoLat: number | null;
   geoLng: number | null;
+  province: string | null;
+  googlePlaceId: string | null;
 } {
   const cityLabel = cityLabelFromValue(value.city) || value.city.trim();
   return {
@@ -87,21 +168,32 @@ export function eventFieldsFromLocationValue(value: LocationValue): {
     venueAddress: value.address.trim() || null,
     geoLat: isValidGeoCoord(value.lat) ? value.lat : null,
     geoLng: isValidGeoCoord(value.lng) ? value.lng : null,
+    province: provinceFromLocationValue(value),
+    googlePlaceId: googlePlaceIdFromLocationValue(value),
   };
 }
 
 export function locationValueFromRentalLocation(input: {
   address?: string | null;
+  city?: string | null;
+  province?: string | null;
+  googlePlaceId?: string | null;
   geoLat?: number | null;
   geoLng?: number | null;
 }): LocationValue {
+  const fromCity = input.province?.trim()
+    ? {
+        province: input.province.trim(),
+        city: resolveProvinceCityFromCityLabel(input.city).city || (input.city ?? '').trim(),
+      }
+    : resolveProvinceCityFromCityLabel(input.city);
   return {
     address: input.address ?? '',
-    province: '',
-    city: '',
+    province: fromCity.province,
+    city: fromCity.city || (input.city ?? '').trim(),
     lat: input.geoLat ?? null,
     lng: input.geoLng ?? null,
-    placeId: null,
+    placeId: input.googlePlaceId ?? null,
   };
 }
 
@@ -117,11 +209,18 @@ export function applyProvinceToLocationValue(value: LocationValue, province: str
 
 export function rentalLocationPayloadFromLocationValue(value: LocationValue): {
   address: string | null;
+  city: string | null;
+  province: string | null;
+  googlePlaceId: string | null;
   geoLat: number | null;
   geoLng: number | null;
 } {
+  const cityLabel = cityLabelFromValue(value.city) || value.city.trim();
   return {
     address: value.address.trim() || null,
+    city: cityLabel || null,
+    province: provinceFromLocationValue(value),
+    googlePlaceId: googlePlaceIdFromLocationValue(value),
     geoLat: isValidGeoCoord(value.lat) ? value.lat : null,
     geoLng: isValidGeoCoord(value.lng) ? value.lng : null,
   };
@@ -130,23 +229,32 @@ export function rentalLocationPayloadFromLocationValue(value: LocationValue): {
 export function locationValueFromExcursionOperator(input: {
   address?: string | null;
   city?: string | null;
+  province?: string | null;
+  googlePlaceId?: string | null;
   geoLat?: number | null;
   geoLng?: number | null;
 }): LocationValue {
-  const { province, city } = resolveProvinceCityFromCityLabel(input.city);
+  const fromCity = input.province?.trim()
+    ? {
+        province: input.province.trim(),
+        city: resolveProvinceCityFromCityLabel(input.city).city || (input.city ?? '').trim(),
+      }
+    : resolveProvinceCityFromCityLabel(input.city);
   return {
     address: input.address ?? '',
-    province,
-    city: city || '',
+    province: fromCity.province,
+    city: fromCity.city || (input.city ?? '').trim(),
     lat: input.geoLat ?? null,
     lng: input.geoLng ?? null,
-    placeId: null,
+    placeId: input.googlePlaceId ?? null,
   };
 }
 
 export function excursionOperatorPayloadFromLocationValue(value: LocationValue): {
   address: string | null;
   city: string | null;
+  province: string | null;
+  googlePlaceId: string | null;
   geoLat: number | null;
   geoLng: number | null;
 } {
@@ -154,7 +262,46 @@ export function excursionOperatorPayloadFromLocationValue(value: LocationValue):
   return {
     address: value.address.trim() || null,
     city: cityLabel || null,
+    province: provinceFromLocationValue(value),
+    googlePlaceId: googlePlaceIdFromLocationValue(value),
     geoLat: isValidGeoCoord(value.lat) ? value.lat : null,
     geoLng: isValidGeoCoord(value.lng) ? value.lng : null,
+  };
+}
+
+export function gastroLocationPayloadFromLocationValue(value: LocationValue): {
+  province: string;
+  city: string;
+  address: string;
+  lat: number | null;
+  lng: number | null;
+  googlePlaceId: string | null;
+} {
+  return {
+    province: value.province.trim(),
+    city: value.city.trim(),
+    address: value.address.trim(),
+    lat: isValidGeoCoord(value.lat) ? value.lat : null,
+    lng: isValidGeoCoord(value.lng) ? value.lng : null,
+    googlePlaceId: googlePlaceIdFromLocationValue(value),
+  };
+}
+
+export function hotelLocationPayloadFromLocationValue(value: LocationValue): {
+  address: string;
+  city: string;
+  province?: string;
+  lat: number | null;
+  lng: number | null;
+  googlePlaceId: string | null;
+} {
+  const province = value.province.trim();
+  return {
+    address: value.address.trim(),
+    city: value.city.trim(),
+    ...(province ? { province } : {}),
+    lat: isValidGeoCoord(value.lat) ? value.lat : null,
+    lng: isValidGeoCoord(value.lng) ? value.lng : null,
+    googlePlaceId: googlePlaceIdFromLocationValue(value),
   };
 }

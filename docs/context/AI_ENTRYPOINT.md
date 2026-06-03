@@ -62,6 +62,7 @@ Controllers: HTTP + Zod only. Services: business logic. Prisma: persistence only
 | **`docs/audits/PUBLIC_FOOTER_AUDIT.md`** | Footer público — Slices 1–5 + cierre |
 | **`docs/audits/PUBLIC_FOOTER_SMOKE.md`** | Smoke / QA footer |
 | **`docs/audits/PUBLIC_FOOTER_CLOSING_AUDIT.md`** | Auditoría de cierre footer |
+| **`docs/audits/ADMIN_GASTRO_LOCATIONS_AUDIT.md`** | Admin Gastro Locations — bloque cerrado (CRUD admin + smoke Slice 5) |
 | **`CONTEXT_PENDIENTES.md`** | Checkbox backlog — mark `[x]` when done |
 | **`docs/legal/LEGAL_ADMIN_MODULE.md`** | Legal Admin — modelos, endpoints, flujos, staging (módulo cerrado 2026-05-24) |
 | **`docs/onboarding/`** | Registro V2 por perfil — wizard, schemas, legales signup, slices 12.5–12.6 |
@@ -153,7 +154,7 @@ pnpm run -w dev    # API :3001 + web :3000
 
 **Producción VPS (Mayo 2026):** `yoteinvito.club` — `npx prisma migrate deploy` en `apps/api` (no `pnpm db:migrate`). SSH: `ssh yoteinvito` → usuario `deploy`, puerto **5230**, solo clave (root/password SSH deshabilitados). API: `NODE_ENV=production`, `DEV_AUTH_ENABLED=false`; `.env` permisos `600`. Secretos críticos rotados (Mayo 2026). Runbook VPS: `docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md` §24–25; auditoría hardening: `docs/audits/PRODUCTION_SECURITY_HARDENING_AUDIT.md`.
 
-**Google Cloud:** buckets + backups cerrados. **Storage V2 cerrado funcional prod (2026-05-31)** — upload GCS, portales web, smokes VPS PASS — [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §22 · [`DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTION_RUNBOOK.md) §24.9. **SEO/GSC:** sitemap final + runbook GSC/SEO — [`SEARCH_CONSOLE_SEO_RUNBOOK.md`](../deploy/SEARCH_CONSOLE_SEO_RUNBOOK.md). Pendiente: ejecución manual en Search Console (propiedad dominio + TXT + envío sitemap).
+**Google Cloud / Storage / SEO / Maps (bloque cerrado 2026-06-01):** proyecto `yoteinvito-1721413433327`; GCS `yti-prod-storage` + `yti-prod-public-assets`; backups PG OK; upload `POST /uploads/public-image` + formularios GCS; SEO `robots`/`sitemap` + GSC propiedad verificada + sitemap enviado; Maps prod (key, autocomplete, fallback, `googlePlaceId`/`province`, Ver ubicación, JSON-LD local). Runbooks: [`GOOGLE_CLOUD_RUNBOOK.md`](../deploy/GOOGLE_CLOUD_RUNBOOK.md) · [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) · [`SEARCH_CONSOLE_SEO_RUNBOOK.md`](../deploy/SEARCH_CONSOLE_SEO_RUNBOOK.md). Auditorías: [`MAPS_LOCATION_AUDIT.md`](../audits/MAPS_LOCATION_AUDIT.md) · [`SEO_TECHNICAL_AUDIT.md`](../audits/SEO_TECHNICAL_AUDIT.md). **Ops no bloqueante:** budget alerts GCP, data-URL/orphans migrate, CDN, GSC indexación/CWV/Rich Results.
 
 **Producción — no ejecutar salvo emergencia documentada:** `pnpm db:reset-dangerous`, `pnpm db:cleanup-content`, `pnpm db:migrate` (usar solo `npx prisma migrate deploy`).
 

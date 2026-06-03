@@ -21,6 +21,8 @@ Esta guía lista los comandos developer **activos** después de la limpieza de d
 
 Contenido de prueba: cargar **manualmente** desde la cuenta principal y portales (admin, producer, gastro, etc.).
 
+**Build producción (VPS):** desde raíz del monorepo, `pnpm build` (Prisma generate → `shared` → api/web/scanner). No compilar solo `apps/api` sin `shared` buildado. Bloque GCP/Storage/SEO/Maps cerrado 2026-06-01 — [`GOOGLE_CLOUD_RUNBOOK.md`](../deploy/GOOGLE_CLOUD_RUNBOOK.md).
+
 ---
 
 ## 2. Comandos de desarrollo
@@ -233,6 +235,8 @@ Detalle completo: [SMOKE_TESTS_GUIDE.md](./SMOKE_TESTS_GUIDE.md).
 |---------|----------------|
 | `smoke:api` | Casi no |
 | `smoke:producer-follows` | Mínimo (follow se borra) |
+| `smoke:email` | No (1 email; `SMOKE_EMAIL_TO` + provider; DonWeb SMTP validado en local) |
+| `smoke:email-template` | No (1 email; `SMOKE_EMAIL_TO` + `SMOKE_EMAIL_TEMPLATE_ID`) |
 
 ### Smokes protegidos (credenciales + posible basura)
 
@@ -250,6 +254,49 @@ SMOKE_USER_EMAIL=felipe.e.salom@gmail.com SMOKE_USER_PASSWORD=<pass> pnpm --filt
 | `smoke:user-portal` | Órdenes, usuarios `@smoke.yo-te-invito.test`, transfers |
 | `test:referral-proposals` / `test:referral-commission` / `test:referral-payment-requests` | Util Referidos V2 (sin BD) |
 
+### Smoke email (DonWeb / Resend)
+
+Envío controlado de **un** correo de prueba. No usa API HTTP ni pagos.
+
+**Validado en local (2026-06):** `MAIL_PROVIDER=smtp`, `SMTP_HOST=c2821613.ferozo.com`, puerto `465`, `SMTP_SECURE=true`, `SMTP_USER=no_reply@yoteinvito.club` → salida OK con `messageId`.
+
+```bash
+SMOKE_EMAIL_TO=soporte@yoteinvito.club \
+MAIL_PROVIDER=smtp \
+SMTP_HOST=c2821613.ferozo.com SMTP_PORT=465 SMTP_SECURE=true \
+SMTP_USER=no_reply@yoteinvito.club SMTP_PASSWORD=<secret> \
+MAIL_FROM="Yo Te Invito <no_reply@yoteinvito.club>" \
+MAIL_REPLY_TO=soporte@yoteinvito.club \
+pnpm --filter api run smoke:email
+```
+
+No commitear `SMTP_PASSWORD`. Rollback: `MAIL_PROVIDER=resend` + `RESEND_API_KEY`. En VPS prod: mismas variables en env del API + deploy (`docs/emails/EMAILS_CLOSING_AUDIT.md` §8–9).
+
+### Smoke email template (Slices 3–10)
+
+**38** IDs en registry (`EMAIL_TEMPLATE_IDS` en `email-template.types.ts`). Cierre: `docs/emails/EMAILS_CLOSING_AUDIT.md`.
+
+```bash
+MAIL_PROVIDER=smtp \
+SMTP_HOST=c2821613.ferozo.com \
+SMTP_PORT=465 \
+SMTP_SECURE=true \
+SMTP_USER=no_reply@yoteinvito.club \
+SMTP_PASSWORD='***' \
+MAIL_FROM='Yo Te Invito <no_reply@yoteinvito.club>' \
+MAIL_REPLY_TO=soporte@yoteinvito.club \
+MAIL_OPERATIONS_TO=operaciones@yoteinvito.club \
+SMOKE_EMAIL_TO=soporte@yoteinvito.club \
+SMOKE_EMAIL_TEMPLATE_ID=AUTH_VERIFY_EMAIL \
+pnpm --filter api run smoke:email-template
+```
+
+Usa variables de ejemplo del script; **no enviar masivamente** — un ID por ejecución.
+
+**Smoke por familia (recomendado):** `AUTH_VERIFY_EMAIL`, `PRODUCER_EVENT_APPROVED`, `TICKET_TRANSFER_RECEIVED`, `REVIEW_RECEIVED`, `REFERRAL_PROPOSAL_RECEIVED`, `FOLLOWED_GASTRO_NEW_DISCOUNT`, `ADMIN_NEW_EVENT_PENDING`, `ADMIN_CRITICAL_ALERT`.
+
+**Callers en prod:** registro; evento productor; transferencias; recordatorio 24h; reviews; referidos; alertas favorito/esperado/gastro; admin pending/storage/delivery-failed. **Legacy (sin registry):** checkout confirmación, payouts, gastro QR inline.
+
 Cleanup automático al finalizar (configurable). Manual:
 
 ```bash
@@ -261,6 +308,11 @@ pnpm --filter api run smoke:cleanup -- --confirm
 | Comando | Notas |
 |---------|--------|
 | `test:getnet-auth` | OAuth Getnet; solo red |
+| `test:order-fulfillment` | Helpers idempotencia fulfill |
+| `test:getnet-webhook` | Helpers webhook Getnet |
+| `test:getnet-reconciliation` | Política reconciliación Getnet |
+| `payments:reconcile-getnet` | Reconciliación batch Getnet — **dry-run por defecto**; `--confirm` muta |
+| `smoke:getnet` | Activación Getnet — `--config` (env/health, sin secretos); `--simulate-webhook --payment-id` (QA) |
 | `test:door-scan` | **Alto** — deja fixture `door-scan-test-*` en BD |
 
 ### E2E Playwright
@@ -338,6 +390,11 @@ Motivo: proteger `felipe.e.salom@gmail.com` y evitar repoblación accidental de 
 | `smoke:api` | Bajo | Casi no | Health API |
 | `smoke:producer-follows` | Bajo | Mínimo | Follows |
 | `test:getnet-auth` | Bajo | No | Integración Getnet |
+| `test:order-fulfillment` | Bajo | No | Fulfill idempotente |
+| `test:getnet-webhook` | Bajo | No | Webhook helpers |
+| `test:getnet-reconciliation` | Bajo | No | Reconciliación policy |
+| `payments:reconcile-getnet` | Medio | Con `--confirm` | Ops pagos Getnet |
+| `smoke:getnet` | Bajo–Medio | `--simulate-webhook` muta | Pre-prod Getnet — ver `docs/payments/GETNET_ACTIVATION_CHECKLIST.md` |
 | `db:migrate` | Medio | Schema | Nuevas migraciones |
 | `db:studio` | Medio | RW manual | Inspección |
 | `db:cleanup-content` | Medio | Sí | Limpiar contenido prueba |
@@ -504,6 +561,22 @@ SMOKE_USER_EMAIL=… SMOKE_USER_PASSWORD=… \
 ```
 
 Doc: [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §22.
+
+### `pnpm --filter api run smoke:maps-location`
+
+Valida entidades públicas con datos de ubicación persistidos (Event, Gastro, Hotel, RentalLocation, ExcursionOperator). Read-only contra API; requiere API levantada y datos reales en BD.
+
+```bash
+pnpm --filter api run smoke:maps-location
+```
+
+| | |
+|--|--|
+| **Riesgo** | Bajo (solo lectura) |
+| **Toca DB** | No |
+| **Doc** | [`MAPS_LOCATION_AUDIT.md`](../audits/MAPS_LOCATION_AUDIT.md) §18, §23 |
+
+Checklist manual frontend (autocomplete, pin, Ver ubicación, fallback sin placeId): audit §18.
 
 ---
 

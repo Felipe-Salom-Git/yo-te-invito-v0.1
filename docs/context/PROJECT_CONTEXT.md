@@ -210,6 +210,8 @@ Script cleanup: `apps/api/prisma/scripts/cleanup-content.ts` (preserva `felipe.e
 
 Guías: `docs/guides/README.md`, `DEVELOPER_SCRIPTS_GUIDE.md`, `SMOKE_TESTS_GUIDE.md`, `DEMO_REMOVAL.md`. Histórico: `docs/legacy/guides/`.
 
+**Google Cloud / Storage / SEO / Maps (bloque cerrado prod 2026-06-01):** GCP + GCS privado/público + backups; upload GCS en portales admin/productora/gastro/hotel; SEO técnico base + GSC; Maps con key prod, persistencia `googlePlaceId`/`province`, Ver ubicación, JSON-LD local. Docs: `docs/deploy/GOOGLE_CLOUD_RUNBOOK.md`, `GCS_STORAGE_STRATEGY.md`, `SEARCH_CONSOLE_SEO_RUNBOOK.md`, `docs/audits/MAPS_LOCATION_AUDIT.md`, `SEO_TECHNICAL_AUDIT.md`. Build VPS: `pnpm build` desde raíz (`db:generate` + `shared` + apps).
+
 ---
 
 ## 9. AI Guidance

@@ -12,6 +12,7 @@ import { GastroLocalService } from './gastro-local.service';
 import { GastroPortalDiscountsService } from './gastro-portal-discounts.service';
 import { GastroContentService } from './gastro-content.service';
 import { GastroDashboardService } from './gastro-dashboard.service';
+import { GastroPublicEventSyncService } from './gastro-public-event-sync.service';
 
 @Module({
   imports: [AuthModule, SubcategoriesModule, ReviewDisputesModule, ReviewsModule],
@@ -24,7 +25,12 @@ import { GastroDashboardService } from './gastro-dashboard.service';
     GastroPortalDiscountsService,
     GastroContentService,
     GastroDashboardService,
+    GastroPublicEventSyncService,
   ],
-  exports: [GastroPortalDiscountsService, GastroContentService],
+  exports: [
+    GastroPortalDiscountsService,
+    GastroContentService,
+    GastroPublicEventSyncService,
+  ],
 })
 export class GastroModule {}

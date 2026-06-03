@@ -25,6 +25,7 @@ import {
   UploadsAuthorizationService,
   type UploadAuthUser,
 } from './uploads-authorization.service';
+import { OperationalAlertsEmailService } from '../../email/operational-alerts-email.service';
 
 type MulterFile = Express.Multer.File;
 
@@ -33,6 +34,7 @@ export class UploadsService {
   constructor(
     private readonly gcs: GcsStorageService,
     private readonly uploadAuth: UploadsAuthorizationService,
+    private readonly operationalAlerts: OperationalAlertsEmailService,
   ) {}
 
   async uploadPublicImage(
@@ -63,11 +65,31 @@ export class UploadsService {
       ext,
     });
 
-    const { bucket, objectKey: storedKey } = await this.gcs.uploadPublicObject({
-      objectKey,
-      buffer,
-      contentType,
-    });
+    let bucket: string;
+    let storedKey: string;
+    try {
+      const uploaded = await this.gcs.uploadPublicObject({
+        objectKey,
+        buffer,
+        contentType,
+      });
+      bucket = uploaded.bucket;
+      storedKey = uploaded.objectKey;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      this.operationalAlerts.notifyStorageUploadFailed({
+        entityType: fields.scope,
+        entityId: fields.entityId,
+        uploaderEmail: user.id,
+        fileName: file?.originalname || objectKey,
+        errorMessage: message,
+        context: `purpose=${fields.purpose}\nobjectKey=${objectKey}`,
+      });
+      throw new ServiceUnavailableException({
+        code: ErrorCode.INTERNAL_ERROR,
+        message: 'Image upload failed',
+      });
+    }
 
     const baseUrl = resolvePublicBaseUrl(config);
     const url = buildPublicObjectUrl(baseUrl, storedKey);

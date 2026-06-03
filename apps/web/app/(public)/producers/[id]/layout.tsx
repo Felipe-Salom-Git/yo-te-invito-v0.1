@@ -107,6 +107,8 @@ async function ProducerJsonLd({ id }: { id: string }) {
     imageUrl: typeof producer?.coverImageUrl === 'string' ? producer.coverImageUrl : null,
     websiteUrl: typeof producer?.websiteUrl === 'string' ? producer.websiteUrl : null,
     instagramUrl: typeof producer?.instagramUrl === 'string' ? producer.instagramUrl : null,
+    city: typeof producer?.city === 'string' ? producer.city : null,
+    country: typeof producer?.country === 'string' ? producer.country : null,
   });
 
   return (

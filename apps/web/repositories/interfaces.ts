@@ -114,6 +114,9 @@ export interface RentalLocationsRepo {
     tenantId?: string;
     name: string;
     address?: string | null;
+    city?: string | null;
+    province?: string | null;
+    googlePlaceId?: string | null;
     openingHours?: import('@yo-te-invito/shared').RentalOpeningHours | null;
     openingHoursNote?: string | null;
     contactPhone?: string | null;
@@ -130,6 +133,9 @@ export interface RentalLocationsRepo {
     patch: {
       name?: string;
       address?: string | null;
+      city?: string | null;
+      province?: string | null;
+      googlePlaceId?: string | null;
       openingHours?: import('@yo-te-invito/shared').RentalOpeningHours | null;
       openingHoursNote?: string | null;
       contactPhone?: string | null;
@@ -217,6 +223,8 @@ export interface ExcursionOperatorsRepo {
     name: string;
     address?: string | null;
     city?: string | null;
+    province?: string | null;
+    googlePlaceId?: string | null;
     openingHours?: import('@yo-te-invito/shared').RentalOpeningHours | null;
     openingHoursNote?: string | null;
     contactPhone?: string | null;
@@ -231,6 +239,8 @@ export interface ExcursionOperatorsRepo {
       name?: string;
       address?: string | null;
       city?: string | null;
+      province?: string | null;
+      googlePlaceId?: string | null;
       openingHours?: import('@yo-te-invito/shared').RentalOpeningHours | null;
       openingHoursNote?: string | null;
       contactPhone?: string | null;
@@ -601,6 +611,8 @@ export interface EventDetail extends EventSummary {
   summary?: string | null;
   endAt: string | null;
   venueAddress: string | null;
+  province?: string | null;
+  googlePlaceId?: string | null;
   geoLat: number | null;
   geoLng: number | null;
   capacityTotal: number | null;
@@ -1242,6 +1254,28 @@ export interface AdminUsersRepo {
   updateRole(userId: string, role: string): Promise<User | null>;
 }
 
+export type AdminPaymentsListQuery = import('@yo-te-invito/shared').AdminPaymentsListQuery;
+export type AdminPaymentsListResponse =
+  import('@yo-te-invito/shared').AdminPaymentsListResponse;
+export type AdminPaymentListItem = import('@yo-te-invito/shared').AdminPaymentListItem;
+export type AdminPaymentDetail = import('@yo-te-invito/shared').AdminPaymentDetail;
+export type AdminPaymentReconcileResponse =
+  import('@yo-te-invito/shared').AdminPaymentReconcileResponse;
+export type AdminPaymentMarkReviewedInput =
+  import('@yo-te-invito/shared').AdminPaymentMarkReviewedInput;
+export type AdminPaymentMarkReviewedResponse =
+  import('@yo-te-invito/shared').AdminPaymentMarkReviewedResponse;
+
+export interface AdminPaymentsRepo {
+  list(query: AdminPaymentsListQuery): Promise<AdminPaymentsListResponse>;
+  getDetail(paymentId: string): Promise<AdminPaymentDetail>;
+  reconcile(paymentId: string): Promise<AdminPaymentReconcileResponse>;
+  markReviewed(
+    paymentId: string,
+    input: AdminPaymentMarkReviewedInput,
+  ): Promise<AdminPaymentMarkReviewedResponse>;
+}
+
 export type AdminLegalDocumentListQuery =
   import('@yo-te-invito/shared').AdminLegalDocumentListQuery;
 export type AdminLegalDocumentListItem =
@@ -1412,6 +1446,8 @@ export interface PaymentStatusResult {
   orderStatus: string;
 }
 
+export type { CheckoutPaymentStatusResponse } from '@yo-te-invito/shared';
+
 export interface OrdersRepo {
   get(orderId: string, tenantId: string): Promise<Order | null>;
   listByBuyer(userId: string, tenantId?: string): Promise<Order[]>;
@@ -1432,6 +1468,15 @@ export interface OrdersRepo {
   confirmDemoPayment(orderId: string, tenantId: string): Promise<Order>;
   refreshPaymentStatus(paymentId: string, tenantId: string): Promise<PaymentStatusResult>;
   getOrderPaymentStatus(orderId: string, tenantId: string): Promise<PaymentStatusResult>;
+  getCheckoutPaymentStatus(
+    orderId: string,
+    tenantId: string,
+    options?: { paymentId?: string; cancelled?: boolean },
+  ): Promise<import('@yo-te-invito/shared').CheckoutPaymentStatusResponse>;
+  refreshCheckoutPaymentStatus(
+    paymentId: string,
+    tenantId: string,
+  ): Promise<import('@yo-te-invito/shared').CheckoutPaymentStatusResponse>;
 }
 
 export interface CreateReferrerInput {
@@ -1963,6 +2008,7 @@ export interface GastroLocal {
   province: string | null;
   city: string | null;
   address: string | null;
+  googlePlaceId?: string | null;
   geoLat: number | null;
   geoLng: number | null;
   openingHours: import('@yo-te-invito/shared').RentalOpeningHours | null;
@@ -2018,8 +2064,9 @@ export interface GastroLocalUpsertPayload {
     province: string;
     city: string;
     address: string;
-    lat: number;
-    lng: number;
+    lat?: number | null;
+    lng?: number | null;
+    googlePlaceId?: string | null;
   };
   openingHours?: import('@yo-te-invito/shared').RentalOpeningHours | null;
   openingHoursNote?: string | null;
@@ -2233,9 +2280,20 @@ export interface AdminGastroLocationListItem {
 }
 
 export interface AdminGastroLocationDetail extends AdminGastroLocationListItem {
+  tenantId: string;
+  legalName: string | null;
   summary: string | null;
+  detail: string | null;
   address: string | null;
   bannerUrl: string | null;
+  galleryUrls: string[] | null;
+  googlePlaceId?: string | null;
+  geoLat?: number | null;
+  geoLng?: number | null;
+  openingHours: import('@yo-te-invito/shared').RentalOpeningHours | null;
+  openingHoursNote: string | null;
+  subcategoryId: string | null;
+  subcategoryName: string | null;
   menuUrl: string | null;
   websiteUrl: string | null;
   updatedAt: string;
@@ -2332,6 +2390,17 @@ export interface AdminGastroRepo {
     note?: string | null,
   ): Promise<AdminGastroDiscountDetail>;
   sendQrEmail(profileId: string, discountId: string): Promise<AdminGastroDiscountDetail>;
+  updateLocationStatus(
+    profileId: string,
+    body: { status: string },
+  ): Promise<AdminGastroLocationDetail>;
+  createLocation(
+    body: import('@yo-te-invito/shared').AdminGastroLocationCreateInput,
+  ): Promise<AdminGastroLocationDetail>;
+  updateLocation(
+    profileId: string,
+    body: import('@yo-te-invito/shared').AdminGastroLocationUpdateInput,
+  ): Promise<AdminGastroLocationDetail>;
 }
 
 export interface PlatformConfig {
@@ -2458,6 +2527,8 @@ export interface GeneralPublicationsRepo {
     venueName?: string | null;
     city?: string | null;
     venueAddress?: string | null;
+    province?: string | null;
+    googlePlaceId?: string | null;
     geoLat?: number | null;
     geoLng?: number | null;
     startAt?: string;
@@ -2554,6 +2625,7 @@ export interface Repositories {
   adminEvents: AdminEventsRepo;
   adminAudit: AdminAuditRepo;
   adminUsers: AdminUsersRepo;
+  adminPayments: AdminPaymentsRepo;
   legalDocuments: LegalDocumentsRepo;
   producerDashboard: ProducerDashboardRepo;
   producers: ProducersRepo;

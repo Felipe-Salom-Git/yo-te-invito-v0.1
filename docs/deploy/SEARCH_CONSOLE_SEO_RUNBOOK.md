@@ -1,6 +1,8 @@
 # Google Search Console + SEO técnico — Runbook (Yo Te Invito)
 
-Este runbook documenta el procedimiento **manual** para cerrar el bloque de SEO técnico en producción:
+**Estado producción (2026-06-01):** bloque SEO técnico **base cerrado**. Propiedad GSC `yoteinvito.club` verificada (DNS TXT DonWeb). `robots.txt` y `sitemap.xml` activos en prod. Sitemap enviado en GSC. Validación técnica externa OK (curl/navegador/Googlebot). GSC puede tardar en procesar el sitemap («No se pudo obtener» inicial). **Decisión producto:** `/home` permanece en sitemap; no cambiar `/` ni `/home` por ahora.
+
+Este runbook documenta el procedimiento **manual** para operación continua de SEO/GSC:
 
 - Verificación de dominio en Google Search Console (GSC)
 - Envío y control de `sitemap.xml`

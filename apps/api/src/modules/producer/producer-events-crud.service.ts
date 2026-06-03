@@ -17,12 +17,15 @@ import { deriveProducerEventMode } from '@yo-te-invito/shared';
 import { ErrorCode, parseRentalOpeningHours } from '@yo-te-invito/shared';
 import { SubcategoriesService } from '../subcategories/subcategories.service';
 import { RentalLocationsService } from '../rental-locations/rental-locations.service';
+import { OperationalAlertsEmailService } from '../../email/operational-alerts-email.service';
+import { categoryLabel } from '../notifications/smart-alerts-matching.util';
 
 @Injectable()
 export class ProducerEventsCrudService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly profilesAuth: ProfilesAuthorizationService,
+    private readonly operationalAlerts: OperationalAlertsEmailService,
     private readonly subcategories: SubcategoriesService,
     private readonly rentalLocations: RentalLocationsService,
   ) {}
@@ -61,6 +64,9 @@ export class ProducerEventsCrudService {
       id: string;
       name: string;
       address: string | null;
+      city?: string | null;
+      province?: string | null;
+      googlePlaceId?: string | null;
       openingHours: unknown;
       openingHoursNote: string | null;
       whatsappPhone: string | null;
@@ -73,6 +79,9 @@ export class ProducerEventsCrudService {
       id: loc.id,
       name: loc.name,
       address: loc.address,
+      city: loc.city ?? null,
+      province: loc.province ?? null,
+      googlePlaceId: loc.googlePlaceId ?? null,
       openingHours: parseRentalOpeningHours(loc.openingHours),
       openingHoursNote: loc.openingHoursNote,
       whatsappPhone: loc.whatsappPhone,
@@ -95,6 +104,9 @@ export class ProducerEventsCrudService {
       id: string;
       name: string;
       address: string | null;
+      city?: string | null;
+      province?: string | null;
+      googlePlaceId?: string | null;
       openingHours: unknown;
       openingHoursNote: string | null;
       whatsappPhone: string | null;
@@ -105,6 +117,8 @@ export class ProducerEventsCrudService {
     summary?: string | null;
     endAt: Date | null;
     venueAddress: string | null;
+    province: string | null;
+    googlePlaceId: string | null;
     geoLat: number | null;
     geoLng: number | null;
     capacityTotal: number | null;
@@ -128,6 +142,8 @@ export class ProducerEventsCrudService {
       summary: event.summary ?? null,
       endAt: event.endAt?.toISOString() ?? null,
       venueAddress: event.venueAddress,
+      province: event.province ?? null,
+      googlePlaceId: event.googlePlaceId ?? null,
       geoLat: event.geoLat,
       geoLng: event.geoLng,
       capacityTotal: event.capacityTotal,
@@ -298,6 +314,8 @@ export class ProducerEventsCrudService {
         city: body.city ?? null,
         venueName: body.venueName ?? null,
         venueAddress: body.venueAddress ?? null,
+        province: body.province?.trim() || null,
+        googlePlaceId: body.googlePlaceId?.trim() || null,
         capacityTotal: body.capacityTotal ?? null,
         coverImageUrl: body.coverImageUrl ?? null,
         geoLat: body.geoLat ?? null,
@@ -364,6 +382,9 @@ export class ProducerEventsCrudService {
       );
     }
 
+    const becamePending =
+      body.status === 'PENDING' && existing.status !== 'PENDING';
+
     const event = await this.prisma.event.update({
       where: { id: eventId },
       data: {
@@ -384,6 +405,12 @@ export class ProducerEventsCrudService {
         ...(body.venueAddress !== undefined && {
           venueAddress: body.venueAddress,
         }),
+        ...(body.province !== undefined && {
+          province: body.province?.trim() || null,
+        }),
+        ...(body.googlePlaceId !== undefined && {
+          googlePlaceId: body.googlePlaceId?.trim() || null,
+        }),
         ...(body.capacityTotal !== undefined && {
           capacityTotal: body.capacityTotal,
         }),
@@ -403,10 +430,49 @@ export class ProducerEventsCrudService {
       },
     });
 
+    if (becamePending) {
+      void this.notifyAdminsEventPending(tenantId, event);
+    }
+
     return this.toEventDetail({
       ...event,
       media: event.media,
       rentalLocation: event.rentalLocation,
     });
+  }
+
+  private async notifyAdminsEventPending(
+    tenantId: string,
+    event: {
+      id: string;
+      title: string;
+      category: string | null;
+      city: string | null;
+      updatedAt: Date;
+      producerProfileId: string | null;
+    },
+  ): Promise<void> {
+    try {
+      const producer = event.producerProfileId
+        ? await this.prisma.producerProfile.findFirst({
+            where: { id: event.producerProfileId, tenantId },
+            select: { displayName: true },
+          })
+        : null;
+
+      this.operationalAlerts.notifyNewEventPending({
+        eventId: event.id,
+        eventTitle: event.title,
+        producerName: producer?.displayName?.trim() || 'Productora',
+        categoryName: categoryLabel(event.category ?? 'event'),
+        city: event.city,
+        createdAt: event.updatedAt.toLocaleString('es-AR', {
+          dateStyle: 'medium',
+          timeStyle: 'short',
+        }),
+      });
+    } catch {
+      // fire-and-forget: no bloquear actualización del evento
+    }
   }
 }

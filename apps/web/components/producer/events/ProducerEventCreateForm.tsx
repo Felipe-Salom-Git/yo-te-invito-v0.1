@@ -79,6 +79,8 @@ export function ProducerEventCreateForm({ mode }: { mode: ProducerEventMode }) {
         endAt: data.endAt ? new Date(data.endAt).toISOString() : null,
         city: loc.city,
         venueAddress: loc.venueAddress,
+        province: loc.province,
+        googlePlaceId: loc.googlePlaceId,
         geoLat: loc.geoLat,
         geoLng: loc.geoLng,
         venueName: data.venueName || null,
