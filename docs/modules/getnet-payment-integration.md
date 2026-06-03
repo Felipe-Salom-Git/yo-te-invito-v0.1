@@ -47,7 +47,8 @@ When `GETNET_WEBCHECKOUT_CLIENT_ID`, `SECRET_KEY`, and `SELLER_ID` are set, **We
 | Variable | Description |
 |----------|-------------|
 | `GETNET_WEBCHECKOUT_ENV` | `pre` (default), `sandbox`, `production` |
-| `GETNET_WEBCHECKOUT_*` | Auth + payment-intent on `api.pre` / `api.globalgetnet.com` |
+| `GETNET_WEBCHECKOUT_*` / `GETNET_GLOBAL_*` | Web Checkout Redirect (`api.pre` / `api.globalgetnet.com`); OAuth **form body** (`client_id`/`client_secret`), not Basic Auth |
+| `GETNET_*_MERCHANT_ID` | Optional; `GETNET_*_SELLER_ID` required |
 | `GETNET_WEBHOOK_AUTH_MODE` | `basic` for portal webhook user/password |
 
 Legacy `GETNET_CLIENT_*` remains as fallback when Web Checkout env is not configured.

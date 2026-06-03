@@ -78,15 +78,16 @@ main → producción (solo con instrucción explícita)
 | Variable | Uso |
 |----------|-----|
 | `GETNET_WEBCHECKOUT_ENV` | `pre` (default), `sandbox`, `production` |
-| `GETNET_WEBCHECKOUT_AUTH_BASE_URL` | OAuth `.../authentication/oauth2/access_token` |
-| `GETNET_WEBCHECKOUT_API_BASE_URL` | Host API (`api.pre` / `api.globalgetnet.com`) |
-| `GETNET_WEBCHECKOUT_PAYMENT_INTENT_PATH` | `/dpy/web-checkout/v1/payment-intent` |
-| `GETNET_WEBCHECKOUT_MERCHANT_ID` | Opcional — header `x-merchant-id` si definido |
-| `GETNET_WEBCHECKOUT_SELLER_ID` | Header `x-seller-id` (requerido) |
-| `GETNET_WEBCHECKOUT_CLIENT_ID` | OAuth Basic user |
-| `GETNET_WEBCHECKOUT_SECRET_KEY` | OAuth Basic password |
-| `GETNET_WEBCHECKOUT_SCOPE` | Opcional en token request |
-| `GETNET_WEBCHECKOUT_CONFIRM_PRE` | `yes` + `--confirm` para smoke POST homologación |
+| `GETNET_*_AUTH_BASE_URL` | OAuth form body (`client_id` + `client_secret`, no Basic Auth) |
+| `GETNET_*_WEBCHECKOUT_BASE_URL` | ej. `https://api.globalgetnet.com/dpy/web-checkout/v1` |
+| `GETNET_*_PAYMENT_INTENT_PATH` | `/payment-intent` |
+| `GETNET_*_MERCHANT_ID` | Opcional — `x-merchant-id` solo si definido |
+| `GETNET_*_SELLER_ID` | Requerido — `x-seller-id` |
+| `GETNET_*_CLIENT_ID` / `SECRET_KEY` | Requeridos — OAuth body |
+| `GETNET_WEBCHECKOUT_CONFIRM_PRE` | `yes` + `--confirm` — smoke POST **pre** only |
+| `GETNET_WEBCHECKOUT_CONFIRM_PROD` | `yes` + `--confirm` — smoke POST **production** only |
+
+Prefijo `GETNET_WEBCHECKOUT_*` o fallback `GETNET_GLOBAL_*`.
 
 ### Webhook
 

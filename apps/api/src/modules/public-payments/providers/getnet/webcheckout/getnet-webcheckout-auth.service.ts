@@ -1,7 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import {
-  loadGetnetWebCheckoutConfig,
-} from './getnet-webcheckout.config';
+import { loadGetnetWebCheckoutConfig } from './getnet-webcheckout.config';
 import type { GetnetWebCheckoutConfig } from './getnet-webcheckout.types';
 
 interface TokenCache {
@@ -19,7 +17,7 @@ export class GetnetWebCheckoutAuthService {
     const config = loadGetnetWebCheckoutConfig();
     if (!config.enabled) {
       throw new Error(
-        'Getnet Web Checkout is not configured (GETNET_WEBCHECKOUT_* missing)',
+        'Getnet Web Checkout is not configured (GETNET_WEBCHECKOUT_* or GETNET_GLOBAL_* missing)',
       );
     }
 
@@ -47,10 +45,11 @@ export class GetnetWebCheckoutAuthService {
 
   private async fetchToken(config: GetnetWebCheckoutConfig): Promise<string> {
     const endpoint = config.authBaseUrl.replace(/\/$/, '');
-    const basic = Buffer.from(`${config.clientId}:${config.secretKey}`).toString(
-      'base64',
-    );
-    const bodyParams = new URLSearchParams({ grant_type: 'client_credentials' });
+    const bodyParams = new URLSearchParams({
+      grant_type: 'client_credentials',
+      client_id: config.clientId,
+      client_secret: config.secretKey,
+    });
     if (config.scope) bodyParams.set('scope', config.scope);
 
     let lastError: Error | null = null;
@@ -60,7 +59,6 @@ export class GetnetWebCheckoutAuthService {
       try {
         const token = await this.doTokenRequest(
           endpoint,
-          basic,
           bodyParams.toString(),
           controller.signal,
         );
@@ -79,15 +77,14 @@ export class GetnetWebCheckoutAuthService {
 
   private async doTokenRequest(
     endpoint: string,
-    basic: string,
     body: string,
     signal: AbortSignal,
   ): Promise<string> {
     const res = await fetch(endpoint, {
       method: 'POST',
       headers: {
-        authorization: `Basic ${basic}`,
-        'content-type': 'application/x-www-form-urlencoded',
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Accept: 'application/json',
       },
       body,
       signal,

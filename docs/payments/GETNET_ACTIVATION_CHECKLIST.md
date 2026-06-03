@@ -53,7 +53,8 @@ Complementa: [GETNET_PRODUCTION_SMOKE.md](./GETNET_PRODUCTION_SMOKE.md), [getnet
 |----------|-----|-------------------:|-----|
 | `GETNET_WEBCHECKOUT_ENV` | API | Sí | `pre` / `production` |
 | `GETNET_WEBCHECKOUT_AUTH_BASE_URL` | API | Recomendado | OAuth PRE/prod |
-| `GETNET_WEBCHECKOUT_API_BASE_URL` | API | Recomendado | Host API |
+| `GETNET_*_WEBCHECKOUT_BASE_URL` | API | Sí | ej. `https://api.globalgetnet.com/dpy/web-checkout/v1` |
+| `GETNET_*_PAYMENT_INTENT_PATH` | API | Sí | `/payment-intent` |
 | `GETNET_WEBCHECKOUT_PAYMENT_INTENT_PATH` | API | No | Default `/dpy/web-checkout/v1/payment-intent` |
 | `GETNET_WEBCHECKOUT_MERCHANT_ID` | API | No | `x-merchant-id` (solo si está definido) |
 | `GETNET_WEBCHECKOUT_SELLER_ID` | API | Sí | `x-seller-id` |

@@ -19,7 +19,7 @@ El portal Getnet tiene configuradas URLs fijas que no se pueden modificar actual
 | Retorno comprador | `https://yoteinvito.club/checkout/return` |
 | Webhook API | `https://api.yoteinvito.club/public/payments/getnet/webhook` |
 
-La API sigue generando `success_url` / `error_url` hacia `/checkout/return` cuando configura payment-intent (`buildCheckoutReturnUrl`). Los alias cubren el desvío del portal.
+V1 Redirect: Getnet devuelve `redirect_url`; retorno del comprador vía portal fijo o `/checkout/return` (`returnUrl`/`errorUrl` en metadata YTI). Los alias cubren URLs fijas del portal Getnet.
 
 ## 4. Solución
 

@@ -16,6 +16,7 @@ import {
   isWebCheckoutPaymentMetadata,
 } from './providers/getnet/webcheckout/getnet-webcheckout.config';
 import { GetnetWebCheckoutClientService } from './providers/getnet/webcheckout/getnet-webcheckout-client.service';
+import { buildWebCheckoutCustomer } from './providers/getnet/webcheckout/getnet-webcheckout-customer.util';
 import { TicketBatchService } from '../../ticketing/ticket-batch.service';
 import { OrderFulfillmentService } from './order-fulfillment.service';
 import { GetnetReconciliationService } from './getnet-reconciliation.service';
@@ -316,12 +317,14 @@ export class PublicPaymentsService {
     });
 
     const products = fullOrder.orderItems.map((oi) => ({
-      productType: 'service',
+      productType: 'physical_goods',
       title: oi.ticketType.name,
       description: 'Entrada Yo Te Invito',
       valueMinor: Math.round(Number(oi.unitPrice) * 100),
       quantity: oi.quantity,
     }));
+
+    const customerPayload = buildWebCheckoutCustomer(fullOrder);
 
     let intentResult;
     try {
@@ -329,10 +332,15 @@ export class PublicPaymentsService {
         orderId,
         currency: order.currency,
         amountMinor: amountCents,
-        successUrl: returnUrl,
-        errorUrl,
         products,
-        expiresAt: '15m',
+        customer: {
+          customerId: customerPayload.customer_id,
+          firstName: customerPayload.first_name,
+          lastName: customerPayload.last_name,
+          name: customerPayload.name,
+          email: customerPayload.email,
+          documentNumber: customerPayload.document_number,
+        },
       });
     } catch (e) {
       await this.prisma.payment.update({
@@ -360,8 +368,6 @@ export class PublicPaymentsService {
           getnetOrderId: orderId,
           returnUrl,
           errorUrl,
-          webCheckoutResponse: intentResult.raw,
-          getnetReturnConfiguredAt: new Date().toISOString(),
           ...(config.merchantId ? { merchantId: config.merchantId } : {}),
         } as Prisma.InputJsonValue,
       },

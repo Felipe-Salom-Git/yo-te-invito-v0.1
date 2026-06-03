@@ -5,6 +5,7 @@
  *   pnpm --filter api run smoke:getnet-webcheckout -- --auth
  *   pnpm --filter api run smoke:getnet-webcheckout -- --payment-intent --dry-run
  *   GETNET_WEBCHECKOUT_CONFIRM_PRE=yes pnpm --filter api run smoke:getnet-webcheckout -- --payment-intent --confirm --amount 100
+ *   GETNET_WEBCHECKOUT_CONFIRM_PROD=yes pnpm --filter api run smoke:getnet-webcheckout -- --payment-intent --confirm --amount 50000
  */
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
@@ -14,7 +15,7 @@ import {
 } from '../src/modules/public-payments/providers/getnet/webcheckout/getnet-webcheckout.config';
 import { GetnetWebCheckoutAuthService } from '../src/modules/public-payments/providers/getnet/webcheckout/getnet-webcheckout-auth.service';
 import { GetnetWebCheckoutClientService } from '../src/modules/public-payments/providers/getnet/webcheckout/getnet-webcheckout-client.service';
-import { buildCheckoutReturnUrl } from '../src/modules/public-payments/getnet-return-url.util';
+import { buildWebCheckoutCustomer } from '../src/modules/public-payments/providers/getnet/webcheckout/getnet-webcheckout-customer.util';
 
 function loadEnvFile() {
   try {
@@ -75,7 +76,8 @@ function parseArgs(argv: string[]) {
   smoke:getnet-webcheckout -- --config
   smoke:getnet-webcheckout -- --auth
   smoke:getnet-webcheckout -- --payment-intent --dry-run
-  GETNET_WEBCHECKOUT_CONFIRM_PRE=yes ... --payment-intent --confirm --amount 100`);
+  GETNET_WEBCHECKOUT_CONFIRM_PRE=yes ... --payment-intent --confirm --amount 100
+  GETNET_WEBCHECKOUT_CONFIRM_PROD=yes ... --payment-intent --confirm --amount 50000`);
       process.exit(0);
     }
   }
@@ -88,24 +90,28 @@ function parseArgs(argv: string[]) {
 
 function runConfig(): number {
   const config = loadGetnetWebCheckoutConfig();
-  console.log('smoke:getnet-webcheckout — Web Checkout Redirect config\n');
-  console.log(`GETNET_WEBCHECKOUT_ENV: ${config.env}`);
-  console.log(`GETNET_WEBCHECKOUT_AUTH_BASE_URL: ${config.authBaseUrl}`);
-  console.log(`GETNET_WEBCHECKOUT_API_BASE_URL: ${config.apiBaseUrl}`);
-  console.log(`GETNET_WEBCHECKOUT_PAYMENT_INTENT_PATH: ${config.paymentIntentPath}`);
+  console.log('smoke:getnet-webcheckout — Web Checkout Redirect (production contract)\n');
+  console.log(`ENV: ${config.env}`);
+  console.log(`Auth URL: ${config.authBaseUrl}`);
+  console.log(`Web Checkout base: ${config.webCheckoutBaseUrl}`);
+  console.log(`Payment-intent path: ${config.paymentIntentPath}`);
   console.log(`Payment-intent URL: ${buildWebCheckoutPaymentIntentUrl(config)}`);
-  console.log(`GETNET_WEBCHECKOUT_MERCHANT_ID: ${formatOptionalMerchantId(config.merchantId)}`);
-  console.log(`GETNET_WEBCHECKOUT_SELLER_ID: ${maskSecret(config.sellerId)}`);
-  console.log(`GETNET_WEBCHECKOUT_CLIENT_ID: ${maskSecret(config.clientId)}`);
-  console.log(`GETNET_WEBCHECKOUT_SECRET_KEY: ${maskSecret(config.secretKey)}`);
+  console.log(`Auth: client_id + client_secret in form body (not Basic Auth)`);
+  console.log(`MERCHANT_ID: ${formatOptionalMerchantId(config.merchantId)}`);
+  console.log(`SELLER_ID: ${maskSecret(config.sellerId)}`);
+  console.log(`CLIENT_ID: ${maskSecret(config.clientId)}`);
+  console.log(`SECRET_KEY: ${maskSecret(config.secretKey)}`);
   console.log(`Enabled: ${config.enabled ? 'yes' : 'no'}`);
   console.log(
     `GETNET_WEBCHECKOUT_CONFIRM_PRE: ${process.env.GETNET_WEBCHECKOUT_CONFIRM_PRE ?? '(not set)'}`,
   );
+  console.log(
+    `GETNET_WEBCHECKOUT_CONFIRM_PROD: ${process.env.GETNET_WEBCHECKOUT_CONFIRM_PROD ?? '(not set)'}`,
+  );
 
   if (!config.enabled) {
     console.error(
-      '\nFAIL: set GETNET_WEBCHECKOUT_CLIENT_ID, GETNET_WEBCHECKOUT_SECRET_KEY, GETNET_WEBCHECKOUT_SELLER_ID (MERCHANT_ID optional)',
+      '\nFAIL: set seller_id, client_id, secret_key (GETNET_WEBCHECKOUT_* or GETNET_GLOBAL_*). MERCHANT_ID optional.',
     );
     return 1;
   }
@@ -125,6 +131,32 @@ async function runAuth(): Promise<number> {
   }
 }
 
+function resolveLiveConfirm(config: ReturnType<typeof loadGetnetWebCheckoutConfig>): {
+  live: boolean;
+  reason?: string;
+} {
+  if (config.env === 'production') {
+    if (process.env.GETNET_WEBCHECKOUT_CONFIRM_PROD !== 'yes') {
+      return {
+        live: false,
+        reason:
+          'Production POST blocked. Set GETNET_WEBCHECKOUT_CONFIRM_PROD=yes explicitly.',
+      };
+    }
+    console.warn(
+      '\n*** WARNING: live payment-intent POST to PRODUCTION Getnet ***\n',
+    );
+    return { live: true };
+  }
+  if (process.env.GETNET_WEBCHECKOUT_CONFIRM_PRE === 'yes') {
+    return { live: true };
+  }
+  return {
+    live: false,
+    reason: 'PRE POST requires GETNET_WEBCHECKOUT_CONFIRM_PRE=yes',
+  };
+}
+
 async function main() {
   loadEnvFile();
   const args = parseArgs(process.argv.slice(2));
@@ -137,7 +169,7 @@ async function main() {
 
   if (args.auth) {
     if (!config.enabled) {
-      console.error('FAIL: configure GETNET_WEBCHECKOUT_* first');
+      console.error('FAIL: configure GETNET_WEBCHECKOUT_* or GETNET_GLOBAL_* first');
       process.exit(1);
     }
     process.exit(await runAuth());
@@ -145,58 +177,50 @@ async function main() {
 
   if (args.paymentIntent) {
     if (!config.enabled) {
-      console.error('FAIL: configure GETNET_WEBCHECKOUT_* first');
-      process.exit(1);
-    }
-
-    if (config.env === 'production' && args.confirm) {
-      console.error('Refusing payment-intent POST in production from smoke script.');
+      console.error('FAIL: configure GETNET_WEBCHECKOUT_* or GETNET_GLOBAL_* first');
       process.exit(1);
     }
 
     const orderId = `yti_smoke_${Date.now()}`;
-    const paymentId = `pay_smoke_${Date.now()}`;
-    const successUrl = buildCheckoutReturnUrl({ orderId, paymentId });
-    const errorUrl = buildCheckoutReturnUrl({
-      orderId,
-      paymentId,
-      cancelled: true,
+    const customer = buildWebCheckoutCustomer({
+      id: orderId,
+      buyerEmail: 'smoke@yoteinvito.club',
+      buyerFirstName: 'Smoke',
+      buyerLastName: 'Test',
+      buyerDocument: null,
     });
 
     const payloadPreview = {
-      mode: 'instant',
       order_id: orderId,
-      configurations: {
-        '3ds': true,
-        success_url: successUrl,
-        error_url: errorUrl,
-      },
       payment: { currency: 'ARS', amount: args.amount },
       product: [
         {
-          product_type: 'service',
+          product_type: 'physical_goods',
           title: 'Smoke Yo Te Invito',
           description: 'Entrada Yo Te Invito',
           value: args.amount,
           quantity: 1,
         },
       ],
-      expires_at: '15m',
+      customer,
     };
 
     console.log('\n--- payment-intent payload (preview) ---');
     console.log(JSON.stringify(payloadPreview, null, 2));
     console.log(`POST ${buildWebCheckoutPaymentIntentUrl(config)}`);
+    console.log('V1: use redirect_url from response (no iframe/lightbox).');
 
-    const live =
-      args.confirm &&
-      !args.dryRun &&
-      process.env.GETNET_WEBCHECKOUT_CONFIRM_PRE === 'yes';
+    const confirmGate = resolveLiveConfirm(config);
+    const live = args.confirm && !args.dryRun && confirmGate.live;
 
     if (!live) {
       console.log('\nDRY-RUN — no HTTP POST sent.');
+      if (confirmGate.reason) console.log(confirmGate.reason);
       console.log(
-        'Live PRE POST: GETNET_WEBCHECKOUT_CONFIRM_PRE=yes ... --payment-intent --confirm',
+        'Live PRE: GETNET_WEBCHECKOUT_CONFIRM_PRE=yes ... --payment-intent --confirm',
+      );
+      console.log(
+        'Live PROD: GETNET_WEBCHECKOUT_CONFIRM_PROD=yes ... --payment-intent --confirm',
       );
       return;
     }
@@ -209,17 +233,23 @@ async function main() {
         orderId,
         currency: 'ARS',
         amountMinor: args.amount,
-        successUrl,
-        errorUrl,
         products: [
           {
-            productType: 'service',
+            productType: 'physical_goods',
             title: 'Smoke Yo Te Invito',
             description: 'Entrada Yo Te Invito',
             valueMinor: args.amount,
             quantity: 1,
           },
         ],
+        customer: {
+          customerId: customer.customer_id,
+          firstName: customer.first_name,
+          lastName: customer.last_name,
+          name: customer.name,
+          email: customer.email,
+          documentNumber: customer.document_number,
+        },
       });
       console.log('\nOK: payment-intent created');
       console.log(`payment_intent_id: ${result.paymentIntentId}`);

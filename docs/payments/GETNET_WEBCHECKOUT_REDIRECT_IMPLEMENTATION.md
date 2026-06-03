@@ -53,40 +53,62 @@ Webhook Basic Auth → GetnetReconciliationService → fulfillPaidOrder
 
 ## 4. Variables de entorno
 
-Ver `apps/api/.env.example`.
+Ver `apps/api/.env.example`. **Prioridad:** `GETNET_WEBCHECKOUT_*` → fallback `GETNET_GLOBAL_*`.
+
+Producción validada (`api.globalgetnet.com`):
 
 | Variable | Uso |
 |----------|-----|
-| `GETNET_WEBCHECKOUT_ENV` | `pre` (default), `sandbox`, `production` |
-| `GETNET_WEBCHECKOUT_AUTH_BASE_URL` | OAuth token |
-| `GETNET_WEBCHECKOUT_API_BASE_URL` | Host API |
-| `GETNET_WEBCHECKOUT_PAYMENT_INTENT_PATH` | `/dpy/web-checkout/v1/payment-intent` |
-| `GETNET_WEBCHECKOUT_MERCHANT_ID` | Opcional — header `x-merchant-id` solo si está definido |
-| `GETNET_WEBCHECKOUT_SELLER_ID` | Requerido — header `x-seller-id` |
-| `GETNET_WEBCHECKOUT_CLIENT_ID` | Requerido — OAuth Basic user |
-| `GETNET_WEBCHECKOUT_SECRET_KEY` | Requerido — OAuth Basic password |
-| `GETNET_WEBHOOK_AUTH_MODE` | `basic` o `header` |
-| `GETNET_WEBHOOK_BASIC_USER` / `PASSWORD` | Portal Web Checkout |
-| `WEB_APP_URL` | `success_url` / `error_url` |
+| `GETNET_*_ENV` | `pre`, `sandbox`, `production` |
+| `GETNET_*_AUTH_BASE_URL` | `POST .../authentication/oauth2/access_token` |
+| `GETNET_*_WEBCHECKOUT_BASE_URL` | ej. `https://api.globalgetnet.com/dpy/web-checkout/v1` |
+| `GETNET_*_PAYMENT_INTENT_PATH` | `/payment-intent` |
+| `GETNET_*_SELLER_ID` | Requerido — header `x-seller-id` |
+| `GETNET_*_CLIENT_ID` / `SECRET_KEY` | Requeridos — **body** OAuth (no Basic Auth) |
+| `GETNET_*_MERCHANT_ID` | Opcional — `x-merchant-id` solo si definido |
+| `GETNET_WEBHOOK_*` | Webhook portal (Basic o header) |
+| `WEB_APP_URL` | Return URLs YTI en metadata (`/checkout/return`) |
+
+**No commitear** scripts locales `test-getnet.js` con credenciales (ver `.gitignore`).
 
 **No mezclar** con `GETNET_CLIENT_ID` / `GETNET_CLIENT_SECRET` (legacy Checkout API v2).
 
 ---
 
-## 5. Payload payment-intent
+## 5. OAuth (contrato real)
 
-Implementado en `GetnetWebCheckoutClientService`:
+`POST` auth URL con `Content-Type: application/x-www-form-urlencoded`:
 
-- `mode: instant`
-- `order_id` = id orden YTI
-- `configurations`: 3DS, `success_url`, `error_url`
-- `payment`: `{ currency, amount }` — **enteros**, centavos en últimos 2 dígitos
-- `product[]`: `product_type: service`, título del ticket
-- `expires_at: 15m`
+```txt
+grant_type=client_credentials
+client_id=<CLIENT_ID>
+client_secret=<SECRET_KEY>
+```
+
+Respuesta: `access_token`, `token_type: Bearer`, `expires_in`. No loguear el token completo.
 
 ---
 
-## 6. Metadata guardada
+## 6. Payload payment-intent
+
+`POST ${WEBCHECKOUT_BASE_URL}${PAYMENT_INTENT_PATH}` — ej. `https://api.globalgetnet.com/dpy/web-checkout/v1/payment-intent`
+
+Headers: `Authorization: Bearer`, `x-seller-id` (requerido), `x-merchant-id` solo si configurado.
+
+Cuerpo (contrato funcional producción):
+
+- `order_id` — id orden YTI
+- `payment`: `{ currency: 'ARS', amount }` — centavos
+- `product[]`: `product_type: physical_goods`, título/descripción/valor/cantidad
+- `customer`: email, nombre, `document_type: DNI`, `document_number` (fallback `yti-{orderId}` si falta `buyerDocument` en checkout)
+
+**V1 Redirect:** no iframe/lightbox; usar `redirect_url` de la respuesta. URLs de retorno del portal YTI: alias en [GETNET_PORTAL_URL_COMPATIBILITY.md](./GETNET_PORTAL_URL_COMPATIBILITY.md).
+
+El ejemplo externo usaba iframe; Yo Te Invito redirige al comprador con `window.location.href = redirectUrl`.
+
+---
+
+## 7. Metadata guardada
 
 En `Payment.metadata`:
 
@@ -97,15 +119,14 @@ En `Payment.metadata`:
 | `paymentIntentId` | ID Getnet |
 | `redirectUrl` | URL de pago |
 | `getnetOrderId` | `order.id` |
-| `returnUrl` / `errorUrl` | URLs YTI |
-| `webCheckoutResponse` | Respuesta sanitizada |
+| `returnUrl` / `errorUrl` | URLs YTI internas |
 
 `Payment.externalReference` = `paymentIntentId`  
-`Payment.paymentUrl` = `redirectUrl`
+`Payment.paymentUrl` = `redirectUrl` → API devuelve `checkoutUrl` / `redirectUrl` al frontend.
 
 ---
 
-## 7. Webhook
+## 8. Webhook
 
 - Ruta: `POST /public/payments/getnet/webhook`
 - Auth: `GETNET_WEBHOOK_AUTH_MODE=basic` (portal) o header legacy
@@ -114,7 +135,7 @@ En `Payment.metadata`:
 
 ---
 
-## 8. Return flow
+## 9. Return flow
 
 `/checkout/return` sin cambios de contrato: poll `refresh-status` + `CheckoutPaymentStatusView`.
 
@@ -124,18 +145,21 @@ Web Checkout: poll remoto **no implementado** (pendiente GET payment-intent stat
 
 ---
 
-## 9. Smoke
+## 10. Smoke
 
 ```bash
 pnpm --filter api run smoke:getnet-webcheckout -- --config
 pnpm --filter api run smoke:getnet-webcheckout -- --auth
 pnpm --filter api run smoke:getnet-webcheckout -- --payment-intent --dry-run
-GETNET_WEBCHECKOUT_CONFIRM_PRE=yes pnpm --filter api run smoke:getnet-webcheckout -- --payment-intent --confirm --amount 100
+GETNET_WEBCHECKOUT_CONFIRM_PRE=yes pnpm --filter api run smoke:getnet-webcheckout -- --payment-intent --confirm
+GETNET_WEBCHECKOUT_CONFIRM_PROD=yes pnpm --filter api run smoke:getnet-webcheckout -- --payment-intent --confirm --amount 50000
 ```
+
+POST producción exige `GETNET_WEBCHECKOUT_CONFIRM_PROD=yes` explícito.
 
 ---
 
-## 10. Código
+## 11. Código
 
 | Archivo | Rol |
 |---------|-----|
@@ -147,7 +171,9 @@ GETNET_WEBCHECKOUT_CONFIRM_PRE=yes pnpm --filter api run smoke:getnet-webcheckou
 
 ---
 
-## 11. Pendientes
+## 12. Pendientes
+
+- Campo DNI obligatorio en checkout UI si Getnet rechaza fallback `yti-{orderId}`
 
 - GET payment-intent status para poll en `/checkout/return`
 - iFrame / Lightbox V2

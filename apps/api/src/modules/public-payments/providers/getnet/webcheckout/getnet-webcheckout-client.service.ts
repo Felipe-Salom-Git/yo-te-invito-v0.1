@@ -70,15 +70,7 @@ export class GetnetWebCheckoutClientService {
     const accessToken = await this.auth.getAccessToken();
 
     const payload = {
-      mode: 'instant',
       order_id: input.orderId,
-      configurations: {
-        '3ds': true,
-        preauthorization: false,
-        card_verification: false,
-        success_url: input.successUrl,
-        error_url: input.errorUrl,
-      },
       payment: {
         currency: input.currency,
         amount: input.amountMinor,
@@ -90,7 +82,16 @@ export class GetnetWebCheckoutClientService {
         value: p.valueMinor,
         quantity: p.quantity,
       })),
-      expires_at: input.expiresAt ?? '15m',
+      customer: {
+        customer_id: input.customer.customerId,
+        first_name: input.customer.firstName,
+        last_name: input.customer.lastName,
+        name: input.customer.name,
+        email: input.customer.email,
+        document_type: 'DNI',
+        document_number: input.customer.documentNumber,
+        checked_email: true,
+      },
     };
 
     const headers: Record<string, string> = {
@@ -101,9 +102,6 @@ export class GetnetWebCheckoutClientService {
     };
     if (config.merchantId) {
       headers['x-merchant-id'] = config.merchantId;
-    }
-    if (config.transactionChannelEntry) {
-      headers['x-transaction-channel-entry'] = config.transactionChannelEntry;
     }
 
     const controller = new AbortController();
@@ -141,9 +139,14 @@ export class GetnetWebCheckoutClientService {
       }
 
       const { paymentIntentId, redirectUrl } = extractPaymentIntentFields(json);
-      if (!paymentIntentId || !redirectUrl) {
+      if (!paymentIntentId) {
         throw new Error(
-          'Getnet Web Checkout response missing payment_intent_id or redirect_url',
+          'Getnet Web Checkout response missing payment_intent_id',
+        );
+      }
+      if (!redirectUrl) {
+        throw new Error(
+          'Getnet Web Checkout response missing redirect_url (required for V1 Redirect flow)',
         );
       }
 
