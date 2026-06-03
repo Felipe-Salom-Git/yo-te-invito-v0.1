@@ -17,7 +17,8 @@ export function RepositoriesProvider({
   repositories?: Repositories;
   children: React.ReactNode;
 }) {
-  const { data: session } = useSession();
+  const sessionState = useSession();
+  const session = sessionState?.data ?? null;
 
   const value = useMemo(() => {
     if (reposProp) return reposProp;

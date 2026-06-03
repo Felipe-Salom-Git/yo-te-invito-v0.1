@@ -4,7 +4,9 @@ import { useSession } from 'next-auth/react';
 import type { Role } from '@yo-te-invito/shared';
 
 export function useRole() {
-  const { data: session, status } = useSession();
+  const sessionState = useSession();
+  const session = sessionState?.data ?? null;
+  const status = sessionState?.status ?? 'loading';
   const role = session?.user?.role as Role | undefined;
 
   const hasRole = (allowed: Role | Role[]) => {

@@ -2,12 +2,10 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useSession } from 'next-auth/react';
 import type { AdminGastroLocationStatusInput } from '@yo-te-invito/shared';
 import {
   PageContainer,
   SectionTitle,
-  PageLoader,
   QueryError,
   EmptyState,
   Button,
@@ -34,7 +32,6 @@ const SUSPEND_CONFIRM_MESSAGE =
   'Suspender este local lo ocultará del descubrimiento público, pero conservará descuentos, reseñas, seguidores e historial. ¿Continuar?';
 
 export function AdminGastroLocationsPageClient() {
-  const { data: session, status } = useSession();
   const { addToast } = useToast();
   const { filters, setFilters, clearFilters } = useAdminGastroUrlFilters();
   const [draft, setDraft] = useState<AdminGastroFiltersState>(filters);
@@ -47,11 +44,7 @@ export function AdminGastroLocationsPageClient() {
   const filtersKey = useMemo(() => JSON.stringify(filters), [filters]);
   const apiQuery = useMemo(() => filtersToAdminGastroListQuery(filters, 100), [filters]);
 
-  const listQuery = useAdminGastroLocationsList(
-    apiQuery,
-    filtersKey,
-    status === 'authenticated',
-  );
+  const listQuery = useAdminGastroLocationsList(apiQuery, filtersKey);
 
   const statusMutation = useAdminGastroLocationStatusMutation();
 
@@ -91,25 +84,6 @@ export function AdminGastroLocationsPageClient() {
       },
     );
   };
-
-  if (status === 'loading') {
-    return (
-      <PageContainer>
-        <PageLoader message="Cargando locales gastronómicos…" />
-      </PageContainer>
-    );
-  }
-
-  if (!session?.user) {
-    return (
-      <PageContainer>
-        <p className="text-text-muted">Debés iniciar sesión como administrador.</p>
-        <Link href="/login" className="mt-4 inline-block text-accent hover:underline">
-          Iniciar sesión
-        </Link>
-      </PageContainer>
-    );
-  }
 
   const showEmptyGlobal = !listQuery.isLoading && rawLocations.length === 0 && !filters.search && !filters.status && !filters.pendingDiscounts;
   const showEmptyFiltered = !listQuery.isLoading && locations.length === 0 && !showEmptyGlobal;
