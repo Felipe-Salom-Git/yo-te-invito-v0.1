@@ -155,6 +155,18 @@ async function main() {
     }
     pass('visible after reactivate');
 
+    const discoveryHref = `/restaurants/${created.publicEventId}`;
+    const canonicalHref = `/gastronomicos/${created.id}`;
+    if (!discoveryHref.includes(created.publicEventId) || discoveryHref.includes('/gastronomicos/')) {
+      fail('discovery href must be /restaurants/[publicEventId]');
+      return 1;
+    }
+    if (discoveryHref === canonicalHref) {
+      fail('must not use /gastronomicos/[publicEventId]');
+      return 1;
+    }
+    pass(`href discovery ${discoveryHref} (canonical profile ${canonicalHref})`);
+
     const draft = await service.create(TENANT, admin.id, {
       displayName: `${MARKER} draft`,
       contactEmail: 'smoke-gastro-draft@test.local',

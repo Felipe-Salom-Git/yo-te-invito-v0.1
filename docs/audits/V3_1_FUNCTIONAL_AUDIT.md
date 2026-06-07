@@ -711,6 +711,18 @@ Requieren migración, compatibilidad o impacto en filtros/listados/comercio:
 
 ---
 
+### 6.14 Hotfix links públicos gastro — **2026-06-14**
+
+**Problema:** Cards abrían `/gastronomicos/[publicEventId]?tenantId=tenant-demo` (página vacía).
+
+**Causa:** Redirect Next.js `/restaurants/:id` → `/gastronomicos/:id` mezclaba `Event.id` con `GastroProfile.id`.
+
+**Fix:** Eliminar redirect; `getContentDetailHref` — discovery `/restaurants/[publicEventId]`, canónico `/gastronomicos/[profileId]`; sin `?tenantId=` por defecto.
+
+**Doc:** `V3_1_HOTFIX_GASTRO_PUBLIC_LINKS.md`.
+
+---
+
 ## 7. Orden recomendado de implementación
 
 ### Tanda 1 — bajo riesgo (V3.1-A visual + hints)

@@ -1,8 +1,12 @@
-/** URL pública de ficha de local gastronómico. */
+import { getContentDetailHref } from '@/lib/home/contentRoutes';
+
+/** Canonical public URL for a gastro local (GastroProfile.id). */
 export function gastroLocationPublicHref(
   gastroProfileId: string,
   tenantId?: string,
 ): string {
-  const base = `/restaurants/${gastroProfileId}`;
-  return tenantId ? `${base}?tenantId=${encodeURIComponent(tenantId)}` : base;
+  return getContentDetailHref(
+    { id: gastroProfileId, category: 'gastro', gastroProfileId },
+    tenantId,
+  );
 }

@@ -1,27 +1,13 @@
 import type { PublicReviewCategory } from '@yo-te-invito/shared';
+import { getContentDetailHref } from '@/lib/home/contentRoutes';
 
-const TENANT_FALLBACK = 'tenant-demo';
-
-/** Public detail path for a reviewed entity (includes tenant query). */
+/** Public detail path for a reviewed entity. */
 export function getPublicReviewEntityHref(
   category: PublicReviewCategory,
   entityId: string,
-  tenantId: string = TENANT_FALLBACK,
+  tenantId?: string,
 ): string {
-  const q = `?tenantId=${encodeURIComponent(tenantId)}`;
-  switch (category) {
-    case 'gastro':
-      return `/restaurants/${entityId}${q}`;
-    case 'hotel':
-      return `/hoteles/${entityId}${q}`;
-    case 'excursion':
-      return `/excursiones/${entityId}${q}`;
-    case 'rental':
-      return `/rentals/${entityId}${q}`;
-    case 'event':
-    default:
-      return `/events/${entityId}${q}`;
-  }
+  return getContentDetailHref({ id: entityId, category }, tenantId);
 }
 
 export const PUBLIC_REVIEW_CATEGORY_LABELS: Record<PublicReviewCategory, string> = {

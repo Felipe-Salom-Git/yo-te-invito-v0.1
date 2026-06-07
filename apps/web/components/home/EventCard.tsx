@@ -2,17 +2,7 @@
 
 import Link from 'next/link';
 import type { EventSummary } from '@/repositories/interfaces';
-
-const TENANT_ID = 'tenant-demo';
-
-function getDetailHref(event: EventSummary): string {
-  const base = event.category === 'gastro' ? '/restaurants'
-    : event.category === 'hotel' ? '/hoteles'
-    : event.category === 'excursion' ? '/excursiones'
-    : event.category === 'rental' ? '/rentals'
-    : '/events';
-  return `${base}/${event.id}?tenantId=${TENANT_ID}`;
-}
+import { getContentDetailHref } from '@/lib/home/contentRoutes';
 
 export interface EventCardProps {
   event: EventSummary & { description?: string | null };
@@ -28,7 +18,7 @@ export function EventCard({ event }: EventCardProps) {
 
   return (
     <Link
-      href={getDetailHref(event)}
+      href={getContentDetailHref({ id: event.id, category: event.category })}
       className="group relative flex-shrink-0 w-[260px] h-[380px] overflow-hidden rounded-lg border border-border bg-bg-muted transition-all duration-300 ease-out hover:z-20 hover:scale-[1.08] hover:border-accent-muted hover:shadow-xl hover:shadow-accent-glow"
     >
       {/* Image + gradient overlay */}

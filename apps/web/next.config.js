@@ -1,15 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   transpilePackages: ['@yo-te-invito/shared'],
-  async redirects() {
-    return [
-      {
-        source: '/restaurants/:id',
-        destination: '/gastronomicos/:id',
-        permanent: true,
-      },
-    ];
-  },
+  // /restaurants/[publicEventId] and /gastronomicos/[profileId] are distinct public routes.
   images: {
     remotePatterns: [
       {

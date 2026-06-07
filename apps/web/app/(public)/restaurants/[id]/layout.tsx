@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 
-// This route is an alias/legacy shape for gastro public pages.
-// Canonical is kept on /gastronomicos/[id] to avoid contradictory metadata (SEO 6 can fully dedupe).
+// Discovery route: id = publicEventId (Event.id). Profile canonical lives at /gastronomicos/[profileId].
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -9,7 +8,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   return {
     alternates: {
-      canonical: `/gastronomicos/${encodeURIComponent(id)}`,
+      canonical: `/restaurants/${encodeURIComponent(id)}`,
     },
     robots: { index: false, follow: false },
   };

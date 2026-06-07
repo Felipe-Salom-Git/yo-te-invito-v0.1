@@ -54,12 +54,19 @@ WHERE g."tenantId" = 'tenant-demo';
 
 ---
 
+## Links públicos (hotfix §21)
+
+- Discovery card → `/restaurants/[publicEventId]` (no `/gastronomicos/[publicEventId]`)
+- Admin canónico → `/gastronomicos/[profileId]`
+- Ver `V3_1_HOTFIX_GASTRO_PUBLIC_LINKS.md`
+
 ## QA manual
 
 - [ ] `/admin/gastronomicos/nuevo` → crear local ACTIVE + publicar
 - [ ] `/categoria/gastro` → card visible
 - [ ] `/explore?category=gastro` → card visible
-- [ ] Ficha `/restaurants/[publicEventId]` o `/gastronomicos/[profileId]`
+- [ ] Click card → `/restaurants/[publicEventId]` sin `?tenantId=tenant-demo`
+- [ ] Ficha `/gastronomicos/[profileId]` desde admin
 - [ ] Suspender → desaparece
 - [ ] Reactivar → vuelve
 

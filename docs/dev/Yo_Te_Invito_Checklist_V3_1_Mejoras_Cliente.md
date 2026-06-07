@@ -884,3 +884,23 @@ WHERE status = 'ACTIVE' AND "publicEventId" IS NULL;
 
 Reactivar cada perfil desde admin dispara sync sin script destructivo.
 
+---
+
+# 21. Hotfix — Link público gastro incorrecto
+
+> Doc: `docs/audits/V3_1_HOTFIX_GASTRO_PUBLIC_LINKS.md`
+
+## 21.1 Fix links (2026-06-14)
+
+- [x] Causa: redirect `/restaurants/:id` → `/gastronomicos/:id` mezclaba `publicEventId` con `profileId`.
+- [x] Cards discovery → `/restaurants/[publicEventId]` (sin `?tenantId=` por defecto).
+- [x] Admin/canónico → `/gastronomicos/[profileId]`.
+- [x] Helper centralizado `getContentDetailHref` actualizado.
+- [x] Sin cambios API/Prisma.
+
+## 21.2 QA manual pendiente
+
+- [ ] Click card en `/categoria/gastro` y `/explore?category=gastro`.
+- [ ] URL sin `/gastronomicos/[publicEventId]`.
+- [ ] Ficha con contenido.
+

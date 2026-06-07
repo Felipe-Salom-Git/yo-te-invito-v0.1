@@ -225,7 +225,7 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`). Shared UI tokens:
 | Ratings públicos 5/5 | `lib/reviews/ratingDisplay.ts` — `formatPublicRatingLabel`; sin cambio DB/API (Slice 13) |
 | ContentCard editorial | `components/home/ContentCard.tsx` — fase 1 afiche (fecha badge, badges sutiles, poster title; Slice 13) |
 | **QA pre-deploy V3.1** | Slice 14 — builds OK; QA manual browser pendiente (`V3_1_PRE_DEPLOY_QA_CLOSING.md` §6) |
-| **Admin gastro → discovery** | Cards gastro usan `/restaurants/[publicEventId]`; admin canónico `/gastronomicos/[profileId]`; hotfix sync API (`V3_1_HOTFIX_ADMIN_GASTRO_DISCOVERY_SMOKE.md`) |
+| **Admin gastro → discovery** | Cards gastro → `/restaurants/[publicEventId]` (`getContentDetailHref`); admin canónico `/gastronomicos/[profileId]`; sin redirect Next `/restaurants`→`/gastronomicos` (`V3_1_HOTFIX_GASTRO_PUBLIC_LINKS.md`) |
 | **Legales admin** | `components/admin/legal/` — `/admin/legales` (tabla desktop `md+` con `overflow-x-auto` + `min-w-[900px]`; cards `md:hidden`), detalle, versiones; `LegalDocumentsRepo` + `lib/query/admin-legal-documents.ts` |
 | **Legales público** | `components/legal/` — `/legal/[slug]` (server fetch, ISR); preview Markdown |
 | **Registro V2** | `components/auth/RegisterWizard.tsx`, `components/auth/register/*` (pasos comprador/productora/gastro/hotel/referido), `lib/auth/register-error-messages.ts`, `lib/auth/register-validation.ts`, `lib/onboarding/*-portal-onboarding.ts`, `OnboardingChecklistCard`; ubicación: `ProvinceCitySelect`, `GastroProvinceCityFields`, catálogo `@yo-te-invito/shared` → `ARGENTINA_PROVINCES` |

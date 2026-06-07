@@ -4,29 +4,49 @@
 
 import { RENTAL_RELATED_SECTION_TITLE } from '@/lib/rentals/publicCopy';
 
-const TENANT_ID = 'tenant-demo';
+export const DEFAULT_PUBLIC_TENANT_ID = 'tenant-demo';
 
 export interface ContentItemForRoute {
+  /** Event/public listing id (discovery). For gastro this is publicEventId. */
   id: string;
   category?: string;
+  /** GastroProfile.id — use canonical /gastronomicos when set explicitly. */
+  gastroProfileId?: string | null;
 }
 
+function appendTenantQuery(path: string, tenantId?: string): string {
+  if (!tenantId || tenantId === DEFAULT_PUBLIC_TENANT_ID) return path;
+  return `${path}?tenantId=${encodeURIComponent(tenantId)}`;
+}
+
+/**
+ * Public detail href for discovery cards and related content.
+ * Gastro discovery (Event.id = publicEventId) → /restaurants/[id].
+ * Gastro canonical profile → /gastronomicos/[gastroProfileId].
+ */
 export function getContentDetailHref(
   item: ContentItemForRoute,
-  tenantId?: string
+  tenantId?: string,
 ): string {
-  const tenant = tenantId ?? TENANT_ID;
+  const category = (item.category ?? 'event').toLowerCase();
+
+  if (category === 'gastro') {
+    if (item.gastroProfileId) {
+      return appendTenantQuery(`/gastronomicos/${item.gastroProfileId}`, tenantId);
+    }
+    return appendTenantQuery(`/restaurants/${item.id}`, tenantId);
+  }
+
   const base =
-    item.category === 'gastro'
-      ? '/restaurants'
-      : item.category === 'hotel'
-        ? '/hoteles'
-        : item.category === 'excursion'
-          ? '/excursiones'
-          : item.category === 'rental'
-            ? '/rentals'
-            : '/events';
-  return `${base}/${item.id}?tenantId=${tenant}`;
+    category === 'hotel'
+      ? '/hoteles'
+      : category === 'excursion'
+        ? '/excursiones'
+        : category === 'rental'
+          ? '/rentals'
+          : '/events';
+
+  return appendTenantQuery(`${base}/${item.id}`, tenantId);
 }
 
 export function getCategoryLabel(category?: string): string {

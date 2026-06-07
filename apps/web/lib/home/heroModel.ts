@@ -3,6 +3,8 @@
  * Keeps presentational logic out of components.
  */
 
+import { getContentDetailHref } from '@/lib/home/contentRoutes';
+
 export type HeroContentType = 'event' | 'gastro' | 'hotel' | 'excursion' | 'rental';
 
 export interface HeroViewModel {
@@ -42,22 +44,6 @@ type FeaturedItem = {
   fromPrice?: number | null;
   producerName?: string | null;
 };
-
-const TENANT_ID = 'tenant-demo';
-
-function getDetailHref(item: FeaturedItem): string {
-  const base =
-    item.category === 'gastro'
-      ? '/restaurants'
-      : item.category === 'hotel'
-        ? '/hoteles'
-        : item.category === 'excursion'
-          ? '/excursiones'
-          : item.category === 'rental'
-            ? '/rentals'
-            : '/events';
-  return `${base}/${item.id}?tenantId=${TENANT_ID}`;
-}
 
 function getCtaLabels(category?: string): { primary: string; secondary: string } {
   switch (category) {
@@ -104,7 +90,10 @@ export function mapFeaturedItemToHeroModel(item: FeaturedItem): HeroViewModel {
     ratingCount: item.ratingCount ?? 0,
     fromPrice: item.fromPrice ?? null,
     producerName: item.producerName ?? null,
-    detailHref: getDetailHref(item),
+    detailHref: getContentDetailHref({
+      id: item.id,
+      category: item.category,
+    }),
     primaryCtaLabel,
     secondaryCtaLabel,
     categoryLabel: getCategoryLabel(item.category),
