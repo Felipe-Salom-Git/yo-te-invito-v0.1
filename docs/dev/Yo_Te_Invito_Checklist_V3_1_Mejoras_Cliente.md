@@ -904,3 +904,14 @@ Reactivar cada perfil desde admin dispara sync sin script destructivo.
 - [ ] URL sin `/gastronomicos/[publicEventId]`.
 - [ ] Ficha con contenido.
 
+---
+
+# 22. Hotfix — className visible en descripciones
+
+> Doc: `docs/audits/V3_1_HOTFIX_PUBLIC_DESCRIPTION_CLASSNAME.md`
+
+- [x] Causa: `RENTAL_DETAIL_SECTION_TITLE` = clases Tailwind pasadas como `sectionTitle`.
+- [x] Separado `RENTAL_DETAIL_SECTION_HEADING_CLASS` vs `RENTAL_DETAIL_DESCRIPTION_LABEL`.
+- [x] Gastro «Propuesta gastronómica»; rentals «Detalle del producto».
+- [ ] QA manual fichas públicas sin texto de clase visible.
+

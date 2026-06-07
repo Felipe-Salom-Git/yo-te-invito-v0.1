@@ -507,6 +507,7 @@ _(Trending con `viewCount`: ver ítem Slice 2 arriba en § K.)_
 - [x] Hotfix admin gastro discovery — sync `publicEventId` al activar/editar (`smoke:v31-admin-gastro-discovery`, `V3_1_HOTFIX_ADMIN_GASTRO_DISCOVERY_SMOKE.md`)
 - [ ] V3.1 — QA manual browser pre/post-deploy (checklist en `V3_1_PRE_DEPLOY_QA_CLOSING.md` §6)
 - [x] Hotfix gastro public links — `/restaurants/[publicEventId]` sin redirect erróneo (`V3_1_HOTFIX_GASTRO_PUBLIC_LINKS.md`)
+- [x] Hotfix descripción pública — `RENTAL_DETAIL_SECTION_TITLE` era className, no copy (`V3_1_HOTFIX_PUBLIC_DESCRIPTION_CLASSNAME.md`)
 - [ ] Hotfix gastro — QA manual browser post-deploy (`/categoria/gastro`, `/explore?category=gastro`, click card)
 - [ ] V3.1 — restante no bloqueante (maps prod §4.1, §5.2 links en descripciones, multi-subcategorías otras verticales, drag galería, cards fase 2, JSON-LD bestRating)
 - [ ] V3.1 legal al publicar evento Caso A (bloqueante; coordinar con publicación `producer_terms` real)

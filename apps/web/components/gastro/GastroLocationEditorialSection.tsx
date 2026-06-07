@@ -29,6 +29,7 @@ export function GastroLocationEditorialSection({
               <RentalDescriptionBlock
                 productTitle={item.title ?? locationName}
                 description={item.body}
+                sectionTitle={item.title ? null : 'Descripción'}
               />
             </div>
           ) : null}

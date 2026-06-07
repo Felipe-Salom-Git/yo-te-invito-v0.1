@@ -231,6 +231,16 @@ pnpm run smoke:v31-category-banners
 
 ---
 
+## 8b. Hotfixes post-deploy (2026-06-14)
+
+| Hotfix | Doc |
+|--------|-----|
+| Admin gastro → discovery sync | `V3_1_HOTFIX_ADMIN_GASTRO_DISCOVERY_SMOKE.md` |
+| Links cards `/restaurants` vs `/gastronomicos` | `V3_1_HOTFIX_GASTRO_PUBLIC_LINKS.md` |
+| className visible en descripciones | `V3_1_HOTFIX_PUBLIC_DESCRIPTION_CLASSNAME.md` |
+
+---
+
 ## 9. Pendientes V3.1 no bloqueantes
 
 - Legal Caso A (`EVENT_PUBLICATION` + bloqueo backend) — requiere `producer_terms` publicado.

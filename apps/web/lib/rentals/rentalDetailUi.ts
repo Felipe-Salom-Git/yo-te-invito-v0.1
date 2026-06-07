@@ -4,8 +4,12 @@ import { formatRentalOpeningHoursSummary, type RentalOpeningHours } from '@yo-te
 export const RENTAL_DETAIL_CARD_CLASS =
   'rounded-xl border border-border bg-bg-muted p-4 sm:p-5';
 
-export const RENTAL_DETAIL_SECTION_TITLE =
+/** Heading class for rental detail section titles (h2). */
+export const RENTAL_DETAIL_SECTION_HEADING_CLASS =
   'text-base font-semibold text-white sm:text-lg';
+
+/** Visible label for the rental product description block. */
+export const RENTAL_DETAIL_DESCRIPTION_LABEL = 'Detalle del producto';
 
 export function hasRentalOpeningHoursContent(
   schedule: RentalOpeningHours | null | undefined,

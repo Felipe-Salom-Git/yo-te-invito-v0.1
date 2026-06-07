@@ -31,7 +31,7 @@ import { buildRentalWhatsAppHref } from '@/lib/rentals/whatsapp';
 import { RentalContactCard } from './RentalContactCard';
 import { RentalMobileStickyCta } from './RentalMobileStickyCta';
 import { RentalProviderContactCta } from './RentalProviderContactCta';
-import { RENTAL_DETAIL_SECTION_TITLE } from '@/lib/rentals/rentalDetailUi';
+import { RENTAL_DETAIL_SECTION_HEADING_CLASS } from '@/lib/rentals/rentalDetailUi';
 import type { RentalOpeningHours } from '@yo-te-invito/shared';
 
 type RentalLocationOnEvent = {
@@ -221,7 +221,7 @@ export function RentalProductDetailContent({
 
             {hasGallery && (
               <section className="min-w-0">
-                <h2 className={RENTAL_DETAIL_SECTION_TITLE}>Galería</h2>
+                <h2 className={RENTAL_DETAIL_SECTION_HEADING_CLASS}>Galería</h2>
                 <div className="mt-3 sm:mt-4">
                   <RentalGalleryThumbnails images={galleryImages} />
                 </div>

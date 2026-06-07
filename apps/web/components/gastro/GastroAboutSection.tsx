@@ -15,7 +15,11 @@ export function GastroAboutSection({
 }: GastroAboutSectionProps) {
   if (description) {
     return (
-      <RentalDescriptionBlock productTitle={displayName} description={description} />
+      <RentalDescriptionBlock
+        productTitle={displayName}
+        description={description}
+        sectionTitle="Propuesta gastronómica"
+      />
     );
   }
 

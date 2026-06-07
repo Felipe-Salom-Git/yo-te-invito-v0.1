@@ -228,7 +228,11 @@ export function ExcursionProductDetailContent({
 
             <section className="space-y-4">
               <ExcursionDetailSectionHeading title="Sobre la excursión" />
-              <RentalDescriptionBlock productTitle={event.title} description={event.description} />
+              <RentalDescriptionBlock
+                productTitle={event.title}
+                description={event.description}
+                sectionTitle={null}
+              />
             </section>
 
             {hasGallery && (

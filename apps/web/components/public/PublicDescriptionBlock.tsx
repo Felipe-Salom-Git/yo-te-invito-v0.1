@@ -5,9 +5,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 const DEFAULT_PREVIEW_MAX_HEIGHT_PX = 260;
 
 export type PublicDescriptionBlockProps = {
+  /** Modal heading — entity title, not a CSS class. */
   title: string;
   description?: string | null;
-  sectionTitle?: string;
+  /** Section h2; `null` hides heading; default «Descripción». */
+  sectionTitle?: string | null;
   previewMaxHeightPx?: number;
   readMoreLabel?: string;
 };
@@ -15,10 +17,12 @@ export type PublicDescriptionBlockProps = {
 export function PublicDescriptionBlock({
   title,
   description,
-  sectionTitle = 'Descripción',
+  sectionTitle,
   previewMaxHeightPx = DEFAULT_PREVIEW_MAX_HEIGHT_PX,
   readMoreLabel = 'Leer descripción completa',
 }: PublicDescriptionBlockProps) {
+  const sectionHeading =
+    sectionTitle === null ? null : (sectionTitle ?? 'Descripción').trim() || null;
   const text = description?.trim() ?? '';
   const previewRef = useRef<HTMLDivElement>(null);
   const [needsMore, setNeedsMore] = useState(false);
@@ -57,7 +61,9 @@ export function PublicDescriptionBlock({
   return (
     <>
       <section className="min-w-0">
-        <h2 className="text-lg font-semibold text-white">{sectionTitle}</h2>
+        {sectionHeading ? (
+          <h2 className="text-lg font-semibold text-white">{sectionHeading}</h2>
+        ) : null}
         <div
           ref={previewRef}
           className="mt-3 overflow-hidden text-sm leading-relaxed text-white/80 sm:text-base"

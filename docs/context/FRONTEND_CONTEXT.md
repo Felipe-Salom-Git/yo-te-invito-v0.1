@@ -186,7 +186,8 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`). Shared UI tokens:
 | OpeningHoursEditor, RentalProductImagesForm | `components/forms/`, `components/rentals/` |
 | **ImageUploadHint**, `imageUploadHints.ts` | `components/upload/`, `lib/upload/` — medidas/formato/peso en formularios GCS (V3.1 Slice 1) |
 | **FieldCharacterCounter**, `RentalSummaryField` | `components/forms/`, `components/rentals/` — contador resumen 220 y campos con límite (V3.1 Slice 1) |
-| **PublicDescriptionBlock** | `components/public/` — preview + «Leer descripción completa» modal (V3.1 Slice 2) |
+| **PublicDescriptionBlock** | `components/public/` — preview + «Leer descripción completa» modal (V3.1 Slice 2); `sectionTitle` = copy, `null` oculta h2 (hotfix className) |
+| **RentalDescriptionBlock** | wrapper rentals/gastro/excursiones; usa `RENTAL_DETAIL_DESCRIPTION_LABEL` / `RENTAL_DETAIL_SECTION_HEADING_CLASS` en `rentalDetailUi.ts` |
 | **getContentCardPrimaryBadge** | `lib/home/contentCardPresentation.ts` — badges útiles en cards (subcategoría > genérico; V3.1 Slice 2) |
 | **HomeCategoryStrip** | `components/home/` — grid categorías en home; oculto en mobile (`md+` only; Slice 3) |
 | **ExcursionDetailInfoGrid** | `components/excursions/` — cards info clave en detalle excursión (Slice 3) |
