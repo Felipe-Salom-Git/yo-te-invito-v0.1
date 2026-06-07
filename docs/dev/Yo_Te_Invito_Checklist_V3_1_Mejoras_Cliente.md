@@ -853,3 +853,34 @@ FAQs, editor enriquecido, palabras cliqueables, cropper de imágenes, SEO fino y
 
 **Recomendación Slice 14:** listo para deploy técnico; QA manual browser pendiente para cierre cliente 100%.
 
+---
+
+# 20. Hotfix — Admin gastro no aparece en discovery público
+
+> Doc: `docs/audits/V3_1_HOTFIX_ADMIN_GASTRO_DISCOVERY_SMOKE.md`
+
+## 20.1 Causa y fix (2026-06-14)
+
+- [x] Causa: sync `publicEventId` incompleto en `updateStatus` / `update` admin.
+- [x] Fix: `syncActiveProfilePublicEvent` + filtro gastro en discovery.
+- [x] Smoke `smoke:v31-admin-gastro-discovery` OK.
+- [x] Sin migración Prisma.
+
+## 20.2 QA manual pendiente
+
+- [ ] Crear local en `/admin/gastronomicos/nuevo` (ACTIVE + publicar).
+- [ ] Verificar `/categoria/gastro` y `/explore?category=gastro`.
+- [ ] Ficha `/restaurants/[publicEventId]`.
+- [ ] Suspender / reactivar desde admin.
+- [ ] Locales prod existentes sin `publicEventId`: reactivar desde admin.
+
+## 20.3 Reparación datos prod
+
+```sql
+SELECT id, "displayName", status, "publicEventId"
+FROM "GastroProfile"
+WHERE status = 'ACTIVE' AND "publicEventId" IS NULL;
+```
+
+Reactivar cada perfil desde admin dispara sync sin script destructivo.
+

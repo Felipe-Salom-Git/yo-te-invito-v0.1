@@ -3,6 +3,7 @@
 **Fecha:** 2026-06-02  
 **Slice:** Admin Gastro 1 (auditoría) · **Admin Gastro 2 (backend CRUD — 2026-06-02)**  
 **Estado:** Slices 2–5 cerrados (2026-06-02) — bloque Admin Gastro Locations operativo  
+**Hotfix 2026-06-14:** sync discovery público reforzado — ver `V3_1_HOTFIX_ADMIN_GASTRO_DISCOVERY_SMOKE.md`  
 **Ramas revisadas:** `main`, `feat/v1-s03-api-foundation` (sin cambios de `developer`)  
 **Fuentes:** `docs/context/*`, `docs/rules/PROJECT_RULES.md`, `docs/audits/GASTRO_HOTELES_V2_AUDIT.md`, código en `apps/api`, `apps/web`, `packages/shared`
 

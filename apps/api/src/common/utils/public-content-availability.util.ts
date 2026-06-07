@@ -1,7 +1,8 @@
 import type { Prisma } from '@prisma/client';
 
 /**
- * Public discovery/detail: hide rental/excursion events when parent local/operator is inactive.
+ * Public discovery/detail: hide rental/excursion/gastro events when parent entity is inactive.
+ * Gastro without linked profile (legacy general publications) remains visible.
  * Does not affect orders, tickets, or historical records.
  */
 export function publicParentEntitiesActiveWhere(): Prisma.EventWhereInput {
@@ -17,6 +18,13 @@ export function publicParentEntitiesActiveWhere(): Prisma.EventWhereInput {
         OR: [
           { category: { not: 'excursion' } },
           { excursionOperator: { isActive: true, deletedAt: null } },
+        ],
+      },
+      {
+        OR: [
+          { category: { not: 'gastro' } },
+          { gastroProfilePublic: { is: null } },
+          { gastroProfilePublic: { status: 'ACTIVE' } },
         ],
       },
     ],

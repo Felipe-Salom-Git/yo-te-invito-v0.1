@@ -56,6 +56,8 @@ HTTP → Controller (thin) → ZodValidationPipe → Service → Prisma → Post
 
 **QA pre-deploy V3.1 (Slice 14):** 5 migraciones (`20260610120000` … `20260614120000`) aplicadas; smokes `smoke:v31-stabilization`, `smoke:v31-subcategories`, `smoke:v31-admin-archive`, `smoke:v31-category-banners` — todos exit 0 (HTTP admin opcional con API levantada). Deploy VPS: `prisma migrate deploy` antes de restart; doc `docs/audits/V3_1_PRE_DEPLOY_QA_CLOSING.md`.
 
+**Hotfix admin gastro discovery (post-V3.1):** `AdminGastroLocationsService.syncActiveProfilePublicEvent` — activar/editar local ACTIVE siempre sincroniza `publicEventId` + `Event` `category=gastro` `APPROVED`; `public-content-availability.util.ts` oculta gastro si `gastroProfilePublic.status !== ACTIVE`. Smoke: `smoke:v31-admin-gastro-discovery`; doc `V3_1_HOTFIX_ADMIN_GASTRO_DISCOVERY_SMOKE.md`.
+
 **Admin endpoints** (`AdminRentalLocationsController`, role `ADMIN`):
 
 | Method | Path |

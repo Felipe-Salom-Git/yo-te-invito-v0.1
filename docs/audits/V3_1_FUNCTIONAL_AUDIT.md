@@ -690,6 +690,27 @@ Requieren migración, compatibilidad o impacto en filtros/listados/comercio:
 
 ---
 
+### 6.13 Hotfix admin gastro discovery — **2026-06-14**
+
+**Problema:** locales creados en `/admin/gastronomicos` visibles en admin pero ausentes en `/categoria/gastro`, `/explore?category=gastro` y carruseles.
+
+**Causa:** `AdminGastroLocationsService` no garantizaba `syncPublicEvent` al activar (`updateStatus`) ni al editar perfiles `ACTIVE` sin `publicEventId` (p. ej. alta con `publish:false` o DRAFT → ACTIVE).
+
+**Fix**
+
+- `syncActiveProfilePublicEvent` — sync completo cuando perfil `ACTIVE`.
+- `updateStatus(ACTIVE)` — siempre sincroniza (crea o restaura evento `APPROVED`).
+- `update()` — si `ACTIVE` y falta `publicEventId`, fuerza sync aunque el body no toque campos de contenido.
+- `public-content-availability.util.ts` — filtro gastro: ocultar si perfil vinculado ≠ `ACTIVE` (legacy sin perfil sigue visible).
+
+**Smoke:** `smoke:v31-admin-gastro-discovery` — OK local.
+
+**Doc:** `V3_1_HOTFIX_ADMIN_GASTRO_DISCOVERY_SMOKE.md`.
+
+**Datos existentes prod:** reactivar local (`Suspender` → `Activar`) o guardar edición con perfil ACTIVE repara `publicEventId` sin migración.
+
+---
+
 ## 7. Orden recomendado de implementación
 
 ### Tanda 1 — bajo riesgo (V3.1-A visual + hints)

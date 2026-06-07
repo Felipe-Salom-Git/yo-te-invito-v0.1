@@ -145,6 +145,28 @@ export class AdminGastroLocationsService {
     return this.adminGastro.getLocation(effectiveTenantId, profile.id);
   }
 
+  /** Keeps discovery Event in sync whenever the profile should be publicly visible. */
+  private async syncActiveProfilePublicEvent(
+    profile: { id: string; tenantId: string; status: ProfileStatus },
+    actorUserId: string,
+    galleryUrls?: string[] | null,
+  ): Promise<void> {
+    const fresh = await this.prisma.gastroProfile.findUniqueOrThrow({
+      where: { id: profile.id },
+    });
+    if (fresh.status !== 'ACTIVE') {
+      await this.publicEventSync.syncVisibilityForProfile(fresh);
+      return;
+    }
+    await this.publicEventSync.syncPublicEvent(
+      fresh,
+      actorUserId,
+      galleryUrls !== undefined
+        ? galleryUrls
+        : this.publicEventSync.readGallery(fresh),
+    );
+  }
+
   async update(
     tenantId: string,
     adminUserId: string,
@@ -227,15 +249,19 @@ export class AdminGastroLocationsService {
       existing.createdByUserId ??
       adminUserId;
 
-    if (
-      updated.status === 'ACTIVE' &&
-      shouldSyncGastroPublicEventAfterUpdate({ ...body, subcategoryId })
-    ) {
-      await this.publicEventSync.syncPublicEvent(
-        updated,
-        actorUserId,
-        gallery !== undefined ? gallery : this.publicEventSync.readGallery(updated),
-      );
+    if (updated.status === 'ACTIVE') {
+      const shouldFullSync =
+        !updated.publicEventId ||
+        shouldSyncGastroPublicEventAfterUpdate({ ...body, subcategoryId });
+      if (shouldFullSync) {
+        await this.syncActiveProfilePublicEvent(
+          updated,
+          actorUserId,
+          gallery !== undefined ? gallery : undefined,
+        );
+      } else {
+        await this.publicEventSync.syncVisibilityForProfile(updated);
+      }
     } else {
       await this.publicEventSync.syncVisibilityForProfile(updated);
     }
@@ -295,19 +321,7 @@ export class AdminGastroLocationsService {
     const actorUserId = existing.createdByUserId ?? adminUserId;
 
     if (status === 'ACTIVE') {
-      if (existing.publicEventId) {
-        await this.publicEventSync.syncPublicEvent(
-          updated,
-          actorUserId,
-          this.publicEventSync.readGallery(updated),
-        );
-      } else if (updated.displayName && updated.city && updated.address) {
-        await this.publicEventSync.syncPublicEvent(
-          updated,
-          actorUserId,
-          this.publicEventSync.readGallery(updated),
-        );
-      }
+      await this.syncActiveProfilePublicEvent(updated, actorUserId);
     } else {
       await this.publicEventSync.syncVisibilityForProfile(updated);
     }
