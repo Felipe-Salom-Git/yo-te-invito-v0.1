@@ -29,6 +29,7 @@ import { GastroModule } from '../gastro/gastro.module';
 import { AdminPaymentsController } from './admin-payments.controller';
 import { AdminPaymentsService } from './admin-payments.service';
 import { AdminGastroLocationsService } from './admin-gastro-locations.service';
+import { AdminContentLifecycleService } from './admin-content-lifecycle.service';
 
 @Module({
   imports: [
@@ -63,6 +64,8 @@ import { AdminGastroLocationsService } from './admin-gastro-locations.service';
     AdminGastroLocationsService,
     AdminDashboardService,
     AdminPaymentsService,
+    AdminContentLifecycleService,
   ],
+  exports: [AdminContentLifecycleService],
 })
 export class AdminModule {}

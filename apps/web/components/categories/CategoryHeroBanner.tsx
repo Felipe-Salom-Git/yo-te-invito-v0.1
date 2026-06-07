@@ -5,8 +5,12 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { CategoryGatewayId } from '@/lib/home/categoryGatewayConfig';
 import { CATEGORY_LANDING_META } from '@/lib/categories/categoryLandingConfig';
-import type { CategoryBannerResolvedItem } from '@/repositories/interfaces';
+import type {
+  CategoryBannerResolvedItem,
+  CategoryEditorialBannerPublicItem,
+} from '@/repositories/interfaces';
 import { mapCategoryBannerToHeroModel } from '@/lib/categories/categoryBannerModel';
+import { mapCategoryEditorialBannerToHeroModel } from '@/lib/categories/categoryEditorialBannerModel';
 import type { HeroViewModel } from '@/lib/home/heroModel';
 
 /** Más bajo que el hero de home: deja filtros + primer carrusel visibles sin scroll. */
@@ -17,7 +21,10 @@ const HERO_CONTENT_PAD = 'px-4 pb-10 sm:px-6 sm:pb-12 md:px-10 md:pb-14 lg:px-16
 
 export interface CategoryHeroBannerProps {
   category: CategoryGatewayId;
-  items: CategoryBannerResolvedItem[];
+  /** Editorial banners take priority when non-empty. */
+  editorialItems?: CategoryEditorialBannerPublicItem[];
+  /** Event-based banners used when no active editorial banners. */
+  eventItems?: CategoryBannerResolvedItem[];
   isLoading?: boolean;
 }
 
@@ -77,20 +84,50 @@ function HeroContent({ model }: { model: HeroViewModel }) {
 }
 
 function HeroCTAs({ model }: { model: HeroViewModel }) {
-  return (
-    <div className="mt-3 flex flex-wrap gap-2 sm:mt-4 sm:gap-3">
-      <Link
+  const primaryClass =
+    'rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-bg shadow-md transition-all hover:bg-accent-hover sm:px-5 sm:py-2.5';
+  const secondaryClass =
+    'hidden rounded-lg border border-white/40 bg-white/5 px-4 py-2 text-sm font-medium text-white backdrop-blur-sm transition-colors hover:bg-white/15 sm:inline-flex sm:px-5 sm:py-2.5';
+
+  if (model.hideSecondaryCta && model.detailHref === '#') {
+    return null;
+  }
+
+  const primary =
+    model.ctaExternal && model.detailHref !== '#' ? (
+      <a
         href={model.detailHref}
-        className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-bg shadow-md transition-all hover:bg-accent-hover sm:px-5 sm:py-2.5"
+        target="_blank"
+        rel="noopener noreferrer"
+        className={primaryClass}
       >
         {model.primaryCtaLabel}
+      </a>
+    ) : model.detailHref !== '#' ? (
+      <Link href={model.detailHref} className={primaryClass}>
+        {model.primaryCtaLabel}
       </Link>
-      <Link
-        href={model.detailHref}
-        className="hidden rounded-lg border border-white/40 bg-white/5 px-4 py-2 text-sm font-medium text-white backdrop-blur-sm transition-colors hover:bg-white/15 sm:inline-flex sm:px-5 sm:py-2.5"
-      >
-        {model.secondaryCtaLabel}
-      </Link>
+    ) : null;
+
+  return (
+    <div className="mt-3 flex flex-wrap gap-2 sm:mt-4 sm:gap-3">
+      {primary}
+      {!model.hideSecondaryCta && model.detailHref !== '#' ? (
+        model.ctaExternal ? (
+          <a
+            href={model.detailHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={secondaryClass}
+          >
+            {model.secondaryCtaLabel}
+          </a>
+        ) : (
+          <Link href={model.detailHref} className={secondaryClass}>
+            {model.secondaryCtaLabel}
+          </Link>
+        )
+      ) : null}
     </div>
   );
 }
@@ -162,12 +199,21 @@ function CategoryHeroBannerSlider({
   );
 }
 
-export function CategoryHeroBanner({ category, items, isLoading }: CategoryHeroBannerProps) {
+export function CategoryHeroBanner({
+  category,
+  editorialItems = [],
+  eventItems = [],
+  isLoading,
+}: CategoryHeroBannerProps) {
   const meta = CATEGORY_LANDING_META[category];
-  const models = useMemo(
-    () => items.slice(0, 5).map((item) => mapCategoryBannerToHeroModel(item)),
-    [items],
-  );
+  const models = useMemo(() => {
+    if (editorialItems.length > 0) {
+      return editorialItems
+        .slice(0, 5)
+        .map((item) => mapCategoryEditorialBannerToHeroModel(item, category));
+    }
+    return eventItems.slice(0, 5).map((item) => mapCategoryBannerToHeroModel(item));
+  }, [category, editorialItems, eventItems]);
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
 
@@ -175,7 +221,7 @@ export function CategoryHeroBanner({ category, items, isLoading }: CategoryHeroB
 
   useEffect(() => {
     setIndex(0);
-  }, [category, items]);
+  }, [category, editorialItems, eventItems]);
 
   useEffect(() => {
     if (models.length <= 1 || paused) return;

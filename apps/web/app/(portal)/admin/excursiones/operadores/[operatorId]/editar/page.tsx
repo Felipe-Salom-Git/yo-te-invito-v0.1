@@ -17,6 +17,12 @@ import {
   validateLocationValue,
   type LocationValue,
 } from '@/components/location';
+import {
+  ExternalLinksFormFields,
+  externalLinksFromExcursionOperator,
+  externalLinksToPayload,
+  type ExternalLinksFormValue,
+} from '@/components/forms/ExternalLinksFormFields';
 
 export default function AdminExcursionOperadorEditarPage() {
   const params = useParams();
@@ -44,6 +50,9 @@ export default function AdminExcursionOperadorEditarPage() {
   });
   const [openingHours, setOpeningHours] = useState(() => createEmptyRentalOpeningHours());
   const [openingHoursNote, setOpeningHoursNote] = useState('');
+  const [externalLinks, setExternalLinks] = useState<ExternalLinksFormValue>(
+    externalLinksFromExcursionOperator({}),
+  );
   const [locationError, setLocationError] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
 
@@ -54,6 +63,7 @@ export default function AdminExcursionOperadorEditarPage() {
       setLocationValue(locationValueFromExcursionOperator(operator));
       setOpeningHours(operator.openingHours ?? createEmptyRentalOpeningHours());
       setOpeningHoursNote(operator.openingHoursNote ?? '');
+      setExternalLinks(externalLinksFromExcursionOperator(operator));
       setHydrated(true);
     }
   }, [operator, hydrated]);
@@ -61,11 +71,15 @@ export default function AdminExcursionOperadorEditarPage() {
   const updateMutation = useMutation({
     mutationFn: () => {
       const geo = excursionOperatorPayloadFromLocationValue(locationValue);
+      const links = externalLinksToPayload(externalLinks);
       return repos.excursionOperators.update(operatorId, {
         name: name.trim(),
         contactPhone: contactPhone.trim() || null,
         openingHours,
         openingHoursNote: openingHoursNote.trim() || null,
+        websiteUrl: links.websiteUrl,
+        bookingUrl: links.bookingUrl,
+        socialLinks: links.socialLinks,
         ...geo,
       });
     },
@@ -123,6 +137,11 @@ export default function AdminExcursionOperadorEditarPage() {
           onChange={setOpeningHours}
           note={openingHoursNote}
           onNoteChange={setOpeningHoursNote}
+        />
+        <ExternalLinksFormFields
+          value={externalLinks}
+          onChange={setExternalLinks}
+          sectionTitle="Reservas y redes"
         />
         <div>
           <Button type="submit" disabled={updateMutation.isPending}>

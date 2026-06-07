@@ -23,9 +23,15 @@ import {
   DEFAULT_EVENT_FORM,
   validateProducerEventForm,
 } from '@/lib/producer/producer-event-form.utils';
+import type { ProducerEventWizardStep } from '@/lib/producer/producer-event-wizard';
+import {
+  validateProducerEventWizardStep1,
+  validateProducerEventWizardStep2,
+} from '@/lib/producer/producer-event-wizard';
 import { ProducerEventFormErrorSummary } from './ProducerEventFormErrorSummary';
 import { ProducerEventFormFields } from './ProducerEventFormFields';
 import { ProducerEventFormLayout } from './ProducerEventFormLayout';
+import { ProducerEventWizardProgress } from './ProducerEventWizardProgress';
 
 export function ProducerEventCreateForm({ mode }: { mode: ProducerEventMode }) {
   const router = useRouter();
@@ -40,6 +46,7 @@ export function ProducerEventCreateForm({ mode }: { mode: ProducerEventMode }) {
   const isTicketed = mode === 'TICKETED';
   const modeLabel = isTicketed ? 'Con ticketera' : 'Solo publicidad';
 
+  const [step, setStep] = useState<ProducerEventWizardStep>(1);
   const [form, setForm] = useState<EventFormData>(DEFAULT_EVENT_FORM);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -117,13 +124,39 @@ export function ProducerEventCreateForm({ mode }: { mode: ProducerEventMode }) {
     },
   });
 
+  const scrollToErrors = () => {
+    errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const goNext = () => {
+    setFormError(null);
+    if (step === 1) {
+      const v = validateProducerEventWizardStep1(form);
+      if (!v.ok) {
+        setErrors(v.errors);
+        scrollToErrors();
+        return;
+      }
+    }
+    if (step === 2) {
+      const v = validateProducerEventWizardStep2(form, location);
+      if (!v.ok) {
+        setErrors(v.errors);
+        scrollToErrors();
+        return;
+      }
+    }
+    setErrors({});
+    setStep((s) => (s < 3 ? ((s + 1) as ProducerEventWizardStep) : s));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
     const validated = validateProducerEventForm(form);
     if (!validated.ok) {
       setErrors(validated.errors);
-      errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      scrollToErrors();
       return;
     }
     setErrors({});
@@ -131,33 +164,56 @@ export function ProducerEventCreateForm({ mode }: { mode: ProducerEventMode }) {
   };
 
   const footer = (
-    <div className="flex flex-col-reverse gap-3 border-t border-border pt-6 sm:flex-row sm:justify-end sm:gap-4">
-      <Link href="/producer/events/new" className="sm:mr-auto">
-        <Button type="button" variant="outline" className="w-full sm:w-auto">
-          Cambiar modo
+    <div className="flex flex-col-reverse gap-3 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row">
+        {step > 1 ? (
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full sm:w-auto"
+            onClick={() => {
+              setErrors({});
+              setStep((s) => (s > 1 ? ((s - 1) as ProducerEventWizardStep) : s));
+            }}
+          >
+            Atrás
+          </Button>
+        ) : (
+          <Link href="/producer/events/new" className="w-full sm:w-auto">
+            <Button type="button" variant="outline" className="w-full">
+              Cambiar modo
+            </Button>
+          </Link>
+        )}
+        <Link href="/producer/events" className="w-full sm:w-auto">
+          <Button type="button" variant="outline" className="w-full">
+            Cancelar
+          </Button>
+        </Link>
+      </div>
+      {step < 3 ? (
+        <Button type="button" onClick={goNext} className="w-full sm:w-auto">
+          Siguiente
         </Button>
-      </Link>
-      <Link href="/producer/events">
-        <Button type="button" variant="outline" className="w-full sm:w-auto">
-          Cancelar
+      ) : (
+        <Button
+          type="submit"
+          disabled={createMutation.isPending || isUploadingCover}
+          className="w-full sm:w-auto"
+        >
+          {createMutation.isPending
+            ? 'Guardando…'
+            : isTicketed
+              ? 'Crear evento (borrador)'
+              : 'Crear publicación (borrador)'}
         </Button>
-      </Link>
-      <Button
-        type="submit"
-        disabled={createMutation.isPending || isUploadingCover}
-        className="w-full sm:w-auto"
-      >
-        {createMutation.isPending
-          ? 'Guardando…'
-          : isTicketed
-            ? 'Crear evento (borrador)'
-            : 'Crear publicación (borrador)'}
-      </Button>
+      )}
     </div>
   );
 
   return (
     <form onSubmit={handleSubmit} className="pb-16">
+      <ProducerEventWizardProgress currentStep={step} />
       <div ref={errorRef}>
         <ProducerEventFormErrorSummary errors={errors} formError={formError} />
       </div>
@@ -181,6 +237,7 @@ export function ProducerEventCreateForm({ mode }: { mode: ProducerEventMode }) {
           uploadConfig={coverUploadConfig}
           onUploadingChange={setIsUploadingCover}
           completenessItems={completenessItems}
+          wizardStep={step}
         />
       </ProducerEventFormLayout>
     </form>

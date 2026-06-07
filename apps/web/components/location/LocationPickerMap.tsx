@@ -9,13 +9,17 @@ export function LocationPickerMap(props: LocationPickerMapProps) {
   const apiKey = getGoogleMapsApiKey();
   const { ready, error } = useGoogleMaps();
 
-  if (!apiKey || error) {
-    return <LocationPickerMapFallback {...props} />;
+  if (!apiKey) {
+    return <LocationPickerMapFallback {...props} mapsLoadError={null} />;
+  }
+
+  if (error) {
+    return <LocationPickerMapFallback {...props} mapsLoadError={error} />;
   }
 
   if (!ready) {
     return (
-      <div className="rounded-xl border border-border bg-bg-muted p-4">
+      <div className="flex min-h-[320px] items-center justify-center rounded-xl border border-border bg-bg-muted p-4">
         <p className="text-sm text-text-muted">Cargando mapa…</p>
       </div>
     );

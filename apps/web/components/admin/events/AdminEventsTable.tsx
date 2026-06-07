@@ -4,6 +4,7 @@ import type { AdminEventListItem } from '@/repositories/interfaces';
 import { getCategoryLabel } from '@/lib/home/contentRoutes';
 import { AdminProducerStatusBadge } from '@/components/admin/producers/AdminProducerStatusBadge';
 import { AdminEventReviewLink } from './AdminEventReviewLink';
+import { AdminEventLifecycleActions } from '@/components/admin/AdminEventLifecycleActions';
 
 function formatDt(iso: string): string {
   return new Date(iso).toLocaleString('es-AR', {
@@ -77,7 +78,10 @@ export function AdminEventsTable({ events }: AdminEventsTableProps) {
                 {formatDt(ev.updatedAt)}
               </td>
               <td className="px-4 py-3">
-                <AdminEventReviewLink event={ev} />
+                <div className="flex flex-col gap-2">
+                  <AdminEventReviewLink event={ev} />
+                  <AdminEventLifecycleActions eventId={ev.id} status={ev.status} compact />
+                </div>
               </td>
             </tr>
           ))}

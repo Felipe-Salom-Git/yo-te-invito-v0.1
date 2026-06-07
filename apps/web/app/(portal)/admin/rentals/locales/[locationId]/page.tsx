@@ -7,6 +7,8 @@ import { useRepositories } from '@/repositories/context';
 import { PageContainer, SectionTitle } from '@/components';
 import { LatLngMapPreview } from '@/components/admin/LatLngMapPreview';
 import { RentalOpeningHoursDisplay } from '@/lib/rentals/openingHoursDisplay';
+import { AdminRentalLocationLifecycleActions } from '@/components/admin/AdminRentalLocationLifecycleActions';
+import { AdminEventLifecycleActions } from '@/components/admin/AdminEventLifecycleActions';
 
 export default function AdminRentalLocalDetailPage() {
   const params = useParams();
@@ -70,7 +72,7 @@ export default function AdminRentalLocalDetailPage() {
             </div>
           )}
 
-          <div className="mt-4 flex flex-wrap gap-3">
+          <div className="mt-4 flex flex-wrap items-center gap-3">
             <Link
               href={`/admin/rentals/locales/${locationId}/editar`}
               className="rounded border border-accent px-3 py-1.5 text-sm text-accent hover:bg-accent/10"
@@ -83,6 +85,10 @@ export default function AdminRentalLocalDetailPage() {
             >
               Agregar producto
             </Link>
+            <AdminRentalLocationLifecycleActions
+              locationId={locationId}
+              isActive={location.isActive}
+            />
           </div>
 
           <h2 className="mt-10 text-lg font-semibold text-text">Productos</h2>
@@ -108,12 +114,19 @@ export default function AdminRentalLocalDetailPage() {
                       <p className="mt-1 line-clamp-2 text-sm text-text-muted">{p.description}</p>
                     )}
                   </div>
-                  <Link
-                    href={`/admin/rentals/locales/${locationId}/productos/${p.id}/editar`}
-                    className="text-sm text-accent hover:underline"
-                  >
-                    Editar
-                  </Link>
+                  <div className="flex flex-col items-end gap-2">
+                    <Link
+                      href={`/admin/rentals/locales/${locationId}/productos/${p.id}/editar`}
+                      className="text-sm text-accent hover:underline"
+                    >
+                      Editar
+                    </Link>
+                    <AdminEventLifecycleActions
+                      eventId={p.id}
+                      status={(p.status ?? 'APPROVED').toLowerCase()}
+                      compact
+                    />
+                  </div>
                 </li>
               ))}
             </ul>

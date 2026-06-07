@@ -29,6 +29,13 @@ const SEED: Array<{ category: string; name: string; sortOrder: number }> = [
   { category: 'excursion', name: 'Nieve', sortOrder: 2 },
   { category: 'excursion', name: 'Aventura', sortOrder: 3 },
   { category: 'excursion', name: 'City tours', sortOrder: 4 },
+  { category: 'excursion', name: 'Verano', sortOrder: 5 },
+  { category: 'excursion', name: 'Invierno', sortOrder: 6 },
+  { category: 'excursion', name: 'Terrestres', sortOrder: 7 },
+  { category: 'excursion', name: 'Familiar', sortOrder: 8 },
+  { category: 'excursion', name: 'Naturaleza', sortOrder: 9 },
+  { category: 'excursion', name: 'Navegación', sortOrder: 10 },
+  { category: 'excursion', name: 'Montaña', sortOrder: 11 },
 ];
 
 async function main() {

@@ -18,7 +18,6 @@ import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { useToast } from '@/components';
 import { EventEngagementRow } from '@/components/events/EventEngagementRow';
 import { getErrorMessage } from '@/lib/errors';
-import { hasPublicLocationForMapLink } from '@/lib/maps';
 import {
   buildRentalGalleryOnlyImages,
   getRentalHeaderImageUrl,
@@ -29,6 +28,15 @@ import { buildExcursionWhatsAppHref } from '@/lib/excursions/whatsapp';
 import { ExcursionProductHero } from './ExcursionProductHero';
 import { ExcursionOperatorCard } from './ExcursionOperatorCard';
 import { ExcursionContactCard } from './ExcursionContactCard';
+import { ExcursionDetailInfoGrid } from './ExcursionDetailInfoGrid';
+import { ExcursionDetailSectionHeading } from './ExcursionDetailSectionHeading';
+import { PublicExternalLinksCard } from '@/components/public/PublicExternalLinksCard';
+import { ExcursionSchedulePublicSections } from './ExcursionSchedulePublicSections';
+import {
+  formatExcursionLocationLabel,
+  resolveExcursionPublicLocation,
+} from '@/lib/excursions/publicLocation';
+import type { EntitySocialLinks, ExcursionSchedulePublic } from '@yo-te-invito/shared';
 import type { RentalOpeningHours } from '@yo-te-invito/shared';
 
 type ExcursionOperatorOnEvent = {
@@ -39,6 +47,9 @@ type ExcursionOperatorOnEvent = {
   openingHours?: RentalOpeningHours | null;
   openingHoursNote?: string | null;
   contactPhone?: string | null;
+  websiteUrl?: string | null;
+  bookingUrl?: string | null;
+  socialLinks?: EntitySocialLinks | null;
   geoLat?: number | null;
   geoLng?: number | null;
 };
@@ -134,27 +145,34 @@ export function ExcursionProductDetailContent({
 
   const operator = (event as { excursionOperator?: ExcursionOperatorOnEvent | null })
     .excursionOperator;
-  const subcategoryName =
-    event.subcategoryId && subcategories
-      ? subcategories.find((s) => s.id === event.subcategoryId)?.name
-      : null;
+  const eventSubcategories = event.subcategories?.length
+    ? event.subcategories
+    : event.subcategoryId && subcategories
+      ? (() => {
+          const name = subcategories.find((s) => s.id === event.subcategoryId)?.name;
+          return name ? [{ id: event.subcategoryId!, name, isPrimary: true }] : [];
+        })()
+      : [];
+  const subcategoryNames = eventSubcategories.map((s) => s.name).filter(Boolean);
+  const subcategoryName = subcategoryNames[0] ?? null;
 
   const headerImageUrl = getRentalHeaderImageUrl(event);
   const galleryImages = buildRentalGalleryOnlyImages(event);
   const hasGallery = galleryImages.length > 0;
 
-  const locationVenueName = operator?.name ?? event.venueName;
-  const locationAddress = operator?.address ?? event.venueAddress;
-  const locationCity = operator?.city ?? event.city;
-  const locationGeoLat = operator?.geoLat ?? event.geoLat;
-  const locationGeoLng = operator?.geoLng ?? event.geoLng;
-  const hasLocation = hasPublicLocationForMapLink({
-    address: locationAddress,
-    city: locationCity,
-    venueName: locationVenueName,
-    geoLat: locationGeoLat,
-    geoLng: locationGeoLng,
-  });
+  const resolvedLocation = resolveExcursionPublicLocation(event, operator);
+  const locationVenueName = resolvedLocation.venueName;
+  const locationAddress = resolvedLocation.address;
+  const locationCity = resolvedLocation.city;
+  const locationGeoLat = resolvedLocation.geoLat;
+  const locationGeoLng = resolvedLocation.geoLng;
+  const hasLocation = resolvedLocation.hasLocation;
+  const locationLabel = formatExcursionLocationLabel(resolvedLocation);
+  const schedule = (event as { excursionSchedule?: ExcursionSchedulePublic | null })
+    .excursionSchedule;
+  const locationSourceNote = !resolvedLocation.usesEventLocation && operator
+    ? 'Ubicación del operador. La excursión puede tener punto de encuentro propio más abajo.'
+    : null;
 
   const whatsAppHref = buildExcursionWhatsAppHref(operator?.contactPhone, event.title);
 
@@ -187,21 +205,48 @@ export function ExcursionProductDetailContent({
         />
 
         <div className="mt-8 grid gap-8 lg:grid-cols-[1.65fr,1fr] lg:items-start lg:gap-10">
-          <div className="min-w-0 space-y-8">
-            <RentalDescriptionBlock productTitle={event.title} description={event.description} />
+          <div className="min-w-0 space-y-10">
+            <ExcursionDetailInfoGrid
+              subcategoryName={subcategoryName}
+              subcategoryNames={subcategoryNames}
+              operatorName={operator?.name ?? event.venueName}
+              departureTime={schedule?.departureTime}
+              durationText={schedule?.durationText}
+            />
+
+            <div className="h-px bg-gradient-to-r from-accent/60 via-white/10 to-transparent" aria-hidden />
+
+            <ExcursionSchedulePublicSections
+              schedule={schedule}
+              locationLabel={locationLabel}
+              hasLocation={hasLocation}
+              onViewLocation={hasLocation ? () => setIsLocationModalOpen(true) : undefined}
+              locationSourceNote={locationSourceNote}
+            />
+
+            <div className="h-px bg-gradient-to-r from-accent/60 via-white/10 to-transparent" aria-hidden />
+
+            <section className="space-y-4">
+              <ExcursionDetailSectionHeading title="Sobre la excursión" />
+              <RentalDescriptionBlock productTitle={event.title} description={event.description} />
+            </section>
 
             {hasGallery && (
-              <section>
-                <h2 className="text-lg font-semibold text-white">Galería</h2>
-                <div className="mt-4">
-                  <RentalGalleryThumbnails images={galleryImages} />
-                </div>
+              <section className="space-y-4">
+                <ExcursionDetailSectionHeading title="Galería" />
+                <RentalGalleryThumbnails images={galleryImages} />
               </section>
             )}
           </div>
 
           <aside className="space-y-4 lg:sticky lg:top-8">
             <ExcursionContactCard whatsAppHref={whatsAppHref} />
+            <PublicExternalLinksCard
+              title="Reservas y redes"
+              websiteUrl={operator?.websiteUrl}
+              bookingUrl={operator?.bookingUrl}
+              socialLinks={operator?.socialLinks}
+            />
             {showOperatorCard && (
               <ExcursionOperatorCard
                 name={operator?.name ?? event.venueName ?? 'Operador'}

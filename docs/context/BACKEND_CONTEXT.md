@@ -38,6 +38,24 @@ HTTP → Controller (thin) → ZodValidationPipe → Service → Prisma → Post
 
 **Schemas** (`packages/shared`): `opening-hours.ts` (`RentalOpeningHours`: weekday / saturday / sunday + exceptions), `rental-locations.ts`.
 
+**Límites de contenido V3.1 (Slice 4):** `constants/content-limits.ts` — `PUBLIC_SUMMARY_MAX_LENGTH` (500), `PUBLIC_SUBTITLE_MAX_LENGTH` (400), helpers `trimToPublicSummary` / `trimToPublicSubtitle`; usados en schemas events/rentals/excursions/gastro + servicios API defensivos.
+
+**Links externos V3.1 (Slice 6):** migración `20260610120000_external_links_gastro_excursion`; `schemas/external-links.ts` + `entity-social-links.util.ts`; gastro local/admin y operador excursión exponen `websiteUrl`, `bookingUrl`, `menuUrl` (gastro), `socialLinks` JSON (instagram/facebook/tiktok/youtube/externalUrl).
+
+**Horarios excursión V3.1 (Slice 7):** migración `20260611120000_excursion_schedule_fields`; campos texto en `Event` (`excursionDepartureTime`, `excursionDurationText`, `excursionAvailableDaysText`, `excursionScheduleNotes`, `excursionMeetingPoint`); `schemas/excursion-schedule.ts`; CRUD producto en `ExcursionOperatorsService`; detalle público `GET /public/events/:id` incluye `excursionSchedule`; ubicación por producto opcional vía campos geo/address existentes en `Event` (fallback operador en web).
+
+**Stabilization V3.1 (Slice 7.5):** smoke `pnpm --filter api run smoke:v31-stabilization` — verifica columnas Slice 6+7+8 (`EventSubcategory`) y roundtrip efímero; doc `docs/audits/V3_1_SLICE_7_5_STABILIZATION_SMOKE.md`. Deploy: aplicar migraciones `20260610120000_*`, `20260611120000_*`, `20260612120000_event_subcategories` antes de API/web.
+
+**Subcategorías múltiples V3.1 (Slice 8 fase 1):** tabla `EventSubcategory`; excursiones aceptan `subcategoryIds` + `subcategoryId` principal; filtros públicos OR legacy/adicionales; solo categoría `excursion` en formularios/UI.
+
+**Admin archivar V3.1 (Slice 9):** `AdminContentLifecycleService` — `POST /admin/events/:id/pause|restore`, `POST /admin/rental-locations/:id/deactivate|activate`, `POST /admin/excursion-operators/:id/deactivate|activate`; gastro `PATCH .../status` con audit; público filtra padres inactivos (`public-content-availability.util.ts`). Doc: `V3_1_SLICE_9_ADMIN_ARCHIVE_SMOKE.md`.
+
+**Banners editoriales V3.1 (Slice 10):** `CategoryEditorialBanner` + `CategoryEditorialBannersService` — `GET/POST /admin/category-editorial-banners`, `PATCH /admin/category-editorial-banners/:id`, `POST .../reorder`; público `GET /public/category-editorial-banners`. Audit: `CATEGORY_EDITORIAL_BANNER_*`. Convive con `CategoryBannerItem` (eventos). Migración `20260614120000_category_editorial_banners`. Doc: `V3_1_SLICE_10_CATEGORY_BANNERS_SMOKE.md`.
+
+**Validación DB V3.1 (Slice 8.5):** smoke `pnpm --filter api run smoke:v31-subcategories` — schema junction, create/edit/sync, filtro secundaria, `subcategories[]` en detalle; doc `docs/audits/V3_1_SLICE_8_5_SUBCATEGORIES_SMOKE.md`. Ejecutar junto con `smoke:v31-stabilization` tras `prisma migrate deploy` local.
+
+**QA pre-deploy V3.1 (Slice 14):** 5 migraciones (`20260610120000` … `20260614120000`) aplicadas; smokes `smoke:v31-stabilization`, `smoke:v31-subcategories`, `smoke:v31-admin-archive`, `smoke:v31-category-banners` — todos exit 0 (HTTP admin opcional con API levantada). Deploy VPS: `prisma migrate deploy` antes de restart; doc `docs/audits/V3_1_PRE_DEPLOY_QA_CLOSING.md`.
+
 **Admin endpoints** (`AdminRentalLocationsController`, role `ADMIN`):
 
 | Method | Path |

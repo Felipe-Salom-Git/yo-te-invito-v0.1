@@ -16,6 +16,7 @@ import {
   type RentalOpeningHours,
   type UpdateRentalLocationBody,
   type UpdateRentalProductBody,
+  trimToPublicSummary,
 } from '@yo-te-invito/shared';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EventPublicationAlertsService } from '../notifications/event-publication-alerts.service';
@@ -35,9 +36,7 @@ export class RentalLocationsService {
     value: string | null | undefined,
   ): string | null | undefined {
     if (value === undefined) return undefined;
-    if (value == null) return null;
-    const t = value.trim();
-    return t === '' ? null : t.slice(0, 220);
+    return trimToPublicSummary(value);
   }
 
   private normalizePhone(
@@ -143,6 +142,7 @@ export class RentalLocationsService {
       subcategoryId: event.subcategoryId,
       description: event.description,
       summary: event.summary,
+      status: event.status,
     };
   }
 

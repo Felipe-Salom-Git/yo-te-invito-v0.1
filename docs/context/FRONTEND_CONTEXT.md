@@ -184,6 +184,26 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`). Shared UI tokens:
 | PlaceDetailView | `components/places/` (non-rental) |
 | TicketStudioClient | `components/producer/ticket-studio/` |
 | OpeningHoursEditor, RentalProductImagesForm | `components/forms/`, `components/rentals/` |
+| **ImageUploadHint**, `imageUploadHints.ts` | `components/upload/`, `lib/upload/` — medidas/formato/peso en formularios GCS (V3.1 Slice 1) |
+| **FieldCharacterCounter**, `RentalSummaryField` | `components/forms/`, `components/rentals/` — contador resumen 220 y campos con límite (V3.1 Slice 1) |
+| **PublicDescriptionBlock** | `components/public/` — preview + «Leer descripción completa» modal (V3.1 Slice 2) |
+| **getContentCardPrimaryBadge** | `lib/home/contentCardPresentation.ts` — badges útiles en cards (subcategoría > genérico; V3.1 Slice 2) |
+| **HomeCategoryStrip** | `components/home/` — grid categorías en home; oculto en mobile (`md+` only; Slice 3) |
+| **ExcursionDetailInfoGrid** | `components/excursions/` — cards info clave en detalle excursión (Slice 3) |
+| **RentalProductImagesForm** | galería con Subir/Bajar; orden → API `sortOrder` (Slice 5) |
+| **PUBLIC_SUMMARY_MAX_LENGTH** | import desde `@yo-te-invito/shared` — 500 chars resumen (Slice 4) |
+| **ExternalLinksFormFields** | `components/forms/` — carga URLs/redes validadas (Slice 6) |
+| **PublicExternalLinksCard** | `components/public/` — bloque «Reservas y redes» en fichas gastro/excursión (Slice 6) |
+| **ExcursionScheduleFormFields** | `components/excursions/` — horario/duración/días/punto de encuentro en admin excursión (Slice 7) |
+| **ExcursionSchedulePublicSections** | `components/excursions/` — secciones públicas horario/encuentro/ubicación/observaciones (Slice 7) |
+
+**Slice 7.5 smoke (estabilización):** revisión estática rutas §7.5 en `docs/audits/V3_1_SLICE_7_5_STABILIZATION_SMOKE.md` — `PublicExternalLinksCard` oculta vacíos; WhatsApp excursión solo en `ExcursionContactCard`.
+
+**Slice 8.5 smoke (subcategorías):** checklist manual UI en `docs/audits/V3_1_SLICE_8_5_SUBCATEGORIES_SMOKE.md` — multi-select solo excursiones; detalle `/excursiones/[id]`; filtros categoría/explore por secundaria.
+
+**Slice 9 admin archivar:** `AdminEventLifecycleActions`, `AdminRentalLocationLifecycleActions`, `AdminExcursionOperatorLifecycleActions`, `AdminArchiveConfirmModal` — `/admin/eventos`, rentals locales, operadores excursión; gastro suspend/activate en `AdminGastroLocationsPageClient`.
+
+| **ExcursionSubcategoryMultiSelect** | `components/excursions/` — multi-select chips excursiones; principal = primera (Slice 8) |
 | Reviews V2 (público + portales) | `components/reviews/` — filtros públicos `PublicReviewsFiltersBar` + hooks `usePublicEntityReviewsState` / `useUserPublicReviewsState`; `EventReviewsSection`; perfil `/users/[userId]`; portales `ManagedReviewsCommentsPage` (URL query en productor/gastro/hotel, chips + orden/respuesta/disputa/estado); `ReviewReplyModal` |
 | Comentarios productora | `components/producer/comments/` (`ProducerCommentsPage` → `ManagedReviewsCommentsPage`, filtros rápidos, resumen API) |
 | Perfil productor (portal) | `components/producer/profile/` (`ProducerProfilePage`, `ProducerIdentityForm` + `ProducerImagesForm` con GCS, `ManagedReviewSummary`, `ProducerProfilePublicPreview`, `producer-profile-completeness.ts`) |
@@ -200,7 +220,11 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`). Shared UI tokens:
 | Alertas valoraciones | `ManagedPortalReviewAlerts` en dashboard productor y portal gastro; labels en `/me/notifications`; preferencias `notifyManagedReviews` / `notifyReviewEngagement` en `MePushAlertPreferences` |
 | Reputación admin | `/admin/reviews` — `AdminReviewsReportPageClient`, KPIs, tabla por vertical, señales problemáticas, top disputas, export CSV; hook `useAdminReviewsReport` |
 | Usuarios admin | `components/admin/users/` — `AdminUsersPageClient`, filtros URL, tabla + cards mobile, badges rol/perfiles; cambio de rol con confirmación; cuenta maestro sin selector; hook `lib/query/admin-users.ts` |
-| Subcategorías admin | `components/admin/subcategories/` — `AdminSubcategoriesPageClient`, tabs por vertical, CRUD vía `SubcategoriesRepo`, hotel `AdminHotelComingSoonPanel`; banners en `AdminCategoryBannerPanel`; hook `useAdminSubcategories` |
+| Subcategorías admin | `components/admin/subcategories/` — `AdminSubcategoriesPageClient`, tabs por vertical, CRUD vía `SubcategoriesRepo`, hotel `AdminHotelComingSoonPanel`; banners editoriales `AdminCategoryEditorialBannerPanel` + eventos `AdminCategoryBannerPanel`; hooks `useAdminSubcategories`, `useCategoryHeroBanner` |
+| Productora eventos | `ProducerEventCreateForm` / `ProducerEventEditForm` — wizard 3 pasos (`ProducerEventWizardProgress`, `wizardStep`); `ProducerEventPublicationLegalNotice` paso 3; ticket types post-create en `/producer/events/[id]` |
+| Ratings públicos 5/5 | `lib/reviews/ratingDisplay.ts` — `formatPublicRatingLabel`; sin cambio DB/API (Slice 13) |
+| ContentCard editorial | `components/home/ContentCard.tsx` — fase 1 afiche (fecha badge, badges sutiles, poster title; Slice 13) |
+| **QA pre-deploy V3.1** | Slice 14 — builds OK; QA manual browser pendiente (`V3_1_PRE_DEPLOY_QA_CLOSING.md` §6) |
 | **Legales admin** | `components/admin/legal/` — `/admin/legales` (tabla desktop `md+` con `overflow-x-auto` + `min-w-[900px]`; cards `md:hidden`), detalle, versiones; `LegalDocumentsRepo` + `lib/query/admin-legal-documents.ts` |
 | **Legales público** | `components/legal/` — `/legal/[slug]` (server fetch, ISR); preview Markdown |
 | **Registro V2** | `components/auth/RegisterWizard.tsx`, `components/auth/register/*` (pasos comprador/productora/gastro/hotel/referido), `lib/auth/register-error-messages.ts`, `lib/auth/register-validation.ts`, `lib/onboarding/*-portal-onboarding.ts`, `OnboardingChecklistCard`; ubicación: `ProvinceCitySelect`, `GastroProvinceCityFields`, catálogo `@yo-te-invito/shared` → `ARGENTINA_PROVINCES` |

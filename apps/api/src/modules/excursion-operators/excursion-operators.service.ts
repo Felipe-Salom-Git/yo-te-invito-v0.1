@@ -21,11 +21,21 @@ import {
   type RentalOpeningHours,
   type UpdateExcursionOperatorBody,
   type UpdateExcursionProductBody,
+  trimToPublicSummary,
 } from '@yo-te-invito/shared';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EventPublicationAlertsService } from '../notifications/event-publication-alerts.service';
 import { SubcategoriesService } from '../subcategories/subcategories.service';
 import { normalizeRentalProductImages } from '../rental-locations/rental-product-images.util';
+import { readEntitySocialLinks, writeEntitySocialLinks } from '../../common/entity-social-links.util';
+import {
+  readExcursionSchedulePublic,
+  writeExcursionScheduleFields,
+} from '../../common/excursion-schedule.util';
+import {
+  resolveValidatedExcursionSubcategories,
+  syncEventSubcategories,
+} from '../../common/event-subcategories.util';
 
 @Injectable()
 export class ExcursionOperatorsService {
@@ -39,9 +49,7 @@ export class ExcursionOperatorsService {
     value: string | null | undefined,
   ): string | null | undefined {
     if (value === undefined) return undefined;
-    if (value == null) return null;
-    const t = value.trim();
-    return t === '' ? null : t.slice(0, 220);
+    return trimToPublicSummary(value);
   }
 
   private toPrismaEventStatus(status?: string): EventStatus {
@@ -81,6 +89,9 @@ export class ExcursionOperatorsService {
       openingHours: this.readOpeningHours(row),
       openingHoursNote: row.openingHoursNote,
       contactPhone: row.contactPhone,
+      websiteUrl: row.websiteUrl,
+      bookingUrl: row.bookingUrl,
+      socialLinks: readEntitySocialLinks(row.socialLinks),
       geoLat: row.geoLat,
       geoLng: row.geoLng,
       isActive: row.isActive,
@@ -101,6 +112,7 @@ export class ExcursionOperatorsService {
       subcategoryId: event.subcategoryId,
       description: event.description,
       summary: event.summary,
+      status: event.status,
     };
   }
 
@@ -173,6 +185,9 @@ export class ExcursionOperatorsService {
         openingHours: this.writeOpeningHours(body.openingHours ?? null),
         openingHoursNote: body.openingHoursNote?.trim() || null,
         contactPhone: body.contactPhone?.trim() || null,
+        websiteUrl: body.websiteUrl ?? null,
+        bookingUrl: body.bookingUrl ?? null,
+        socialLinks: writeEntitySocialLinks(body.socialLinks),
         geoLat: body.geoLat ?? null,
         geoLng: body.geoLng ?? null,
         isActive: body.isActive ?? true,
@@ -207,6 +222,11 @@ export class ExcursionOperatorsService {
         ...(body.contactPhone !== undefined && {
           contactPhone: body.contactPhone?.trim() || null,
         }),
+        ...(body.websiteUrl !== undefined && { websiteUrl: body.websiteUrl }),
+        ...(body.bookingUrl !== undefined && { bookingUrl: body.bookingUrl }),
+        ...(body.socialLinks !== undefined && {
+          socialLinks: writeEntitySocialLinks(body.socialLinks),
+        }),
         ...(body.geoLat !== undefined && { geoLat: body.geoLat ?? null }),
         ...(body.geoLng !== undefined && { geoLng: body.geoLng ?? null }),
         ...(body.isActive !== undefined && { isActive: body.isActive }),
@@ -232,46 +252,71 @@ export class ExcursionOperatorsService {
     body: CreateExcursionProductBody,
   ) {
     const operator = await this.assertOperator(tenantId, operatorId);
-    const subcategoryId = await this.subcategories.resolveSubcategoryForEvent(
+    const subcategoryResolved = await resolveValidatedExcursionSubcategories(
+      this.prisma,
       tenantId,
-      'excursion',
-      body.subcategoryId ?? null,
+      {
+        ...(body.subcategoryId !== undefined ? { subcategoryId: body.subcategoryId } : {}),
+        ...(body.subcategoryIds !== undefined ? { subcategoryIds: body.subcategoryIds } : {}),
+      },
     );
+    const subcategoryId = subcategoryResolved?.primaryId ?? null;
     const { headerImageUrl, galleryMedia } = normalizeRentalProductImages(body);
     const now = new Date();
-    const event = await this.prisma.event.create({
-      data: {
-        tenantId,
-        producerId,
-        category: 'excursion',
-        excursionOperatorId: operator.id,
-        subcategoryId,
-        title: body.title.trim(),
-        summary: this.normalizeSummary(body.summary) ?? null,
-        description: body.description?.trim() || null,
-        startAt: now,
-        endAt: null,
-        city: operator.city,
-        venueName: operator.name,
-        venueAddress: operator.address,
-        geoLat: operator.geoLat,
-        geoLng: operator.geoLng,
-        coverImageUrl: headerImageUrl ?? null,
-        status: this.toPrismaEventStatus(body.status),
-        isTicketingEnabled: false,
-        media: galleryMedia?.length
-          ? {
-              create: galleryMedia.map((m) => ({
-                type: m.type,
-                url: m.url,
-                sortOrder: m.sortOrder,
-              })),
-            }
-          : undefined,
-      },
-      include: {
-        media: { where: { deletedAt: null }, orderBy: { sortOrder: 'asc' } },
-      },
+    const hasLocationOverride =
+      body.venueAddress !== undefined ||
+      body.city !== undefined ||
+      body.province !== undefined ||
+      body.googlePlaceId !== undefined ||
+      body.geoLat !== undefined ||
+      body.geoLng !== undefined;
+    const event = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.event.create({
+        data: {
+          tenantId,
+          producerId,
+          category: 'excursion',
+          excursionOperatorId: operator.id,
+          subcategoryId,
+          title: body.title.trim(),
+          summary: this.normalizeSummary(body.summary) ?? null,
+          description: body.description?.trim() || null,
+          startAt: now,
+          endAt: null,
+          city: hasLocationOverride ? (body.city?.trim() || null) : null,
+          province: hasLocationOverride ? (body.province?.trim() || null) : null,
+          venueName: operator.name,
+          venueAddress: hasLocationOverride ? (body.venueAddress?.trim() || null) : null,
+          googlePlaceId: hasLocationOverride ? (body.googlePlaceId?.trim() || null) : null,
+          geoLat: hasLocationOverride ? (body.geoLat ?? null) : null,
+          geoLng: hasLocationOverride ? (body.geoLng ?? null) : null,
+          coverImageUrl: headerImageUrl ?? null,
+          status: this.toPrismaEventStatus(body.status),
+          ...writeExcursionScheduleFields(body),
+          isTicketingEnabled: false,
+          media: galleryMedia?.length
+            ? {
+                create: galleryMedia.map((m) => ({
+                  type: m.type,
+                  url: m.url,
+                  sortOrder: m.sortOrder,
+                })),
+              }
+            : undefined,
+        },
+        include: {
+          media: { where: { deletedAt: null }, orderBy: { sortOrder: 'asc' } },
+        },
+      });
+      if (subcategoryResolved) {
+        await syncEventSubcategories(
+          tx,
+          created.id,
+          subcategoryResolved.primaryId,
+          subcategoryResolved.allIds,
+        );
+      }
+      return created;
     });
     if (event.status === 'APPROVED') {
       this.publicationAlerts.handleEventBecameApproved(tenantId, event.id);
@@ -303,33 +348,67 @@ export class ExcursionOperatorsService {
     }
 
     let subcategoryId: string | null | undefined = undefined;
-    if (body.subcategoryId !== undefined) {
-      subcategoryId = await this.subcategories.resolveSubcategoryForEvent(
+    let subcategoryResolved: Awaited<
+      ReturnType<typeof resolveValidatedExcursionSubcategories>
+    > = null;
+    if (body.subcategoryId !== undefined || body.subcategoryIds !== undefined) {
+      subcategoryResolved = await resolveValidatedExcursionSubcategories(
+        this.prisma,
         tenantId,
-        'excursion',
-        body.subcategoryId,
+        {
+          subcategoryId: body.subcategoryId,
+          subcategoryIds: body.subcategoryIds,
+        },
       );
+      subcategoryId = subcategoryResolved?.primaryId ?? null;
     }
 
     const { headerImageUrl, galleryMedia } = normalizeRentalProductImages(body);
+    const hasLocationOverride =
+      body.venueAddress !== undefined ||
+      body.city !== undefined ||
+      body.province !== undefined ||
+      body.googlePlaceId !== undefined ||
+      body.geoLat !== undefined ||
+      body.geoLng !== undefined;
 
     const previousStatus = existing.status;
-    const event = await this.prisma.event.update({
-      where: { id: excursionId },
-      data: {
-        ...(body.title !== undefined && { title: body.title.trim() }),
-        ...(body.summary !== undefined && {
-          summary: this.normalizeSummary(body.summary) ?? null,
-        }),
-        ...(body.description !== undefined && {
-          description: body.description?.trim() || null,
-        }),
-        ...(headerImageUrl !== undefined && { coverImageUrl: headerImageUrl }),
-        ...(body.status !== undefined && {
-          status: this.toPrismaEventStatus(body.status),
-        }),
-        ...(subcategoryId !== undefined && { subcategoryId }),
-      },
+    const event = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.event.update({
+        where: { id: excursionId },
+        data: {
+          ...(body.title !== undefined && { title: body.title.trim() }),
+          ...(body.summary !== undefined && {
+            summary: this.normalizeSummary(body.summary) ?? null,
+          }),
+          ...(body.description !== undefined && {
+            description: body.description?.trim() || null,
+          }),
+          ...(headerImageUrl !== undefined && { coverImageUrl: headerImageUrl }),
+          ...(body.status !== undefined && {
+            status: this.toPrismaEventStatus(body.status),
+          }),
+          ...(subcategoryId !== undefined && { subcategoryId }),
+          ...writeExcursionScheduleFields(body),
+          ...(hasLocationOverride && {
+            city: body.city?.trim() || null,
+            province: body.province?.trim() || null,
+            venueAddress: body.venueAddress?.trim() || null,
+            googlePlaceId: body.googlePlaceId?.trim() || null,
+            geoLat: body.geoLat ?? null,
+            geoLng: body.geoLng ?? null,
+          }),
+        },
+      });
+      if (subcategoryResolved) {
+        await syncEventSubcategories(
+          tx,
+          excursionId,
+          subcategoryResolved.primaryId,
+          subcategoryResolved.allIds,
+        );
+      }
+      return updated;
     });
 
     if (event.status === 'APPROVED') {

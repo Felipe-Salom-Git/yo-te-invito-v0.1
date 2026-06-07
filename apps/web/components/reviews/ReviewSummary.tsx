@@ -1,6 +1,10 @@
 'use client';
 
 import type { PublicReviewCategory } from '@yo-te-invito/shared';
+import {
+  formatPublicRatingLabel,
+  publicRatingAriaLabel,
+} from '@/lib/reviews/ratingDisplay';
 import { ReviewAspectBreakdown } from './ReviewAspectBreakdown';
 
 export interface ReviewSummaryProps {
@@ -40,12 +44,12 @@ export function ReviewSummary({
         {hasAverage ? (
           <div
             className="flex shrink-0 items-baseline gap-1 self-start sm:self-auto"
-            aria-label={`Promedio ${averageRating!.toFixed(1)} de 10`}
+            aria-label={publicRatingAriaLabel(averageRating!)}
           >
             <span className="text-4xl font-bold tabular-nums text-white sm:text-5xl">
-              {averageRating!.toFixed(1)}
+              {formatPublicRatingLabel(averageRating, { suffix: false })}
             </span>
-            <span className="pb-1 text-base text-text-muted sm:text-lg">/10</span>
+            <span className="pb-1 text-base text-text-muted sm:text-lg">/5</span>
           </div>
         ) : null}
       </div>

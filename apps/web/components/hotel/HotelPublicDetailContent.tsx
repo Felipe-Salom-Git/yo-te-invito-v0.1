@@ -15,6 +15,7 @@ import { EventReviewsSection } from '@/components/events/EventReviewsSection';
 import { ReviewForm, type ReviewFormSubmitPayload } from '@/components/reviews/ReviewForm';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import type { PublicHotelLocation } from '@/repositories/interfaces';
+import { formatPublicRatingLabel } from '@/lib/reviews/ratingDisplay';
 
 export type HotelPublicDetailContentProps = {
   hotel: PublicHotelLocation;
@@ -106,7 +107,10 @@ export function HotelPublicDetailContent({
             href="#reviews"
             className="inline-flex rounded-full border border-white/25 bg-black/40 px-3 py-1.5 text-sm text-white/90 backdrop-blur-sm hover:border-accent/50"
           >
-            {ratingDisplay != null ? `${ratingDisplay.toFixed(1)} ★` : 'Valoraciones'} ·{' '}
+            {ratingDisplay != null
+              ? `${formatPublicRatingLabel(ratingDisplay) ?? ratingDisplay.toFixed(1)} ★`
+              : 'Valoraciones'}{' '}
+            ·{' '}
             {reviewCountDisplay} {reviewCountDisplay === 1 ? 'reseña' : 'reseñas'}
           </a>
         ) : null}

@@ -4,6 +4,7 @@
  */
 
 export * from './enums';
+export * from './constants/content-limits';
 export * from './constants/ticket-transfer';
 export * from './constants/master-user';
 export * from './constants/legal-documents';
@@ -12,6 +13,7 @@ export * from './constants/auth-register';
 export * from './location/argentina-locations';
 export * from './location/labels';
 export type { ProvinceOption } from './location/types';
+export * from './schemas/event-subcategories';
 export * from './schemas/events';
 export * from './schemas/scanner';
 export * from './schemas/scanner-gastro-discount';
@@ -45,13 +47,17 @@ export * from './schemas/referral-metrics';
 export * from './schemas/inbox.schema';
 export * from './schemas/subcategories';
 export * from './schemas/category-banners';
+export * from './schemas/category-editorial-banners';
 export * from './schemas/opening-hours';
 export * from './schemas/rental-locations';
+export * from './schemas/external-links';
+export * from './schemas/excursion-schedule';
 export * from './schemas/excursion-operators';
 export * from './schemas/admin-producers';
 export * from './schemas/admin-dashboard';
 export * from './schemas/admin-reviews-report';
 export * from './schemas/admin-events-list';
+export * from './schemas/admin-content-lifecycle';
 export * from './schemas/admin-users';
 export * from './schemas/admin-payments';
 export * from './schemas/general-publications';

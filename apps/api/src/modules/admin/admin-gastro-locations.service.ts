@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { ProfileStatus, Prisma } from '@prisma/client';
+import { AuditAction, ProfileStatus, Prisma } from '@prisma/client';
 import {
   ErrorCode,
   type AdminGastroLocationCreateInput,
@@ -19,6 +19,7 @@ import {
   writeGastroOpeningHours,
 } from '../gastro/gastro-profile-fields.util';
 import { GastroPublicEventSyncService } from '../gastro/gastro-public-event-sync.service';
+import { writeEntitySocialLinks } from '../../common/entity-social-links.util';
 
 @Injectable()
 export class AdminGastroLocationsService {
@@ -124,6 +125,8 @@ export class AdminGastroLocationsService {
         contactEmail: body.contactEmail.trim(),
         menuUrl: body.menuUrl ?? null,
         websiteUrl: body.websiteUrl ?? null,
+        bookingUrl: body.bookingUrl ?? null,
+        socialLinks: writeEntitySocialLinks(body.socialLinks),
         status,
         createdByUserId: adminUserId,
       },
@@ -208,6 +211,10 @@ export class AdminGastroLocationsService {
         }),
         ...(body.menuUrl !== undefined && { menuUrl: body.menuUrl }),
         ...(body.websiteUrl !== undefined && { websiteUrl: body.websiteUrl }),
+        ...(body.bookingUrl !== undefined && { bookingUrl: body.bookingUrl }),
+        ...(body.socialLinks !== undefined && {
+          socialLinks: writeEntitySocialLinks(body.socialLinks),
+        }),
       },
     });
 
@@ -239,6 +246,7 @@ export class AdminGastroLocationsService {
   async updateStatus(
     tenantId: string,
     adminUserId: string,
+    adminRole: string,
     profileId: string,
     body: AdminGastroLocationStatusPatchInput,
   ) {
@@ -253,9 +261,35 @@ export class AdminGastroLocationsService {
     }
 
     const status = body.status as ProfileStatus;
-    const updated = await this.prisma.gastroProfile.update({
-      where: { id: profileId },
-      data: { status },
+    const before = { status: existing.status };
+    const after = { status };
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const row = await tx.gastroProfile.update({
+        where: { id: profileId },
+        data: { status },
+      });
+      const auditAction =
+        status === 'SUSPENDED'
+          ? AuditAction.GASTRO_PROFILE_SUSPENDED
+          : status === 'ACTIVE'
+            ? AuditAction.GASTRO_PROFILE_ACTIVATED
+            : null;
+      if (auditAction) {
+        await tx.auditLog.create({
+          data: {
+            tenantId,
+            actorId: adminUserId,
+            actorRole: adminRole,
+            action: auditAction,
+            entityType: 'GastroProfile',
+            entityId: profileId,
+            before: before as object,
+            after: after as object,
+          },
+        });
+      }
+      return row;
     });
 
     const actorUserId = existing.createdByUserId ?? adminUserId;

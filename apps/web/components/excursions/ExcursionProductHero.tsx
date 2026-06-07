@@ -24,9 +24,8 @@ export function ExcursionProductHero({
 }: ExcursionProductHeroProps) {
   const heroSummary = getRentalHeroSummaryText(summary, description);
 
-  const chips: string[] = [getCategoryLabel('excursion')];
-  if (subcategoryName?.trim()) chips.push(subcategoryName.trim());
-  if (operatorName?.trim()) chips.push(operatorName.trim());
+  const subcategory = subcategoryName?.trim() ?? null;
+  const operator = operatorName?.trim() ?? null;
 
   return (
     <section className="relative h-[40vh] min-h-[280px] overflow-hidden bg-black md:h-[50vh] md:min-h-[400px]">
@@ -51,22 +50,26 @@ export function ExcursionProductHero({
           {title}
         </h1>
         {heroSummary && (
-          <p className="mt-2 max-w-2xl text-base leading-relaxed text-white/75 drop-shadow sm:text-lg">
+          <p className="mt-3 max-w-2xl text-base leading-relaxed text-white/85 drop-shadow sm:text-lg md:max-w-3xl">
             {heroSummary}
           </p>
         )}
-        {chips.length > 0 && (
-          <div className="mt-4 flex flex-wrap gap-2">
-            {chips.map((label) => (
-              <span
-                key={label}
-                className="inline-flex rounded-full border border-white/25 bg-black/40 px-3 py-1 text-sm text-white/90 backdrop-blur-sm"
-              >
-                {label}
-              </span>
-            ))}
-          </div>
-        )}
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          {subcategory ? (
+            <span className="inline-flex rounded-full bg-accent/90 px-3 py-1 text-sm font-medium text-bg">
+              {subcategory}
+            </span>
+          ) : (
+            <span className="inline-flex rounded-full border border-white/25 bg-black/40 px-3 py-1 text-sm text-white/90 backdrop-blur-sm">
+              {getCategoryLabel('excursion')}
+            </span>
+          )}
+          {operator ? (
+            <span className="text-sm text-white/70">
+              por <span className="font-medium text-white">{operator}</span>
+            </span>
+          ) : null}
+        </div>
         {children && <div className="mt-4 [&_a]:text-white/80 [&_p]:text-white/80">{children}</div>}
       </div>
     </section>

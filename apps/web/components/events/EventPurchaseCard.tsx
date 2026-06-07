@@ -18,7 +18,7 @@ export interface EventPurchaseCardProps {
   qtyByType: Record<string, number>;
   onQtyChange: (ticketTypeId: string, qty: number) => void;
   onAddToCart: (tt: TicketTypeResponse, qty: number) => void;
-  /** Optional: show popularity badge when ratingAvg >= 4.5 and ratingCount >= 10 */
+  /** Optional: show popularity badge when ratingAvg >= 9 (4.5/5 visual) and ratingCount >= 10 */
   ratingAvg?: number | null;
   ratingCount?: number;
 }
@@ -43,7 +43,7 @@ export function EventPurchaseCard({
     0
   );
   const showScarcity = totalAvailable > 0 && totalAvailable <= 30;
-  const showPopular = ratingAvg != null && ratingAvg >= 4.5 && (ratingCount ?? 0) >= 10;
+  const showPopular = ratingAvg != null && ratingAvg >= 9 && (ratingCount ?? 0) >= 10;
   return (
     <div
       id="comprar"

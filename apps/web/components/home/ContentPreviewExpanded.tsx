@@ -2,12 +2,13 @@
 
 import type { ContentCardItem } from './ContentCard';
 import {
-  getContentCardCategoryBadge,
+  getContentCardPrimaryBadge,
   getContentCardLocationLine,
   getContentCardPlaceholderEmoji,
   isRentalContent,
   RENTAL_CARD_CTA,
 } from '@/lib/home/contentCardPresentation';
+import { formatPublicRatingLabel } from '@/lib/reviews/ratingDisplay';
 
 export interface ContentPreviewExpandedProps {
   item: ContentCardItem;
@@ -34,11 +35,11 @@ function ContentHighlights({ item }: { item: ContentCardItem }) {
     }
   }
 
-  if (item.category) {
-    bullets.push(getContentCardCategoryBadge(item.category));
-  }
-  if (item.ratingAvg != null && item.ratingAvg > 0) {
-    bullets.push(`★ ${item.ratingAvg.toFixed(1)}`);
+  const primaryBadge = getContentCardPrimaryBadge(item);
+  if (primaryBadge) bullets.push(primaryBadge);
+  const ratingLabel = formatPublicRatingLabel(item.ratingAvg);
+  if (ratingLabel) {
+    bullets.push(`★ ${ratingLabel}`);
   }
 
   if (bullets.length === 0) return null;
@@ -79,10 +80,12 @@ function LocationSummary({ item }: { item: ContentCardItem }) {
 function ReviewSummary({ ratingAvg, ratingCount }: { ratingAvg?: number | null; ratingCount?: number | null }) {
   if (ratingAvg == null || ratingAvg <= 0) return null;
 
+  const ratingLabel = formatPublicRatingLabel(ratingAvg);
+  if (!ratingLabel) return null;
   const label =
     ratingCount != null && ratingCount > 0
-      ? `${ratingAvg.toFixed(1)} · ${ratingCount} valoraciones`
-      : `${ratingAvg.toFixed(1)}`;
+      ? `${ratingLabel} · ${ratingCount} valoraciones`
+      : ratingLabel;
 
   return (
     <div>

@@ -69,6 +69,14 @@ import {
   type AdminGastroLocationStatusPatchInput,
   adminEventsListQuerySchema,
   type AdminEventsListQuery,
+  adminContentLifecycleBodySchema,
+  adminEventIdParamsSchema,
+  rentalLocationIdParamsSchema,
+  excursionOperatorIdParamsSchema,
+  type AdminContentLifecycleBody,
+  type AdminEventIdParams,
+  type RentalLocationIdParams,
+  type ExcursionOperatorIdParams,
 } from '@yo-te-invito/shared';
 import { AdminGastroService } from './admin-gastro.service';
 import { AdminGastroLocationsService } from './admin-gastro-locations.service';
@@ -92,11 +100,13 @@ import { AdminApplicationsService } from './admin-applications.service';
 import { AdminProfilesService } from './admin-profiles.service';
 import { ReferralsService } from '../referrals/referrals.service';
 import { InboxService } from '../inbox/inbox.service';
+import { AdminContentLifecycleService } from './admin-content-lifecycle.service';
 
 @Controller('admin')
 export class AdminController {
   constructor(
     private readonly events: AdminEventsService,
+    private readonly contentLifecycle: AdminContentLifecycleService,
     private readonly audit: AdminAuditService,
     private readonly tickets: AdminTicketsService,
     private readonly fraud: AdminFraudService,
@@ -285,6 +295,116 @@ export class AdminController {
       user.id,
       user.role,
       eventId,
+    );
+  }
+
+  @Post('events/:eventId/pause')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async pauseEvent(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param(new ZodValidationPipe(adminEventIdParamsSchema)) params: AdminEventIdParams,
+    @Body(new ZodValidationPipe(adminContentLifecycleBodySchema))
+    body: AdminContentLifecycleBody,
+  ) {
+    return this.contentLifecycle.pauseEvent(
+      user.tenantId,
+      user.id,
+      user.role,
+      params.eventId,
+      body.reason,
+    );
+  }
+
+  @Post('events/:eventId/restore')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async restoreEvent(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param(new ZodValidationPipe(adminEventIdParamsSchema)) params: AdminEventIdParams,
+    @Body(new ZodValidationPipe(adminContentLifecycleBodySchema))
+    body: AdminContentLifecycleBody,
+  ) {
+    return this.contentLifecycle.restoreEvent(
+      user.tenantId,
+      user.id,
+      user.role,
+      params.eventId,
+      body.reason,
+    );
+  }
+
+  @Post('rental-locations/:id/deactivate')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async deactivateRentalLocation(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param(new ZodValidationPipe(rentalLocationIdParamsSchema)) params: RentalLocationIdParams,
+    @Body(new ZodValidationPipe(adminContentLifecycleBodySchema))
+    body: AdminContentLifecycleBody,
+  ) {
+    return this.contentLifecycle.deactivateRentalLocation(
+      user.tenantId,
+      user.id,
+      user.role,
+      params.id,
+      body.reason,
+    );
+  }
+
+  @Post('rental-locations/:id/activate')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async activateRentalLocation(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param(new ZodValidationPipe(rentalLocationIdParamsSchema)) params: RentalLocationIdParams,
+    @Body(new ZodValidationPipe(adminContentLifecycleBodySchema))
+    body: AdminContentLifecycleBody,
+  ) {
+    return this.contentLifecycle.activateRentalLocation(
+      user.tenantId,
+      user.id,
+      user.role,
+      params.id,
+      body.reason,
+    );
+  }
+
+  @Post('excursion-operators/:id/deactivate')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async deactivateExcursionOperator(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param(new ZodValidationPipe(excursionOperatorIdParamsSchema))
+    params: ExcursionOperatorIdParams,
+    @Body(new ZodValidationPipe(adminContentLifecycleBodySchema))
+    body: AdminContentLifecycleBody,
+  ) {
+    return this.contentLifecycle.deactivateExcursionOperator(
+      user.tenantId,
+      user.id,
+      user.role,
+      params.id,
+      body.reason,
+    );
+  }
+
+  @Post('excursion-operators/:id/activate')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async activateExcursionOperator(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param(new ZodValidationPipe(excursionOperatorIdParamsSchema))
+    params: ExcursionOperatorIdParams,
+    @Body(new ZodValidationPipe(adminContentLifecycleBodySchema))
+    body: AdminContentLifecycleBody,
+  ) {
+    return this.contentLifecycle.activateExcursionOperator(
+      user.tenantId,
+      user.id,
+      user.role,
+      params.id,
+      body.reason,
     );
   }
 
@@ -817,7 +937,7 @@ export class AdminController {
   @UseGuards(JwtOrDevAuthGuard, RolesGuard)
   @RequireRole(Role.ADMIN)
   async updateGastroLocationStatus(
-    @CurrentUser() user: { id: string; tenantId: string },
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
     @Param(new ZodValidationPipe(adminGastroProfileIdParamsSchema)) params: AdminGastroProfileIdParams,
     @Body(new ZodValidationPipe(adminGastroLocationStatusPatchSchema))
     body: AdminGastroLocationStatusPatchInput,
@@ -825,6 +945,7 @@ export class AdminController {
     return this.adminGastroLocations.updateStatus(
       user.tenantId,
       user.id,
+      user.role,
       params.profileId,
       body,
     );

@@ -23,6 +23,7 @@ import {
   writeGastroOpeningHours,
 } from './gastro-profile-fields.util';
 import { GastroPublicEventSyncService } from './gastro-public-event-sync.service';
+import { readEntitySocialLinks, writeEntitySocialLinks } from '../../common/entity-social-links.util';
 
 @Injectable()
 export class GastroLocalService {
@@ -59,6 +60,8 @@ export class GastroLocalService {
       contactEmail: row.contactEmail,
       menuUrl: row.menuUrl,
       websiteUrl: row.websiteUrl,
+      bookingUrl: row.bookingUrl,
+      socialLinks: readEntitySocialLinks(row.socialLinks),
       subcategoryId: row.subcategoryId,
       publicEventId: row.publicEventId,
       status: row.status as GastroLocalResponse['status'],
@@ -164,6 +167,8 @@ export class GastroLocalService {
         contactEmail: body.contactEmail.trim(),
         menuUrl: body.menuUrl ?? null,
         websiteUrl: body.websiteUrl ?? null,
+        bookingUrl: body.bookingUrl ?? null,
+        socialLinks: writeEntitySocialLinks(body.socialLinks),
       },
     });
 
@@ -232,6 +237,10 @@ export class GastroLocalService {
         }),
         ...(body.menuUrl !== undefined && { menuUrl: body.menuUrl }),
         ...(body.websiteUrl !== undefined && { websiteUrl: body.websiteUrl }),
+        ...(body.bookingUrl !== undefined && { bookingUrl: body.bookingUrl }),
+        ...(body.socialLinks !== undefined && {
+          socialLinks: writeEntitySocialLinks(body.socialLinks),
+        }),
       },
     });
 

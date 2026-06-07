@@ -102,6 +102,7 @@ export interface RentalLocationDetail extends RentalLocationSummary {
     category?: string | null;
     subcategoryId?: string | null;
     description?: string | null;
+    status?: 'DRAFT' | 'PENDING' | 'APPROVED' | 'PAUSED' | 'CANCELLED';
   }>;
 }
 
@@ -189,6 +190,9 @@ export interface ExcursionOperatorSummary {
   openingHours: import('@yo-te-invito/shared').RentalOpeningHours | null;
   openingHoursNote: string | null;
   contactPhone: string | null;
+  websiteUrl: string | null;
+  bookingUrl: string | null;
+  socialLinks: import('@yo-te-invito/shared').EntitySocialLinks | null;
   geoLat: number | null;
   geoLng: number | null;
   isActive: boolean;
@@ -210,6 +214,7 @@ export interface ExcursionOperatorDetail extends ExcursionOperatorSummary {
     subcategoryId?: string | null;
     description?: string | null;
     summary?: string | null;
+    status?: 'DRAFT' | 'PENDING' | 'APPROVED' | 'PAUSED' | 'CANCELLED';
   }>;
 }
 
@@ -228,6 +233,9 @@ export interface ExcursionOperatorsRepo {
     openingHours?: import('@yo-te-invito/shared').RentalOpeningHours | null;
     openingHoursNote?: string | null;
     contactPhone?: string | null;
+    websiteUrl?: string | null;
+    bookingUrl?: string | null;
+    socialLinks?: import('@yo-te-invito/shared').EntitySocialLinks | null;
     geoLat?: number | null;
     geoLng?: number | null;
     isActive?: boolean;
@@ -244,6 +252,9 @@ export interface ExcursionOperatorsRepo {
       openingHours?: import('@yo-te-invito/shared').RentalOpeningHours | null;
       openingHoursNote?: string | null;
       contactPhone?: string | null;
+      websiteUrl?: string | null;
+      bookingUrl?: string | null;
+      socialLinks?: import('@yo-te-invito/shared').EntitySocialLinks | null;
       geoLat?: number | null;
       geoLng?: number | null;
       isActive?: boolean;
@@ -327,6 +338,63 @@ export interface CategoryBannersRepo {
     category: ContentMainCategory,
     itemId: string,
   ): Promise<{ mode: 'automatic' | 'manual'; items: CategoryBannerAdminItem[] }>;
+}
+
+export interface CategoryEditorialBannerItem {
+  id: string;
+  category: ContentMainCategory;
+  title: string;
+  subtitle: string | null;
+  imageUrl: string;
+  imageObjectKey?: string | null;
+  ctaLabel: string | null;
+  ctaHref: string | null;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CategoryEditorialBannerPublicItem {
+  id: string;
+  category: ContentMainCategory;
+  title: string;
+  subtitle: string | null;
+  imageUrl: string;
+  ctaLabel: string | null;
+  ctaHref: string | null;
+  sortOrder: number;
+}
+
+export interface CategoryEditorialBannersRepo {
+  getPublic(
+    tenantId: string,
+    category: ContentMainCategory,
+  ): Promise<{ data: CategoryEditorialBannerPublicItem[] }>;
+  listAdmin(category: ContentMainCategory): Promise<{ data: CategoryEditorialBannerItem[] }>;
+  create(input: {
+    category: ContentMainCategory;
+    title: string;
+    subtitle?: string | null;
+    imageUrl: string;
+    imageObjectKey?: string | null;
+    ctaLabel?: string | null;
+    ctaHref?: string | null;
+    isActive?: boolean;
+  }): Promise<{ data: CategoryEditorialBannerItem[] }>;
+  update(
+    id: string,
+    patch: {
+      title?: string;
+      subtitle?: string | null;
+      imageUrl?: string;
+      imageObjectKey?: string | null;
+      ctaLabel?: string | null;
+      ctaHref?: string | null;
+      isActive?: boolean;
+    },
+  ): Promise<{ data: CategoryEditorialBannerItem[] }>;
+  reorder(id: string, direction: 'up' | 'down'): Promise<{ data: CategoryEditorialBannerItem[] }>;
 }
 
 export interface SubcategoriesRepo {
@@ -622,6 +690,14 @@ export interface EventDetail extends EventSummary {
   ratingAvg?: number | null;
   ratingCount?: number;
   producer?: EventProducerPublicSummary | null;
+  excursionSchedule?: {
+    departureTime: string | null;
+    durationText: string | null;
+    availableDaysText: string | null;
+    scheduleNotes: string | null;
+    meetingPoint: string | null;
+  } | null;
+  subcategories?: Array<{ id: string; name: string; isPrimary?: boolean }>;
 }
 
 export interface Ticket {
@@ -1235,6 +1311,27 @@ export type AdminEventsListResponse = import('@yo-te-invito/shared').AdminEvents
 
 export interface AdminEventsRepo {
   list(query: AdminEventsListQuery): Promise<AdminEventsListResponse>;
+}
+
+export interface AdminContentLifecycleRepo {
+  pauseEvent(eventId: string, reason?: string): Promise<{ id: string; status: string }>;
+  restoreEvent(eventId: string, reason?: string): Promise<{ id: string; status: string }>;
+  deactivateRentalLocation(
+    locationId: string,
+    reason?: string,
+  ): Promise<{ id: string; isActive: boolean }>;
+  activateRentalLocation(
+    locationId: string,
+    reason?: string,
+  ): Promise<{ id: string; isActive: boolean }>;
+  deactivateExcursionOperator(
+    operatorId: string,
+    reason?: string,
+  ): Promise<{ id: string; isActive: boolean }>;
+  activateExcursionOperator(
+    operatorId: string,
+    reason?: string,
+  ): Promise<{ id: string; isActive: boolean }>;
 }
 
 export type AuditLogsListQuery = import('@yo-te-invito/shared').AuditLogsListQuery;
@@ -2017,6 +2114,8 @@ export interface GastroLocal {
   contactEmail: string | null;
   menuUrl: string | null;
   websiteUrl: string | null;
+  bookingUrl: string | null;
+  socialLinks: import('@yo-te-invito/shared').EntitySocialLinks | null;
   subcategoryId: string | null;
   publicEventId: string | null;
   status: string;
@@ -2074,6 +2173,8 @@ export interface GastroLocalUpsertPayload {
   contactEmail: string;
   menuUrl?: string | null;
   websiteUrl?: string | null;
+  bookingUrl?: string | null;
+  socialLinks?: import('@yo-te-invito/shared').EntitySocialLinks | null;
 }
 
 export interface GastroDiscountCreatePayload {
@@ -2296,6 +2397,8 @@ export interface AdminGastroLocationDetail extends AdminGastroLocationListItem {
   subcategoryName: string | null;
   menuUrl: string | null;
   websiteUrl: string | null;
+  bookingUrl: string | null;
+  socialLinks: import('@yo-te-invito/shared').EntitySocialLinks | null;
   updatedAt: string;
 }
 
@@ -2603,6 +2706,7 @@ export interface Repositories {
   rentalLocations: RentalLocationsRepo;
   excursionOperators: ExcursionOperatorsRepo;
   categoryBanners: CategoryBannersRepo;
+  categoryEditorialBanners: CategoryEditorialBannersRepo;
   subcategories: SubcategoriesRepo;
   applications: ApplicationsRepo;
   profiles: ProfilesRepo;
@@ -2623,6 +2727,7 @@ export interface Repositories {
   metrics: MetricsRepo;
   adminDashboard: AdminDashboardRepo;
   adminEvents: AdminEventsRepo;
+  adminContentLifecycle: AdminContentLifecycleRepo;
   adminAudit: AdminAuditRepo;
   adminUsers: AdminUsersRepo;
   adminPayments: AdminPaymentsRepo;

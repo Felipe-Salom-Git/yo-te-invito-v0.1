@@ -22,6 +22,10 @@ export interface HeroViewModel {
   primaryCtaLabel: string;
   secondaryCtaLabel: string;
   categoryLabel: string;
+  /** Editorial banner CTA opens in new tab when external http(s). */
+  ctaExternal?: boolean;
+  /** Hide secondary CTA when editorial banner has no link. */
+  hideSecondaryCta?: boolean;
 }
 
 type FeaturedItem = {

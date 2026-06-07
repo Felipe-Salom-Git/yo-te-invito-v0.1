@@ -4,6 +4,7 @@ import {
   REVIEW_ASPECT_LABELS_ES,
   type PublicReviewCategory,
 } from '@yo-te-invito/shared';
+import { formatPublicRatingLabel } from '@/lib/reviews/ratingDisplay';
 
 export interface ReviewAspectBreakdownProps {
   category: PublicReviewCategory;
@@ -44,8 +45,8 @@ export function ReviewAspectBreakdown({
           >
             <span className="min-w-0 text-sm text-text-muted">{labels[key] ?? key}</span>
             <span className="shrink-0 text-sm font-medium tabular-nums text-accent">
-              {avg.toFixed(1)}
-              <span className="font-normal text-text-muted"> /10</span>
+              {formatPublicRatingLabel(avg, { suffix: false })}
+              <span className="font-normal text-text-muted"> /5</span>
             </span>
           </div>
         ))}

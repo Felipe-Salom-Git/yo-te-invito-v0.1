@@ -162,7 +162,8 @@ model Tenant {
   gastroDiscountClaims    GastroDiscountClaim[]
   gastroContents          GastroContent[]
   contentSubcategories    ContentSubcategory[]
-  categoryBannerItems     CategoryBannerItem[]
+  categoryBannerItems         CategoryBannerItem[]
+  categoryEditorialBanners    CategoryEditorialBanner[]
   rentalLocations         RentalLocation[]
   excursionOperators      ExcursionOperator[]
   commercialRelationshipReviews CommercialRelationshipReview[]
@@ -219,6 +220,9 @@ model ExcursionOperator {
   openingHours     Json?
   openingHoursNote String?
   contactPhone     String?
+  websiteUrl       String?
+  bookingUrl       String?
+  socialLinks      Json?
   geoLat           Float?
   geoLng           Float?
   isActive         Boolean   @default(true)
@@ -301,6 +305,8 @@ model GastroProfile {
   contactEmail     String?
   menuUrl          String?
   websiteUrl       String?
+  bookingUrl       String?
+  socialLinks      Json?
   subcategoryId    String?
   publicEventId    String?       @unique
   ratingAvg        Float?
@@ -739,6 +745,29 @@ model CategoryBannerItem {
   @@index([tenantId, category, isActive])
 }
 
+/// V3.1 Slice 10 — admin-managed editorial hero banners per category (image + title + subtitle).
+model CategoryEditorialBanner {
+  id             String   @id @default(cuid())
+  tenantId       String
+  category       String   // event | gastro | rental | excursion
+  title          String
+  subtitle       String?
+  imageUrl       String
+  imageObjectKey String?
+  ctaLabel       String?
+  ctaHref        String?
+  isActive       Boolean  @default(true)
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, category])
+  @@index([tenantId, category, isActive])
+  @@index([tenantId, category, sortOrder])
+}
+
 model ContentSubcategory {
   id          String   @id @default(cuid())
   tenantId    String
@@ -753,13 +782,29 @@ model ContentSubcategory {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  tenant         Tenant          @relation(fields: [tenantId], references: [id])
-  events         Event[]
-  gastroProfiles GastroProfile[]
+  tenant            Tenant             @relation(fields: [tenantId], references: [id])
+  events            Event[]
+  eventSubcategories EventSubcategory[]
+  gastroProfiles    GastroProfile[]
 
   @@unique([tenantId, category, slug])
   @@index([tenantId, category])
   @@index([tenantId, category, isActive])
+}
+
+model EventSubcategory {
+  id            String   @id @default(cuid())
+  eventId       String
+  subcategoryId String
+  isPrimary     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  event       Event              @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  subcategory ContentSubcategory @relation(fields: [subcategoryId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, subcategoryId])
+  @@index([eventId])
+  @@index([subcategoryId])
 }
 
 model Event {
@@ -796,13 +841,20 @@ model Event {
   /// Public detail page views (simple counter; no per-user dedup in V2)
   viewCount         Int          @default(0)
   publishedAt       DateTime?
+  /// Excursion-only schedule text (V3.1 Slice 7) — not used for ticketing events
+  excursionDepartureTime    String?
+  excursionDurationText     String?
+  excursionAvailableDaysText String?
+  excursionScheduleNotes    String?
+  excursionMeetingPoint     String?
   createdAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
   deletedAt         DateTime?
 
   tenant      Tenant       @relation(fields: [tenantId], references: [id])
   producerProfile ProducerProfile? @relation(fields: [producerProfileId], references: [id], onDelete: SetNull)
-  subcategory      ContentSubcategory? @relation(fields: [subcategoryId], references: [id], onDelete: SetNull)
+  subcategory        ContentSubcategory? @relation(fields: [subcategoryId], references: [id], onDelete: SetNull)
+  eventSubcategories EventSubcategory[]
   rentalLocation     RentalLocation?     @relation(fields: [rentalLocationId], references: [id], onDelete: SetNull)
   excursionOperator  ExcursionOperator?  @relation(fields: [excursionOperatorId], references: [id], onDelete: SetNull)
   media            EventMedia[]
@@ -1745,6 +1797,13 @@ enum AuditAction {
   EVENT_REJECTED
   EVENT_POSTPONED
   EVENT_CANCELLED
+  EVENT_RESTORED
+  GASTRO_PROFILE_SUSPENDED
+  GASTRO_PROFILE_ACTIVATED
+  RENTAL_LOCATION_DEACTIVATED
+  RENTAL_LOCATION_ACTIVATED
+  EXCURSION_OPERATOR_DEACTIVATED
+  EXCURSION_OPERATOR_ACTIVATED
   TICKET_REVOKED
   ORDER_EXPIRED
   TICKET_TRANSFERRED
@@ -1773,6 +1832,11 @@ enum AuditAction {
   LEGAL_DOCUMENT_ARCHIVED
   PAYMENT_ADMIN_RECONCILED
   PAYMENT_MANUAL_REVIEWED
+  CATEGORY_EDITORIAL_BANNER_CREATED
+  CATEGORY_EDITORIAL_BANNER_UPDATED
+  CATEGORY_EDITORIAL_BANNER_ACTIVATED
+  CATEGORY_EDITORIAL_BANNER_DEACTIVATED
+  CATEGORY_EDITORIAL_BANNER_REORDERED
 }
 
 model AuditLog {

@@ -15,4 +15,6 @@ export function getRentalHeroSummaryText(
   return `${d.slice(0, HERO_SUMMARY_FALLBACK_MAX).trimEnd()}…`;
 }
 
-export const RENTAL_SUMMARY_MAX_LENGTH = 220;
+import { PUBLIC_SUMMARY_MAX_LENGTH } from '@yo-te-invito/shared';
+
+export const RENTAL_SUMMARY_MAX_LENGTH = PUBLIC_SUMMARY_MAX_LENGTH;

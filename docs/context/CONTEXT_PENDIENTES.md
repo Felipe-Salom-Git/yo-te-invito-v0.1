@@ -482,6 +482,34 @@ _(Trending con `viewCount`: ver ítem Slice 2 arriba en § K.)_
 
 ---
 
+## O. Mejoras cliente V3.1 — auditoría Slice 0 (2026-06-06)
+
+> Checklist: **`docs/dev/Yo_Te_Invito_Checklist_V3_1_Mejoras_Cliente.md`** (redirect en `docs/context/`) · Auditoría: **`docs/audits/V3_1_FUNCTIONAL_AUDIT.md`**
+
+- [x] Slice 0 — auditoría funcional/técnica V3.1 (`V3_1_FUNCTIONAL_AUDIT.md`)
+- [x] Slice 1 — hints imagen centralizados + contadores (límite 220) + seed subcategorías excursiones (`V3_1_FUNCTIONAL_AUDIT.md` § Slice 1)
+- [x] Slice 2 — fondo dark global, calendario/filtros mobile, `PublicDescriptionBlock`, badges cards, maps fallback UX (`V3_1_FUNCTIONAL_AUDIT.md` § Slice 2)
+- [x] Slice 3 — menú/categorías mobile (`HomeCategoryStrip` + hero tabs), detalle excursión visual (`ExcursionDetailInfoGrid`)
+- [x] Slice 4 — resúmenes 500 / subtítulo productora 400 (`content-limits.ts`, shared + API + web)
+- [x] Slice 5 — galería Subir/Bajar en `RentalProductImagesForm` + `sortOrder` en detalle público
+- [x] Slice 6 — links/redes gastro + excursiones (`external-links.ts`, migración, `PublicExternalLinksCard`)
+- [x] Slice 7 — horarios/punto de encuentro/ubicación excursiones (`excursion-schedule.ts`, migración `20260611120000_excursion_schedule_fields`, formularios admin + `/excursiones/[id]`)
+- [x] Slice 7.5 — smoke post-migraciones 6+7 (`smoke:v31-stabilization`, `V3_1_SLICE_7_5_STABILIZATION_SMOKE.md`); PATCH admin opcional (skip 401/403 sin credenciales)
+- [x] Slice 8 — subcategorías múltiples fase 1 excursiones (`EventSubcategory`, `ExcursionSubcategoryMultiSelect`)
+- [x] Slice 8.5 — smoke subcategorías (`smoke:v31-subcategories`, `V3_1_SLICE_8_5_SUBCATEGORIES_SMOKE.md`)
+- [x] Slice 9 — admin archivar/dar de baja (`admin-content-lifecycle`, `V3_1_SLICE_9_ADMIN_ARCHIVE_SMOKE.md`)
+- [x] Slice 10 — banners editoriales por categoría (`CategoryEditorialBanner`, `V3_1_SLICE_10_CATEGORY_BANNERS_SMOKE.md`)
+- [x] Slice 11 — wizard productora 3 pasos (`V3_1_SLICE_11_PRODUCER_EVENT_WIZARD_SMOKE.md`)
+- [x] Slice 12 — legal publicación Caso B informativo (`V3_1_SLICE_12_EVENT_PUBLICATION_LEGAL_SMOKE.md`); Caso A pendiente `producer_terms` publicado
+- [x] Slice 13 — ratings 5/5 visual + `ContentCard` editorial fase 1 (`V3_1_SLICE_13_PUBLIC_CARDS_RATINGS_SMOKE.md`)
+- [x] Slice 14 — QA pre-deploy (`V3_1_PRE_DEPLOY_QA_CLOSING.md`): migraciones 5/5 OK, builds OK, smokes DB 4/4 OK
+- [x] V3.1 — validación DB local (Slice 14): `pnpm db:up` + `migrate deploy` + smokes `v31-*` OK
+- [ ] V3.1 — QA manual browser pre/post-deploy (checklist en `V3_1_PRE_DEPLOY_QA_CLOSING.md` §6)
+- [ ] V3.1 — restante no bloqueante (maps prod §4.1, §5.2 links en descripciones, multi-subcategorías otras verticales, drag galería, cards fase 2, JSON-LD bestRating)
+- [ ] V3.1 legal al publicar evento Caso A (bloqueante; coordinar con publicación `producer_terms` real)
+
+---
+
 ## Referencias
 
 | Documento | Uso |
@@ -511,4 +539,7 @@ _(Trending con `viewCount`: ver ítem Slice 2 arriba en § K.)_
 | `docs/emails/EMAILS_ARCHITECTURE.md` | Emails: auditoría + plan SMTP DonWeb |
 | `docs/emails/EMAIL_MATRIX.md` | Matriz inicial de envíos por clase |
 | `docs/user/USER_PORTAL_PRISMA_PROPOSAL.md` | Diff modelo (pre-migrate) |
+| `docs/audits/V3_1_FUNCTIONAL_AUDIT.md` | Auditoría funcional V3.1 — Slice 0 (orden de implementación) |
+| `docs/audits/V3_1_PRE_DEPLOY_QA_CLOSING.md` | QA pre-deploy V3.1 — Slice 14 (migraciones, smokes, deploy VPS) |
+| `docs/dev/Yo_Te_Invito_Checklist_V3_1_Mejoras_Cliente.md` | Checklist mejoras cliente V3.1 (source of truth) |
 

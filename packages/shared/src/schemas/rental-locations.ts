@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { PUBLIC_SUMMARY_MAX_LENGTH } from '../constants/content-limits';
 import { EventStatus, EventMediaType } from '../enums';
 import { eventMediaSchema, eventSummarySchema } from './events';
 import { rentalOpeningHoursSchema } from './opening-hours';
@@ -152,7 +153,10 @@ export const rentalProductGalleryImageSchema = z.object({
 
 export const rentalProductSummarySchema = z
   .string()
-  .max(220, 'El resumen no puede superar 220 caracteres')
+  .max(
+    PUBLIC_SUMMARY_MAX_LENGTH,
+    `El resumen no puede superar ${PUBLIC_SUMMARY_MAX_LENGTH} caracteres`,
+  )
   .optional()
   .nullable();
 

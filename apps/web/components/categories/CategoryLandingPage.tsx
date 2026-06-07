@@ -10,7 +10,7 @@ import { SubcategoryRail } from './SubcategoryRail';
 import { CrossCategoryRails } from './CrossCategoryRails';
 import { CategoryHeroBanner } from './CategoryHeroBanner';
 import { CategoryLandingEditorial } from './CategoryLandingEditorial';
-import { useCategoryBanner } from '@/lib/query/useCategoryBanner';
+import { useCategoryHeroBanner } from '@/lib/query/useCategoryHeroBanner';
 import { toContentMainCategory } from '@/lib/categories/categoryLandingConfig';
 import { RENTAL_CATEGORY_EMPTY_MESSAGE } from '@/lib/rentals/publicCopy';
 import { RentalProviderContactCta } from '@/components/rentals/RentalProviderContactCta';
@@ -39,9 +39,7 @@ export function CategoryLandingPage({ category, subcategorySlug }: CategoryLandi
     publishedDiscountsLoading,
   } = useCategoryCarousels(category, subcategorySlug);
 
-  const { data: bannerData, isLoading: bannerLoading } = useCategoryBanner(
-    toContentMainCategory(category),
-  );
+  const heroBanner = useCategoryHeroBanner(toContentMainCategory(category));
 
   const [previewItem, setPreviewItem] = useState<ContentCardItem | null>(null);
   const openPreview = useCallback((item: ContentCardItem) => setPreviewItem(item), []);
@@ -63,8 +61,9 @@ export function CategoryLandingPage({ category, subcategorySlug }: CategoryLandi
     <div className="min-h-screen bg-black pb-12 text-white">
       <CategoryHeroBanner
         category={category}
-        items={bannerData?.data ?? []}
-        isLoading={bannerLoading}
+        editorialItems={heroBanner.editorialItems}
+        eventItems={heroBanner.eventItems}
+        isLoading={heroBanner.isLoading}
       />
 
       <CategoryLandingEditorial category={category} />

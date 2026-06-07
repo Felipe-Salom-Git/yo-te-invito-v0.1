@@ -1,6 +1,7 @@
 // Shared profile payloads for signup (POST /auth/register) and apply (POST /profiles/.../apply).
 // Slice 3 — single source of truth per profile type (RENTAL excluded from V2 signup).
 import { z } from 'zod';
+import { PUBLIC_SUMMARY_MAX_LENGTH } from '../constants/content-limits';
 import { cityLabelFromValue, provinceLabelFromValue } from '../location/labels';
 
 /** Profile type chosen during public registration (not ADMIN / SCANNER / RENTAL). */
@@ -71,7 +72,7 @@ export type GastroProfileLocationInput = z.infer<typeof gastroProfileLocationSch
 export const gastroProfileBaseSchema = z.object({
   displayName: trimmedString(1, 200, 'Nombre del local'),
   contactEmail: z.string().trim().email('Email de contacto inválido').max(200),
-  summary: z.string().trim().max(220).optional(),
+  summary: z.string().trim().max(PUBLIC_SUMMARY_MAX_LENGTH).optional(),
   location: gastroProfileLocationSchema,
   legalName: z.string().trim().max(200).optional(),
   contactPhone: z.string().trim().max(40).optional(),

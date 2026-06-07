@@ -16,6 +16,7 @@ import {
   type GcsImageUploadConfig,
 } from '@/lib/upload/gcs-image-upload-config';
 import { useGcsImageUpload } from '@/lib/upload/use-gcs-image-upload';
+import { ImageUploadHint } from '@/components/upload/ImageUploadHint';
 import { isDataImageUrl } from '@/lib/upload/validate-public-image-file';
 
 const TENANT_ID = 'tenant-demo';
@@ -243,6 +244,11 @@ export default function GastroContenidoPage() {
                   {uploadProgress}
                 </p>
               ) : null}
+              <ImageUploadHint
+                variant="content"
+                options={{ gcs: gcsMode }}
+                className="mb-2"
+              />
               <Input
                 value={newImageUrl}
                 onChange={(e) => {

@@ -12,7 +12,7 @@ import { SubcategoryRail } from '@/components/categories/SubcategoryRail';
 import { CrossCategoryRails } from '@/components/categories/CrossCategoryRails';
 import { CategoryHeroBanner } from '@/components/categories/CategoryHeroBanner';
 import { CategoryLandingEditorial } from '@/components/categories/CategoryLandingEditorial';
-import { useCategoryBanner } from '@/lib/query/useCategoryBanner';
+import { useCategoryHeroBanner } from '@/lib/query/useCategoryHeroBanner';
 import { toContentMainCategory } from '@/lib/categories/categoryLandingConfig';
 import { EventDiscoveryViewToggle } from './EventDiscoveryViewToggle';
 import { EventDateGroupedView } from './EventDateGroupedView';
@@ -30,9 +30,7 @@ export function EventDiscoveryContent({
   const carousel = useCategoryCarousels(category, subcategorySlug);
   const dateQuery = useEventsByDate(subcategorySlug, view === 'date');
 
-  const { data: bannerData, isLoading: bannerLoading } = useCategoryBanner(
-    toContentMainCategory(category),
-  );
+  const heroBanner = useCategoryHeroBanner(toContentMainCategory(category));
 
   const [previewItem, setPreviewItem] = useState<ContentCardItem | null>(null);
   const openPreview = useCallback((item: ContentCardItem) => setPreviewItem(item), []);
@@ -73,8 +71,9 @@ export function EventDiscoveryContent({
     <div className="min-h-screen bg-black pb-12 text-white">
       <CategoryHeroBanner
         category={category}
-        items={bannerData?.data ?? []}
-        isLoading={bannerLoading}
+        editorialItems={heroBanner.editorialItems}
+        eventItems={heroBanner.eventItems}
+        isLoading={heroBanner.isLoading}
       />
 
       <CategoryLandingEditorial category={category} />

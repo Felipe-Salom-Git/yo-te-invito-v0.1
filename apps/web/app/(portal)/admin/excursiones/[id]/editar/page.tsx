@@ -8,7 +8,11 @@ import { useRepositories } from '@/repositories/context';
 import { PageContainer, SectionTitle, Button, Input, useToast } from '@/components';
 import { getErrorMessage } from '@/lib/errors';
 import { ImageUrlPreview } from '@/components/admin/ImageUrlPreview';
-import { SubcategorySelect } from '@/components/forms/SubcategorySelect';
+import {
+  ExcursionSubcategoryMultiSelect,
+  excursionSubcategoryIdsFromEvent,
+  excursionSubcategoryIdsToPayload,
+} from '@/components/excursions/ExcursionSubcategoryMultiSelect';
 import {
   EventLocationFields,
   eventFieldsFromLocationValue,
@@ -18,7 +22,13 @@ import {
 } from '@/components/location';
 import { IMAGE_ACCEPT_GCS } from '@/lib/upload/gcs-image-upload-config';
 import { useGcsImageUpload } from '@/lib/upload/use-gcs-image-upload';
+import { ImageUploadHint } from '@/components/upload/ImageUploadHint';
 import { isDataImageUrl } from '@/lib/upload/validate-public-image-file';
+import {
+  ExcursionScheduleFormFields,
+  excursionScheduleFormValueFromEvent,
+  excursionScheduleFormValueToPayload,
+} from '@/components/excursions/ExcursionScheduleFormFields';
 
 const TENANT_ID = 'tenant-demo';
 
@@ -43,8 +53,9 @@ export default function AdminExcursionEditarPage() {
   const [startAt, setStartAt] = useState('');
   const [capacityTotal, setCapacityTotal] = useState('');
   const [coverImageUrl, setCoverImageUrl] = useState('');
-  const [subcategoryId, setSubcategoryId] = useState('');
+  const [subcategoryIds, setSubcategoryIds] = useState<string[]>([]);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [schedule, setSchedule] = useState(excursionScheduleFormValueFromEvent());
 
   const { isUploading, uploadProgress, uploadSingleWithProgress } = useGcsImageUpload(
     id ? { scope: 'excursion', entityId: id } : undefined,
@@ -81,7 +92,8 @@ export default function AdminExcursionEditarPage() {
       setStartAt(event.startAt ? event.startAt.slice(0, 16) : '');
       setCapacityTotal(event.capacityTotal != null ? String(event.capacityTotal) : '');
       setCoverImageUrl(event.coverImageUrl ?? '');
-      setSubcategoryId(event.subcategoryId ?? '');
+      setSubcategoryIds(excursionSubcategoryIdsFromEvent(event));
+      setSchedule(excursionScheduleFormValueFromEvent(event.excursionSchedule));
     }
   }, [event]);
 
@@ -120,7 +132,8 @@ export default function AdminExcursionEditarPage() {
       startAt: startAt ? new Date(startAt).toISOString() : null,
       capacityTotal: capacityTotal ? parseInt(capacityTotal, 10) : null,
       coverImageUrl: cover || null,
-      subcategoryId: subcategoryId || null,
+      ...excursionSubcategoryIdsToPayload(subcategoryIds),
+      ...excursionScheduleFormValueToPayload(schedule),
       ...(cover
         ? {
             media: [{ id: `img-${Date.now()}`, type: 'image' as const, url: cover, sortOrder: 0 }],
@@ -175,9 +188,7 @@ export default function AdminExcursionEditarPage() {
               {uploadProgress}
             </p>
           ) : null}
-          <p className="mb-2 text-xs text-text-muted">
-            Cover vía Google Cloud Storage (JPEG, PNG o WEBP, máx. 5 MB).
-          </p>
+          <ImageUploadHint variant="cover" options={{ gcs: true }} className="mb-2" />
           <Input
             label="URL de imagen"
             value={coverImageUrl}
@@ -197,15 +208,12 @@ export default function AdminExcursionEditarPage() {
           </label>
           <ImageUrlPreview url={coverImageUrl} />
         </div>
+        <ExcursionScheduleFormFields value={schedule} onChange={setSchedule} />
         <div>
           <label className="mb-1.5 block text-sm font-medium text-text">Ubicación (opcional)</label>
           <EventLocationFields value={location} onChange={setLocation} mapError={locationError ?? undefined} />
         </div>
-        <SubcategorySelect
-          category="excursion"
-          value={subcategoryId}
-          onChange={setSubcategoryId}
-        />
+        <ExcursionSubcategoryMultiSelect value={subcategoryIds} onChange={setSubcategoryIds} />
         <div className="flex gap-3 pt-4">
           <Button type="submit" disabled={updateMutation.isPending || isUploading}>
             {updateMutation.isPending ? 'Guardando…' : 'Guardar'}

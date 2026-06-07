@@ -4,7 +4,10 @@ import { useState } from 'react';
 import { Button, Input, SectionTitle } from '@/components';
 import { RentalProductImagesForm } from '@/components/rentals/RentalProductImagesForm';
 import type { GcsImageUploadConfig } from '@/lib/upload/gcs-image-upload-config';
+import { FieldCharacterCounter } from '@/components/forms/FieldCharacterCounter';
 import type { GastroDiscountCreatePayload } from '@/repositories/interfaces';
+
+const GASTRO_DISCOUNT_SUMMARY_MAX = 500;
 
 type Props = {
   initial?: {
@@ -66,8 +69,18 @@ export function GastroDiscountForm({ initial, onSubmit, submitting, gastroProfil
           className="w-full rounded-lg border border-border bg-bg px-3 py-2 text-sm text-text placeholder:text-text-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
           rows={2}
           value={summary}
-          onChange={(e) => setSummary(e.target.value)}
+          onChange={(e) =>
+            setSummary(e.target.value.slice(0, GASTRO_DISCOUNT_SUMMARY_MAX))
+          }
+          maxLength={GASTRO_DISCOUNT_SUMMARY_MAX}
           required
+          aria-describedby="gastro-discount-summary-counter"
+        />
+        <FieldCharacterCounter
+          id="gastro-discount-summary-counter"
+          current={summary.length}
+          max={GASTRO_DISCOUNT_SUMMARY_MAX}
+          className="mt-1"
         />
       </div>
       <div>

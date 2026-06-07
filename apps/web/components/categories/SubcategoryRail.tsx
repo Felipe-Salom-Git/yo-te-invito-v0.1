@@ -68,8 +68,8 @@ export function SubcategoryRail({
           Todavía no hay subcategorías disponibles para esta categoría.
         </p>
       ) : (
-        <div className="flex items-center gap-3 px-4 pb-1 sm:px-6">
-          <div className="relative min-w-0 flex-1">
+        <div className="flex flex-col gap-3 px-4 pb-1 sm:flex-row sm:items-center sm:px-6">
+          <div className="relative min-w-0 w-full sm:flex-1">
             <div
               ref={scrollRef}
               onScroll={updateScroll}
@@ -118,7 +118,11 @@ export function SubcategoryRail({
               </button>
             )}
           </div>
-          {trailing ? <div className="flex shrink-0 flex-col items-end gap-2">{trailing}</div> : null}
+          {trailing ? (
+            <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:items-end">
+              {trailing}
+            </div>
+          ) : null}
         </div>
       )}
     </section>

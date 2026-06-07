@@ -1,4 +1,9 @@
 import { z } from 'zod';
+import { PUBLIC_SUMMARY_MAX_LENGTH } from '../constants/content-limits';
+import {
+  entitySocialLinksInputSchema,
+  safeExternalUrlOptionalSchema,
+} from './external-links';
 import { rentalOpeningHoursSchema } from './opening-hours';
 
 const gastroProfileStatusSchema = z.enum([
@@ -8,14 +13,6 @@ const gastroProfileStatusSchema = z.enum([
   'REJECTED',
   'SUSPENDED',
 ]);
-
-const urlOptional = z
-  .string()
-  .url()
-  .max(500)
-  .nullable()
-  .optional()
-  .or(z.literal('').transform(() => null));
 
 /** https URL o data:image/* (subida desde el portal). */
 const gastroImageRefSchema = z
@@ -63,6 +60,8 @@ export const gastroLocalResponseSchema = z.object({
   contactEmail: z.string().nullable(),
   menuUrl: z.string().nullable(),
   websiteUrl: z.string().nullable(),
+  bookingUrl: z.string().nullable(),
+  socialLinks: entitySocialLinksInputSchema.nullable(),
   subcategoryId: z.string().nullable(),
   publicEventId: z.string().nullable(),
   status: gastroProfileStatusSchema,
@@ -73,7 +72,7 @@ export type GastroLocalResponse = z.infer<typeof gastroLocalResponseSchema>;
 
 export const gastroLocalCreateSchema = z.object({
   displayName: z.string().min(1).max(200),
-  summary: z.string().max(220).nullable().optional(),
+  summary: z.string().max(PUBLIC_SUMMARY_MAX_LENGTH).nullable().optional(),
   detail: z.string().max(10000).nullable().optional(),
   subcategoryId: z
     .union([z.string().min(1), z.literal('')])
@@ -87,8 +86,10 @@ export const gastroLocalCreateSchema = z.object({
   openingHoursNote: z.string().max(500).nullable().optional(),
   contactPhone: z.string().max(40).nullable().optional(),
   contactEmail: z.string().email().max(200),
-  menuUrl: urlOptional,
-  websiteUrl: urlOptional,
+  menuUrl: safeExternalUrlOptionalSchema,
+  websiteUrl: safeExternalUrlOptionalSchema,
+  bookingUrl: safeExternalUrlOptionalSchema,
+  socialLinks: entitySocialLinksInputSchema,
 });
 export type GastroLocalCreateInput = z.infer<typeof gastroLocalCreateSchema>;
 

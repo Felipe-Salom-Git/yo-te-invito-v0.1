@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRepositories } from '@/repositories/context';
 import { useSearchParams } from 'next/navigation';
 import { PageContainer, SectionTitle, Button } from '@/components';
+import { formatPublicRatingLabel } from '@/lib/reviews/ratingDisplay';
 
 function PublicProducersListingContent() {
   const repos = useRepositories();
@@ -65,7 +66,11 @@ function PublicProducersListingContent() {
               {(producer.ratingAvg != null || producer.ratingCount > 0) && (
                 <div className="mt-4 flex items-center justify-center gap-1 text-sm font-medium text-amber-400">
                   <span>★</span>
-                  <span>{producer.ratingAvg?.toFixed(1) ?? '-'}</span>
+                  <span>
+                    {producer.ratingAvg != null
+                      ? formatPublicRatingLabel(producer.ratingAvg) ?? '-'
+                      : '-'}
+                  </span>
                   <span className="text-xs text-text-muted">({producer.ratingCount})</span>
                 </div>
               )}

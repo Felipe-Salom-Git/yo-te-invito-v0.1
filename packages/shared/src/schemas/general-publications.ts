@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { PUBLIC_SUMMARY_MAX_LENGTH } from '../constants/content-limits';
 import { eventMediaSchema } from './events';
 
 export const generalPublicationCategorySchema = z.enum([
@@ -18,7 +19,7 @@ export const generalPublicationGalleryImageSchema = z.object({
 export const createGeneralPublicationBodySchema = z.object({
   category: generalPublicationCategorySchema,
   title: z.string().min(1),
-  summary: z.string().max(220).nullable().optional(),
+  summary: z.string().max(PUBLIC_SUMMARY_MAX_LENGTH).nullable().optional(),
   description: z.string().nullish(),
   subcategoryId: z.string().nullish(),
   venueName: z.string().nullish(),

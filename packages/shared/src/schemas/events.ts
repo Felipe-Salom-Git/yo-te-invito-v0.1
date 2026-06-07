@@ -1,5 +1,9 @@
 import { z } from 'zod';
+import { PUBLIC_SUMMARY_MAX_LENGTH } from '../constants/content-limits';
 import { EventMediaType } from '../enums';
+import { entitySocialLinksInputSchema } from './external-links';
+import { eventSubcategoryPublicSchema } from './event-subcategories';
+import { excursionSchedulePublicSchema } from './excursion-schedule';
 import { rentalOpeningHoursSchema } from './opening-hours';
 
 /** Optional Google Places id and province for location-backed entities (Maps 5). */
@@ -162,6 +166,9 @@ export const eventDetailSchema = eventSummarySchema.extend({
       openingHours: rentalOpeningHoursSchema.nullable(),
       openingHoursNote: z.string().nullable(),
       contactPhone: z.string().nullable(),
+      websiteUrl: z.string().nullable(),
+      bookingUrl: z.string().nullable(),
+      socialLinks: entitySocialLinksInputSchema,
       geoLat: z.number().nullable(),
       geoLng: z.number().nullable(),
     })
@@ -180,6 +187,10 @@ export const eventDetailSchema = eventSummarySchema.extend({
     })
     .nullable()
     .optional(),
+  /** Present on excursion products — textual schedule (V3.1 Slice 7). */
+  excursionSchedule: excursionSchedulePublicSchema.optional(),
+  /** All assigned subcategories (excursions phase 1); primary listed first. */
+  subcategories: z.array(eventSubcategoryPublicSchema).optional(),
 });
 
 export type EventDetail = z.infer<typeof eventDetailSchema>;
@@ -318,7 +329,7 @@ export type FraudSignalsResponse = z.infer<typeof fraudSignalsResponseSchema>;
 
 export const eventUpdateDtoSchema = z.object({
   title: z.string().min(1).optional(),
-  summary: z.string().max(220).nullable().optional(),
+  summary: z.string().max(PUBLIC_SUMMARY_MAX_LENGTH).nullable().optional(),
   description: z.string().nullable().optional(),
   startAt: z.string().datetime().optional(),
   endAt: z.string().datetime().nullable().optional(),
@@ -335,7 +346,17 @@ export const eventUpdateDtoSchema = z.object({
   category: z.string().nullish(),
   subcategoryId: z.string().nullish(),
   rentalLocationId: z.string().nullish(),
-});
+  subcategoryIds: z.array(z.string().min(1)).max(8).optional().nullable(),
+})
+  .merge(
+    z.object({
+      departureTime: z.string().max(80).nullable().optional(),
+      durationText: z.string().max(120).nullable().optional(),
+      availableDaysText: z.string().max(200).nullable().optional(),
+      scheduleNotes: z.string().max(500).nullable().optional(),
+      meetingPoint: z.string().max(500).nullable().optional(),
+    }),
+  );
 export type EventUpdateDto = z.infer<typeof eventUpdateDtoSchema>;
 
 export const eventsPaginatedResponseSchema = z.object({

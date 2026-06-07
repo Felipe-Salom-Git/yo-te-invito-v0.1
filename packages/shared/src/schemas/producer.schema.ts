@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { PUBLIC_SUBTITLE_MAX_LENGTH } from '../constants/content-limits';
 import { deriveProducerEventMode, producerEventModeSchema } from './events';
 
 /** https URL o data:image/* (subida desde el portal). */
@@ -44,7 +45,7 @@ const updateProducerProfileFieldsSchema = z.object({
   slug: emptyAsUndefined(z.string().min(2).max(80).optional()),
   displayName: emptyAsUndefined(z.string().min(1).max(200).optional()),
   legalName: emptyAsUndefined(z.string().max(200).optional()),
-  shortDescription: emptyAsUndefined(z.string().max(160).optional()),
+  shortDescription: emptyAsUndefined(z.string().max(PUBLIC_SUBTITLE_MAX_LENGTH).optional()),
   longDescription: emptyAsUndefined(z.string().max(5000).optional()),
   logoUrl: optionalImage,
   coverImageUrl: optionalImage,

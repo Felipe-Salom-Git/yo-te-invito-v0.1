@@ -10,6 +10,7 @@ import {
   useToast,
 } from '@/components';
 import { AdminCategoryBannerPanel } from '@/components/categories/AdminCategoryBannerPanel';
+import { AdminCategoryEditorialBannerPanel } from '@/components/categories/AdminCategoryEditorialBannerPanel';
 import { useAdminSubcategories } from '@/lib/query/subcategories';
 import { isManageableSubcategoryCategory } from '@/lib/admin/admin-subcategory-categories';
 import { useRepositories } from '@/repositories/context';
@@ -145,7 +146,16 @@ export function AdminSubcategoriesPageClient() {
           ) : null}
 
           {section === 'banner' && manageable ? (
-            <AdminCategoryBannerPanel category={tab as ContentMainCategory} />
+            <>
+              <AdminCategoryEditorialBannerPanel category={tab as ContentMainCategory} />
+              <div className="mt-10 border-t border-border pt-8">
+                <p className="text-sm font-medium text-text">Eventos destacados (fallback)</p>
+                <p className="mt-1 text-xs text-text-muted">
+                  Solo aplica cuando no hay banners editoriales activos en la landing pública.
+                </p>
+                <AdminCategoryBannerPanel category={tab as ContentMainCategory} />
+              </div>
+            </>
           ) : (
             <>
               <AdminSubcategoryForm

@@ -9,6 +9,7 @@ import {
 } from '@/lib/home/categoryGatewayConfig';
 import type { HeroViewModel } from '@/lib/home/heroModel';
 import { mapFeaturedItemToHeroModel } from '@/lib/home/heroModel';
+import { formatPublicRatingLabel } from '@/lib/reviews/ratingDisplay';
 
 type FeaturedItem = {
   id: string;
@@ -88,7 +89,9 @@ function HeroContent({ model }: { model: HeroViewModel }) {
       )}
       <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-white/80">
         {model.ratingAvg != null && model.ratingAvg > 0 && (
-          <span className="text-accent">★ {model.ratingAvg.toFixed(1)}</span>
+          <span className="text-accent">
+            ★ {formatPublicRatingLabel(model.ratingAvg)}
+          </span>
         )}
         {model.producerName && <span>{model.producerName}</span>}
         {model.fromPrice != null && model.fromPrice > 0 && (
@@ -212,7 +215,7 @@ export function HomeHero({
       {featuredTabs.length > 0 && (
         <div className="absolute left-0 right-0 top-6 z-10 px-4 sm:px-6 md:px-10 lg:px-16">
           <div
-            className="flex flex-wrap items-center gap-2 rounded-lg bg-black/40 p-1 backdrop-blur-sm"
+            className="scrollbar-hide flex items-center gap-2 overflow-x-auto rounded-lg bg-black/40 p-1 backdrop-blur-sm sm:flex-wrap sm:overflow-visible"
             role="tablist"
             aria-label="Categorías destacadas"
           >
@@ -226,7 +229,7 @@ export function HomeHero({
                   aria-selected={isSelected}
                   aria-controls="hero-content"
                   onClick={() => handleTabChange(tab.id)}
-                  className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                  className={`shrink-0 rounded-md px-3 py-2 text-sm font-medium transition-colors sm:shrink ${
                     isSelected
                       ? 'bg-accent text-bg'
                       : 'text-white/90 hover:bg-white/15 hover:text-white'

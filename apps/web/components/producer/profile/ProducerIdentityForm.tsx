@@ -16,7 +16,13 @@ import {
   type GcsImageUploadConfig,
 } from '@/lib/upload/gcs-image-upload-config';
 import { useGcsImageUpload } from '@/lib/upload/use-gcs-image-upload';
+import { FieldCharacterCounter } from '@/components/forms/FieldCharacterCounter';
+import { ImageUploadHint } from '@/components/upload/ImageUploadHint';
 import { ProducerProfileFormIntro } from './ProducerProfileFormIntro';
+
+import { PUBLIC_SUBTITLE_MAX_LENGTH } from '@yo-te-invito/shared';
+
+const PRODUCER_SHORT_DESCRIPTION_MAX = PUBLIC_SUBTITLE_MAX_LENGTH;
 
 function invalidateProducerProfile(
   queryClient: ReturnType<typeof useQueryClient>,
@@ -108,9 +114,7 @@ export function ProducerIdentityForm({ profile }: { profile: ProducerDetail }) {
       >
         <div>
           <p className="text-sm font-medium text-text">Logo</p>
-          <p className="mt-1 text-xs text-text-muted">
-            Recomendado cuadrado, visible en listados y ficha (JPEG, PNG o WEBP, máx. 5 MB).
-          </p>
+          <ImageUploadHint variant="logo" options={{ gcs: true }} className="mt-1" />
           {uploadProgress ? (
             <p className="mt-2 text-sm text-accent" role="status">
               {uploadProgress}
@@ -176,12 +180,25 @@ export function ProducerIdentityForm({ profile }: { profile: ProducerDetail }) {
           value={legalName}
           onChange={(e) => setLegalName(e.target.value)}
         />
-        <Input
-          label="Subtítulo"
-          value={shortDescription}
-          onChange={(e) => setShortDescription(e.target.value)}
-          placeholder="Una línea sobre tu marca"
-        />
+        <div>
+          <label className="text-sm font-medium text-text">Subtítulo</label>
+          <input
+            value={shortDescription}
+            onChange={(e) =>
+              setShortDescription(e.target.value.slice(0, PRODUCER_SHORT_DESCRIPTION_MAX))
+            }
+            maxLength={PRODUCER_SHORT_DESCRIPTION_MAX}
+            placeholder="Una línea sobre tu marca"
+            className="mt-1 w-full rounded-md border border-border bg-bg-muted px-3 py-2 text-text outline-none focus:border-accent-muted"
+            aria-describedby="producer-short-desc-counter"
+          />
+          <FieldCharacterCounter
+            id="producer-short-desc-counter"
+            current={shortDescription.length}
+            max={PRODUCER_SHORT_DESCRIPTION_MAX}
+            className="mt-1"
+          />
+        </div>
         <div>
           <label className="text-sm font-medium text-text">Descripción</label>
           <textarea

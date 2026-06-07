@@ -3,6 +3,7 @@
 import { Input } from '@/components/ui/Input';
 import { LatLngMapPreview } from '@/components/admin/LatLngMapPreview';
 import { parseGeoCoord } from './location.utils';
+import { getGoogleMapsApiKey } from './useGoogleMaps';
 import type { LocationPickerMapProps } from './location.types';
 
 export function LocationPickerMapFallback({
@@ -12,8 +13,10 @@ export function LocationPickerMapFallback({
   label,
   helperText,
   error,
+  mapsLoadError,
 }: LocationPickerMapProps) {
-  const showDevWarning = process.env.NODE_ENV === 'development';
+  const showDevWarning =
+    process.env.NODE_ENV === 'development' && !getGoogleMapsApiKey();
 
   const handleAddressChange = (address: string) => {
     onChange({ ...value, address });
@@ -37,6 +40,10 @@ export function LocationPickerMapFallback({
         <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
           Google Maps no está configurado (<code className="text-amber-100">NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code>).
           Podés cargar dirección y coordenadas manualmente.
+        </p>
+      ) : mapsLoadError ? (
+        <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+          No se pudo cargar el mapa interactivo. Completá la dirección y las coordenadas manualmente.
         </p>
       ) : (
         <p className="text-xs text-text-muted">

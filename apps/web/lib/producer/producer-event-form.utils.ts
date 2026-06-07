@@ -1,4 +1,5 @@
 import type { ZodError } from 'zod';
+import { PUBLIC_SUMMARY_MAX_LENGTH } from '@yo-te-invito/shared';
 import { eventFormSchema, type EventFormData } from '@/lib/schemas/event';
 import {
   eventFieldsFromLocationValue,
@@ -163,7 +164,9 @@ export function buildUpdatePayload(
   const loc = eventFieldsFromLocationValue(location);
   return {
     title: data.title,
-    summary: data.summary?.trim() ? data.summary.trim().slice(0, 220) : null,
+    summary: data.summary?.trim()
+      ? data.summary.trim().slice(0, PUBLIC_SUMMARY_MAX_LENGTH)
+      : null,
     description: data.description?.trim() || null,
     startAt: new Date(data.startAt).toISOString(),
     endAt: data.endAt ? new Date(data.endAt).toISOString() : null,

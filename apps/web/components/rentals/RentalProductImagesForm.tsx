@@ -9,6 +9,7 @@ import {
   type GcsImageUploadConfig,
 } from '@/lib/upload/gcs-image-upload-config';
 import { useGcsImageUpload } from '@/lib/upload/use-gcs-image-upload';
+import { ImageUploadHint } from '@/components/upload/ImageUploadHint';
 import { isDataImageUrl } from '@/lib/upload/validate-public-image-file';
 
 export type { GcsImageUploadConfig } from '@/lib/upload/gcs-image-upload-config';
@@ -61,6 +62,14 @@ export function RentalProductImagesForm({
       ...value,
       galleryImageUrls: value.galleryImageUrls.filter((_, i) => i !== index),
     });
+
+  const moveGalleryItem = (index: number, direction: -1 | 1) => {
+    const urls = [...value.galleryImageUrls];
+    const target = index + direction;
+    if (target < 0 || target >= urls.length) return;
+    [urls[index], urls[target]] = [urls[target], urls[index]];
+    onChange({ ...value, galleryImageUrls: urls });
+  };
 
   const appendGalleryUrls = (urls: string[]) => {
     if (urls.length === 0) return;
@@ -155,10 +164,7 @@ export function RentalProductImagesForm({
       {!galleryOnly && (
         <div>
         <label className="mb-1.5 block text-sm font-medium text-text">Imagen de encabezado</label>
-        <p className="mb-2 text-xs text-text-muted">
-          Imagen principal del producto: fondo del encabezado en el detalle y vista en tarjetas.
-          {gcsMode ? ' Se sube a Google Cloud Storage (JPEG, PNG o WEBP, máx. 5 MB).' : null}
-        </p>
+        <ImageUploadHint variant="cover" options={{ gcs: gcsMode }} className="mb-2" />
         <Input
           label="URL"
           value={value.headerImageUrl}
@@ -184,13 +190,16 @@ export function RentalProductImagesForm({
         <label className="mb-1.5 block text-sm font-medium text-text">
           {galleryOnly ? 'Imágenes del ticket' : 'Galería'}
         </label>
-        <p className="mb-3 text-xs text-text-muted">
-          {galleryOnly
-            ? 'Podés subir varias imágenes. Administración elegirá cuáles publicar y cuál será la de cabecera.'
-            : gcsMode
-              ? 'Imágenes adicionales del producto. Subí varias a la vez (JPEG, PNG o WEBP, máx. 5 MB c/u).'
-              : 'Imágenes adicionales del producto. Podés seleccionar varias a la vez.'}
-        </p>
+        <ImageUploadHint
+          variant="gallery"
+          options={{
+            gcs: gcsMode,
+            usageOverride: galleryOnly
+              ? 'Podés subir varias imágenes del ticket. Administración elegirá cuáles publicar.'
+              : undefined,
+          }}
+          className="mb-3"
+        />
 
         {value.galleryImageUrls.length > 0 ? (
           <ul className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5">
@@ -214,6 +223,26 @@ export function RentalProductImagesForm({
                 >
                   ×
                 </button>
+                <div className="absolute bottom-0 left-0 right-0 flex justify-center gap-0.5 bg-black/70 p-1">
+                  <button
+                    type="button"
+                    onClick={() => moveGalleryItem(index, -1)}
+                    disabled={isUploading || index === 0}
+                    className="rounded px-2 py-0.5 text-[10px] font-medium text-white hover:bg-white/15 disabled:opacity-30"
+                    aria-label={`Subir imagen ${index + 1}`}
+                  >
+                    Subir
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => moveGalleryItem(index, 1)}
+                    disabled={isUploading || index === value.galleryImageUrls.length - 1}
+                    className="rounded px-2 py-0.5 text-[10px] font-medium text-white hover:bg-white/15 disabled:opacity-30"
+                    aria-label={`Bajar imagen ${index + 1}`}
+                  >
+                    Bajar
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
@@ -282,10 +311,13 @@ export function rentalProductImagesToPayload(value: RentalProductImagesValue) {
 /** Load form from event detail (cover = header; media = gallery only) */
 export function rentalProductImagesFromEvent(event: {
   coverImageUrl?: string | null;
-  media?: Array<{ url: string }>;
+  media?: Array<{ url: string; sortOrder?: number }>;
 }): RentalProductImagesValue {
   const headerImageUrl = event.coverImageUrl?.trim() ?? '';
-  const galleryImageUrls = (event.media?.map((m) => m.url).filter(Boolean) ?? []).filter(
+  const sortedMedia = [...(event.media ?? [])].sort(
+    (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0),
+  );
+  const galleryImageUrls = sortedMedia.map((m) => m.url).filter(Boolean).filter(
     (url) => url !== headerImageUrl,
   );
   return { headerImageUrl, galleryImageUrls };

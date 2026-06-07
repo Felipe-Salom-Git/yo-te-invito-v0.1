@@ -13,6 +13,7 @@ import { usePublicEntityReviewsState } from '@/lib/query/reviews';
 import type { PublicReviewCategory } from '@yo-te-invito/shared';
 import { entityTypeToReviewCategory } from '@/lib/schemas/review';
 import { getPlaceHeroCtaLabel, getRelatedSectionTitle } from '@/lib/home/contentRoutes';
+import { PublicDescriptionBlock } from '@/components/public/PublicDescriptionBlock';
 import { EventHeroPremium } from '@/components/events/EventHeroPremium';
 import { EventGallerySection } from '@/components/events/EventGallerySection';
 import { EventHighlightsSection } from '@/components/events/EventHighlightsSection';
@@ -219,12 +220,11 @@ export function PlaceDetailView({ id, variant, tenantId = 'tenant-demo' }: Place
         {/* Row 1: Top content (left) + Purchase (right) */}
         <div className="grid gap-8 lg:grid-cols-[1.65fr,1fr] lg:gap-12">
           <div className="min-w-0 space-y-0 order-1">
-            {event.description && (
+            {event.description ? (
               <section className="mt-10 first:mt-0">
-                <h2 className="text-lg font-semibold text-white">Descripción</h2>
-                <p className="mt-3 leading-relaxed text-text-muted">{event.description}</p>
+                <PublicDescriptionBlock title={event.title} description={event.description} />
               </section>
-            )}
+            ) : null}
 
             <EventHighlightsSection
               category={category}

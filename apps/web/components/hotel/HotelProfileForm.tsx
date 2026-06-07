@@ -17,6 +17,7 @@ import {
   type GcsImageUploadConfig,
 } from '@/lib/upload/gcs-image-upload-config';
 import { useGcsImageUpload } from '@/lib/upload/use-gcs-image-upload';
+import { ImageUploadHint } from '@/components/upload/ImageUploadHint';
 import { isDataImageUrl } from '@/lib/upload/validate-public-image-file';
 
 type Props = {
@@ -274,9 +275,6 @@ export function HotelProfileForm({ initial, onSubmit, submitting }: Props) {
 
       <section>
         <SectionTitle className="text-base">Imágenes</SectionTitle>
-        <p className="mt-1 text-sm text-text-muted">
-          Logo, portada y galería vía Google Cloud Storage (JPEG, PNG o WEBP, máx. 5 MB).
-        </p>
         {uploadProgress ? (
           <p className="mt-2 text-sm text-accent" role="status">
             {uploadProgress}
@@ -284,8 +282,10 @@ export function HotelProfileForm({ initial, onSubmit, submitting }: Props) {
         ) : null}
         <div className="mt-4 space-y-6">
           <div>
+            <p className="text-sm font-medium text-text">Logo</p>
+            <ImageUploadHint variant="logo" options={{ gcs: true }} className="mt-1 mb-3" />
             <Input
-              label="Logo"
+              label="URL del logo"
               value={logoUrl}
               onChange={(e) => {
                 const url = e.target.value;

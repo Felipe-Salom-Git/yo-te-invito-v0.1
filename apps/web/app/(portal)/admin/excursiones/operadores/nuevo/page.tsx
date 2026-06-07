@@ -16,6 +16,12 @@ import {
   validateLocationValue,
   type LocationValue,
 } from '@/components/location';
+import {
+  ExternalLinksFormFields,
+  EMPTY_EXTERNAL_LINKS_FORM,
+  externalLinksToPayload,
+  type ExternalLinksFormValue,
+} from '@/components/forms/ExternalLinksFormFields';
 
 const TENANT_ID = 'tenant-demo';
 
@@ -28,17 +34,24 @@ export default function AdminExcursionOperadorNuevoPage() {
   const [location, setLocation] = useState<LocationValue>(EMPTY_LOCATION_VALUE);
   const [openingHours, setOpeningHours] = useState(() => createEmptyRentalOpeningHours());
   const [openingHoursNote, setOpeningHoursNote] = useState('');
+  const [externalLinks, setExternalLinks] = useState<ExternalLinksFormValue>(
+    EMPTY_EXTERNAL_LINKS_FORM,
+  );
   const [locationError, setLocationError] = useState<string | null>(null);
 
   const createMutation = useMutation({
     mutationFn: () => {
       const geo = excursionOperatorPayloadFromLocationValue(location);
+      const links = externalLinksToPayload(externalLinks);
       return repos.excursionOperators.create({
         tenantId: TENANT_ID,
         name: name.trim(),
         contactPhone: contactPhone.trim() || null,
         openingHours,
         openingHoursNote: openingHoursNote.trim() || null,
+        websiteUrl: links.websiteUrl,
+        bookingUrl: links.bookingUrl,
+        socialLinks: links.socialLinks,
         ...geo,
       });
     },
@@ -86,6 +99,11 @@ export default function AdminExcursionOperadorNuevoPage() {
           onChange={setOpeningHours}
           note={openingHoursNote}
           onNoteChange={setOpeningHoursNote}
+        />
+        <ExternalLinksFormFields
+          value={externalLinks}
+          onChange={setExternalLinks}
+          sectionTitle="Reservas y redes"
         />
         <div>
           <Button type="submit" disabled={createMutation.isPending}>

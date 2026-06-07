@@ -90,6 +90,8 @@ export const adminGastroLocationDetailSchema = adminGastroLocationListItemSchema
   subcategoryName: z.string().nullable(),
   menuUrl: z.string().nullable(),
   websiteUrl: z.string().nullable(),
+  bookingUrl: z.string().nullable(),
+  socialLinks: gastroLocalResponseSchema.shape.socialLinks,
   updatedAt: z.string().datetime(),
 });
 export type AdminGastroLocationDetail = z.infer<typeof adminGastroLocationDetailSchema>;

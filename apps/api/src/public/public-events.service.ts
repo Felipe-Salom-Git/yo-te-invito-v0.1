@@ -17,7 +17,14 @@ import {
   parseRentalOpeningHours,
   type EventsRecommendedQuery,
 } from '@yo-te-invito/shared';
+import { readEntitySocialLinks } from '../common/entity-social-links.util';
+import { readExcursionSchedulePublic } from '../common/excursion-schedule.util';
+import {
+  mapEventSubcategoriesPublic,
+  subcategoryFilterWhere,
+} from '../common/event-subcategories.util';
 import { mergePublicEventVisibility } from '../common/utils/event-public-visibility.util';
+import { mergePublicParentEntitiesActive } from '../common/utils/public-content-availability.util';
 import { TRENDING_PRISMA_ORDER_BY } from '../common/utils/event-trending.util';
 import {
   loadPublicFromPriceByEventId,
@@ -30,7 +37,7 @@ export class PublicEventsService {
   constructor(private readonly prisma: PrismaService) {}
 
   private publicWhere(base: Prisma.EventWhereInput): Prisma.EventWhereInput {
-    return mergePublicEventVisibility(base);
+    return mergePublicParentEntitiesActive(mergePublicEventVisibility(base));
   }
 
   private listOrderBy(
@@ -137,29 +144,17 @@ export class PublicEventsService {
     where: Prisma.EventWhereInput,
     query: { tenantId: string; category?: string; subcategoryId?: string; subcategorySlug?: string },
   ): void {
-    const category = query.category?.trim();
-    if (query.subcategoryId?.trim()) {
-      const id = query.subcategoryId.trim();
-      if (category) {
-        where.subcategory = {
-          id,
-          category,
-          tenantId: query.tenantId,
-          isActive: true,
-        };
-      } else {
-        where.subcategoryId = id;
-      }
-      return;
-    }
-    if (query.subcategorySlug?.trim() && category) {
-      where.subcategory = {
-        slug: query.subcategorySlug.trim(),
-        category,
-        tenantId: query.tenantId,
-        isActive: true,
-      };
-    }
+    const clause = subcategoryFilterWhere(query.tenantId, query.category, {
+      subcategoryId: query.subcategoryId,
+      subcategorySlug: query.subcategorySlug,
+    });
+    if (!clause) return;
+    const existingAnd = where.AND
+      ? Array.isArray(where.AND)
+        ? where.AND
+        : [where.AND]
+      : [];
+    where.AND = [...existingAnd, clause];
   }
 
   private searchOrderBy(
@@ -676,6 +671,9 @@ export class PublicEventsService {
           where: { deletedAt: null },
           orderBy: { sortOrder: 'asc' },
         },
+        eventSubcategories: {
+          include: { subcategory: { select: { id: true, name: true } } },
+        },
         rentalLocation: true,
         excursionOperator: true,
         producerProfile: {
@@ -765,10 +763,19 @@ export class PublicEventsService {
             openingHours: parseRentalOpeningHours(event.excursionOperator.openingHours),
             openingHoursNote: event.excursionOperator.openingHoursNote,
             contactPhone: event.excursionOperator.contactPhone,
+            websiteUrl: event.excursionOperator.websiteUrl,
+            bookingUrl: event.excursionOperator.bookingUrl,
+            socialLinks: readEntitySocialLinks(event.excursionOperator.socialLinks),
             geoLat: event.excursionOperator.geoLat,
             geoLng: event.excursionOperator.geoLng,
           }
         : null,
+      excursionSchedule:
+        event.category === 'excursion' ? readExcursionSchedulePublic(event) : undefined,
+      subcategories:
+        event.category === 'excursion'
+          ? mapEventSubcategoriesPublic(event.eventSubcategories)
+          : undefined,
       producer: event.producerProfile
         ? {
             id: event.producerProfile.id,

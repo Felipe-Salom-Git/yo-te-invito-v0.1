@@ -6,6 +6,7 @@ import type {
   EventSummary,
   GeneralPublicationsListQuery,
 } from '@yo-te-invito/shared';
+import { trimToPublicSummary } from '@yo-te-invito/shared';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EventPublicationAlertsService } from '../notifications/event-publication-alerts.service';
 import { SubcategoriesService } from '../subcategories/subcategories.service';
@@ -114,7 +115,7 @@ export class AdminGeneralPublicationsService {
         ? null
         : body.summary.trim() === ''
           ? null
-          : body.summary.trim().slice(0, 220);
+          : trimToPublicSummary(body.summary);
 
     const startAt = body.startAt ? new Date(body.startAt) : new Date();
     const status = body.status ?? 'APPROVED';

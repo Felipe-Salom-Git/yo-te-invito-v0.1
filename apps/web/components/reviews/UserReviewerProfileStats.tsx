@@ -2,6 +2,7 @@
 
 import type { PublicReviewCategory, UserPublicReviewProfile } from '@yo-te-invito/shared';
 import { PUBLIC_REVIEW_CATEGORY_LABELS } from '@/lib/reviews/publicReviewRoutes';
+import { formatPublicRatingLabel } from '@/lib/reviews/ratingDisplay';
 
 type Props = {
   profile: UserPublicReviewProfile;
@@ -38,7 +39,7 @@ export function UserReviewerProfileStats({ profile }: Props) {
   const count = profile.visibleReviewCount;
   const avg =
     profile.averageOverallRating != null && profile.averageOverallRating > 0
-      ? `${profile.averageOverallRating.toFixed(1)} /10`
+      ? formatPublicRatingLabel(profile.averageOverallRating) ?? '—'
       : '—';
 
   return (

@@ -14,6 +14,7 @@ import {
   type AdminGastroLocationsListQuery,
 } from '@yo-te-invito/shared';
 import { readGastroGallery } from '../gastro/gastro-profile-fields.util';
+import { readEntitySocialLinks } from '../../common/entity-social-links.util';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../../email/email.service';
 import { GastroFollowDiscountAlertsService } from '../notifications/gastro-follow-discount-alerts.service';
@@ -380,6 +381,8 @@ export class AdminGastroService {
       subcategoryName: p.subcategory?.name ?? null,
       menuUrl: p.menuUrl,
       websiteUrl: p.websiteUrl,
+      bookingUrl: p.bookingUrl,
+      socialLinks: readEntitySocialLinks(p.socialLinks),
       owner: {
         userId: owner?.id ?? null,
         email: owner?.email ?? null,

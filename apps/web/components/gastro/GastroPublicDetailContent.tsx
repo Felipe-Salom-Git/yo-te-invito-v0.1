@@ -7,7 +7,7 @@ import { buildGastroGalleryImages, buildGastroWhatsAppHref } from '@/lib/gastro/
 import { hasPublicLocationForMapLink } from '@/lib/maps';
 import { GastroPublicHero } from './GastroPublicHero';
 import { GastroDiscountsSection } from './GastroDiscountsSection';
-import { GastroLocationLinksCard } from './GastroLocationLinksCard';
+import { PublicExternalLinksCard } from '@/components/public/PublicExternalLinksCard';
 import { GastroLocationEditorialSection } from './GastroLocationEditorialSection';
 import { GastroContactCard } from './GastroContactCard';
 import { GastroLocationCard } from './GastroLocationCard';
@@ -20,6 +20,7 @@ import { ReviewForm, type ReviewFormSubmitPayload } from '@/components/reviews/R
 import { GastroFollowButton } from '@/components/me/GastroFollowButton';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import type { EventSummary, PublicGastroLocation } from '@/repositories/interfaces';
+import { formatPublicRatingLabel } from '@/lib/reviews/ratingDisplay';
 import type { PublicGastroLocationDiscount } from '@/repositories/interfaces';
 
 export type GastroPublicDetailContentProps = {
@@ -117,7 +118,10 @@ export function GastroPublicDetailContent({
               href="#reviews"
               className="rounded-full border border-white/25 bg-black/40 px-3 py-1.5 text-sm text-white/90 backdrop-blur-sm hover:border-accent/50"
             >
-              {ratingDisplay != null ? `${ratingDisplay.toFixed(1)} ★` : 'Valoraciones'} ·{' '}
+              {ratingDisplay != null
+                ? `${formatPublicRatingLabel(ratingDisplay) ?? ratingDisplay.toFixed(1)} ★`
+                : 'Valoraciones'}{' '}
+              ·{' '}
               {reviewCountDisplay} {reviewCountDisplay === 1 ? 'reseña' : 'reseñas'}
             </a>
           ) : null}
@@ -163,13 +167,21 @@ export function GastroPublicDetailContent({
               hasLocation={hasLocation}
               onViewLocation={hasLocation ? onLocationModalOpen : undefined}
             />
-            <GastroLocationLinksCard
+            <PublicExternalLinksCard
+              title="Reservas y redes"
               menuUrl={location.menuUrl}
               websiteUrl={location.websiteUrl}
+              bookingUrl={location.bookingUrl}
+              socialLinks={location.socialLinks}
               contactPhone={location.contactPhone}
               contactEmail={location.contactEmail}
             />
-            {!hasLocation && !whatsAppHref && !location.menuUrl && !location.websiteUrl ? (
+            {!hasLocation &&
+            !whatsAppHref &&
+            !location.menuUrl &&
+            !location.websiteUrl &&
+            !location.bookingUrl &&
+            !location.socialLinks ? (
               <p className="text-xs text-text-muted">
                 El local puede actualizar horarios y contacto desde su portal gastronómico.
               </p>

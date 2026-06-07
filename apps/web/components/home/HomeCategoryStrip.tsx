@@ -7,11 +7,14 @@ import {
   CATEGORY_GATEWAY_OPTIONS,
 } from '@/lib/home/categoryGatewayConfig';
 
-/** Quick entry to main category landings (4 pillars, no hotels). */
+/**
+ * Quick entry to main category landings (4 pillars, no hotels).
+ * Hidden below `md`: hero tabs already provide category navigation on mobile.
+ */
 export function HomeCategoryStrip() {
   return (
     <nav
-      className="mx-4 mb-2 mt-2 sm:mx-6 lg:mx-8"
+      className="mx-4 mb-2 mt-2 hidden md:block sm:mx-6 lg:mx-8"
       aria-label="Explorar por categoría"
     >
       <p className="mb-3 text-xs font-bold uppercase tracking-wider text-text-muted">

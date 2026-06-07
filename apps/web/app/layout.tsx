@@ -45,8 +45,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es">
-      <body className="flex min-h-screen flex-col bg-bg text-text">
+    <html lang="es" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('yti:theme');if(t==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}})();`,
+          }}
+        />
+      </head>
+      <body className="flex min-h-screen flex-col bg-bg text-text antialiased">
         <Providers>
           <Navbar />
           <main className="min-w-0 flex-1 overflow-x-clip">{children}</main>

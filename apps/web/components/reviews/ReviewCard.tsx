@@ -9,6 +9,10 @@ import {
   getPublicReviewEntityHref,
   PUBLIC_REVIEW_CATEGORY_LABELS,
 } from '@/lib/reviews/publicReviewRoutes';
+import {
+  formatPublicRatingLabel,
+  publicRatingAriaLabel,
+} from '@/lib/reviews/ratingDisplay';
 
 export interface ReviewCardProps {
   review: PublicReviewItemV2;
@@ -36,12 +40,12 @@ export function ReviewCard({
       <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
         <div
           className="flex shrink-0 items-center justify-center rounded-lg border border-accent/30 bg-accent/10 px-3 py-2 sm:w-[4.5rem] sm:flex-col sm:px-2"
-          aria-label={`Puntaje ${review.overallRating} de 10`}
+          aria-label={publicRatingAriaLabel(review.overallRating)}
         >
           <span className="text-2xl font-bold tabular-nums text-accent sm:text-3xl">
-            {review.overallRating}
+            {formatPublicRatingLabel(review.overallRating, { suffix: false })}
           </span>
-          <span className="text-xs text-text-muted sm:mt-0.5">/10</span>
+          <span className="text-xs text-text-muted sm:mt-0.5">/5</span>
         </div>
 
         <div className="min-w-0 flex-1">

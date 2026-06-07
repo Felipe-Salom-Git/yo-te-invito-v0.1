@@ -1,6 +1,7 @@
 'use client';
 
 import { getCategoryLabel } from '@/lib/home/contentRoutes';
+import { formatPublicRatingLabel } from '@/lib/reviews/ratingDisplay';
 
 export interface EventMetaSummaryProps {
   ratingAvg?: number | null;
@@ -27,13 +28,14 @@ export function EventMetaSummary({
   const categoryLabel = category ? getCategoryLabel(category) : null;
 
   const items: Array<{ icon: string; label: string }> = [];
-  if (ratingAvg != null && ratingAvg > 0 && ratingCount != null && ratingCount > 0) {
+  const ratingLabel = formatPublicRatingLabel(ratingAvg);
+  if (ratingLabel && ratingCount != null && ratingCount > 0) {
     items.push({
       icon: '★',
-      label: `${ratingAvg.toFixed(1)} (${ratingCount} reseñas)`,
+      label: `${ratingLabel} (${ratingCount} reseñas)`,
     });
-  } else if (ratingAvg != null && ratingAvg > 0) {
-    items.push({ icon: '★', label: ratingAvg.toFixed(1) });
+  } else if (ratingLabel) {
+    items.push({ icon: '★', label: ratingLabel });
   }
   if (city) items.push({ icon: '📍', label: city });
   if (dateLabel) items.push({ icon: '📅', label: dateLabel });

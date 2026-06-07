@@ -7,6 +7,7 @@ import {
   PUBLIC_REVIEW_REPLY_OPTIONS,
   PUBLIC_REVIEW_SORT_OPTIONS,
 } from '@/lib/reviews/publicReviewListFilters';
+import { formatPublicRatingLabel } from '@/lib/reviews/ratingDisplay';
 
 const selectClass =
   'mt-1 w-full rounded-lg border border-border bg-bg px-3 py-2 text-sm text-text focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent';
@@ -77,7 +78,7 @@ export function PublicReviewsFiltersBar({ filters, onChange, className = '' }: P
           </select>
         </label>
         <label className="block min-w-0 text-xs text-text-muted">
-          Puntaje (1–10)
+          Puntaje (1–5)
           <select
             className={selectClass}
             value={filters.overallRating ?? ''}
@@ -91,7 +92,7 @@ export function PublicReviewsFiltersBar({ filters, onChange, className = '' }: P
             <option value="">Cualquiera</option>
             {[10, 9, 8, 7, 6, 5, 4, 3, 2, 1].map((n) => (
               <option key={n} value={String(n)}>
-                {n}/10
+                {formatPublicRatingLabel(n)}
               </option>
             ))}
           </select>

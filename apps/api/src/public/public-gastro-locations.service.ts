@@ -6,6 +6,7 @@ import {
 } from '@yo-te-invito/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { GastroContentService } from '../modules/gastro/gastro-content.service';
+import { readEntitySocialLinks } from '../common/entity-social-links.util';
 
 @Injectable()
 export class PublicGastroLocationsService {
@@ -91,6 +92,8 @@ export class PublicGastroLocationsService {
       contactEmail: string | null;
       menuUrl: string | null;
       websiteUrl: string | null;
+      bookingUrl: string | null;
+      socialLinks: unknown;
       subcategoryId: string | null;
       publicEventId: string | null;
       status: string;
@@ -129,6 +132,8 @@ export class PublicGastroLocationsService {
       contactEmail: row.contactEmail ?? null,
       menuUrl: row.menuUrl,
       websiteUrl: row.websiteUrl,
+      bookingUrl: row.bookingUrl,
+      socialLinks: readEntitySocialLinks(row.socialLinks),
       subcategoryId: row.subcategoryId,
       publicEventId: row.publicEventId,
       status: row.status,

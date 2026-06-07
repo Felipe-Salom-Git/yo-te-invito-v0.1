@@ -1,6 +1,7 @@
 'use client';
 
-const CARD_CLASS = 'rounded-xl border border-border bg-bg-muted p-5';
+const CARD_CLASS =
+  'rounded-xl border border-accent/25 bg-accent/5 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]';
 
 type ExcursionContactCardProps = {
   whatsAppHref: string;

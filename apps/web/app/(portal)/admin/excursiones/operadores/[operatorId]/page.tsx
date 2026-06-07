@@ -8,6 +8,8 @@ import { excursionOperatorsKeys } from '@/lib/query/keys';
 import { PageContainer, SectionTitle } from '@/components';
 import { LatLngMapPreview } from '@/components/admin/LatLngMapPreview';
 import { RentalOpeningHoursDisplay } from '@/lib/rentals/openingHoursDisplay';
+import { AdminExcursionOperatorLifecycleActions } from '@/components/admin/AdminExcursionOperatorLifecycleActions';
+import { AdminEventLifecycleActions } from '@/components/admin/AdminEventLifecycleActions';
 
 export default function AdminExcursionOperadorDetailPage() {
   const params = useParams();
@@ -60,7 +62,7 @@ export default function AdminExcursionOperadorDetailPage() {
             </div>
           )}
 
-          <div className="mt-4 flex flex-wrap gap-3">
+          <div className="mt-4 flex flex-wrap items-center gap-3">
             <Link
               href={`/admin/excursiones/operadores/${operatorId}/editar`}
               className="rounded border border-accent px-3 py-1.5 text-sm text-accent hover:bg-accent/10"
@@ -73,6 +75,10 @@ export default function AdminExcursionOperadorDetailPage() {
             >
               Nueva excursión
             </Link>
+            <AdminExcursionOperatorLifecycleActions
+              operatorId={operatorId}
+              isActive={operator.isActive}
+            />
           </div>
 
           <h2 className="mt-10 text-lg font-semibold text-text">Excursiones</h2>
@@ -98,12 +104,19 @@ export default function AdminExcursionOperadorDetailPage() {
                       <p className="mt-1 line-clamp-2 text-sm text-text-muted">{ex.summary}</p>
                     )}
                   </div>
-                  <Link
-                    href={`/admin/excursiones/operadores/${operatorId}/excursiones/${ex.id}/editar`}
-                    className="text-sm text-accent hover:underline"
-                  >
-                    Editar excursión
-                  </Link>
+                  <div className="flex flex-col items-end gap-2">
+                    <Link
+                      href={`/admin/excursiones/operadores/${operatorId}/excursiones/${ex.id}/editar`}
+                      className="text-sm text-accent hover:underline"
+                    >
+                      Editar excursión
+                    </Link>
+                    <AdminEventLifecycleActions
+                      eventId={ex.id}
+                      status={(ex.status ?? 'APPROVED').toLowerCase()}
+                      compact
+                    />
+                  </div>
                 </li>
               ))}
             </ul>

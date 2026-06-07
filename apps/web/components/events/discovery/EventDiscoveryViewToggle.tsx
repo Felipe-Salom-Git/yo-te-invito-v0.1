@@ -13,8 +13,8 @@ export function EventDiscoveryViewToggle({
   onOpenCalendar: () => void;
 }) {
   return (
-    <div className="flex flex-col items-end gap-2">
-      <div className="inline-flex rounded-lg border border-white/15 bg-white/5 p-1">
+    <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
+      <div className="inline-flex w-full rounded-lg border border-white/15 bg-white/5 p-1 sm:w-auto">
         {(
           [
             { id: 'carousels' as const, label: 'Por categoría' },
@@ -36,7 +36,7 @@ export function EventDiscoveryViewToggle({
       <button
         type="button"
         onClick={onOpenCalendar}
-        className="w-full whitespace-nowrap rounded-lg border border-accent-muted px-3 py-2 text-center text-sm font-medium text-accent-soft transition hover:border-accent hover:bg-accent-surface/40"
+        className="w-full whitespace-nowrap rounded-lg border border-accent-muted px-3 py-2 text-center text-sm font-medium text-accent-soft transition hover:border-accent hover:bg-accent-surface/40 sm:min-w-[10.5rem]"
       >
         Calendario mensual
       </button>

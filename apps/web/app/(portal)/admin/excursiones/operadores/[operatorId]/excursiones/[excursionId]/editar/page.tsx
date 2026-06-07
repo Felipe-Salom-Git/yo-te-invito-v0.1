@@ -8,7 +8,11 @@ import { useRepositories } from '@/repositories/context';
 import { PageContainer, SectionTitle, Button, Input, useToast } from '@/components';
 import { getErrorMessage } from '@/lib/errors';
 import { eventsKeys, excursionOperatorsKeys } from '@/lib/query/keys';
-import { SubcategorySelect } from '@/components/forms/SubcategorySelect';
+import {
+  ExcursionSubcategoryMultiSelect,
+  excursionSubcategoryIdsFromEvent,
+  excursionSubcategoryIdsToPayload,
+} from '@/components/excursions/ExcursionSubcategoryMultiSelect';
 import {
   RentalProductImagesForm,
   rentalProductImagesFromEvent,
@@ -16,6 +20,19 @@ import {
   type RentalProductImagesValue,
 } from '@/components/rentals/RentalProductImagesForm';
 import { RentalSummaryField } from '@/components/rentals/RentalSummaryField';
+import {
+  ExcursionScheduleFormFields,
+  excursionScheduleFormValueFromEvent,
+  excursionScheduleFormValueToPayload,
+} from '@/components/excursions/ExcursionScheduleFormFields';
+import {
+  EventLocationFields,
+  eventFieldsFromLocationValue,
+  locationValueFromEventFields,
+  validateOptionalEntityLocation,
+  type LocationValue,
+} from '@/components/location';
+import { hasPublicLocationForMapLink } from '@/lib/maps';
 
 const TENANT_ID = 'tenant-demo';
 
@@ -42,29 +59,66 @@ export default function AdminExcursionEditarPage() {
   const [title, setTitle] = useState('');
   const [summary, setSummary] = useState('');
   const [description, setDescription] = useState('');
-  const [subcategoryId, setSubcategoryId] = useState('');
+  const [subcategoryIds, setSubcategoryIds] = useState<string[]>([]);
   const [images, setImages] = useState<RentalProductImagesValue>(emptyImages);
   const [imagesUploading, setImagesUploading] = useState(false);
+  const [schedule, setSchedule] = useState(excursionScheduleFormValueFromEvent());
+  const [location, setLocation] = useState<LocationValue | null>(null);
+  const [useCustomLocation, setUseCustomLocation] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
 
   useEffect(() => {
     if (event) {
       setTitle(event.title ?? '');
       setSummary(event.summary ?? '');
       setDescription(event.description ?? '');
-      setSubcategoryId(event.subcategoryId ?? '');
+      setSubcategoryIds(excursionSubcategoryIdsFromEvent(event));
       setImages(rentalProductImagesFromEvent(event));
+      setSchedule(excursionScheduleFormValueFromEvent(event.excursionSchedule));
+      const loc = locationValueFromEventFields(event);
+      const hasOwn = hasPublicLocationForMapLink({
+        address: event.venueAddress,
+        city: event.city,
+        venueName: event.venueName,
+        geoLat: event.geoLat,
+        geoLng: event.geoLng,
+      });
+      setLocation(loc);
+      setUseCustomLocation(hasOwn);
     }
   }, [event]);
 
   const updateMutation = useMutation({
-    mutationFn: () =>
-      repos.excursionOperators.updateExcursion(operatorId, excursionId, {
+    mutationFn: () => {
+      if (useCustomLocation && location) {
+        const locErr = validateOptionalEntityLocation(location);
+        if (locErr) {
+          setLocationError(locErr);
+          throw new Error(locErr);
+        }
+      }
+      setLocationError(null);
+      const loc = useCustomLocation && location ? eventFieldsFromLocationValue(location) : null;
+      return repos.excursionOperators.updateExcursion(operatorId, excursionId, {
         title: title.trim(),
         summary: summary.trim() || null,
         description: description.trim() || null,
-        subcategoryId: subcategoryId || null,
+        ...excursionSubcategoryIdsToPayload(subcategoryIds),
         ...rentalProductImagesToPayload(images),
-      }),
+        ...excursionScheduleFormValueToPayload(schedule),
+        ...(loc ??
+          (useCustomLocation
+            ? {}
+            : {
+                venueAddress: null,
+                city: null,
+                province: null,
+                googlePlaceId: null,
+                geoLat: null,
+                geoLng: null,
+              })),
+      });
+    },
     onError: (err) => addToast(getErrorMessage(err), 'error'),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: eventsKeys.detail(excursionId, TENANT_ID) });
@@ -79,7 +133,7 @@ export default function AdminExcursionEditarPage() {
     updateMutation.mutate();
   };
 
-  if (isLoading) {
+  if (isLoading || !location) {
     return (
       <PageContainer>
         <p className="text-text-muted">Cargando…</p>
@@ -109,7 +163,29 @@ export default function AdminExcursionEditarPage() {
             className="w-full rounded border border-border bg-bg px-3 py-2 text-text"
           />
         </div>
-        <SubcategorySelect category="excursion" value={subcategoryId} onChange={setSubcategoryId} />
+        <ExcursionSubcategoryMultiSelect value={subcategoryIds} onChange={setSubcategoryIds} />
+        <ExcursionScheduleFormFields value={schedule} onChange={setSchedule} />
+        <div className="space-y-3 rounded-lg border border-border p-4">
+          <label className="flex items-center gap-2 text-sm text-text">
+            <input
+              type="checkbox"
+              checked={useCustomLocation}
+              onChange={(e) => setUseCustomLocation(e.target.checked)}
+              className="rounded border-border"
+            />
+            Ubicación propia de la excursión
+          </label>
+          <p className="text-xs text-text-muted">
+            Si está desmarcado, el detalle público mostrará la ubicación del operador.
+          </p>
+          {useCustomLocation ? (
+            <EventLocationFields
+              value={location}
+              onChange={setLocation}
+              mapError={locationError ?? undefined}
+            />
+          ) : null}
+        </div>
         <RentalProductImagesForm
           value={images}
           onChange={setImages}

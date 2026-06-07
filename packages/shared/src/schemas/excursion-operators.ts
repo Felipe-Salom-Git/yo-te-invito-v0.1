@@ -1,6 +1,16 @@
 import { z } from 'zod';
+import { PUBLIC_SUMMARY_MAX_LENGTH } from '../constants/content-limits';
+import {
+  entitySocialLinksInputSchema,
+  safeExternalUrlOptionalSchema,
+} from './external-links';
 import { EventStatus, EventMediaType } from '../enums';
 import { eventMediaSchema, eventSummarySchema } from './events';
+import { excursionSubcategoryIdsInputSchema } from './event-subcategories';
+import {
+  excursionProductLocationInputSchema,
+  excursionScheduleInputSchema,
+} from './excursion-schedule';
 import { rentalOpeningHoursSchema } from './opening-hours';
 
 const googlePlaceIdOptional = z.string().max(255).nullable().optional();
@@ -17,6 +27,9 @@ export const excursionOperatorSummarySchema = z.object({
   openingHours: rentalOpeningHoursSchema.nullable(),
   openingHoursNote: z.string().nullable(),
   contactPhone: z.string().nullable(),
+  websiteUrl: z.string().nullable(),
+  bookingUrl: z.string().nullable(),
+  socialLinks: entitySocialLinksInputSchema,
   geoLat: z.number().nullable(),
   geoLng: z.number().nullable(),
   isActive: z.boolean(),
@@ -42,6 +55,9 @@ export const publicExcursionOperatorSchema = z.object({
   openingHours: rentalOpeningHoursSchema.nullable(),
   openingHoursNote: z.string().nullable(),
   contactPhone: z.string().nullable(),
+  websiteUrl: z.string().nullable(),
+  bookingUrl: z.string().nullable(),
+  socialLinks: entitySocialLinksInputSchema,
   geoLat: z.number().nullable(),
   geoLng: z.number().nullable(),
 });
@@ -75,6 +91,9 @@ export const createExcursionOperatorBodySchema = z.object({
   openingHours: rentalOpeningHoursSchema.nullable().optional(),
   openingHoursNote: z.string().max(500).nullable().optional(),
   contactPhone: z.string().max(40).nullable().optional(),
+  websiteUrl: safeExternalUrlOptionalSchema,
+  bookingUrl: safeExternalUrlOptionalSchema,
+  socialLinks: entitySocialLinksInputSchema,
   geoLat: z.number().nullish(),
   geoLng: z.number().nullish(),
   isActive: z.boolean().optional(),
@@ -91,6 +110,9 @@ export const updateExcursionOperatorBodySchema = z.object({
   openingHours: rentalOpeningHoursSchema.nullable().optional(),
   openingHoursNote: z.string().max(500).nullable().optional(),
   contactPhone: z.string().max(40).nullable().optional(),
+  websiteUrl: safeExternalUrlOptionalSchema,
+  bookingUrl: safeExternalUrlOptionalSchema,
+  socialLinks: entitySocialLinksInputSchema,
   geoLat: z.number().nullish(),
   geoLng: z.number().nullish(),
   isActive: z.boolean().optional(),
@@ -112,32 +134,43 @@ export const excursionProductGalleryImageSchema = z.object({
 
 export const excursionProductSummarySchema = z
   .string()
-  .max(220, 'El resumen no puede superar 220 caracteres')
+  .max(
+    PUBLIC_SUMMARY_MAX_LENGTH,
+    `El resumen no puede superar ${PUBLIC_SUMMARY_MAX_LENGTH} caracteres`,
+  )
   .optional()
   .nullable();
 
-export const createExcursionProductBodySchema = z.object({
-  title: z.string().min(1),
-  summary: excursionProductSummarySchema,
-  description: z.string().nullish(),
-  subcategoryId: z.string().nullish(),
-  headerImageUrl: z.string().nullish(),
-  galleryImages: z.array(excursionProductGalleryImageSchema).optional(),
-  coverImageUrl: z.string().nullish(),
-  media: z.array(eventMediaSchema).optional(),
-  status: z.nativeEnum(EventStatus).optional(),
-});
+export const createExcursionProductBodySchema = z
+  .object({
+    title: z.string().min(1),
+    summary: excursionProductSummarySchema,
+    description: z.string().nullish(),
+    subcategoryId: z.string().nullish(),
+    subcategoryIds: excursionSubcategoryIdsInputSchema,
+    headerImageUrl: z.string().nullish(),
+    galleryImages: z.array(excursionProductGalleryImageSchema).optional(),
+    coverImageUrl: z.string().nullish(),
+    media: z.array(eventMediaSchema).optional(),
+    status: z.nativeEnum(EventStatus).optional(),
+  })
+  .merge(excursionScheduleInputSchema)
+  .merge(excursionProductLocationInputSchema);
 export type CreateExcursionProductBody = z.infer<typeof createExcursionProductBodySchema>;
 
-export const updateExcursionProductBodySchema = z.object({
-  title: z.string().min(1).optional(),
-  summary: excursionProductSummarySchema,
-  description: z.string().nullish(),
-  subcategoryId: z.string().nullish(),
-  headerImageUrl: z.string().nullish(),
-  galleryImages: z.array(excursionProductGalleryImageSchema).optional(),
-  coverImageUrl: z.string().nullish(),
-  media: z.array(eventMediaSchema).optional(),
-  status: z.nativeEnum(EventStatus).optional(),
-});
+export const updateExcursionProductBodySchema = z
+  .object({
+    title: z.string().min(1).optional(),
+    summary: excursionProductSummarySchema,
+    description: z.string().nullish(),
+    subcategoryId: z.string().nullish(),
+    subcategoryIds: excursionSubcategoryIdsInputSchema,
+    headerImageUrl: z.string().nullish(),
+    galleryImages: z.array(excursionProductGalleryImageSchema).optional(),
+    coverImageUrl: z.string().nullish(),
+    media: z.array(eventMediaSchema).optional(),
+    status: z.nativeEnum(EventStatus).optional(),
+  })
+  .merge(excursionScheduleInputSchema)
+  .merge(excursionProductLocationInputSchema);
 export type UpdateExcursionProductBody = z.infer<typeof updateExcursionProductBodySchema>;

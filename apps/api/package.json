@@ -60,6 +60,10 @@
     "storage:cleanup-orphans": "tsx scripts/storage-cleanup-orphans.ts",
     "smoke:storage-global": "tsx scripts/smoke-storage-global.ts",
     "smoke:maps-location": "tsx scripts/smoke-maps-location.ts",
+    "smoke:v31-stabilization": "tsx scripts/smoke-v31-stabilization.ts",
+    "smoke:v31-subcategories": "tsx scripts/smoke-v31-subcategories.ts",
+    "smoke:v31-admin-archive": "tsx scripts/smoke-v31-admin-archive.ts",
+    "smoke:v31-category-banners": "tsx scripts/smoke-v31-category-banners.ts",
     "smoke:email": "tsx scripts/smoke-email.ts",
     "smoke:email-template": "tsx scripts/smoke-email-template.ts"
   },

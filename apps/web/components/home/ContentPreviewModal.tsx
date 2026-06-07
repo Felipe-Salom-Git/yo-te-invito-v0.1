@@ -4,7 +4,7 @@ import { useEffect, useCallback, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getContentDetailHref } from '@/lib/home/contentRoutes';
 import {
-  getContentCardCategoryBadge,
+  getContentCardPrimaryBadge,
   getContentCardPlaceholderEmoji,
   getContentPreviewDateLabel,
   getContentPreviewLocationLabel,
@@ -129,7 +129,7 @@ function ContentPreviewContent({
 }) {
   const detailHref = getContentDetailHref(item);
   const isRental = isRentalContent(item);
-  const categoryLabel = getContentCardCategoryBadge(item.category);
+  const categoryLabel = getContentCardPrimaryBadge(item);
   const filteredSimilar = similarItems.filter((s) => s.id !== item.id);
 
   const dateLabel = getContentPreviewDateLabel(item);
@@ -193,11 +193,11 @@ function ContentPreviewContent({
         />
 
         {/* Category badge */}
-        {item.category && (
+        {categoryLabel ? (
           <span className="absolute left-4 top-4 rounded-full bg-black/55 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm">
             {categoryLabel}
           </span>
-        )}
+        ) : null}
       </div>
 
       {/* Main content — scrollable */}

@@ -5,6 +5,7 @@ import { createEmptyRentalOpeningHours } from '@yo-te-invito/shared';
 import { Button, Input, SectionTitle } from '@/components';
 import { OpeningHoursEditor } from '@/components/forms/OpeningHoursEditor';
 import { RentalProductImagesForm } from '@/components/rentals/RentalProductImagesForm';
+import { RentalSummaryField } from '@/components/rentals/RentalSummaryField';
 import type { GcsImageUploadConfig } from '@/lib/upload/gcs-image-upload-config';
 import {
   EventLocationFields,
@@ -12,6 +13,12 @@ import {
   validateGastroLocationValue,
   type LocationValue,
 } from '@/components/location';
+import {
+  ExternalLinksFormFields,
+  externalLinksFromGastroLocal,
+  externalLinksToPayload,
+  type ExternalLinksFormValue,
+} from '@/components/forms/ExternalLinksFormFields';
 import type { GastroLocal, GastroLocalUpsertPayload } from '@/repositories/interfaces';
 
 export type GastroLocalFormMode = 'owner' | 'admin';
@@ -86,8 +93,9 @@ export function GastroLocalForm({
   const [openingHoursNote, setOpeningHoursNote] = useState(initial?.openingHoursNote ?? '');
   const [contactPhone, setContactPhone] = useState(initial?.contactPhone ?? '');
   const [contactEmail, setContactEmail] = useState(initial?.contactEmail ?? '');
-  const [menuUrl, setMenuUrl] = useState(initial?.menuUrl ?? '');
-  const [websiteUrl, setWebsiteUrl] = useState(initial?.websiteUrl ?? '');
+  const [externalLinks, setExternalLinks] = useState<ExternalLinksFormValue>(() =>
+    initial ? externalLinksFromGastroLocal(initial) : externalLinksFromGastroLocal({}),
+  );
   const [locationError, setLocationError] = useState<string | null>(null);
   const [isUploadingImages, setIsUploadingImages] = useState(false);
   const hydratedFromId = useRef<string | null>(null);
@@ -113,8 +121,7 @@ export function GastroLocalForm({
     setOpeningHoursNote(initial.openingHoursNote ?? '');
     setContactPhone(initial.contactPhone ?? '');
     setContactEmail(initial.contactEmail ?? '');
-    setMenuUrl(initial.menuUrl ?? '');
-    setWebsiteUrl(initial.websiteUrl ?? '');
+    setExternalLinks(externalLinksFromGastroLocal(initial));
   }, [initial]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -130,6 +137,7 @@ export function GastroLocalForm({
       return;
     }
     setLocationError(null);
+    const links = externalLinksToPayload(externalLinks);
     onSubmit({
       displayName: displayName.trim(),
       summary: summary.trim() || null,
@@ -142,8 +150,10 @@ export function GastroLocalForm({
       openingHoursNote: openingHoursNote.trim() || null,
       contactPhone: contactPhone.trim() || null,
       contactEmail: contactEmail.trim(),
-      menuUrl: menuUrl.trim() || null,
-      websiteUrl: websiteUrl.trim() || null,
+      menuUrl: links.menuUrl,
+      websiteUrl: links.websiteUrl,
+      bookingUrl: links.bookingUrl,
+      socialLinks: links.socialLinks,
     });
   };
 
@@ -163,16 +173,7 @@ export function GastroLocalForm({
         onChange={(e) => setDisplayName(e.target.value)}
         required
       />
-      <div>
-        <label className="mb-1 block text-sm text-text-muted">Resumen (máx. 220 caracteres)</label>
-        <textarea
-          className="w-full rounded-lg border border-border bg-bg px-3 py-2 text-sm text-text placeholder:text-text-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
-          rows={2}
-          maxLength={220}
-          value={summary}
-          onChange={(e) => setSummary(e.target.value)}
-        />
-      </div>
+      <RentalSummaryField value={summary} onChange={setSummary} />
       <div>
         <label className="mb-1 block text-sm text-text-muted">Detalle</label>
         <textarea
@@ -243,15 +244,11 @@ export function GastroLocalForm({
         onChange={(e) => setContactEmail(e.target.value)}
         required
       />
-      <Input
-        label={isAdmin ? 'Menú / carta (URL)' : 'Menú digital (URL)'}
-        value={menuUrl}
-        onChange={(e) => setMenuUrl(e.target.value)}
-      />
-      <Input
-        label={isAdmin ? 'Web / redes (URL)' : 'Página web (URL)'}
-        value={websiteUrl}
-        onChange={(e) => setWebsiteUrl(e.target.value)}
+      <ExternalLinksFormFields
+        value={externalLinks}
+        onChange={setExternalLinks}
+        showMenuUrl
+        sectionTitle={isAdmin ? 'Enlaces y redes' : 'Reservas y redes'}
       />
       {locationError && <p className="text-sm text-red-500">{locationError}</p>}
       <Button type="submit" disabled={submitting || isUploadingImages}>

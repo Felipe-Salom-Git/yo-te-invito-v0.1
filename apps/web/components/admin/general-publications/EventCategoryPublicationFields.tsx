@@ -15,6 +15,7 @@ import {
   EventLocationFields,
   type LocationValue,
 } from '@/components/location';
+import { ImageUploadHint } from '@/components/upload/ImageUploadHint';
 import type { ContentCategory } from '@/repositories/interfaces';
 
 export type EventCategoryPublicationValue = {
@@ -162,11 +163,7 @@ export function EventCategoryPublicationFields({
       />
       <div>
         <label className="mb-1.5 block text-sm font-medium text-text">Imagen</label>
-        {gcsMode ? (
-          <p className="mb-2 text-xs text-text-muted">
-            Cover vía Google Cloud Storage (JPEG, PNG o WEBP, máx. 5 MB).
-          </p>
-        ) : null}
+        <ImageUploadHint variant="cover" options={{ gcs: gcsMode }} className="mb-2" />
         <Input
           label="URL de imagen"
           value={value.coverImageUrl}

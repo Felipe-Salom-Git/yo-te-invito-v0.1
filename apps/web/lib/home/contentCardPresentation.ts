@@ -17,6 +17,33 @@ export function getContentCardCategoryBadge(category?: string | null): string {
   return getCategoryLabel(category ?? undefined);
 }
 
+const CATEGORIES_HIDE_GENERIC_WHEN_SUBCATEGORY = new Set(['event', 'gastro', 'excursion']);
+
+/**
+ * Primary badge on discovery cards — prefers useful subcategory over generic vertical label.
+ */
+export function getContentCardPrimaryBadge(item: {
+  category?: string | null;
+  subcategoryName?: string | null;
+}): string | null {
+  const category = item.category ?? null;
+  const subcategory = item.subcategoryName?.trim();
+
+  if (category === 'rental') return RENTAL_CARD_BADGE;
+  if (subcategory) return subcategory;
+  if (category && CATEGORIES_HIDE_GENERIC_WHEN_SUBCATEGORY.has(category)) return null;
+  return category ? getCategoryLabel(category) : null;
+}
+
+/** Secondary chip — rental subcategory when primary is “Alquiler”. */
+export function getContentCardSecondaryBadge(item: {
+  category?: string | null;
+  subcategoryName?: string | null;
+}): string | null {
+  if (item.category !== 'rental') return null;
+  return item.subcategoryName?.trim() || null;
+}
+
 /** Location line: local (venueName) first for rentals; city/venue for other categories. */
 export function getContentCardLocationLine(item: {
   category?: string | null;

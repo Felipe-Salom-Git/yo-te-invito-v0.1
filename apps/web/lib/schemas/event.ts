@@ -1,8 +1,12 @@
 import { z } from 'zod';
+import { PUBLIC_SUMMARY_MAX_LENGTH } from '@yo-te-invito/shared';
 
 export const eventFormSchema = z.object({
   title: z.string().min(1, 'Título requerido'),
-  summary: z.string().max(220, 'Máximo 220 caracteres').optional(),
+  summary: z
+    .string()
+    .max(PUBLIC_SUMMARY_MAX_LENGTH, `Máximo ${PUBLIC_SUMMARY_MAX_LENGTH} caracteres`)
+    .optional(),
   description: z.string().optional(),
   startAt: z.string().min(1, 'Fecha de inicio requerida'),
   endAt: z.string().optional(),

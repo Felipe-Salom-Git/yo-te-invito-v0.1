@@ -19,10 +19,16 @@ import {
   validateProducerEventForm,
   validateProducerEventSubmit,
 } from '@/lib/producer/producer-event-form.utils';
+import type { ProducerEventWizardStep } from '@/lib/producer/producer-event-wizard';
+import {
+  validateProducerEventWizardStep1,
+  validateProducerEventWizardStep2,
+} from '@/lib/producer/producer-event-wizard';
 import type { GcsImageUploadConfig } from '@/lib/upload/gcs-image-upload-config';
 import { ProducerEventFormErrorSummary } from './ProducerEventFormErrorSummary';
 import { ProducerEventFormFields } from './ProducerEventFormFields';
 import { ProducerEventFormLayout } from './ProducerEventFormLayout';
+import { ProducerEventWizardProgress } from './ProducerEventWizardProgress';
 
 type Props = {
   eventId: string;
@@ -38,11 +44,11 @@ export function ProducerEventEditForm({ eventId, eventData }: Props) {
   const errorRef = useRef<HTMLDivElement>(null);
 
   const mode = deriveEventModeFromEvent(eventData);
-  const isTicketed = mode === 'TICKETED';
-  const modeLabel = isTicketed ? 'Con ticketera' : 'Solo publicidad';
+  const modeLabel = mode === 'TICKETED' ? 'Con ticketera' : 'Solo publicidad';
   const statusUpper = (eventData.status ?? 'DRAFT').toUpperCase();
   const canChangeStatus = statusUpper === 'DRAFT' || statusUpper === 'PENDING';
 
+  const [step, setStep] = useState<ProducerEventWizardStep>(1);
   const [form, setForm] = useState<EventFormData>(() => eventDetailToFormData(eventData));
   const [location, setLocation] = useState<LocationValue>(() =>
     locationValueFromEventFields(eventData),
@@ -91,19 +97,45 @@ export function ProducerEventEditForm({ eventId, eventData }: Props) {
     },
   });
 
+  const scrollToErrors = () => {
+    errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const goNext = () => {
+    setFormError(null);
+    if (step === 1) {
+      const v = validateProducerEventWizardStep1(form);
+      if (!v.ok) {
+        setErrors(v.errors);
+        scrollToErrors();
+        return;
+      }
+    }
+    if (step === 2) {
+      const v = validateProducerEventWizardStep2(form, location);
+      if (!v.ok) {
+        setErrors(v.errors);
+        scrollToErrors();
+        return;
+      }
+    }
+    setErrors({});
+    setStep((s) => (s < 3 ? ((s + 1) as ProducerEventWizardStep) : s));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
     const validated = validateProducerEventSubmit(form, location);
     if (!validated.ok) {
       setErrors(validated.errors);
-      errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      scrollToErrors();
       return;
     }
     const parsed = validateProducerEventForm(form);
     if (!parsed.ok) {
       setErrors(parsed.errors);
-      errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      scrollToErrors();
       return;
     }
     setErrors({});
@@ -111,24 +143,47 @@ export function ProducerEventEditForm({ eventId, eventData }: Props) {
   };
 
   const footer = (
-    <div className="flex flex-col-reverse gap-3 border-t border-border pt-6 sm:flex-row sm:justify-end">
-      <Link href={`/producer/events/${eventId}`} className="sm:mr-auto">
-        <Button type="button" variant="outline" className="w-full sm:w-auto">
-          Volver al evento
+    <div className="flex flex-col-reverse gap-3 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row">
+        {step > 1 ? (
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full sm:w-auto"
+            onClick={() => {
+              setErrors({});
+              setStep((s) => (s > 1 ? ((s - 1) as ProducerEventWizardStep) : s));
+            }}
+          >
+            Atrás
+          </Button>
+        ) : (
+          <Link href={`/producer/events/${eventId}`} className="w-full sm:w-auto">
+            <Button type="button" variant="outline" className="w-full">
+              Volver al evento
+            </Button>
+          </Link>
+        )}
+      </div>
+      {step < 3 ? (
+        <Button type="button" onClick={goNext} className="w-full sm:w-auto">
+          Siguiente
         </Button>
-      </Link>
-      <Button
-        type="submit"
-        disabled={updateMutation.isPending || isUploadingCover}
-        className="w-full sm:w-auto"
-      >
-        {updateMutation.isPending ? 'Guardando…' : 'Guardar cambios'}
-      </Button>
+      ) : (
+        <Button
+          type="submit"
+          disabled={updateMutation.isPending || isUploadingCover}
+          className="w-full sm:w-auto"
+        >
+          {updateMutation.isPending ? 'Guardando…' : 'Guardar cambios'}
+        </Button>
+      )}
     </div>
   );
 
   return (
     <form onSubmit={handleSubmit} className="pb-16">
+      <ProducerEventWizardProgress currentStep={step} />
       <div ref={errorRef}>
         <ProducerEventFormErrorSummary errors={errors} formError={formError} />
       </div>
@@ -153,6 +208,7 @@ export function ProducerEventEditForm({ eventId, eventData }: Props) {
           onUploadingChange={setIsUploadingCover}
           apiStatus={eventData.status}
           completenessItems={completenessItems}
+          wizardStep={step}
         />
       </ProducerEventFormLayout>
     </form>

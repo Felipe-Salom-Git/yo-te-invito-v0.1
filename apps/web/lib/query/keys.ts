@@ -230,6 +230,14 @@ export const categoryBannersKeys = {
   admin: (category: string) => [...categoryBannersKeys.all, 'admin', category] as const,
 };
 
+export const categoryEditorialBannersKeys = {
+  all: ['categoryEditorialBanners'] as const,
+  public: (tenantId: string, category: string) =>
+    [...categoryEditorialBannersKeys.all, 'public', tenantId, category] as const,
+  admin: (category: string) =>
+    [...categoryEditorialBannersKeys.all, 'admin', category] as const,
+};
+
 export const categoryLandingKeys = {
   all: ['categoryLanding'] as const,
   rails: (tenantId: string, category: string, subcategorySlug?: string) =>

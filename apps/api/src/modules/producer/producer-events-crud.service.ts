@@ -14,11 +14,20 @@ import type {
   EventsPaginatedResponse,
 } from '@yo-te-invito/shared';
 import { deriveProducerEventMode } from '@yo-te-invito/shared';
-import { ErrorCode, parseRentalOpeningHours } from '@yo-te-invito/shared';
+import { ErrorCode, parseRentalOpeningHours, trimToPublicSummary } from '@yo-te-invito/shared';
 import { SubcategoriesService } from '../subcategories/subcategories.service';
 import { RentalLocationsService } from '../rental-locations/rental-locations.service';
 import { OperationalAlertsEmailService } from '../../email/operational-alerts-email.service';
 import { categoryLabel } from '../notifications/smart-alerts-matching.util';
+import {
+  readExcursionSchedulePublic,
+  writeExcursionScheduleFields,
+} from '../../common/excursion-schedule.util';
+import {
+  mapEventSubcategoriesPublic,
+  resolveValidatedExcursionSubcategories,
+  syncEventSubcategories,
+} from '../../common/event-subcategories.util';
 
 @Injectable()
 export class ProducerEventsCrudService {
@@ -127,6 +136,11 @@ export class ProducerEventsCrudService {
     status: string;
     ratingAvg: number | null;
     ratingCount: number;
+    excursionDepartureTime: string | null;
+    excursionDurationText: string | null;
+    excursionAvailableDaysText: string | null;
+    excursionScheduleNotes: string | null;
+    excursionMeetingPoint: string | null;
     media: Array<{ id: string; type: string; url: string; sortOrder: number }>;
   }): EventDetail {
     return {
@@ -160,6 +174,8 @@ export class ProducerEventsCrudService {
         sortOrder: m.sortOrder,
       })),
       rentalLocation: this.mapRentalLocationForDetail(event.rentalLocation ?? null),
+      excursionSchedule:
+        event.category === 'excursion' ? readExcursionSchedulePublic(event) : undefined,
     };
   }
 
@@ -359,7 +375,24 @@ export class ProducerEventsCrudService {
     const nextCategory =
       body.category !== undefined ? body.category?.trim() || 'event' : existing.category;
     let subcategoryId: string | null | undefined = undefined;
-    if (body.subcategoryId !== undefined) {
+    let excursionSubcategoryResolved: Awaited<
+      ReturnType<typeof resolveValidatedExcursionSubcategories>
+    > = null;
+    const isExcursionCategory = nextCategory === 'excursion';
+    if (
+      isExcursionCategory &&
+      (body.subcategoryId !== undefined || body.subcategoryIds !== undefined)
+    ) {
+      excursionSubcategoryResolved = await resolveValidatedExcursionSubcategories(
+        this.prisma,
+        tenantId,
+        {
+          ...(body.subcategoryId !== undefined ? { subcategoryId: body.subcategoryId } : {}),
+          ...(body.subcategoryIds !== undefined ? { subcategoryIds: body.subcategoryIds } : {}),
+        },
+      );
+      subcategoryId = excursionSubcategoryResolved?.primaryId ?? null;
+    } else if (body.subcategoryId !== undefined) {
       subcategoryId = await this.subcategories.resolveSubcategoryForEvent(
         tenantId,
         nextCategory,
@@ -385,60 +418,79 @@ export class ProducerEventsCrudService {
     const becamePending =
       body.status === 'PENDING' && existing.status !== 'PENDING';
 
-    const event = await this.prisma.event.update({
-      where: { id: eventId },
-      data: {
-        ...(body.title !== undefined && { title: body.title }),
-        ...(body.description !== undefined && { description: body.description }),
-        ...(body.summary !== undefined && {
-          summary:
-            body.summary == null || body.summary.trim() === ''
-              ? null
-              : body.summary.trim().slice(0, 220),
-        }),
-        ...(body.startAt !== undefined && { startAt: new Date(body.startAt) }),
-        ...(body.endAt !== undefined && {
-          endAt: body.endAt ? new Date(body.endAt) : null,
-        }),
-        ...(body.city !== undefined && { city: body.city }),
-        ...(body.venueName !== undefined && { venueName: body.venueName }),
-        ...(body.venueAddress !== undefined && {
-          venueAddress: body.venueAddress,
-        }),
-        ...(body.province !== undefined && {
-          province: body.province?.trim() || null,
-        }),
-        ...(body.googlePlaceId !== undefined && {
-          googlePlaceId: body.googlePlaceId?.trim() || null,
-        }),
-        ...(body.capacityTotal !== undefined && {
-          capacityTotal: body.capacityTotal,
-        }),
-        ...(body.coverImageUrl !== undefined && {
-          coverImageUrl: body.coverImageUrl,
-        }),
-        ...(body.geoLat !== undefined && { geoLat: body.geoLat }),
-        ...(body.geoLng !== undefined && { geoLng: body.geoLng }),
-        ...(body.status !== undefined && { status: body.status }),
-        ...(body.category !== undefined && { category: nextCategory }),
-        ...(subcategoryId !== undefined && { subcategoryId }),
-        ...(rentalLocationId !== undefined && { rentalLocationId }),
-      },
-      include: {
-        media: { where: { deletedAt: null }, orderBy: { sortOrder: 'asc' } },
-        rentalLocation: true,
-      },
+    const event = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.event.update({
+        where: { id: eventId },
+        data: {
+          ...(body.title !== undefined && { title: body.title }),
+          ...(body.description !== undefined && { description: body.description }),
+          ...(body.summary !== undefined && {
+            summary:
+              body.summary == null || body.summary.trim() === ''
+                ? null
+                : trimToPublicSummary(body.summary),
+          }),
+          ...(body.startAt !== undefined && { startAt: new Date(body.startAt) }),
+          ...(body.endAt !== undefined && {
+            endAt: body.endAt ? new Date(body.endAt) : null,
+          }),
+          ...(body.city !== undefined && { city: body.city }),
+          ...(body.venueName !== undefined && { venueName: body.venueName }),
+          ...(body.venueAddress !== undefined && {
+            venueAddress: body.venueAddress,
+          }),
+          ...(body.province !== undefined && {
+            province: body.province?.trim() || null,
+          }),
+          ...(body.googlePlaceId !== undefined && {
+            googlePlaceId: body.googlePlaceId?.trim() || null,
+          }),
+          ...(body.capacityTotal !== undefined && {
+            capacityTotal: body.capacityTotal,
+          }),
+          ...(body.coverImageUrl !== undefined && {
+            coverImageUrl: body.coverImageUrl,
+          }),
+          ...(body.geoLat !== undefined && { geoLat: body.geoLat }),
+          ...(body.geoLng !== undefined && { geoLng: body.geoLng }),
+          ...(body.status !== undefined && { status: body.status }),
+          ...(body.category !== undefined && { category: nextCategory }),
+          ...(subcategoryId !== undefined && { subcategoryId }),
+          ...(rentalLocationId !== undefined && { rentalLocationId }),
+          ...writeExcursionScheduleFields(body),
+        },
+        include: {
+          media: { where: { deletedAt: null }, orderBy: { sortOrder: 'asc' } },
+          rentalLocation: true,
+          eventSubcategories: {
+            include: { subcategory: { select: { id: true, name: true } } },
+          },
+        },
+      });
+      if (excursionSubcategoryResolved) {
+        await syncEventSubcategories(
+          tx,
+          eventId,
+          excursionSubcategoryResolved.primaryId,
+          excursionSubcategoryResolved.allIds,
+        );
+      }
+      return updated;
     });
 
     if (becamePending) {
       void this.notifyAdminsEventPending(tenantId, event);
     }
 
-    return this.toEventDetail({
+    const detail = this.toEventDetail({
       ...event,
       media: event.media,
       rentalLocation: event.rentalLocation,
     });
+    if (event.category === 'excursion') {
+      detail.subcategories = mapEventSubcategoriesPublic(event.eventSubcategories);
+    }
+    return detail;
   }
 
   private async notifyAdminsEventPending(

@@ -551,6 +551,36 @@ export class ApiRepository implements Repositories {
       ),
   };
 
+  categoryEditorialBanners: import('./interfaces').CategoryEditorialBannersRepo = {
+    getPublic: async (tenantId, category) => {
+      const t = tenantId || this.defaultTenantId;
+      return this.client.get<{ data: import('./interfaces').CategoryEditorialBannerPublicItem[] }>(
+        '/public/category-editorial-banners',
+        { tenantId: t, category },
+      );
+    },
+    listAdmin: async (category) =>
+      this.client.get<{ data: import('./interfaces').CategoryEditorialBannerItem[] }>(
+        '/admin/category-editorial-banners',
+        { category },
+      ),
+    create: async (input) =>
+      this.client.post<{ data: import('./interfaces').CategoryEditorialBannerItem[] }>(
+        '/admin/category-editorial-banners',
+        input,
+      ),
+    update: async (id, patch) =>
+      this.client.patch<{ data: import('./interfaces').CategoryEditorialBannerItem[] }>(
+        `/admin/category-editorial-banners/${encodeURIComponent(id)}`,
+        patch,
+      ),
+    reorder: async (id, direction) =>
+      this.client.post<{ data: import('./interfaces').CategoryEditorialBannerItem[] }>(
+        `/admin/category-editorial-banners/${encodeURIComponent(id)}/reorder`,
+        { direction },
+      ),
+  };
+
   subcategories: SubcategoriesRepo = {
     listPublic: async (tenantId: string, category: ContentMainCategory) => {
       const raw = await this.client.get<{ data: PublicSubcategorySummary[] }>(
@@ -1321,6 +1351,45 @@ export class ApiRepository implements Repositories {
       return this.client.get<import('./interfaces').AdminEventsListResponse>(
         '/admin/events',
         query as Record<string, string | number | boolean | undefined>,
+      );
+    },
+  };
+
+  adminContentLifecycle: import('./interfaces').AdminContentLifecycleRepo = {
+    pauseEvent: async (eventId, reason) => {
+      return this.client.post<{ id: string; status: string }>(
+        `/admin/events/${encodeURIComponent(eventId)}/pause`,
+        reason ? { reason } : {},
+      );
+    },
+    restoreEvent: async (eventId, reason) => {
+      return this.client.post<{ id: string; status: string }>(
+        `/admin/events/${encodeURIComponent(eventId)}/restore`,
+        reason ? { reason } : {},
+      );
+    },
+    deactivateRentalLocation: async (locationId, reason) => {
+      return this.client.post<{ id: string; isActive: boolean }>(
+        `/admin/rental-locations/${encodeURIComponent(locationId)}/deactivate`,
+        reason ? { reason } : {},
+      );
+    },
+    activateRentalLocation: async (locationId, reason) => {
+      return this.client.post<{ id: string; isActive: boolean }>(
+        `/admin/rental-locations/${encodeURIComponent(locationId)}/activate`,
+        reason ? { reason } : {},
+      );
+    },
+    deactivateExcursionOperator: async (operatorId, reason) => {
+      return this.client.post<{ id: string; isActive: boolean }>(
+        `/admin/excursion-operators/${encodeURIComponent(operatorId)}/deactivate`,
+        reason ? { reason } : {},
+      );
+    },
+    activateExcursionOperator: async (operatorId, reason) => {
+      return this.client.post<{ id: string; isActive: boolean }>(
+        `/admin/excursion-operators/${encodeURIComponent(operatorId)}/activate`,
+        reason ? { reason } : {},
       );
     },
   };

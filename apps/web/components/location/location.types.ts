@@ -24,6 +24,8 @@ export type LocationPickerMapProps = {
   label?: string;
   helperText?: string;
   error?: string;
+  /** Set when Google Maps script failed — fallback shows a clearer message. */
+  mapsLoadError?: string | null;
 };
 
 export type ProvinceCitySelectProps = {

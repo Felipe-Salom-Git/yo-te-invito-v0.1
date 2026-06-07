@@ -20,8 +20,12 @@ import {
   type GcsImageUploadConfig,
 } from '@/lib/upload/gcs-image-upload-config';
 import { useGcsImageUpload } from '@/lib/upload/use-gcs-image-upload';
+import { RentalSummaryField } from '@/components/rentals/RentalSummaryField';
+import { ImageUploadHint } from '@/components/upload/ImageUploadHint';
 import { isDataImageUrl } from '@/lib/upload/validate-public-image-file';
 import { ProducerEventFormCompleteness } from './ProducerEventFormCompleteness';
+import { ProducerEventPublicationLegalNotice } from './ProducerEventPublicationLegalNotice';
+import type { ProducerEventWizardStep } from '@/lib/producer/producer-event-wizard';
 
 function FormSection({
   id,
@@ -114,6 +118,8 @@ export type ProducerEventFormFieldsProps = {
   onUploadingChange?: (uploading: boolean) => void;
   apiStatus?: string | null;
   completenessItems: EventFormCompletenessItem[];
+  /** Wizard mode: show only the active step (1–3). Omit for full scroll form. */
+  wizardStep?: ProducerEventWizardStep;
 };
 
 export function ProducerEventFormFields({
@@ -130,6 +136,7 @@ export function ProducerEventFormFields({
   onUploadingChange,
   apiStatus,
   completenessItems,
+  wizardStep,
 }: ProducerEventFormFieldsProps) {
   const { addToast } = useToast();
   const set = (patch: Partial<EventFormData>) =>
@@ -183,8 +190,11 @@ export function ProducerEventFormFields({
     variant === 'edit' && (statusUpper === 'DRAFT' || statusUpper === 'PENDING');
   const statusHint = statusHintForProducerForm(apiStatus ?? form.status, mode);
 
+  const showStep = (step: ProducerEventWizardStep) => !wizardStep || wizardStep === step;
+
   return (
     <div className="space-y-6">
+      {showStep(1) ? (
       <FormSection
         id="bloque-datos"
         title="1. Datos básicos"
@@ -198,16 +208,13 @@ export function ProducerEventFormFields({
           error={errors.title}
           placeholder="Ej: Fiesta Bresh — Edición Invierno"
         />
-        <Input
+        <RentalSummaryField
           label="Resumen corto"
+          hint="Opcional pero recomendado para listados y cards. Si no completás resumen, podés usar solo la descripción larga."
           value={form.summary ?? ''}
-          onChange={(e) => set({ summary: e.target.value })}
-          error={errors.summary}
-          placeholder="Hasta 220 caracteres para listados y cards"
+          onChange={(summary) => set({ summary })}
         />
-        <FieldHint>
-          Opcional pero recomendado. Si no completás resumen, podés usar solo la descripción larga.
-        </FieldHint>
+        {errors.summary ? <p className="text-sm text-red-400">{errors.summary}</p> : null}
         <TextAreaField
           label="Descripción completa"
           optional
@@ -224,7 +231,9 @@ export function ProducerEventFormFields({
         />
         <FieldHint>La subcategoría ayuda a clasificar el evento en búsquedas (opcional).</FieldHint>
       </FormSection>
+      ) : null}
 
+      {showStep(2) ? (
       <FormSection
         id="bloque-fecha"
         title="2. Fecha y ubicación"
@@ -263,58 +272,15 @@ export function ProducerEventFormFields({
           <p className="text-sm text-red-400">{errors.venueAddress}</p>
         ) : null}
       </FormSection>
+      ) : null}
 
-      <FormSection
-        id="bloque-imagen"
-        title="3. Imagen y presentación"
-        description="La portada es lo primero que ve el público. Usá una imagen horizontal, buena luz y sin texto ilegible."
-      >
-        {uploadProgress ? (
-          <p className="text-sm text-accent" role="status">
-            {uploadProgress}
-          </p>
-        ) : null}
-        {gcsMode ? (
-          <p className="text-xs text-text-muted">
-            Cover vía Google Cloud Storage (JPEG, PNG o WEBP, máx. 5 MB).
-          </p>
-        ) : null}
-        <Input
-          label="URL de la imagen"
-          value={form.coverImageUrl ?? ''}
-          onChange={(e) => {
-            const url = e.target.value;
-            if (rejectDataUrlIfGcs(url)) return;
-            set({ coverImageUrl: url || null });
-          }}
-          error={errors.coverImageUrl}
-          placeholder="https://…"
-          disabled={isUploading}
-        />
-        <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-bg p-6 text-sm text-text-muted transition-colors hover:border-accent disabled:opacity-50 sm:p-8">
-          <span>Subir imagen desde tu dispositivo</span>
-          <span className="mt-1 text-xs">
-            {gcsMode ? 'JPEG, PNG o WEBP, recomendado 16:9' : 'JPG o PNG, recomendado 16:9'}
-          </span>
-          <input
-            type="file"
-            accept={gcsMode ? IMAGE_ACCEPT_GCS : 'image/*'}
-            onChange={handleCoverFileChange}
-            disabled={isUploading}
-            className="hidden"
-          />
-        </label>
-        {form.coverImageUrl ? (
-          <ImageUrlPreview url={form.coverImageUrl} className="max-h-48 w-full object-cover" />
-        ) : null}
-      </FormSection>
-
+      {showStep(2) ? (
       <FormSection
         id="bloque-comercial"
-        title="4. Configuración comercial"
+        title="Entradas y condiciones"
         description={
           isTicketed
-            ? 'Las entradas, precios y tandas se configuran después de crear la ficha, desde la gestión del evento.'
+            ? 'Capacidad de referencia. Las tandas y precios se configuran después de guardar la ficha.'
             : 'Este evento es solo publicidad: no habilita venta de entradas en la plataforma.'
         }
       >
@@ -322,9 +288,8 @@ export function ProducerEventFormFields({
           <>
             <div className="rounded-lg border border-border/80 bg-bg p-4 text-sm text-text-muted">
               <p>
-                <span className="font-medium text-text">Entradas y tandas</span> — las definís en el
-                paso siguiente, sin perder lo que cargaste acá. Podés crear tipos de entrada,
-                tandas y diseño de ticket cuando el evento esté en borrador o aprobado.
+                <span className="font-medium text-text">Entradas y tandas</span> — las definís en la
+                gestión del evento después de crear o guardar este borrador.
               </p>
             </div>
             <Input
@@ -353,10 +318,53 @@ export function ProducerEventFormFields({
           </p>
         )}
       </FormSection>
+      ) : null}
 
+      {showStep(3) ? (
+      <FormSection
+        id="bloque-imagen"
+        title="3. Imagen y presentación"
+        description="La portada es lo primero que ve el público. Usá una imagen horizontal, buena luz y sin texto ilegible."
+      >
+        {uploadProgress ? (
+          <p className="text-sm text-accent" role="status">
+            {uploadProgress}
+          </p>
+        ) : null}
+        <ImageUploadHint variant="cover" options={{ gcs: gcsMode }} />
+        <Input
+          label="URL de la imagen"
+          value={form.coverImageUrl ?? ''}
+          onChange={(e) => {
+            const url = e.target.value;
+            if (rejectDataUrlIfGcs(url)) return;
+            set({ coverImageUrl: url || null });
+          }}
+          error={errors.coverImageUrl}
+          placeholder="https://…"
+          disabled={isUploading}
+        />
+        <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-bg p-6 text-sm text-text-muted transition-colors hover:border-accent disabled:opacity-50 sm:p-8">
+          <span>Subir imagen desde tu dispositivo</span>
+          <span className="mt-1 text-xs">Elegí un archivo desde tu dispositivo</span>
+          <input
+            type="file"
+            accept={gcsMode ? IMAGE_ACCEPT_GCS : 'image/*'}
+            onChange={handleCoverFileChange}
+            disabled={isUploading}
+            className="hidden"
+          />
+        </label>
+        {form.coverImageUrl ? (
+          <ImageUrlPreview url={form.coverImageUrl} className="max-h-48 w-full object-cover" />
+        ) : null}
+      </FormSection>
+      ) : null}
+
+      {showStep(3) ? (
       <FormSection
         id="bloque-publicacion"
-        title="5. Estado y publicación"
+        title="Revisión y publicación"
         description="Guardá como borrador mientras armás la ficha. Cuando esté completa, enviala a revisión del equipo."
       >
         <ProducerEventFormCompleteness items={completenessItems} />
@@ -402,7 +410,10 @@ export function ProducerEventFormFields({
         {statusHint ? (
           <p className="text-sm text-text-muted">{statusHint}</p>
         ) : null}
+
+        <ProducerEventPublicationLegalNotice />
       </FormSection>
+      ) : null}
     </div>
   );
 }

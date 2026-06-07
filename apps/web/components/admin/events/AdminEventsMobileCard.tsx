@@ -4,6 +4,7 @@ import type { AdminEventListItem } from '@/repositories/interfaces';
 import { getCategoryLabel } from '@/lib/home/contentRoutes';
 import { AdminProducerStatusBadge } from '@/components/admin/producers/AdminProducerStatusBadge';
 import { AdminEventReviewLink } from './AdminEventReviewLink';
+import { AdminEventLifecycleActions } from '@/components/admin/AdminEventLifecycleActions';
 
 function formatDt(iso: string): string {
   return new Date(iso).toLocaleString('es-AR', {
@@ -70,8 +71,9 @@ export function AdminEventsMobileCard({ event }: AdminEventsMobileCardProps) {
           </div>
         ) : null}
       </dl>
-      <div className="mt-4">
+      <div className="mt-4 flex flex-wrap items-center gap-3">
         <AdminEventReviewLink event={event} />
+        <AdminEventLifecycleActions eventId={event.id} status={event.status} compact />
       </div>
     </article>
   );

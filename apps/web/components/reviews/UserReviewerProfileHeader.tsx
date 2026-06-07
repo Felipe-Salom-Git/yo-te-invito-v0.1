@@ -4,6 +4,10 @@ import type { UserPublicReviewProfile } from '@yo-te-invito/shared';
 import { USER_REVIEWER_TIER_SUMMARY_ES } from '@yo-te-invito/shared';
 import { UserReviewBadge } from './UserReviewBadge';
 import { UserReviewerAvatar } from './UserReviewerAvatar';
+import {
+  formatPublicRatingLabel,
+  publicRatingAriaLabel,
+} from '@/lib/reviews/ratingDisplay';
 
 type Props = {
   profile: UserPublicReviewProfile;
@@ -34,12 +38,12 @@ export function UserReviewerProfileHeader({ profile }: Props) {
         {hasAverage ? (
           <div
             className="flex shrink-0 items-baseline gap-1 self-start sm:text-right"
-            aria-label={`Promedio ${profile.averageOverallRating!.toFixed(1)} de 10`}
+            aria-label={publicRatingAriaLabel(profile.averageOverallRating!)}
           >
             <span className="text-3xl font-bold tabular-nums text-white sm:text-4xl">
-              {profile.averageOverallRating!.toFixed(1)}
+              {formatPublicRatingLabel(profile.averageOverallRating, { suffix: false })}
             </span>
-            <span className="pb-0.5 text-sm text-text-muted">/10</span>
+            <span className="pb-0.5 text-sm text-text-muted">/5</span>
           </div>
         ) : null}
       </div>
