@@ -30,7 +30,7 @@ Implementation-oriented technical context for AI-assisted development. Describes
 
 ## 3. Branding and Design
 
-- **Background**: Black (`#0a0a0a`, muted `#171717`)
+- **Background**: Black (`#0a0a0a`, muted `#171717`) — **dark only** (V3.1 Etapa 13: no light mode; `html.dark`, `color-scheme: dark only`; sin `ThemeToggle`)
 - **Accent**: Green (`#22c55e`, hover `#16a34a`)
 - **Text**: White + muted
 - **Logo**: `components/brand/Logo.tsx` (variants: icon, with-text, navbar, auth, splash)
@@ -190,7 +190,7 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`). Shared UI tokens:
 | **FieldCharacterCounter**, `RentalSummaryField` | `components/forms/`, `components/rentals/` — contador resumen 220 y campos con límite (V3.1 Slice 1) |
 | **PublicDescriptionBlock** | `components/public/` — preview + «Leer descripción completa» modal (V3.1 Slice 2); `sectionTitle` = copy, `null` oculta h2 (hotfix className) |
 | **RentalDescriptionBlock** | wrapper rentals/gastro/excursiones; usa `RENTAL_DETAIL_DESCRIPTION_LABEL` / `RENTAL_DETAIL_SECTION_HEADING_CLASS` en `rentalDetailUi.ts` |
-| **contentCardPresentation** | `lib/home/contentCardPresentation.ts` — badges y metadata por vertical (evento/excursión/gastro/rental; V3.1 Etapa 3) |
+| **contentCardPresentation** | `lib/home/contentCardPresentation.ts` — badges y metadata por vertical; gastro: `getGastroCardSubtitleLine` (propuesta antes que ciudad — Etapa 13.2) |
 | **HomeCategoryStrip** | `components/home/` — grid categorías en home; oculto en mobile (`md+` only; Slice 3) |
 | **ExcursionDetailInfoGrid** | `components/excursions/` — cards info clave en detalle excursión (Slice 3) |
 | **SortableImageList** | `components/upload/` — drag & drop HTML5 + Subir/Bajar fallback (V3.1 Etapa 12.1) |

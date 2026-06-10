@@ -26,6 +26,7 @@
 
 - [x] Agregar fondo negro/dark global a toda la aplicación pública — Slice 2: `globals.css`, `layout.tsx`, `(public)/layout.tsx`.
 - [x] Evitar que el navegador en modo claro muestre fondos blancos — `color-scheme: dark` en `html` + fondo en `html`/`body`/`main`.
+- [x] **Etapa 13.1:** Modo claro no soportado; se fuerza estética dark en todos los dispositivos (`color-scheme: dark only`, `html.dark`, sin `ThemeToggle`, sin `[data-theme=light]`) — `V3_1_STAGE_13_FORCE_DARK_MODE_SMOKE.md`.
 - [x] Revisar `html`, `body`, layouts públicos y contenedores principales.
 - [x] Confirmar que home, categorías, explore y fichas públicas respeten la estética dark/green — wrapper público `bg-bg`; impresión ticket sin cambios (`@media print`).
 
@@ -581,6 +582,7 @@
 - [x] Eventos: fecha + lugar + precio desde + productor — Etapa 3.1.
 - [x] Excursiones: subcategoría + ciudad + horario/duración si existe — Etapa 3.2 (duración si viene en payload list).
 - [x] Gastronomía: tipo de local + ciudad + rating — Etapa 3.3.
+- [x] **Etapa 13.2:** Subtítulo gastro prioriza propuesta/resumen; ciudad como metadata o fallback — `getGastroCardSubtitleLine`, `V3_1_STAGE_13_GASTRO_CARD_SUBTITLE_SMOKE.md`.
 - [x] Rentals: local + subcategoría + CTA disponibilidad — Etapa 3.4.
 - [x] Mantener una base visual común, pero metadata específica por categoría.
 
@@ -669,6 +671,7 @@
 
 ## 16.4 Gastronomía / Restaurants
 
+- [x] Subtítulo card/carrusel coherente (propuesta antes que ciudad) — Etapa 13.2.
 - [ ] Agregar links externos/redes.
 - [ ] Revisar si aplica maps.
 - [ ] Revisar resumen ampliado.
@@ -912,6 +915,34 @@ Reactivar cada perfil desde admin dispara sync sin script destructivo.
 - [x] Separado `RENTAL_DETAIL_SECTION_HEADING_CLASS` vs `RENTAL_DETAIL_DESCRIPTION_LABEL`.
 - [x] Gastro «Propuesta gastronómica»; rentals «Detalle del producto».
 - [ ] QA manual fichas públicas sin texto de clase visible.
+
+---
+
+# 31. V3.1 Etapa 13 — Hotfix visual final pre-QA
+
+> Cierre: `docs/audits/V3_1_STAGE_13_VISUAL_HOTFIX_CLOSING.md`
+
+## 31.1 Forzar estética dark única (Slice 13.1)
+
+- [x] Eliminar modo claro visual (`[data-theme=light]`, toggle navbar/drawer).
+- [x] `color-scheme: dark only` + fondo fijo `#0a0a0a`.
+- [x] `tailwind` `darkMode: 'class'` + `html.dark`.
+- [x] Limpiar `localStorage yti:theme=light` en carga.
+- [x] Preservar `@media print` tickets.
+- [ ] QA manual con OS/navegador en light mode (matriz rutas § cierre).
+
+## 31.2 Subtítulo cards gastro (Slice 13.2)
+
+- [x] Helper `getGastroCardSubtitleLine` / `getContentCardSubtitleLine`.
+- [x] `ContentCard`, overlay expandido, `ContentPreviewModal`.
+- [x] Links `/restaurants/[publicEventId]` sin cambio.
+- [ ] QA visual home, `/categoria/gastro`, explore, modal.
+
+## 31.3 Cierre etapa (Slice 13.3)
+
+- [x] Documentación smoke + cierre.
+- [x] Build web OK.
+- [ ] QA manual browser completo pre-Etapa 0.
 
 ---
 
