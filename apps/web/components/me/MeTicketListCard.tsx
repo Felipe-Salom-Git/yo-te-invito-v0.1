@@ -19,7 +19,11 @@ export function MeTicketListCard({
   onSimulateScan,
   isScanning,
 }: Props) {
-  const startRaw = ticket.eventStartAt as string | undefined;
+  const eventObj = ticket.event as { occurrenceStartAt?: string | null; startAt?: string } | undefined;
+  const startRaw =
+    (eventObj?.occurrenceStartAt as string | undefined) ??
+    (ticket.eventStartAt as string | undefined) ??
+    eventObj?.startAt;
   const when = startRaw
     ? new Date(startRaw).toLocaleString('es-AR', { dateStyle: 'medium', timeStyle: 'short' })
     : null;
@@ -32,7 +36,11 @@ export function MeTicketListCard({
           {ticket.ticketTypeName ? (
             <p className="text-xs text-text-muted">{ticket.ticketTypeName}</p>
           ) : null}
-          {when && <p className="mt-1 text-xs text-text-muted">{when}</p>}
+          {when ? (
+            <p className="mt-1 text-xs text-text-muted">
+              Fecha de tu entrada: {when}
+            </p>
+          ) : null}
           <p className="mt-2 text-xs text-text-muted break-all">ID: {ticket.id}</p>
         </div>
         <StatusBadge status={ticket.status} kind="ticket" className="self-start shrink-0" />

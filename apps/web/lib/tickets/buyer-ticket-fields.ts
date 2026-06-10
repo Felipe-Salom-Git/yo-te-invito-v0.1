@@ -36,7 +36,7 @@ export function resolveBuyerDynamicField(
     case 'eventName':
       return ev.title;
     case 'eventDate':
-      return formatEventDate(ev.startAt);
+      return formatEventDate(ev.occurrenceStartAt ?? ev.startAt);
     case 'venueName':
       return ev.venueName ?? '';
     case 'city':

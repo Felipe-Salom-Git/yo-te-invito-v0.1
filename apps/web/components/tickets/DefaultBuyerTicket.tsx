@@ -40,7 +40,12 @@ export function DefaultBuyerTicket({ ticket, className = '' }: Props) {
 
       <div className="relative px-5 py-5">
         <h2 className="text-xl font-semibold leading-tight text-text">{ev.title}</h2>
-        {when && <p className="mt-2 text-sm text-text-muted">{when}</p>}
+        {when ? (
+          <p className="mt-2 text-sm text-text-muted">
+            {ticket.event.occurrenceStartAt ? 'Fecha de tu entrada: ' : ''}
+            {when}
+          </p>
+        ) : null}
         {venue && <p className="mt-1 text-sm text-text-muted">{venue}</p>}
 
         <div className="mt-4 flex flex-wrap gap-2 text-xs text-text-muted">

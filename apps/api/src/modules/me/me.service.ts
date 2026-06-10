@@ -50,6 +50,11 @@ export class MeService {
     usedAt: Date | null;
     revokedAt: Date | null;
     ticketBatchId: string | null;
+    occurrence?: {
+      startAt: Date;
+      endAt: Date | null;
+      venueName: string | null;
+    } | null;
     event: {
       id: string;
       title: string;
@@ -59,6 +64,7 @@ export class MeService {
     };
     ticketType: { id: string; name: string } | null;
   }): MeTicketItem {
+    const displayStart = t.occurrence?.startAt ?? t.event.startAt;
     return {
       ticketId: t.id,
       status: t.status,
@@ -68,9 +74,12 @@ export class MeService {
       event: {
         id: t.event.id,
         title: t.event.title,
-        startAt: t.event.startAt.toISOString(),
-        venueName: t.event.venueName,
+        startAt: displayStart.toISOString(),
+        venueName: t.occurrence?.venueName ?? t.event.venueName,
         city: t.event.city ?? null,
+        occurrenceStartAt: t.occurrence?.startAt.toISOString() ?? null,
+        occurrenceEndAt: t.occurrence?.endAt?.toISOString() ?? null,
+        occurrenceVenueName: t.occurrence?.venueName ?? null,
       },
       ticketType: {
         id: t.ticketType?.id ?? '',
@@ -211,6 +220,9 @@ export class MeService {
           select: { id: true, title: true, startAt: true, venueName: true, city: true },
         },
         ticketType: { select: { id: true, name: true } },
+        occurrence: {
+          select: { startAt: true, endAt: true, venueName: true },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -247,6 +259,9 @@ export class MeService {
           select: { id: true, title: true, startAt: true, venueName: true, city: true },
         },
         ticketType: { select: { id: true, name: true } },
+        occurrence: {
+          select: { startAt: true, endAt: true, venueName: true },
+        },
       },
     });
 
