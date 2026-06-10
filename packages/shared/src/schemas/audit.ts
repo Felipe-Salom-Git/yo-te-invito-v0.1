@@ -45,6 +45,10 @@ export const auditActionSchema = z.enum([
   'SCANNER_ACCOUNT_DEACTIVATED',
   'SCANNER_ACCOUNT_ACTIVATED',
   'SCANNER_PASSWORD_RESET',
+  'TICKET_DATE_CHANGE_REQUESTED',
+  'TICKET_DATE_CHANGE_APPROVED',
+  'TICKET_DATE_CHANGE_REJECTED',
+  'TICKET_DATE_CHANGE_APPLIED',
 ]);
 export type AuditActionValue = z.infer<typeof auditActionSchema>;
 
