@@ -38,6 +38,11 @@ const KIND_LABELS: Record<string, string> = {
   REVIEW_DISPUTE_REJECTED: 'Disputa rechazada',
   REVIEW_MODERATION_HIDDEN: 'Reseña ocultada',
   REVIEW_MODERATION_RESTORED: 'Reseña restaurada',
+  TICKET_DATE_CHANGE_REQUESTED: 'Cambio de fecha solicitado',
+  TICKET_DATE_CHANGE_PENDING_PRODUCER: 'Cambio de fecha pendiente',
+  TICKET_DATE_CHANGE_APPROVED: 'Cambio de fecha aprobado',
+  TICKET_DATE_CHANGE_REJECTED: 'Cambio de fecha rechazado',
+  TICKET_DATE_CHANGE_APPLIED: 'Fecha de entrada actualizada',
 };
 
 export default function MeNotificationsPage() {

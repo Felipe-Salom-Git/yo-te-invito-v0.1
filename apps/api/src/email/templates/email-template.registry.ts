@@ -37,6 +37,10 @@ import { renderAdminNewEventPending } from './templates/admin-new-event-pending.
 import { renderAdminOperationalError } from './templates/admin-operational-error.template';
 import { renderAdminScannerCriticalError } from './templates/admin-scanner-critical-error.template';
 import { renderAdminStorageUploadFailed } from './templates/admin-storage-upload-failed.template';
+import { renderTicketDateChangeRequested } from './templates/ticket-date-change-requested.template';
+import { renderTicketDateChangePendingProducer } from './templates/ticket-date-change-pending-producer.template';
+import { renderTicketDateChangeApplied } from './templates/ticket-date-change-applied.template';
+import { renderTicketDateChangeRejected } from './templates/ticket-date-change-rejected.template';
 
 export type EmailTemplateRenderer = (
   variables: Record<string, unknown>,
@@ -81,6 +85,10 @@ const REGISTRY: Record<EmailTemplateId, EmailTemplateRenderer> = {
   ADMIN_EMAIL_DELIVERY_FAILED: renderAdminEmailDeliveryFailed,
   ADMIN_SCANNER_CRITICAL_ERROR: renderAdminScannerCriticalError,
   ADMIN_STORAGE_UPLOAD_FAILED: renderAdminStorageUploadFailed,
+  TICKET_DATE_CHANGE_REQUESTED: renderTicketDateChangeRequested,
+  TICKET_DATE_CHANGE_PENDING_PRODUCER: renderTicketDateChangePendingProducer,
+  TICKET_DATE_CHANGE_APPLIED: renderTicketDateChangeApplied,
+  TICKET_DATE_CHANGE_REJECTED: renderTicketDateChangeRejected,
 };
 
 export function getEmailTemplateRenderer(
