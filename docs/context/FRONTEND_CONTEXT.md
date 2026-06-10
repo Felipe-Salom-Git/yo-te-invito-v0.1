@@ -193,7 +193,11 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`). Shared UI tokens:
 | **contentCardPresentation** | `lib/home/contentCardPresentation.ts` — badges y metadata por vertical (evento/excursión/gastro/rental; V3.1 Etapa 3) |
 | **HomeCategoryStrip** | `components/home/` — grid categorías en home; oculto en mobile (`md+` only; Slice 3) |
 | **ExcursionDetailInfoGrid** | `components/excursions/` — cards info clave en detalle excursión (Slice 3) |
-| **RentalProductImagesForm** | galería con Subir/Bajar; orden → API `sortOrder` (Slice 5) |
+| **SortableImageList** | `components/upload/` — drag & drop HTML5 + Subir/Bajar fallback (V3.1 Etapa 12.1) |
+| **RentalProductImagesForm** | galería con `SortableImageList`; orden → API `sortOrder` |
+| **PublicRelatedLinksCard** | `components/public/` — bloque links relacionados seguros (Etapa 12.5) |
+| **RelatedLinksFormFields** | `components/forms/` — editor links excursiones/gastro (máx. 5, URL https) |
+| **SiteOrganizationJsonLd** | `components/seo/` — schema.org Organization en layout (Etapa 12.6) |
 | **PUBLIC_SUMMARY_MAX_LENGTH** | import desde `@yo-te-invito/shared` — 500 chars resumen (Slice 4) |
 | **ExternalLinksFormFields** | `components/forms/` — carga URLs/redes validadas (Slice 6) |
 | **PublicExternalLinksCard** | `components/public/` — bloque «Reservas y redes» en fichas gastro/excursión (Slice 6) |
@@ -205,6 +209,8 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`). Shared UI tokens:
 **Slice 8.5 smoke (subcategorías):** checklist manual UI en `docs/audits/V3_1_SLICE_8_5_SUBCATEGORIES_SMOKE.md` — multi-select solo excursiones; detalle `/excursiones/[id]`; filtros categoría/explore por secundaria.
 
 **Slice 9 admin archivar:** `AdminEventLifecycleActions`, `AdminRentalLocationLifecycleActions`, `AdminExcursionOperatorLifecycleActions`, `AdminArchiveConfirmModal` — `/admin/eventos`, rentals locales, operadores excursión; gastro suspend/activate en `AdminGastroLocationsPageClient`.
+
+**Etapa 12 extras:** `/admin/hoteles` archivar/restaurar; cards excursión con `getExcursionCardScheduleLine`; doc `docs/audits/V3_1_STAGE_12_*`.
 
 | **ExcursionSubcategoryMultiSelect** | `components/excursions/` — multi-select chips excursiones; principal = primera (Slice 8) |
 | Reviews V2 (público + portales) | `components/reviews/` — filtros públicos `PublicReviewsFiltersBar` + hooks `usePublicEntityReviewsState` / `useUserPublicReviewsState`; `EventReviewsSection`; perfil `/users/[userId]`; portales `ManagedReviewsCommentsPage` (URL query en productor/gastro/hotel, chips + orden/respuesta/disputa/estado); `ReviewReplyModal` |

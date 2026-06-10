@@ -168,7 +168,7 @@
 
 - [x] Confirmar comportamiento actual de galería — `sortOrder` en API; array orden en formulario.
 - [x] Agregar opción para reordenar fotos una vez subidas — Slice 5: Subir/Bajar en `RentalProductImagesForm`.
-- [ ] Permitir mover fotos arriba/abajo o drag & drop — drag & drop fuera de alcance Slice 5.
+- [x] Permitir mover fotos arriba/abajo o drag & drop — Etapa 12 Slice 12.1: `SortableImageList` + botones fallback.
 - [x] Guardar orden persistente — índice del array → `sortOrder` vía `normalizeRentalProductImages`.
 - [x] Usar ese orden en detalle público y cards si corresponde — `productGallery.ts` + `rentalProductImagesFromEvent` ordenan por `sortOrder`.
 
@@ -265,10 +265,10 @@
 
 ## 4.2 Maps en excursiones
 
-- [ ] Agregar ubicación/mapa en carga de excursiones.
-- [ ] Mostrar mapa en detalle público de excursión cuando exista ubicación.
-- [ ] Permitir cargar punto de salida, ubicación principal o recorrido aproximado.
-- [ ] Definir campos mínimos:
+- [x] Agregar ubicación/mapa en carga de excursiones — operador + override excursión (`EventLocationFields`).
+- [x] Mostrar mapa en detalle público de excursión cuando exista ubicación — `EventLocationModal` + `ExcursionSchedulePublicSections`.
+- [x] Permitir cargar punto de salida, ubicación principal o recorrido aproximado — `meetingPoint` + geo operador/excursión.
+- [x] Definir campos mínimos:
   - Dirección o punto de encuentro.
   - Ciudad.
   - Provincia.
@@ -306,14 +306,14 @@
 
 ## 5.2 Palabras cliqueables dentro de descripciones
 
-- [ ] Evaluar soporte para enlaces dentro de textos largos.
-- [ ] Permitir que ciertas palabras lleven a páginas informativas externas o internas.
-- [ ] Alternativa recomendada:
+- [x] Evaluar soporte para enlaces dentro de textos largos — Etapa 12: bloque “Links relacionados” (no inline).
+- [ ] Permitir que ciertas palabras lleven a páginas informativas externas o internas — V3.2; no HTML libre.
+- [x] Alternativa recomendada:
   - Campo de “links relacionados”.
   - Editor enriquecido controlado.
   - Markdown limitado.
-- [ ] Evitar HTML libre inseguro.
-- [ ] Definir si se habilita en V3.1 o queda para V3.2.
+- [x] Evitar HTML libre inseguro — URLs https validadas; `PublicRelatedLinksCard`.
+- [x] Definir si se habilita en V3.1 o queda para V3.2 — V3.1: links relacionados; inline → V3.2.
 
 **Prioridad:** Media  
 **Tipo:** Funcional / Seguridad / Contenido
@@ -360,7 +360,7 @@
   - Días disponibles (`availableDaysText`).
   - Observaciones (`scheduleNotes`).
 - [x] Mostrar horario en detalle público de forma visible — Slice 7: `/excursiones/[id]`.
-- [ ] Evaluar si cards públicas deben mostrar horario o solo fecha/ciudad — pendiente; cards siguen sin horario estructurado.
+- [x] Evaluar si cards públicas deben mostrar horario o solo fecha/ciudad — Etapa 12: una línea metadata (`getExcursionCardScheduleLine`) si hay datos.
 
 **Prioridad:** Alta  
 **Tipo:** Funcional / Excursiones
@@ -438,16 +438,16 @@
 
 ## 10.1 Logo en resultados de Google
 
-- [ ] Revisar favicon y metadata del sitio.
-- [ ] Confirmar que Google pueda detectar logo/marca.
-- [ ] Agregar o revisar:
+- [x] Revisar favicon y metadata del sitio — Etapa 12.6.
+- [ ] Confirmar que Google pueda detectar logo/marca — manual GSC/recrawl (no inmediato).
+- [x] Agregar o revisar:
   - Favicon.
   - Apple touch icon.
   - Manifest.
   - Open Graph image.
-  - Schema.org Organization.
+  - Schema.org Organization — `SiteOrganizationJsonLd` en layout.
   - Metadata global.
-- [ ] Verificar indexación con Google Search Console.
+- [ ] Verificar indexación con Google Search Console — manual post-deploy.
 
 **Prioridad:** Media  
 **Tipo:** SEO / Marca
@@ -463,7 +463,7 @@
 - [x] Excursiones (producto `Event` + operador `isActive`) — acciones en ficha operador.
 - [x] Gastronomía/locales — Suspender / Activar (existente) + audit log Slice 9.
 - [x] Rentals — local `deactivate/activate` + archivar productos (event pause).
-- [ ] Hoteles — fuera Slice 9 (Próximamente).
+- [x] Hoteles — Etapa 12 Slice 12.2: `/admin/hoteles` archivar/restaurar (`SUSPENDED`/`ACTIVE`).
 - [x] Confirmación modal (`AdminArchiveConfirmModal`) — avisa que no borra historial.
 - [x] Auditoría — `EVENT_POSTPONED`, `EVENT_RESTORED`, gastro/rental/excursion actions.
 - [x] Smoke `smoke:v31-admin-archive` + doc `V3_1_SLICE_9_ADMIN_ARCHIVE_SMOKE.md`.
@@ -844,9 +844,9 @@ FAQs, editor enriquecido, palabras cliqueables, cropper de imágenes, SEO fino y
 - [ ] JSON-LD `bestRating: 5`.
 - [ ] Formulario review escala 5 visual.
 - [ ] Cards editoriales fase 2 (§14.2).
-- [ ] Drag & drop galería.
-- [ ] Hoteles archivar.
-- [ ] Links embebidos en descripciones (§5.2).
+- [x] Drag & drop galería — Etapa 12.1.
+- [x] Hoteles archivar — Etapa 12.2.
+- [x] Links embebidos en descripciones (§5.2) — bloque links relacionados; inline V3.2.
 - [ ] FAQs excursiones.
 
 **Recomendación Slice 14:** listo para deploy técnico; QA manual browser pendiente para cierre cliente 100%.
