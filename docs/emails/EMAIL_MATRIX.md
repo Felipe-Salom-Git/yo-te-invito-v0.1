@@ -24,6 +24,7 @@
 | `TICKET_TRANSFER_ACCEPTED` | `accept` → emisor | `transfer:{offerId}:accepted` |
 | `TICKET_TRANSFER_REJECTED` | `reject` → emisor | `transfer:{offerId}:rejected` |
 | `TICKET_TRANSFER_CANCELLED` | `cancel` → receptor (si hay `buyerUserId`) | `transfer:{offerId}:cancelled` |
+| `TICKET_TRANSFER_EXPIRED` | `expireOffer` (cron) → emisor + receptor | `transfer:{offerId}:expired` |
 | `EVENT_REMINDER_24H` | Cron `NotificationsSchedulerService` | `ticket:{ticketId}`; prefs por ticket |
 | `REVIEW_RECEIVED` | `ReviewNotificationsService.notifyReviewReceived` | `notifyManagedReviews` + `emailNotificationsEnabled` |
 | `REVIEW_OFFICIAL_REPLY` | `notifyOfficialReply` | `notifyReviewEngagement` |

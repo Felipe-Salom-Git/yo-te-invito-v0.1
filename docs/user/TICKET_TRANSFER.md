@@ -25,8 +25,9 @@ Campos opcionales en la oferta: `message` (nota al receptor), `rejectedAt` (si e
 - `recipientEmail` en create resuelve al usuario del tenant; fija `buyerUserId`.
 - Al crear oferta: QR original bloqueado (scanner inválido).
 - Al cancelar, rechazar o expirar: origen vuelve a `VALID`.
-- Al aceptar: origen `TRANSFERRED` (definitivo); receptor recibe ticket nuevo.
-- Expiración automática: cron cada 15 min (10 min en dev); variable `TICKET_TRANSFER_CRON_ENABLED=false` para desactivar.
+- Al aceptar: origen `TRANSFERRED` (definitivo); receptor recibe ticket nuevo con **nuevo `qrPayload`** y mismo `occurrenceId` si aplica (multi-fecha).
+- Expiración automática: cron cada 15 min (10 min en dev); variable `TICKET_TRANSFER_CRON_ENABLED=false` para desactivar; email `TICKET_TRANSFER_EXPIRED` a emisor/receptor.
+- Elegibilidad centralizada: `TicketTransferEligibilityService` (usado / revocado / vencido / pending / evento cancelado / cambio fecha pending).
 
 ## API (portal)
 
@@ -63,4 +64,5 @@ Checkout, órdenes, pagos con pasarela (Getnet / Mercado Pago cuando aplique) y 
 
 - Migración marketplace: `20260605120000_remove_resale_marketplace`
 - Migración mensaje/rechazo: `20260606120000_ticket_transfer_offer_message`
-- Smoke: `pnpm --filter api run smoke:user-portal`
+- Smokes: `pnpm --filter api run smoke:v31-ticket-transfer-flow`, `smoke:user-portal` (sección transfer).
+- Cierre Etapa 9: `docs/audits/V3_1_STAGE_9_TICKET_TRANSFER_CLOSING.md`

@@ -1176,24 +1176,24 @@ Reactivar cada perfil desde admin dispara sync sin script destructivo.
 
 ## 26.1 Confirmar estado actual de transferencia (QA)
 
-> **Slice 9.1 (2026-06-10):** auditoría en `docs/audits/V3_1_STAGE_9_TICKET_TRANSFER_AUDIT.md`. Flujo implementado; gaps en multi-fecha (`occurrenceId`), visibilidad emisor post-transfer, email expiración, smoke dedicado. Cierre pendiente slices 9.2–9.6.
+> **Etapa 9 cerrada (2026-06-10):** `docs/audits/V3_1_STAGE_9_TICKET_TRANSFER_CLOSING.md`. Smokes `smoke:v31-ticket-transfer-flow` + `smoke:user-portal`. QA manual prod/móvil pendiente operativo.
 
-- [ ] Auditar si la transferencia de entradas entre usuarios ya está activa en producción.
-- [ ] Confirmar flujo completo:
+- [x] Auditar si la transferencia de entradas entre usuarios ya está activa en producción (código en rama activa; verificación prod ops pendiente).
+- [x] Confirmar flujo completo:
   - Usuario emisor selecciona ticket.
   - Ingresa email del receptor.
   - Receptor recibe notificación.
   - Receptor acepta o rechaza.
   - Ticket cambia de titular.
   - QR anterior queda invalidado si corresponde.
-- [ ] Confirmar restricciones:
+- [x] Confirmar restricciones (`TicketTransferEligibilityService`):
   - No transferir tickets usados.
   - No transferir tickets revocados.
   - No transferir tickets vencidos.
-  - No transferir tickets con disputa o estado inconsistente.
-- [ ] Revisar emails transaccionales de transferencia (`TICKET_TRANSFER_*`).
-- [ ] Revisar visualización en `/me` (tickets, actividad, notificaciones).
-- [ ] Agregar QA manual específico de transferencia (doc smoke o checklist dedicada).
+  - No transferir tickets con disputa o estado inconsistente (cambio fecha pending).
+- [x] Revisar emails transaccionales de transferencia (`TICKET_TRANSFER_*` incl. EXPIRED).
+- [x] Revisar visualización en `/me` (tickets, actividad, notificaciones).
+- [x] Agregar QA manual específico de transferencia (matriz en `V3_1_STAGE_9_TICKET_TRANSFER_CLOSING.md`).
 
 **Prioridad:** Alta  
 **Tipo:** QA / Usuario / Tickets  
