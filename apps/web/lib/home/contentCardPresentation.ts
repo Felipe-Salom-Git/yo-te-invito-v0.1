@@ -1,4 +1,8 @@
 import { getCategoryLabel } from '@/lib/home/contentRoutes';
+import {
+  formatPublicEventDate,
+  shouldShowPublicEventDate,
+} from '@/lib/public/publicContentDates';
 import { RENTAL_PUBLIC_CTA_LOCAL } from '@/lib/rentals/publicCopy';
 
 /** Badge on public discovery cards (not section titles). */
@@ -59,14 +63,13 @@ export function getContentCardLocationLine(item: {
   return item.city ?? item.venueName ?? '—';
 }
 
-/** Event date on cards — hidden for rentals (no ticketing schedule). */
+/** Event date on cards — only for ticketing events (`startAt`), not creation/sync dates. */
 export function getContentCardDateLabel(item: {
   category?: string | null;
   startAt?: string;
 }): string | null {
-  if (isRentalContent(item)) return null;
-  if (!item.startAt) return null;
-  return new Date(item.startAt).toLocaleDateString('es-AR');
+  if (!shouldShowPublicEventDate(item.category)) return null;
+  return formatPublicEventDate(item.startAt);
 }
 
 /** Long date for preview modal meta. */
@@ -74,7 +77,7 @@ export function getContentPreviewDateLabel(item: {
   category?: string | null;
   startAt?: string;
 }): string | null {
-  if (isRentalContent(item)) return null;
+  if (!shouldShowPublicEventDate(item.category)) return null;
   if (!item.startAt) return null;
   return new Date(item.startAt).toLocaleDateString('es-AR', {
     day: 'numeric',
@@ -87,7 +90,7 @@ export function getContentPreviewShortDateLabel(item: {
   category?: string | null;
   startAt?: string;
 }): string | null {
-  if (isRentalContent(item)) return null;
+  if (!shouldShowPublicEventDate(item.category)) return null;
   if (!item.startAt) return null;
   return new Date(item.startAt).toLocaleDateString('es-AR', {
     day: 'numeric',

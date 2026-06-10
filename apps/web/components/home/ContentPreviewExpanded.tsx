@@ -8,6 +8,7 @@ import {
   isRentalContent,
   RENTAL_CARD_CTA,
 } from '@/lib/home/contentCardPresentation';
+import { shouldShowPublicEventDate } from '@/lib/public/publicContentDates';
 import { formatPublicRatingLabel } from '@/lib/reviews/ratingDisplay';
 
 export interface ContentPreviewExpandedProps {
@@ -29,7 +30,7 @@ function ContentHighlights({ item }: { item: ContentCardItem }) {
   } else {
     if (item.city) bullets.push(item.city);
     if (item.venueName && item.venueName !== item.city) bullets.push(item.venueName);
-    if (item.startAt) {
+    if (item.startAt && shouldShowPublicEventDate(item.category)) {
       const d = new Date(item.startAt);
       bullets.push(d.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' }));
     }
