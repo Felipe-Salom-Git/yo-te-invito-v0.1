@@ -10,8 +10,13 @@ import {
 import { useExploreUrlFilters } from '@/lib/explore/useExploreUrlFilters';
 import { useExploreEvents } from '@/lib/query/explore';
 import { usePublicSubcategories } from '@/lib/query/subcategories';
+import {
+  PUBLIC_FILTER_CHIP_BASE,
+  publicFilterChipStateClass,
+} from '@/components/categories/SubcategoryFilterChip';
 import { ContentCard, type ContentCardItem } from '@/components/home/ContentCard';
 import { ContentCardSkeleton } from '@/components/home/ContentCardSkeleton';
+import { PublicSearchBar } from '@/components/public/PublicSearchBar';
 import { PageContainer, SectionTitle, EmptyState, QueryError } from '@/components';
 import { RENTAL_EXPLORE_EMPTY_HINT, RENTAL_PUBLIC_TAGLINE } from '@/lib/rentals/publicCopy';
 import { HotelsComingSoonScreen } from '@/components/hotel/HotelsComingSoonScreen';
@@ -25,13 +30,29 @@ const inputClass =
 const selectClass =
   'mt-1 w-full rounded border border-border bg-bg px-3 py-2 text-text focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent disabled:cursor-not-allowed disabled:opacity-50';
 
+function hasAdvancedExploreFilters(filters: ExploreFiltersState): boolean {
+  return (
+    !!filters.city.trim() ||
+    !!filters.dateFrom.trim() ||
+    !!filters.dateTo.trim() ||
+    !!filters.category.trim() ||
+    !!filters.subcategoryId.trim()
+  );
+}
+
 export function ExplorePageContent() {
   const { filters: urlFilters, applyFilters, clearFilters } = useExploreUrlFilters();
 
   const [draft, setDraft] = useState<ExploreFiltersState>(urlFilters);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(() =>
+    hasAdvancedExploreFilters(urlFilters),
+  );
 
   useEffect(() => {
     setDraft(urlFilters);
+    if (hasAdvancedExploreFilters(urlFilters)) {
+      setShowAdvancedFilters(true);
+    }
   }, [urlFilters]);
 
   const mainCategory = isExploreMainCategory(draft.category)
@@ -157,44 +178,51 @@ export function ExplorePageContent() {
         </p>
       </header>
 
+      <div className="mt-6 max-w-2xl">
+        <PublicSearchBar defaultQuery={urlFilters.q} variant="default" />
+      </div>
+
+      <div
+        className="mt-4 -mx-1 flex gap-2 overflow-x-auto overscroll-x-contain px-1 pb-1 snap-x snap-mandatory scrollbar-thin"
+        role="group"
+        aria-label="Filtrar por categoría"
+      >
+        {EXPLORE_CATEGORY_OPTIONS.map((c) => {
+          const isActive = (draft.category || '') === c.value;
+          return (
+            <button
+              key={c.value || 'all'}
+              type="button"
+              onClick={() => handleCategoryChange(c.value)}
+              className={`${PUBLIC_FILTER_CHIP_BASE} ${publicFilterChipStateClass(isActive)} min-h-[40px] snap-start`}
+              aria-pressed={isActive}
+            >
+              {c.label}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="mt-4">
+        <button
+          type="button"
+          onClick={() => setShowAdvancedFilters((v) => !v)}
+          className="text-sm text-text-muted transition-colors hover:text-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          aria-expanded={showAdvancedFilters}
+        >
+          {showAdvancedFilters ? 'Ocultar filtros' : 'Más filtros'}
+          {hasAdvancedExploreFilters(draft) && !showAdvancedFilters ? (
+            <span className="ml-1.5 text-accent">· activos</span>
+          ) : null}
+        </button>
+      </div>
+
+      {showAdvancedFilters ? (
       <form
         onSubmit={handleSubmit}
-        className="mt-6 space-y-4 rounded-xl border border-border bg-bg-muted/80 p-4 sm:p-5"
+        className="mt-3 space-y-4 rounded-xl border border-white/10 bg-bg-muted/50 p-4 sm:p-5"
       >
-        <div>
-          <label htmlFor="explore-q" className="block text-sm font-medium text-text-muted">
-            Buscar por texto
-          </label>
-          <input
-            id="explore-q"
-            type="search"
-            value={draft.q}
-            onChange={(e) => setDraft((d) => ({ ...d, q: e.target.value }))}
-            placeholder="Nombre del evento o lugar"
-            className={inputClass}
-            autoComplete="off"
-          />
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div>
-            <label htmlFor="explore-category" className="block text-sm font-medium text-text-muted">
-              Categoría
-            </label>
-            <select
-              id="explore-category"
-              value={draft.category}
-              onChange={(e) => handleCategoryChange(e.target.value)}
-              className={selectClass}
-            >
-              {EXPLORE_CATEGORY_OPTIONS.map((c) => (
-                <option key={c.value || 'all'} value={c.value}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div>
             <label
               htmlFor="explore-subcategory"
@@ -243,7 +271,7 @@ export function ExplorePageContent() {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3 sm:col-span-1 lg:col-span-1">
+          <div className="grid grid-cols-2 gap-3 sm:col-span-2 lg:col-span-1">
             <div>
               <label htmlFor="explore-from" className="block text-sm font-medium text-text-muted">
                 Desde
@@ -274,21 +302,22 @@ export function ExplorePageContent() {
         <div className="flex flex-wrap items-center gap-3 pt-1">
           <button
             type="submit"
-            className="rounded bg-accent px-5 py-2.5 text-sm font-medium text-bg transition-colors hover:bg-accent-hover focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-bg"
+            className="rounded-full bg-accent px-5 py-2 text-sm font-medium text-bg transition-colors hover:bg-accent-hover focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-bg"
           >
-            Buscar
+            Aplicar filtros
           </button>
           {hasActiveExploreFilters(urlFilters) ? (
             <button
               type="button"
               onClick={handleClear}
-              className="rounded border border-border px-4 py-2.5 text-sm text-text-muted transition-colors hover:border-accent hover:text-accent"
+              className="rounded-full border border-white/15 px-4 py-2 text-sm text-text-muted transition-colors hover:border-accent hover:text-accent"
             >
               Limpiar filtros
             </button>
           ) : null}
         </div>
       </form>
+      ) : null}
 
       <section className="mt-10" aria-label="Resultados">
         <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">

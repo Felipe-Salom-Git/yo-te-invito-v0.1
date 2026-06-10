@@ -2,6 +2,7 @@
 
 import { useMemo, useCallback, useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { PublicSearchBar } from '@/components/public/PublicSearchBar';
 import { ContentPreviewModal } from '@/components/home/ContentPreviewModal';
 import { ContentRail } from '@/components/home/ContentRail';
 import { HomeCategoryStrip } from '@/components/home/HomeCategoryStrip';
@@ -174,6 +175,10 @@ export function HomeLanding({ initialCategory = null }: HomeLandingProps) {
       />
 
       {viewModel.strategy === 'discovery' ? <HomeCategoryStrip /> : null}
+
+      <div className="mx-auto w-full max-w-2xl px-4 pt-6 sm:px-6 md:max-w-xl md:pt-8">
+        <PublicSearchBar variant="compact" />
+      </div>
 
       <div className="w-full overflow-visible px-0 pb-10 pt-6 md:pt-10">
         {viewModel.rails.map((rail) => (
