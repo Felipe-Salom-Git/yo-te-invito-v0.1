@@ -23,6 +23,7 @@ import {
   readExcursionSchedulePublic,
   writeExcursionScheduleFields,
 } from '../../common/excursion-schedule.util';
+import { parseRelatedLinks } from '../../common/related-links.util';
 import {
   mapEventSubcategoriesPublic,
   resolveValidatedExcursionSubcategories,
@@ -157,6 +158,7 @@ export class ProducerEventsCrudService {
     excursionAvailableDaysText: string | null;
     excursionScheduleNotes: string | null;
     excursionMeetingPoint: string | null;
+    relatedLinks?: unknown;
     media: Array<{ id: string; type: string; url: string; sortOrder: number }>;
     eventTags?: Array<{ tag: { id: string; name: string; slug: string; isActive: boolean } }>;
   }): EventDetail {
@@ -193,6 +195,7 @@ export class ProducerEventsCrudService {
       rentalLocation: this.mapRentalLocationForDetail(event.rentalLocation ?? null),
       excursionSchedule:
         event.category === 'excursion' ? readExcursionSchedulePublic(event) : undefined,
+      relatedLinks: parseRelatedLinks(event.relatedLinks),
       tags: mapEventTagsPublic(event.eventTags),
     };
   }

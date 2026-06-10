@@ -4,6 +4,7 @@ import {
   entitySocialLinksInputSchema,
   safeExternalUrlOptionalSchema,
 } from './external-links';
+import { relatedLinksInputSchema, relatedLinksPublicSchema } from './related-links';
 import { contentTagPublicSchema, eventTagIdsSchema } from './content-tags';
 import { rentalOpeningHoursSchema } from './opening-hours';
 import {
@@ -69,6 +70,7 @@ export const gastroLocalResponseSchema = z.object({
   websiteUrl: z.string().nullable(),
   bookingUrl: z.string().nullable(),
   socialLinks: entitySocialLinksInputSchema.nullable(),
+  relatedLinks: relatedLinksPublicSchema.nullable().optional(),
   subcategoryId: z.string().nullable(),
   publicEventId: z.string().nullable(),
   tags: z.array(contentTagPublicSchema).optional(),
@@ -100,6 +102,7 @@ export const gastroLocalCreateSchema = z.object({
   websiteUrl: safeExternalUrlOptionalSchema,
   bookingUrl: safeExternalUrlOptionalSchema,
   socialLinks: entitySocialLinksInputSchema,
+  relatedLinks: relatedLinksInputSchema,
   tagIds: eventTagIdsSchema.optional(),
 });
 export type GastroLocalCreateInput = z.infer<typeof gastroLocalCreateSchema>;

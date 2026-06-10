@@ -32,6 +32,7 @@ import {
   readExcursionSchedulePublic,
   writeExcursionScheduleFields,
 } from '../../common/excursion-schedule.util';
+import { normalizeRelatedLinksForWrite } from '../../common/related-links.util';
 import {
   resolveValidatedExcursionSubcategories,
   syncEventSubcategories,
@@ -303,6 +304,9 @@ export class ExcursionOperatorsService {
           coverImageUrl: headerImageUrl ?? null,
           status: this.toPrismaEventStatus(body.status),
           ...writeExcursionScheduleFields(body),
+          ...(body.relatedLinks !== undefined && {
+            relatedLinks: normalizeRelatedLinksForWrite(body.relatedLinks) as Prisma.InputJsonValue,
+          }),
           isTicketingEnabled: false,
           media: galleryMedia?.length
             ? {
@@ -411,6 +415,10 @@ export class ExcursionOperatorsService {
           }),
           ...(subcategoryId !== undefined && { subcategoryId }),
           ...writeExcursionScheduleFields(body),
+          ...(body.relatedLinks !== undefined && {
+            relatedLinks:
+              normalizeRelatedLinksForWrite(body.relatedLinks) ?? Prisma.JsonNull,
+          }),
           ...(hasLocationOverride && {
             city: body.city?.trim() || null,
             province: body.province?.trim() || null,

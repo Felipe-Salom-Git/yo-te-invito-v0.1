@@ -8,6 +8,7 @@ import { hasPublicLocationForMapLink } from '@/lib/maps';
 import { GastroPublicHero } from './GastroPublicHero';
 import { GastroDiscountsSection } from './GastroDiscountsSection';
 import { PublicExternalLinksCard } from '@/components/public/PublicExternalLinksCard';
+import { PublicRelatedLinksCard } from '@/components/public/PublicRelatedLinksCard';
 import { GastroLocationEditorialSection } from './GastroLocationEditorialSection';
 import { GastroContactCard } from './GastroContactCard';
 import { GastroLocationCard } from './GastroLocationCard';
@@ -186,6 +187,7 @@ export function GastroPublicDetailContent({
               contactPhone={location.contactPhone}
               contactEmail={location.contactEmail}
             />
+            <PublicRelatedLinksCard links={location.relatedLinks} />
             {!hasLocation &&
             !whatsAppHref &&
             !location.menuUrl &&

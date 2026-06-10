@@ -28,6 +28,10 @@ import {
 import { GastroPublicEventSyncService } from './gastro-public-event-sync.service';
 import { readEntitySocialLinks, writeEntitySocialLinks } from '../../common/entity-social-links.util';
 import {
+  normalizeRelatedLinksForWrite,
+  parseRelatedLinks,
+} from '../../common/related-links.util';
+import {
   loadEventTagsPublic,
   syncGastroPublicEventTags,
 } from '../../common/event-tags.util';
@@ -71,6 +75,7 @@ export class GastroLocalService {
       websiteUrl: row.websiteUrl,
       bookingUrl: row.bookingUrl,
       socialLinks: readEntitySocialLinks(row.socialLinks),
+      relatedLinks: parseRelatedLinks(row.relatedLinks),
       subcategoryId: row.subcategoryId,
       publicEventId: row.publicEventId,
       ...(tags !== undefined ? { tags } : {}),
@@ -186,6 +191,8 @@ export class GastroLocalService {
         websiteUrl: body.websiteUrl ?? null,
         bookingUrl: body.bookingUrl ?? null,
         socialLinks: writeEntitySocialLinks(body.socialLinks),
+        relatedLinks:
+          normalizeRelatedLinksForWrite(body.relatedLinks) as Prisma.InputJsonValue,
       },
     });
 
@@ -264,6 +271,10 @@ export class GastroLocalService {
         ...(body.bookingUrl !== undefined && { bookingUrl: body.bookingUrl }),
         ...(body.socialLinks !== undefined && {
           socialLinks: writeEntitySocialLinks(body.socialLinks),
+        }),
+        ...(body.relatedLinks !== undefined && {
+          relatedLinks:
+            normalizeRelatedLinksForWrite(body.relatedLinks) ?? Prisma.JsonNull,
         }),
       },
     });

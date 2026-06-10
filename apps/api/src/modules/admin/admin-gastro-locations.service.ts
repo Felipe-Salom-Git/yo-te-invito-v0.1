@@ -22,6 +22,7 @@ import {
 } from '../gastro/gastro-profile-fields.util';
 import { GastroPublicEventSyncService } from '../gastro/gastro-public-event-sync.service';
 import { writeEntitySocialLinks } from '../../common/entity-social-links.util';
+import { normalizeRelatedLinksForWrite } from '../../common/related-links.util';
 import { syncGastroPublicEventTags } from '../../common/event-tags.util';
 
 @Injectable()
@@ -132,6 +133,8 @@ export class AdminGastroLocationsService {
         websiteUrl: body.websiteUrl ?? null,
         bookingUrl: body.bookingUrl ?? null,
         socialLinks: writeEntitySocialLinks(body.socialLinks),
+        relatedLinks:
+          normalizeRelatedLinksForWrite(body.relatedLinks) as Prisma.InputJsonValue,
         status,
         createdByUserId: adminUserId,
       },
@@ -257,6 +260,10 @@ export class AdminGastroLocationsService {
         ...(body.bookingUrl !== undefined && { bookingUrl: body.bookingUrl }),
         ...(body.socialLinks !== undefined && {
           socialLinks: writeEntitySocialLinks(body.socialLinks),
+        }),
+        ...(body.relatedLinks !== undefined && {
+          relatedLinks:
+            normalizeRelatedLinksForWrite(body.relatedLinks) ?? Prisma.JsonNull,
         }),
       },
     });

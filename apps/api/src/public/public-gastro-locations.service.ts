@@ -7,6 +7,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { GastroContentService } from '../modules/gastro/gastro-content.service';
 import { readEntitySocialLinks } from '../common/entity-social-links.util';
+import { parseRelatedLinks } from '../common/related-links.util';
 import { readGastroOpeningHoursFields } from '../modules/gastro/gastro-profile-fields.util';
 import { loadEventTagsPublic } from '../common/event-tags.util';
 
@@ -98,6 +99,7 @@ export class PublicGastroLocationsService {
       websiteUrl: string | null;
       bookingUrl: string | null;
       socialLinks: unknown;
+      relatedLinks: unknown;
       subcategoryId: string | null;
       publicEventId: string | null;
       status: string;
@@ -143,6 +145,7 @@ export class PublicGastroLocationsService {
       websiteUrl: row.websiteUrl,
       bookingUrl: row.bookingUrl,
       socialLinks: readEntitySocialLinks(row.socialLinks),
+      relatedLinks: parseRelatedLinks(row.relatedLinks),
       subcategoryId: row.subcategoryId,
       publicEventId: row.publicEventId,
       status: row.status,

@@ -13,6 +13,7 @@ import {
   excursionScheduleInputSchema,
 } from './excursion-schedule';
 import { rentalOpeningHoursSchema } from './opening-hours';
+import { relatedLinksInputSchema } from './related-links';
 
 const googlePlaceIdOptional = z.string().max(255).nullable().optional();
 const provinceOptional = z.string().max(100).nullable().optional();
@@ -155,6 +156,7 @@ export const createExcursionProductBodySchema = z
     media: z.array(eventMediaSchema).optional(),
     status: z.nativeEnum(EventStatus).optional(),
     tagIds: eventTagIdsSchema.optional(),
+    relatedLinks: relatedLinksInputSchema,
   })
   .merge(excursionScheduleInputSchema)
   .merge(excursionProductLocationInputSchema);
@@ -173,6 +175,7 @@ export const updateExcursionProductBodySchema = z
     media: z.array(eventMediaSchema).optional(),
     status: z.nativeEnum(EventStatus).optional(),
     tagIds: eventTagIdsSchema.optional().nullable(),
+    relatedLinks: relatedLinksInputSchema,
   })
   .merge(excursionScheduleInputSchema)
   .merge(excursionProductLocationInputSchema);

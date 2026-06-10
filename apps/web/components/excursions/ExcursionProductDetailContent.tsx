@@ -31,6 +31,7 @@ import { ExcursionContactCard } from './ExcursionContactCard';
 import { ExcursionDetailInfoGrid } from './ExcursionDetailInfoGrid';
 import { ExcursionDetailSectionHeading } from './ExcursionDetailSectionHeading';
 import { PublicExternalLinksCard } from '@/components/public/PublicExternalLinksCard';
+import { PublicRelatedLinksCard } from '@/components/public/PublicRelatedLinksCard';
 import { ExcursionSchedulePublicSections } from './ExcursionSchedulePublicSections';
 import {
   formatExcursionLocationLabel,
@@ -255,6 +256,7 @@ export function ExcursionProductDetailContent({
               bookingUrl={operator?.bookingUrl}
               socialLinks={operator?.socialLinks}
             />
+            <PublicRelatedLinksCard links={event.relatedLinks} />
             {showOperatorCard && (
               <ExcursionOperatorCard
                 name={operator?.name ?? event.venueName ?? 'Operador'}

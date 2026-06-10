@@ -18,6 +18,7 @@ import {
   readGastroOpeningHoursFields,
 } from '../gastro/gastro-profile-fields.util';
 import { readEntitySocialLinks } from '../../common/entity-social-links.util';
+import { parseRelatedLinks } from '../../common/related-links.util';
 import { loadEventTagsPublic } from '../../common/event-tags.util';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../../email/email.service';
@@ -390,6 +391,7 @@ export class AdminGastroService {
       websiteUrl: p.websiteUrl,
       bookingUrl: p.bookingUrl,
       socialLinks: readEntitySocialLinks(p.socialLinks),
+      relatedLinks: parseRelatedLinks(p.relatedLinks),
       owner: {
         userId: owner?.id ?? null,
         email: owner?.email ?? null,

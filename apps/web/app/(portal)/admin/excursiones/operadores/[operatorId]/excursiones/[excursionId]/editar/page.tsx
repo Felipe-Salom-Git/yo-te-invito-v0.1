@@ -37,6 +37,12 @@ import {
   ContentTagSelector,
   tagIdsFromEvent,
 } from '@/components/content-tags/ContentTagSelector';
+import {
+  RelatedLinksFormFields,
+  normalizeRelatedLinksForSave,
+  validateRelatedLinksDraft,
+} from '@/components/forms/RelatedLinksFormFields';
+import type { RelatedLinkItem } from '@yo-te-invito/shared';
 
 const TENANT_ID = 'tenant-demo';
 
@@ -71,6 +77,7 @@ export default function AdminExcursionEditarPage() {
   const [location, setLocation] = useState<LocationValue | null>(null);
   const [useCustomLocation, setUseCustomLocation] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [relatedLinks, setRelatedLinks] = useState<RelatedLinkItem[]>([]);
 
   useEffect(() => {
     if (event) {
@@ -91,6 +98,7 @@ export default function AdminExcursionEditarPage() {
       });
       setLocation(loc);
       setUseCustomLocation(hasOwn);
+      setRelatedLinks(event.relatedLinks ?? []);
     }
   }, [event]);
 
@@ -104,6 +112,10 @@ export default function AdminExcursionEditarPage() {
         }
       }
       setLocationError(null);
+      const linksError = validateRelatedLinksDraft(relatedLinks);
+      if (linksError) {
+        throw new Error(linksError);
+      }
       const loc = useCustomLocation && location ? eventFieldsFromLocationValue(location) : null;
       return repos.excursionOperators.updateExcursion(operatorId, excursionId, {
         title: title.trim(),
@@ -113,6 +125,7 @@ export default function AdminExcursionEditarPage() {
         ...rentalProductImagesToPayload(images),
         ...excursionScheduleFormValueToPayload(schedule),
         tagIds,
+        relatedLinks: normalizeRelatedLinksForSave(relatedLinks),
         ...(loc ??
           (useCustomLocation
             ? {}
@@ -200,6 +213,7 @@ export default function AdminExcursionEditarPage() {
           uploadConfig={{ scope: 'excursion', entityId: excursionId }}
           onUploadingChange={setImagesUploading}
         />
+        <RelatedLinksFormFields value={relatedLinks} onChange={setRelatedLinks} />
 
         <div className="flex gap-3 pt-4">
           <Button type="submit" disabled={updateMutation.isPending || imagesUploading}>

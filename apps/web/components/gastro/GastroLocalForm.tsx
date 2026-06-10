@@ -25,6 +25,12 @@ import {
   type ExternalLinksFormValue,
 } from '@/components/forms/ExternalLinksFormFields';
 import {
+  RelatedLinksFormFields,
+  normalizeRelatedLinksForSave,
+  validateRelatedLinksDraft,
+} from '@/components/forms/RelatedLinksFormFields';
+import type { RelatedLinkItem } from '@yo-te-invito/shared';
+import {
   ContentTagSelector,
   tagIdsFromEvent,
 } from '@/components/content-tags/ContentTagSelector';
@@ -114,6 +120,9 @@ export function GastroLocalForm({
   const [externalLinks, setExternalLinks] = useState<ExternalLinksFormValue>(() =>
     initial ? externalLinksFromGastroLocal(initial) : externalLinksFromGastroLocal({}),
   );
+  const [relatedLinks, setRelatedLinks] = useState<RelatedLinkItem[]>(
+    initial?.relatedLinks ?? [],
+  );
   const [locationError, setLocationError] = useState<string | null>(null);
   const [isUploadingImages, setIsUploadingImages] = useState(false);
   const hydratedFromId = useRef<string | null>(null);
@@ -143,6 +152,7 @@ export function GastroLocalForm({
     setContactPhone(initial.contactPhone ?? '');
     setContactEmail(initial.contactEmail ?? '');
     setExternalLinks(externalLinksFromGastroLocal(initial));
+    setRelatedLinks(initial.relatedLinks ?? []);
   }, [initial]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -155,6 +165,11 @@ export function GastroLocalForm({
     }
     if (mustPickSubcategory && !subcategoryId) {
       setLocationError('Seleccioná una subcategoría gastronómica.');
+      return;
+    }
+    const linksError = validateRelatedLinksDraft(relatedLinks);
+    if (linksError) {
+      setLocationError(linksError);
       return;
     }
     setLocationError(null);
@@ -178,6 +193,7 @@ export function GastroLocalForm({
       websiteUrl: links.websiteUrl,
       bookingUrl: links.bookingUrl,
       socialLinks: links.socialLinks,
+      relatedLinks: normalizeRelatedLinksForSave(relatedLinks),
     });
   };
 
@@ -304,6 +320,7 @@ export function GastroLocalForm({
         showMenuUrl
         sectionTitle={isAdmin ? 'Enlaces y redes' : 'Reservas y redes'}
       />
+      <RelatedLinksFormFields value={relatedLinks} onChange={setRelatedLinks} />
       {locationError && <p className="text-sm text-red-500">{locationError}</p>}
       <Button type="submit" disabled={submitting || isUploadingImages}>
         {submitLabel}
