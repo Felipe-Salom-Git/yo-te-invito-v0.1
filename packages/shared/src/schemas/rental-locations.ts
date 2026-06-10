@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { PUBLIC_SUMMARY_MAX_LENGTH } from '../constants/content-limits';
 import { EventStatus, EventMediaType } from '../enums';
+import { eventTagIdsSchema } from './content-tags';
 import { eventMediaSchema, eventSummarySchema } from './events';
 import { rentalOpeningHoursSchema } from './opening-hours';
 
@@ -172,6 +173,7 @@ export const createRentalProductBodySchema = z.object({
   /** @deprecated use galleryImages */
   media: z.array(eventMediaSchema).optional(),
   status: z.nativeEnum(EventStatus).optional(),
+  tagIds: eventTagIdsSchema.optional(),
 });
 export type CreateRentalProductBody = z.infer<typeof createRentalProductBodySchema>;
 
@@ -186,5 +188,6 @@ export const updateRentalProductBodySchema = z.object({
   coverImageUrl: z.string().nullish(),
   media: z.array(eventMediaSchema).optional(),
   status: z.nativeEnum(EventStatus).optional(),
+  tagIds: eventTagIdsSchema.optional().nullable(),
 });
 export type UpdateRentalProductBody = z.infer<typeof updateRentalProductBodySchema>;

@@ -14,6 +14,7 @@ import {
   type RentalProductImagesValue,
 } from '@/components/rentals/RentalProductImagesForm';
 import { RentalSummaryField } from '@/components/rentals/RentalSummaryField';
+import { ContentTagSelector } from '@/components/content-tags/ContentTagSelector';
 
 const emptyImages: RentalProductImagesValue = {
   headerImageUrl: '',
@@ -31,6 +32,7 @@ export default function AdminRentalProductoNuevoPage() {
   const [summary, setSummary] = useState('');
   const [description, setDescription] = useState('');
   const [subcategoryId, setSubcategoryId] = useState('');
+  const [tagIds, setTagIds] = useState<string[]>([]);
   const [images, setImages] = useState<RentalProductImagesValue>(emptyImages);
   const [imagesUploading, setImagesUploading] = useState(false);
 
@@ -41,6 +43,7 @@ export default function AdminRentalProductoNuevoPage() {
         summary: summary.trim() || null,
         description: description.trim() || null,
         subcategoryId: subcategoryId || null,
+        tagIds,
         ...rentalProductImagesToPayload(images),
         status: 'approved',
       }),
@@ -80,6 +83,7 @@ export default function AdminRentalProductoNuevoPage() {
           />
         </div>
         <SubcategorySelect category="rental" value={subcategoryId} onChange={setSubcategoryId} />
+        <ContentTagSelector category="rental" value={tagIds} onChange={setTagIds} />
         <RentalProductImagesForm
           value={images}
           onChange={setImages}

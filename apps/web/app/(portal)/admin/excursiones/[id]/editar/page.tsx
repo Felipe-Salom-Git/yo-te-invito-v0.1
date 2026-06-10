@@ -29,6 +29,10 @@ import {
   excursionScheduleFormValueFromEvent,
   excursionScheduleFormValueToPayload,
 } from '@/components/excursions/ExcursionScheduleFormFields';
+import {
+  ContentTagSelector,
+  tagIdsFromEvent,
+} from '@/components/content-tags/ContentTagSelector';
 
 const TENANT_ID = 'tenant-demo';
 
@@ -54,6 +58,7 @@ export default function AdminExcursionEditarPage() {
   const [capacityTotal, setCapacityTotal] = useState('');
   const [coverImageUrl, setCoverImageUrl] = useState('');
   const [subcategoryIds, setSubcategoryIds] = useState<string[]>([]);
+  const [tagIds, setTagIds] = useState<string[]>([]);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [schedule, setSchedule] = useState(excursionScheduleFormValueFromEvent());
 
@@ -93,6 +98,7 @@ export default function AdminExcursionEditarPage() {
       setCapacityTotal(event.capacityTotal != null ? String(event.capacityTotal) : '');
       setCoverImageUrl(event.coverImageUrl ?? '');
       setSubcategoryIds(excursionSubcategoryIdsFromEvent(event));
+      setTagIds(tagIdsFromEvent(event));
       setSchedule(excursionScheduleFormValueFromEvent(event.excursionSchedule));
     }
   }, [event]);
@@ -134,6 +140,7 @@ export default function AdminExcursionEditarPage() {
       coverImageUrl: cover || null,
       ...excursionSubcategoryIdsToPayload(subcategoryIds),
       ...excursionScheduleFormValueToPayload(schedule),
+      tagIds,
       ...(cover
         ? {
             media: [{ id: `img-${Date.now()}`, type: 'image' as const, url: cover, sortOrder: 0 }],
@@ -214,6 +221,7 @@ export default function AdminExcursionEditarPage() {
           <EventLocationFields value={location} onChange={setLocation} mapError={locationError ?? undefined} />
         </div>
         <ExcursionSubcategoryMultiSelect value={subcategoryIds} onChange={setSubcategoryIds} />
+        <ContentTagSelector category="excursion" value={tagIds} onChange={setTagIds} />
         <div className="flex gap-3 pt-4">
           <Button type="submit" disabled={updateMutation.isPending || isUploading}>
             {updateMutation.isPending ? 'Guardando…' : 'Guardar'}

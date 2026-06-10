@@ -97,6 +97,37 @@ export function mapEventTagsPublic(
     .sort((a, b) => a.name.localeCompare(b.name, 'es'));
 }
 
+/** Sync tags on a gastro public discovery event after profile save. */
+export async function syncGastroPublicEventTags(
+  prisma: PrismaTagLike,
+  tenantId: string,
+  publicEventId: string | null | undefined,
+  tagIds: string[] | null | undefined,
+): Promise<void> {
+  if (tagIds === undefined || !publicEventId) return;
+  const validated = await validateEventTagIds(prisma, tenantId, 'gastro', tagIds ?? []);
+  await syncEventTags(prisma, publicEventId, validated);
+}
+
+export async function loadEventTagsPublic(
+  prisma: {
+    eventTag: {
+      findMany(args: {
+        where: { eventId: string };
+        include: { tag: { select: { id: true; name: true; slug: true; isActive: true } } };
+      }): Promise<EventTagRow[]>;
+    };
+  },
+  eventId: string | null | undefined,
+): Promise<ContentTagPublic[]> {
+  if (!eventId) return [];
+  const rows = await prisma.eventTag.findMany({
+    where: { eventId },
+    include: { tag: { select: { id: true, name: true, slug: true, isActive: true } } },
+  });
+  return mapEventTagsPublic(rows);
+}
+
 /** Public list/search filter by tag slug. */
 export function tagSlugFilterWhere(slug: string | undefined): { eventTags: { some: { tag: { slug: string; isActive: true } } } } | null {
   const s = slug?.trim();

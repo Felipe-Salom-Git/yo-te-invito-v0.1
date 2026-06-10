@@ -121,12 +121,26 @@ async function smokeTagCrud(
   }
 
   await service.setActive(TENANT, created.id, true);
-  const publicAfterRestore = await service.listPublic({ tenantId: TENANT, category: 'event' });
-  if (!publicAfterRestore.data.some((t) => t.slug === 'nieve')) {
-    fail('global/excursion tag not in public event list after restore');
+  const publicExcursionAfterRestore = await service.listPublic({
+    tenantId: TENANT,
+    category: 'excursion',
+  });
+  if (!publicExcursionAfterRestore.data.some((t) => t.slug === 'nieve')) {
+    fail('excursion tag not in public excursion list after restore');
     ok = false;
   } else {
-    pass('restored tag visible for event category filter');
+    pass('restored tag visible for excursion category filter');
+  }
+
+  const publicEventAfterRestore = await service.listPublic({
+    tenantId: TENANT,
+    category: 'event',
+  });
+  if (publicEventAfterRestore.data.some((t) => t.slug === 'nieve')) {
+    fail('excursion-scoped tag must not appear in event public list');
+    ok = false;
+  } else {
+    pass('excursion-scoped tag excluded from event category filter');
   }
 
   return ok;

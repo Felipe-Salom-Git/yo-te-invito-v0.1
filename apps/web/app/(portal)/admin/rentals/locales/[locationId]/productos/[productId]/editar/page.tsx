@@ -16,6 +16,10 @@ import {
   type RentalProductImagesValue,
 } from '@/components/rentals/RentalProductImagesForm';
 import { RentalSummaryField } from '@/components/rentals/RentalSummaryField';
+import {
+  ContentTagSelector,
+  tagIdsFromEvent,
+} from '@/components/content-tags/ContentTagSelector';
 
 const TENANT_ID = 'tenant-demo';
 
@@ -43,6 +47,7 @@ export default function AdminRentalProductoEditarPage() {
   const [summary, setSummary] = useState('');
   const [description, setDescription] = useState('');
   const [subcategoryId, setSubcategoryId] = useState('');
+  const [tagIds, setTagIds] = useState<string[]>([]);
   const [images, setImages] = useState<RentalProductImagesValue>(emptyImages);
   const [imagesUploading, setImagesUploading] = useState(false);
 
@@ -52,6 +57,7 @@ export default function AdminRentalProductoEditarPage() {
       setSummary(event.summary ?? '');
       setDescription(event.description ?? '');
       setSubcategoryId(event.subcategoryId ?? '');
+      setTagIds(tagIdsFromEvent(event));
       setImages(rentalProductImagesFromEvent(event));
     }
   }, [event]);
@@ -63,6 +69,7 @@ export default function AdminRentalProductoEditarPage() {
         summary: summary.trim() || null,
         description: description.trim() || null,
         subcategoryId: subcategoryId || null,
+        tagIds,
         ...rentalProductImagesToPayload(images),
       }),
     onError: (err) => addToast(getErrorMessage(err), 'error'),
@@ -111,6 +118,7 @@ export default function AdminRentalProductoEditarPage() {
           />
         </div>
         <SubcategorySelect category="rental" value={subcategoryId} onChange={setSubcategoryId} />
+        <ContentTagSelector category="rental" value={tagIds} onChange={setTagIds} />
         <RentalProductImagesForm
           value={images}
           onChange={setImages}

@@ -6,6 +6,7 @@ import {
 } from './external-links';
 import { EventStatus, EventMediaType } from '../enums';
 import { eventMediaSchema, eventSummarySchema } from './events';
+import { eventTagIdsSchema } from './content-tags';
 import { excursionSubcategoryIdsInputSchema } from './event-subcategories';
 import {
   excursionProductLocationInputSchema,
@@ -153,6 +154,7 @@ export const createExcursionProductBodySchema = z
     coverImageUrl: z.string().nullish(),
     media: z.array(eventMediaSchema).optional(),
     status: z.nativeEnum(EventStatus).optional(),
+    tagIds: eventTagIdsSchema.optional(),
   })
   .merge(excursionScheduleInputSchema)
   .merge(excursionProductLocationInputSchema);
@@ -170,6 +172,7 @@ export const updateExcursionProductBodySchema = z
     coverImageUrl: z.string().nullish(),
     media: z.array(eventMediaSchema).optional(),
     status: z.nativeEnum(EventStatus).optional(),
+    tagIds: eventTagIdsSchema.optional().nullable(),
   })
   .merge(excursionScheduleInputSchema)
   .merge(excursionProductLocationInputSchema);

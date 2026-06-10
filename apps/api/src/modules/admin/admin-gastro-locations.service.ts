@@ -20,6 +20,7 @@ import {
 } from '../gastro/gastro-profile-fields.util';
 import { GastroPublicEventSyncService } from '../gastro/gastro-public-event-sync.service';
 import { writeEntitySocialLinks } from '../../common/entity-social-links.util';
+import { syncGastroPublicEventTags } from '../../common/event-tags.util';
 
 @Injectable()
 export class AdminGastroLocationsService {
@@ -137,7 +138,17 @@ export class AdminGastroLocationsService {
     }
 
     if (this.shouldPublishOnWrite(status, body.publish)) {
-      await this.publicEventSync.syncPublicEvent(profile, adminUserId, gallery);
+      const eventId = await this.publicEventSync.syncPublicEvent(
+        profile,
+        adminUserId,
+        gallery,
+      );
+      await syncGastroPublicEventTags(
+        this.prisma,
+        effectiveTenantId,
+        eventId,
+        body.tagIds,
+      );
     } else if (status !== 'ACTIVE') {
       await this.publicEventSync.syncVisibilityForProfile(profile);
     }
@@ -264,6 +275,18 @@ export class AdminGastroLocationsService {
       }
     } else {
       await this.publicEventSync.syncVisibilityForProfile(updated);
+    }
+
+    if (body.tagIds !== undefined) {
+      const refreshed = await this.prisma.gastroProfile.findUniqueOrThrow({
+        where: { id: profileId },
+      });
+      await syncGastroPublicEventTags(
+        this.prisma,
+        tenantId,
+        refreshed.publicEventId,
+        body.tagIds,
+      );
     }
 
     return this.adminGastro.getLocation(tenantId, profileId);

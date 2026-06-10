@@ -15,6 +15,7 @@ import {
 } from '@yo-te-invito/shared';
 import { readGastroGallery } from '../gastro/gastro-profile-fields.util';
 import { readEntitySocialLinks } from '../../common/entity-social-links.util';
+import { loadEventTagsPublic } from '../../common/event-tags.util';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../../email/email.service';
 import { GastroFollowDiscountAlertsService } from '../notifications/gastro-follow-discount-alerts.service';
@@ -356,6 +357,7 @@ export class AdminGastroService {
     const pendingDiscountsCount = counts.pending;
     const activeDiscountsCount = counts.active;
     const owner = p.memberships[0]?.user;
+    const tags = await loadEventTagsPublic(this.prisma, p.publicEventId);
     return {
       id: p.id,
       tenantId: p.tenantId,
@@ -366,6 +368,7 @@ export class AdminGastroService {
       contactEmail: p.contactEmail,
       contactPhone: p.contactPhone,
       publicEventId: p.publicEventId,
+      tags,
       legalName: p.legalName,
       summary: p.summary,
       detail: p.detail,

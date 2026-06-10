@@ -22,6 +22,10 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { EventPublicationAlertsService } from '../notifications/event-publication-alerts.service';
 import { SubcategoriesService } from '../subcategories/subcategories.service';
 import { normalizeRentalProductImages } from './rental-product-images.util';
+import {
+  syncEventTags,
+  validateEventTagIds,
+} from '../../common/event-tags.util';
 
 @Injectable()
 export class RentalLocationsService {
@@ -291,9 +295,16 @@ export class RentalLocationsService {
       'rental',
       body.subcategoryId ?? null,
     );
+    const tagIds = await validateEventTagIds(
+      this.prisma,
+      tenantId,
+      'rental',
+      body.tagIds,
+    );
     const { headerImageUrl, galleryMedia } = normalizeRentalProductImages(body);
     const now = new Date();
-    const event = await this.prisma.event.create({
+    const event = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.event.create({
       data: {
         tenantId,
         producerId,
@@ -323,9 +334,12 @@ export class RentalLocationsService {
             }
           : undefined,
       },
-      include: {
-        media: { where: { deletedAt: null }, orderBy: { sortOrder: 'asc' } },
-      },
+        include: {
+          media: { where: { deletedAt: null }, orderBy: { sortOrder: 'asc' } },
+        },
+      });
+      await syncEventTags(tx, created.id, tagIds);
+      return created;
     });
     if (event.status === 'APPROVED') {
       this.publicationAlerts.handleEventBecameApproved(tenantId, event.id);
@@ -367,8 +381,19 @@ export class RentalLocationsService {
 
     const { headerImageUrl, galleryMedia } = normalizeRentalProductImages(body);
 
+    let validatedTagIds: string[] | undefined;
+    if (body.tagIds !== undefined) {
+      validatedTagIds = await validateEventTagIds(
+        this.prisma,
+        tenantId,
+        'rental',
+        body.tagIds ?? [],
+      );
+    }
+
     const previousStatus = existing.status;
-    const event = await this.prisma.event.update({
+    const event = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.event.update({
       where: { id: productId },
       data: {
         ...(body.title !== undefined && { title: body.title.trim() }),
@@ -384,6 +409,11 @@ export class RentalLocationsService {
         }),
         ...(subcategoryId !== undefined && { subcategoryId }),
       },
+      });
+      if (validatedTagIds !== undefined) {
+        await syncEventTags(tx, productId, validatedTagIds);
+      }
+      return updated;
     });
 
     if (event.status === 'APPROVED') {

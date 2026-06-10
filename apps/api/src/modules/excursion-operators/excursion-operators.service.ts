@@ -36,6 +36,10 @@ import {
   resolveValidatedExcursionSubcategories,
   syncEventSubcategories,
 } from '../../common/event-subcategories.util';
+import {
+  syncEventTags,
+  validateEventTagIds,
+} from '../../common/event-tags.util';
 
 @Injectable()
 export class ExcursionOperatorsService {
@@ -261,6 +265,12 @@ export class ExcursionOperatorsService {
       },
     );
     const subcategoryId = subcategoryResolved?.primaryId ?? null;
+    const tagIds = await validateEventTagIds(
+      this.prisma,
+      tenantId,
+      'excursion',
+      body.tagIds,
+    );
     const { headerImageUrl, galleryMedia } = normalizeRentalProductImages(body);
     const now = new Date();
     const hasLocationOverride =
@@ -316,6 +326,7 @@ export class ExcursionOperatorsService {
           subcategoryResolved.allIds,
         );
       }
+      await syncEventTags(tx, created.id, tagIds);
       return created;
     });
     if (event.status === 'APPROVED') {
@@ -372,6 +383,16 @@ export class ExcursionOperatorsService {
       body.geoLat !== undefined ||
       body.geoLng !== undefined;
 
+    let validatedTagIds: string[] | undefined;
+    if (body.tagIds !== undefined) {
+      validatedTagIds = await validateEventTagIds(
+        this.prisma,
+        tenantId,
+        'excursion',
+        body.tagIds ?? [],
+      );
+    }
+
     const previousStatus = existing.status;
     const event = await this.prisma.$transaction(async (tx) => {
       const updated = await tx.event.update({
@@ -407,6 +428,9 @@ export class ExcursionOperatorsService {
           subcategoryResolved.primaryId,
           subcategoryResolved.allIds,
         );
+      }
+      if (validatedTagIds !== undefined) {
+        await syncEventTags(tx, excursionId, validatedTagIds);
       }
       return updated;
     });

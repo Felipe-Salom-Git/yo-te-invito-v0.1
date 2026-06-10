@@ -19,6 +19,10 @@ import {
   externalLinksToPayload,
   type ExternalLinksFormValue,
 } from '@/components/forms/ExternalLinksFormFields';
+import {
+  ContentTagSelector,
+  tagIdsFromEvent,
+} from '@/components/content-tags/ContentTagSelector';
 import type { GastroLocal, GastroLocalUpsertPayload } from '@/repositories/interfaces';
 
 export type GastroLocalFormMode = 'owner' | 'admin';
@@ -71,6 +75,9 @@ export function GastroLocalForm({
   const [summary, setSummary] = useState(initial?.summary ?? '');
   const [detail, setDetail] = useState(initial?.detail ?? '');
   const [subcategoryId, setSubcategoryId] = useState(initial?.subcategoryId ?? '');
+  const [tagIds, setTagIds] = useState<string[]>(() =>
+    initial ? tagIdsFromEvent(initial) : [],
+  );
   const [images, setImages] = useState({
     headerImageUrl: initial?.bannerUrl ?? '',
     galleryImageUrls: initial?.galleryUrls ?? [],
@@ -112,6 +119,7 @@ export function GastroLocalForm({
     setSummary(initial.summary ?? '');
     setDetail(initial.detail ?? '');
     setSubcategoryId(initial.subcategoryId ?? '');
+    setTagIds(tagIdsFromEvent(initial));
     setImages({
       headerImageUrl: initial.bannerUrl ?? '',
       galleryImageUrls: initial.galleryUrls ?? [],
@@ -143,6 +151,7 @@ export function GastroLocalForm({
       summary: summary.trim() || null,
       detail: detail.trim() || null,
       subcategoryId: subcategoryId || null,
+      tagIds,
       bannerUrl: images.headerImageUrl.trim() || null,
       galleryUrls: images.galleryImageUrls.filter(Boolean),
       location: gastroLocationPayloadFromLocationValue(location),
@@ -206,6 +215,7 @@ export function GastroLocalForm({
           <span className="text-accent">/admin/categorias</span> antes de asignar una.
         </p>
       ) : null}
+      <ContentTagSelector category="gastro" value={tagIds} onChange={setTagIds} />
       <div>
         {isAdmin ? <p className="mb-2 text-sm font-medium text-text">Imágenes</p> : null}
         {imagesHelperText ? (

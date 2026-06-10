@@ -24,6 +24,10 @@ import {
 } from './gastro-profile-fields.util';
 import { GastroPublicEventSyncService } from './gastro-public-event-sync.service';
 import { readEntitySocialLinks, writeEntitySocialLinks } from '../../common/entity-social-links.util';
+import {
+  loadEventTagsPublic,
+  syncGastroPublicEventTags,
+} from '../../common/event-tags.util';
 
 @Injectable()
 export class GastroLocalService {
@@ -36,6 +40,7 @@ export class GastroLocalService {
 
   private toResponse(
     row: GastroProfile & { subcategory?: { name: string } | null },
+    tags?: GastroLocalResponse['tags'],
   ): GastroLocalResponse {
     return {
       id: row.id,
@@ -64,10 +69,16 @@ export class GastroLocalService {
       socialLinks: readEntitySocialLinks(row.socialLinks),
       subcategoryId: row.subcategoryId,
       publicEventId: row.publicEventId,
+      ...(tags !== undefined ? { tags } : {}),
       status: row.status as GastroLocalResponse['status'],
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
     };
+  }
+
+  private async withTags(response: GastroLocalResponse): Promise<GastroLocalResponse> {
+    const tags = await loadEventTagsPublic(this.prisma, response.publicEventId);
+    return { ...response, tags };
   }
 
   private async assertGastroUser(tenantId: string, userId: string, _userRole: string) {
@@ -108,7 +119,7 @@ export class GastroLocalService {
     await this.assertGastroUser(tenantId, userId, userRole);
     try {
       const profile = await this.getOwnedProfile(tenantId, userId);
-      return this.toResponse(profile);
+      return this.withTags(this.toResponse(profile));
     } catch (e) {
       if (e instanceof NotFoundException) return null;
       throw e;
@@ -172,11 +183,12 @@ export class GastroLocalService {
       },
     });
 
-    await this.publicEventSync.syncPublicEvent(profile, userId, gallery);
+    const eventId = await this.publicEventSync.syncPublicEvent(profile, userId, gallery);
+    await syncGastroPublicEventTags(this.prisma, tenantId, eventId, body.tagIds);
     const refreshed = await this.prisma.gastroProfile.findUniqueOrThrow({
       where: { id: profile.id },
     });
-    return this.toResponse(refreshed);
+    return this.withTags(this.toResponse(refreshed));
   }
 
   async updateMyLocal(
@@ -244,14 +256,21 @@ export class GastroLocalService {
       },
     });
 
+    let publicEventId = updated.publicEventId;
     if (shouldSyncGastroPublicEventAfterUpdate({ ...body, subcategoryId })) {
-      await this.publicEventSync.syncPublicEvent(
+      publicEventId = await this.publicEventSync.syncPublicEvent(
         updated,
         userId,
         gallery !== undefined ? gallery : this.publicEventSync.readGallery(updated),
       );
     }
+    if (body.tagIds !== undefined) {
+      await syncGastroPublicEventTags(this.prisma, tenantId, publicEventId, body.tagIds);
+    }
 
-    return this.toResponse(updated);
+    const refreshed = await this.prisma.gastroProfile.findUniqueOrThrow({
+      where: { id: updated.id },
+    });
+    return this.withTags(this.toResponse(refreshed));
   }
 }

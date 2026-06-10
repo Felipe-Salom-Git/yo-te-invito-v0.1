@@ -28,6 +28,7 @@ import {
   validateOptionalEntityLocation,
   type LocationValue,
 } from '@/components/location';
+import { ContentTagSelector } from '@/components/content-tags/ContentTagSelector';
 
 const emptyImages: RentalProductImagesValue = {
   headerImageUrl: '',
@@ -54,6 +55,7 @@ export default function AdminExcursionNuevoPage() {
   const [summary, setSummary] = useState('');
   const [description, setDescription] = useState('');
   const [subcategoryIds, setSubcategoryIds] = useState<string[]>([]);
+  const [tagIds, setTagIds] = useState<string[]>([]);
   const [images, setImages] = useState<RentalProductImagesValue>(emptyImages);
   const [imagesUploading, setImagesUploading] = useState(false);
   const [schedule, setSchedule] = useState(emptyExcursionScheduleFormValue);
@@ -80,6 +82,7 @@ export default function AdminExcursionNuevoPage() {
         ...rentalProductImagesToPayload(images),
         ...excursionScheduleFormValueToPayload(schedule),
         ...(useCustomLocation ? loc : {}),
+        tagIds,
         status: 'approved',
       });
     },
@@ -116,6 +119,7 @@ export default function AdminExcursionNuevoPage() {
           />
         </div>
         <ExcursionSubcategoryMultiSelect value={subcategoryIds} onChange={setSubcategoryIds} />
+        <ContentTagSelector category="excursion" value={tagIds} onChange={setTagIds} />
         <ExcursionScheduleFormFields value={schedule} onChange={setSchedule} />
         <div className="space-y-3 rounded-lg border border-border p-4">
           <label className="flex items-center gap-2 text-sm text-text">

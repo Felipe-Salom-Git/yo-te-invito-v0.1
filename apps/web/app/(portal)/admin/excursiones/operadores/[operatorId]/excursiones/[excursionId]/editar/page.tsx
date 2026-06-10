@@ -33,6 +33,10 @@ import {
   type LocationValue,
 } from '@/components/location';
 import { hasPublicLocationForMapLink } from '@/lib/maps';
+import {
+  ContentTagSelector,
+  tagIdsFromEvent,
+} from '@/components/content-tags/ContentTagSelector';
 
 const TENANT_ID = 'tenant-demo';
 
@@ -60,6 +64,7 @@ export default function AdminExcursionEditarPage() {
   const [summary, setSummary] = useState('');
   const [description, setDescription] = useState('');
   const [subcategoryIds, setSubcategoryIds] = useState<string[]>([]);
+  const [tagIds, setTagIds] = useState<string[]>([]);
   const [images, setImages] = useState<RentalProductImagesValue>(emptyImages);
   const [imagesUploading, setImagesUploading] = useState(false);
   const [schedule, setSchedule] = useState(excursionScheduleFormValueFromEvent());
@@ -73,6 +78,7 @@ export default function AdminExcursionEditarPage() {
       setSummary(event.summary ?? '');
       setDescription(event.description ?? '');
       setSubcategoryIds(excursionSubcategoryIdsFromEvent(event));
+      setTagIds(tagIdsFromEvent(event));
       setImages(rentalProductImagesFromEvent(event));
       setSchedule(excursionScheduleFormValueFromEvent(event.excursionSchedule));
       const loc = locationValueFromEventFields(event);
@@ -106,6 +112,7 @@ export default function AdminExcursionEditarPage() {
         ...excursionSubcategoryIdsToPayload(subcategoryIds),
         ...rentalProductImagesToPayload(images),
         ...excursionScheduleFormValueToPayload(schedule),
+        tagIds,
         ...(loc ??
           (useCustomLocation
             ? {}
@@ -164,6 +171,7 @@ export default function AdminExcursionEditarPage() {
           />
         </div>
         <ExcursionSubcategoryMultiSelect value={subcategoryIds} onChange={setSubcategoryIds} />
+        <ContentTagSelector category="excursion" value={tagIds} onChange={setTagIds} />
         <ExcursionScheduleFormFields value={schedule} onChange={setSchedule} />
         <div className="space-y-3 rounded-lg border border-border p-4">
           <label className="flex items-center gap-2 text-sm text-text">

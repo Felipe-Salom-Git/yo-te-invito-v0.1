@@ -157,6 +157,7 @@ export interface RentalLocationsRepo {
       summary?: string | null;
       description?: string | null;
       subcategoryId?: string | null;
+      tagIds?: string[];
       headerImageUrl?: string | null;
       galleryImages?: Array<{ url: string; type?: string }>;
       coverImageUrl?: string | null;
@@ -172,6 +173,7 @@ export interface RentalLocationsRepo {
       summary?: string | null;
       description?: string | null;
       subcategoryId?: string | null;
+      tagIds?: string[] | null;
       headerImageUrl?: string | null;
       galleryImages?: Array<{ url: string; type?: string }>;
       coverImageUrl?: string | null;
@@ -269,11 +271,24 @@ export interface ExcursionOperatorsRepo {
       summary?: string | null;
       description?: string | null;
       subcategoryId?: string | null;
+      subcategoryIds?: string[];
+      tagIds?: string[];
       headerImageUrl?: string | null;
       galleryImages?: Array<{ url: string; type?: string }>;
       coverImageUrl?: string | null;
       media?: Array<{ id: string; type: string; url: string; sortOrder: number }>;
       status?: string;
+      departureTime?: string | null;
+      durationText?: string | null;
+      availableDaysText?: string | null;
+      scheduleNotes?: string | null;
+      meetingPoint?: string | null;
+      venueAddress?: string | null;
+      city?: string | null;
+      province?: string | null;
+      googlePlaceId?: string | null;
+      geoLat?: number | null;
+      geoLng?: number | null;
     },
   ): Promise<{ id: string; title: string }>;
   updateExcursion(
@@ -284,11 +299,24 @@ export interface ExcursionOperatorsRepo {
       summary?: string | null;
       description?: string | null;
       subcategoryId?: string | null;
+      subcategoryIds?: string[];
+      tagIds?: string[] | null;
       headerImageUrl?: string | null;
       galleryImages?: Array<{ url: string; type?: string }>;
       coverImageUrl?: string | null;
       media?: Array<{ id: string; type: string; url: string; sortOrder: number }>;
       status?: string;
+      departureTime?: string | null;
+      durationText?: string | null;
+      availableDaysText?: string | null;
+      scheduleNotes?: string | null;
+      meetingPoint?: string | null;
+      venueAddress?: string | null;
+      city?: string | null;
+      province?: string | null;
+      googlePlaceId?: string | null;
+      geoLat?: number | null;
+      geoLng?: number | null;
     },
   ): Promise<{ id: string; title: string }>;
 }
@@ -2185,6 +2213,7 @@ export interface GastroLocal {
   socialLinks: import('@yo-te-invito/shared').EntitySocialLinks | null;
   subcategoryId: string | null;
   publicEventId: string | null;
+  tags?: ContentTagPublic[];
   status: string;
   createdAt: string;
   updatedAt: string;
@@ -2242,6 +2271,7 @@ export interface GastroLocalUpsertPayload {
   websiteUrl?: string | null;
   bookingUrl?: string | null;
   socialLinks?: import('@yo-te-invito/shared').EntitySocialLinks | null;
+  tagIds?: string[];
 }
 
 export interface GastroDiscountCreatePayload {

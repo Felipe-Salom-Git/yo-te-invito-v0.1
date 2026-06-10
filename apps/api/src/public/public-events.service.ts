@@ -23,6 +23,7 @@ import {
   mapEventSubcategoriesPublic,
   subcategoryFilterWhere,
 } from '../common/event-subcategories.util';
+import { mapEventTagsPublic } from '../common/event-tags.util';
 import { mergePublicEventVisibility } from '../common/utils/event-public-visibility.util';
 import { mergePublicParentEntitiesActive } from '../common/utils/public-content-availability.util';
 import { TRENDING_PRISMA_ORDER_BY } from '../common/utils/event-trending.util';
@@ -674,6 +675,7 @@ export class PublicEventsService {
         eventSubcategories: {
           include: { subcategory: { select: { id: true, name: true } } },
         },
+        eventTags: { include: { tag: true } },
         rentalLocation: true,
         excursionOperator: true,
         producerProfile: {
@@ -776,6 +778,7 @@ export class PublicEventsService {
         event.category === 'excursion'
           ? mapEventSubcategoriesPublic(event.eventSubcategories)
           : undefined,
+      tags: mapEventTagsPublic(event.eventTags),
       producer: event.producerProfile
         ? {
             id: event.producerProfile.id,
