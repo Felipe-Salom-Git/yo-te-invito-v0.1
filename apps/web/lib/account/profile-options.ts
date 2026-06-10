@@ -1,6 +1,6 @@
 /**
- * Profile options for the vertical selector.
- * Static metadata: id, title, description, icon, etc.
+ * Profile options metadata — legacy selector (V3.1: `/profiles` redirects by role).
+ * setupRoute/pendingRoute point to `/register` for any residual links.
  */
 import type { ProfileKind } from './profile-status';
 
@@ -8,11 +8,8 @@ export interface ProfileOption {
   id: ProfileKind;
   title: string;
   description: string;
-  /** Route for primary CTA when available */
   dashboardRoute: string;
-  /** Route for setup/apply when unavailable */
   setupRoute: string;
-  /** Route when pending */
   pendingRoute?: string;
 }
 
@@ -31,8 +28,8 @@ export const PROFILE_OPTIONS: ProfileOption[] = [
     description:
       'Creá eventos, gestioná tu productora y publicá experiencias con o sin ticketera.',
     dashboardRoute: '/producer',
-    setupRoute: '/cuenta/solicitar-productor',
-    pendingRoute: '/cuenta/solicitar-productor',
+    setupRoute: '/register',
+    pendingRoute: '/register',
   },
   {
     id: 'gastro',
@@ -40,8 +37,8 @@ export const PROFILE_OPTIONS: ProfileOption[] = [
     description:
       'Mostrá tu local, gestioná contenido gastronómico y lanzá descuentos o beneficios.',
     dashboardRoute: '/gastro',
-    setupRoute: '/cuenta/solicitar-gastro',
-    pendingRoute: '/cuenta/solicitar-gastro',
+    setupRoute: '/register',
+    pendingRoute: '/register',
   },
   {
     id: 'hotel',
@@ -49,8 +46,8 @@ export const PROFILE_OPTIONS: ProfileOption[] = [
     description:
       'Cargá tu establecimiento, sitio web y enlaces. Gestioná tu presencia en la sección Hoteles del inicio.',
     dashboardRoute: '/hotel',
-    setupRoute: '/cuenta/solicitar-hotel',
-    pendingRoute: '/cuenta/solicitar-hotel',
+    setupRoute: '/register',
+    pendingRoute: '/register',
   },
   {
     id: 'referrer',
@@ -58,7 +55,7 @@ export const PROFILE_OPTIONS: ProfileOption[] = [
     description:
       'Perfil activo al instante, link para productoras, métricas y directorio público opcional.',
     dashboardRoute: '/referrer',
-    setupRoute: '/cuenta/solicitar-referrer',
-    pendingRoute: '/cuenta/solicitar-referrer',
+    setupRoute: '/register',
+    pendingRoute: '/register',
   },
 ];

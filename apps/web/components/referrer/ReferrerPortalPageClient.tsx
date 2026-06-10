@@ -137,8 +137,8 @@ export function ReferrerPortalPageClient() {
     return (
       <PageContainer>
         <p className="text-text-muted">No encontramos un perfil de referidor.</p>
-        <Link href="/cuenta/solicitar-referrer" className="mt-4 inline-block text-accent hover:underline">
-          Crear perfil
+        <Link href="/register" className="mt-4 inline-block text-accent hover:underline">
+          Crear cuenta como referido
         </Link>
       </PageContainer>
     );

@@ -48,12 +48,13 @@ export default function HotelPortalPage() {
           No encontramos un perfil hotel activo. Si acabás de ser aprobado, actualizá la página o
           contactá soporte.
         </p>
-        <Link
-          href="/cuenta/solicitar-hotel"
-          className="mt-4 inline-block text-sm text-accent hover:underline"
-        >
-          Solicitar perfil hotel
-        </Link>
+        <p className="mt-4 text-sm text-text-muted">
+          Si necesitás un perfil hotel, registrate con ese tipo de cuenta desde{' '}
+          <Link href="/register" className="text-accent hover:underline">
+            Crear cuenta
+          </Link>
+          .
+        </p>
       </PageContainer>
     );
   }

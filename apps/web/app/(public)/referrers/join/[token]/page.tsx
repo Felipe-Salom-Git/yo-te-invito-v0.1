@@ -120,10 +120,10 @@ export default function ReferrerJoinLinkPage() {
           <div className="mt-8 rounded-xl border border-border bg-bg-muted/40 p-5">
             <p className="text-sm text-text">Necesitás un perfil de productor activo.</p>
             <Link
-              href="/cuenta/solicitar-productor"
+              href="/register"
               className="mt-4 inline-flex rounded-lg border border-accent px-4 py-2 text-sm font-medium text-accent hover:bg-accent/10"
             >
-              Solicitar productor
+              Registrarme como productora
             </Link>
           </div>
         )}

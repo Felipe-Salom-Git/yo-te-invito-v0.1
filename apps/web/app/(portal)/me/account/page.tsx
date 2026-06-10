@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import {
   PageContainer,
@@ -45,10 +44,6 @@ export default function MeAccountPage() {
       setCity(account.city ?? '');
     }
   }, [account]);
-
-  const producerAccess = meUser?.availableProfiles?.producer?.hasAccess ?? false;
-  const hasProducerProfiles = (meUser?.availableProfiles?.producer?.profiles?.length ?? 0) > 0;
-  const canRequestProducer = !producerAccess && !hasProducerProfiles;
 
   if (isLoading || meLoading) {
     return (
@@ -140,21 +135,6 @@ export default function MeAccountPage() {
       </form>
 
       <MeAccountProfiles profiles={meUser?.availableProfiles} />
-
-      {canRequestProducer && (
-        <div className="mt-10 rounded-lg border border-border p-4">
-          <h3 className="font-medium text-text">¿Sos productor de eventos?</h3>
-          <p className="mt-2 text-sm text-text-muted">
-            Creá tu perfil de productor para publicar eventos.
-          </p>
-          <Link
-            href="/cuenta/solicitar-productor"
-            className="mt-4 inline-block text-sm text-accent hover:underline"
-          >
-            Solicitar perfil productor
-          </Link>
-        </div>
-      )}
     </PageContainer>
   );
 }
