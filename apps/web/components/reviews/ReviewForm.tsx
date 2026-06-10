@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import type { EntityType } from '@/lib/schemas/review';
 import { getReviewSchema, getDimensionLabels } from '@/lib/schemas/review';
+import { PUBLIC_RATING_STARS_MAX } from '@/lib/reviews/ratingDisplay';
 import { RatingInput } from './RatingInput';
 
 export interface ReviewFormSubmitPayload {
@@ -24,6 +25,9 @@ function avgScores(nums: number[]): number {
   if (nums.length === 0) return 0;
   return Math.round((nums.reduce((a, b) => a + b, 0) / nums.length) * 10) / 10;
 }
+
+/** Default internal score — 8 ≈ 4/5 stars. */
+const DEFAULT_INTERNAL_SCORE = 8;
 
 export function ReviewForm({
   entityType,
@@ -47,7 +51,7 @@ export function ReviewForm({
     }
     const keys = Object.keys(labels);
     const aspectRatings: Record<string, number> = {};
-    for (const k of keys) aspectRatings[k] = scores[k] ?? 8;
+    for (const k of keys) aspectRatings[k] = scores[k] ?? DEFAULT_INTERNAL_SCORE;
     const overallRating = Math.min(
       10,
       Math.max(1, Math.round(avgScores(Object.values(aspectRatings)))),
@@ -76,16 +80,17 @@ export function ReviewForm({
       <div className="p-6 sm:p-8">
         <h3 className="text-lg font-semibold text-white">Escribir valoración</h3>
         <p className="mt-1.5 text-sm text-text-muted">
-          Valorá cada aspecto del 1 al 10. Solo usuarios registrados pueden publicar.
+          Valorá cada aspecto del 1 al {PUBLIC_RATING_STARS_MAX}. Solo usuarios registrados pueden publicar.
         </p>
 
         <div className="mt-6 grid gap-6 sm:grid-cols-2">
           {Object.entries(labels).map(([key, label]) => (
             <RatingInput
               key={key}
-              value={scores[key] ?? 8}
+              value={scores[key] ?? DEFAULT_INTERNAL_SCORE}
               onChange={(v) => setScores((p) => ({ ...p, [key]: v }))}
               label={label}
+              scale="visual"
             />
           ))}
         </div>
