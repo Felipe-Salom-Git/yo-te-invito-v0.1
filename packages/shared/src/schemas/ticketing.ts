@@ -29,6 +29,7 @@ const TicketStatusApi = {
 
 export const ticketTypesQuerySchema = z.object({
   tenantId: z.string().min(1, 'tenantId is required'),
+  occurrenceId: z.string().min(1).optional(),
 });
 export type TicketTypesQuery = z.infer<typeof ticketTypesQuerySchema>;
 
@@ -51,6 +52,8 @@ export const createOrderItemSchema = z.object({
 
 export const createOrderDtoSchema = z.object({
   eventId: z.string().min(1),
+  /** Required for multi-date events; all items must belong to this occurrence. */
+  occurrenceId: z.string().min(1).optional(),
   buyer: createOrderBuyerSchema,
   items: z.array(createOrderItemSchema).min(1),
   referralCode: z.string().optional(),
@@ -80,6 +83,7 @@ export type TicketBatchResponse = z.infer<typeof ticketBatchResponseSchema>;
 export const ticketTypeResponseSchema = z.object({
   id: z.string(),
   eventId: z.string(),
+  occurrenceId: z.string().nullable().optional(),
   name: z.string(),
   description: z.string().nullable(),
   price: z.string(),
@@ -113,6 +117,8 @@ export const createTicketTypeDtoSchema = z
   .object({
     name: z.string().min(1),
     description: z.string().optional().nullable(),
+    /** Set for multi-date events — links type to a specific occurrence. */
+    occurrenceId: z.string().min(1).optional().nullable(),
     /** Required when `batches` is omitted; when batches are set, defaults to first batch price server-side if omitted. */
     price: z.number().nonnegative().optional(),
     capacityTotal: z.number().int().min(1),
@@ -219,6 +225,8 @@ export const orderItemResponseSchema = z.object({
   id: z.string(),
   ticketTypeId: z.string(),
   ticketBatchId: z.string().nullable().optional(),
+  occurrenceId: z.string().nullable().optional(),
+  occurrenceStartAt: z.string().datetime().nullable().optional(),
   ticketTypeName: z.string(),
   quantity: z.number(),
   unitPrice: z.string(),
@@ -273,6 +281,8 @@ export type RevokeTicketResponse = z.infer<typeof revokeTicketResponseSchema>;
 export const orderResponseSchema = z.object({
   id: z.string(),
   eventId: z.string(),
+  occurrenceId: z.string().nullable().optional(),
+  occurrenceStartAt: z.string().datetime().nullable().optional(),
   tenantId: z.string(),
   status: z.nativeEnum(OrderStatusApi),
   buyerEmail: z.string(),

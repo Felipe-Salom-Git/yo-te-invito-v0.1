@@ -100,6 +100,7 @@ export class ProducerTicketTypesService {
     t: {
       id: string;
       eventId: string;
+      occurrenceId?: string | null;
       name: string;
       description: string | null;
       price: Decimal;
@@ -118,6 +119,7 @@ export class ProducerTicketTypesService {
     const base: TicketTypeResponse = {
       id: t.id,
       eventId: t.eventId,
+      occurrenceId: t.occurrenceId ?? null,
       name: t.name,
       description: t.description,
       price: t.price.toString(),
@@ -185,6 +187,31 @@ export class ProducerTicketTypesService {
     const event = await this.assertEventOwnedByUser(eventId, tenantId, userId, userRole);
     this.assertTicketedEvent(event);
     const now = new Date();
+    const occurrenceCount = await this.prisma.eventOccurrence.count({
+      where: { eventId, status: { not: 'CANCELLED' } },
+    });
+    if (occurrenceCount > 0) {
+      if (!body.occurrenceId) {
+        throw new BadRequestException({
+          code: ErrorCode.VALIDATION_FAILED,
+          message: 'occurrenceId is required for multi-date events',
+        });
+      }
+      const occ = await this.prisma.eventOccurrence.findFirst({
+        where: { id: body.occurrenceId, eventId, tenantId },
+      });
+      if (!occ) {
+        throw new NotFoundException({
+          code: ErrorCode.NOT_FOUND,
+          message: 'Event occurrence not found',
+        });
+      }
+    } else if (body.occurrenceId) {
+      throw new BadRequestException({
+        code: ErrorCode.VALIDATION_FAILED,
+        message: 'occurrenceId is not applicable for single-date events',
+      });
+    }
 
     if (body.batches?.length) {
       const sorted = [...body.batches].sort((a, b) => a.orderIndex - b.orderIndex);
@@ -203,6 +230,7 @@ export class ProducerTicketTypesService {
         data: {
           tenantId: event.tenantId,
           eventId,
+          occurrenceId: body.occurrenceId ?? null,
           name: body.name,
           description: body.description ?? null,
           price: new Decimal(typePrice),
@@ -252,6 +280,7 @@ export class ProducerTicketTypesService {
       data: {
         tenantId: event.tenantId,
         eventId,
+        occurrenceId: body.occurrenceId ?? null,
         name: body.name,
         description: body.description ?? null,
         price: new Decimal(body.price!),

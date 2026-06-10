@@ -15,6 +15,6 @@ export class PublicTicketTypesController {
     @Param('eventId') eventId: string,
     @Query(new ZodValidationPipe(ticketTypesQuerySchema)) query: TicketTypesQuery,
   ) {
-    return this.service.list(eventId, query.tenantId);
+    return this.service.list(eventId, query.tenantId, query.occurrenceId);
   }
 }

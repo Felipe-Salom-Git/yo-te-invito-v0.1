@@ -22,6 +22,8 @@ import { ProducerTicketTypeFormFields } from './ProducerTicketTypeFormFields';
 import { ProducerTicketTypeCard } from './ProducerTicketTypeCard';
 import { ProducerTicketTypesHelp } from './ProducerTicketTypesHelp';
 import { ProducerTicketFormErrorSummary } from './ProducerTicketFormErrorSummary';
+import { formatOccurrenceShortLabel } from '@/lib/producer/event-occurrences';
+import type { EventOccurrenceWithStats } from '@yo-te-invito/shared';
 
 type Props = {
   eventId: string;
@@ -43,6 +45,15 @@ export function TicketTypesEditor({ eventId }: Props) {
   const [validationError, setValidationError] = useState<TicketTypeBatchValidationError | null>(
     null,
   );
+  const [activeOccurrenceId, setActiveOccurrenceId] = useState<string | null>(null);
+
+  const { data: occurrences } = useQuery({
+    queryKey: ['eventOccurrences', eventId],
+    queryFn: () => repos.events.listEventOccurrences(eventId),
+    enabled: !!eventId && !!userId,
+  });
+
+  const isMultiDate = (occurrences?.length ?? 0) > 0;
 
   const { data: ticketTypes, isLoading, isError, error } = useQuery({
     queryKey: ticketTypesKeys.producerByEvent(eventId),
@@ -81,10 +92,10 @@ export function TicketTypesEditor({ eventId }: Props) {
   };
 
   const createMut = useMutation({
-    mutationFn: (form: TicketTypeEditForm) => {
+    mutationFn: ({ form, occurrenceId }: { form: TicketTypeEditForm; occurrenceId?: string }) => {
       const v = validateTicketTypeEditForm(form);
       if (!v.ok) throw new Error(v.error.message);
-      return repos.ticketTypes.create(eventId, editFormToCreateInput(form));
+      return repos.ticketTypes.create(eventId, editFormToCreateInput(form, occurrenceId));
     },
     onSuccess: () => {
       addToast('Tipo de entrada creado', 'success');
@@ -152,7 +163,19 @@ export function TicketTypesEditor({ eventId }: Props) {
     setValidationError(null);
   };
 
+  const resolvedOccurrenceId = isMultiDate
+    ? activeOccurrenceId ?? occurrences?.[0]?.id ?? null
+    : null;
+
+  const ticketTypesForSection = isMultiDate
+    ? (ticketTypes ?? []).filter((tt) => tt.occurrenceId === resolvedOccurrenceId)
+    : ticketTypes ?? [];
+
   const startNew = () => {
+    if (isMultiDate && !resolvedOccurrenceId) {
+      addToast('Seleccioná una fecha antes de crear tipos de entrada.', 'error');
+      return;
+    }
     setNewOpen(true);
     setNewForm({
       name: '',
@@ -181,6 +204,8 @@ export function TicketTypesEditor({ eventId }: Props) {
 
   const managingTicketType = ticketTypes?.find((t) => t.id === managingId);
 
+  const occurrenceTabs = isMultiDate ? (occurrences ?? []) : [];
+
   return (
     <section className="mt-8" id="entradas">
       <div className="flex flex-wrap items-end justify-between gap-4">
@@ -203,13 +228,41 @@ export function TicketTypesEditor({ eventId }: Props) {
         <ProducerTicketTypesHelp />
       </div>
 
+      {isMultiDate ? (
+        <div className="mt-6">
+          <p className="mb-2 text-sm text-text-muted">
+            Cada fecha tiene sus propios tipos de entrada y stock.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {occurrenceTabs.map((occ: EventOccurrenceWithStats) => (
+              <button
+                key={occ.id}
+                type="button"
+                onClick={() => {
+                  setActiveOccurrenceId(occ.id);
+                  closeManage();
+                  setNewOpen(false);
+                }}
+                className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors sm:text-sm ${
+                  resolvedOccurrenceId === occ.id
+                    ? 'border-accent bg-accent/15 text-text'
+                    : 'border-border text-text-muted hover:border-accent/40'
+                }`}
+              >
+                {formatOccurrenceShortLabel(occ.startAt)}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       <div ref={errorRef} className="mt-4">
         {(validationError && (managingId || newOpen)) ? (
           <ProducerTicketFormErrorSummary error={validationError} />
         ) : null}
       </div>
 
-      {!ticketTypes?.length && !newOpen ? (
+      {!ticketTypesForSection.length && !newOpen ? (
         <div className="mt-6 rounded-xl border border-dashed border-border bg-bg-muted/40 py-10 text-center">
           <p className="text-text-muted">Todavía no hay tipos de entrada para este evento.</p>
           <p className="mt-2 text-sm text-text-muted">
@@ -222,7 +275,7 @@ export function TicketTypesEditor({ eventId }: Props) {
       ) : null}
 
       <div className="mt-6 space-y-6">
-        {ticketTypes?.map((tt) => {
+        {ticketTypesForSection.map((tt) => {
           const sold = getTicketTypeSoldCount(tt);
           const isManaging = managingId === tt.id;
 
@@ -295,14 +348,17 @@ export function TicketTypesEditor({ eventId }: Props) {
               disabled={createMut.isPending}
               onClick={() => {
                 if (!runValidation(newForm, false)) return;
-                createMut.mutate(newForm);
+                createMut.mutate({
+                  form: newForm,
+                  occurrenceId: resolvedOccurrenceId ?? undefined,
+                });
               }}
             >
               {createMut.isPending ? 'Creando…' : 'Crear tipo de entrada'}
             </Button>
           </div>
         </div>
-      ) : ticketTypes && ticketTypes.length > 0 ? (
+      ) : ticketTypesForSection.length > 0 ? (
         <Button type="button" className="mt-6" variant="secondary" onClick={startNew}>
           + Agregar tipo de entrada
         </Button>

@@ -13,7 +13,10 @@ export function editFormToApiBatches(form: TicketTypeEditForm): TicketBatchCreat
   }));
 }
 
-export function editFormToCreateInput(form: TicketTypeEditForm): TicketTypeCreateInput {
+export function editFormToCreateInput(
+  form: TicketTypeEditForm,
+  occurrenceId?: string,
+): TicketTypeCreateInput {
   return {
     name: form.name.trim(),
     description: form.description.trim() || null,
@@ -22,5 +25,6 @@ export function editFormToCreateInput(form: TicketTypeEditForm): TicketTypeCreat
     status: form.status,
     batches: editFormToApiBatches(form),
     price: form.batches[0]?.price ?? 0,
+    ...(occurrenceId ? { occurrenceId } : {}),
   };
 }

@@ -12,7 +12,11 @@ export class PublicTicketTypesService {
     private readonly ticketBatches: TicketBatchService,
   ) {}
 
-  async list(eventId: string, tenantId: string): Promise<TicketTypeResponse[]> {
+  async list(
+    eventId: string,
+    tenantId: string,
+    occurrenceId?: string,
+  ): Promise<TicketTypeResponse[]> {
     const event = await this.prisma.event.findFirst({
       where: mergePublicEventVisibility({
         id: eventId,
@@ -41,7 +45,12 @@ export class PublicTicketTypesService {
     });
 
     const types = await this.prisma.ticketType.findMany({
-      where: { eventId, status: 'ACTIVE', deletedAt: null },
+      where: {
+        eventId,
+        status: 'ACTIVE',
+        deletedAt: null,
+        ...(occurrenceId ? { occurrenceId } : {}),
+      },
       include: { batches: { orderBy: { orderIndex: 'asc' } } },
       orderBy: { name: 'asc' },
     });
@@ -54,6 +63,7 @@ export class PublicTicketTypesService {
       return {
         id: t.id,
         eventId: t.eventId,
+        occurrenceId: t.occurrenceId,
         name: t.name,
         description: t.description,
         price: (active?.price ?? t.price).toString(),
