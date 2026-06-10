@@ -58,6 +58,8 @@ HTTP → Controller (thin) → ZodValidationPipe → Service → Prisma → Post
 
 **Hotfix admin gastro discovery (post-V3.1):** `AdminGastroLocationsService.syncActiveProfilePublicEvent` — activar/editar local ACTIVE siempre sincroniza `publicEventId` + `Event` `category=gastro` `APPROVED`; `public-content-availability.util.ts` oculta gastro si `gastroProfilePublic.status !== ACTIVE`. Smoke: `smoke:v31-admin-gastro-discovery`; doc `V3_1_HOTFIX_ADMIN_GASTRO_DISCOVERY_SMOKE.md`.
 
+**V3.1 Etapa 10 — Horarios gastro avanzados (cerrada 2026-06-10):** `GastroProfile.openingHoursMode` (`simple`|`weekly`) + `openingHoursWeekly` JSONB; convive con `openingHours` (rental) + `openingHoursNote`. Schemas: `gastro-weekly-opening-hours.ts`; helpers `gastro-profile-fields.util.ts`; público `PublicGastroLocationsService`. Smoke: `smoke:v31-gastro-weekly-hours`. Doc cierre: `docs/audits/V3_1_STAGE_10_GASTRO_HOURS_CLOSING.md`; checklist §27.1–27.2.
+
 **Admin endpoints** (`AdminRentalLocationsController`, role `ADMIN`):
 
 | Method | Path |

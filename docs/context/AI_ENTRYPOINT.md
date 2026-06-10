@@ -102,6 +102,8 @@ Controllers: HTTP + Zod only. Services: business logic. Prisma: persistence only
 
 **V3.1 Etapa 9 — Transferencia de entradas (cerrada 2026-06-10):** flujo personal `TicketTransferOffer`, elegibilidad `TicketTransferEligibilityService`, QR nuevo al aceptar. Smokes: `smoke:v31-ticket-transfer-flow`, `smoke:user-portal`. Doc: `docs/audits/V3_1_STAGE_9_TICKET_TRANSFER_CLOSING.md`; checklist §26.1.
 
+**V3.1 Etapa 10 — Horarios gastro avanzados (cerrada 2026-06-10):** `openingHoursMode` simple/weekly, `openingHoursWeekly` por día, formulario `WeeklyOpeningHoursEditor`, ficha pública abierto/cerrado. Smoke: `smoke:v31-gastro-weekly-hours`. Doc: `docs/audits/V3_1_STAGE_10_GASTRO_HOURS_CLOSING.md`; checklist §27.1–27.2.
+
 **Legal Admin / Legales V2 (cerrado 2026-05-24):** slices 1–8 + import Markdown — admin `/admin/legales`, público `/legal/[slug]`, aceptación `/me/legal/*`, integración registro/checkout/footer/portales; **layout portales** `max-w-screen-2xl` (`portalLayoutClasses.ts`, `PortalPageContext`). Doc: `docs/legal/LEGAL_ADMIN_MODULE.md`; QA: `docs/dev/LEGAL_ADMIN_QA_SMOKE.md`; smoke `pnpm --filter api run smoke:legal` (API + `DEV_AUTH_ENABLED` o JWT). **No** marcar checklist de redacción legal hasta publicar contenido real.
 
 **Footer público V2 (cerrado 2026-05-24):** `RouteAwareFooter` + variantes `full`/`minimal`/`hidden` (`footerVisibility.ts`); UI `components/footer/*`; contacto `GET /public/platform-config` + `usePublicPlatformConfig`; legales `footerLegalLinks.ts`. `/categorias`: solo `CategoryGatewayFooter` (global hidden). Checklist V2 § Footer público completo. Docs: `PUBLIC_FOOTER_AUDIT.md`, `PUBLIC_FOOTER_SMOKE.md`, `PUBLIC_FOOTER_CLOSING_AUDIT.md`.

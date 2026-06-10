@@ -136,6 +136,8 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`). Shared UI tokens:
 
 **Ficha pública canónica (admin CTA):** `/gastronomicos/[profileId]`. Alias discovery en cards: `/restaurants/[publicEventId]` (`contentRoutes.ts`).
 
+**V3.1 Etapa 10 — Horarios gastro:** `GastroLocalForm` toggle simple (`OpeningHoursEditor`) / avanzado (`WeeklyOpeningHoursEditor`); ficha pública `GastroOpeningHoursSummary` + badge abierto/cerrado (solo weekly); fallback legacy en `lib/gastro/openingHoursDisplay.ts`. Doc: `docs/audits/V3_1_STAGE_10_GASTRO_HOURS_CLOSING.md`.
+
 **Hooks:** `lib/query/admin-gastro.ts` — list, detail, create, update, status mutations. **UI:** `AdminGastroLocations*` (listado), `AdminGastroLocationFormClient` (form). **`GastroLocalForm`:** `mode="owner"` (portal) | `mode="admin"` (campos extra + labels). Doc + smoke: `docs/audits/ADMIN_GASTRO_LOCATIONS_AUDIT.md` § Slice 5.
 
 ### Portal usuario (`/me/*`)

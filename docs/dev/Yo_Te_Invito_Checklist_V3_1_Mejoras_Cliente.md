@@ -1205,9 +1205,9 @@ Reactivar cada perfil desde admin dispara sync sin script destructivo.
 
 ## 27.1 Mantener carga actual de horarios
 
-- [ ] Mantener la forma actual de carga de horarios para no romper el flujo existente.
-- [ ] Confirmar que los horarios actuales se sigan mostrando correctamente en ficha pública (`/restaurants/[id]`, `/gastronomicos/[id]`).
-- [ ] Mantener compatibilidad con datos ya cargados en `GastroProfile` / formularios portal y admin.
+- [x] Mantener la forma actual de carga de horarios para no romper el flujo existente.
+- [x] Confirmar que los horarios actuales se sigan mostrando correctamente en ficha pública (`/restaurants/[id]`, `/gastronomicos/[id]`).
+- [x] Mantener compatibilidad con datos ya cargados en `GastroProfile` / formularios portal y admin.
 
 **Prioridad:** Alta  
 **Tipo:** Compatibilidad / Gastro  
@@ -1217,15 +1217,15 @@ Reactivar cada perfil desde admin dispara sync sin script destructivo.
 
 ## 27.2 Horarios independientes por día
 
-- [ ] Agregar opción avanzada para cargar horarios por día de la semana.
-- [ ] Permitir configurar independientemente:
+- [x] Agregar opción avanzada para cargar horarios por día de la semana.
+- [x] Permitir configurar independientemente:
   - Lunes, martes, miércoles, jueves, viernes, sábado, domingo.
-- [ ] Permitir marcar un día como cerrado.
-- [ ] Permitir más de una franja horaria por día (ej.: 12:00–15:00 y 20:00–00:00).
-- [ ] Permitir copiar horarios de un día a otros días.
-- [ ] Mostrar en ficha pública de forma clara.
-- [ ] Destacar si el local está abierto o cerrado según día/hora actual.
-- [ ] Definir fallback si el local solo tiene cargado el horario simple actual (mostrar legacy sin romper).
+- [x] Permitir marcar un día como cerrado.
+- [x] Permitir más de una franja horaria por día (ej.: 12:00–15:00 y 20:00–00:00).
+- [x] Permitir copiar horarios de un día a otros días.
+- [x] Mostrar en ficha pública de forma clara.
+- [x] Destacar si el local está abierto o cerrado según día/hora actual.
+- [x] Definir fallback si el local solo tiene cargado el horario simple actual (mostrar legacy sin romper).
 
 **Prioridad:** Media/Alta  
 **Tipo:** Gastro / UX carga / Ficha pública  
