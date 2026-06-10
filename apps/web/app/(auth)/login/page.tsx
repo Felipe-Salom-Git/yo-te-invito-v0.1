@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, Suspense } from 'react';
-import { signIn } from 'next-auth/react';
+import { signIn, getSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import type { Role } from '@yo-te-invito/shared';
 import { Button, Input, Card, CardHeader, CardContent } from '@/components';
 import { Logo } from '@/components/brand/Logo';
+import { resolvePostLoginHref } from '@/lib/navigation/rolePortalHome';
 
 function LoginForm() {
   const router = useRouter();
@@ -13,6 +15,16 @@ function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const registered = searchParams?.get('registered') === '1';
   const verify = searchParams?.get('verify') === '1';
+  const callbackUrl = searchParams?.get('callbackUrl');
+
+  async function navigateAfterLogin() {
+    const session = await getSession();
+    const email = session?.user?.email ?? null;
+    const role = (session?.user as { role?: Role } | undefined)?.role;
+    const href = resolvePostLoginHref({ callbackUrl, email, role });
+    router.push(href);
+    router.refresh();
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -33,9 +45,12 @@ function LoginForm() {
       return;
     }
 
-    // Post-login: always go to profile selector
-    router.push('/profiles');
-    router.refresh();
+    await navigateAfterLogin();
+  }
+
+  function handleGoogleSignIn() {
+    const href = resolvePostLoginHref({ callbackUrl });
+    void signIn('google', { callbackUrl: href });
   }
 
   return (
@@ -61,7 +76,7 @@ function LoginForm() {
             <div className="mb-4">
               <button
                 type="button"
-                onClick={() => signIn('google', { callbackUrl: '/profiles' })}
+                onClick={handleGoogleSignIn}
                 className="flex w-full items-center justify-center gap-2 rounded border border-border bg-bg-muted px-4 py-2 text-text hover:bg-border transition-colors"
               >
                 <svg className="h-5 w-5" viewBox="0 0 24 24">
