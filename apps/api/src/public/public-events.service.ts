@@ -749,7 +749,7 @@ export class PublicEventsService {
       },
     ]);
 
-    return {
+    const detail: EventDetail = {
       id: event.id,
       title: event.title,
       startAt: event.startAt.toISOString(),
@@ -833,5 +833,36 @@ export class PublicEventsService {
       producerName,
       fromPrice: fromPriceMap.get(event.id) ?? null,
     };
+
+    const occurrenceRows = await this.prisma.eventOccurrence.findMany({
+      where: { eventId: id, tenantId, status: { not: 'CANCELLED' } },
+      orderBy: [{ sortOrder: 'asc' }, { startAt: 'asc' }],
+    });
+    if (occurrenceRows.length > 0) {
+      detail.isMultiDate = true;
+      detail.occurrences = occurrenceRows.map((o) => ({
+        id: o.id,
+        tenantId: o.tenantId,
+        eventId: o.eventId,
+        startAt: o.startAt.toISOString(),
+        endAt: o.endAt?.toISOString() ?? null,
+        venueName: o.venueName,
+        venueAddress: o.venueAddress,
+        city: o.city,
+        province: o.province,
+        googlePlaceId: o.googlePlaceId,
+        geoLat: o.geoLat,
+        geoLng: o.geoLng,
+        capacity: o.capacity,
+        status: o.status,
+        sortOrder: o.sortOrder,
+        createdAt: o.createdAt.toISOString(),
+        updatedAt: o.updatedAt.toISOString(),
+      }));
+    } else {
+      detail.isMultiDate = false;
+    }
+
+    return detail;
   }
 }

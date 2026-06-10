@@ -34,6 +34,10 @@ import { EventPublicityInfoCard } from '@/components/events/detail/EventPublicit
 import { EventSectionCard } from '@/components/events/detail/EventSectionCard';
 import { useToast } from '@/components';
 import { ContentTagChips } from '@/components/content-tags/ContentTagChips';
+import {
+  EventDateSelector,
+  type OccurrenceAvailability,
+} from '@/components/events/EventDateSelector';
 
 const DEFAULT_TENANT_ID = 'tenant-demo';
 
@@ -52,6 +56,7 @@ export default function EventDetailPage() {
   const tenantId = searchParams?.get('tenantId') ?? DEFAULT_TENANT_ID;
   const [reviewFormKey, setReviewFormKey] = useState(0);
   const [qtyByType, setQtyByType] = useState<Record<string, number>>({});
+  const [selectedOccurrenceId, setSelectedOccurrenceId] = useState<string | null>(null);
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
 
 
@@ -71,11 +76,57 @@ export default function EventDetailPage() {
     }
   }, [event?.category, eventId, tenantId, router]);
 
-  const { data: ticketTypes } = useQuery({
-    queryKey: ['ticketTypes', eventId],
-    queryFn: () => repos.events.getTicketTypes(eventId),
-    enabled: !!eventId && !!event?.isTicketingEnabled && !event?.isGeneralPublication,
+  const isMultiDate = !!event?.isMultiDate && (event.occurrences?.length ?? 0) > 0;
+  const occurrences = event?.occurrences ?? [];
+
+  useEffect(() => {
+    if (!isMultiDate) {
+      setSelectedOccurrenceId(null);
+      return;
+    }
+    if (selectedOccurrenceId && occurrences.some((o) => o.id === selectedOccurrenceId)) return;
+    const first = [...occurrences].sort(
+      (a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime(),
+    )[0];
+    setSelectedOccurrenceId(first?.id ?? null);
+  }, [isMultiDate, occurrences, selectedOccurrenceId]);
+
+  const { data: occurrenceAvailability } = useQuery({
+    queryKey: ['ticketTypes', eventId, 'occurrence-availability'],
+    queryFn: async () => {
+      const entries = await Promise.all(
+        occurrences.map(async (o) => {
+          const types = await repos.events.getTicketTypes(eventId, o.id);
+          const available = types.some((tt) => (tt.capacityAvailable ?? 0) > 0);
+          const status: OccurrenceAvailability = o.status === 'PAUSED'
+            ? 'paused'
+            : available
+              ? 'available'
+              : 'sold_out';
+          return [o.id, status] as const;
+        }),
+      );
+      return Object.fromEntries(entries) as Record<string, OccurrenceAvailability>;
+    },
+    enabled: !!eventId && isMultiDate && occurrences.length > 0,
   });
+
+  const { data: ticketTypes } = useQuery({
+    queryKey: ['ticketTypes', eventId, selectedOccurrenceId],
+    queryFn: () =>
+      repos.events.getTicketTypes(
+        eventId,
+        isMultiDate ? selectedOccurrenceId ?? undefined : undefined,
+      ),
+    enabled:
+      !!eventId &&
+      !!event?.isTicketingEnabled &&
+      !event?.isGeneralPublication &&
+      (!isMultiDate || !!selectedOccurrenceId),
+  });
+
+  const selectedOccurrence =
+    occurrences.find((o) => o.id === selectedOccurrenceId) ?? null;
 
   const entityType =
     CATEGORY_TO_ENTITY[event?.category ?? 'event'] ?? 'event';
@@ -142,11 +193,16 @@ export default function EventDetailPage() {
 
   const handleAddToCart = (tt: TicketTypeResponse, qty: number) => {
     if (qty < 1) return;
+    if (isMultiDate && !selectedOccurrenceId) {
+      addToast('Elegí una fecha antes de agregar entradas.', 'error');
+      return;
+    }
     addToCart(
       {
         eventId,
         ticketTypeId: tt.id,
         quantity: qty,
+        occurrenceId: selectedOccurrenceId ?? undefined,
         eventTitle: event?.title ?? 'Event',
         ticketTypeName: tt.name,
         price: typeof tt.price === 'string' ? parseFloat(tt.price) : tt.price,
@@ -210,6 +266,7 @@ export default function EventDetailPage() {
   const canPurchaseTickets =
     !event.isGeneralPublication &&
     event.isTicketingEnabled &&
+    (!isMultiDate || !!selectedOccurrenceId) &&
     ticketTypes &&
     ticketTypes.length > 0;
 
@@ -291,6 +348,17 @@ export default function EventDetailPage() {
             {event.producer ? (
               <EventProducerCard producer={event.producer} />
             ) : null}
+            {isMultiDate && occurrences.length > 0 ? (
+              <EventDateSelector
+                occurrences={occurrences}
+                selectedId={selectedOccurrenceId}
+                onSelect={(id) => {
+                  setSelectedOccurrenceId(id);
+                  setQtyByType({});
+                }}
+                availabilityById={occurrenceAvailability}
+              />
+            ) : null}
             {canPurchaseTickets && ticketTypes ? (
               <EventPurchaseCard
                 eventId={eventId}
@@ -304,7 +372,14 @@ export default function EventDetailPage() {
                 onAddToCart={handleAddToCart}
                 ratingAvg={event.ratingAvg}
                 ratingCount={event.ratingCount}
+                selectedOccurrence={selectedOccurrence}
               />
+            ) : isMultiDate && selectedOccurrenceId && ticketTypes && ticketTypes.length === 0 ? (
+              <div className="rounded-xl border border-border bg-bg-muted p-5">
+                <p className="text-sm text-text-muted">
+                  No hay entradas disponibles para la fecha seleccionada.
+                </p>
+              </div>
             ) : null}
             {event.isGeneralPublication ? (
               <EventPublicityInfoCard producer={event.producer} />
