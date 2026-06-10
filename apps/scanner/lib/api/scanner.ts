@@ -93,6 +93,33 @@ export interface ScanParams {
   qrPayload: string;
   deviceId?: string;
   devUserId: string;
+  occurrenceId?: string;
+}
+
+export interface ScannerEventOccurrence {
+  id: string;
+  startAt: string;
+  endAt?: string | null;
+  venueName?: string | null;
+  status: string;
+}
+
+export async function fetchEventOccurrences(
+  eventId: string,
+  tenantId: string,
+): Promise<{ isMultiDate: boolean; occurrences: ScannerEventOccurrence[] }> {
+  const res = await fetch(
+    `${API_BASE}/public/events/${encodeURIComponent(eventId)}?tenantId=${encodeURIComponent(tenantId)}`,
+  );
+  if (!res.ok) return { isMultiDate: false, occurrences: [] };
+  const data = (await res.json()) as {
+    isMultiDate?: boolean;
+    occurrences?: ScannerEventOccurrence[];
+  };
+  return {
+    isMultiDate: !!data.isMultiDate,
+    occurrences: data.occurrences ?? [],
+  };
 }
 
 export async function scanTicket(params: ScanParams): Promise<ScanResponse> {
@@ -106,6 +133,7 @@ export async function scanTicket(params: ScanParams): Promise<ScanResponse> {
       eventId: params.eventId,
       qrPayload: params.qrPayload,
       deviceId: params.deviceId,
+      ...(params.occurrenceId ? { occurrenceId: params.occurrenceId } : {}),
     }),
   });
   if (!res.ok) throw new Error('Scan request failed');

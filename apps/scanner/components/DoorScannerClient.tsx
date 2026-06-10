@@ -14,6 +14,9 @@ import {
   validateGastroDiscount,
   fetchScanTargets,
   downloadEventTicketsPdf,
+  fetchEventOccurrences,
+  fetchScannerAccount,
+  type ScannerEventOccurrence,
 } from '@/lib/api/scanner';
 import { scanOffline, type OfflineScanResult } from '@/lib/scan/offline-scan';
 import { useOfflineSync } from '@/lib/hooks/use-offline-sync';
@@ -33,6 +36,7 @@ const MAX_HISTORY = 20;
 const LS_DEV_USER = 'scanner:devUserId';
 const LS_LAST_EVENT = 'scanner:lastEventId';
 const LS_LAST_DISCOUNT = 'scanner:lastDiscountId';
+const LS_LAST_OCCURRENCE = 'scanner:lastOccurrenceId';
 const LS_INPUT_MODE = 'scanner:inputMode';
 
 type ScanHistoryItem =
@@ -47,6 +51,20 @@ function gastroStatusClass(status: ValidateGastroDiscountResponse['status']): st
   return 'bg-red-700 text-white';
 }
 
+function formatOccurrenceLabel(occ: ScannerEventOccurrence): string {
+  return new Date(occ.startAt).toLocaleString('es-AR', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+  });
+}
+
+function scanResultLabel(result: ScanResponse['result']): string {
+  if (result === 'WRONG_OCCURRENCE') {
+    return 'Fecha incorrecta — esta entrada es para otra función';
+  }
+  return result;
+}
+
 function formatEventLabel(e: ScannerScanTargetsResponse['events'][number]): string {
   const date = e.startAt
     ? new Date(e.startAt).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' })
@@ -59,6 +77,9 @@ export function DoorScannerClient() {
   const [targets, setTargets] = useState<ScannerScanTargetsResponse | null>(null);
   const [targetsError, setTargetsError] = useState<string | null>(null);
   const [selectedEventId, setSelectedEventId] = useState('');
+  const [selectedOccurrenceId, setSelectedOccurrenceId] = useState('');
+  const [eventOccurrences, setEventOccurrences] = useState<ScannerEventOccurrence[]>([]);
+  const [scannerTenantId, setScannerTenantId] = useState('tenant-demo');
   const [selectedDiscountId, setSelectedDiscountId] = useState('');
   const [qrPayload, setQrPayload] = useState('');
   const [inputMode, setInputMode] = useState<InputMode>('camera');
@@ -101,6 +122,7 @@ export function DoorScannerClient() {
     if (typeof window === 'undefined') return;
     setDevUserId(localStorage.getItem(LS_DEV_USER) ?? '');
     setSelectedEventId(localStorage.getItem(LS_LAST_EVENT) ?? '');
+    setSelectedOccurrenceId(localStorage.getItem(LS_LAST_OCCURRENCE) ?? '');
     setSelectedDiscountId(localStorage.getItem(LS_LAST_DISCOUNT) ?? '');
     const mode = localStorage.getItem(LS_INPUT_MODE);
     if (mode === 'manual' || mode === 'camera') setInputMode(mode);
@@ -148,6 +170,33 @@ export function DoorScannerClient() {
   useEffect(() => {
     if (devUserId) void loadTargets(devUserId);
   }, [devUserId, loadTargets]);
+
+  useEffect(() => {
+    if (!devUserId.trim()) return;
+    void fetchScannerAccount(devUserId.trim()).then((account) => {
+      if (account?.tenantId) setScannerTenantId(account.tenantId);
+    });
+  }, [devUserId]);
+
+  useEffect(() => {
+    if (!selectedEventId || !isProducer) {
+      setEventOccurrences([]);
+      return;
+    }
+    void fetchEventOccurrences(selectedEventId, scannerTenantId).then((data) => {
+      setEventOccurrences(data.isMultiDate ? data.occurrences : []);
+      if (!data.isMultiDate || data.occurrences.length === 0) {
+        setSelectedOccurrenceId('');
+        localStorage.removeItem(LS_LAST_OCCURRENCE);
+        return;
+      }
+      const stored = localStorage.getItem(LS_LAST_OCCURRENCE);
+      const valid = stored && data.occurrences.some((o) => o.id === stored);
+      const id = valid ? stored! : data.occurrences[0]!.id;
+      setSelectedOccurrenceId(id);
+      localStorage.setItem(LS_LAST_OCCURRENCE, id);
+    });
+  }, [selectedEventId, scannerTenantId, isProducer]);
 
   useEffect(() => {
     const onOnline = () => setIsOnline(true);
@@ -236,6 +285,7 @@ export function DoorScannerClient() {
               eventId,
               qrPayload: trimmed,
               devUserId: devUserId.trim(),
+              ...(selectedOccurrenceId ? { occurrenceId: selectedOccurrenceId } : {}),
             });
           } catch {
             res = await scanOffline(eventId, trimmed);
@@ -265,6 +315,7 @@ export function DoorScannerClient() {
       isGastro,
       selectedDiscountId,
       selectedEventId,
+      selectedOccurrenceId,
       refreshOfflineState,
     ],
   );
@@ -400,6 +451,27 @@ export function DoorScannerClient() {
                 <option key={e.id} value={e.id}>
                   {formatEventLabel(e)}
                   {e.ticketsValid != null ? ` · ${e.ticketsValid} válidas` : ''}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+
+        {isProducer && eventOccurrences.length > 0 && (
+          <label className="text-sm text-slate-400">
+            Función / fecha
+            <select
+              value={selectedOccurrenceId}
+              onChange={(e) => {
+                setSelectedOccurrenceId(e.target.value);
+                localStorage.setItem(LS_LAST_OCCURRENCE, e.target.value);
+              }}
+              className="mt-1 block w-full rounded-lg border border-slate-600 bg-slate-900 px-4 py-2 text-white"
+            >
+              {eventOccurrences.map((occ) => (
+                <option key={occ.id} value={occ.id}>
+                  {formatOccurrenceLabel(occ)}
+                  {occ.venueName ? ` · ${occ.venueName}` : ''}
                 </option>
               ))}
             </select>
@@ -550,7 +622,7 @@ export function DoorScannerClient() {
           <p className="text-xs font-normal uppercase opacity-80">Entrada</p>
           {ticketOk
             ? `OK — ${lastTicket.ticketTypeName ?? 'Válida'}`
-            : lastTicket.result}
+            : scanResultLabel(lastTicket.result)}
           {ticketOffline && (
             <p className="mt-2 text-sm font-normal opacity-90">
               Validación offline{ticketPending ? ' — pendiente de sincronizar' : ''}
@@ -583,7 +655,7 @@ export function DoorScannerClient() {
                       : 'bg-red-900/50 text-red-300'
                   }`}
                 >
-                  Entrada · {h.result.result}
+                  Entrada · {scanResultLabel(h.result.result)}
                   {(h.result as OfflineScanResult).offline ? ' (offline)' : ''}
                 </li>
               ) : (

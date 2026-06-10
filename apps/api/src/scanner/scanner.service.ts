@@ -67,7 +67,7 @@ export class ScannerService {
     scannerId: string,
     body: ScanBody,
   ): Promise<ScanResponse> {
-    const { eventId, qrPayload, deviceId } = body;
+    const { eventId, qrPayload, deviceId, occurrenceId } = body;
 
     await this.scannerAccounts.assertScannerCanAccessEvent(tenantId, scannerId, eventId);
 
@@ -138,6 +138,31 @@ export class ScannerService {
         },
       });
       return { result: 'INVALID', ticketId: ticket.id, ticketTypeName: ticket.ticketType?.name };
+    }
+
+    const ticketOccurrenceId = ticket.occurrenceId ?? ticket.ticketType?.occurrenceId ?? null;
+    if (
+      occurrenceId &&
+      ticketOccurrenceId &&
+      ticketOccurrenceId !== occurrenceId
+    ) {
+      await this.prisma.ticketScanLog.create({
+        data: {
+          tenantId,
+          eventId,
+          qrPayload,
+          deviceId: deviceId ?? null,
+          scannerId,
+          ticketId: ticket.id,
+          result: 'INVALID',
+        },
+      });
+      return {
+        result: 'WRONG_OCCURRENCE',
+        ticketId: ticket.id,
+        ticketTypeName: ticket.ticketType?.name,
+        message: 'Esta entrada corresponde a otra fecha.',
+      };
     }
 
     const now = new Date();
