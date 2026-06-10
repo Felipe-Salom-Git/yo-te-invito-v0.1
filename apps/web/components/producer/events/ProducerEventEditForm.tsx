@@ -64,6 +64,7 @@ export function ProducerEventEditForm({ eventId, eventData }: Props) {
     eventData.isMultiDate ? 'multi' : 'simple',
   );
   const [draftOccurrences, setDraftOccurrences] = useState<OccurrenceDraft[]>([]);
+  const [legalAccepted, setLegalAccepted] = useState(true);
 
   const coverUploadConfig = useMemo(
     (): GcsImageUploadConfig => ({ scope: 'event', entityId: eventId }),
@@ -135,9 +136,20 @@ export function ProducerEventEditForm({ eventId, eventData }: Props) {
     setStep((s) => (s < 3 ? ((s + 1) as ProducerEventWizardStep) : s));
   };
 
+  const submittingForReview = form.status === 'pending';
+  const legalBlocksSubmit = submittingForReview && !legalAccepted;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
+    if (legalBlocksSubmit) {
+      const msg =
+        'Debés aceptar las condiciones para productoras antes de enviar el evento a revisión.';
+      setFormError(msg);
+      addToast(msg, 'error');
+      scrollToErrors();
+      return;
+    }
     const validated = validateProducerEventSubmit(form, location);
     if (!validated.ok) {
       setErrors(validated.errors);
@@ -184,10 +196,14 @@ export function ProducerEventEditForm({ eventId, eventData }: Props) {
       ) : (
         <Button
           type="submit"
-          disabled={updateMutation.isPending || isUploadingCover}
+          disabled={updateMutation.isPending || isUploadingCover || legalBlocksSubmit}
           className="w-full sm:w-auto"
         >
-          {updateMutation.isPending ? 'Guardando…' : 'Guardar cambios'}
+          {updateMutation.isPending
+            ? 'Guardando…'
+            : legalBlocksSubmit
+              ? 'Aceptá los términos para enviar a revisión'
+              : 'Guardar cambios'}
         </Button>
       )}
     </div>
@@ -228,6 +244,7 @@ export function ProducerEventEditForm({ eventId, eventData }: Props) {
           onDateModeChange={setDateMode}
           draftOccurrences={draftOccurrences}
           onDraftOccurrencesChange={setDraftOccurrences}
+          onLegalAcceptanceChange={setLegalAccepted}
         />
       </ProducerEventFormLayout>
     </form>

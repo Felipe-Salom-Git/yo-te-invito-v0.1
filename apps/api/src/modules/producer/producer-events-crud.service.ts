@@ -33,6 +33,7 @@ import {
   syncEventTags,
   validateEventTagIds,
 } from '../../common/event-tags.util';
+import { EventPublicationLegalService } from '../legal/event-publication-legal.service';
 
 @Injectable()
 export class ProducerEventsCrudService {
@@ -42,6 +43,7 @@ export class ProducerEventsCrudService {
     private readonly operationalAlerts: OperationalAlertsEmailService,
     private readonly subcategories: SubcategoriesService,
     private readonly rentalLocations: RentalLocationsService,
+    private readonly eventPublicationLegal: EventPublicationLegalService,
   ) {}
 
   async assertEventAccessForUser(
@@ -493,6 +495,15 @@ export class ProducerEventsCrudService {
 
     const becamePending =
       body.status === 'PENDING' && existing.status !== 'PENDING';
+
+    if (becamePending) {
+      await this.eventPublicationLegal.assertCanSubmitEventForReview(
+        tenantId,
+        eventId,
+        userId,
+        userRole,
+      );
+    }
 
     let validatedTagIds: string[] | undefined;
     if (body.tagIds !== undefined) {

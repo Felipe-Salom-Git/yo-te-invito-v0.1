@@ -130,6 +130,7 @@ export type ProducerEventFormFieldsProps = {
   onDateModeChange?: (mode: EventDateMode) => void;
   draftOccurrences?: OccurrenceDraft[];
   onDraftOccurrencesChange?: (drafts: OccurrenceDraft[]) => void;
+  onLegalAcceptanceChange?: (accepted: boolean) => void;
 };
 
 export function ProducerEventFormFields({
@@ -154,6 +155,7 @@ export function ProducerEventFormFields({
   onDateModeChange,
   draftOccurrences = [],
   onDraftOccurrencesChange,
+  onLegalAcceptanceChange,
 }: ProducerEventFormFieldsProps) {
   const { addToast } = useToast();
   const set = (patch: Partial<EventFormData>) =>
@@ -445,7 +447,11 @@ export function ProducerEventFormFields({
           <p className="text-sm text-text-muted">{statusHint}</p>
         ) : null}
 
-        <ProducerEventPublicationLegalNotice />
+        <ProducerEventPublicationLegalNotice
+          eventId={eventId}
+          submittingForReview={form.status === 'pending'}
+          onAcceptanceChange={onLegalAcceptanceChange}
+        />
       </FormSection>
       ) : null}
     </div>

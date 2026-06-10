@@ -76,6 +76,7 @@
     "smoke:v31-ticket-transfer-flow": "tsx scripts/smoke-v31-ticket-transfer-flow.ts",
     "smoke:v31-ticket-transfer-restrictions": "tsx scripts/smoke-v31-ticket-transfer-flow.ts",
     "smoke:v31-gastro-weekly-hours": "tsx scripts/smoke-v31-gastro-weekly-hours.ts",
+    "smoke:v31-event-publication-legal": "tsx scripts/smoke-v31-event-publication-legal.ts",
     "smoke:email": "tsx scripts/smoke-email.ts",
     "smoke:email-template": "tsx scripts/smoke-email-template.ts"
   },
