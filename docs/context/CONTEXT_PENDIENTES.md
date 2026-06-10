@@ -484,7 +484,7 @@ _(Trending con `viewCount`: ver ítem Slice 2 arriba en § K.)_
 
 ## O. Mejoras cliente V3.1 — auditoría Slice 0 (2026-06-06)
 
-> Checklist: **`docs/dev/Yo_Te_Invito_Checklist_V3_1_Mejoras_Cliente.md`** (redirect en `docs/context/`) · Auditoría: **`docs/audits/V3_1_FUNCTIONAL_AUDIT.md`**
+> Checklist: **`docs/dev/Yo_Te_Invito_Checklist_V3_1_Mejoras_Cliente.md`** · Auditoría: **`docs/audits/V3_1_FUNCTIONAL_AUDIT.md`**
 
 - [x] Slice 0 — auditoría funcional/técnica V3.1 (`V3_1_FUNCTIONAL_AUDIT.md`)
 - [x] Slice 1 — hints imagen centralizados + contadores (límite 220) + seed subcategorías excursiones (`V3_1_FUNCTIONAL_AUDIT.md` § Slice 1)
@@ -516,6 +516,11 @@ _(Trending con `viewCount`: ver ítem Slice 2 arriba en § K.)_
 - [ ] V3.1 Etapa 2 — buscador en navbar global (fase 2)
 - [x] V3.1 Etapa 3 — cards editoriales fase 2 + ratings 5/5 — slices 3.1–3.8; doc `V3_1_STAGE_3_CARDS_RATINGS_CLOSING.md`
 - [ ] V3.1 Etapa 3 — QA manual browser cards + reviews (matriz §7 doc cierre)
+- [x] V3.1 Etapa 4 — etiquetas/tags (slices 4.1–4.7); doc `V3_1_STAGE_4_TAGS_CLOSING.md`; checklist §23
+- [ ] V3.1 Etapa 4 — pendiente: búsqueda admin publicaciones por tag (§23.1)
+- [x] V3.1 Etapa 5 — scanner PWA (slices 5.1–5.8); doc `V3_1_STAGE_5_CLOSING.md`; checklist §24.1–24.4
+- [ ] V3.1 Etapa 5 — QA manual móvil + verificación prod `scanner.yoteinvito.club` (§24.2–24.3)
+- [ ] V3.1 Etapa 5 — pendiente: PDF entradas (§24.5), offline avanzado (§24.6), JWT login PWA
 - [ ] V3.1 — restante no bloqueante (maps prod §4.1, §5.2 links en descripciones, multi-subcategorías otras verticales, drag galería, migración DB ratings 1–5)
 - [ ] V3.1 legal al publicar evento Caso A (bloqueante; coordinar con publicación `producer_terms` real)
 
@@ -557,4 +562,8 @@ _(Trending con `viewCount`: ver ítem Slice 2 arriba en § K.)_
 | `docs/dev/Yo_Te_Invito_Checklist_V3_1_Mejoras_Cliente.md` | Checklist mejoras cliente V3.1 (source of truth) |
 | `docs/audits/V3_1_STAGE_2_PUBLIC_UX_CLOSING.md` | Cierre V3.1 Etapa 2 — UX pública |
 | `docs/audits/V3_1_STAGE_3_CARDS_RATINGS_CLOSING.md` | Cierre V3.1 Etapa 3 — cards + ratings 5/5 |
+| `docs/audits/V3_1_STAGE_4_TAGS_CLOSING.md` | Cierre V3.1 Etapa 4 — etiquetas/tags |
+| `docs/audits/V3_1_STAGE_5_CLOSING.md` | Cierre V3.1 Etapa 5 — scanner PWA (5.1–5.8) |
+| `docs/audits/V3_1_STAGE_5_SCANNER_ACCOUNTS_SMOKE.md` | Smoke ownership `ScannerAccount` |
+| `docs/audits/V3_1_STAGE_5_SCANNER_USERS_SMOKE.md` | Smoke gestión usuarios scanner portales |
 

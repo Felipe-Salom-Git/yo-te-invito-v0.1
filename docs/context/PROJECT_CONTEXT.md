@@ -28,7 +28,7 @@ High-level project-wide summary. **Current state as verified from the repository
 yo-te-invito-v0.1/
 ├── apps/web/       # Next.js — discovery, portals
 ├── apps/api/       # NestJS + Prisma + PostgreSQL
-├── apps/scanner/   # PWA door scanning (usuarios SCANNER vinculados vía ScannerAccount — Etapa 5)
+├── apps/scanner/   # PWA puerta — manifest, cámara QR, scope por ScannerAccount (V3.1 Etapa 5 cerrada)
 ├── packages/shared/  # Zod schemas, contracts
 └── docs/
 ```
@@ -71,9 +71,9 @@ yo-te-invito-v0.1/
 
 ### Producer / Admin / Gastro / Hotel / Referrer
 
-- **Producer (productoras / “Proveedores v2”)**: portal pulido (slices 1–10 en checklist V2): dashboard `/producer` (métricas, engagement, alertas de aprobación/rechazo admin vía `/me/notifications`), eventos por estado, create/edit, tandas, cortesías, referidos, **perfil por bloques** (`/producer/profile` + slug **auto-único** desde nombre), **comentarios** (`/producer/comments`). Ficha pública `/producers/[id|slug]`. Valoraciones **comerciales** B2B. Navegación principal en **sidebar** del layout productor (sin duplicar accesos rápidos en dashboard).
+- **Producer (productoras / “Proveedores v2”)**: portal pulido (slices 1–10 en checklist V2): dashboard `/producer` (métricas, engagement, alertas de aprobación/rechazo admin vía `/me/notifications`), eventos por estado, create/edit, tandas, cortesías, referidos, **perfil por bloques** (`/producer/profile` + slug **auto-único** desde nombre), **comentarios** (`/producer/comments`), **usuarios scanner** (`/producer/scanners` + CTA PWA — V3.1 Etapa 5). Ficha pública `/producers/[id|slug]`. Valoraciones **comerciales** B2B. Navegación principal en **sidebar** del layout productor (sin duplicar accesos rápidos en dashboard).
 - **Admin**: rol `ADMIN` en `User.role`; web `/admin/*` restringido a ADMIN; aprobación/rechazo de eventos notifica a productoras (in-app + email + push según preferencias). Inbox, **cola disputas** (`/admin/review-disputes`), **reporte reputación** (`/admin/reviews`), users, config, **rentals** locales/productos, **`/admin/legales`** (documentos versionados), audit. Cuenta maestro: `user:restore-master` + re-login.
-- **Gastro V2 (cerrado):** portal `/gastro/*` (dashboard, contenido Prisma, descuentos, validaciones, valoraciones), ficha `/restaurants/[id]`, QR + scanner PWA, follows + alertas descuento. Docs: `docs/gastro/`, `docs/audits/GASTRO_HOTELES_V2_AUDIT.md`.
+- **Gastro V2 (cerrado):** portal `/gastro/*` (dashboard, contenido Prisma, descuentos, validaciones, **usuarios scanner** `/gastro/scanners`, valoraciones), ficha `/restaurants/[id]`, QR + scanner PWA con scope por local, follows + alertas descuento. Docs: `docs/gastro/`, `docs/audits/GASTRO_HOTELES_V2_AUDIT.md`, `docs/audits/V3_1_STAGE_5_CLOSING.md`.
 - **Hoteles V2 (liviano, cerrado):** discovery Próximamente (sin gateway/carrusel); portal `/hotel` + `/hotel/editar`; ficha pública `/hoteles/[id]`; valoraciones `/hotel/valoraciones`; E2E `pnpm e2e:hotel` (`docs/hotel/HOTEL_E2E.md`).
 - **Referidos V2 (cerrado):** propuesta → aceptación → acuerdo + link; comisión **% o fijo por entrada** al pagar; solicitud de pago y registro `mark-paid` (**liquidación manual externa**, sin custodia de fondos). Portales `/producer/referrals`, evento referrals, `/referrer`. Doc: `docs/referrals/REFERRALS_V2.md`; smoke `smoke:referrals`. Legacy `/me/commissions/request` convive (deprecación opcional).
 

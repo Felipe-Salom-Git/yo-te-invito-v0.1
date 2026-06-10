@@ -973,14 +973,14 @@ Reactivar cada perfil desde admin dispara sync sin script destructivo.
 - [x] Permitir configurar email/usuario y contraseña inicial (Slice 5.2).
 - [x] Asociar el usuario scanner a la cuenta padre (tenant + perfil comercial) — backend `ScannerAccount` (Slice 5.1).
 - [x] Definir permisos limitados (modelo): rol `SCANNER` + tabla dedicada, sin membership de portal (Slice 5.1).
-- [ ] Validar permisos limitados en portales y scanner PWA:
-  - Solo acceder al scanner.
-  - No acceder al panel administrativo completo.
-  - No modificar publicaciones.
-  - No ver datos sensibles innecesarios.
+- [x] Validar permisos limitados (modelo + scope API — Slices 5.1, 5.7). Pendiente: E2E formal rol SCANNER sin rutas `/producer`.
+  - [x] Solo acceder al scanner (rol `SCANNER` + redirect post-login a PWA).
+  - [x] No acceder al panel administrativo completo (sin membership de portal).
+  - [x] No modificar publicaciones (sin endpoints de edición para SCANNER).
+  - [x] Scope API: no validar eventos/descuentos de otra cuenta padre.
 - [x] Permitir activar/desactivar usuarios scanner (Slice 5.2).
 - [x] Permitir resetear contraseña desde la cuenta padre (Slice 5.2). Admin `/admin/usuarios` pendiente.
-- [ ] Agregar opción visible para copiar o abrir link de descarga/instalación del Scanner PWA.
+- [x] Opción visible para copiar o abrir link del Scanner PWA (`ScannerPwaCta` — Slice 5.3).
 
 **Prioridad:** Alta  
 **Tipo:** Seguridad / Roles / Portal operativo  
@@ -1027,6 +1027,10 @@ Reactivar cada perfil desde admin dispara sync sin script destructivo.
 - [x] Scope API en scan/tickets/gastro (Slice 5.7).
 - [x] Última selección en `localStorage`.
 - [x] Contexto: título, fecha, estado, conteos tickets/validaciones.
+
+> **Etapa 5 cerrada (código slices 5.1–5.8):** `docs/audits/V3_1_STAGE_5_CLOSING.md`  
+> Smokes: `smoke:v31-scanner-accounts`, `smoke:v31-scanner-scope`  
+> Pendiente en checklist: §24.5 PDF, §24.6 offline avanzado, QA manual prod/móvil.
 
 **Prioridad:** Alta  
 **Tipo:** Scanner / Permisos / Operación  
@@ -1316,10 +1320,10 @@ Reactivar cada perfil desde admin dispara sync sin script destructivo.
 | Slice sugerido | Bloque |
 | -------------- | ------------------------------------------------ |
 | V3.1 Slice 14  | Limpieza `/profiles` + sidebars por rol |
-| V3.1 Slice 15  | Etiquetas Admin + etiquetas en publicaciones |
-| V3.1 Slice 16  | Scanner: usuarios scanner + link PWA |
-| V3.1 Slice 17  | Scanner cámara + selección evento/descuento |
-| V3.1 Slice 18  | Scanner offline + PDF listado entradas |
+| V3.1 Slice 15  | Etiquetas Admin + etiquetas en publicaciones — **Etapa 4 cerrada** |
+| V3.1 Slice 16  | Scanner: usuarios scanner + link PWA — **Etapa 5.1–5.3 cerrada** |
+| V3.1 Slice 17  | Scanner cámara + selección evento/descuento — **Etapa 5.4–5.7 cerrada** |
+| V3.1 Slice 18  | Scanner offline + PDF listado entradas — **pendiente §24.5–24.6** |
 | V3.1 Slice 19  | Múltiples fechas por evento + entradas por fecha |
 | V3.1 Slice 20  | Cambio de fecha de entrada |
 | V3.1 Slice 21  | Horarios gastronómicos por día |
