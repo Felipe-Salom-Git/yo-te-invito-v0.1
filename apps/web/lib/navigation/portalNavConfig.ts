@@ -59,6 +59,7 @@ export const PORTAL_NAV_BY_KEY: Record<PortalNavKey, PortalNavDefinition> = {
       { href: '/admin/tickets', label: 'Tickets' },
       { href: '/admin/contactos', label: 'Contactos' },
       { href: '/admin/categorias', label: 'Subcategorías' },
+      { href: '/admin/etiquetas', label: 'Etiquetas' },
     ],
   },
   gastro: {

@@ -201,6 +201,13 @@ export const subcategoriesKeys = {
   admin: (category: string) => [...subcategoriesKeys.all, 'admin', category] as const,
 };
 
+export const contentTagsKeys = {
+  all: ['contentTags'] as const,
+  public: (tenantId: string, category: string) =>
+    [...contentTagsKeys.all, 'public', tenantId, category] as const,
+  adminList: (filters: string) => [...contentTagsKeys.all, 'admin', filters] as const,
+};
+
 export const generalPublicationsKeys = {
   all: ['general-publications'] as const,
   list: (filters: string) => [...generalPublicationsKeys.all, 'list', filters] as const,
