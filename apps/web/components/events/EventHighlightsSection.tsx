@@ -1,6 +1,7 @@
 'use client';
 
 import { getCategoryLabel } from '@/lib/home/contentRoutes';
+import { shouldShowPublicEventDate } from '@/lib/public/publicContentDates';
 
 export interface EventHighlightsSectionProps {
   category?: string;
@@ -37,7 +38,7 @@ export function EventHighlightsSection({
   if (city) {
     items.push({ icon: '🏙', label: city });
   }
-  if (startAt) {
+  if (startAt && shouldShowPublicEventDate(category)) {
     const d = new Date(startAt);
     items.push({
       icon: '📅',

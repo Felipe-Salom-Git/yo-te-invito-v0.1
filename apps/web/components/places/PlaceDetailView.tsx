@@ -235,10 +235,9 @@ export function PlaceDetailView({ id, variant, tenantId = 'tenant-demo' }: Place
               capacityTotal={event.capacityTotal}
             />
 
-            <EventScheduleSection
-              startAt={event.startAt}
-              endAt={event.endAt}
-            />
+            {(category === 'event' || !category) && (
+              <EventScheduleSection startAt={event.startAt} endAt={event.endAt} />
+            )}
 
             {variant === 'restaurant' && (
               <GastroPromosSection discounts={publicDiscountsData?.discounts ?? []} />
