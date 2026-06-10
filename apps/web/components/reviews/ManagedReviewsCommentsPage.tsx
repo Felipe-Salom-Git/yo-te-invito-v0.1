@@ -12,6 +12,13 @@ import type {
 import { useRepositories } from '@/repositories/context';
 import { SectionTitle, PageLoader, QueryError, EmptyState } from '@/components';
 import { getErrorMessage } from '@/lib/errors';
+import {
+  formatPublicRatingLabel,
+  internalTenToVisualStars,
+  PUBLIC_RATING_STARS_MAX,
+  publicStarFilterLabel,
+  visualStarsToInternalTen,
+} from '@/lib/reviews/ratingDisplay';
 import { ManagedReviewSummary } from '@/components/producer/comments/ManagedReviewSummary';
 import { ProducerCommentsHelp } from '@/components/producer/comments/ProducerCommentsHelp';
 import { ManagedReviewCard } from '@/components/producer/comments/ManagedReviewCard';
@@ -337,21 +344,29 @@ export function ManagedReviewsCommentsPage({ scope }: Props) {
           ) : null}
 
           <label className="block text-xs text-text-muted">
-            Puntaje exacto (1–10)
+            Puntaje ({PUBLIC_RATING_STARS_MAX} estrellas)
             <select
               className={`${selectClass} mt-1 w-full`}
-              value={overallRating}
+              value={
+                overallRating
+                  ? String(internalTenToVisualStars(Number(overallRating)))
+                  : ''
+              }
               onChange={(e) => {
-                setOverallRating(e.target.value);
+                setOverallRating(
+                  e.target.value ? String(visualStarsToInternalTen(Number(e.target.value))) : '',
+                );
                 setPage(1);
               }}
             >
               <option value="">Cualquiera</option>
-              {[10, 9, 8, 7, 6, 5, 4, 3, 2, 1].map((n) => (
-                <option key={n} value={String(n)}>
-                  {n}/10
-                </option>
-              ))}
+              {Array.from({ length: PUBLIC_RATING_STARS_MAX }, (_, i) => PUBLIC_RATING_STARS_MAX - i).map(
+                (stars) => (
+                  <option key={stars} value={String(stars)}>
+                    {publicStarFilterLabel(stars)} ({formatPublicRatingLabel(visualStarsToInternalTen(stars))})
+                  </option>
+                ),
+              )}
             </select>
           </label>
 
