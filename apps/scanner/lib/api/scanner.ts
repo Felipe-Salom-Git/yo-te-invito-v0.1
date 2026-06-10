@@ -1,4 +1,6 @@
 import type {
+  OfflineSnapshotResponse,
+  OfflineValidationSyncResponse,
   ScanResponse,
   ScannerAccountSelfResponse,
   ScannerScanTargetsResponse,
@@ -51,6 +53,41 @@ export async function fetchEventTickets(
   return data.tickets ?? [];
 }
 
+export async function fetchEventSnapshot(
+  eventId: string,
+  devUserId: string,
+): Promise<OfflineSnapshotResponse> {
+  const res = await fetch(`${API_BASE}/scanner/events/${encodeURIComponent(eventId)}/snapshot`, {
+    headers: authHeaders(devUserId),
+  });
+  if (!res.ok) throw new Error('Failed to fetch event snapshot');
+  return res.json();
+}
+
+export async function downloadEventTicketsPdf(
+  eventId: string,
+  devUserId: string,
+): Promise<{ blob: Blob; filename: string }> {
+  const res = await fetch(
+    `${API_BASE}/scanner/events/${encodeURIComponent(eventId)}/tickets/export.pdf`,
+    { headers: authHeaders(devUserId) },
+  );
+  if (!res.ok) {
+    let message = 'Error al descargar PDF';
+    try {
+      const body = (await res.json()) as { message?: string };
+      if (body.message) message = body.message;
+    } catch {
+      /* ignore */
+    }
+    throw new Error(message);
+  }
+  const disposition = res.headers.get('content-disposition') ?? '';
+  const match = disposition.match(/filename="([^"]+)"/);
+  const filename = match?.[1] ?? `entradas-${eventId}.pdf`;
+  return { blob: await res.blob(), filename };
+}
+
 export interface ScanParams {
   eventId: string;
   qrPayload: string;
@@ -72,6 +109,32 @@ export async function scanTicket(params: ScanParams): Promise<ScanResponse> {
     }),
   });
   if (!res.ok) throw new Error('Scan request failed');
+  return res.json();
+}
+
+export async function syncOfflineValidations(
+  devUserId: string,
+  body: {
+    snapshotVersion: string;
+    contentId: string;
+    contentType: 'EVENT';
+    validations: Array<{
+      localId: string;
+      qrPayload: string;
+      scannedAt: string;
+      deviceId?: string;
+    }>;
+  },
+): Promise<OfflineValidationSyncResponse> {
+  const res = await fetch(`${API_BASE}/scanner/offline-validations/sync`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...authHeaders(devUserId),
+    },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error('Sync request failed');
   return res.json();
 }
 
