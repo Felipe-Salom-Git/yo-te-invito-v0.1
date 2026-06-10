@@ -27,6 +27,7 @@ import { AuthModule } from './auth/auth.module';
 import { EmailModule } from './email/email.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { UploadsModule } from './modules/uploads/uploads.module';
+import { ScannerAccountsModule } from './modules/scanner-accounts/scanner-accounts.module';
 
 @Module({
   imports: [
@@ -58,6 +59,7 @@ import { UploadsModule } from './modules/uploads/uploads.module';
     ReviewDisputesModule,
     LegalModule,
     UploadsModule,
+    ScannerAccountsModule,
   ],
 })
 export class AppModule {}

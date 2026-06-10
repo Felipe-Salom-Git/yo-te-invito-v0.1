@@ -28,6 +28,14 @@ enum UserStatus {
   DELETED
 }
 
+/// Commercial profile that owns a scanner user (V3.1 Etapa 5).
+enum ScannerParentProfileType {
+  PRODUCER
+  GASTRO
+  EXCURSION_OPERATOR
+  RENTAL_LOCATION
+}
+
 enum InboxItemKind {
   GASTRO_PROMOTION_REQUEST
   REVIEW_MODERATION_REQUEST
@@ -179,6 +187,7 @@ model Tenant {
   userNotifications             UserNotification[]
   notificationDeliveryLogs      NotificationDeliveryLog[]
   legalDocuments                LegalDocument[]
+  scannerAccounts               ScannerAccount[]
 }
 
 model RentalLocation {
@@ -709,6 +718,8 @@ model User {
   notificationDeliveries      NotificationDeliveryLog[]
   legalDocumentVersionsPublished LegalDocumentVersion[] @relation("LegalVersionPublisher")
   legalAcceptances              UserLegalAcceptance[]
+  scannerAccountAsScanner       ScannerAccount?  @relation("ScannerAccountScanner")
+  scannerAccountsManaged        ScannerAccount[] @relation("ScannerAccountParent")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -1874,6 +1885,30 @@ enum AuditAction {
   CATEGORY_EDITORIAL_BANNER_ACTIVATED
   CATEGORY_EDITORIAL_BANNER_DEACTIVATED
   CATEGORY_EDITORIAL_BANNER_REORDERED
+  SCANNER_ACCOUNT_LINKED
+  SCANNER_ACCOUNT_DEACTIVATED
+  SCANNER_ACCOUNT_ACTIVATED
+}
+
+/// Scanner user bound to one parent commercial account (tenant-scoped).
+model ScannerAccount {
+  id                String                   @id @default(cuid())
+  tenantId          String
+  scannerUserId     String                   @unique
+  parentUserId      String
+  parentProfileType ScannerParentProfileType
+  parentProfileId   String
+  isActive          Boolean                  @default(true)
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+
+  tenant      Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  scannerUser User   @relation("ScannerAccountScanner", fields: [scannerUserId], references: [id], onDelete: Cascade)
+  parentUser  User   @relation("ScannerAccountParent", fields: [parentUserId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, parentProfileType, parentProfileId])
+  @@index([tenantId, parentUserId])
 }
 
 model AuditLog {

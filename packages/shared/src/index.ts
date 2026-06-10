@@ -19,6 +19,7 @@ export * from './schemas/event-subcategories';
 export * from './schemas/events';
 export * from './schemas/scanner';
 export * from './schemas/scanner-gastro-discount';
+export * from './schemas/scanner-accounts';
 export * from './schemas/foundation-test.schema';
 export * from './schemas/ticketing';
 export * from './schemas/ticket-template.schema';

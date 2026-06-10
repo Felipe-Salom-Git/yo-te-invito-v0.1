@@ -28,7 +28,7 @@ High-level project-wide summary. **Current state as verified from the repository
 yo-te-invito-v0.1/
 ├── apps/web/       # Next.js — discovery, portals
 ├── apps/api/       # NestJS + Prisma + PostgreSQL
-├── apps/scanner/   # PWA door scanning
+├── apps/scanner/   # PWA door scanning (usuarios SCANNER vinculados vía ScannerAccount — Etapa 5)
 ├── packages/shared/  # Zod schemas, contracts
 └── docs/
 ```

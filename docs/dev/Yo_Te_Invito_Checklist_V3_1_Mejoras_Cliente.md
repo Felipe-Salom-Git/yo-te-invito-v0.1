@@ -971,8 +971,9 @@ Reactivar cada perfil desde admin dispara sync sin script destructivo.
 
 - [ ] En paneles de Productora, Gastro y Proveedor/Operador, agregar opción para crear usuario scanner.
 - [ ] Permitir configurar email/usuario y contraseña inicial.
-- [ ] Asociar el usuario scanner a la cuenta padre (tenant + perfil comercial).
-- [ ] Definir permisos limitados:
+- [x] Asociar el usuario scanner a la cuenta padre (tenant + perfil comercial) — backend `ScannerAccount` (Slice 5.1).
+- [x] Definir permisos limitados (modelo): rol `SCANNER` + tabla dedicada, sin membership de portal (Slice 5.1).
+- [ ] Validar permisos limitados en portales y scanner PWA:
   - Solo acceder al scanner.
   - No acceder al panel administrativo completo.
   - No modificar publicaciones.
