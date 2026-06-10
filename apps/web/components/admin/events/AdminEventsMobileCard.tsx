@@ -23,7 +23,14 @@ export function AdminEventsMobileCard({ event }: AdminEventsMobileCardProps) {
   return (
     <article className="rounded-xl border border-border/80 bg-bg-muted/40 p-4">
       <div className="flex items-start justify-between gap-2">
-        <h3 className="min-w-0 flex-1 font-medium text-text">{event.title}</h3>
+        <h3 className="min-w-0 flex-1 font-medium text-text">
+          {event.title}
+          {event.isMultiDate ? (
+            <span className="ml-2 rounded-full bg-violet-500/15 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-violet-300">
+              Multi-fecha
+            </span>
+          ) : null}
+        </h3>
         <AdminProducerStatusBadge status={event.status} />
       </div>
       <dl className="mt-3 space-y-1 text-xs text-text-muted">

@@ -43,6 +43,11 @@ export function AdminEventsTable({ events }: AdminEventsTableProps) {
               <td className="max-w-[220px] px-4 py-3">
                 <p className="truncate font-medium text-text" title={ev.title}>
                   {ev.title}
+                  {ev.isMultiDate ? (
+                    <span className="ml-2 rounded-full bg-violet-500/15 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-violet-300">
+                      Multi-fecha
+                    </span>
+                  ) : null}
                 </p>
                 <p className="mt-0.5 text-xs text-text-muted">
                   Alta {formatDt(ev.createdAt)}

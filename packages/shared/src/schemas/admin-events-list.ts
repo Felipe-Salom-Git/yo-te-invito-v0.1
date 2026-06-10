@@ -51,6 +51,8 @@ export const adminEventListItemSchema = z.object({
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
   publishedAt: z.string().datetime().nullable(),
+  isMultiDate: z.boolean().optional(),
+  occurrenceCount: z.number().int().min(0).optional(),
 });
 export type AdminEventListItem = z.infer<typeof adminEventListItemSchema>;
 

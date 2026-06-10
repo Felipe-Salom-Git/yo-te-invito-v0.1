@@ -112,6 +112,17 @@ export class AdminEventsService {
       this.prisma.event.count({ where }),
     ]);
 
+    const eventIds = rows.map((e) => e.id);
+    const occurrenceCounts =
+      eventIds.length > 0
+        ? await this.prisma.eventOccurrence.groupBy({
+            by: ['eventId'],
+            where: { eventId: { in: eventIds }, status: { not: 'CANCELLED' } },
+            _count: { _all: true },
+          })
+        : [];
+    const countByEvent = new Map(occurrenceCounts.map((c) => [c.eventId, c._count._all]));
+
     const data: AdminEventListItem[] = rows.map((e) => ({
       id: e.id,
       title: e.title,
@@ -127,6 +138,8 @@ export class AdminEventsService {
       createdAt: e.createdAt.toISOString(),
       updatedAt: e.updatedAt.toISOString(),
       publishedAt: e.publishedAt?.toISOString() ?? null,
+      occurrenceCount: countByEvent.get(e.id) ?? 0,
+      isMultiDate: (countByEvent.get(e.id) ?? 0) > 0,
     }));
 
     return {
