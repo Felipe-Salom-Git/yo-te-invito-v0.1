@@ -1,7 +1,7 @@
 import { MASTER_USER_EMAIL } from '@yo-te-invito/shared';
 import type { PortalNavKey } from './portalNavConfig';
 
-/** Portal de entrada para el usuario maestro (evita paso por `/profiles`). */
+/** Portal de entrada para el usuario maestro — sidebar multi-vertical en todos los portales. */
 export const MASTER_USER_PORTAL_HOME_HREF = '/me';
 
 export function isMasterUserEmail(email: string | null | undefined): boolean {
@@ -19,6 +19,5 @@ export const MASTER_PORTAL_NAV_SECTIONS: { key: PortalNavKey; label: string }[] 
   { key: 'referrer', label: 'Referido' },
 ];
 
-export function getPortalHomeHrefForUser(email: string | null | undefined): string {
-  return isMasterUserEmail(email) ? MASTER_USER_PORTAL_HOME_HREF : '/profiles';
-}
+/** @deprecated Import from `rolePortalHome.ts` — re-export for backward compatibility. */
+export { getPortalHomeHrefForUser } from './rolePortalHome';

@@ -10,9 +10,9 @@ import { useRouter, usePathname } from 'next/navigation';
 import { Role } from '@yo-te-invito/shared';
 import { useRole } from '@/hooks/useRole';
 import { useMe } from '@/hooks/useMe';
+import { getDefaultPortalHomeForRole } from '@/lib/navigation/rolePortalHome';
 
 const LOGIN_PATH = '/login';
-const PROFILES_PATH = '/profiles';
 
 export type ProfileType = 'producer' | 'gastro' | 'hotel' | 'referrer';
 
@@ -73,7 +73,8 @@ export function ProfileProtectedLayout({
     }
 
     if (!access) {
-      router.replace(PROFILES_PATH);
+      const role = (session.user as { role?: Role })?.role;
+      router.replace(getDefaultPortalHomeForRole(role));
     }
   }, [session, status, isLoading, access, pathname, router]);
 

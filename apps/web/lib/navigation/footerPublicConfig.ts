@@ -48,7 +48,7 @@ export const FOOTER_QUICK_LINKS: FooterNavLink[] = [
   { id: 'quick-explore', label: 'Explorar', href: '/explore' },
   { id: 'quick-categories', label: 'Categorías', href: '/categorias' },
   { id: 'quick-home', label: 'Inicio', href: '/home' },
-  { id: 'quick-portal', label: 'Mi portal', href: '/profiles' },
+  { id: 'quick-portal', label: 'Mi espacio', href: '/me', requiresAuth: true },
   {
     id: 'quick-tickets',
     label: 'Mis tickets',
