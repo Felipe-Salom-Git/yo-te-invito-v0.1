@@ -16,9 +16,7 @@ import { ManagedPortalReviewAlerts } from '@/components/reviews/ManagedPortalRev
 import { useGastroDashboard } from '@/lib/query/gastro-dashboard';
 import { getErrorMessage } from '@/lib/errors';
 import type { GastroDashboardAlert } from '@/repositories/interfaces';
-
-const SCANNER_APP_URL =
-  process.env.NEXT_PUBLIC_SCANNER_APP_URL ?? 'http://localhost:3002/door';
+import { ScannerPwaCta } from '@/components/portal/scanner/ScannerPwaCta';
 
 const ALERT_COPY: Record<
   GastroDashboardAlert,
@@ -209,21 +207,7 @@ export function GastroDashboardClient() {
         </div>
       </section>
 
-      <section className="mt-8 rounded-xl border border-border/80 bg-bg-muted/40 p-4">
-        <h2 className="text-sm font-semibold text-text">Scanner en puerta</h2>
-        <p className="mt-1 text-sm text-text-muted">
-          Validá descuentos con la PWA (requiere conexión). Los tickets siguen usando el flujo de
-          entradas.
-        </p>
-        <a
-          href={SCANNER_APP_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-3 inline-block rounded-lg bg-accent px-4 py-2 text-sm font-medium text-bg hover:bg-accent-hover"
-        >
-          Abrir PWA Scanner
-        </a>
-      </section>
+      <ScannerPwaCta className="mt-8" />
 
       <section className="mt-8">
         <div className="flex items-center justify-between gap-4">

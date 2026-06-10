@@ -990,15 +990,13 @@ Reactivar cada perfil desde admin dispara sync sin script destructivo.
 
 ## 24.2 Link para descargar o instalar Scanner PWA
 
-- [ ] En paneles de Productora, Gastro y Proveedor/Operador, mostrar CTA:
-  - «Abrir Scanner».
-  - «Instalar Scanner PWA».
-  - «Copiar link del Scanner».
-- [ ] Mostrar instrucciones simples para instalar en celular:
-  - Android / Chrome.
-  - iPhone / Safari.
-- [ ] Confirmar que el scanner PWA tenga manifest, iconos y comportamiento instalable (`apps/scanner`).
-- [ ] Verificar funcionamiento desde `scanner.yoteinvito.club`.
+- [x] En paneles de Productora y Gastro, mostrar CTA (`ScannerPwaCta` — Slice 5.3). Operador excursión pendiente.
+  - [x] «Abrir Scanner».
+  - [x] «Instalar Scanner PWA» / instrucciones.
+  - [x] «Copiar link del Scanner».
+- [x] Instrucciones Android/Chrome e iPhone/Safari en `ScannerPwaCta`.
+- [x] Manifest + iconos en `apps/scanner/public` (Slice 5.3).
+- [ ] Verificar en producción `scanner.yoteinvito.club` (deploy manual).
 
 **Prioridad:** Alta  
 **Tipo:** PWA / UX Operativa  
@@ -1008,15 +1006,12 @@ Reactivar cada perfil desde admin dispara sync sin script destructivo.
 
 ## 24.3 Scanner con cámara del dispositivo
 
-- [ ] El scanner debe poder usar la cámara del dispositivo para leer QR.
-- [ ] Solicitar permisos de cámara de forma clara (copy + estado de permiso).
-- [ ] Mostrar error entendible si el navegador bloquea permisos.
-- [ ] Permitir reintentar acceso a cámara.
-- [ ] Confirmar funcionamiento en:
-  - Android Chrome.
-  - iPhone Safari.
-  - Desktop con webcam (si aplica).
-- [ ] Mantener alternativa manual para ingresar código si la cámara falla.
+- [x] Cámara con `html5-qrcode` en `/door` (Slice 5.4).
+- [x] Copy de permisos + estado en `QrCameraScanner`.
+- [x] Error entendible si el navegador bloquea permisos.
+- [x] Botón reintentar cámara.
+- [ ] QA manual Android Chrome / iPhone Safari / desktop webcam.
+- [x] Alternativa manual — pestaña Manual (Slice 5.5).
 
 **Prioridad:** Alta  
 **Tipo:** Scanner / Mobile / QR  
@@ -1026,19 +1021,12 @@ Reactivar cada perfil desde admin dispara sync sin script destructivo.
 
 ## 24.4 Selección de evento o descuento dentro del Scanner
 
-- [ ] Dentro del scanner, permitir seleccionar el evento, descuento o publicación asociada a la cuenta padre.
-- [ ] Mostrar solo publicaciones que correspondan al usuario scanner (scope por cuenta padre).
-- [ ] Separar claramente:
-  - Eventos con entradas.
-  - Descuentos gastronómicos.
-  - Otros beneficios escaneables (si aplican).
-- [ ] Evitar que un scanner pueda validar entradas/descuentos de otra cuenta.
-- [ ] Recordar última selección usada para agilizar operación (persistencia local o perfil).
-- [ ] Mostrar datos mínimos de contexto:
-  - Nombre del evento/descuento.
-  - Fecha si aplica.
-  - Estado.
-  - Cantidad esperada/validada si aplica.
+- [x] Selector evento/descuento en PWA (`GET /scanner/scan-targets` — Slice 5.6).
+- [x] Solo publicaciones del perfil padre (`ScannerAccount`).
+- [x] Separación productora (eventos) vs gastro (descuentos).
+- [x] Scope API en scan/tickets/gastro (Slice 5.7).
+- [x] Última selección en `localStorage`.
+- [x] Contexto: título, fecha, estado, conteos tickets/validaciones.
 
 **Prioridad:** Alta  
 **Tipo:** Scanner / Permisos / Operación  

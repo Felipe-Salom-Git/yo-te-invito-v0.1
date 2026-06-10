@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@yo-te-invito/shared": "workspace:*",
+    "html5-qrcode": "^2.3.8",
     "next": "^15.0.0",
     "react": "^18.3.0",
     "react-dom": "^18.3.0"

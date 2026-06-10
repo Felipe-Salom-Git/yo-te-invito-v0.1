@@ -32,6 +32,7 @@ import { ProducerDashboardTopEvents } from './ProducerDashboardTopEvents';
 import { ProducerDashboardEventStatusAlerts } from './ProducerDashboardEventStatusAlerts';
 import { ProducerOnboardingChecklist } from '@/components/onboarding/ProducerOnboardingChecklist';
 import { ManagedPortalReviewAlerts } from '@/components/reviews/ManagedPortalReviewAlerts';
+import { ScannerPwaCta } from '@/components/portal/scanner/ScannerPwaCta';
 
 function displayNameFromSession(user: {
   name?: string | null;
@@ -332,6 +333,8 @@ export function ProducerDashboardClient() {
               </p>
             ) : null}
           </section>
+
+          <ScannerPwaCta className="mt-8" />
 
           <ProducerDashboardNextSteps steps={nextSteps} />
         </>

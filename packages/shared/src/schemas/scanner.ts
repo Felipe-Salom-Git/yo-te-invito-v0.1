@@ -109,3 +109,41 @@ export const ticketScanLogItemSchema = z.object({
   scannedAt: z.string().datetime(),
 });
 export type TicketScanLogItem = z.infer<typeof ticketScanLogItemSchema>;
+
+/** Event selectable in scanner PWA (producer parent). */
+export const scannerScanTargetEventSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  startAt: z.string().datetime().nullable(),
+  city: z.string().nullable(),
+  status: z.string(),
+  ticketsValid: z.number().int().nonnegative().optional(),
+  scanCount: z.number().int().nonnegative().optional(),
+});
+export type ScannerScanTargetEvent = z.infer<typeof scannerScanTargetEventSchema>;
+
+/** Gastro discount selectable in scanner PWA. */
+export const scannerScanTargetDiscountSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  status: z.string(),
+  validFrom: z.string().datetime().nullable(),
+  validTo: z.string().datetime().nullable(),
+  validationCount: z.number().int().nonnegative().optional(),
+});
+export type ScannerScanTargetDiscount = z.infer<typeof scannerScanTargetDiscountSchema>;
+
+/** GET /scanner/scan-targets — scoped list for active scanner account. */
+export const scannerScanTargetsResponseSchema = z.object({
+  parentProfileType: z.enum([
+    'PRODUCER',
+    'GASTRO',
+    'EXCURSION_OPERATOR',
+    'RENTAL_LOCATION',
+  ]),
+  parentProfileId: z.string(),
+  parentDisplayName: z.string().nullable(),
+  events: z.array(scannerScanTargetEventSchema),
+  discounts: z.array(scannerScanTargetDiscountSchema),
+});
+export type ScannerScanTargetsResponse = z.infer<typeof scannerScanTargetsResponseSchema>;

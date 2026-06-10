@@ -25,6 +25,7 @@ import {
   type ScannerAccountSummary,
   type ScannerAccountsListResponse,
   type ScannerParentProfileType as SharedScannerParentProfileType,
+  type ScannerScanTargetsResponse,
 } from '@yo-te-invito/shared';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ProfilesAuthorizationService } from '../../common/profiles-authorization.service';
@@ -781,6 +782,165 @@ export class ScannerAccountsService {
     return {
       parentProfileType: row.parentProfileType,
       parentProfileId: row.parentProfileId,
+    };
+  }
+
+  private scannerScopeForbidden(): ForbiddenException {
+    return new ForbiddenException({
+      code: ErrorCode.FORBIDDEN,
+      message: 'No tenés permiso para escanear en este contexto',
+    });
+  }
+
+  /** Throws if scanner user has no active linked account (Slice 5.7). */
+  async requireActiveAccountForScanning(
+    tenantId: string,
+    scannerUserId: string,
+  ): Promise<{
+    parentProfileType: SharedScannerParentProfileType;
+    parentProfileId: string;
+  }> {
+    const account = await this.getActiveAccountForScanner(tenantId, scannerUserId);
+    if (!account) throw this.scannerScopeForbidden();
+    return account;
+  }
+
+  async assertScannerCanAccessEvent(
+    tenantId: string,
+    scannerUserId: string,
+    eventId: string,
+  ): Promise<void> {
+    const account = await this.requireActiveAccountForScanning(tenantId, scannerUserId);
+    if (account.parentProfileType !== ScannerParentProfileType.PRODUCER) {
+      throw this.scannerScopeForbidden();
+    }
+    const event = await this.prisma.event.findFirst({
+      where: { id: eventId, tenantId, deletedAt: null },
+      select: { producerProfileId: true },
+    });
+    if (!event?.producerProfileId || event.producerProfileId !== account.parentProfileId) {
+      throw this.scannerScopeForbidden();
+    }
+  }
+
+  async assertScannerCanAccessGastroDiscount(
+    tenantId: string,
+    scannerUserId: string,
+    discountId: string,
+  ): Promise<void> {
+    const account = await this.requireActiveAccountForScanning(tenantId, scannerUserId);
+    if (account.parentProfileType !== ScannerParentProfileType.GASTRO) {
+      throw this.scannerScopeForbidden();
+    }
+    const discount = await this.prisma.gastroDiscount.findFirst({
+      where: { id: discountId, tenantId },
+      select: { gastroProfileId: true },
+    });
+    if (!discount || discount.gastroProfileId !== account.parentProfileId) {
+      throw this.scannerScopeForbidden();
+    }
+  }
+
+  async getScanTargetsForScanner(user: AuthUser): Promise<ScannerScanTargetsResponse> {
+    if (user.role !== Role.SCANNER) {
+      throw new ForbiddenException({
+        code: ErrorCode.FORBIDDEN,
+        message: 'Scanner role required',
+      });
+    }
+
+    const account = await this.requireActiveAccountForScanning(user.tenantId, user.id);
+    const parentDisplayName = await this.resolveParentDisplayName(
+      user.tenantId,
+      account.parentProfileType as ScannerParentProfileType,
+      account.parentProfileId,
+    );
+
+    if (account.parentProfileType === ScannerParentProfileType.PRODUCER) {
+      const events = await this.prisma.event.findMany({
+        where: {
+          tenantId: user.tenantId,
+          deletedAt: null,
+          producerProfileId: account.parentProfileId,
+          status: { in: ['APPROVED', 'PAUSED'] },
+          ticketTypes: { some: {} },
+        },
+        select: {
+          id: true,
+          title: true,
+          startAt: true,
+          city: true,
+          status: true,
+          _count: {
+            select: {
+              tickets: { where: { status: 'VALID' } },
+              ticketScanLogs: true,
+            },
+          },
+        },
+        orderBy: [{ startAt: 'asc' }, { createdAt: 'desc' }],
+        take: 100,
+      });
+
+      return {
+        parentProfileType: account.parentProfileType,
+        parentProfileId: account.parentProfileId,
+        parentDisplayName,
+        events: events.map((e) => ({
+          id: e.id,
+          title: e.title,
+          startAt: e.startAt?.toISOString() ?? null,
+          city: e.city,
+          status: e.status,
+          ticketsValid: e._count.tickets,
+          scanCount: e._count.ticketScanLogs,
+        })),
+        discounts: [],
+      };
+    }
+
+    if (account.parentProfileType === ScannerParentProfileType.GASTRO) {
+      const discounts = await this.prisma.gastroDiscount.findMany({
+        where: {
+          tenantId: user.tenantId,
+          gastroProfileId: account.parentProfileId,
+          status: { in: ['ACTIVE', 'APPROVED'] },
+        },
+        select: {
+          id: true,
+          displayTitle: true,
+          code: true,
+          status: true,
+          validFrom: true,
+          validTo: true,
+          _count: { select: { validations: true } },
+        },
+        orderBy: [{ validTo: 'asc' }, { createdAt: 'desc' }],
+        take: 100,
+      });
+
+      return {
+        parentProfileType: account.parentProfileType,
+        parentProfileId: account.parentProfileId,
+        parentDisplayName,
+        events: [],
+        discounts: discounts.map((d) => ({
+          id: d.id,
+          title: d.displayTitle?.trim() || d.code,
+          status: d.status,
+          validFrom: d.validFrom?.toISOString() ?? null,
+          validTo: d.validTo?.toISOString() ?? null,
+          validationCount: d._count.validations,
+        })),
+      };
+    }
+
+    return {
+      parentProfileType: account.parentProfileType,
+      parentProfileId: account.parentProfileId,
+      parentDisplayName,
+      events: [],
+      discounts: [],
     };
   }
 }

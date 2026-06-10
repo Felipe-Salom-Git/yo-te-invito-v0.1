@@ -20,6 +20,7 @@ import {
 import { getErrorMessage } from '@/lib/errors';
 import type { ScannerAccountsPortal } from '@/repositories/interfaces';
 import type { ScannerAccountSummary } from '@yo-te-invito/shared';
+import { ScannerPwaCta } from '@/components/portal/scanner/ScannerPwaCta';
 
 const PORTAL_COPY: Record<
   ScannerAccountsPortal,
@@ -145,6 +146,8 @@ export function ScannerUsersPanel({ portal }: Props) {
       >
         ← {copy.backLabel}
       </Link>
+
+      <ScannerPwaCta className="mb-6" />
 
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>

@@ -4,6 +4,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { ScannerAccountsService } from '../modules/scanner-accounts/scanner-accounts.service';
 import type {
   ValidateTicketBody,
   ValidateTicketQuery,
@@ -17,12 +18,17 @@ import { ErrorCode } from '@yo-te-invito/shared';
 
 @Injectable()
 export class ScannerService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly scannerAccounts: ScannerAccountsService,
+  ) {}
 
   async getEventTickets(
     tenantId: string,
+    scannerUserId: string,
     eventId: string,
   ): Promise<EventTicketsResponse> {
+    await this.scannerAccounts.assertScannerCanAccessEvent(tenantId, scannerUserId, eventId);
     const event = await this.prisma.event.findFirst({
       where: {
         id: eventId,
@@ -62,6 +68,8 @@ export class ScannerService {
     body: ScanBody,
   ): Promise<ScanResponse> {
     const { eventId, qrPayload, deviceId } = body;
+
+    await this.scannerAccounts.assertScannerCanAccessEvent(tenantId, scannerId, eventId);
 
     const ticket = await this.prisma.ticket.findFirst({
       where: {

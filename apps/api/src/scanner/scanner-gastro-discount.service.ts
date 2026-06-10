@@ -9,6 +9,8 @@ import {
 } from '@yo-te-invito/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProfilesAuthorizationService } from '../common/profiles-authorization.service';
+import { ScannerAccountsService } from '../modules/scanner-accounts/scanner-accounts.service';
+import { Role } from '@yo-te-invito/shared';
 
 function formatValueLabel(type: string, value: number): string {
   if (type === 'PERCENT') return `${value}%`;
@@ -27,6 +29,7 @@ export class ScannerGastroDiscountService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly profiles: ProfilesAuthorizationService,
+    private readonly scannerAccounts: ScannerAccountsService,
   ) {}
 
   private response(
@@ -92,6 +95,14 @@ export class ScannerGastroDiscountService {
     }
 
     const { discountId, token } = parsed;
+
+    if (userRole === Role.SCANNER) {
+      await this.scannerAccounts.assertScannerCanAccessGastroDiscount(
+        tenantId,
+        userId,
+        discountId,
+      );
+    }
 
     if (parsed.version === 'legacy' && parsed.tenantId && parsed.tenantId !== tenantId) {
       return this.response(

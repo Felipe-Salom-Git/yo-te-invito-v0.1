@@ -30,13 +30,22 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Role } from '@yo-te-invito/shared';
 import { ScannerService } from './scanner.service';
 import { ScannerGastroDiscountService } from './scanner-gastro-discount.service';
+import { ScannerAccountsService } from '../modules/scanner-accounts/scanner-accounts.service';
 
 @Controller('scanner')
 export class ScannerController {
   constructor(
     private readonly service: ScannerService,
     private readonly gastroDiscountScanner: ScannerGastroDiscountService,
+    private readonly scannerAccounts: ScannerAccountsService,
   ) {}
+
+  @Get('scan-targets')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.SCANNER)
+  getScanTargets(@CurrentUser() user: { id: string; tenantId: string; role: string }) {
+    return this.scannerAccounts.getScanTargetsForScanner(user);
+  }
 
   @Post('validate')
   async validate(
@@ -70,10 +79,10 @@ export class ScannerController {
   @UseGuards(JwtOrDevAuthGuard, RolesGuard)
   @RequireRole(Role.SCANNER)
   async getEventTickets(
-    @CurrentUser() user: { tenantId: string },
+    @CurrentUser() user: { tenantId: string; id: string },
     @Param(new ZodValidationPipe(eventTicketsParamsSchema)) params: EventTicketsParams,
   ) {
-    return this.service.getEventTickets(user.tenantId, params.eventId);
+    return this.service.getEventTickets(user.tenantId, user.id, params.eventId);
   }
 
   @Post('scan')

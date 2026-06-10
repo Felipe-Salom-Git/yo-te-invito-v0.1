@@ -311,7 +311,7 @@ Bloque checklist V2 cerrado (Slices 1–8). Resumen: gateway → categorías/hom
 
 **Gastro V2 (operativo):** discovery (`/categoria/gastro`, explore), ficha `/restaurants/[id]` (`GastroPublicDetailContent`), portal `/gastro` (dashboard, `/gastro/contenido` Prisma, descuentos, validaciones, **`/gastro/scanners`** usuarios scanner — Etapa 5.2, valoraciones), follows + `FOLLOWED_GASTRO_NEW_DISCOUNT`, QR/scanner (`test:gastro-discount-qr`, `test:gastro-discount-scan`). Sin LocalDB ni `fetch` en UI.
 
-**Scanner users (V3.1 Etapa 5.2):** `ScannerUsersPanel` reutilizable; rutas `/producer/scanners` y `/gastro/scanners`; repo `scannerAccounts` + hooks `lib/query/scanner-accounts.ts`; nav en `portalNavConfig.ts`. Copy: solo escaneo, sin panel admin.
+**Scanner (V3.1 Etapa 5):** portales — `ScannerUsersPanel`, `ScannerPwaCta` (abrir/instalar/copiar link); PWA `apps/scanner` — `/door`, cámara `QrCameraScanner`, manifest, picker evento/descuento scoped. Auth dev: `X-Dev-User-Id`. Producción: `NEXT_PUBLIC_SCANNER_APP_URL` → `scanner.yoteinvito.club/door`.
 
 **Hoteles V2 (liviano):** discovery **Próximamente** (sin tile en gateway 2×2, sin carrusel home, subcategorías `comingSoon`); portal operativo `/hotel` + `/hotel/editar` (`PATCH /hotel/me`, completitud); ficha pública `/hoteles/[id]` informativa (`HotelLocationDetailView`, API pública); `/hoteles` listado Próximamente. Sin reservas/checkout en plataforma.
 
