@@ -108,6 +108,7 @@ import type {
   CreatePaymentResult,
   PaymentStatusResult,
   SubcategoriesRepo,
+  ContentTagsRepo,
   CategoryBannersRepo,
   RentalLocationsRepo,
   RentalLocationSummary,
@@ -386,6 +387,9 @@ export class ApiRepository implements Repositories {
         category: input.category ?? 'event',
         subcategoryId: (input as { subcategoryId?: string | null }).subcategoryId ?? null,
         eventMode: (input as { eventMode?: 'PUBLICITY_ONLY' | 'TICKETED' }).eventMode ?? 'TICKETED',
+        ...((input as { tagIds?: string[] }).tagIds?.length
+          ? { tagIds: (input as { tagIds?: string[] }).tagIds }
+          : {}),
       };
       return this.client.post<EventDetail>('/producer/events', body) as Promise<EventDetail>;
     },
@@ -600,6 +604,41 @@ export class ApiRepository implements Repositories {
       this.client.patch<SubcategoryAdmin>(`/admin/subcategories/${encodeURIComponent(id)}`, patch),
     deactivate: async (id) =>
       this.client.delete<SubcategoryAdmin>(`/admin/subcategories/${encodeURIComponent(id)}`),
+  };
+
+  contentTags: ContentTagsRepo = {
+    listPublic: async (tenantId, category) => {
+      const raw = await this.client.get<{ data: import('./interfaces').ContentTagPublic[] }>(
+        '/public/tags',
+        {
+          tenantId: tenantId ?? this.defaultTenantId,
+          ...(category ? { category } : {}),
+        },
+      );
+      return raw.data;
+    },
+    listAdmin: async (params) =>
+      this.client.get<{
+        data: import('./interfaces').ContentTagAdmin[];
+        meta: { page: number; limit: number; total: number; totalPages: number };
+      }>('/admin/tags', params as Record<string, string | number | boolean | undefined>),
+    create: async (input) =>
+      this.client.post<import('./interfaces').ContentTagAdmin>('/admin/tags', input),
+    update: async (id, patch) =>
+      this.client.patch<import('./interfaces').ContentTagAdmin>(
+        `/admin/tags/${encodeURIComponent(id)}`,
+        patch,
+      ),
+    archive: async (id) =>
+      this.client.post<import('./interfaces').ContentTagAdmin>(
+        `/admin/tags/${encodeURIComponent(id)}/archive`,
+        {},
+      ),
+    restore: async (id) =>
+      this.client.post<import('./interfaces').ContentTagAdmin>(
+        `/admin/tags/${encodeURIComponent(id)}/restore`,
+        {},
+      ),
   };
 
   auth: AuthRepo = {

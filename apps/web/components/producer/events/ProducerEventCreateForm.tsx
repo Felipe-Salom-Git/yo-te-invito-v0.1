@@ -51,6 +51,7 @@ export function ProducerEventCreateForm({ mode }: { mode: ProducerEventMode }) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [subcategoryId, setSubcategoryId] = useState('');
+  const [tagIds, setTagIds] = useState<string[]>([]);
   const [location, setLocation] = useState<LocationValue>(EMPTY_LOCATION_VALUE);
   const [isUploadingCover, setIsUploadingCover] = useState(false);
 
@@ -95,6 +96,7 @@ export function ProducerEventCreateForm({ mode }: { mode: ProducerEventMode }) {
         coverImageUrl: data.coverImageUrl || null,
         category: 'event',
         subcategoryId: subcategoryId || null,
+        tagIds: tagIds.length ? tagIds : undefined,
         media: data.coverImageUrl
           ? [
               {
@@ -233,6 +235,8 @@ export function ProducerEventCreateForm({ mode }: { mode: ProducerEventMode }) {
           onLocationChange={setLocation}
           subcategoryId={subcategoryId}
           onSubcategoryChange={setSubcategoryId}
+          tagIds={tagIds}
+          onTagIdsChange={setTagIds}
           errors={errors}
           uploadConfig={coverUploadConfig}
           onUploadingChange={setIsUploadingCover}

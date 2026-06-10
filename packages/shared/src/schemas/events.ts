@@ -3,6 +3,7 @@ import { PUBLIC_SUMMARY_MAX_LENGTH } from '../constants/content-limits';
 import { EventMediaType } from '../enums';
 import { entitySocialLinksInputSchema } from './external-links';
 import { eventSubcategoryPublicSchema } from './event-subcategories';
+import { contentTagPublicSchema, eventTagIdsSchema } from './content-tags';
 import { excursionSchedulePublicSchema } from './excursion-schedule';
 import { rentalOpeningHoursSchema } from './opening-hours';
 
@@ -109,6 +110,7 @@ export const eventSummarySchema = z.object({
   /** Active producer profile display name — never email. */
   producerName: z.string().nullable().optional(),
   status: z.enum(['DRAFT', 'PENDING', 'APPROVED', 'PAUSED', 'CANCELLED']).optional(),
+  tags: z.array(contentTagPublicSchema).optional(),
 });
 
 export const eventsCalendarMonthQuerySchema = z.object({
@@ -191,6 +193,7 @@ export const eventDetailSchema = eventSummarySchema.extend({
   excursionSchedule: excursionSchedulePublicSchema.optional(),
   /** All assigned subcategories (excursions phase 1); primary listed first. */
   subcategories: z.array(eventSubcategoryPublicSchema).optional(),
+  tags: z.array(contentTagPublicSchema).optional(),
 });
 
 export type EventDetail = z.infer<typeof eventDetailSchema>;
@@ -235,6 +238,7 @@ export const eventCreateDtoSchema = z.object({
   subcategoryId: z.string().nullish(),
   rentalLocationId: z.string().nullish(),
   eventMode: producerEventModeSchema,
+  tagIds: eventTagIdsSchema.optional(),
 });
 export type EventCreateDto = z.infer<typeof eventCreateDtoSchema>;
 
@@ -347,6 +351,7 @@ export const eventUpdateDtoSchema = z.object({
   subcategoryId: z.string().nullish(),
   rentalLocationId: z.string().nullish(),
   subcategoryIds: z.array(z.string().min(1)).max(8).optional().nullable(),
+  tagIds: eventTagIdsSchema.optional().nullable(),
 })
   .merge(
     z.object({
@@ -380,6 +385,8 @@ export const eventsSearchQuerySchema = z
     category: z.string().optional(),
     subcategoryId: z.string().optional(),
     subcategorySlug: z.string().optional(),
+    /** Filter by active tag slug (V3.1 Etapa 4). */
+    tag: z.string().max(48).optional(),
     dateFrom: z.string().datetime().optional(),
     dateTo: z.string().datetime().optional(),
     minRating: z.coerce.number().min(0).max(5).optional(),

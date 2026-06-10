@@ -29,6 +29,7 @@ import { ProducerEventFormErrorSummary } from './ProducerEventFormErrorSummary';
 import { ProducerEventFormFields } from './ProducerEventFormFields';
 import { ProducerEventFormLayout } from './ProducerEventFormLayout';
 import { ProducerEventWizardProgress } from './ProducerEventWizardProgress';
+import { tagIdsFromEvent } from '@/components/content-tags/ContentTagSelector';
 
 type Props = {
   eventId: string;
@@ -56,6 +57,7 @@ export function ProducerEventEditForm({ eventId, eventData }: Props) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [subcategoryId, setSubcategoryId] = useState(eventData.subcategoryId ?? '');
+  const [tagIds, setTagIds] = useState<string[]>(() => tagIdsFromEvent(eventData));
   const [isUploadingCover, setIsUploadingCover] = useState(false);
 
   const coverUploadConfig = useMemo(
@@ -67,6 +69,7 @@ export function ProducerEventEditForm({ eventId, eventData }: Props) {
     setForm(eventDetailToFormData(eventData));
     setLocation(locationValueFromEventFields(eventData));
     setSubcategoryId(eventData.subcategoryId ?? '');
+    setTagIds(tagIdsFromEvent(eventData));
   }, [eventData]);
 
   const completenessItems = useMemo(
@@ -76,7 +79,7 @@ export function ProducerEventEditForm({ eventId, eventData }: Props) {
 
   const updateMutation = useMutation({
     mutationFn: async (data: EventFormData) => {
-      const payload = buildUpdatePayload(data, location, subcategoryId);
+      const payload = { ...buildUpdatePayload(data, location, subcategoryId), tagIds };
       if (!canChangeStatus) {
         const { status: _s, ...rest } = payload;
         return repos.events.update(eventId, rest);
@@ -203,6 +206,8 @@ export function ProducerEventEditForm({ eventId, eventData }: Props) {
           onLocationChange={setLocation}
           subcategoryId={subcategoryId}
           onSubcategoryChange={setSubcategoryId}
+          tagIds={tagIds}
+          onTagIdsChange={setTagIds}
           errors={errors}
           uploadConfig={coverUploadConfig}
           onUploadingChange={setIsUploadingCover}

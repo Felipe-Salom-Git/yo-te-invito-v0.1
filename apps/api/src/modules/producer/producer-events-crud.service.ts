@@ -28,6 +28,11 @@ import {
   resolveValidatedExcursionSubcategories,
   syncEventSubcategories,
 } from '../../common/event-subcategories.util';
+import {
+  mapEventTagsPublic,
+  syncEventTags,
+  validateEventTagIds,
+} from '../../common/event-tags.util';
 
 @Injectable()
 export class ProducerEventsCrudService {
@@ -142,6 +147,7 @@ export class ProducerEventsCrudService {
     excursionScheduleNotes: string | null;
     excursionMeetingPoint: string | null;
     media: Array<{ id: string; type: string; url: string; sortOrder: number }>;
+    eventTags?: Array<{ tag: { id: string; name: string; slug: string; isActive: boolean } }>;
   }): EventDetail {
     return {
       id: event.id,
@@ -176,6 +182,7 @@ export class ProducerEventsCrudService {
       rentalLocation: this.mapRentalLocationForDetail(event.rentalLocation ?? null),
       excursionSchedule:
         event.category === 'excursion' ? readExcursionSchedulePublic(event) : undefined,
+      tags: mapEventTagsPublic(event.eventTags),
     };
   }
 
@@ -191,6 +198,7 @@ export class ProducerEventsCrudService {
       include: {
         media: { where: { deletedAt: null }, orderBy: { sortOrder: 'asc' } },
         rentalLocation: true,
+        eventTags: { include: { tag: true } },
       },
     });
     if (!event) {
@@ -199,11 +207,23 @@ export class ProducerEventsCrudService {
         message: 'Event not found',
       });
     }
-    return this.toEventDetail({
+    const detail = this.toEventDetail({
       ...event,
       media: event.media,
       rentalLocation: event.rentalLocation,
+      eventTags: event.eventTags,
     });
+    if (event.category === 'excursion') {
+      detail.subcategories = mapEventSubcategoriesPublic(
+        (
+          await this.prisma.eventSubcategory.findMany({
+            where: { eventId },
+            include: { subcategory: { select: { id: true, name: true } } },
+          })
+        ),
+      );
+    }
+    return detail;
   }
 
   async list(
@@ -314,8 +334,15 @@ export class ProducerEventsCrudService {
       body.rentalLocationId ?? null,
     );
     const isPublicityOnly = body.eventMode === 'PUBLICITY_ONLY';
+    const tagIds = await validateEventTagIds(
+      this.prisma,
+      tenantId,
+      category,
+      body.tagIds,
+    );
 
-    const event = await this.prisma.event.create({
+    const event = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.event.create({
       data: {
         tenantId,
         producerId,
@@ -340,16 +367,28 @@ export class ProducerEventsCrudService {
         isTicketingEnabled: false,
         isGeneralPublication: isPublicityOnly,
       },
-      include: {
-        media: { where: { deletedAt: null }, orderBy: { sortOrder: 'asc' } },
-        rentalLocation: true,
-      },
+        include: {
+          media: { where: { deletedAt: null }, orderBy: { sortOrder: 'asc' } },
+          rentalLocation: true,
+          eventTags: { include: { tag: true } },
+        },
+      });
+      await syncEventTags(tx, created.id, tagIds);
+      return tx.event.findFirstOrThrow({
+        where: { id: created.id },
+        include: {
+          media: { where: { deletedAt: null }, orderBy: { sortOrder: 'asc' } },
+          rentalLocation: true,
+          eventTags: { include: { tag: true } },
+        },
+      });
     });
 
     return this.toEventDetail({
       ...event,
       media: event.media,
       rentalLocation: event.rentalLocation,
+      eventTags: event.eventTags,
     });
   }
 
@@ -418,6 +457,16 @@ export class ProducerEventsCrudService {
     const becamePending =
       body.status === 'PENDING' && existing.status !== 'PENDING';
 
+    let validatedTagIds: string[] | undefined;
+    if (body.tagIds !== undefined) {
+      validatedTagIds = await validateEventTagIds(
+        this.prisma,
+        tenantId,
+        nextCategory,
+        body.tagIds ?? [],
+      );
+    }
+
     const event = await this.prisma.$transaction(async (tx) => {
       const updated = await tx.event.update({
         where: { id: eventId },
@@ -465,6 +514,7 @@ export class ProducerEventsCrudService {
           eventSubcategories: {
             include: { subcategory: { select: { id: true, name: true } } },
           },
+          eventTags: { include: { tag: true } },
         },
       });
       if (excursionSubcategoryResolved) {
@@ -475,7 +525,20 @@ export class ProducerEventsCrudService {
           excursionSubcategoryResolved.allIds,
         );
       }
-      return updated;
+      if (validatedTagIds !== undefined) {
+        await syncEventTags(tx, eventId, validatedTagIds);
+      }
+      return tx.event.findFirstOrThrow({
+        where: { id: eventId },
+        include: {
+          media: { where: { deletedAt: null }, orderBy: { sortOrder: 'asc' } },
+          rentalLocation: true,
+          eventSubcategories: {
+            include: { subcategory: { select: { id: true, name: true } } },
+          },
+          eventTags: { include: { tag: true } },
+        },
+      });
     });
 
     if (becamePending) {
@@ -486,6 +549,7 @@ export class ProducerEventsCrudService {
       ...event,
       media: event.media,
       rentalLocation: event.rentalLocation,
+      eventTags: event.eventTags,
     });
     if (event.category === 'excursion') {
       detail.subcategories = mapEventSubcategoriesPublic(event.eventSubcategories);

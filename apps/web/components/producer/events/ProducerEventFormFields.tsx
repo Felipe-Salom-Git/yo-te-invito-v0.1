@@ -23,6 +23,7 @@ import { useGcsImageUpload } from '@/lib/upload/use-gcs-image-upload';
 import { RentalSummaryField } from '@/components/rentals/RentalSummaryField';
 import { ImageUploadHint } from '@/components/upload/ImageUploadHint';
 import { isDataImageUrl } from '@/lib/upload/validate-public-image-file';
+import { ContentTagSelector } from '@/components/content-tags/ContentTagSelector';
 import { ProducerEventFormCompleteness } from './ProducerEventFormCompleteness';
 import { ProducerEventPublicationLegalNotice } from './ProducerEventPublicationLegalNotice';
 import type { ProducerEventWizardStep } from '@/lib/producer/producer-event-wizard';
@@ -112,6 +113,8 @@ export type ProducerEventFormFieldsProps = {
   onLocationChange: (v: LocationValue) => void;
   subcategoryId: string;
   onSubcategoryChange: (id: string) => void;
+  tagIds: string[];
+  onTagIdsChange: (ids: string[]) => void;
   errors: Record<string, string>;
   /** GCS cover upload — create: scope producer; edit: scope event. */
   uploadConfig?: GcsImageUploadConfig;
@@ -131,6 +134,8 @@ export function ProducerEventFormFields({
   onLocationChange,
   subcategoryId,
   onSubcategoryChange,
+  tagIds,
+  onTagIdsChange,
   errors,
   uploadConfig,
   onUploadingChange,
@@ -230,6 +235,7 @@ export function ProducerEventFormFields({
           onChange={onSubcategoryChange}
         />
         <FieldHint>La subcategoría ayuda a clasificar el evento en búsquedas (opcional).</FieldHint>
+        <ContentTagSelector category="event" value={tagIds} onChange={onTagIdsChange} />
       </FormSection>
       ) : null}
 

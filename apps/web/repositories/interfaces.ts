@@ -425,6 +425,67 @@ export interface SubcategoriesRepo {
   deactivate(id: string): Promise<SubcategoryAdmin>;
 }
 
+export type ContentTagScope = import('@yo-te-invito/shared').ContentTagScope;
+
+export interface ContentTagAdmin {
+  id: string;
+  tenantId: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  categoryScope: ContentTagScope | null;
+  isActive: boolean;
+  usageCount?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ContentTagPublic {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+export interface AdminContentTagsListParams {
+  q?: string;
+  categoryScope?: ContentTagScope;
+  isActive?: boolean;
+  page?: number;
+  limit?: number;
+}
+
+export interface ContentTagsRepo {
+  listPublic(
+    tenantId: string,
+    category?: ContentMainCategory,
+  ): Promise<ContentTagPublic[]>;
+  listAdmin(
+    params: AdminContentTagsListParams,
+  ): Promise<{
+    data: ContentTagAdmin[];
+    meta: { page: number; limit: number; total: number; totalPages: number };
+  }>;
+  create(input: {
+    name: string;
+    slug?: string;
+    description?: string | null;
+    categoryScope?: ContentTagScope | null;
+    isActive?: boolean;
+  }): Promise<ContentTagAdmin>;
+  update(
+    id: string,
+    patch: {
+      name?: string;
+      slug?: string;
+      description?: string | null;
+      categoryScope?: ContentTagScope | null;
+      isActive?: boolean;
+    },
+  ): Promise<ContentTagAdmin>;
+  archive(id: string): Promise<ContentTagAdmin>;
+  restore(id: string): Promise<ContentTagAdmin>;
+}
+
 export interface EventsPaginatedResponse {
   data: EventSummary[];
   meta: { page: number; limit: number; total: number; totalPages: number };
@@ -458,6 +519,7 @@ export interface EventSummary {
   fromPrice?: number | null;
   /** Public list: producer display name. Null when no active profile. */
   producerName?: string | null;
+  tags?: ContentTagPublic[];
 }
 
 export interface ProducerSummary {
@@ -698,6 +760,7 @@ export interface EventDetail extends EventSummary {
     meetingPoint: string | null;
   } | null;
   subcategories?: Array<{ id: string; name: string; isPrimary?: boolean }>;
+  tags?: ContentTagPublic[];
 }
 
 export interface Ticket {
@@ -1514,9 +1577,13 @@ export interface EventsRepo {
       tenantId: string;
       producerId?: string;
       eventMode?: 'PUBLICITY_ONLY' | 'TICKETED';
+      tagIds?: string[];
     },
   ): Promise<EventDetail>;
-  update(eventId: string, patch: Partial<EventDetail>): Promise<EventDetail | null>;
+  update(
+    eventId: string,
+    patch: Partial<EventDetail> & { tagIds?: string[] | null },
+  ): Promise<EventDetail | null>;
 }
 
 export interface TicketsRepo {
@@ -2708,6 +2775,7 @@ export interface Repositories {
   categoryBanners: CategoryBannersRepo;
   categoryEditorialBanners: CategoryEditorialBannersRepo;
   subcategories: SubcategoriesRepo;
+  contentTags: ContentTagsRepo;
   applications: ApplicationsRepo;
   profiles: ProfilesRepo;
   hotel: HotelRepo;
