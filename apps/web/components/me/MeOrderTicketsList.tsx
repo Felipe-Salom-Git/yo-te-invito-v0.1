@@ -28,6 +28,9 @@ export function MeOrderTicketsList({ tickets }: Props) {
                 {t.ticketTypeName ?? 'Entrada'}
               </p>
               <p className="text-xs text-text-muted break-all">ID: {t.id}</p>
+              {t.hasDateChangeApplied && (
+                <p className="mt-1 text-xs text-accent">Fecha modificada — ver detalle del ticket</p>
+              )}
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <StatusBadge status={t.status} kind="ticket" />

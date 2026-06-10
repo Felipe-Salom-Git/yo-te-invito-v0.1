@@ -20,10 +20,16 @@ import {
   isTicketReminderEnabled,
 } from './user-portal-preferences.util';
 import { ErrorCode } from '@yo-te-invito/shared';
+import { TicketDateChangeEligibilityService } from '../tickets/ticket-date-change-eligibility.service';
+import { TicketDateChangeService } from '../tickets/ticket-date-change.service';
 
 @Injectable()
 export class MeService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly dateChangeEligibility: TicketDateChangeEligibilityService,
+    private readonly dateChanges: TicketDateChangeService,
+  ) {}
 
   private async requireUser<T extends Prisma.UserSelect>(
     tenantId: string,
@@ -438,19 +444,40 @@ export class MeService {
             city: true,
             category: true,
             endAt: true,
+            tenantId: true,
+            deletedAt: true,
           },
         },
         ticketType: {
           select: {
             id: true,
             name: true,
+            price: true,
+            occurrenceId: true,
             ticketTemplate: true,
           },
         },
         ticketBatch: { select: { name: true } },
-        order: { select: { id: true } },
+        order: {
+          select: {
+            id: true,
+            buyerEmail: true,
+            status: true,
+            buyerUserId: true,
+          },
+        },
         ownerUser: { select: { firstName: true, lastName: true } },
         activeTransferOffer: true,
+        occurrence: {
+          select: {
+            id: true,
+            startAt: true,
+            endAt: true,
+            status: true,
+            eventId: true,
+            venueName: true,
+          },
+        },
       },
     });
 
@@ -459,6 +486,23 @@ export class MeService {
         code: ErrorCode.TICKET_NOT_FOUND,
         message: 'Ticket not found',
       });
+    }
+
+    const dateChangeEval = await this.dateChangeEligibility.evaluate({
+      ticket,
+      userId,
+      userEmail: user.email,
+    });
+
+    let dateChangeHistory: MeTicketDetail['dateChangeHistory'];
+    try {
+      dateChangeHistory = await this.dateChanges.listHistoryForTicket(
+        tenantId,
+        userId,
+        ticketId,
+      );
+    } catch {
+      dateChangeHistory = [];
     }
 
     const eventEnd = ticket.event.endAt ?? ticket.event.startAt;
@@ -509,6 +553,8 @@ export class MeService {
       holderName: holderFromOwner || `${user.firstName} ${user.lastName}`.trim() || null,
       batchName: ticket.ticketBatch?.name ?? null,
       ticketTemplate,
+      canChangeDate: dateChangeEval.canRequest,
+      dateChangeHistory: dateChangeHistory ?? [],
     };
   }
 }

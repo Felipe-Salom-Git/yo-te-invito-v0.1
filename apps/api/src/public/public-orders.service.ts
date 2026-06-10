@@ -239,10 +239,21 @@ export class PublicOrdersService {
       });
     }
 
-    return this.mapOrderToResponse(order);
+    const ticketIds = order.tickets.map((t) => t.id);
+    const appliedChanges =
+      ticketIds.length > 0
+        ? await this.prisma.ticketDateChangeRequest.findMany({
+            where: { ticketId: { in: ticketIds }, status: 'APPLIED' },
+            select: { ticketId: true },
+          })
+        : [];
+    const dateChangedTicketIds = new Set(appliedChanges.map((r) => r.ticketId));
+
+    return this.mapOrderToResponse(order, dateChangedTicketIds);
   }
 
-  private mapOrderToResponse(order: {
+  private mapOrderToResponse(
+    order: {
     id: string;
     eventId: string;
     occurrenceId?: string | null;
@@ -282,7 +293,9 @@ export class PublicOrdersService {
       qrPayload: string;
       status: string;
     }>;
-  }): OrderResponse {
+  },
+    dateChangedTicketIds: Set<string> = new Set(),
+  ): OrderResponse {
     const orderItems = order.orderItems.map((oi) => ({
       id: oi.id,
       ticketTypeId: oi.ticketTypeId,
@@ -300,6 +313,7 @@ export class PublicOrdersService {
         ticketTypeName: oi.ticketType.name,
         qrPayload: t.qrPayload,
         status: t.status as 'VALID' | 'USED' | 'REVOKED',
+        hasDateChangeApplied: dateChangedTicketIds.has(t.id),
       })),
     }));
 
@@ -314,6 +328,7 @@ export class PublicOrdersService {
           ticketTypeName: oi?.ticketType.name ?? null,
           qrPayload: t.qrPayload,
           status: t.status as 'VALID' | 'USED' | 'REVOKED',
+          hasDateChangeApplied: dateChangedTicketIds.has(t.id),
         };
       });
 

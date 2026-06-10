@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { contentCategorySchema, contentMainCategorySchema } from './subcategories';
 import { meTicketItemSchema, meOrderItemSchema } from './user.schema';
+import { ticketDateChangeHistoryItemSchema } from './ticket-date-change';
 import { ticketTransferOfferSummarySchema } from './ticket-transfer-offer';
 import { ticketTemplateResponseSchema } from './ticket-template.schema';
 import { publicReviewCategorySchema } from './review-aspects';
@@ -425,6 +426,8 @@ export const meTicketDetailSchema = meTicketItemSchema.extend({
   batchName: z.string().nullable().optional(),
   /** Producer canvas template when linked to ticket type; null if none. */
   ticketTemplate: ticketTemplateResponseSchema.nullable().optional(),
+  canChangeDate: z.boolean().optional(),
+  dateChangeHistory: z.array(ticketDateChangeHistoryItemSchema).optional(),
 });
 export type MeTicketDetail = z.infer<typeof meTicketDetailSchema>;
 

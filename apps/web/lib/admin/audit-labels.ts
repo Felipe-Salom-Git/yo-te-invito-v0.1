@@ -32,6 +32,10 @@ export const AUDIT_ACTION_LABELS: Record<AuditActionValue | string, string> = {
   REVIEW_HIDDEN: 'Reseña ocultada',
   REVIEW_RESTORED: 'Reseña restaurada',
   REVIEW_REPLY_UPDATED: 'Réplica actualizada',
+  TICKET_DATE_CHANGE_REQUESTED: 'Cambio de fecha solicitado',
+  TICKET_DATE_CHANGE_APPROVED: 'Cambio de fecha aprobado',
+  TICKET_DATE_CHANGE_REJECTED: 'Cambio de fecha rechazado',
+  TICKET_DATE_CHANGE_APPLIED: 'Cambio de fecha aplicado',
 };
 
 export const AUDIT_ACTION_OPTIONS: Array<{ value: AuditActionValue; label: string }> =

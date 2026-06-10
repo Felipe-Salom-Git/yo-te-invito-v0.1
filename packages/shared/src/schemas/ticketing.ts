@@ -218,6 +218,7 @@ export const ticketResponseSchema = z.object({
   ticketTypeName: z.string().nullable(),
   qrPayload: z.string(),
   status: z.nativeEnum(TicketStatusApi),
+  hasDateChangeApplied: z.boolean().optional(),
 });
 export type TicketResponse = z.infer<typeof ticketResponseSchema>;
 
