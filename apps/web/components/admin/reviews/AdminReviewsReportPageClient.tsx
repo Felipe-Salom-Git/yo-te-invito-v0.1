@@ -14,6 +14,7 @@ import {
 } from '@/components';
 import { useAdminReviewsReport } from '@/lib/query/admin-reviews-report';
 import { getErrorMessage } from '@/lib/errors';
+import { formatPublicRatingLabel } from '@/lib/reviews/ratingDisplay';
 import { downloadAdminReviewsReportCsv } from '@/lib/admin/download-reviews-report-csv';
 import {
   ADMIN_REVIEW_CATEGORY_LABELS,
@@ -192,7 +193,7 @@ export function AdminReviewsReportPageClient() {
               Promedio por vertical
             </h2>
             <p className="mt-1 text-sm text-text-muted">
-              Promedio sobre reseñas públicas visibles (escala 1–10).
+              Promedio sobre reseñas públicas visibles (visual 5/5; interno 1–10 en export CSV).
             </p>
             <div className="mt-4 overflow-x-auto rounded-xl border border-border/80">
               <table className="min-w-full text-left text-sm">
@@ -215,7 +216,7 @@ export function AdminReviewsReportPageClient() {
                         {row.publicReviewCount}
                       </td>
                       <td className="px-4 py-3 tabular-nums text-text">
-                        {row.averageRating != null ? `${row.averageRating} /10` : '—'}
+                        {row.averageRating != null ? formatPublicRatingLabel(row.averageRating) : '—'}
                       </td>
                     </tr>
                   ))}
@@ -251,7 +252,7 @@ export function AdminReviewsReportPageClient() {
                       </div>
                       <p className="mt-1 font-medium text-text">{row.eventTitle}</p>
                       <p className="mt-0.5 text-sm text-text-muted">
-                        {row.userDisplayName} · {row.overallRating}/10 · {row.status}
+                        {row.userDisplayName} · {formatPublicRatingLabel(row.overallRating)} · {row.status}
                         {row.hiddenFromPublic ? ' · oculta' : ''}
                       </p>
                     </div>

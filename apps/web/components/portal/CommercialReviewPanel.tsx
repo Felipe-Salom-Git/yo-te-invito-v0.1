@@ -187,6 +187,7 @@ export function CommercialReviewPanel({ mode, counterpartyId, counterpartyLabel 
               label={label}
               value={scores[key] ?? DEFAULT_SCORE}
               onChange={(v) => setScores((p) => ({ ...p, [key]: v }))}
+              scale="internal"
             />
           ))}
         </div>

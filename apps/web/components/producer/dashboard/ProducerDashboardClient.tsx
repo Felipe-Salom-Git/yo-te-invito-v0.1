@@ -21,6 +21,7 @@ import { producersKeys } from '@/lib/query/keys';
 import { useProducerDashboardMetrics } from '@/lib/query/producer-dashboard';
 import { isEventPast, isEventActive, isEventFuture } from '@/lib/eventCycleHelpers';
 import { getErrorMessage } from '@/lib/errors';
+import { formatPublicRatingLabel } from '@/lib/reviews/ratingDisplay';
 import { ProducerKpiCard } from './ProducerKpiCard';
 import {
   ProducerDashboardNextSteps,
@@ -253,7 +254,7 @@ export function ProducerDashboardClient() {
                 label="Reputación"
                 value={
                   hasReviews
-                    ? `${metrics.reviews?.averageRating?.toFixed(1) ?? '—'} /10`
+                    ? formatPublicRatingLabel(metrics.reviews?.averageRating) ?? '—'
                     : '—'
                 }
                 unavailable={!hasReviews}

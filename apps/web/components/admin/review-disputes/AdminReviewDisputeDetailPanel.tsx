@@ -7,6 +7,7 @@ import { useRepositories } from '@/repositories/context';
 import { adminReviewDisputesKeys } from '@/lib/query/keys';
 import { Button, useToast } from '@/components';
 import { getErrorMessage } from '@/lib/errors';
+import { formatPublicRatingLabel } from '@/lib/reviews/ratingDisplay';
 import type { ReviewDisputeDetail } from '@/repositories/interfaces';
 import { ReviewPublicStatusBadge } from '@/components/producer/comments/ReviewPublicStatusBadge';
 import { AdminReviewDisputeStatusBadge } from './AdminReviewDisputeStatusBadge';
@@ -212,8 +213,7 @@ export function AdminReviewDisputeDetailPanel({ dispute, filtersKey, onClose }: 
           <div>
             <dt className="text-xs uppercase tracking-wide text-text-muted">Puntaje</dt>
             <dd className="mt-1 text-lg font-semibold tabular-nums text-accent">
-              {dispute.reviewOverallRating}
-              <span className="text-sm font-normal text-text-muted"> /10</span>
+              {formatPublicRatingLabel(dispute.reviewOverallRating)}
             </dd>
           </div>
           <div className="sm:col-span-2">

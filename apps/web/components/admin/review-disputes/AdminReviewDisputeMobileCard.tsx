@@ -1,6 +1,7 @@
 'use client';
 
 import type { ReviewDisputeDetail } from '@/repositories/interfaces';
+import { formatPublicRatingLabel } from '@/lib/reviews/ratingDisplay';
 import { AdminReviewDisputeStatusBadge } from './AdminReviewDisputeStatusBadge';
 import {
   EVENT_CATEGORY_LABELS,
@@ -39,7 +40,7 @@ export function AdminReviewDisputeMobileCard({ dispute, selected, onSelect }: Pr
           Autor: <span className="text-text">{dispute.reviewUserDisplayName}</span>
         </span>
         <span className="font-medium text-accent">
-          {dispute.reviewOverallRating}/10
+          {formatPublicRatingLabel(dispute.reviewOverallRating)}
         </span>
         <span>{formatAdminDateTime(dispute.createdAt)}</span>
       </div>

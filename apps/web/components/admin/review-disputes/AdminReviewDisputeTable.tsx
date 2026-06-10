@@ -1,6 +1,7 @@
 'use client';
 
 import type { ReviewDisputeDetail } from '@/repositories/interfaces';
+import { formatPublicRatingLabel } from '@/lib/reviews/ratingDisplay';
 import { AdminReviewDisputeStatusBadge } from './AdminReviewDisputeStatusBadge';
 import {
   EVENT_CATEGORY_LABELS,
@@ -49,7 +50,7 @@ export function AdminReviewDisputeTable({ disputes, selectedId, onSelect }: Prop
                 {d.reviewUserDisplayName}
               </td>
               <td className="py-3 pr-3 font-medium tabular-nums text-accent">
-                {d.reviewOverallRating}/10
+                {formatPublicRatingLabel(d.reviewOverallRating)}
               </td>
               <td className="py-3 pr-3 text-text-muted">
                 {REVIEW_DISPUTE_REASON_LABELS[d.reasonType] ?? d.reasonType}

@@ -15,6 +15,7 @@ import { ReviewReplyModal } from '@/components/reviews/ReviewReplyModal';
 import type { ManagedReviewsScope } from '@/components/reviews/ManagedReviewsCommentsPage';
 import { ReviewDisputeStatusBadge } from './ReviewDisputeStatusBadge';
 import { ReviewDisputeModal } from './ReviewDisputeModal';
+import { formatPublicRatingLabel } from '@/lib/reviews/ratingDisplay';
 import { ReviewPublicStatusBadge } from './ReviewPublicStatusBadge';
 
 const OPEN: ReviewDisputeStatus[] = ['PENDING', 'IN_REVIEW'];
@@ -123,8 +124,7 @@ export function ManagedReviewCard({
       <p className="mt-2 text-sm">
         Puntaje general:{' '}
         <span className="font-semibold text-accent">
-          {review.overallRating}
-          <span className="font-normal text-text-muted"> /10</span>
+          {formatPublicRatingLabel(review.overallRating)}
         </span>
       </p>
 
