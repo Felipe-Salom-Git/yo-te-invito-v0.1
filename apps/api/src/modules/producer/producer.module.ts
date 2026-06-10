@@ -10,6 +10,7 @@ import { ReviewsModule } from '../reviews/reviews.module';
 import { CommercialReviewsModule } from '../commercial-reviews/commercial-reviews.module';
 import { ProfilesAuthorizationService } from '../../common/profiles-authorization.service';
 import { ProducerEventsController } from './producer-events.controller';
+import { ProducerEventOccurrencesController } from './producer-event-occurrences.controller';
 import { ProducerReferrersController } from './producer-referrers.controller';
 import { ProducerReferralProposalsController } from './producer-referral-proposals.controller';
 import { ProducerReferralPaymentRequestsController } from './producer-referral-payment-requests.controller';
@@ -43,6 +44,7 @@ import { ProducerDashboardMetricsService } from './producer-dashboard-metrics.se
   ],
   controllers: [
     ProducerEventsController,
+    ProducerEventOccurrencesController,
     ProducerReferrersController,
     ProducerReferralProposalsController,
     ProducerReferralPaymentRequestsController,

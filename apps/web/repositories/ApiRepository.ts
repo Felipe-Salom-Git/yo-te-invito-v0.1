@@ -362,16 +362,38 @@ export class ApiRepository implements Repositories {
       );
       return raw;
     },
-    getTicketTypes: async (eventId: string) => {
+    getTicketTypes: async (eventId: string, occurrenceId?: string) => {
       const raw = await this.client.get<Array<TicketTypeResponse & { price?: string | number }>>(
         `/public/events/${encodeURIComponent(eventId)}/ticket-types`,
-        this.q({})
+        this.q(occurrenceId ? { occurrenceId } : {}),
       );
       return raw.map((tt) => ({
         ...tt,
         price: typeof tt.price === 'string' ? parseFloat(tt.price) : tt.price ?? 0,
         capacityAvailable: tt.capacityAvailable ?? (tt as { capacityTotal?: number }).capacityTotal ?? 0,
       }));
+    },
+    listEventOccurrences: async (eventId: string) => {
+      return this.client.get<import('./interfaces').EventOccurrenceWithStats[]>(
+        `/producer/events/${encodeURIComponent(eventId)}/occurrences`,
+      );
+    },
+    createEventOccurrence: async (eventId, body) => {
+      return this.client.post<import('./interfaces').EventOccurrenceResponse>(
+        `/producer/events/${encodeURIComponent(eventId)}/occurrences`,
+        body,
+      );
+    },
+    updateEventOccurrence: async (eventId, occurrenceId, body) => {
+      return this.client.patch<import('./interfaces').EventOccurrenceResponse>(
+        `/producer/events/${encodeURIComponent(eventId)}/occurrences/${encodeURIComponent(occurrenceId)}`,
+        body,
+      );
+    },
+    deleteEventOccurrence: async (eventId, occurrenceId) => {
+      return this.client.delete<{ ok: true }>(
+        `/producer/events/${encodeURIComponent(eventId)}/occurrences/${encodeURIComponent(occurrenceId)}`,
+      );
     },
     create: async (input) => {
       const body = {

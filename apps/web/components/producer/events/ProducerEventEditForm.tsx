@@ -30,6 +30,7 @@ import { ProducerEventFormFields } from './ProducerEventFormFields';
 import { ProducerEventFormLayout } from './ProducerEventFormLayout';
 import { ProducerEventWizardProgress } from './ProducerEventWizardProgress';
 import { tagIdsFromEvent } from '@/components/content-tags/ContentTagSelector';
+import type { EventDateMode, OccurrenceDraft } from '@/lib/producer/event-occurrences';
 
 type Props = {
   eventId: string;
@@ -59,6 +60,10 @@ export function ProducerEventEditForm({ eventId, eventData }: Props) {
   const [subcategoryId, setSubcategoryId] = useState(eventData.subcategoryId ?? '');
   const [tagIds, setTagIds] = useState<string[]>(() => tagIdsFromEvent(eventData));
   const [isUploadingCover, setIsUploadingCover] = useState(false);
+  const [dateMode, setDateMode] = useState<EventDateMode>(() =>
+    eventData.isMultiDate ? 'multi' : 'simple',
+  );
+  const [draftOccurrences, setDraftOccurrences] = useState<OccurrenceDraft[]>([]);
 
   const coverUploadConfig = useMemo(
     (): GcsImageUploadConfig => ({ scope: 'event', entityId: eventId }),
@@ -70,6 +75,7 @@ export function ProducerEventEditForm({ eventId, eventData }: Props) {
     setLocation(locationValueFromEventFields(eventData));
     setSubcategoryId(eventData.subcategoryId ?? '');
     setTagIds(tagIdsFromEvent(eventData));
+    setDateMode(eventData.isMultiDate ? 'multi' : 'simple');
   }, [eventData]);
 
   const completenessItems = useMemo(
@@ -115,7 +121,10 @@ export function ProducerEventEditForm({ eventId, eventData }: Props) {
       }
     }
     if (step === 2) {
-      const v = validateProducerEventWizardStep2(form, location);
+      const v = validateProducerEventWizardStep2(form, location, {
+        dateMode,
+        draftOccurrences,
+      });
       if (!v.ok) {
         setErrors(v.errors);
         scrollToErrors();
@@ -214,6 +223,11 @@ export function ProducerEventEditForm({ eventId, eventData }: Props) {
           apiStatus={eventData.status}
           completenessItems={completenessItems}
           wizardStep={step}
+          eventId={eventId}
+          dateMode={dateMode}
+          onDateModeChange={setDateMode}
+          draftOccurrences={draftOccurrences}
+          onDraftOccurrencesChange={setDraftOccurrences}
         />
       </ProducerEventFormLayout>
     </form>

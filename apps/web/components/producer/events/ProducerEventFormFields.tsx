@@ -26,6 +26,8 @@ import { isDataImageUrl } from '@/lib/upload/validate-public-image-file';
 import { ContentTagSelector } from '@/components/content-tags/ContentTagSelector';
 import { ProducerEventFormCompleteness } from './ProducerEventFormCompleteness';
 import { ProducerEventPublicationLegalNotice } from './ProducerEventPublicationLegalNotice';
+import { EventOccurrencesEditor } from './EventOccurrencesEditor';
+import type { EventDateMode, OccurrenceDraft } from '@/lib/producer/event-occurrences';
 import type { ProducerEventWizardStep } from '@/lib/producer/producer-event-wizard';
 
 function FormSection({
@@ -123,6 +125,11 @@ export type ProducerEventFormFieldsProps = {
   completenessItems: EventFormCompletenessItem[];
   /** Wizard mode: show only the active step (1–3). Omit for full scroll form. */
   wizardStep?: ProducerEventWizardStep;
+  eventId?: string;
+  dateMode?: EventDateMode;
+  onDateModeChange?: (mode: EventDateMode) => void;
+  draftOccurrences?: OccurrenceDraft[];
+  onDraftOccurrencesChange?: (drafts: OccurrenceDraft[]) => void;
 };
 
 export function ProducerEventFormFields({
@@ -142,6 +149,11 @@ export function ProducerEventFormFields({
   apiStatus,
   completenessItems,
   wizardStep,
+  eventId,
+  dateMode = 'simple',
+  onDateModeChange,
+  draftOccurrences = [],
+  onDraftOccurrencesChange,
 }: ProducerEventFormFieldsProps) {
   const { addToast } = useToast();
   const set = (patch: Partial<EventFormData>) =>
@@ -245,24 +257,40 @@ export function ProducerEventFormFields({
         title="2. Fecha y ubicación"
         description="Cuándo y dónde se realiza. La dirección y el mapa mejoran la experiencia del público."
       >
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Input
-            label="Fecha y hora de inicio"
-            type="datetime-local"
-            value={form.startAt}
-            onChange={(e) => set({ startAt: e.target.value })}
-            required
-            error={errors.startAt}
+        {onDateModeChange && onDraftOccurrencesChange ? (
+          <EventOccurrencesEditor
+            eventId={eventId}
+            dateMode={dateMode}
+            onDateModeChange={onDateModeChange}
+            defaultVenue={{ venueName: form.venueName, city: location.city }}
+            draftOccurrences={draftOccurrences}
+            onDraftChange={onDraftOccurrencesChange}
+            errors={errors}
           />
-          <Input
-            label="Fecha y hora de fin"
-            type="datetime-local"
-            value={form.endAt ?? ''}
-            onChange={(e) => set({ endAt: e.target.value })}
-            error={errors.endAt}
-          />
-        </div>
-        <FieldHint>La fecha de fin es opcional (eventos de un solo bloque horario).</FieldHint>
+        ) : null}
+
+        {dateMode === 'simple' ? (
+          <>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Input
+                label="Fecha y hora de inicio"
+                type="datetime-local"
+                value={form.startAt}
+                onChange={(e) => set({ startAt: e.target.value })}
+                required
+                error={errors.startAt}
+              />
+              <Input
+                label="Fecha y hora de fin"
+                type="datetime-local"
+                value={form.endAt ?? ''}
+                onChange={(e) => set({ endAt: e.target.value })}
+                error={errors.endAt}
+              />
+            </div>
+            <FieldHint>La fecha de fin es opcional (eventos de un solo bloque horario).</FieldHint>
+          </>
+        ) : null}
         <Input
           label="Nombre del lugar"
           value={form.venueName ?? ''}

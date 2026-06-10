@@ -32,6 +32,12 @@ import { ProducerEventFormErrorSummary } from './ProducerEventFormErrorSummary';
 import { ProducerEventFormFields } from './ProducerEventFormFields';
 import { ProducerEventFormLayout } from './ProducerEventFormLayout';
 import { ProducerEventWizardProgress } from './ProducerEventWizardProgress';
+import {
+  draftToCreateBody,
+  earliestDraftStartIso,
+  type EventDateMode,
+  type OccurrenceDraft,
+} from '@/lib/producer/event-occurrences';
 
 export function ProducerEventCreateForm({ mode }: { mode: ProducerEventMode }) {
   const router = useRouter();
@@ -54,6 +60,8 @@ export function ProducerEventCreateForm({ mode }: { mode: ProducerEventMode }) {
   const [tagIds, setTagIds] = useState<string[]>([]);
   const [location, setLocation] = useState<LocationValue>(EMPTY_LOCATION_VALUE);
   const [isUploadingCover, setIsUploadingCover] = useState(false);
+  const [dateMode, setDateMode] = useState<EventDateMode>('simple');
+  const [draftOccurrences, setDraftOccurrences] = useState<OccurrenceDraft[]>([]);
 
   const { data: producerProfile } = useQuery({
     queryKey: producersKeys.myProfile(),
@@ -77,14 +85,23 @@ export function ProducerEventCreateForm({ mode }: { mode: ProducerEventMode }) {
         data.description?.trim() ||
         data.summary?.trim() ||
         null;
+      const multiStart = earliestDraftStartIso(draftOccurrences);
       return repos.events.create({
         tenantId: t,
         producerId: PRODUCER_ID,
         eventMode: mode,
         title: data.title,
         description,
-        startAt: new Date(data.startAt).toISOString(),
-        endAt: data.endAt ? new Date(data.endAt).toISOString() : null,
+        startAt:
+          dateMode === 'multi' && multiStart
+            ? multiStart
+            : new Date(data.startAt).toISOString(),
+        endAt:
+          dateMode === 'multi'
+            ? null
+            : data.endAt
+              ? new Date(data.endAt).toISOString()
+              : null,
         city: loc.city,
         venueAddress: loc.venueAddress,
         province: loc.province,
@@ -114,7 +131,28 @@ export function ProducerEventCreateForm({ mode }: { mode: ProducerEventMode }) {
       setFormError(msg);
       addToast(msg, 'error');
     },
-    onSuccess: (event) => {
+    onSuccess: async (event) => {
+      if (dateMode === 'multi' && draftOccurrences.length > 0) {
+        const venue = {
+          venueName: form.venueName,
+          city: eventFieldsFromLocationValue(location).city,
+        };
+        try {
+          for (const draft of draftOccurrences) {
+            await repos.events.createEventOccurrence(
+              event.id,
+              draftToCreateBody(draft, venue),
+            );
+          }
+        } catch (err) {
+          addToast(
+            `Evento creado, pero hubo un error al guardar fechas: ${getErrorMessage(err)}`,
+            'error',
+          );
+          router.push(`/producer/events/${event.id}/edit`);
+          return;
+        }
+      }
       addToast(
         isTicketed
           ? 'Evento creado en borrador. Configurá entradas cuando quieras.'
@@ -141,7 +179,10 @@ export function ProducerEventCreateForm({ mode }: { mode: ProducerEventMode }) {
       }
     }
     if (step === 2) {
-      const v = validateProducerEventWizardStep2(form, location);
+      const v = validateProducerEventWizardStep2(form, location, {
+        dateMode,
+        draftOccurrences,
+      });
       if (!v.ok) {
         setErrors(v.errors);
         scrollToErrors();
@@ -242,6 +283,10 @@ export function ProducerEventCreateForm({ mode }: { mode: ProducerEventMode }) {
           onUploadingChange={setIsUploadingCover}
           completenessItems={completenessItems}
           wizardStep={step}
+          dateMode={dateMode}
+          onDateModeChange={setDateMode}
+          draftOccurrences={draftOccurrences}
+          onDraftOccurrencesChange={setDraftOccurrences}
         />
       </ProducerEventFormLayout>
     </form>

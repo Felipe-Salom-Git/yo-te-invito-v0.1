@@ -4,6 +4,7 @@ import { EventMediaType } from '../enums';
 import { entitySocialLinksInputSchema } from './external-links';
 import { eventSubcategoryPublicSchema } from './event-subcategories';
 import { contentTagPublicSchema, eventTagIdsSchema } from './content-tags';
+import { eventOccurrenceResponseSchema } from './event-occurrences';
 import { excursionSchedulePublicSchema } from './excursion-schedule';
 import { rentalOpeningHoursSchema } from './opening-hours';
 
@@ -194,6 +195,9 @@ export const eventDetailSchema = eventSummarySchema.extend({
   /** All assigned subcategories (excursions phase 1); primary listed first. */
   subcategories: z.array(eventSubcategoryPublicSchema).optional(),
   tags: z.array(contentTagPublicSchema).optional(),
+  /** Multi-date events (V3.1 Etapa 7) — present when event has occurrences. */
+  isMultiDate: z.boolean().optional(),
+  occurrences: z.array(eventOccurrenceResponseSchema).optional(),
 });
 
 export type EventDetail = z.infer<typeof eventDetailSchema>;

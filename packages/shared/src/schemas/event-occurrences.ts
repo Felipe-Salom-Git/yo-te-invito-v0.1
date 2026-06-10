@@ -85,3 +85,9 @@ export const eventOccurrencesListQuerySchema = z.object({
   includeCancelled: z.coerce.boolean().optional(),
 });
 export type EventOccurrencesListQuery = z.infer<typeof eventOccurrencesListQuerySchema>;
+export const eventOccurrenceWithStatsSchema = eventOccurrenceResponseSchema.extend({
+  ticketTypeCount: z.number().int().min(0),
+  soldCount: z.number().int().min(0),
+  capacityAvailable: z.number().int().min(0),
+});
+export type EventOccurrenceWithStats = z.infer<typeof eventOccurrenceWithStatsSchema>;

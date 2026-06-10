@@ -44,6 +44,15 @@ export class ProducerEventsCrudService {
     private readonly rentalLocations: RentalLocationsService,
   ) {}
 
+  async assertEventAccessForUser(
+    eventId: string,
+    tenantId: string,
+    userId: string,
+    userRole: string,
+  ) {
+    return this.assertEventOwnedByUser(eventId, tenantId, userId, userRole);
+  }
+
   private async assertEventOwnedByUser(
     eventId: string,
     tenantId: string,
@@ -222,6 +231,34 @@ export class ProducerEventsCrudService {
           })
         ),
       );
+    }
+    const occurrenceRows = await this.prisma.eventOccurrence.findMany({
+      where: { eventId, tenantId },
+      orderBy: [{ sortOrder: 'asc' }, { startAt: 'asc' }],
+    });
+    if (occurrenceRows.length > 0) {
+      detail.isMultiDate = true;
+      detail.occurrences = occurrenceRows.map((o) => ({
+        id: o.id,
+        tenantId: o.tenantId,
+        eventId: o.eventId,
+        startAt: o.startAt.toISOString(),
+        endAt: o.endAt?.toISOString() ?? null,
+        venueName: o.venueName,
+        venueAddress: o.venueAddress,
+        city: o.city,
+        province: o.province,
+        googlePlaceId: o.googlePlaceId,
+        geoLat: o.geoLat,
+        geoLng: o.geoLng,
+        capacity: o.capacity,
+        status: o.status,
+        sortOrder: o.sortOrder,
+        createdAt: o.createdAt.toISOString(),
+        updatedAt: o.updatedAt.toISOString(),
+      }));
+    } else {
+      detail.isMultiDate = false;
     }
     return detail;
   }

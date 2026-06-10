@@ -3,6 +3,11 @@ import type { LocationValue } from '@/components/location';
 import { PUBLIC_SUMMARY_MAX_LENGTH } from '@yo-te-invito/shared';
 import { zodErrorsToFieldMap } from './producer-event-form.utils';
 import { eventFormSchema } from '@/lib/schemas/event';
+import {
+  validateOccurrenceDrafts,
+  type EventDateMode,
+  type OccurrenceDraft,
+} from '@/lib/producer/event-occurrences';
 
 export type ProducerEventWizardStep = 1 | 2 | 3;
 
@@ -29,7 +34,19 @@ export function validateProducerEventWizardStep1(
 export function validateProducerEventWizardStep2(
   form: EventFormData,
   location: LocationValue,
+  options?: { dateMode?: EventDateMode; draftOccurrences?: OccurrenceDraft[] },
 ): { ok: true } | { ok: false; errors: Record<string, string> } {
+  const dateMode = options?.dateMode ?? 'simple';
+
+  if (dateMode === 'multi') {
+    const v = validateOccurrenceDrafts(options?.draftOccurrences ?? []);
+    if (!v.ok) {
+      return { ok: false, errors: { occurrences: v.message } };
+    }
+    void location;
+    return { ok: true };
+  }
+
   const parsed = eventFormSchema.safeParse(form);
   if (!parsed.success) {
     const all = zodErrorsToFieldMap(parsed.error);

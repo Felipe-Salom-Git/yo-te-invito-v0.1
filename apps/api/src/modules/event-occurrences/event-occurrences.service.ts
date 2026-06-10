@@ -7,6 +7,7 @@ import {
 import type { EventOccurrence, Prisma } from '@prisma/client';
 import {
   ErrorCode,
+  deriveEventStartAtFromOccurrences,
   type CreateEventOccurrenceBody,
   type EventOccurrenceResponse,
   type EventOccurrencesListQuery,
@@ -128,6 +129,7 @@ export class EventOccurrencesService {
       },
     });
 
+    await this.syncEventStartAt(tenantId, eventId);
     return this.toResponse(row);
   }
 
@@ -159,7 +161,93 @@ export class EventOccurrencesService {
       },
     });
 
+    await this.syncEventStartAt(tenantId, eventId);
     return this.toResponse(row);
+  }
+
+  /** Keep Event.startAt aligned with next visible occurrence for discovery/cards. */
+  async syncEventStartAt(tenantId: string, eventId: string): Promise<void> {
+    const rows = await this.prisma.eventOccurrence.findMany({
+      where: { tenantId, eventId, status: { not: 'CANCELLED' } },
+      orderBy: [{ sortOrder: 'asc' }, { startAt: 'asc' }],
+    });
+    if (rows.length === 0) return;
+
+    const nextStart = deriveEventStartAtFromOccurrences(rows);
+    if (!nextStart) return;
+
+    await this.prisma.event.update({
+      where: { id: eventId },
+      data: { startAt: nextStart },
+    });
+  }
+
+  async deleteOccurrence(
+    tenantId: string,
+    eventId: string,
+    occurrenceId: string,
+  ): Promise<void> {
+    await this.assertOccurrenceInTenant(tenantId, eventId, occurrenceId);
+
+    const soldTickets = await this.prisma.ticket.count({
+      where: {
+        eventId,
+        ticketType: { occurrenceId },
+      },
+    });
+    if (soldTickets > 0) {
+      throw new BadRequestException({
+        code: ErrorCode.CONFLICT,
+        message: 'Cannot remove a date that already has sold tickets',
+      });
+    }
+
+    await this.prisma.ticketType.updateMany({
+      where: { occurrenceId, eventId },
+      data: { occurrenceId: null },
+    });
+
+    await this.prisma.eventOccurrence.delete({ where: { id: occurrenceId } });
+    await this.syncEventStartAt(tenantId, eventId);
+  }
+
+  async countForEvent(tenantId: string, eventId: string): Promise<number> {
+    return this.prisma.eventOccurrence.count({
+      where: { tenantId, eventId, status: { not: 'CANCELLED' } },
+    });
+  }
+
+  async getOccurrenceWithStats(
+    tenantId: string,
+    eventId: string,
+  ): Promise<
+    Array<
+      EventOccurrenceResponse & {
+        ticketTypeCount: number;
+        soldCount: number;
+        capacityAvailable: number;
+      }
+    >
+  > {
+    const rows = await this.listForEvent(tenantId, eventId, { includeCancelled: true });
+    const enriched = await Promise.all(
+      rows.map(async (occ) => {
+        const types = await this.prisma.ticketType.findMany({
+          where: { eventId, occurrenceId: occ.id, deletedAt: null },
+          select: { capacityAvailable: true },
+        });
+        const soldCount = await this.prisma.ticket.count({
+          where: { eventId, ticketType: { occurrenceId: occ.id } },
+        });
+        return {
+          ...occ,
+          ticketTypeCount: types.length,
+          soldCount,
+          capacityAvailable: types.reduce((s, t) => s + t.capacityAvailable, 0),
+        };
+      }),
+    );
+    return enriched;
   }
 
   /** Reject cross-tenant or cross-event ticket type ↔ occurrence pairing. */

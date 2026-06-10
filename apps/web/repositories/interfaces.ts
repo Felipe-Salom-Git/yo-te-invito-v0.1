@@ -765,10 +765,17 @@ export interface AdminReviewDisputesRepo {
   resolve(id: string, body?: { adminNote?: string }): Promise<ReviewDisputeDetail>;
 }
 
+export type EventOccurrenceResponse = import('@yo-te-invito/shared').EventOccurrenceResponse;
+export type EventOccurrenceWithStats = import('@yo-te-invito/shared').EventOccurrenceWithStats;
+export type CreateEventOccurrenceBody = import('@yo-te-invito/shared').CreateEventOccurrenceBody;
+export type UpdateEventOccurrenceBody = import('@yo-te-invito/shared').UpdateEventOccurrenceBody;
+
 export interface EventDetail extends EventSummary {
   description: string | null;
   summary?: string | null;
   endAt: string | null;
+  isMultiDate?: boolean;
+  occurrences?: EventOccurrenceResponse[];
   venueAddress: string | null;
   province?: string | null;
   googlePlaceId?: string | null;
@@ -1257,6 +1264,7 @@ export interface TicketTypeResponse {
   capacityAvailable: number;
   capacityTotal?: number;
   eventId?: string;
+  occurrenceId?: string | null;
   description?: string | null;
   currency?: string;
   maxPerOrder?: number;
@@ -1326,6 +1334,7 @@ export interface TicketBatchCreateInput {
 
 export interface TicketTypeCreateInput {
   name: string;
+  occurrenceId?: string;
   /** Total pool; required. Use `capacityAvailable` only for legacy alias. */
   capacityTotal?: number;
   /** @deprecated use capacityTotal — same value sent as capacityTotal to API */
@@ -1600,7 +1609,18 @@ export interface EventsRepo {
   listPublicDiscounts(eventId: string, tenantId: string): Promise<{ discounts: PublicGastroDiscountSummary[] }>;
   /** Event detail for producer portal (includes DRAFT/PENDING). */
   getDetailForProducer(eventId: string): Promise<EventDetail | null>;
-  getTicketTypes(eventId: string): Promise<TicketTypeResponse[]>;
+  getTicketTypes(eventId: string, occurrenceId?: string): Promise<TicketTypeResponse[]>;
+  listEventOccurrences(eventId: string): Promise<EventOccurrenceWithStats[]>;
+  createEventOccurrence(
+    eventId: string,
+    body: CreateEventOccurrenceBody,
+  ): Promise<EventOccurrenceResponse>;
+  updateEventOccurrence(
+    eventId: string,
+    occurrenceId: string,
+    body: UpdateEventOccurrenceBody,
+  ): Promise<EventOccurrenceResponse>;
+  deleteEventOccurrence(eventId: string, occurrenceId: string): Promise<{ ok: true }>;
   create(
     input: Partial<EventDetail> & {
       tenantId: string;
