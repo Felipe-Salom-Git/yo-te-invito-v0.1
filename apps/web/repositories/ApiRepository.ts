@@ -395,6 +395,23 @@ export class ApiRepository implements Repositories {
         `/producer/events/${encodeURIComponent(eventId)}/occurrences/${encodeURIComponent(occurrenceId)}`,
       );
     },
+    listDateChangeRequests: async (eventId, query) => {
+      return this.client.get(
+        `/producer/events/${encodeURIComponent(eventId)}/date-change-requests`,
+        query as Record<string, string>,
+      );
+    },
+    approveDateChangeRequest: async (requestId) => {
+      return this.client.post(
+        `/producer/date-change-requests/${encodeURIComponent(requestId)}/approve`,
+      );
+    },
+    rejectDateChangeRequest: async (requestId, body) => {
+      return this.client.post(
+        `/producer/date-change-requests/${encodeURIComponent(requestId)}/reject`,
+        body ?? {},
+      );
+    },
     create: async (input) => {
       const body = {
         title: input.title ?? 'Nuevo evento',
@@ -2102,6 +2119,10 @@ export class ApiRepository implements Repositories {
       this.client.get(`/me/ticket-transfer-offers/lookup/${encodeURIComponent(token)}`),
     rejectTransferOffer: async (offerId) =>
       this.client.post(`/me/ticket-transfer-offers/${encodeURIComponent(offerId)}/reject`),
+    getTicketDateChangeOptions: async (ticketId) =>
+      this.client.get(`/me/tickets/${encodeURIComponent(ticketId)}/date-change-options`),
+    createTicketDateChangeRequest: async (ticketId, body) =>
+      this.client.post(`/me/tickets/${encodeURIComponent(ticketId)}/date-change-requests`, body),
     listNotifications: async () => this.client.get('/me/notifications'),
     getNotificationsUnreadCount: async () => this.client.get('/me/notifications/unread-count'),
     markNotificationRead: async (notificationId) =>

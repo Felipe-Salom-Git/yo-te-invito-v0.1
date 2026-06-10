@@ -147,6 +147,8 @@ export const mePortalKeys = {
   activity: () => [...mePortalKeys.all, 'activity'] as const,
   account: () => [...mePortalKeys.all, 'account'] as const,
   ticketDetail: (ticketId: string) => [...mePortalKeys.all, 'ticket', ticketId] as const,
+  ticketDateChangeOptions: (ticketId: string) =>
+    [...mePortalKeys.all, 'ticketDateChangeOptions', ticketId] as const,
   transferOffers: (role?: string, status?: string) =>
     [...mePortalKeys.all, 'transferOffers', role ?? 'all', status ?? ''] as const,
   transferLookup: (token: string) =>

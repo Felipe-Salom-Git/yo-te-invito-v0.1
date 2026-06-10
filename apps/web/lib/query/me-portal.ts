@@ -12,6 +12,7 @@ import type {
   RegisterPushSubscriptionBody,
   SendTestPushBody,
   CreateTicketTransferOfferBody,
+  CreateTicketDateChangeRequestBody,
   MeCartCheckoutBody,
   MeTicketTransferOffersQuery,
   PatchMeAccountBody,
@@ -298,6 +299,36 @@ export function useTicketTransferMutations() {
     },
   });
   return { create, cancel, accept, reject };
+}
+
+export function useTicketDateChangeOptions(ticketId: string, enabled = true) {
+  const repos = useRepositories();
+  return useQuery({
+    queryKey: mePortalKeys.ticketDateChangeOptions(ticketId),
+    queryFn: () => repos.mePortal.getTicketDateChangeOptions(ticketId),
+    enabled: enabled && !!ticketId,
+  });
+}
+
+export function useTicketDateChangeMutations() {
+  const repos = useRepositories();
+  const queryClient = useQueryClient();
+  const invalidate = (ticketId: string) => {
+    queryClient.invalidateQueries({ queryKey: mePortalKeys.ticketDetail(ticketId) });
+    queryClient.invalidateQueries({ queryKey: mePortalKeys.ticketDateChangeOptions(ticketId) });
+    queryClient.invalidateQueries({ queryKey: ['tickets'] });
+  };
+  const create = useMutation({
+    mutationFn: ({
+      ticketId,
+      body,
+    }: {
+      ticketId: string;
+      body: CreateTicketDateChangeRequestBody;
+    }) => repos.mePortal.createTicketDateChangeRequest(ticketId, body),
+    onSuccess: (_data, vars) => invalidate(vars.ticketId),
+  });
+  return { create };
 }
 
 export function useMeNotifications(enabled = true) {

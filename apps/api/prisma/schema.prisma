@@ -189,6 +189,7 @@ model Tenant {
   legalDocuments                LegalDocument[]
   scannerAccounts               ScannerAccount[]
   eventOccurrences              EventOccurrence[]
+  ticketDateChangeRequests      TicketDateChangeRequest[]
 }
 
 model RentalLocation {
@@ -721,6 +722,8 @@ model User {
   legalAcceptances              UserLegalAcceptance[]
   scannerAccountAsScanner       ScannerAccount?  @relation("ScannerAccountScanner")
   scannerAccountsManaged        ScannerAccount[] @relation("ScannerAccountParent")
+  ticketDateChangeRequests      TicketDateChangeRequest[] @relation("TicketDateChangeRequester")
+  ticketDateChangeReviews       TicketDateChangeRequest[] @relation("TicketDateChangeReviewer")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -979,6 +982,8 @@ model EventOccurrence {
   orderItems  OrderItem[]
   tickets     Ticket[]
   userCartItems UserCartItem[]
+  dateChangesFrom TicketDateChangeRequest[] @relation("DateChangeFromOccurrence")
+  dateChangesTo   TicketDateChangeRequest[] @relation("DateChangeToOccurrence")
 
   @@index([tenantId])
   @@index([eventId])
@@ -1016,6 +1021,15 @@ enum TicketStatus {
   TRANSFERRED
 }
 
+/// V3.1 Etapa 8 — user-requested ticket date change workflow.
+enum TicketDateChangeRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  APPLIED
+  CANCELLED
+}
+
 enum NotificationKind {
   TICKET_REMINDER_24H
   FAVORITE_EVENT_SOON
@@ -1037,6 +1051,11 @@ enum NotificationKind {
   REVIEW_DISPUTE_REJECTED
   REVIEW_MODERATION_HIDDEN
   REVIEW_MODERATION_RESTORED
+  TICKET_DATE_CHANGE_REQUESTED
+  TICKET_DATE_CHANGE_PENDING_PRODUCER
+  TICKET_DATE_CHANGE_APPROVED
+  TICKET_DATE_CHANGE_REJECTED
+  TICKET_DATE_CHANGE_APPLIED
 }
 
 enum NotificationChannel {
@@ -1115,6 +1134,8 @@ model TicketType {
   tickets        Ticket[]
   courtesyGrants CourtesyGrant[]
   userCartItems  UserCartItem[]
+  dateChangesFrom TicketDateChangeRequest[] @relation("DateChangeFromTicketType")
+  dateChangesTo   TicketDateChangeRequest[] @relation("DateChangeToTicketType")
 
   @@index([eventId, status])
   @@index([tenantId])
@@ -1311,12 +1332,48 @@ model Ticket {
   ticketScanLogs TicketScanLog[]
   transfers      TicketTransfer[]
   transferOffers TicketTransferOffer[] @relation("TransferOfferSourceTicket")
+  dateChangeRequests TicketDateChangeRequest[]
 
   @@index([eventId, status])
   @@index([orderId])
   @@index([ownerUserId])
   @@index([ticketBatchId])
   @@index([occurrenceId])
+}
+
+model TicketDateChangeRequest {
+  id                String                        @id @default(cuid())
+  tenantId          String
+  ticketId          String
+  requestedByUserId String
+  fromOccurrenceId  String
+  toOccurrenceId    String
+  fromTicketTypeId  String?
+  toTicketTypeId    String?
+  status            TicketDateChangeRequestStatus @default(PENDING)
+  message           String?
+  rejectReason      String?
+  reviewedByUserId  String?
+  reviewedAt        DateTime?
+  appliedAt         DateTime?
+  createdAt         DateTime                      @default(now())
+  updatedAt         DateTime                      @updatedAt
+
+  tenant         Tenant          @relation(fields: [tenantId], references: [id])
+  ticket         Ticket          @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  requestedBy    User            @relation("TicketDateChangeRequester", fields: [requestedByUserId], references: [id])
+  reviewedBy     User?           @relation("TicketDateChangeReviewer", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+  fromOccurrence EventOccurrence @relation("DateChangeFromOccurrence", fields: [fromOccurrenceId], references: [id])
+  toOccurrence   EventOccurrence @relation("DateChangeToOccurrence", fields: [toOccurrenceId], references: [id])
+  fromTicketType TicketType?     @relation("DateChangeFromTicketType", fields: [fromTicketTypeId], references: [id], onDelete: SetNull)
+  toTicketType   TicketType?     @relation("DateChangeToTicketType", fields: [toTicketTypeId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([ticketId])
+  @@index([ticketId, status])
+  @@index([tenantId, status])
+  @@index([fromOccurrenceId])
+  @@index([toOccurrenceId])
 }
 
 model TicketTransfer {
@@ -1951,6 +2008,10 @@ enum AuditAction {
   SCANNER_ACCOUNT_ACTIVATED
   SCANNER_PASSWORD_RESET
   TICKET_LIST_EXPORTED
+  TICKET_DATE_CHANGE_REQUESTED
+  TICKET_DATE_CHANGE_APPROVED
+  TICKET_DATE_CHANGE_REJECTED
+  TICKET_DATE_CHANGE_APPLIED
 }
 
 /// Scanner user bound to one parent commercial account (tenant-scoped).

@@ -13,6 +13,8 @@ import { MeCartController } from './me-cart.controller';
 import { MeFavoritesController } from './me-favorites.controller';
 import { MeExpectedEventsController } from './me-expected-events.controller';
 import { MeTicketTransferController } from './me-ticket-transfer.controller';
+import { MeTicketDateChangeController } from './me-ticket-date-change.controller';
+import { TicketsModule } from '../tickets/tickets.module';
 import { MeNotificationsController } from './me-notifications.controller';
 import { MeProducerFollowsController } from './me-producer-follows.controller';
 import { MeGastroFollowsController } from './me-gastro-follows.controller';
@@ -34,7 +36,15 @@ import { UserPushSubscriptionsService } from './user-push-subscriptions.service'
 import { MeRecommendationsService } from './me-recommendations.service';
 
 @Module({
-  imports: [AuthModule, ReferralsModule, InboxModule, PublicModule, NotificationsModule, LegalModule],
+  imports: [
+    AuthModule,
+    ReferralsModule,
+    InboxModule,
+    PublicModule,
+    NotificationsModule,
+    LegalModule,
+    TicketsModule,
+  ],
   controllers: [
     MeController,
     MePortalController,
@@ -43,6 +53,7 @@ import { MeRecommendationsService } from './me-recommendations.service';
     MeFavoritesController,
     MeExpectedEventsController,
     MeTicketTransferController,
+    MeTicketDateChangeController,
     MeNotificationsController,
     MeProducerFollowsController,
     MeGastroFollowsController,

@@ -820,6 +820,7 @@ export interface OrderTicketSummary {
   qrPayload: string;
   status: string;
   ticketTypeName?: string | null;
+  hasDateChangeApplied?: boolean;
 }
 
 export interface OrderLineItem {
@@ -1633,6 +1634,17 @@ export interface EventsRepo {
     eventId: string,
     patch: Partial<EventDetail> & { tagIds?: string[] | null },
   ): Promise<EventDetail | null>;
+  listDateChangeRequests(
+    eventId: string,
+    query?: import('@yo-te-invito/shared').ProducerTicketDateChangeListQuery,
+  ): Promise<import('@yo-te-invito/shared').ProducerTicketDateChangeListItem[]>;
+  approveDateChangeRequest(
+    requestId: string,
+  ): Promise<import('@yo-te-invito/shared').TicketDateChangeRequestResponse>;
+  rejectDateChangeRequest(
+    requestId: string,
+    body?: import('@yo-te-invito/shared').RejectTicketDateChangeBody,
+  ): Promise<import('@yo-te-invito/shared').TicketDateChangeRequestResponse>;
 }
 
 export interface TicketsRepo {
@@ -1917,6 +1929,15 @@ export interface MePortalRepo {
   getRecommendations(
     limit?: number,
   ): Promise<import('@yo-te-invito/shared').MeRecommendationsResponse>;
+  getTicketDateChangeOptions(
+    ticketId: string,
+  ): Promise<import('@yo-te-invito/shared').TicketDateChangeEligibility>;
+  createTicketDateChangeRequest(
+    ticketId: string,
+    body: import('@yo-te-invito/shared').CreateTicketDateChangeRequestBody,
+  ): Promise<
+    import('@yo-te-invito/shared').TicketDateChangeRequestResponse & { autoApproved?: boolean }
+  >;
 }
 
 export interface UsersRepo {

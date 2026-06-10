@@ -6,6 +6,7 @@ import { PageContainer, SectionTitle, PageLoader, QueryError, EmptyState } from 
 import { StatusBadge } from '@/components/domain/StatusBadge';
 import { MeBuyerTicketPanel } from '@/components/me/MeBuyerTicketPanel';
 import { TicketTransferPanel } from '@/components/me/TicketTransferPanel';
+import { TicketDateChangePanel } from '@/components/me/TicketDateChangePanel';
 import { TicketReminderToggle } from '@/components/me/TicketReminderToggle';
 import { useMeTicketDetail } from '@/lib/query/me-portal';
 import { getErrorMessage } from '@/lib/errors';
@@ -114,6 +115,8 @@ export default function TicketDetailPage() {
             offer={ticket.transferOffer}
             canTransfer={ticket.canTransfer}
           />
+
+          <TicketDateChangePanel ticket={ticket} />
         </div>
       </div>
     </PageContainer>
