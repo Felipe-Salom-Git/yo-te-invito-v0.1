@@ -1030,7 +1030,9 @@ Reactivar cada perfil desde admin dispara sync sin script destructivo.
 
 > **Etapa 5 cerrada (código slices 5.1–5.8):** `docs/audits/V3_1_STAGE_5_CLOSING.md`  
 > Smokes: `smoke:v31-scanner-accounts`, `smoke:v31-scanner-scope`  
-> Pendiente en checklist: §24.5 PDF, §24.6 offline avanzado, QA manual prod/móvil.
+> **Etapa 6 cerrada (código slices 6.1–6.8):** `docs/audits/V3_1_STAGE_6_SCANNER_OFFLINE_CLOSING.md`  
+> Smokes: `smoke:v31-ticket-list-pdf`, `smoke:v31-ticket-list-pdf-permissions`  
+> Pendiente operativo: QA manual Android/iPhone en puerta; JWT login PWA prod.
 
 **Prioridad:** Alta  
 **Tipo:** Scanner / Permisos / Operación  
@@ -1040,8 +1042,8 @@ Reactivar cada perfil desde admin dispara sync sin script destructivo.
 
 ## 24.5 Descargar listado de entradas en PDF
 
-- [ ] Desde el scanner o panel padre, permitir descargar listado de entradas en PDF.
-- [ ] El PDF debe incluir:
+- [x] Desde el scanner o panel padre, permitir descargar listado de entradas en PDF.
+- [x] El PDF debe incluir:
   - Nombre del evento.
   - Fecha del evento.
   - Comprador.
@@ -1049,10 +1051,10 @@ Reactivar cada perfil desde admin dispara sync sin script destructivo.
   - Estado.
   - Código/identificador.
   - Estado de validación.
-- [ ] Definir si incluye QR o solo datos de control.
-- [ ] Agregar fecha/hora de generación del PDF.
-- [ ] Agregar aviso de seguridad: «Listado de control interno».
-- [ ] Validar permisos antes de permitir descarga (rol scanner, productora, admin).
+- [x] Definir si incluye QR o solo datos de control — **sin QR completo**; código corto + sufijo parcial (`docs/audits/V3_1_STAGE_6_TICKET_LIST_PDF_SMOKE.md`).
+- [x] Agregar fecha/hora de generación del PDF.
+- [x] Agregar aviso de seguridad: «Listado de control interno».
+- [x] Validar permisos antes de permitir descarga (rol scanner, productora, admin).
 
 **Prioridad:** Media/Alta  
 **Tipo:** Operación / PDF / Control acceso  
@@ -1062,24 +1064,24 @@ Reactivar cada perfil desde admin dispara sync sin script destructivo.
 
 ## 24.6 Scanner offline con listado descargado
 
-- [ ] Permitir guardar listado local para operar scanner offline.
-- [ ] El usuario scanner debe poder descargar/sincronizar listado antes del evento.
-- [ ] El scanner debe funcionar sin internet usando ese listado local.
-- [ ] Registrar validaciones offline localmente.
-- [ ] Cuando vuelva internet, sincronizar validaciones con backend.
-- [ ] Resolver conflictos:
+- [x] Permitir guardar listado local para operar scanner offline.
+- [x] El usuario scanner debe poder descargar/sincronizar listado antes del evento.
+- [x] El scanner debe funcionar sin internet usando ese listado local.
+- [x] Registrar validaciones offline localmente.
+- [x] Cuando vuelva internet, sincronizar validaciones con backend.
+- [x] Resolver conflictos:
   - Entrada ya usada online.
   - Entrada validada en otro dispositivo.
   - QR inválido.
   - Listado desactualizado.
-- [ ] Mostrar estado claro:
+- [x] Mostrar estado claro:
   - Online.
   - Offline.
   - Pendiente de sincronizar.
   - Sincronizado.
   - Error de sincronización.
-- [ ] Definir límite de seguridad para uso offline (ventana temporal, revocación, versión de listado).
-- [ ] Agregar advertencia operativa: «Sincronizá antes de abrir puertas».
+- [x] Definir límite de seguridad para uso offline (ventana temporal, revocación, versión de listado) — `expiresAt` 48h + versión snapshot.
+- [x] Agregar advertencia operativa: «Sincronizá antes de abrir puertas».
 
 **Prioridad:** Alta  
 **Tipo:** Scanner / Offline-first / Seguridad operativa  
@@ -1323,7 +1325,7 @@ Reactivar cada perfil desde admin dispara sync sin script destructivo.
 | V3.1 Slice 15  | Etiquetas Admin + etiquetas en publicaciones — **Etapa 4 cerrada** |
 | V3.1 Slice 16  | Scanner: usuarios scanner + link PWA — **Etapa 5.1–5.3 cerrada** |
 | V3.1 Slice 17  | Scanner cámara + selección evento/descuento — **Etapa 5.4–5.7 cerrada** |
-| V3.1 Slice 18  | Scanner offline + PDF listado entradas — **pendiente §24.5–24.6** |
+| V3.1 Slice 18  | Scanner offline + PDF listado entradas — **cerrado §24.5–24.6** (`V3_1_STAGE_6_SCANNER_OFFLINE_CLOSING.md`) |
 | V3.1 Slice 19  | Múltiples fechas por evento + entradas por fecha |
 | V3.1 Slice 20  | Cambio de fecha de entrada |
 | V3.1 Slice 21  | Horarios gastronómicos por día |

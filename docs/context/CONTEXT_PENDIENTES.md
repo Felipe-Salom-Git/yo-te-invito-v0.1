@@ -520,7 +520,8 @@ _(Trending con `viewCount`: ver ítem Slice 2 arriba en § K.)_
 - [ ] V3.1 Etapa 4 — pendiente: búsqueda admin publicaciones por tag (§23.1)
 - [x] V3.1 Etapa 5 — scanner PWA (slices 5.1–5.8); doc `V3_1_STAGE_5_CLOSING.md`; checklist §24.1–24.4
 - [ ] V3.1 Etapa 5 — QA manual móvil + verificación prod `scanner.yoteinvito.club` (§24.2–24.3)
-- [ ] V3.1 Etapa 5 — pendiente: PDF entradas (§24.5), offline avanzado (§24.6), JWT login PWA
+- [x] V3.1 Etapa 6 — PDF entradas (§24.5) + scanner offline (§24.6) — `docs/audits/V3_1_STAGE_6_SCANNER_OFFLINE_CLOSING.md`
+- [ ] V3.1 Scanner PWA prod — JWT login (pendiente desde Etapa 5)
 - [ ] V3.1 — restante no bloqueante (maps prod §4.1, §5.2 links en descripciones, multi-subcategorías otras verticales, drag galería, migración DB ratings 1–5)
 - [ ] V3.1 legal al publicar evento Caso A (bloqueante; coordinar con publicación `producer_terms` real)
 

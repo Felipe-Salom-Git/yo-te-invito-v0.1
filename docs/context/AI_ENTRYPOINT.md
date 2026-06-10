@@ -92,7 +92,9 @@ Controllers: HTTP + Zod only. Services: business logic. Prisma: persistence only
 
 **V3.1 Etapa 4 — Etiquetas (cerrada 2026-06-10):** modelo `ContentTag` / `EventTag`, admin `/admin/etiquetas`, tags en portales, filtro `?tag=` en explore. Doc: `docs/audits/V3_1_STAGE_4_TAGS_CLOSING.md`; checklist §23.
 
-**V3.1 Etapa 5 — Scanner PWA (cerrada 2026-06-10):** `ScannerAccount`, portales `/producer/scanners` y `/gastro/scanners`, PWA `apps/scanner` (manifest, cámara QR, scope API). Smokes: `smoke:v31-scanner-accounts`, `smoke:v31-scanner-scope`. Doc: `docs/audits/V3_1_STAGE_5_CLOSING.md`; checklist §24.1–24.4. Pendiente: §24.5 PDF, §24.6 offline, JWT en PWA.
+**V3.1 Etapa 5 — Scanner PWA (cerrada 2026-06-10):** `ScannerAccount`, portales `/producer/scanners` y `/gastro/scanners`, PWA `apps/scanner` (manifest, cámara QR, scope API). Smokes: `smoke:v31-scanner-accounts`, `smoke:v31-scanner-scope`. Doc: `docs/audits/V3_1_STAGE_5_CLOSING.md`; checklist §24.1–24.4.
+
+**V3.1 Etapa 6 — Scanner PDF y offline (cerrada 2026-06-10):** PDF listado (`export.pdf`), snapshot offline, validación/sync local, conflictos, UX estados. Smokes: `smoke:v31-ticket-list-pdf`, `smoke:v31-ticket-list-pdf-permissions`. Doc: `docs/audits/V3_1_STAGE_6_SCANNER_OFFLINE_CLOSING.md`; checklist §24.5–24.6. Pendiente operativo: JWT login PWA prod, QA manual móvil puerta.
 
 **Legal Admin / Legales V2 (cerrado 2026-05-24):** slices 1–8 + import Markdown — admin `/admin/legales`, público `/legal/[slug]`, aceptación `/me/legal/*`, integración registro/checkout/footer/portales; **layout portales** `max-w-screen-2xl` (`portalLayoutClasses.ts`, `PortalPageContext`). Doc: `docs/legal/LEGAL_ADMIN_MODULE.md`; QA: `docs/dev/LEGAL_ADMIN_QA_SMOKE.md`; smoke `pnpm --filter api run smoke:legal` (API + `DEV_AUTH_ENABLED` o JWT). **No** marcar checklist de redacción legal hasta publicar contenido real.
 

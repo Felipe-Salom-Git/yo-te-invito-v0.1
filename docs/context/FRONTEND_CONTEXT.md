@@ -313,6 +313,8 @@ Bloque checklist V2 cerrado (Slices 1–8). Resumen: gateway → categorías/hom
 
 **Scanner (V3.1 Etapa 5 — cerrada):** portales web — `ScannerUsersPanel` (`/producer/scanners`, `/gastro/scanners`), `ScannerPwaCta` (dashboard productora/gastro + panel scanners); repo `scannerAccounts` + `lib/query/scanner-accounts.ts`; nav `portalNavConfig`. PWA `apps/scanner`: `/door` (`DoorScannerClient`), `QrCameraScanner` (`html5-qrcode`), `public/manifest.json`, pestaña Manual, picker desde `GET /scanner/scan-targets`, persistencia `scanner:lastEventId` / `scanner:lastDiscountId`. Auth dev: `X-Dev-User-Id`. Producción: `NEXT_PUBLIC_SCANNER_APP_URL` → `https://scanner.yoteinvito.club/door`. Doc: `docs/audits/V3_1_STAGE_5_CLOSING.md`.
 
+**Scanner PDF + offline (V3.1 Etapa 6 — cerrada 2026-06-10):** Web — `TicketListPdfDownload` en `/producer/events/[eventId]` (`lib/producer/download-ticket-list-pdf.ts`). PWA — IndexedDB `ScannerOfflineDB` v2 (`lib/db/offline-scanner.ts`), snapshot `GET /scanner/events/:id/snapshot`, sync `POST /scanner/offline-validations/sync`, componentes `ScannerConnectionStatus`, `OfflineConflictPanel`, CTAs guardar/borrar/sync/PDF en `DoorScannerClient`. Doc: `docs/audits/V3_1_STAGE_6_SCANNER_OFFLINE_CLOSING.md`.
+
 **Hoteles V2 (liviano):** discovery **Próximamente** (sin tile en gateway 2×2, sin carrusel home, subcategorías `comingSoon`); portal operativo `/hotel` + `/hotel/editar` (`PATCH /hotel/me`, completitud); ficha pública `/hoteles/[id]` informativa (`HotelLocationDetailView`, API pública); `/hoteles` listado Próximamente. Sin reservas/checkout en plataforma.
 
 **E2E:** `pnpm e2e:hotel` — `e2e/hotel.spec.ts`; `E2E_HOTEL_*` (skip si faltan); doc `docs/hotel/HOTEL_E2E.md`.
