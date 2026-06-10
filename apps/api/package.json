@@ -70,6 +70,7 @@
     "smoke:v31-scanner-scope": "tsx scripts/smoke-v31-scanner-scope.ts",
     "smoke:v31-ticket-list-pdf": "tsx scripts/smoke-v31-ticket-list-pdf.ts",
     "smoke:v31-ticket-list-pdf-permissions": "tsx scripts/smoke-v31-ticket-list-pdf-permissions.ts",
+    "smoke:v31-event-occurrences": "tsx scripts/smoke-v31-event-occurrences.ts",
     "smoke:email": "tsx scripts/smoke-email.ts",
     "smoke:email-template": "tsx scripts/smoke-email-template.ts"
   },

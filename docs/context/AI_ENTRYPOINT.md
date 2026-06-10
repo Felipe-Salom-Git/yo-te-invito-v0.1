@@ -96,6 +96,8 @@ Controllers: HTTP + Zod only. Services: business logic. Prisma: persistence only
 
 **V3.1 Etapa 6 — Scanner PDF y offline (cerrada 2026-06-10):** PDF listado (`export.pdf`), snapshot offline, validación/sync local, conflictos, UX estados. Smokes: `smoke:v31-ticket-list-pdf`, `smoke:v31-ticket-list-pdf-permissions`. Doc: `docs/audits/V3_1_STAGE_6_SCANNER_OFFLINE_CLOSING.md`; checklist §24.5–24.6. Pendiente operativo: JWT login PWA prod, QA manual móvil puerta.
 
+**V3.1 Etapa 7 — Eventos multi-fecha (en curso):** Slice 7.1 base técnica — modelo `EventOccurrence`, `TicketType.occurrenceId` opcional, helpers compatibilidad legacy. Smoke: `smoke:v31-event-occurrences`. Doc: `docs/audits/V3_1_STAGE_7_EVENT_OCCURRENCES_MODEL_SMOKE.md`; checklist §25 (base marcada, UI/checkout pendientes).
+
 **Legal Admin / Legales V2 (cerrado 2026-05-24):** slices 1–8 + import Markdown — admin `/admin/legales`, público `/legal/[slug]`, aceptación `/me/legal/*`, integración registro/checkout/footer/portales; **layout portales** `max-w-screen-2xl` (`portalLayoutClasses.ts`, `PortalPageContext`). Doc: `docs/legal/LEGAL_ADMIN_MODULE.md`; QA: `docs/dev/LEGAL_ADMIN_QA_SMOKE.md`; smoke `pnpm --filter api run smoke:legal` (API + `DEV_AUTH_ENABLED` o JWT). **No** marcar checklist de redacción legal hasta publicar contenido real.
 
 **Footer público V2 (cerrado 2026-05-24):** `RouteAwareFooter` + variantes `full`/`minimal`/`hidden` (`footerVisibility.ts`); UI `components/footer/*`; contacto `GET /public/platform-config` + `usePublicPlatformConfig`; legales `footerLegalLinks.ts`. `/categorias`: solo `CategoryGatewayFooter` (global hidden). Checklist V2 § Footer público completo. Docs: `PUBLIC_FOOTER_AUDIT.md`, `PUBLIC_FOOTER_SMOKE.md`, `PUBLIC_FOOTER_CLOSING_AUDIT.md`.

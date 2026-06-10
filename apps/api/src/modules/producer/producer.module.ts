@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { SubcategoriesModule } from '../subcategories/subcategories.module';
 import { RentalLocationsModule } from '../rental-locations/rental-locations.module';
+import { EventOccurrencesModule } from '../event-occurrences/event-occurrences.module';
 import { AuthModule } from '../../auth/auth.module';
 import { TicketingModule } from '../../ticketing/ticketing.module';
 import { TicketsModule } from '../tickets/tickets.module';
@@ -38,6 +39,7 @@ import { ProducerDashboardMetricsService } from './producer-dashboard-metrics.se
     CommercialReviewsModule,
     SubcategoriesModule,
     RentalLocationsModule,
+    EventOccurrencesModule,
   ],
   controllers: [
     ProducerEventsController,

@@ -159,6 +159,7 @@ See previous full endpoint tables in git history; key groups:
 - **Event**, **EventMedia**, **ContentSubcategory**
 - **RentalLocation** → rental products
 - **TicketType**, **TicketTemplate**, **TicketBatch**, **Order**, **OrderItem**, **Payment**, **Ticket** (`TRANSFER_PENDING`, `TRANSFERRED`; **TicketTransferOffer**)
+- **EventOccurrence** (V3.1 Etapa 7 Slice 7.1): fechas/funciones multi-fecha; `TicketType.occurrenceId` opcional (`null` = legacy single-date). Helpers: `packages/shared/src/event-occurrences/compat.ts`. Service: `EventOccurrencesService`. Smoke: `smoke:v31-event-occurrences`. Doc: `V3_1_STAGE_7_EVENT_OCCURRENCES_MODEL_SMOKE.md`. Checkout/scanner sin cambios hasta slices 7.6+.
 - **UserCart**, **UserCartItem**, **UserFavorite**, **UserExpectedEvent**, **UserGastroFollow**, **UserPushSubscription**
 - **UserNotification**, **NotificationDeliveryLog** (`NotificationChannel`: `IN_APP`, `EMAIL`, `PUSH`)
 - **Referidos V2:** **ReferrerProfile**, **ProducerReferrerRelationship**, **ReferralLink**, **ReferralAttribution**, **ReferralCommercialProposal**, **ReferralCommercialAgreement**, **ReferralCommission** (`CONFIRMED` / `MARKED_AS_PAID`), **ReferralPaymentRequest** — liquidación externa (sin custodia). Emails transaccionales Slice 7: `ReferralEmailsService` → `REFERRAL_*` templates (`enqueueTemplate`). Doc: `docs/referrals/REFERRALS_V2.md`, `docs/emails/EMAIL_MATRIX.md` §6

@@ -188,6 +188,7 @@ model Tenant {
   notificationDeliveryLogs      NotificationDeliveryLog[]
   legalDocuments                LegalDocument[]
   scannerAccounts               ScannerAccount[]
+  eventOccurrences              EventOccurrence[]
 }
 
 model RentalLocation {
@@ -734,6 +735,13 @@ enum EventStatus {
   CANCELLED
 }
 
+/// Per-date/show instance for multi-date ticketing events (V3.1 Etapa 7).
+enum EventOccurrenceStatus {
+  ACTIVE
+  PAUSED
+  CANCELLED
+}
+
 enum EventMediaType {
   IMAGE
   VIDEO
@@ -930,6 +938,7 @@ model Event {
   hotelProfilePublic  HotelProfile?        @relation("HotelPublicEvent")
   userCartItems       UserCartItem[]
   expectedByUsers     UserExpectedEvent[]
+  occurrences         EventOccurrence[]
 
   @@index([tenantId])
   @@index([tenantId, status])
@@ -941,6 +950,37 @@ model Event {
   @@index([excursionOperatorId])
   @@index([tenantId, category, rentalLocationId])
   @@index([tenantId, category, excursionOperatorId])
+}
+
+/// Single date/show for a multi-date event. Legacy single-date events use Event.startAt only.
+model EventOccurrence {
+  id            String                @id @default(cuid())
+  tenantId      String
+  eventId       String
+  startAt       DateTime
+  endAt         DateTime?
+  venueName     String?
+  venueAddress  String?
+  city          String?
+  province      String?
+  googlePlaceId String?
+  geoLat        Float?
+  geoLng        Float?
+  capacity      Int?
+  status        EventOccurrenceStatus @default(ACTIVE)
+  sortOrder     Int                   @default(0)
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+
+  tenant      Tenant       @relation(fields: [tenantId], references: [id])
+  event       Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  ticketTypes TicketType[]
+
+  @@index([tenantId])
+  @@index([eventId])
+  @@index([tenantId, eventId])
+  @@index([eventId, status, startAt])
+  @@index([eventId, sortOrder])
 }
 
 enum TicketTypeStatus {
@@ -1045,6 +1085,8 @@ model TicketType {
   id               String           @id @default(cuid())
   tenantId         String
   eventId          String
+  /// null = legacy single-date event; set for multi-date ticket types (V3.1 Etapa 7).
+  occurrenceId     String?
   name             String
   description      String?
   price            Decimal          @db.Decimal(12, 2)
@@ -1062,6 +1104,7 @@ model TicketType {
 
   tenant         Tenant           @relation(fields: [tenantId], references: [id])
   event          Event            @relation(fields: [eventId], references: [id])
+  occurrence     EventOccurrence? @relation(fields: [occurrenceId], references: [id], onDelete: SetNull)
   ticketTemplate TicketTemplate?  @relation(fields: [ticketTemplateId], references: [id], onDelete: SetNull)
   batches        TicketBatch[]
   orderItems     OrderItem[]
@@ -1071,6 +1114,7 @@ model TicketType {
 
   @@index([eventId, status])
   @@index([tenantId])
+  @@index([occurrenceId])
 }
 
 /// Visual layout for digital ticket (producer canvas studio). QR payload at issuance is unchanged; this is display-only until a renderer consumes it.

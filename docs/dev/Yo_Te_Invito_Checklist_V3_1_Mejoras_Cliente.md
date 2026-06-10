@@ -1091,8 +1091,11 @@ Reactivar cada perfil desde admin dispara sync sin script destructivo.
 
 # 25. Eventos con múltiples fechas
 
+> **Slice 7.1 (2026-06-10):** Base técnica — modelo `EventOccurrence`, `TicketType.occurrenceId` opcional, schemas shared, helpers compatibilidad, `EventOccurrencesService`, smoke `smoke:v31-event-occurrences`. Doc: `docs/audits/V3_1_STAGE_7_EVENT_OCCURRENCES_MODEL_SMOKE.md`. Checkout/scanner sin cambios.
+
 ## 25.1 Múltiples fechas por evento
 
+- [x] **Base técnica:** modelo `EventOccurrence` + relación con `Event` y `TicketType` (Slice 7.1).
 - [ ] Permitir que una productora cargue un evento con múltiples fechas.
 - [ ] Cada fecha debe tener su propia configuración operativa.
 - [ ] Para cada fecha, permitir cargar:

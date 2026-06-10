@@ -52,6 +52,8 @@ export * from './schemas/referral-metrics';
 export * from './schemas/inbox.schema';
 export * from './schemas/subcategories';
 export * from './schemas/content-tags';
+export * from './schemas/event-occurrences';
+export * from './event-occurrences';
 export * from './schemas/category-banners';
 export * from './schemas/category-editorial-banners';
 export * from './schemas/opening-hours';
