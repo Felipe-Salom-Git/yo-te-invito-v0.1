@@ -792,6 +792,13 @@ export class ScannerAccountsService {
     });
   }
 
+  private scannerInactiveForbidden(): ForbiddenException {
+    return new ForbiddenException({
+      code: 'SCANNER_INACTIVE',
+      message: 'La cuenta scanner está inactiva',
+    });
+  }
+
   /** Throws if scanner user has no active linked account (Slice 5.7). */
   async requireActiveAccountForScanning(
     tenantId: string,
@@ -800,9 +807,16 @@ export class ScannerAccountsService {
     parentProfileType: SharedScannerParentProfileType;
     parentProfileId: string;
   }> {
-    const account = await this.getActiveAccountForScanner(tenantId, scannerUserId);
-    if (!account) throw this.scannerScopeForbidden();
-    return account;
+    const linked = await this.prisma.scannerAccount.findFirst({
+      where: { tenantId, scannerUserId },
+      select: { isActive: true, parentProfileType: true, parentProfileId: true },
+    });
+    if (!linked) throw this.scannerScopeForbidden();
+    if (!linked.isActive) throw this.scannerInactiveForbidden();
+    return {
+      parentProfileType: linked.parentProfileType as SharedScannerParentProfileType,
+      parentProfileId: linked.parentProfileId,
+    };
   }
 
   async assertScannerCanAccessEvent(
