@@ -29,6 +29,7 @@ import { ProducerProfileController } from './producer-profile.controller';
 import { ProducerProfileService } from './producer-profile.service';
 import { ProducerDashboardController } from './producer-dashboard.controller';
 import { ProducerDashboardMetricsService } from './producer-dashboard-metrics.service';
+import { ProducerTicketDateChangeController } from './producer-ticket-date-change.controller';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { ProducerDashboardMetricsService } from './producer-dashboard-metrics.se
     ProducerTicketTemplateController,
     ProducerProfileController,
     ProducerDashboardController,
+    ProducerTicketDateChangeController,
   ],
   providers: [
     ProfilesAuthorizationService,

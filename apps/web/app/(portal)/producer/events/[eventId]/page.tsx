@@ -12,6 +12,7 @@ import { getErrorMessage } from '@/lib/errors';
 import { TicketTypesEditor } from '@/components/producer/ticket-types/TicketTypesEditor';
 import { ProducerEventPostSavePanel } from '@/components/producer/events/ProducerEventPostSavePanel';
 import { TicketListPdfDownload } from '@/components/producer/events/TicketListPdfDownload';
+import { ProducerTicketDateChangesPanel } from '@/components/producer/events/ProducerTicketDateChangesPanel';
 import type { ProducerReviewRow } from '@/repositories/interfaces';
 
 export default function ProducerEventManagePage() {
@@ -117,6 +118,8 @@ export default function ProducerEventManagePage() {
       ) : (
         <TicketTypesEditor eventId={eventId} />
       )}
+
+      {!event.isGeneralPublication && <ProducerTicketDateChangesPanel eventId={eventId} />}
 
       <section className="mt-12 border-t border-border pt-8">
         <h2 className="font-semibold text-text">Reseñas</h2>
