@@ -6,7 +6,6 @@ import { createPortal } from 'react-dom';
 import { useFocusTrap, useReturnFocus } from '@/hooks/useOverlayA11y';
 import { useRole } from '@/hooks/useRole';
 import { navFocusRing, navTouchTarget } from '@/lib/navigation/navA11yClasses';
-import { ThemeToggle } from '@/components/ThemeToggle';
 import {
   getMobilePublicNavDrawerItems,
   type PublicNavItem,
@@ -142,12 +141,6 @@ export function MobilePublicNavDrawer({ isOpen, onClose }: MobilePublicNavDrawer
           </div>
         </nav>
 
-        <div className="border-t border-border px-4 py-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-text-muted">Tema</span>
-            <ThemeToggle />
-          </div>
-        </div>
       </div>
     </div>
   );

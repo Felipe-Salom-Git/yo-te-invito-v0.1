@@ -47,12 +47,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" suppressHydrationWarning>
+    <html lang="es" className="dark" suppressHydrationWarning>
       <head>
         <SiteOrganizationJsonLd />
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('yti:theme');if(t==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}})();`,
+            __html: `(function(){try{var d=document.documentElement;d.classList.add('dark');d.removeAttribute('data-theme');if(localStorage.getItem('yti:theme')==='light')localStorage.removeItem('yti:theme');}catch(e){}})();`,
           }}
         />
       </head>

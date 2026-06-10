@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { Logo } from './brand/Logo';
 import { NavbarUserMenu } from './NavbarUserMenu';
 import { NavbarCartButton } from './navbar/NavbarCartButton';
-import { ThemeToggle } from './ThemeToggle';
 import { NavbarHomeButton } from './navbar/NavbarHomeButton';
 import { NavbarPublicLinks } from './navbar/NavbarPublicLinks';
 import { NavbarCitySlot } from './navbar/NavbarCitySlot';
@@ -39,9 +38,6 @@ export function Navbar() {
         </div>
 
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-          <div className="hidden md:block">
-            <ThemeToggle />
-          </div>
           <NavbarCartButton />
           <NavbarMobileNav />
           <div className="hidden md:flex md:items-center">
