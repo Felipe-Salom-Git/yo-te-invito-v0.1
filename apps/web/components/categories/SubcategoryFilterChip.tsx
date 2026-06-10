@@ -2,13 +2,14 @@
 
 import Link from 'next/link';
 
-const CHIP_SIZE =
-  'flex h-[84px] w-[108px] shrink-0 flex-col items-center justify-center border px-2 text-center transition-colors sm:h-[88px] sm:w-[116px]';
+/** Shared subtle chip styles — V3.1 Etapa 2 */
+export const PUBLIC_FILTER_CHIP_BASE =
+  'inline-flex shrink-0 items-center justify-center rounded-full border px-3.5 py-2 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black';
 
-function chipStateClass(isActive: boolean) {
+export function publicFilterChipStateClass(isActive: boolean): string {
   return isActive
-    ? 'border-accent-muted bg-accent-surface/60 text-accent-soft'
-    : 'border-white/20 bg-black text-white/80 hover:border-white/40 hover:text-white';
+    ? 'border-accent/50 bg-accent/15 text-accent-soft'
+    : 'border-white/12 bg-white/[0.04] text-white/75 hover:border-white/25 hover:bg-white/[0.08] hover:text-white';
 }
 
 export type SubcategoryFilterChipProps = {
@@ -25,20 +26,17 @@ export function SubcategoryFilterChip({
   isActive = false,
 }: SubcategoryFilterChipProps) {
   return (
-    <Link href={href} className={`${CHIP_SIZE} ${chipStateClass(isActive)}`}>
-      <span
-        className={`line-clamp-2 text-xs font-black uppercase leading-tight tracking-tight sm:text-sm ${
-          isActive ? 'text-accent-soft' : 'text-white'
-        }`}
-      >
-        {title}
-      </span>
+    <Link
+      href={href}
+      className={`${PUBLIC_FILTER_CHIP_BASE} ${publicFilterChipStateClass(isActive)} min-h-[40px] max-w-[9.5rem] flex-col gap-0.5 sm:max-w-[10.5rem]`}
+      aria-current={isActive ? 'page' : undefined}
+    >
+      <span className="line-clamp-1 w-full text-center leading-tight">{title}</span>
       {subtitle ? (
-        <span className="mt-1 line-clamp-1 text-[0.6rem] font-medium uppercase tracking-wide text-white/50">
+        <span className="line-clamp-1 w-full text-center text-[10px] font-normal text-white/45">
           {subtitle}
         </span>
       ) : null}
-      <div className="mt-2 h-[2px] w-6 shrink-0 bg-accent" aria-hidden />
     </Link>
   );
 }

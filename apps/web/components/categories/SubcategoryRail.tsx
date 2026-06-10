@@ -19,7 +19,7 @@ export interface SubcategoryRailProps {
 }
 
 const SKELETON_CHIP_CLASS =
-  'h-[84px] w-[108px] shrink-0 animate-pulse border border-white/10 bg-white/5 sm:h-[88px] sm:w-[116px]';
+  'h-10 w-24 shrink-0 animate-pulse rounded-full border border-white/10 bg-white/5 sm:w-28';
 
 export function SubcategoryRail({
   category,
@@ -73,7 +73,7 @@ export function SubcategoryRail({
             <div
               ref={scrollRef}
               onScroll={updateScroll}
-              className="scrollbar-hide flex gap-2 overflow-x-auto"
+              className="scrollbar-hide flex gap-2 overflow-x-auto overscroll-x-contain pb-0.5 snap-x snap-mandatory [-webkit-overflow-scrolling:touch]"
             >
               <SubcategoryFilterChip
                 href={baseHref}
