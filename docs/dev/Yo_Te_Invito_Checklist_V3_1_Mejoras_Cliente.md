@@ -1176,6 +1176,8 @@ Reactivar cada perfil desde admin dispara sync sin script destructivo.
 
 ## 26.1 Confirmar estado actual de transferencia (QA)
 
+> **Slice 9.1 (2026-06-10):** auditoría en `docs/audits/V3_1_STAGE_9_TICKET_TRANSFER_AUDIT.md`. Flujo implementado; gaps en multi-fecha (`occurrenceId`), visibilidad emisor post-transfer, email expiración, smoke dedicado. Cierre pendiente slices 9.2–9.6.
+
 - [ ] Auditar si la transferencia de entradas entre usuarios ya está activa en producción.
 - [ ] Confirmar flujo completo:
   - Usuario emisor selecciona ticket.
