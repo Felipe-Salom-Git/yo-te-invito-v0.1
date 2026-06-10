@@ -835,11 +835,12 @@ FAQs, editor enriquecido, palabras cliqueables, cropper de imágenes, SEO fino y
 
 ## 19.3 Deploy VPS
 
-- [ ] `git pull origin feat/v1-s03-api-foundation`.
-- [ ] `prisma migrate deploy` en VPS (bloqueante si pending).
+- [x] `git push origin feat/v1-s03-api-foundation` — 2026-06-10, commit `892f611` (77 commits).
+- [ ] `git pull origin feat/v1-s03-api-foundation` en VPS (ejecución manual SSH).
+- [ ] `prisma migrate deploy` en VPS (bloqueante si pending; incl. `20260610140000_stage_12_hotel_audit_related_links`).
 - [ ] `pnpm build` + restart `yti-api yti-web yti-scanner`.
-- [ ] `curl -I` health público/API/scanner.
-- [ ] Confirmar política merge `main` vs deploy directo desde rama.
+- [ ] `curl -I` health público/API/scanner post-deploy.
+- [x] Confirmar política merge `main` vs deploy directo desde rama — **deploy desde `feat/v1-s03-api-foundation`; sin merge a `main`**.
 
 ## 19.4 Pendientes no bloqueantes post-V3.1
 
@@ -943,6 +944,42 @@ Reactivar cada perfil desde admin dispara sync sin script destructivo.
 - [x] Documentación smoke + cierre.
 - [x] Build web OK.
 - [ ] QA manual browser completo pre-Etapa 0.
+
+---
+
+# 32. V3.1 Etapa 0 — Cierre técnico y deploy VPS
+
+> Docs: `V3_1_STAGE_0_DEPLOY_CLOSING.md`, `V3_1_STAGE_0_MANUAL_QA_SERVER_CHECKLIST.md`
+
+## 32.1 Auditoría y push (Slices 0.1–0.3)
+
+- [x] Rama `feat/v1-s03-api-foundation`, working tree limpio.
+- [x] Sin secretos en staging.
+- [x] Push remoto `892f611` (2026-06-10).
+- [x] Builds local: shared/web/scanner PASS; api PASS vía `nest build` (prisma generate bloqueado por dev server Windows).
+
+## 32.2 Smokes pre-push (Slice 0.2)
+
+- [x] `smoke:v31-stabilization` PASS (local, post `migrate deploy`).
+- [x] `smoke:v31-subcategories` PASS.
+- [x] `smoke:v31-admin-archive` PASS.
+- [x] `smoke:v31-category-banners` PASS.
+- [x] `smoke:v31-admin-gastro-discovery` PASS.
+
+## 32.3 Deploy VPS (Slice 0.4)
+
+- [ ] SSH + `git pull` + `pnpm install` + `prisma migrate deploy` + `pnpm build` + restart servicios.
+- [x] Health pre-deploy (código anterior): web/API/scanner HTTP 200.
+
+## 32.4 Post-deploy operativo (Slice 0.5)
+
+- [ ] Gastro ACTIVE sin `publicEventId` (query VPS).
+- [ ] Usuario maestro `user:inspect`.
+- [ ] Estado legales en admin (sin auto-publish).
+
+## 32.5 QA manual servidor (Slice 0.6–0.7)
+
+- [ ] Checklist `V3_1_STAGE_0_MANUAL_QA_SERVER_CHECKLIST.md` completada por Euge.
 
 ---
 

@@ -102,6 +102,10 @@ Controllers: HTTP + Zod only. Services: business logic. Prisma: persistence only
 
 **V3.1 Etapa 9 — Transferencia de entradas (cerrada 2026-06-10):** flujo personal `TicketTransferOffer`, elegibilidad `TicketTransferEligibilityService`, QR nuevo al aceptar. Smokes: `smoke:v31-ticket-transfer-flow`, `smoke:user-portal`. Doc: `docs/audits/V3_1_STAGE_9_TICKET_TRANSFER_CLOSING.md`; checklist §26.1.
 
+**V3.1 Etapa 0 — Deploy técnico pre-QA (parcial 2026-06-10):** push `feat/v1-s03-api-foundation` @ `892f611`; smokes V3.1 OK local; deploy VPS manual pendiente SSH. Docs: `V3_1_STAGE_0_DEPLOY_CLOSING.md`, `V3_1_STAGE_0_MANUAL_QA_SERVER_CHECKLIST.md`.
+
+**V3.1 Etapa 13 — Hotfix visual (cerrada 2026-06-10):** dark forzado global; subtítulos gastro cards. Doc: `V3_1_STAGE_13_VISUAL_HOTFIX_CLOSING.md`.
+
 **V3.1 Etapa 10 — Horarios gastro avanzados (cerrada 2026-06-10):** `openingHoursMode` simple/weekly, `openingHoursWeekly` por día, formulario `WeeklyOpeningHoursEditor`, ficha pública abierto/cerrado. Smoke: `smoke:v31-gastro-weekly-hours`. Doc: `docs/audits/V3_1_STAGE_10_GASTRO_HOURS_CLOSING.md`; checklist §27.1–27.2.
 
 **Legal Admin / Legales V2 (cerrado 2026-05-24):** slices 1–8 + import Markdown — admin `/admin/legales`, público `/legal/[slug]`, aceptación `/me/legal/*`, integración registro/checkout/footer/portales; **layout portales** `max-w-screen-2xl` (`portalLayoutClasses.ts`, `PortalPageContext`). Doc: `docs/legal/LEGAL_ADMIN_MODULE.md`; QA: `docs/dev/LEGAL_ADMIN_QA_SMOKE.md`; smoke `pnpm --filter api run smoke:legal` (API + `DEV_AUTH_ENABLED` o JWT). **No** marcar checklist de redacción legal hasta publicar contenido real.

@@ -530,6 +530,9 @@ _(Trending con `viewCount`: ver ítem Slice 2 arriba en § K.)_
 - [ ] V3.1 — restante no bloqueante (maps prod §4.1, §5.2 links en descripciones, multi-subcategorías otras verticales, drag galería, migración DB ratings 1–5)
 - [x] V3.1 Etapa 11 — legales Caso A código (`EVENT_PUBLICATION`, bloqueo `PENDING`) — `V3_1_STAGE_11_LEGAL_CLOSING.md`
 - [ ] V3.1 Etapa 11 — QA manual browser legales + publicar `producer_terms` real (cliente)
+- [x] V3.1 Etapa 0 — push rama `feat/v1-s03-api-foundation` (`892f611`, 2026-06-10) — `V3_1_STAGE_0_DEPLOY_CLOSING.md`
+- [ ] V3.1 Etapa 0 — deploy VPS manual (SSH `deploy@179.43.124.145:5230`) + `prisma migrate deploy` + restart
+- [ ] V3.1 Etapa 0 — QA manual servidor — `V3_1_STAGE_0_MANUAL_QA_SERVER_CHECKLIST.md`
 
 ---
 
@@ -564,6 +567,9 @@ _(Trending con `viewCount`: ver ítem Slice 2 arriba en § K.)_
 | `docs/user/USER_PORTAL_PRISMA_PROPOSAL.md` | Diff modelo (pre-migrate) |
 | `docs/audits/V3_1_FUNCTIONAL_AUDIT.md` | Auditoría funcional V3.1 — Slice 0 (orden de implementación) |
 | `docs/audits/V3_1_PRE_DEPLOY_QA_CLOSING.md` | QA pre-deploy V3.1 — Slice 14 (migraciones, smokes, deploy VPS) |
+| `docs/audits/V3_1_STAGE_0_DEPLOY_CLOSING.md` | Etapa 0 — push, deploy VPS, smokes pre-push |
+| `docs/audits/V3_1_STAGE_0_MANUAL_QA_SERVER_CHECKLIST.md` | QA manual post-deploy (Euge) |
+| `docs/audits/V3_1_STAGE_13_VISUAL_HOTFIX_CLOSING.md` | Etapa 13 — dark global + gastro cards |
 | `docs/audits/V3_1_HOTFIX_ADMIN_GASTRO_DISCOVERY_SMOKE.md` | Hotfix admin gastro → discovery público |
 | `docs/audits/V3_1_HOTFIX_GASTRO_PUBLIC_LINKS.md` | Hotfix links cards gastro (`/restaurants` vs `/gastronomicos`) |
 | `docs/dev/Yo_Te_Invito_Checklist_V3_1_Mejoras_Cliente.md` | Checklist mejoras cliente V3.1 (source of truth) |
