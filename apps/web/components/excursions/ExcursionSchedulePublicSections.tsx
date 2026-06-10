@@ -85,7 +85,7 @@ export function ExcursionSchedulePublicSections({
                 onClick={onViewLocation}
                 className="mt-3 text-sm font-medium text-accent hover:underline"
               >
-                Ver en mapa
+                Ver ubicación
               </button>
             ) : null}
           </div>
