@@ -96,7 +96,9 @@ Controllers: HTTP + Zod only. Services: business logic. Prisma: persistence only
 
 **V3.1 Etapa 6 — Scanner PDF y offline (cerrada 2026-06-10):** PDF listado (`export.pdf`), snapshot offline, validación/sync local, conflictos, UX estados. Smokes: `smoke:v31-ticket-list-pdf`, `smoke:v31-ticket-list-pdf-permissions`. Doc: `docs/audits/V3_1_STAGE_6_SCANNER_OFFLINE_CLOSING.md`; checklist §24.5–24.6. Pendiente operativo: JWT login PWA prod, QA manual móvil puerta.
 
-**V3.1 Etapa 7 — Eventos multi-fecha (en curso):** Slice 7.1 base técnica — modelo `EventOccurrence`, `TicketType.occurrenceId` opcional, helpers compatibilidad legacy. Smoke: `smoke:v31-event-occurrences`. Doc: `docs/audits/V3_1_STAGE_7_EVENT_OCCURRENCES_MODEL_SMOKE.md`; checklist §25 (base marcada, UI/checkout pendientes).
+**V3.1 Etapa 7 — Eventos multi-fecha (cerrada 2026-06-10):** modelo `EventOccurrence`, checkout/cart con `occurrenceId`, scanner `WRONG_OCCURRENCE`. Smoke: `smoke:v31-event-occurrences`. Doc: `docs/audits/V3_1_STAGE_7_MULTI_DATE_EVENTS_CLOSING.md`; checklist §25.1–25.2.
+
+**V3.1 Etapa 8 — Cambio de fecha entrada (cerrada 2026-06-10):** `TicketDateChangeRequest`, política `docs/tickets/TICKET_DATE_CHANGE_POLICY.md`, portal usuario + productora, notificaciones/email. Smoke: `smoke:v31-ticket-date-change`. Doc: `docs/audits/V3_1_STAGE_8_TICKET_DATE_CHANGE_CLOSING.md`; checklist §25.3.
 
 **Legal Admin / Legales V2 (cerrado 2026-05-24):** slices 1–8 + import Markdown — admin `/admin/legales`, público `/legal/[slug]`, aceptación `/me/legal/*`, integración registro/checkout/footer/portales; **layout portales** `max-w-screen-2xl` (`portalLayoutClasses.ts`, `PortalPageContext`). Doc: `docs/legal/LEGAL_ADMIN_MODULE.md`; QA: `docs/dev/LEGAL_ADMIN_QA_SMOKE.md`; smoke `pnpm --filter api run smoke:legal` (API + `DEV_AUTH_ENABLED` o JWT). **No** marcar checklist de redacción legal hasta publicar contenido real.
 

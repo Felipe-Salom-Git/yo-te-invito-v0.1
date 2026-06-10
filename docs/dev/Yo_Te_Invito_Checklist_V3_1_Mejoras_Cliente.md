@@ -1146,21 +1146,25 @@ Reactivar cada perfil desde admin dispara sync sin script destructivo.
 
 ## 25.3 Cambio de fecha de entrada por parte del usuario
 
-- [ ] Si el evento tiene múltiples fechas, permitir que el usuario solicite o realice cambio de fecha.
-- [ ] Definir reglas:
-  - Hasta cuántas horas antes se puede cambiar.
-  - Si depende de disponibilidad.
-  - Si requiere aprobación de productora.
-  - Si puede tener costo adicional.
-- [ ] Solo permitir cambio si la entrada:
+- [x] Si el evento tiene múltiples fechas, permitir que el usuario solicite o realice cambio de fecha (Etapa 8 slices 8.2–8.5).
+- [x] Definir reglas (Slice 8.1 — `docs/tickets/TICKET_DATE_CHANGE_POLICY.md`):
+  - Hasta cuántas horas antes se puede cambiar — **24 h** (origen o destino, más restrictivo).
+  - Si depende de disponibilidad — **sí**, stock en destino.
+  - Si requiere aprobación de productora — **auto** mismo tipo/precio; manual si diferencia.
+  - Si puede tener costo adicional — **no en V1** (diferencia → manual/bloqueo).
+- [x] Solo permitir cambio si la entrada:
   - Está válida.
   - No fue usada.
   - No fue revocada.
   - No fue transferida en estado pendiente (`TRANSFER_PENDING`).
-- [ ] Registrar auditoría del cambio.
-- [ ] Notificar al usuario por email.
-- [ ] Actualizar QR/ticket si corresponde.
-- [ ] Mostrar historial del cambio en detalle de orden/ticket (`/me/tickets`, `/me/orders`).
+- [x] Registrar auditoría del cambio (`TICKET_DATE_CHANGE_*`).
+- [x] Notificar al usuario por email + in-app (Slice 8.6).
+- [x] Actualizar ticket/occurrence; QR `yti:v1:` sin regenerar; scanner por BD (Slice 8.5).
+- [x] Mostrar historial del cambio en detalle de orden/ticket (`/me/tickets`, `/me/orders`) (Slice 8.7).
+
+> **Etapa 8 cerrada (código slices 8.1–8.8):** `docs/audits/V3_1_STAGE_8_TICKET_DATE_CHANGE_CLOSING.md`  
+> Smoke: `smoke:v31-ticket-date-change`  
+> Pendiente: flag manual por evento; cobro diferencia precio; QA puerta manual.
 
 **Prioridad:** Media/Alta  
 **Tipo:** Usuario / Tickets / Reglas negocio  
