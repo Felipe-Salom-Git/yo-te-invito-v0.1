@@ -915,3 +915,435 @@ Reactivar cada perfil desde admin dispara sync sin script destructivo.
 - [x] Gastro «Propuesta gastronómica»; rentals «Detalle del producto».
 - [ ] QA manual fichas públicas sin texto de clase visible.
 
+---
+
+# 23. Etiquetas / Tags de publicaciones
+
+## 23.1 Admin — creación de etiquetas
+
+- [ ] Crear módulo de administración de etiquetas en `/admin` (CRUD dedicado o subsección de contenido).
+- [ ] Permitir crear, editar, activar/desactivar y archivar etiquetas.
+- [ ] Evitar duplicados o etiquetas demasiado similares (normalización, validación de nombre, sugerencias al crear).
+- [ ] Definir formato recomendado tipo hashtag (`#nieve`, `#recitales`, `#bariloche`, `#familia`, `#promo`).
+- [ ] Definir si las etiquetas son globales o por vertical:
+  - Eventos.
+  - Gastronomía.
+  - Excursiones.
+  - Rentals.
+  - Hoteles (cuando corresponda).
+- [ ] Permitir buscar publicaciones por etiqueta desde Admin (listado filtrado por tag).
+
+**Prioridad:** Media/Alta  
+**Tipo:** Admin / Contenido / Búsqueda  
+**Pantallas:** `/admin/*` (módulo etiquetas), búsqueda admin de publicaciones
+
+---
+
+## 23.2 Publicaciones — etiquetas en carga de contenido
+
+- [ ] Al cargar una publicación desde cualquier portal, permitir agregar etiquetas.
+- [ ] Aplicar a:
+  - Eventos de productora.
+  - Excursiones.
+  - Gastronomía.
+  - Rentals.
+  - Hoteles (cuando estén activos).
+- [ ] Permitir seleccionar etiquetas existentes (autocomplete o chips).
+- [ ] Definir si perfiles comerciales pueden crear etiquetas o solo elegir las creadas por Admin.
+- [ ] Validar cantidad máxima de etiquetas por publicación.
+- [ ] Mostrar ayuda visual:
+  - «Agregá etiquetas para mejorar la búsqueda en Explorar».
+  - «Ejemplo: nieve, cena, teatro, aventura».
+- [ ] Usar etiquetas como parte del buscador/explorer (`/explore`, búsqueda pública).
+- [ ] Permitir filtrar o encontrar publicaciones por etiqueta.
+- [ ] Mostrar etiquetas en:
+  - Modal de publicación (`ContentPreviewModal`).
+  - Página pública de publicación.
+  - Cards públicas solo si no saturan visualmente.
+- [ ] Evitar mostrar demasiadas etiquetas en cards (límite visual + truncado).
+
+**Prioridad:** Alta  
+**Tipo:** Funcional / Discovery / UX carga  
+**Pantallas:** Portales productora/gastro/hotel/excursión/rental; `/explore`; fichas públicas; cards home/categoría
+
+---
+
+# 24. Scanner PWA / usuarios scanner / operación offline
+
+## 24.1 Crear usuario scanner desde Productoras, Proveedores y Gastros
+
+- [ ] En paneles de Productora, Gastro y Proveedor/Operador, agregar opción para crear usuario scanner.
+- [ ] Permitir configurar email/usuario y contraseña inicial.
+- [ ] Asociar el usuario scanner a la cuenta padre (tenant + perfil comercial).
+- [ ] Definir permisos limitados:
+  - Solo acceder al scanner.
+  - No acceder al panel administrativo completo.
+  - No modificar publicaciones.
+  - No ver datos sensibles innecesarios.
+- [ ] Permitir activar/desactivar usuarios scanner.
+- [ ] Permitir resetear contraseña desde la cuenta padre o desde Admin.
+- [ ] Agregar opción visible para copiar o abrir link de descarga/instalación del Scanner PWA.
+
+**Prioridad:** Alta  
+**Tipo:** Seguridad / Roles / Portal operativo  
+**Pantallas:** `/producer/*`, `/gastro/*`, portal operador excursión; `/admin/usuarios` (reset)
+
+---
+
+## 24.2 Link para descargar o instalar Scanner PWA
+
+- [ ] En paneles de Productora, Gastro y Proveedor/Operador, mostrar CTA:
+  - «Abrir Scanner».
+  - «Instalar Scanner PWA».
+  - «Copiar link del Scanner».
+- [ ] Mostrar instrucciones simples para instalar en celular:
+  - Android / Chrome.
+  - iPhone / Safari.
+- [ ] Confirmar que el scanner PWA tenga manifest, iconos y comportamiento instalable (`apps/scanner`).
+- [ ] Verificar funcionamiento desde `scanner.yoteinvito.club`.
+
+**Prioridad:** Alta  
+**Tipo:** PWA / UX Operativa  
+**Pantallas:** Portales productora/gastro/operador; `apps/scanner` (manifest, icons)
+
+---
+
+## 24.3 Scanner con cámara del dispositivo
+
+- [ ] El scanner debe poder usar la cámara del dispositivo para leer QR.
+- [ ] Solicitar permisos de cámara de forma clara (copy + estado de permiso).
+- [ ] Mostrar error entendible si el navegador bloquea permisos.
+- [ ] Permitir reintentar acceso a cámara.
+- [ ] Confirmar funcionamiento en:
+  - Android Chrome.
+  - iPhone Safari.
+  - Desktop con webcam (si aplica).
+- [ ] Mantener alternativa manual para ingresar código si la cámara falla.
+
+**Prioridad:** Alta  
+**Tipo:** Scanner / Mobile / QR  
+**Pantallas:** `scanner.yoteinvito.club` / `apps/scanner`
+
+---
+
+## 24.4 Selección de evento o descuento dentro del Scanner
+
+- [ ] Dentro del scanner, permitir seleccionar el evento, descuento o publicación asociada a la cuenta padre.
+- [ ] Mostrar solo publicaciones que correspondan al usuario scanner (scope por cuenta padre).
+- [ ] Separar claramente:
+  - Eventos con entradas.
+  - Descuentos gastronómicos.
+  - Otros beneficios escaneables (si aplican).
+- [ ] Evitar que un scanner pueda validar entradas/descuentos de otra cuenta.
+- [ ] Recordar última selección usada para agilizar operación (persistencia local o perfil).
+- [ ] Mostrar datos mínimos de contexto:
+  - Nombre del evento/descuento.
+  - Fecha si aplica.
+  - Estado.
+  - Cantidad esperada/validada si aplica.
+
+**Prioridad:** Alta  
+**Tipo:** Scanner / Permisos / Operación  
+**Pantallas:** Scanner PWA; API `/scanner/*`
+
+---
+
+## 24.5 Descargar listado de entradas en PDF
+
+- [ ] Desde el scanner o panel padre, permitir descargar listado de entradas en PDF.
+- [ ] El PDF debe incluir:
+  - Nombre del evento.
+  - Fecha del evento.
+  - Comprador.
+  - Tipo de entrada.
+  - Estado.
+  - Código/identificador.
+  - Estado de validación.
+- [ ] Definir si incluye QR o solo datos de control.
+- [ ] Agregar fecha/hora de generación del PDF.
+- [ ] Agregar aviso de seguridad: «Listado de control interno».
+- [ ] Validar permisos antes de permitir descarga (rol scanner, productora, admin).
+
+**Prioridad:** Media/Alta  
+**Tipo:** Operación / PDF / Control acceso  
+**Pantallas:** Scanner PWA; `/producer/events/[id]` (o equivalente panel padre)
+
+---
+
+## 24.6 Scanner offline con listado descargado
+
+- [ ] Permitir guardar listado local para operar scanner offline.
+- [ ] El usuario scanner debe poder descargar/sincronizar listado antes del evento.
+- [ ] El scanner debe funcionar sin internet usando ese listado local.
+- [ ] Registrar validaciones offline localmente.
+- [ ] Cuando vuelva internet, sincronizar validaciones con backend.
+- [ ] Resolver conflictos:
+  - Entrada ya usada online.
+  - Entrada validada en otro dispositivo.
+  - QR inválido.
+  - Listado desactualizado.
+- [ ] Mostrar estado claro:
+  - Online.
+  - Offline.
+  - Pendiente de sincronizar.
+  - Sincronizado.
+  - Error de sincronización.
+- [ ] Definir límite de seguridad para uso offline (ventana temporal, revocación, versión de listado).
+- [ ] Agregar advertencia operativa: «Sincronizá antes de abrir puertas».
+
+**Prioridad:** Alta  
+**Tipo:** Scanner / Offline-first / Seguridad operativa  
+**Pantallas:** Scanner PWA (`apps/scanner`); API sync validaciones
+
+---
+
+# 25. Eventos con múltiples fechas
+
+## 25.1 Múltiples fechas por evento
+
+- [ ] Permitir que una productora cargue un evento con múltiples fechas.
+- [ ] Cada fecha debe tener su propia configuración operativa.
+- [ ] Para cada fecha, permitir cargar:
+  - Fecha y horario.
+  - Lugar si cambia.
+  - Capacidad/stock.
+  - Tipos de entrada.
+  - Precio por tipo de entrada.
+  - Estado de venta.
+- [ ] Definir si las fechas comparten:
+  - Misma portada.
+  - Misma descripción.
+  - Misma ubicación.
+  - Mismos términos.
+- [ ] Mostrar en detalle público selector de fecha cuando el evento tenga más de una.
+- [ ] Al comprar, el usuario debe elegir fecha antes de seleccionar entradas.
+- [ ] Evitar mezclar stock entre fechas distintas.
+- [ ] En Admin y Productora, mostrar ventas separadas por fecha.
+
+**Prioridad:** Alta  
+**Tipo:** Modelo de datos / Checkout / Productora  
+**Pantallas:** `/producer/events/*`, `/admin/eventos`, `/events/[id]`, checkout
+
+---
+
+## 25.2 Entradas por fecha
+
+- [ ] Cada fecha del evento debe tener sus propios tipos de entradas.
+- [ ] Permitir que una fecha tenga entradas diferentes a otra.
+- [ ] Permitir activar/desactivar ventas por fecha.
+- [ ] Evitar que una entrada comprada para una fecha valide en otra fecha.
+- [ ] En el ticket, mostrar claramente:
+  - Evento.
+  - Fecha elegida.
+  - Horario.
+  - Tipo de entrada.
+  - QR asociado a esa fecha.
+
+**Prioridad:** Alta  
+**Tipo:** Tickets / Stock / Checkout  
+**Pantallas:** Checkout, `/me/tickets/[ticketId]`, scanner, panel productora
+
+---
+
+## 25.3 Cambio de fecha de entrada por parte del usuario
+
+- [ ] Si el evento tiene múltiples fechas, permitir que el usuario solicite o realice cambio de fecha.
+- [ ] Definir reglas:
+  - Hasta cuántas horas antes se puede cambiar.
+  - Si depende de disponibilidad.
+  - Si requiere aprobación de productora.
+  - Si puede tener costo adicional.
+- [ ] Solo permitir cambio si la entrada:
+  - Está válida.
+  - No fue usada.
+  - No fue revocada.
+  - No fue transferida en estado pendiente (`TRANSFER_PENDING`).
+- [ ] Registrar auditoría del cambio.
+- [ ] Notificar al usuario por email.
+- [ ] Actualizar QR/ticket si corresponde.
+- [ ] Mostrar historial del cambio en detalle de orden/ticket (`/me/tickets`, `/me/orders`).
+
+**Prioridad:** Media/Alta  
+**Tipo:** Usuario / Tickets / Reglas negocio  
+**Pantallas:** `/me/tickets/[ticketId]`; portal productora (aprobación si aplica)
+
+---
+
+# 26. Transferencia de entradas
+
+## 26.1 Confirmar estado actual de transferencia (QA)
+
+- [ ] Auditar si la transferencia de entradas entre usuarios ya está activa en producción.
+- [ ] Confirmar flujo completo:
+  - Usuario emisor selecciona ticket.
+  - Ingresa email del receptor.
+  - Receptor recibe notificación.
+  - Receptor acepta o rechaza.
+  - Ticket cambia de titular.
+  - QR anterior queda invalidado si corresponde.
+- [ ] Confirmar restricciones:
+  - No transferir tickets usados.
+  - No transferir tickets revocados.
+  - No transferir tickets vencidos.
+  - No transferir tickets con disputa o estado inconsistente.
+- [ ] Revisar emails transaccionales de transferencia (`TICKET_TRANSFER_*`).
+- [ ] Revisar visualización en `/me` (tickets, actividad, notificaciones).
+- [ ] Agregar QA manual específico de transferencia (doc smoke o checklist dedicada).
+
+**Prioridad:** Alta  
+**Tipo:** QA / Usuario / Tickets  
+**Pantallas:** `/me/tickets`, `/me/activity`, scanner; doc `docs/user/TICKET_TRANSFER.md`
+
+---
+
+# 27. Horarios de locales gastronómicos
+
+## 27.1 Mantener carga actual de horarios
+
+- [ ] Mantener la forma actual de carga de horarios para no romper el flujo existente.
+- [ ] Confirmar que los horarios actuales se sigan mostrando correctamente en ficha pública (`/restaurants/[id]`, `/gastronomicos/[id]`).
+- [ ] Mantener compatibilidad con datos ya cargados en `GastroProfile` / formularios portal y admin.
+
+**Prioridad:** Alta  
+**Tipo:** Compatibilidad / Gastro  
+**Pantallas:** `/gastro/*`, `/admin/gastronomicos/*`, ficha pública gastro
+
+---
+
+## 27.2 Horarios independientes por día
+
+- [ ] Agregar opción avanzada para cargar horarios por día de la semana.
+- [ ] Permitir configurar independientemente:
+  - Lunes, martes, miércoles, jueves, viernes, sábado, domingo.
+- [ ] Permitir marcar un día como cerrado.
+- [ ] Permitir más de una franja horaria por día (ej.: 12:00–15:00 y 20:00–00:00).
+- [ ] Permitir copiar horarios de un día a otros días.
+- [ ] Mostrar en ficha pública de forma clara.
+- [ ] Destacar si el local está abierto o cerrado según día/hora actual.
+- [ ] Definir fallback si el local solo tiene cargado el horario simple actual (mostrar legacy sin romper).
+
+**Prioridad:** Media/Alta  
+**Tipo:** Gastro / UX carga / Ficha pública  
+**Pantallas:** `GastroLocalForm` (portal + admin); ficha pública gastro
+
+---
+
+# 28. Fechas visibles en publicaciones
+
+## 28.1 Ocultar fechas de alta en publicaciones públicas
+
+- [ ] Revisar dónde se muestran fechas de alta/carga de publicaciones.
+- [ ] Ocultar fecha de creación en publicaciones públicas donde no aporta valor.
+- [ ] Aplicar a:
+  - Gastronomía.
+  - Rentals.
+  - Excursiones (si no corresponde mostrar fecha de carga).
+  - Hoteles (cuando estén activos).
+- [ ] Evitar textos tipo:
+  - «Publicado el…».
+  - «Creado el…».
+  - «Fecha de alta…».
+- [ ] Mantener fecha de alta solo en Admin si sirve para gestión interna.
+
+**Prioridad:** Alta  
+**Tipo:** UX pública / Contenido  
+**Pantallas:** Fichas públicas gastro/rental/excursión/hotel; cards; modal preview
+
+---
+
+## 28.2 Eventos muestran fecha del evento, no fecha de carga
+
+- [ ] En eventos, mostrar únicamente la fecha real del evento (`startAt`).
+- [ ] Si el evento tiene múltiples fechas (§25), mostrar:
+  - Próxima fecha disponible.
+  - Selector/listado de fechas.
+- [ ] Evitar confusión entre fecha de publicación y fecha del evento.
+- [ ] Revisar cards, modal, detalle público, checkout y tickets.
+
+**Prioridad:** Alta  
+**Tipo:** Eventos / UX pública  
+**Pantallas:** `ContentCard`, `/events/[id]`, checkout, `/me/tickets`
+
+---
+
+# 29. Limpieza de perfiles y sidebars
+
+## 29.1 Eliminar flujo viejo de carga/solicitud de perfiles
+
+- [x] Quitar de paneles de usuario la opción de cargar o solicitar perfiles (flujo pre-registro V2) — Etapa 1 slices 1.2.
+- [x] Eliminar o desactivar enlace `/profiles` si ya no se usa — redirect por rol (slice 1.1); sin selector UI.
+- [x] Confirmar que el registro único por perfil (`/register`) sea el único flujo válido.
+- [x] Revisar enlaces internos que todavía apunten a `/profiles` — navbar/footer/login actualizados; `/profiles` solo como router OAuth.
+- [x] Revisar navbar, footer, sidebars, CTAs y páginas de onboarding.
+- [x] Si se deja redirect, redirigir a una página válida según rol — `rolePortalHome.ts`.
+- [x] Evitar que usuarios accedan a pantallas antiguas de solicitud de perfil — `/cuenta/solicitar-*` → redirect.
+- [ ] QA manual browser post-deploy (matriz en `V3_1_STAGE_1_PROFILES_NAVIGATION_CLOSING.md` §5).
+
+**Prioridad:** Alta  
+**Tipo:** Limpieza UX / Onboarding / Rutas  
+**Pantallas:** `/profiles`, `/me/account`, navbar (`userNavConfig`), portales
+
+---
+
+## 29.2 Sidebar único según rol/perfil
+
+- [x] Cada usuario debe ver únicamente el sidebar correspondiente a su rol/perfil activo — `PortalLayoutShell` + `portalNavConfig` (sin cambio estructural; validado Etapa 1).
+- [x] Usuario estándar: solo sidebar de usuario (`/me/*`).
+- [x] Productora: solo sidebar de productora (`/producer/*`).
+- [x] Gastro: solo sidebar de gastro (`/gastro/*`).
+- [x] Hotel: solo sidebar de hotel (`/hotel/*`).
+- [x] Referido: solo sidebar de referido (`/referrer`).
+- [x] Scanner: solo acceso scanner (sin panel completo) — redirect PWA en `rolePortalHome.ts`.
+- [x] Admin: solo sidebar de administración (`/admin/*`); no mostrar sidebar de usuario estándar.
+- [x] Evitar mezcla de opciones entre portales (`portalNavConfig`, `PortalLayoutShell`).
+- [x] Confirmar comportamiento post-login según rol — slice 1.4.
+- [x] Confirmar redirects por rol — `ProfileProtectedLayout` sin `/profiles`.
+- [x] Revisar usuarios con múltiples roles si existieran y definir prioridad (excepción: cuenta maestro documentada) — ver `V3_1_STAGE_1_PROFILES_NAVIGATION_CLOSING.md` §6–7.
+- [ ] QA manual browser por rol (§5 doc cierre).
+
+**Prioridad:** Alta  
+**Tipo:** Roles / UX / Seguridad navegación  
+**Pantallas:** Todos los portales; `lib/navigation/portalNavConfig.ts`; post-login redirects
+
+---
+
+## 29.3 Usuario ADMIN deja de ver portal estándar
+
+- [x] Cuando un usuario pasa a ser ADMIN, debe ver únicamente opciones de Admin — menú navbar reducido (slice 1.5).
+- [x] No debe mostrarse sidebar estándar de usuario en sesión ADMIN — `/me/layout` redirect.
+- [x] Revisar accesos a:
+  - `/me` — redirect `/admin` (no maestro).
+  - `/profiles` — redirect `/admin`.
+  - Menú usuario (navbar) — Panel admin.
+  - Sidebar mobile — vía `getUserMenuLoggedInItems`.
+- [x] Definir si Admin puede acceder manualmente a `/me` o si se redirige a `/admin` — **redirect** salvo maestro.
+- [x] Recomendación V3.1: redirigir Admin a `/admin` y ocultar navegación estándar salvo acciones estrictamente necesarias.
+- [ ] QA manual con cuenta ADMIN real (no maestro).
+
+**Prioridad:** Alta  
+**Tipo:** Admin / Roles / UX  
+**Pantallas:** `/admin`, `/me`, navbar, `ProfileProtectedLayout`
+
+---
+
+# 30. Orden sugerido de slices (tanda V3.1 — cliente)
+
+> Los slices 1–14 y hotfixes §20–22 corresponden a la tanda inicial V3.1. La tabla siguiente ordena la **nueva tanda** solicitada por cliente para implementación futura.
+
+| Slice sugerido | Bloque |
+| -------------- | ------------------------------------------------ |
+| V3.1 Slice 14  | Limpieza `/profiles` + sidebars por rol |
+| V3.1 Slice 15  | Etiquetas Admin + etiquetas en publicaciones |
+| V3.1 Slice 16  | Scanner: usuarios scanner + link PWA |
+| V3.1 Slice 17  | Scanner cámara + selección evento/descuento |
+| V3.1 Slice 18  | Scanner offline + PDF listado entradas |
+| V3.1 Slice 19  | Múltiples fechas por evento + entradas por fecha |
+| V3.1 Slice 20  | Cambio de fecha de entrada |
+| V3.1 Slice 21  | Horarios gastronómicos por día |
+| V3.1 Slice 22  | Limpieza fechas visibles en publicaciones |
+| V3.1 Slice 23  | QA transferencia de entradas |
+
+**Nota:** El Slice 14 de QA pre-deploy (§19) ya está cerrado técnicamente. Los slices 14–23 de esta tabla son una **nueva numeración de producto** para la segunda tanda V3.1; al implementar, documentar en `docs/audits/` con sufijo coherente (ej. `V3_1_SLICE_14_PROFILES_SIDEBARS_SMOKE.md`).
+
+**Recomendación — primer slice a implementar:** **V3.1 Slice 14 — Limpieza `/profiles` + sidebars por rol** (§29). Reduce confusión en paneles, corrige navegación ADMIN, elimina flujo viejo de solicitud/carga de perfiles; alto impacto UX y seguridad de navegación; no depende de cambios grandes de modelo (múltiples fechas, scanner offline, etiquetas).
+

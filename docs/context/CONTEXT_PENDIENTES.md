@@ -45,7 +45,7 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 - [x] Perfiles comerciales activos al crear (sin cola admin de perfiles)
 - [x] Admin: ocultar «Perfiles pendientes» (`/admin/perfiles` redirige a `/admin`)
 - [x] Script test user: `pnpm --filter api run user:restore-master` (`felipe.e.salom@gmail.com`) — rol `ADMIN` + memberships portales; **cerrar sesión y volver a entrar** para refrescar JWT
-- [x] Portal `/admin/*` protegido en web (`ProfileProtectedLayout`, rol `ADMIN`); acceso desde `/profiles` y URL directa
+- [x] Portal `/admin/*` protegido en web (`ProfileProtectedLayout`, rol `ADMIN`); post-login y URL directa (`/profiles` deprecado como selector — redirect por rol, V3.1 Etapa 1)
 - [x] **Navbar V2** (2026-05): responsive, drawer mobile, ciudad, carro, portales, a11y, smoke — checklist V2 § Navbar cerrado
 - [ ] Deprecar/eliminar endpoints legacy `RoleApplication` y `/admin/applications` (opcional)
 - [ ] UI preferencias `notifyProducerEventStatus` en portal (backend ya soporta; default `true`)
@@ -509,6 +509,8 @@ _(Trending con `viewCount`: ver ítem Slice 2 arriba en § K.)_
 - [x] Hotfix gastro public links — `/restaurants/[publicEventId]` sin redirect erróneo (`V3_1_HOTFIX_GASTRO_PUBLIC_LINKS.md`)
 - [x] Hotfix descripción pública — `RENTAL_DETAIL_SECTION_TITLE` era className, no copy (`V3_1_HOTFIX_PUBLIC_DESCRIPTION_CLASSNAME.md`)
 - [ ] Hotfix gastro — QA manual browser post-deploy (`/categoria/gastro`, `/explore?category=gastro`, click card)
+- [x] V3.1 Etapa 1 — limpieza `/profiles` + navegación por rol (slices 1.1–1.5 código; doc `V3_1_STAGE_1_PROFILES_NAVIGATION_CLOSING.md`)
+- [ ] V3.1 Etapa 1 — QA manual browser navegación por rol (matriz §5 doc cierre)
 - [ ] V3.1 — restante no bloqueante (maps prod §4.1, §5.2 links en descripciones, multi-subcategorías otras verticales, drag galería, cards fase 2, JSON-LD bestRating)
 - [ ] V3.1 legal al publicar evento Caso A (bloqueante; coordinar con publicación `producer_terms` real)
 
