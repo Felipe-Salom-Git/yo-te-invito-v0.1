@@ -2,9 +2,13 @@
 
 import type { ContentCardItem } from './ContentCard';
 import {
+  getContentCardMetaLine,
   getContentCardPrimaryBadge,
   getContentCardLocationLine,
   getContentCardPlaceholderEmoji,
+  isEventContent,
+  isExcursionContent,
+  isGastroContent,
   isRentalContent,
   RENTAL_CARD_CTA,
 } from '@/lib/home/contentCardPresentation';
@@ -21,19 +25,36 @@ export interface ContentPreviewExpandedProps {
 function ContentHighlights({ item }: { item: ContentCardItem }) {
   const bullets: string[] = [];
   const isRental = isRentalContent(item);
+  const isExcursion = isExcursionContent(item);
+  const isGastro = isGastroContent(item);
+  const isEvent = isEventContent(item);
 
   if (isRental) {
     const location = getContentCardLocationLine(item);
     if (location !== '—') bullets.push(location);
     if (item.subcategoryName) bullets.push(item.subcategoryName);
     bullets.push(RENTAL_CARD_CTA);
-  } else {
+  } else if (isExcursion) {
+    const location = getContentCardLocationLine(item);
+    if (location !== '—') bullets.push(location);
+    if (item.subcategoryName) bullets.push(item.subcategoryName);
+    const meta = getContentCardMetaLine(item);
+    if (meta) bullets.push(meta);
+  } else if (isGastro) {
+    const location = getContentCardLocationLine(item);
+    if (location !== '—') bullets.push(location);
+    if (item.subcategoryName) bullets.push(item.subcategoryName);
+  } else if (isEvent) {
     if (item.city) bullets.push(item.city);
     if (item.venueName && item.venueName !== item.city) bullets.push(item.venueName);
     if (item.startAt && shouldShowPublicEventDate(item.category)) {
       const d = new Date(item.startAt);
       bullets.push(d.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' }));
     }
+    if (item.producerName) bullets.push(item.producerName);
+  } else {
+    if (item.city) bullets.push(item.city);
+    if (item.venueName && item.venueName !== item.city) bullets.push(item.venueName);
   }
 
   const primaryBadge = getContentCardPrimaryBadge(item);
