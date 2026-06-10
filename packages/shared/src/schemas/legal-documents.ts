@@ -13,6 +13,7 @@ export const legalAcceptanceContextSchema = z.enum([
   'CHECKOUT',
   'PROFILE_ONBOARDING',
   'PORTAL_ACCESS',
+  'EVENT_PUBLICATION',
 ]);
 export type LegalAcceptanceContext = z.infer<typeof legalAcceptanceContextSchema>;
 

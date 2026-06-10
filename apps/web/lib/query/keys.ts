@@ -361,6 +361,12 @@ export const meLegalKeys = {
   acceptances: () => [...meLegalKeys.all, 'acceptances'] as const,
 };
 
+export const producerEventLegalKeys = {
+  all: ['producer', 'event', 'legal'] as const,
+  publicationTerms: (eventId: string) =>
+    [...producerEventLegalKeys.all, 'publication-terms', eventId] as const,
+};
+
 // ─── Payouts ───────────────────────────────────────────────────────────────
 
 export const payoutsKeys = {

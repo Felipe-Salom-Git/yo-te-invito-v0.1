@@ -86,4 +86,5 @@ export * from './schemas/notifications';
 export * from './schemas/push-notifications';
 export * from './schemas/legal-documents';
 export * from './schemas/me-legal';
+export * from './schemas/event-publication-legal';
 export * from './schemas/public-image-upload';

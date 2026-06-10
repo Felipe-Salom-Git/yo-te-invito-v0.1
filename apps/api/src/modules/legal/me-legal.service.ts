@@ -89,10 +89,11 @@ export class MeLegalService {
 
       const existing = await this.prisma.userLegalAcceptance.findUnique({
         where: {
-          userId_documentVersionId_context: {
+          userId_documentVersionId_context_eventId: {
             userId,
             documentVersionId: published.id,
             context: query.context,
+            eventId: '',
           },
         },
       });
@@ -173,10 +174,11 @@ export class MeLegalService {
 
       const existing = await this.prisma.userLegalAcceptance.findUnique({
         where: {
-          userId_documentVersionId_context: {
+          userId_documentVersionId_context_eventId: {
             userId,
             documentVersionId: versionId,
             context: body.context,
+            eventId: '',
           },
         },
       });
@@ -193,6 +195,7 @@ export class MeLegalService {
           documentId: version.documentId,
           documentVersionId: versionId,
           context: body.context,
+          eventId: '',
           ipAddress: meta.ipAddress ?? null,
           userAgent: meta.userAgent ?? null,
         },

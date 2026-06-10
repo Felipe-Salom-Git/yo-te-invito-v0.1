@@ -440,6 +440,17 @@ export class ApiRepository implements Repositories {
         patch
       ) as Promise<EventDetail | null>;
     },
+    getEventPublicationLegalStatus: async (eventId) => {
+      return this.client.get<import('@yo-te-invito/shared').EventPublicationLegalStatus>(
+        `/producer/events/${encodeURIComponent(eventId)}/legal/publication-terms`,
+      );
+    },
+    acceptEventPublicationTerms: async (eventId) => {
+      return this.client.post<import('@yo-te-invito/shared').EventPublicationLegalAcceptResponse>(
+        `/producer/events/${encodeURIComponent(eventId)}/legal/accept-publication-terms`,
+        {},
+      );
+    },
   };
 
   rentalLocations: RentalLocationsRepo = {

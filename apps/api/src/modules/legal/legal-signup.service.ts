@@ -106,10 +106,11 @@ export class LegalSignupService {
     for (const item of snapshot.required) {
       await tx.userLegalAcceptance.upsert({
         where: {
-          userId_documentVersionId_context: {
+          userId_documentVersionId_context_eventId: {
             userId,
             documentVersionId: item.documentVersionId,
             context: 'SIGNUP',
+            eventId: '',
           },
         },
         create: {
@@ -117,6 +118,7 @@ export class LegalSignupService {
           documentId: item.documentId,
           documentVersionId: item.documentVersionId,
           context: 'SIGNUP',
+          eventId: '',
           ipAddress: meta.ipAddress ?? null,
           userAgent: meta.userAgent ?? null,
         },

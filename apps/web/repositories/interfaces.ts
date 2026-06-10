@@ -1645,6 +1645,12 @@ export interface EventsRepo {
     requestId: string,
     body?: import('@yo-te-invito/shared').RejectTicketDateChangeBody,
   ): Promise<import('@yo-te-invito/shared').TicketDateChangeRequestResponse>;
+  getEventPublicationLegalStatus(
+    eventId: string,
+  ): Promise<import('@yo-te-invito/shared').EventPublicationLegalStatus>;
+  acceptEventPublicationTerms(
+    eventId: string,
+  ): Promise<import('@yo-te-invito/shared').EventPublicationLegalAcceptResponse>;
 }
 
 export interface TicketsRepo {

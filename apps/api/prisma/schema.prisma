@@ -2253,6 +2253,7 @@ enum LegalAcceptanceContext {
   CHECKOUT
   PROFILE_ONBOARDING
   PORTAL_ACCESS
+  EVENT_PUBLICATION
 }
 
 model LegalDocument {
@@ -2306,6 +2307,8 @@ model UserLegalAcceptance {
   documentId        String
   documentVersionId String
   context           LegalAcceptanceContext
+  /// Empty string for global contexts (SIGNUP, CHECKOUT, PORTAL_ACCESS). Event id for EVENT_PUBLICATION.
+  eventId           String                 @default("")
   acceptedAt        DateTime               @default(now())
   ipAddress         String?
   userAgent         String?
@@ -2315,8 +2318,9 @@ model UserLegalAcceptance {
   document        LegalDocument        @relation(fields: [documentId], references: [id], onDelete: Cascade)
   documentVersion LegalDocumentVersion @relation(fields: [documentVersionId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, documentVersionId, context])
+  @@unique([userId, documentVersionId, context, eventId])
   @@index([userId, context])
+  @@index([userId, context, eventId])
   @@index([documentId])
   @@index([documentVersionId])
 }

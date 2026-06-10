@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { SubcategoriesModule } from '../subcategories/subcategories.module';
 import { RentalLocationsModule } from '../rental-locations/rental-locations.module';
 import { EventOccurrencesModule } from '../event-occurrences/event-occurrences.module';
+import { LegalModule } from '../legal/legal.module';
 import { AuthModule } from '../../auth/auth.module';
 import { TicketingModule } from '../../ticketing/ticketing.module';
 import { TicketsModule } from '../tickets/tickets.module';
@@ -30,6 +31,7 @@ import { ProducerProfileService } from './producer-profile.service';
 import { ProducerDashboardController } from './producer-dashboard.controller';
 import { ProducerDashboardMetricsService } from './producer-dashboard-metrics.service';
 import { ProducerTicketDateChangeController } from './producer-ticket-date-change.controller';
+import { ProducerEventLegalController } from './producer-event-legal.controller';
 
 @Module({
   imports: [
@@ -42,9 +44,11 @@ import { ProducerTicketDateChangeController } from './producer-ticket-date-chang
     SubcategoriesModule,
     RentalLocationsModule,
     EventOccurrencesModule,
+    LegalModule,
   ],
   controllers: [
     ProducerEventsController,
+    ProducerEventLegalController,
     ProducerEventOccurrencesController,
     ProducerReferrersController,
     ProducerReferralProposalsController,
