@@ -4,6 +4,8 @@ import { useState, useRef, useEffect, useId } from 'react';
 import Link from 'next/link';
 import { createPortal } from 'react-dom';
 import { useRole } from '@/hooks/useRole';
+import { useIsMasterUser } from '@/hooks/useIsMasterUser';
+import { shouldUseStandardUserPortal } from '@/lib/navigation/rolePortalHome';
 import { useFocusTrap } from '@/hooks/useOverlayA11y';
 import { useMeNotificationsUnread } from '@/lib/query/me-portal';
 import { getUserMenuLoggedInItems } from '@/lib/navigation/userNavConfig';
@@ -14,8 +16,10 @@ const menuLinkClass = `block px-3 py-2.5 text-sm text-text transition-colors hov
 const actionBtn = `inline-flex shrink-0 items-center justify-center rounded border border-border bg-bg-muted text-sm text-text transition-colors hover:bg-border ${navFocusRing}`;
 
 export function NavbarUserMenu() {
-  const { session, status, isAuthenticated } = useRole();
-  const { data: unreadData } = useMeNotificationsUnread(isAuthenticated);
+  const { session, status, isAuthenticated, role } = useRole();
+  const isMaster = useIsMasterUser();
+  const showBuyerNav = shouldUseStandardUserPortal(session?.user?.email, role);
+  const { data: unreadData } = useMeNotificationsUnread(isAuthenticated && showBuyerNav);
   const unreadNotifications = unreadData?.unreadCount ?? 0;
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLDivElement>(null);
@@ -90,11 +94,11 @@ export function NavbarUserMenu() {
   }
 
   const email = session?.user?.email ?? '';
-  const menuItems = getUserMenuLoggedInItems(email);
+  const menuItems = getUserMenuLoggedInItems(email, role);
 
   return (
     <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-      {isAuthenticated && (
+      {isAuthenticated && showBuyerNav && (
         <Link
           href="/me/notifications"
           className={`${actionBtn} relative hidden p-2 lg:inline-flex lg:px-3 lg:py-1.5`}
