@@ -31,6 +31,7 @@ import { AdminPaymentsController } from './admin-payments.controller';
 import { AdminPaymentsService } from './admin-payments.service';
 import { AdminGastroLocationsService } from './admin-gastro-locations.service';
 import { AdminContentLifecycleService } from './admin-content-lifecycle.service';
+import { AdminHotelProfilesService } from './admin-hotel-profiles.service';
 
 @Module({
   imports: [
@@ -67,6 +68,7 @@ import { AdminContentLifecycleService } from './admin-content-lifecycle.service'
     AdminDashboardService,
     AdminPaymentsService,
     AdminContentLifecycleService,
+    AdminHotelProfilesService,
   ],
   exports: [AdminContentLifecycleService],
 })

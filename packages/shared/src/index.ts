@@ -60,6 +60,8 @@ export * from './schemas/category-editorial-banners';
 export * from './schemas/opening-hours';
 export * from './schemas/rental-locations';
 export * from './schemas/external-links';
+export * from './schemas/related-links';
+export * from './schemas/admin-hotel-profiles';
 export * from './schemas/excursion-schedule';
 export * from './schemas/excursion-operators';
 export * from './schemas/admin-producers';

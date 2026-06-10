@@ -50,6 +50,11 @@ const LINKS: OperationalLink[] = [
     description: 'Locales y productos de alquiler.',
   },
   {
+    href: '/admin/hoteles',
+    label: 'Hoteles',
+    description: 'Archivar o restaurar perfiles hotel (baja lógica).',
+  },
+  {
     href: '/admin/reviews',
     label: 'Reputación',
     description: 'KPIs de reseñas públicas, disputas y export CSV.',

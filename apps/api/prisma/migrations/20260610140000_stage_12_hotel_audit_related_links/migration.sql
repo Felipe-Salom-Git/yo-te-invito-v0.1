@@ -1,0 +1,7 @@
+-- V3.1 Etapa 12 — hotel archive audit + related links
+
+ALTER TYPE "AuditAction" ADD VALUE IF NOT EXISTS 'HOTEL_PROFILE_SUSPENDED';
+ALTER TYPE "AuditAction" ADD VALUE IF NOT EXISTS 'HOTEL_PROFILE_ACTIVATED';
+
+ALTER TABLE "Event" ADD COLUMN IF NOT EXISTS "relatedLinks" JSONB;
+ALTER TABLE "GastroProfile" ADD COLUMN IF NOT EXISTS "relatedLinks" JSONB;

@@ -47,6 +47,24 @@ export function useRentalLocationLifecycleMutation() {
   });
 }
 
+export function useHotelProfileLifecycleMutation() {
+  const repos = useRepositories();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      profileId: string;
+      action: 'suspend' | 'activate';
+      reason?: string;
+    }) =>
+      input.action === 'suspend'
+        ? repos.adminContentLifecycle.suspendHotelProfile(input.profileId, input.reason)
+        : repos.adminContentLifecycle.activateHotelProfile(input.profileId, input.reason),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'hotel-profiles'] });
+    },
+  });
+}
+
 export function useExcursionOperatorLifecycleMutation() {
   const repos = useRepositories();
   const queryClient = useQueryClient();

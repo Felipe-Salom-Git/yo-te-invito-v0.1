@@ -318,6 +318,7 @@ export interface ExcursionOperatorsRepo {
       googlePlaceId?: string | null;
       geoLat?: number | null;
       geoLng?: number | null;
+      relatedLinks?: import('@yo-te-invito/shared').RelatedLinkItem[] | null;
     },
   ): Promise<{ id: string; title: string }>;
 }
@@ -797,6 +798,7 @@ export interface EventDetail extends EventSummary {
   } | null;
   subcategories?: Array<{ id: string; name: string; isPrimary?: boolean }>;
   tags?: ContentTagPublic[];
+  relatedLinks?: import('@yo-te-invito/shared').RelatedLinkItem[] | null;
 }
 
 export interface Ticket {
@@ -1434,6 +1436,23 @@ export interface AdminContentLifecycleRepo {
     operatorId: string,
     reason?: string,
   ): Promise<{ id: string; isActive: boolean }>;
+  suspendHotelProfile(
+    profileId: string,
+    reason?: string,
+  ): Promise<{ id: string; status: string }>;
+  activateHotelProfile(
+    profileId: string,
+    reason?: string,
+  ): Promise<{ id: string; status: string }>;
+}
+
+export type AdminHotelProfilesListQuery =
+  import('@yo-te-invito/shared').AdminHotelProfilesListQuery;
+export type AdminHotelProfilesListResponse =
+  import('@yo-te-invito/shared').AdminHotelProfilesListResponse;
+
+export interface AdminHotelProfilesRepo {
+  list(query?: AdminHotelProfilesListQuery): Promise<AdminHotelProfilesListResponse>;
 }
 
 export type AuditLogsListQuery = import('@yo-te-invito/shared').AuditLogsListQuery;
@@ -2283,6 +2302,7 @@ export interface GastroLocal {
   websiteUrl: string | null;
   bookingUrl: string | null;
   socialLinks: import('@yo-te-invito/shared').EntitySocialLinks | null;
+  relatedLinks?: import('@yo-te-invito/shared').RelatedLinkItem[] | null;
   subcategoryId: string | null;
   publicEventId: string | null;
   tags?: ContentTagPublic[];
@@ -2345,6 +2365,7 @@ export interface GastroLocalUpsertPayload {
   websiteUrl?: string | null;
   bookingUrl?: string | null;
   socialLinks?: import('@yo-te-invito/shared').EntitySocialLinks | null;
+  relatedLinks?: import('@yo-te-invito/shared').RelatedLinkItem[] | null;
   tagIds?: string[];
 }
 
@@ -2902,6 +2923,7 @@ export interface Repositories {
   adminDashboard: AdminDashboardRepo;
   adminEvents: AdminEventsRepo;
   adminContentLifecycle: AdminContentLifecycleRepo;
+  adminHotelProfiles: AdminHotelProfilesRepo;
   adminAudit: AdminAuditRepo;
   adminUsers: AdminUsersRepo;
   adminPayments: AdminPaymentsRepo;

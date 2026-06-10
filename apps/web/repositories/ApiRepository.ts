@@ -1483,6 +1483,27 @@ export class ApiRepository implements Repositories {
         reason ? { reason } : {},
       );
     },
+    suspendHotelProfile: async (profileId, reason) => {
+      return this.client.post<{ id: string; status: string }>(
+        `/admin/hotel-profiles/${encodeURIComponent(profileId)}/suspend`,
+        reason ? { reason } : {},
+      );
+    },
+    activateHotelProfile: async (profileId, reason) => {
+      return this.client.post<{ id: string; status: string }>(
+        `/admin/hotel-profiles/${encodeURIComponent(profileId)}/activate`,
+        reason ? { reason } : {},
+      );
+    },
+  };
+
+  adminHotelProfiles: import('./interfaces').AdminHotelProfilesRepo = {
+    list: async (query) => {
+      return this.client.get<import('./interfaces').AdminHotelProfilesListResponse>(
+        '/admin/hotel-profiles',
+        query as Record<string, string | number | boolean | undefined>,
+      );
+    },
   };
 
   adminAudit: import('./interfaces').AdminAuditRepo = {

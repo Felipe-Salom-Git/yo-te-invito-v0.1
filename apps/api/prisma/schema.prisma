@@ -321,6 +321,7 @@ model GastroProfile {
   websiteUrl       String?
   bookingUrl       String?
   socialLinks      Json?
+  relatedLinks     Json?
   subcategoryId    String?
   publicEventId    String?       @unique
   ratingAvg        Float?
@@ -907,6 +908,7 @@ model Event {
   excursionAvailableDaysText String?
   excursionScheduleNotes    String?
   excursionMeetingPoint     String?
+  relatedLinks              Json?
   createdAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
   deletedAt         DateTime?
@@ -1968,6 +1970,8 @@ enum AuditAction {
   EVENT_RESTORED
   GASTRO_PROFILE_SUSPENDED
   GASTRO_PROFILE_ACTIVATED
+  HOTEL_PROFILE_SUSPENDED
+  HOTEL_PROFILE_ACTIVATED
   RENTAL_LOCATION_DEACTIVATED
   RENTAL_LOCATION_ACTIVATED
   EXCURSION_OPERATOR_DEACTIVATED

@@ -77,6 +77,10 @@ import {
   type AdminEventIdParams,
   type RentalLocationIdParams,
   type ExcursionOperatorIdParams,
+  adminHotelProfilesListQuerySchema,
+  adminHotelProfileIdParamsSchema,
+  type AdminHotelProfilesListQuery,
+  type AdminHotelProfileIdParams,
 } from '@yo-te-invito/shared';
 import { AdminGastroService } from './admin-gastro.service';
 import { AdminGastroLocationsService } from './admin-gastro-locations.service';
@@ -101,6 +105,7 @@ import { AdminProfilesService } from './admin-profiles.service';
 import { ReferralsService } from '../referrals/referrals.service';
 import { InboxService } from '../inbox/inbox.service';
 import { AdminContentLifecycleService } from './admin-content-lifecycle.service';
+import { AdminHotelProfilesService } from './admin-hotel-profiles.service';
 
 @Controller('admin')
 export class AdminController {
@@ -122,6 +127,7 @@ export class AdminController {
     private readonly generalPublications: AdminGeneralPublicationsService,
     private readonly adminGastro: AdminGastroService,
     private readonly adminGastroLocations: AdminGastroLocationsService,
+    private readonly adminHotelProfiles: AdminHotelProfilesService,
   ) {}
 
   @Get('general-publications')
@@ -400,6 +406,53 @@ export class AdminController {
     body: AdminContentLifecycleBody,
   ) {
     return this.contentLifecycle.activateExcursionOperator(
+      user.tenantId,
+      user.id,
+      user.role,
+      params.id,
+      body.reason,
+    );
+  }
+
+  @Get('hotel-profiles')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async listHotelProfiles(
+    @CurrentUser() user: { tenantId: string },
+    @Query(new ZodValidationPipe(adminHotelProfilesListQuerySchema))
+    query: AdminHotelProfilesListQuery,
+  ) {
+    return this.adminHotelProfiles.list(user.tenantId, query);
+  }
+
+  @Post('hotel-profiles/:id/suspend')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async suspendHotelProfile(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param(new ZodValidationPipe(adminHotelProfileIdParamsSchema)) params: AdminHotelProfileIdParams,
+    @Body(new ZodValidationPipe(adminContentLifecycleBodySchema))
+    body: AdminContentLifecycleBody,
+  ) {
+    return this.contentLifecycle.suspendHotelProfile(
+      user.tenantId,
+      user.id,
+      user.role,
+      params.id,
+      body.reason,
+    );
+  }
+
+  @Post('hotel-profiles/:id/activate')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async activateHotelProfile(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param(new ZodValidationPipe(adminHotelProfileIdParamsSchema)) params: AdminHotelProfileIdParams,
+    @Body(new ZodValidationPipe(adminContentLifecycleBodySchema))
+    body: AdminContentLifecycleBody,
+  ) {
+    return this.contentLifecycle.activateHotelProfile(
       user.tenantId,
       user.id,
       user.role,

@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { AuditAction, Prisma } from '@prisma/client';
+import { AuditAction, Prisma, type HotelProfile } from '@prisma/client';
 import { ErrorCode } from '@yo-te-invito/shared';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EventPublicationAlertsService } from '../notifications/event-publication-alerts.service';
@@ -244,6 +244,80 @@ export class AdminContentLifecycleService {
     return { id: operatorId, isActive: false };
   }
 
+  async suspendHotelProfile(
+    tenantId: string,
+    actorId: string,
+    actorRole: string,
+    profileId: string,
+    reason?: string,
+  ): Promise<{ id: string; status: string }> {
+    const row = await this.assertHotelProfile(tenantId, profileId);
+    if (row.status !== 'ACTIVE') {
+      throw new BadRequestException({
+        code: ErrorCode.VALIDATION_FAILED,
+        message: 'Solo se puede archivar un hotel activo',
+      });
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.hotelProfile.update({
+        where: { id: profileId },
+        data: { status: 'SUSPENDED' },
+      });
+      await this.writeAudit(tx, {
+        tenantId,
+        actorId,
+        actorRole,
+        action: AuditAction.HOTEL_PROFILE_SUSPENDED,
+        entityType: 'HotelProfile',
+        entityId: profileId,
+        before: { status: row.status },
+        after: { status: 'SUSPENDED' },
+        reason,
+      });
+    });
+
+    await this.syncHotelPublicEventVisibility({ ...row, status: 'SUSPENDED' });
+    return { id: profileId, status: 'suspended' };
+  }
+
+  async activateHotelProfile(
+    tenantId: string,
+    actorId: string,
+    actorRole: string,
+    profileId: string,
+    reason?: string,
+  ): Promise<{ id: string; status: string }> {
+    const row = await this.assertHotelProfile(tenantId, profileId);
+    if (row.status !== 'SUSPENDED') {
+      throw new BadRequestException({
+        code: ErrorCode.VALIDATION_FAILED,
+        message: 'Solo se puede restaurar un hotel archivado (SUSPENDED)',
+      });
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.hotelProfile.update({
+        where: { id: profileId },
+        data: { status: 'ACTIVE' },
+      });
+      await this.writeAudit(tx, {
+        tenantId,
+        actorId,
+        actorRole,
+        action: AuditAction.HOTEL_PROFILE_ACTIVATED,
+        entityType: 'HotelProfile',
+        entityId: profileId,
+        before: { status: row.status },
+        after: { status: 'ACTIVE' },
+        reason,
+      });
+    });
+
+    await this.syncHotelPublicEventVisibility({ ...row, status: 'ACTIVE' });
+    return { id: profileId, status: 'active' };
+  }
+
   async activateExcursionOperator(
     tenantId: string,
     actorId: string,
@@ -317,5 +391,30 @@ export class AdminContentLifecycleService {
       });
     }
     return row;
+  }
+
+  private async assertHotelProfile(tenantId: string, profileId: string) {
+    const row = await this.prisma.hotelProfile.findFirst({
+      where: { id: profileId, tenantId },
+    });
+    if (!row) {
+      throw new NotFoundException({
+        code: ErrorCode.NOT_FOUND,
+        message: 'Hotel profile not found',
+      });
+    }
+    return row;
+  }
+
+  private async syncHotelPublicEventVisibility(profile: HotelProfile): Promise<void> {
+    if (!profile.publicEventId) return;
+    const approved = profile.status === 'ACTIVE';
+    await this.prisma.event.update({
+      where: { id: profile.publicEventId },
+      data: {
+        status: approved ? 'APPROVED' : 'PAUSED',
+        publishedAt: approved ? new Date() : null,
+      },
+    });
   }
 }

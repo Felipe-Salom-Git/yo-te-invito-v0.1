@@ -7,6 +7,8 @@ const ACTION_LABELS: Record<string, string> = {
   EVENT_CANCELLED: 'Evento cancelado',
   EVENT_RESTORED: 'Evento restaurado',
   GASTRO_PROFILE_SUSPENDED: 'Local gastro suspendido',
+  HOTEL_PROFILE_SUSPENDED: 'Hotel archivado',
+  HOTEL_PROFILE_ACTIVATED: 'Hotel restaurado',
   GASTRO_PROFILE_ACTIVATED: 'Local gastro activado',
   RENTAL_LOCATION_DEACTIVATED: 'Local rental dado de baja',
   RENTAL_LOCATION_ACTIVATED: 'Local rental reactivado',
