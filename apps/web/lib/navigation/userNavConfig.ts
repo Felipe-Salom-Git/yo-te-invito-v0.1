@@ -1,10 +1,12 @@
 /**
- * User account dropdown — logged-in menu (Slice 3).
- * Portal access (admin, producer, gastro, etc.) is via /profiles, not duplicated here.
- * Usuario maestro: inicio directo en `/me` (ver `masterUser.ts`).
+ * User account dropdown — logged-in menu (Slice 3 + V3.1 Etapa 1 role scoping).
  */
-
-import { getPortalHomeHrefForUser } from './masterUser';
+import { Role, type Role as RoleType } from '@yo-te-invito/shared';
+import {
+  getPortalHomeHrefForUser,
+  getPortalHomeMenuLabel,
+  shouldUseStandardUserPortal,
+} from './rolePortalHome';
 
 export interface UserMenuItem {
   id: 'portal-home' | 'tickets' | 'account' | 'logout';
@@ -12,39 +14,51 @@ export interface UserMenuItem {
   href: string;
 }
 
-/** Profile selector — entry point for all role-specific portals. */
-export const USER_MENU_PORTAL_HOME_HREF = '/profiles';
-
-const USER_MENU_LOGGED_IN_BASE: UserMenuItem[] = [
-  {
-    id: 'portal-home',
-    label: 'Inicio del portal',
-    href: USER_MENU_PORTAL_HOME_HREF,
-  },
-  {
-    id: 'tickets',
-    label: 'Mis tickets',
-    href: '/me/tickets',
-  },
-  {
-    id: 'account',
-    label: 'Mi cuenta',
-    href: '/me/account',
-  },
-  {
-    id: 'logout',
-    label: 'Cerrar sesión',
-    href: '/logout',
-  },
+const USER_MENU_STANDARD: UserMenuItem[] = [
+  { id: 'portal-home', label: 'Mi espacio', href: '/me' },
+  { id: 'tickets', label: 'Mis tickets', href: '/me/tickets' },
+  { id: 'account', label: 'Mi cuenta', href: '/me/account' },
+  { id: 'logout', label: 'Cerrar sesión', href: '/logout' },
 ];
 
-/** Menú cuenta con href de inicio según email (maestro → `/me`). */
-export function getUserMenuLoggedInItems(userEmail?: string | null): UserMenuItem[] {
-  const portalHome = getPortalHomeHrefForUser(userEmail);
-  return USER_MENU_LOGGED_IN_BASE.map((item) =>
-    item.id === 'portal-home' ? { ...item, href: portalHome } : item,
+const USER_MENU_ADMIN_ONLY: UserMenuItem[] = [
+  { id: 'portal-home', label: 'Panel admin', href: '/admin' },
+  { id: 'logout', label: 'Cerrar sesión', href: '/logout' },
+];
+
+const USER_MENU_COMMERCIAL: UserMenuItem[] = [
+  { id: 'portal-home', label: 'Mi panel', href: '/me' },
+  { id: 'account', label: 'Mi cuenta', href: '/me/account' },
+  { id: 'logout', label: 'Cerrar sesión', href: '/logout' },
+];
+
+/** @deprecated Use `getUserMenuLoggedInItems(email, role)` — legacy default was `/profiles`. */
+export const USER_MENU_PORTAL_HOME_HREF = '/me';
+
+/** Menú cuenta según rol — sin paso por `/profiles`. */
+export function getUserMenuLoggedInItems(
+  userEmail?: string | null,
+  role?: RoleType | string | null,
+): UserMenuItem[] {
+  const portalHome = getPortalHomeHrefForUser(userEmail, role);
+  const portalLabel = getPortalHomeMenuLabel(userEmail, role);
+
+  if (role === Role.ADMIN && shouldUseStandardUserPortal(userEmail, role) === false) {
+    return USER_MENU_ADMIN_ONLY.map((item) =>
+      item.id === 'portal-home' ? { ...item, href: portalHome, label: portalLabel } : item,
+    );
+  }
+
+  if (shouldUseStandardUserPortal(userEmail, role)) {
+    return USER_MENU_STANDARD.map((item) =>
+      item.id === 'portal-home' ? { ...item, href: portalHome, label: portalLabel } : item,
+    );
+  }
+
+  return USER_MENU_COMMERCIAL.map((item) =>
+    item.id === 'portal-home' ? { ...item, href: portalHome, label: portalLabel } : item,
   );
 }
 
-/** @deprecated Usar `getUserMenuLoggedInItems(email)` — mantiene compatibilidad con `/profiles`. */
-export const USER_MENU_LOGGED_IN_ITEMS: UserMenuItem[] = USER_MENU_LOGGED_IN_BASE;
+/** @deprecated Usar `getUserMenuLoggedInItems(email, role)`. */
+export const USER_MENU_LOGGED_IN_ITEMS: UserMenuItem[] = USER_MENU_STANDARD;

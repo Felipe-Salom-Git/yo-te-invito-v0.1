@@ -11,7 +11,7 @@ import {
   getMobilePublicNavDrawerItems,
   type PublicNavItem,
 } from '@/lib/navigation/publicNavConfig';
-import { isMasterUserEmail } from '@/lib/navigation/masterUser';
+import { getPortalHomeMenuLabel } from '@/lib/navigation/rolePortalHome';
 import { getUserMenuLoggedInItems } from '@/lib/navigation/userNavConfig';
 import { NavbarCitySelectField } from './NavbarCitySelectField';
 
@@ -21,9 +21,6 @@ interface MobilePublicNavDrawerProps {
   isOpen: boolean;
   onClose: () => void;
 }
-
-const PORTAL_HOME_LABEL_DEFAULT = 'Portal / Cambiar perfil';
-const PORTAL_HOME_LABEL_MASTER = 'Inicio del portal';
 
 export function MobilePublicNavDrawer({ isOpen, onClose }: MobilePublicNavDrawerProps) {
   const panelRef = useRef<HTMLDivElement>(null);
@@ -53,10 +50,9 @@ export function MobilePublicNavDrawer({ isOpen, onClose }: MobilePublicNavDrawer
   if (!isOpen) return null;
 
   const email = session?.user?.email ?? '';
-  const accountMenuItems = getUserMenuLoggedInItems(email);
-  const portalHomeLabel = isMasterUserEmail(email)
-    ? PORTAL_HOME_LABEL_MASTER
-    : PORTAL_HOME_LABEL_DEFAULT;
+  const role = session?.user?.role;
+  const accountMenuItems = getUserMenuLoggedInItems(email, role);
+  const portalHomeLabel = getPortalHomeMenuLabel(email, role);
 
   const content = (
     <div className="fixed inset-0 z-50 md:hidden" role="presentation">
