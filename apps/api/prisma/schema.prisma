@@ -295,25 +295,27 @@ model ProducerProfile {
 }
 
 model GastroProfile {
-  id               String        @id @default(cuid())
-  tenantId         String
-  displayName      String
-  legalName        String?
-  summary          String?
-  description      String?
-  detail           String?
-  logoUrl          String?
-  bannerUrl        String?
-  galleryUrls      Json?
-  address          String?
-  province         String?
-  city             String?
-  googlePlaceId    String?
-  geoLat           Float?
-  geoLng           Float?
-  openingHours     Json?
-  openingHoursNote String?
-  contactPhone     String?
+  id                 String        @id @default(cuid())
+  tenantId           String
+  displayName        String
+  legalName          String?
+  summary            String?
+  description        String?
+  detail             String?
+  logoUrl            String?
+  bannerUrl          String?
+  galleryUrls        Json?
+  address            String?
+  province           String?
+  city               String?
+  googlePlaceId      String?
+  geoLat             Float?
+  geoLng             Float?
+  openingHours       Json?
+  openingHoursNote   String?
+  openingHoursMode   String        @default("simple")
+  openingHoursWeekly Json?
+  contactPhone       String?
   contactEmail     String?
   menuUrl          String?
   websiteUrl       String?

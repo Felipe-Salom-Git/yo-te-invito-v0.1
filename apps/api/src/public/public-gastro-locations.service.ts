@@ -7,6 +7,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { GastroContentService } from '../modules/gastro/gastro-content.service';
 import { readEntitySocialLinks } from '../common/entity-social-links.util';
+import { readGastroOpeningHoursFields } from '../modules/gastro/gastro-profile-fields.util';
 import { loadEventTagsPublic } from '../common/event-tags.util';
 
 @Injectable()
@@ -89,6 +90,8 @@ export class PublicGastroLocationsService {
       geoLng: number | null;
       openingHours: unknown;
       openingHoursNote: string | null;
+      openingHoursMode: string;
+      openingHoursWeekly: unknown;
       contactPhone: string | null;
       contactEmail: string | null;
       menuUrl: string | null;
@@ -130,6 +133,10 @@ export class PublicGastroLocationsService {
       geoLng: row.geoLng,
       openingHours: parseRentalOpeningHours(row.openingHours),
       openingHoursNote: row.openingHoursNote,
+      ...readGastroOpeningHoursFields({
+        openingHoursMode: row.openingHoursMode,
+        openingHoursWeekly: row.openingHoursWeekly,
+      }),
       contactPhone: row.contactPhone,
       contactEmail: row.contactEmail ?? null,
       menuUrl: row.menuUrl,

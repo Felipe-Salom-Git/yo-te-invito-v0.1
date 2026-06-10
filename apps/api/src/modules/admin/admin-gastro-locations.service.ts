@@ -17,6 +17,8 @@ import {
   normalizeGastroSummary,
   shouldSyncGastroPublicEventAfterUpdate,
   writeGastroOpeningHours,
+  writeGastroOpeningHoursMode,
+  writeGastroOpeningHoursWeekly,
 } from '../gastro/gastro-profile-fields.util';
 import { GastroPublicEventSyncService } from '../gastro/gastro-public-event-sync.service';
 import { writeEntitySocialLinks } from '../../common/entity-social-links.util';
@@ -122,6 +124,8 @@ export class AdminGastroLocationsService {
         geoLng: body.location.lng ?? null,
         openingHours: writeGastroOpeningHours(body.openingHours),
         openingHoursNote: body.openingHoursNote?.trim() || null,
+        openingHoursMode: writeGastroOpeningHoursMode(body.openingHoursMode ?? 'simple'),
+        openingHoursWeekly: writeGastroOpeningHoursWeekly(body.openingHoursWeekly),
         contactPhone: body.contactPhone?.trim() || null,
         contactEmail: body.contactEmail.trim(),
         menuUrl: body.menuUrl ?? null,
@@ -235,6 +239,12 @@ export class AdminGastroLocationsService {
         }),
         ...(body.openingHoursNote !== undefined && {
           openingHoursNote: body.openingHoursNote?.trim() || null,
+        }),
+        ...(body.openingHoursMode !== undefined && {
+          openingHoursMode: writeGastroOpeningHoursMode(body.openingHoursMode),
+        }),
+        ...(body.openingHoursWeekly !== undefined && {
+          openingHoursWeekly: writeGastroOpeningHoursWeekly(body.openingHoursWeekly),
         }),
         ...(body.contactPhone !== undefined && {
           contactPhone: body.contactPhone?.trim() || null,

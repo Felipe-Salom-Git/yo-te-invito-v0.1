@@ -19,8 +19,11 @@ import { SubcategoriesService } from '../subcategories/subcategories.service';
 import {
   normalizeGastroSummary,
   readGastroGallery,
+  readGastroOpeningHoursFields,
   shouldSyncGastroPublicEventAfterUpdate,
   writeGastroOpeningHours,
+  writeGastroOpeningHoursMode,
+  writeGastroOpeningHoursWeekly,
 } from './gastro-profile-fields.util';
 import { GastroPublicEventSyncService } from './gastro-public-event-sync.service';
 import { readEntitySocialLinks, writeEntitySocialLinks } from '../../common/entity-social-links.util';
@@ -61,6 +64,7 @@ export class GastroLocalService {
       geoLng: row.geoLng,
       openingHours: parseRentalOpeningHours(row.openingHours),
       openingHoursNote: row.openingHoursNote,
+      ...readGastroOpeningHoursFields(row),
       contactPhone: row.contactPhone,
       contactEmail: row.contactEmail,
       menuUrl: row.menuUrl,
@@ -174,6 +178,8 @@ export class GastroLocalService {
         geoLng: body.location.lng ?? null,
         openingHours: writeGastroOpeningHours(body.openingHours),
         openingHoursNote: body.openingHoursNote?.trim() || null,
+        openingHoursMode: writeGastroOpeningHoursMode(body.openingHoursMode ?? 'simple'),
+        openingHoursWeekly: writeGastroOpeningHoursWeekly(body.openingHoursWeekly),
         contactPhone: body.contactPhone?.trim() || null,
         contactEmail: body.contactEmail.trim(),
         menuUrl: body.menuUrl ?? null,
@@ -240,6 +246,12 @@ export class GastroLocalService {
         }),
         ...(body.openingHoursNote !== undefined && {
           openingHoursNote: body.openingHoursNote?.trim() || null,
+        }),
+        ...(body.openingHoursMode !== undefined && {
+          openingHoursMode: writeGastroOpeningHoursMode(body.openingHoursMode),
+        }),
+        ...(body.openingHoursWeekly !== undefined && {
+          openingHoursWeekly: writeGastroOpeningHoursWeekly(body.openingHoursWeekly),
         }),
         ...(body.contactPhone !== undefined && {
           contactPhone: body.contactPhone?.trim() || null,

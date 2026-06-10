@@ -86,6 +86,8 @@ export const adminGastroLocationDetailSchema = adminGastroLocationListItemSchema
   geoLng: gastroLocalResponseSchema.shape.geoLng,
   openingHours: gastroLocalResponseSchema.shape.openingHours,
   openingHoursNote: gastroLocalResponseSchema.shape.openingHoursNote,
+  openingHoursMode: gastroLocalResponseSchema.shape.openingHoursMode,
+  openingHoursWeekly: gastroLocalResponseSchema.shape.openingHoursWeekly,
   subcategoryId: z.string().nullable(),
   subcategoryName: z.string().nullable(),
   menuUrl: z.string().nullable(),

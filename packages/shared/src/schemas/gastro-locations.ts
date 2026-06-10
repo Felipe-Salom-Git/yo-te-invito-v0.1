@@ -6,6 +6,10 @@ import {
 } from './external-links';
 import { contentTagPublicSchema, eventTagIdsSchema } from './content-tags';
 import { rentalOpeningHoursSchema } from './opening-hours';
+import {
+  gastroOpeningHoursModeSchema,
+  gastroWeeklyOpeningHoursSchema,
+} from './gastro-weekly-opening-hours';
 
 const gastroProfileStatusSchema = z.enum([
   'DRAFT',
@@ -57,6 +61,8 @@ export const gastroLocalResponseSchema = z.object({
   geoLng: z.number().nullable(),
   openingHours: rentalOpeningHoursSchema.nullable(),
   openingHoursNote: z.string().nullable(),
+  openingHoursMode: gastroOpeningHoursModeSchema.default('simple'),
+  openingHoursWeekly: gastroWeeklyOpeningHoursSchema.nullable().optional(),
   contactPhone: z.string().nullable(),
   contactEmail: z.string().nullable(),
   menuUrl: z.string().nullable(),
@@ -86,6 +92,8 @@ export const gastroLocalCreateSchema = z.object({
   location: gastroLocalLocationSchema,
   openingHours: rentalOpeningHoursSchema.nullable().optional(),
   openingHoursNote: z.string().max(500).nullable().optional(),
+  openingHoursMode: gastroOpeningHoursModeSchema.optional(),
+  openingHoursWeekly: gastroWeeklyOpeningHoursSchema.nullable().optional(),
   contactPhone: z.string().max(40).nullable().optional(),
   contactEmail: z.string().email().max(200),
   menuUrl: safeExternalUrlOptionalSchema,

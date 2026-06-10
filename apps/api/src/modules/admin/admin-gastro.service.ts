@@ -13,7 +13,10 @@ import {
   type AdminGastroDiscountPublication,
   type AdminGastroLocationsListQuery,
 } from '@yo-te-invito/shared';
-import { readGastroGallery } from '../gastro/gastro-profile-fields.util';
+import {
+  readGastroGallery,
+  readGastroOpeningHoursFields,
+} from '../gastro/gastro-profile-fields.util';
 import { readEntitySocialLinks } from '../../common/entity-social-links.util';
 import { loadEventTagsPublic } from '../../common/event-tags.util';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -380,6 +383,7 @@ export class AdminGastroService {
       geoLng: p.geoLng,
       openingHours: parseRentalOpeningHours(p.openingHours),
       openingHoursNote: p.openingHoursNote,
+      ...readGastroOpeningHoursFields(p),
       subcategoryId: p.subcategoryId,
       subcategoryName: p.subcategory?.name ?? null,
       menuUrl: p.menuUrl,

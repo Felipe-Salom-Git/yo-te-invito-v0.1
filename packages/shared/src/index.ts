@@ -71,6 +71,7 @@ export * from './schemas/admin-users';
 export * from './schemas/admin-payments';
 export * from './schemas/general-publications';
 export * from './schemas/gastro-locations';
+export * from './schemas/gastro-weekly-opening-hours';
 export * from './schemas/hotel-profile';
 export * from './schemas/public-hotel-locations';
 export * from './schemas/gastro-content';

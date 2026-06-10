@@ -1,8 +1,15 @@
 import { Prisma, type GastroProfile } from '@prisma/client';
 import {
+  gastroOpeningHoursModeSchema,
+  gastroWeeklyOpeningHoursSchema,
+  normalizeGastroOpeningHoursMode,
+  parseGastroWeeklyOpeningHours,
   rentalOpeningHoursSchema,
   trimToPublicSummary,
   type GastroLocalCreateInput,
+  type GastroLocalResponse,
+  type GastroOpeningHoursMode,
+  type GastroWeeklyOpeningHours,
 } from '@yo-te-invito/shared';
 
 export function normalizeGastroSummary(value: string | null | undefined): string | null {
@@ -20,6 +27,48 @@ export function writeGastroOpeningHours(
   if (value === undefined) return undefined;
   if (value == null) return Prisma.JsonNull;
   return rentalOpeningHoursSchema.parse(value) as Prisma.InputJsonValue;
+}
+
+export function readGastroOpeningHoursMode(row: GastroProfile): GastroOpeningHoursMode {
+  const weekly = parseGastroWeeklyOpeningHours(row.openingHoursWeekly);
+  return normalizeGastroOpeningHoursMode(row.openingHoursMode, weekly);
+}
+
+export function readGastroOpeningHoursWeekly(
+  row: GastroProfile,
+): GastroWeeklyOpeningHours | null {
+  return parseGastroWeeklyOpeningHours(row.openingHoursWeekly);
+}
+
+export function writeGastroOpeningHoursMode(
+  value: GastroLocalCreateInput['openingHoursMode'] | undefined,
+): string | undefined {
+  if (value === undefined) return undefined;
+  return gastroOpeningHoursModeSchema.parse(value);
+}
+
+export function writeGastroOpeningHoursWeekly(
+  value: GastroLocalCreateInput['openingHoursWeekly'] | undefined,
+): Prisma.InputJsonValue | typeof Prisma.JsonNull | undefined {
+  if (value === undefined) return undefined;
+  if (value == null) return Prisma.JsonNull;
+  return gastroWeeklyOpeningHoursSchema.parse(value) as Prisma.InputJsonValue;
+}
+
+type GastroOpeningHoursRow = {
+  openingHoursMode: string;
+  openingHoursWeekly: unknown;
+};
+
+export function readGastroOpeningHoursFields(row: GastroOpeningHoursRow): Pick<
+  GastroLocalResponse,
+  'openingHoursMode' | 'openingHoursWeekly'
+> {
+  const weekly = parseGastroWeeklyOpeningHours(row.openingHoursWeekly);
+  return {
+    openingHoursMode: normalizeGastroOpeningHoursMode(row.openingHoursMode, weekly),
+    openingHoursWeekly: weekly,
+  };
 }
 
 export function shouldSyncGastroPublicEventAfterUpdate(body: {
