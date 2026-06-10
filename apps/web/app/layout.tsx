@@ -3,6 +3,7 @@ import '@/styles/globals.css';
 import { Providers } from './providers';
 import { Navbar } from '@/components';
 import { RouteAwareFooter } from '@/components/RouteAwareFooter';
+import { SiteOrganizationJsonLd } from '@/components/seo/SiteOrganizationJsonLd';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://yoteinvito.club';
 
@@ -33,8 +34,9 @@ export const metadata: Metadata = {
     images: ['/brand/logo_2.png'],
   },
   icons: {
-    icon: '/brand/logo.png',
-    apple: '/brand/logo.png',
+    icon: [{ url: '/brand/logo.png', type: 'image/png' }],
+    apple: [{ url: '/brand/logo.png', type: 'image/png' }],
+    shortcut: '/brand/logo.png',
   },
   manifest: '/manifest.json',
 };
@@ -47,6 +49,7 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <head>
+        <SiteOrganizationJsonLd />
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var t=localStorage.getItem('yti:theme');if(t==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}})();`,
