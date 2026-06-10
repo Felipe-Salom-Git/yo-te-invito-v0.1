@@ -6,6 +6,7 @@ import { eventSubcategoryPublicSchema } from './event-subcategories';
 import { contentTagPublicSchema, eventTagIdsSchema } from './content-tags';
 import { eventOccurrenceResponseSchema } from './event-occurrences';
 import { excursionSchedulePublicSchema } from './excursion-schedule';
+import { relatedLinksPublicSchema } from './related-links';
 import { rentalOpeningHoursSchema } from './opening-hours';
 
 /** Optional Google Places id and province for location-backed entities (Maps 5). */
@@ -112,6 +113,11 @@ export const eventSummarySchema = z.object({
   producerName: z.string().nullable().optional(),
   status: z.enum(['DRAFT', 'PENDING', 'APPROVED', 'PAUSED', 'CANCELLED']).optional(),
   tags: z.array(contentTagPublicSchema).optional(),
+  /** Excursion schedule hints for discovery cards (V3.1 Etapa 12). */
+  departureTime: z.string().nullable().optional(),
+  durationText: z.string().nullable().optional(),
+  availableDaysText: z.string().nullable().optional(),
+  scheduleNotes: z.string().nullable().optional(),
 });
 
 export const eventsCalendarMonthQuerySchema = z.object({
@@ -198,6 +204,8 @@ export const eventDetailSchema = eventSummarySchema.extend({
   /** Multi-date events (V3.1 Etapa 7) — present when event has occurrences. */
   isMultiDate: z.boolean().optional(),
   occurrences: z.array(eventOccurrenceResponseSchema).optional(),
+  /** Curated external links — no HTML in descriptions (V3.1 Etapa 12). */
+  relatedLinks: relatedLinksPublicSchema.nullable().optional(),
 });
 
 export type EventDetail = z.infer<typeof eventDetailSchema>;

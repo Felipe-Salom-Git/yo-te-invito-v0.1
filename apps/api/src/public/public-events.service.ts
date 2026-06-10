@@ -19,6 +19,7 @@ import {
 } from '@yo-te-invito/shared';
 import { readEntitySocialLinks } from '../common/entity-social-links.util';
 import { readExcursionSchedulePublic } from '../common/excursion-schedule.util';
+import { parseRelatedLinks } from '../common/related-links.util';
 import {
   mapEventSubcategoriesPublic,
   subcategoryFilterWhere,
@@ -137,7 +138,85 @@ export class PublicEventsService {
         take: 1,
       },
       eventTags: this.eventTagsListSelect(),
+      excursionDepartureTime: true,
+      excursionDurationText: true,
+      excursionAvailableDaysText: true,
+      excursionScheduleNotes: true,
+      excursionMeetingPoint: true,
     } as const;
+  }
+
+  private mapPublicListSummary(
+    e: {
+      id: string;
+      title: string;
+      startAt: Date;
+      city: string | null;
+      venueName: string | null;
+      coverImageUrl: string | null;
+      category: string | null;
+      subcategoryId: string | null;
+      description: string | null;
+      ratingAvg: number | null;
+      ratingCount: number;
+      createdAt: Date;
+      isTicketingEnabled: boolean;
+      isGeneralPublication: boolean;
+      subcategory?: { name: string } | null;
+      producerProfile: { displayName: string } | null;
+      ticketTypes: Array<{ id: string }>;
+      eventTags: Array<{
+        tag: { id: string; name: string; slug: string; isActive: boolean };
+      }>;
+      excursionDepartureTime?: string | null;
+      excursionDurationText?: string | null;
+      excursionAvailableDaysText?: string | null;
+      excursionScheduleNotes?: string | null;
+      excursionMeetingPoint?: string | null;
+    },
+    priceCandidates: PublicFromPriceCandidate[],
+  ): EventSummary {
+    priceCandidates.push({
+      id: e.id,
+      isTicketingEnabled: e.isTicketingEnabled,
+      isGeneralPublication: e.isGeneralPublication,
+    });
+    const base: EventSummary = {
+      id: e.id,
+      title: e.title,
+      startAt: e.startAt.toISOString(),
+      city: e.city,
+      venueName: e.venueName,
+      coverImageUrl: e.coverImageUrl,
+      category: e.category ?? undefined,
+      subcategoryId: e.subcategoryId ?? undefined,
+      subcategoryName: e.subcategory?.name ?? null,
+      description: e.description ?? undefined,
+      ratingAvg: e.ratingAvg ?? undefined,
+      ratingCount: e.ratingCount ?? undefined,
+      createdAt: e.createdAt.toISOString(),
+      isTicketingEnabled: e.isTicketingEnabled,
+      isGeneralPublication: e.isGeneralPublication,
+      hasTicketing: this.mapHasTicketing(e),
+      producerName: resolvePublicProducerName(e.producerProfile),
+      fromPrice: null,
+      tags: mapEventTagsPublic(e.eventTags),
+    };
+    if ((e.category ?? '').toLowerCase() !== 'excursion') return base;
+    const schedule = readExcursionSchedulePublic({
+      excursionDepartureTime: e.excursionDepartureTime ?? null,
+      excursionDurationText: e.excursionDurationText ?? null,
+      excursionAvailableDaysText: e.excursionAvailableDaysText ?? null,
+      excursionScheduleNotes: e.excursionScheduleNotes ?? null,
+      excursionMeetingPoint: e.excursionMeetingPoint ?? null,
+    });
+    return {
+      ...base,
+      departureTime: schedule.departureTime,
+      durationText: schedule.durationText,
+      availableDaysText: schedule.availableDaysText,
+      scheduleNotes: schedule.scheduleNotes,
+    };
   }
 
   private applyTagFilter(base: Prisma.EventWhereInput, tagSlug?: string): void {
@@ -343,57 +422,9 @@ export class PublicEventsService {
             tags: mapEventTagsPublic(e.eventTags),
           };
         })
-      : (
-          data as Array<{
-            id: string;
-            title: string;
-            startAt: Date;
-            city: string | null;
-            venueName: string | null;
-            coverImageUrl: string | null;
-            category: string | null;
-            subcategoryId: string | null;
-            description: string | null;
-            ratingAvg: number | null;
-            ratingCount: number;
-            createdAt: Date;
-            isTicketingEnabled: boolean;
-            isGeneralPublication: boolean;
-            subcategory: { name: string } | null;
-            producerProfile: { displayName: string } | null;
-            ticketTypes: Array<{ id: string }>;
-            eventTags: Array<{
-              tag: { id: string; name: string; slug: string; isActive: boolean };
-            }>;
-          }>
-        ).map((e) => {
-          priceCandidates.push({
-            id: e.id,
-            isTicketingEnabled: e.isTicketingEnabled,
-            isGeneralPublication: e.isGeneralPublication,
-          });
-          return {
-            id: e.id,
-            title: e.title,
-            startAt: e.startAt.toISOString(),
-            city: e.city,
-            venueName: e.venueName,
-            coverImageUrl: e.coverImageUrl,
-            category: e.category ?? undefined,
-            subcategoryId: e.subcategoryId ?? undefined,
-            subcategoryName: e.subcategory?.name ?? null,
-            description: e.description ?? undefined,
-            ratingAvg: e.ratingAvg ?? undefined,
-            ratingCount: e.ratingCount ?? undefined,
-            createdAt: e.createdAt.toISOString(),
-            isTicketingEnabled: e.isTicketingEnabled,
-            isGeneralPublication: e.isGeneralPublication,
-            hasTicketing: this.mapHasTicketing(e),
-            producerName: resolvePublicProducerName(e.producerProfile),
-            fromPrice: null,
-            tags: mapEventTagsPublic(e.eventTags),
-          };
-        });
+      : (data as Parameters<PublicEventsService['mapPublicListSummary']>[0][]).map((e) =>
+          this.mapPublicListSummary(e, priceCandidates),
+        );
 
     const items = await this.attachFromPriceToSummaries(itemsBase, priceCandidates);
 
@@ -478,56 +509,8 @@ export class PublicEventsService {
 
     const priceCandidates: PublicFromPriceCandidate[] = [];
     const itemsBase: EventSummary[] = (
-      data as Array<{
-        id: string;
-        title: string;
-        startAt: Date;
-        city: string | null;
-        venueName: string | null;
-        coverImageUrl: string | null;
-        category: string | null;
-        subcategoryId: string | null;
-        description: string | null;
-        ratingAvg: number | null;
-        ratingCount: number;
-        createdAt: Date;
-        isTicketingEnabled: boolean;
-        isGeneralPublication: boolean;
-        subcategory: { name: string } | null;
-        producerProfile: { displayName: string } | null;
-        ticketTypes: Array<{ id: string }>;
-        eventTags: Array<{
-          tag: { id: string; name: string; slug: string; isActive: boolean };
-        }>;
-      }>
-    ).map((e) => {
-      priceCandidates.push({
-        id: e.id,
-        isTicketingEnabled: e.isTicketingEnabled,
-        isGeneralPublication: e.isGeneralPublication,
-      });
-      return {
-        id: e.id,
-        title: e.title,
-        startAt: e.startAt.toISOString(),
-        city: e.city,
-        venueName: e.venueName,
-        coverImageUrl: e.coverImageUrl,
-        category: e.category ?? undefined,
-        subcategoryId: e.subcategoryId ?? undefined,
-        subcategoryName: e.subcategory?.name ?? null,
-        description: e.description ?? undefined,
-        ratingAvg: e.ratingAvg ?? undefined,
-        ratingCount: e.ratingCount ?? undefined,
-        createdAt: e.createdAt.toISOString(),
-        isTicketingEnabled: e.isTicketingEnabled,
-        isGeneralPublication: e.isGeneralPublication,
-        hasTicketing: this.mapHasTicketing(e),
-        producerName: resolvePublicProducerName(e.producerProfile),
-        fromPrice: null,
-        tags: mapEventTagsPublic(e.eventTags),
-      };
-    });
+      data as Parameters<PublicEventsService['mapPublicListSummary']>[0][]
+    ).map((e) => this.mapPublicListSummary(e, priceCandidates));
 
     const items = await this.attachFromPriceToSummaries(itemsBase, priceCandidates);
 
@@ -575,56 +558,8 @@ export class PublicEventsService {
 
     const priceCandidates: PublicFromPriceCandidate[] = [];
     const itemsBase: EventSummary[] = (
-      data as Array<{
-        id: string;
-        title: string;
-        startAt: Date;
-        city: string | null;
-        venueName: string | null;
-        coverImageUrl: string | null;
-        category: string | null;
-        subcategoryId: string | null;
-        description: string | null;
-        ratingAvg: number | null;
-        ratingCount: number;
-        createdAt: Date;
-        isTicketingEnabled: boolean;
-        isGeneralPublication: boolean;
-        subcategory: { name: string } | null;
-        producerProfile: { displayName: string } | null;
-        ticketTypes: Array<{ id: string }>;
-        eventTags: Array<{
-          tag: { id: string; name: string; slug: string; isActive: boolean };
-        }>;
-      }>
-    ).map((e) => {
-      priceCandidates.push({
-        id: e.id,
-        isTicketingEnabled: e.isTicketingEnabled,
-        isGeneralPublication: e.isGeneralPublication,
-      });
-      return {
-        id: e.id,
-        title: e.title,
-        startAt: e.startAt.toISOString(),
-        city: e.city,
-        venueName: e.venueName,
-        coverImageUrl: e.coverImageUrl,
-        category: e.category ?? undefined,
-        subcategoryId: e.subcategoryId ?? undefined,
-        subcategoryName: e.subcategory?.name ?? null,
-        description: e.description ?? undefined,
-        ratingAvg: e.ratingAvg ?? undefined,
-        ratingCount: e.ratingCount ?? undefined,
-        createdAt: e.createdAt.toISOString(),
-        isTicketingEnabled: e.isTicketingEnabled,
-        isGeneralPublication: e.isGeneralPublication,
-        hasTicketing: this.mapHasTicketing(e),
-        producerName: resolvePublicProducerName(e.producerProfile),
-        fromPrice: null,
-        tags: mapEventTagsPublic(e.eventTags),
-      };
-    });
+      data as Parameters<PublicEventsService['mapPublicListSummary']>[0][]
+    ).map((e) => this.mapPublicListSummary(e, priceCandidates));
 
     return this.attachFromPriceToSummaries(itemsBase, priceCandidates);
   }
@@ -813,6 +748,7 @@ export class PublicEventsService {
         : null,
       excursionSchedule:
         event.category === 'excursion' ? readExcursionSchedulePublic(event) : undefined,
+      relatedLinks: parseRelatedLinks(event.relatedLinks),
       subcategories:
         event.category === 'excursion'
           ? mapEventSubcategoriesPublic(event.eventSubcategories)

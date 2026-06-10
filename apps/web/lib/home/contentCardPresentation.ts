@@ -102,6 +102,25 @@ export function getContentCardLocationLine(item: {
   return item.city?.trim() || item.venueName?.trim() || '—';
 }
 
+/** One-line excursion schedule hint for discovery cards (V3.1 Etapa 12). */
+export function getExcursionCardScheduleLine(item: {
+  durationText?: string | null;
+  departureTime?: string | null;
+  availableDaysText?: string | null;
+  scheduleNotes?: string | null;
+}): string | null {
+  const duration = item.durationText?.trim();
+  const departure = item.departureTime?.trim();
+  const days = item.availableDaysText?.trim();
+  if (duration && departure) return `${duration} · Salida ${departure}`;
+  if (duration) return duration;
+  if (departure) return `Salida ${departure}`;
+  if (days) return days;
+  const notes = item.scheduleNotes?.trim();
+  if (notes && notes.length <= 48) return notes;
+  return null;
+}
+
 /** Third metadata line on cards — operator, producer, excursion schedule hint, rental CTA. */
 export function getContentCardMetaLine(item: {
   category?: string | null;
@@ -109,16 +128,15 @@ export function getContentCardMetaLine(item: {
   venueName?: string | null;
   summary?: string | null;
   durationText?: string | null;
+  departureTime?: string | null;
+  availableDaysText?: string | null;
   scheduleNotes?: string | null;
 }): string | null {
   if (isRentalContent(item)) return RENTAL_CARD_CTA;
 
   if (isExcursionContent(item)) {
-    const duration = item.durationText?.trim();
-    const schedule = item.scheduleNotes?.trim();
-    if (duration && schedule) return `${duration} · ${schedule}`;
-    if (duration) return duration;
-    if (schedule) return schedule;
+    const scheduleLine = getExcursionCardScheduleLine(item);
+    if (scheduleLine) return scheduleLine;
     const operator = item.venueName?.trim() || item.producerName?.trim();
     if (operator) return operator;
     const summary = item.summary?.trim();

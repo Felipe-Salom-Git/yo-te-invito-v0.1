@@ -35,8 +35,10 @@ export interface ContentCardItem extends EventSummary {
   ratingCount?: number;
   fromPrice?: number | null;
   producerName?: string | null;
-  /** Excursion detail fields — optional on list payloads */
+  /** Excursion schedule fields — optional on list payloads */
   durationText?: string | null;
+  departureTime?: string | null;
+  availableDaysText?: string | null;
   scheduleNotes?: string | null;
 }
 
@@ -85,6 +87,8 @@ export function ContentCard({ item, onClick, tenantId }: ContentCardProps) {
     category: item.category,
     summary: item.summary,
     durationText: item.durationText,
+    departureTime: item.departureTime,
+    availableDaysText: item.availableDaysText,
     scheduleNotes: item.scheduleNotes,
   };
 

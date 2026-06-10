@@ -27,6 +27,8 @@ export interface ContentCardMetadata {
   category?: string;
   summary?: string | null;
   durationText?: string | null;
+  departureTime?: string | null;
+  availableDaysText?: string | null;
   scheduleNotes?: string | null;
 }
 
