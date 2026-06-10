@@ -5,6 +5,12 @@ import { useSession } from 'next-auth/react';
 import { Button, useToast } from '@/components';
 import { useTenant } from '@/hooks/useTenant';
 import {
+  EXPECTED_EVENT_BUTTON_ACTIVE_LABEL,
+  EXPECTED_EVENT_BUTTON_LABEL,
+  EXPECTED_EVENT_BUTTON_TITLE,
+  EXPECTED_EVENT_LOGIN_HINT,
+} from '@/lib/engagement/expected-event-copy';
+import {
   useMeFavorites,
   useMeFavoriteMutations,
   useMeExpectedEvents,
@@ -17,7 +23,7 @@ type Props = {
 };
 
 /**
- * Favoritos + “Esperado” — persiste en /me/favorites y /me/expected-events.
+ * Favoritos + eventos de interés — persiste en /me/favorites y /me/expected-events.
  */
 export function EventEngagementRow({ eventId }: Props) {
   const { data: session, status } = useSession();
@@ -40,7 +46,7 @@ export function EventEngagementRow({ eventId }: Props) {
         <Link href="/login" className="text-accent hover:underline">
           Iniciá sesión
         </Link>{' '}
-        para guardar favoritos o marcar como esperado.
+        {EXPECTED_EVENT_LOGIN_HINT}
       </p>
     );
   }
@@ -91,8 +97,10 @@ export function EventEngagementRow({ eventId }: Props) {
         variant={isExpected ? 'primary' : 'outline'}
         disabled={pending}
         onClick={toggleExpected}
+        title={EXPECTED_EVENT_BUTTON_TITLE}
+        aria-label={EXPECTED_EVENT_BUTTON_TITLE}
       >
-        {isExpected ? '✓ Lo espero' : 'Lo espero'}
+        {isExpected ? EXPECTED_EVENT_BUTTON_ACTIVE_LABEL : EXPECTED_EVENT_BUTTON_LABEL}
       </Button>
       <Link href="/me/preferences?tab=favorites" className="text-xs text-text-muted hover:text-accent">
         Mis favoritos

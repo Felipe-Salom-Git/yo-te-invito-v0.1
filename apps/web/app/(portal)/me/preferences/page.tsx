@@ -23,6 +23,7 @@ import {
   usePortalPreferences,
   usePatchPortalPreferences,
 } from '@/lib/query/me-portal';
+import { EXPECTED_EVENT_EMPTY_DESCRIPTION } from '@/lib/engagement/expected-event-copy';
 import { getErrorMessage } from '@/lib/errors';
 import type { UserFavorite, UserExpectedEvent } from '@yo-te-invito/shared';
 import { useEffect, useState } from 'react';
@@ -254,7 +255,7 @@ function ExpectedTab() {
     return (
       <EmptyState
         title="No marcaste eventos como esperados"
-        description="Usá «Lo espero» en la ficha de un evento para seguirlo desde acá."
+        description={EXPECTED_EVENT_EMPTY_DESCRIPTION}
         actionLabel="Explorar eventos"
         actionHref="/explore"
       />
