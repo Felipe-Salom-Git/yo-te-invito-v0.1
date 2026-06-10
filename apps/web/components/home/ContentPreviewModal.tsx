@@ -10,6 +10,8 @@ import {
   getContentPreviewLocationLabel,
   getContentPreviewPrimaryCta,
   getContentPreviewShortDateLabel,
+  getGastroCardSubtitleLine,
+  isGastroContent,
   isRentalContent,
 } from '@/lib/home/contentCardPresentation';
 import type { ContentCardItem } from './ContentCard';
@@ -130,11 +132,24 @@ function ContentPreviewContent({
 }) {
   const detailHref = getContentDetailHref(item);
   const isRental = isRentalContent(item);
+  const isGastro = isGastroContent(item);
   const categoryLabel = getContentCardPrimaryBadge(item);
   const filteredSimilar = similarItems.filter((s) => s.id !== item.id);
 
   const dateLabel = getContentPreviewDateLabel(item);
   const locationLabel = getContentPreviewLocationLabel(item);
+  const gastroSubtitle = isGastro
+    ? getGastroCardSubtitleLine({
+        summary: item.summary,
+        description: item.description,
+        subcategoryName: item.subcategoryName,
+        city: item.city,
+      })
+    : null;
+  const previewBodyText =
+    item.description?.trim() ||
+    (isGastro ? item.summary?.trim() : null) ||
+    null;
 
   const fromPrice =
     !isRental && item.fromPrice != null && Number(item.fromPrice) > 0
@@ -224,16 +239,18 @@ function ContentPreviewContent({
           </div>
         )}
 
-        {/* Description — line-clamp in base, full in expanded */}
-        {item.description && (
+        {/* Description / propuesta — line-clamp in base, full in expanded */}
+        {previewBodyText ? (
           <p
             className={`mt-4 text-sm leading-relaxed text-white/90 ${
               isExpanded ? '' : 'line-clamp-3'
             }`}
           >
-            {item.description}
+            {previewBodyText}
           </p>
-        )}
+        ) : isGastro && gastroSubtitle && gastroSubtitle !== item.city ? (
+          <p className="mt-4 text-sm leading-relaxed text-white/90">{gastroSubtitle}</p>
+        ) : null}
 
         {item.tags && item.tags.length > 0 ? (
           <ContentTagChips
@@ -244,14 +261,16 @@ function ContentPreviewContent({
           />
         ) : null}
 
-        {/* Producer / local */}
-        {(isRental ? item.venueName : item.producerName || item.venueName) && (
+        {/* Producer / local / gastro metadata */}
+        {isGastro && locationLabel ? (
+          <p className="mt-2 text-sm text-white/60">{locationLabel}</p>
+        ) : (isRental ? item.venueName : item.producerName || item.venueName) ? (
           <p className="mt-2 text-sm text-white/70">
             {isRental
               ? [item.venueName, item.city].filter(Boolean).join(' · ')
               : [item.producerName, item.venueName].filter(Boolean).join(' · ')}
           </p>
-        )}
+        ) : null}
 
         {/* CTA row */}
         <div className="mt-6">

@@ -79,6 +79,68 @@ export function getEventCardDateParts(startAt?: string | null): {
   };
 }
 
+const GASTRO_CARD_SUBTITLE_MAX = 56;
+
+function truncateCardLine(text: string, max = GASTRO_CARD_SUBTITLE_MAX): string {
+  const trimmed = text.trim();
+  if (trimmed.length <= max) return trimmed;
+  return `${trimmed.slice(0, max - 1).trimEnd()}…`;
+}
+
+/**
+ * Gastro/restaurant card subtitle — summary/propuesta, tipo+especialidad, tipo, ciudad fallback.
+ */
+export function getGastroCardSubtitleLine(item: {
+  summary?: string | null;
+  description?: string | null;
+  subcategoryName?: string | null;
+  city?: string | null;
+}): string {
+  const summary = item.summary?.trim();
+  if (summary) return truncateCardLine(summary);
+
+  const description = item.description?.trim();
+  if (description) return truncateCardLine(description);
+
+  const subcategory = item.subcategoryName?.trim();
+  if (subcategory) {
+    return `Restaurant · ${subcategory}`;
+  }
+
+  return item.city?.trim() || '—';
+}
+
+/** City as tertiary metadata when gastro subtitle is not already the city. */
+export function getGastroCardCityMetaLine(item: {
+  summary?: string | null;
+  description?: string | null;
+  subcategoryName?: string | null;
+  city?: string | null;
+}): string | null {
+  const city = item.city?.trim();
+  if (!city) return null;
+  const subtitle = getGastroCardSubtitleLine(item);
+  if (subtitle === city) return null;
+  return city;
+}
+
+/**
+ * Primary subtitle below card title — gastro uses propuesta/tipo; other verticals use location.
+ */
+export function getContentCardSubtitleLine(item: {
+  category?: string | null;
+  summary?: string | null;
+  description?: string | null;
+  subcategoryName?: string | null;
+  city?: string | null;
+  venueName?: string | null;
+}): string {
+  if (isGastroContent(item)) {
+    return getGastroCardSubtitleLine(item);
+  }
+  return getContentCardLocationLine(item);
+}
+
 /** Location line: local (venueName) first for rentals; city/venue for other categories. */
 export function getContentCardLocationLine(item: {
   category?: string | null;
@@ -127,6 +189,9 @@ export function getContentCardMetaLine(item: {
   producerName?: string | null;
   venueName?: string | null;
   summary?: string | null;
+  description?: string | null;
+  subcategoryName?: string | null;
+  city?: string | null;
   durationText?: string | null;
   departureTime?: string | null;
   availableDaysText?: string | null;
@@ -144,7 +209,9 @@ export function getContentCardMetaLine(item: {
     return EXCURSION_CARD_CTA;
   }
 
-  if (isGastroContent(item)) return null;
+  if (isGastroContent(item)) {
+    return getGastroCardCityMetaLine(item);
+  }
 
   if (isEventContent(item) && item.producerName?.trim()) {
     return item.producerName.trim();

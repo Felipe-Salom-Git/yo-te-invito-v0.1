@@ -5,8 +5,10 @@ import {
   getContentCardExpandedCta,
   getContentCardLocationLine,
   getContentCardMetaLine,
+  getContentCardSubtitleLine,
   isEventContent,
   isExcursionContent,
+  isGastroContent,
   isRentalContent,
   shouldShowContentCardPrice,
 } from '@/lib/home/contentCardPresentation';
@@ -26,6 +28,7 @@ export interface ContentCardMetadata {
   detailHref: string;
   category?: string;
   summary?: string | null;
+  subcategoryName?: string | null;
   durationText?: string | null;
   departureTime?: string | null;
   availableDaysText?: string | null;
@@ -52,19 +55,32 @@ export function ExpandedContentCardOverlay({
     city,
     category,
     summary,
+    subcategoryName,
     durationText,
     scheduleNotes,
   } = metadata;
   const isRental = isRentalContent({ category });
   const isEvent = isEventContent({ category });
   const isExcursion = isExcursionContent({ category });
+  const isGastro = isGastroContent({ category });
   const ctaLabel = getContentCardExpandedCta(category);
   const locationLine = getContentCardLocationLine({ category, venueName, city });
+  const subtitleLine = getContentCardSubtitleLine({
+    category,
+    summary,
+    description,
+    subcategoryName,
+    city,
+    venueName,
+  });
   const metaLine = getContentCardMetaLine({
     category,
     producerName,
     venueName,
     summary,
+    description,
+    subcategoryName,
+    city,
     durationText,
     scheduleNotes,
   });
@@ -105,6 +121,15 @@ export function ExpandedContentCardOverlay({
             <p className="text-xs text-white/80">{locationLine}</p>
             {producerName ? (
               <ProducerMeta producerName={producerName} className="mt-0.5" />
+            ) : null}
+          </>
+        ) : isGastro ? (
+          <>
+            <p className="text-xs text-white/85">{subtitleLine}</p>
+            {metaLine ? (
+              <p className="mt-0.5 text-[11px] uppercase tracking-wide text-white/55">
+                {metaLine}
+              </p>
             ) : null}
           </>
         ) : (

@@ -9,7 +9,7 @@ import {
   getContentCardDateLabel,
   getContentCardPrimaryBadge,
   getContentCardSecondaryBadge,
-  getContentCardLocationLine,
+  getContentCardSubtitleLine,
   getContentCardPlaceholderEmoji,
   getContentCardMetaLine,
   getEventCardDateParts,
@@ -65,7 +65,7 @@ export function ContentCard({ item, onClick, tenantId }: ContentCardProps) {
 
   const dateLabel = getContentCardDateLabel(item);
   const eventDateParts = isEvent ? getEventCardDateParts(item.startAt) : null;
-  const locationLabel = getContentCardLocationLine(item);
+  const subtitleLine = getContentCardSubtitleLine(item);
   const metaLine = getContentCardMetaLine(item);
   const primaryBadge = getContentCardPrimaryBadge(item);
   const secondaryBadge = getContentCardSecondaryBadge(item);
@@ -86,6 +86,7 @@ export function ContentCard({ item, onClick, tenantId }: ContentCardProps) {
     detailHref,
     category: item.category,
     summary: item.summary,
+    subcategoryName: item.subcategoryName,
     durationText: item.durationText,
     departureTime: item.departureTime,
     availableDaysText: item.availableDaysText,
@@ -224,13 +225,23 @@ export function ContentCard({ item, onClick, tenantId }: ContentCardProps) {
         >
           {item.title}
         </h3>
-        <p className="mt-1.5 truncate text-xs font-medium uppercase tracking-wide text-white/75">
-          {locationLabel}
+        <p
+          className={`mt-1.5 truncate text-xs font-medium ${
+            isGastro
+              ? 'normal-case tracking-normal text-white/80'
+              : 'uppercase tracking-wide text-white/75'
+          }`}
+        >
+          {subtitleLine}
         </p>
         {metaLine && !isEvent ? (
           <p
             className={`mt-1 truncate text-[11px] font-medium ${
-              isRental || isExcursion ? 'text-accent/90' : 'text-white/65'
+              isRental || isExcursion
+                ? 'text-accent/90'
+                : isGastro
+                  ? 'uppercase tracking-wide text-white/55'
+                  : 'text-white/65'
             }`}
           >
             {metaLine}
