@@ -4,7 +4,11 @@ import { motion } from 'framer-motion';
 import {
   getContentCardExpandedCta,
   getContentCardLocationLine,
+  getContentCardMetaLine,
+  isEventContent,
+  isExcursionContent,
   isRentalContent,
+  shouldShowContentCardPrice,
 } from '@/lib/home/contentCardPresentation';
 import { RatingBadge } from './RatingBadge';
 import { PriceBadge } from './PriceBadge';
@@ -21,6 +25,9 @@ export interface ContentCardMetadata {
   city?: string | null;
   detailHref: string;
   category?: string;
+  summary?: string | null;
+  durationText?: string | null;
+  scheduleNotes?: string | null;
 }
 
 export interface ExpandedContentCardOverlayProps {
@@ -32,11 +39,34 @@ export function ExpandedContentCardOverlay({
   metadata,
   isVisible,
 }: ExpandedContentCardOverlayProps) {
-  const { title, description, ratingAvg, ratingCount, fromPrice, producerName, venueName, city, category } =
-    metadata;
+  const {
+    title,
+    description,
+    ratingAvg,
+    ratingCount,
+    fromPrice,
+    producerName,
+    venueName,
+    city,
+    category,
+    summary,
+    durationText,
+    scheduleNotes,
+  } = metadata;
   const isRental = isRentalContent({ category });
+  const isEvent = isEventContent({ category });
+  const isExcursion = isExcursionContent({ category });
   const ctaLabel = getContentCardExpandedCta(category);
   const locationLine = getContentCardLocationLine({ category, venueName, city });
+  const metaLine = getContentCardMetaLine({
+    category,
+    producerName,
+    venueName,
+    summary,
+    durationText,
+    scheduleNotes,
+  });
+  const showPrice = shouldShowContentCardPrice({ category, fromPrice });
 
   return (
     <motion.div
@@ -51,7 +81,7 @@ export function ExpandedContentCardOverlay({
       {/* Metadata row — rating, price */}
       <div className="mb-2 flex flex-wrap items-center gap-2">
         <RatingBadge ratingAvg={ratingAvg} ratingCount={ratingCount} />
-        <PriceBadge fromPrice={isRental ? null : fromPrice} />
+        <PriceBadge fromPrice={showPrice ? fromPrice : null} />
       </div>
 
       {/* Title */}
@@ -61,8 +91,20 @@ export function ExpandedContentCardOverlay({
 
       {/* Producer / local */}
       <div className="mt-1">
-        {isRental ? (
-          <p className="text-xs text-white/80">{locationLine}</p>
+        {isRental || isExcursion ? (
+          <>
+            <p className="text-xs text-white/80">{locationLine}</p>
+            {metaLine ? (
+              <p className="mt-0.5 text-[11px] text-accent/90">{metaLine}</p>
+            ) : null}
+          </>
+        ) : isEvent ? (
+          <>
+            <p className="text-xs text-white/80">{locationLine}</p>
+            {producerName ? (
+              <ProducerMeta producerName={producerName} className="mt-0.5" />
+            ) : null}
+          </>
         ) : (
           <ProducerMeta producerName={producerName} venueName={venueName} city={city} />
         )}
