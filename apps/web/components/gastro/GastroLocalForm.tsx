@@ -1,9 +1,14 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { createEmptyRentalOpeningHours } from '@yo-te-invito/shared';
+import {
+  createEmptyGastroWeeklyOpeningHours,
+  createEmptyRentalOpeningHours,
+  type GastroOpeningHoursMode,
+} from '@yo-te-invito/shared';
 import { Button, Input, SectionTitle } from '@/components';
 import { OpeningHoursEditor } from '@/components/forms/OpeningHoursEditor';
+import { WeeklyOpeningHoursEditor } from '@/components/forms/WeeklyOpeningHoursEditor';
 import { RentalProductImagesForm } from '@/components/rentals/RentalProductImagesForm';
 import { RentalSummaryField } from '@/components/rentals/RentalSummaryField';
 import type { GcsImageUploadConfig } from '@/lib/upload/gcs-image-upload-config';
@@ -94,8 +99,14 @@ export function GastroLocalForm({
           placeId: null,
         },
   );
+  const [openingHoursMode, setOpeningHoursMode] = useState<GastroOpeningHoursMode>(
+    initial?.openingHoursMode ?? 'simple',
+  );
   const [openingHours, setOpeningHours] = useState(
     initial?.openingHours ?? createEmptyRentalOpeningHours(),
+  );
+  const [openingHoursWeekly, setOpeningHoursWeekly] = useState(
+    initial?.openingHoursWeekly ?? createEmptyGastroWeeklyOpeningHours(),
   );
   const [openingHoursNote, setOpeningHoursNote] = useState(initial?.openingHoursNote ?? '');
   const [contactPhone, setContactPhone] = useState(initial?.contactPhone ?? '');
@@ -125,7 +136,9 @@ export function GastroLocalForm({
       galleryImageUrls: initial.galleryUrls ?? [],
     });
     setLocation(locationFromLocal(initial));
+    setOpeningHoursMode(initial.openingHoursMode ?? 'simple');
     setOpeningHours(initial.openingHours ?? createEmptyRentalOpeningHours());
+    setOpeningHoursWeekly(initial.openingHoursWeekly ?? createEmptyGastroWeeklyOpeningHours());
     setOpeningHoursNote(initial.openingHoursNote ?? '');
     setContactPhone(initial.contactPhone ?? '');
     setContactEmail(initial.contactEmail ?? '');
@@ -156,6 +169,8 @@ export function GastroLocalForm({
       galleryUrls: images.galleryImageUrls.filter(Boolean),
       location: gastroLocationPayloadFromLocationValue(location),
       openingHours,
+      openingHoursMode,
+      openingHoursWeekly: openingHoursMode === 'weekly' ? openingHoursWeekly : null,
       openingHoursNote: openingHoursNote.trim() || null,
       contactPhone: contactPhone.trim() || null,
       contactEmail: contactEmail.trim(),
@@ -236,7 +251,36 @@ export function GastroLocalForm({
         provinceError={locationError ?? undefined}
       />
       {isAdmin ? <p className="text-sm font-medium text-text">Horarios y contacto</p> : null}
-      <OpeningHoursEditor value={openingHours} onChange={setOpeningHours} />
+      <fieldset className="space-y-3">
+        <legend className="text-sm font-medium text-text">Horario de atención</legend>
+        <div className="flex flex-wrap gap-4 text-sm text-text-muted">
+          <label className="flex items-center gap-2">
+            <input
+              type="radio"
+              name="openingHoursMode"
+              checked={openingHoursMode === 'simple'}
+              onChange={() => setOpeningHoursMode('simple')}
+              className="border-border"
+            />
+            Usar horario simple
+          </label>
+          <label className="flex items-center gap-2">
+            <input
+              type="radio"
+              name="openingHoursMode"
+              checked={openingHoursMode === 'weekly'}
+              onChange={() => setOpeningHoursMode('weekly')}
+              className="border-border"
+            />
+            Configurar por día
+          </label>
+        </div>
+        {openingHoursMode === 'simple' ? (
+          <OpeningHoursEditor value={openingHours} onChange={setOpeningHours} />
+        ) : (
+          <WeeklyOpeningHoursEditor value={openingHoursWeekly} onChange={setOpeningHoursWeekly} />
+        )}
+      </fieldset>
       <Input
         label="Nota horarios (opcional)"
         value={openingHoursNote}

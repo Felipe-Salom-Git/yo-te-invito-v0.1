@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import type { GastroLocal } from '@/repositories/interfaces';
 import { buildGastroGalleryImages } from '@/lib/gastro/gallery';
-import { RentalOpeningHoursSummary } from '@/components/rentals/RentalOpeningHoursSummary';
+import { GastroOpeningHoursSummary } from '@/components/gastro/GastroOpeningHoursSummary';
 import { RentalGalleryThumbnails } from '@/components/rentals/RentalGalleryThumbnails';
 
 type GastroLocalPreviewProps = {
@@ -96,9 +96,11 @@ export function GastroLocalPreview({ local, subcategoryName }: GastroLocalPrevie
             Horario de atención
           </p>
           <div className="mt-1">
-            <RentalOpeningHoursSummary
-              schedule={local.openingHours}
-              note={local.openingHoursNote}
+            <GastroOpeningHoursSummary
+              openingHoursMode={local.openingHoursMode}
+              openingHours={local.openingHours}
+              openingHoursWeekly={local.openingHoursWeekly}
+              openingHoursNote={local.openingHoursNote}
             />
           </div>
         </div>

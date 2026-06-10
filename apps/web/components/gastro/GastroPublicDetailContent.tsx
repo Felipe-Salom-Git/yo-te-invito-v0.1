@@ -170,7 +170,9 @@ export function GastroPublicDetailContent({
             <GastroLocationCard
               name={location.displayName}
               address={location.address}
+              openingHoursMode={location.openingHoursMode}
               openingHours={location.openingHours}
+              openingHoursWeekly={location.openingHoursWeekly}
               openingHoursNote={location.openingHoursNote}
               hasLocation={hasLocation}
               onViewLocation={hasLocation ? onLocationModalOpen : undefined}

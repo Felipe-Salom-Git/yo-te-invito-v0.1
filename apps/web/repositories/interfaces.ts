@@ -2269,6 +2269,8 @@ export interface GastroLocal {
   geoLng: number | null;
   openingHours: import('@yo-te-invito/shared').RentalOpeningHours | null;
   openingHoursNote: string | null;
+  openingHoursMode: import('@yo-te-invito/shared').GastroOpeningHoursMode;
+  openingHoursWeekly: import('@yo-te-invito/shared').GastroWeeklyOpeningHours | null;
   contactPhone: string | null;
   contactEmail: string | null;
   menuUrl: string | null;
@@ -2329,6 +2331,8 @@ export interface GastroLocalUpsertPayload {
   };
   openingHours?: import('@yo-te-invito/shared').RentalOpeningHours | null;
   openingHoursNote?: string | null;
+  openingHoursMode?: import('@yo-te-invito/shared').GastroOpeningHoursMode;
+  openingHoursWeekly?: import('@yo-te-invito/shared').GastroWeeklyOpeningHours | null;
   contactPhone?: string | null;
   contactEmail: string;
   menuUrl?: string | null;
@@ -2554,6 +2558,8 @@ export interface AdminGastroLocationDetail extends AdminGastroLocationListItem {
   geoLng?: number | null;
   openingHours: import('@yo-te-invito/shared').RentalOpeningHours | null;
   openingHoursNote: string | null;
+  openingHoursMode: import('@yo-te-invito/shared').GastroOpeningHoursMode;
+  openingHoursWeekly: import('@yo-te-invito/shared').GastroWeeklyOpeningHours | null;
   subcategoryId: string | null;
   subcategoryName: string | null;
   menuUrl: string | null;
