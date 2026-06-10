@@ -5,6 +5,8 @@
 
 export * from './enums';
 export * from './constants/content-limits';
+export * from './constants/content-tags';
+export * from './content-tags/normalize';
 export * from './constants/ticket-transfer';
 export * from './constants/master-user';
 export * from './constants/legal-documents';
@@ -46,6 +48,7 @@ export * from './schemas/referral-payment-requests';
 export * from './schemas/referral-metrics';
 export * from './schemas/inbox.schema';
 export * from './schemas/subcategories';
+export * from './schemas/content-tags';
 export * from './schemas/category-banners';
 export * from './schemas/category-editorial-banners';
 export * from './schemas/opening-hours';

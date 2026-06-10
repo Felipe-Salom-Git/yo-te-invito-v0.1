@@ -162,6 +162,7 @@ model Tenant {
   gastroDiscountClaims    GastroDiscountClaim[]
   gastroContents          GastroContent[]
   contentSubcategories    ContentSubcategory[]
+  contentTags             ContentTag[]
   categoryBannerItems         CategoryBannerItem[]
   categoryEditorialBanners    CategoryEditorialBanner[]
   rentalLocations         RentalLocation[]
@@ -807,6 +808,41 @@ model EventSubcategory {
   @@index([subcategoryId])
 }
 
+/// Tenant-scoped publication tags (V3.1 Etapa 4) — complements categories/subcategories.
+model ContentTag {
+  id            String   @id @default(cuid())
+  tenantId      String
+  name          String
+  slug          String
+  description   String?
+  /// null = all verticals; otherwise event|gastro|rental|excursion|hotel
+  categoryScope String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenant    Tenant     @relation(fields: [tenantId], references: [id])
+  eventTags EventTag[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId, isActive])
+  @@index([tenantId, categoryScope, isActive])
+}
+
+model EventTag {
+  id        String   @id @default(cuid())
+  eventId   String
+  tagId     String
+  createdAt DateTime @default(now())
+
+  event Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  tag   ContentTag @relation(fields: [tagId], references: [id], onDelete: Restrict)
+
+  @@unique([eventId, tagId])
+  @@index([eventId])
+  @@index([tagId])
+}
+
 model Event {
   id                String       @id @default(cuid())
   tenantId          String
@@ -855,6 +891,7 @@ model Event {
   producerProfile ProducerProfile? @relation(fields: [producerProfileId], references: [id], onDelete: SetNull)
   subcategory        ContentSubcategory? @relation(fields: [subcategoryId], references: [id], onDelete: SetNull)
   eventSubcategories EventSubcategory[]
+  eventTags          EventTag[]
   rentalLocation     RentalLocation?     @relation(fields: [rentalLocationId], references: [id], onDelete: SetNull)
   excursionOperator  ExcursionOperator?  @relation(fields: [excursionOperatorId], references: [id], onDelete: SetNull)
   media            EventMedia[]

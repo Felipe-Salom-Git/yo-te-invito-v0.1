@@ -13,6 +13,7 @@ import { AdminConfigService } from './admin-config.service';
 import { AdminApplicationsService } from './admin-applications.service';
 import { AdminProfilesService } from './admin-profiles.service';
 import { SubcategoriesModule } from '../subcategories/subcategories.module';
+import { ContentTagsModule } from '../content-tags/content-tags.module';
 import { RentalLocationsModule } from '../rental-locations/rental-locations.module';
 import { ExcursionOperatorsModule } from '../excursion-operators/excursion-operators.module';
 import { CategoryBannersModule } from '../category-banners/category-banners.module';
@@ -37,6 +38,7 @@ import { AdminContentLifecycleService } from './admin-content-lifecycle.service'
     ReferralsModule,
     InboxModule,
     SubcategoriesModule,
+    ContentTagsModule,
     RentalLocationsModule,
     ExcursionOperatorsModule,
     CategoryBannersModule,

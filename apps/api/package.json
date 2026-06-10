@@ -65,6 +65,7 @@
     "smoke:v31-admin-archive": "tsx scripts/smoke-v31-admin-archive.ts",
     "smoke:v31-category-banners": "tsx scripts/smoke-v31-category-banners.ts",
     "smoke:v31-admin-gastro-discovery": "tsx scripts/smoke-v31-admin-gastro-discovery.ts",
+    "smoke:v31-tags-model": "tsx scripts/smoke-v31-tags-model.ts",
     "smoke:email": "tsx scripts/smoke-email.ts",
     "smoke:email-template": "tsx scripts/smoke-email-template.ts"
   },

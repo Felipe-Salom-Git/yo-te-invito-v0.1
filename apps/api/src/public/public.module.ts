@@ -28,6 +28,7 @@ import { ReviewsModule } from '../modules/reviews/reviews.module';
 import { ReferrerModule } from '../modules/referrer/referrer.module';
 import { TicketingModule } from '../ticketing/ticketing.module';
 import { SubcategoriesModule } from '../modules/subcategories/subcategories.module';
+import { ContentTagsModule } from '../modules/content-tags/content-tags.module';
 import { RentalLocationsModule } from '../modules/rental-locations/rental-locations.module';
 import { CategoryBannersModule } from '../modules/category-banners/category-banners.module';
 import { GastroModule } from '../modules/gastro/gastro.module';
@@ -40,6 +41,7 @@ import { GastroModule } from '../modules/gastro/gastro.module';
     ReferrerModule,
     TicketingModule,
     SubcategoriesModule,
+    ContentTagsModule,
     RentalLocationsModule,
     CategoryBannersModule,
     GastroModule,
