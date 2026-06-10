@@ -109,7 +109,7 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`). Shared UI tokens:
 - **Galería**: only **additional** images (`buildRentalGalleryOnlyImages`); `RentalGalleryThumbnails` + modal. Cover **not** duplicated.
 - **`RentalLocalCard`**: address, **horario de atención** solo si hay datos (`hasRentalOpeningHoursContent`), “Ver ubicación” (full-width button on mobile). No event-style schedule section elsewhere.
 - **`RentalDescriptionBlock`**: «Detalle del producto»; hidden if empty (no «Lo que incluye» block on rentals).
-- Reviews V2 + related products; favorites / “Lo espero” via `EventEngagementRow`.
+- Reviews V2 + related products; favorites / **«Me interesa»** (expected-events) via `EventEngagementRow` — copy en `lib/engagement/expected-event-copy.ts`.
 
 ### Rental admin
 
@@ -291,9 +291,16 @@ Doc: `docs/tickets/TICKET_CANVAS_STUDIO.md`, `docs/tickets/TICKET_TEMPLATE_QR_ZO
 ## 8b. Explore (`/explore`)
 
 - `ExplorePageContent` + `useExploreUrlFilters` — filtros en URL: `q`, `category`, `subcategoryId`, `city`, `from`, `to`, `page`.
+- **Buscador:** `PublicSearchBar` → `/explore?q=...` (home + explore); filtros avanzados en panel «Más filtros».
+- **Filtros UI:** chips de categoría (`SubcategoryFilterChip` / `SubcategoryRail` en categorías); pills horizontales con scroll.
 - `useExploreEvents` → `GET /public/events/search` (misma metadata que listados: `fromPrice`, `producerName`, `subcategoryName`).
 - Subcategorías: `usePublicSubcategories(category)`.
 - Estados: loading skeleton, empty, `QueryError`.
+
+### Fechas en UI pública (V3.1 Etapa 2)
+
+- `lib/public/publicContentDates.ts` — `shouldShowPublicEventDate(category)`: solo `event` muestra badge `startAt` en cards/modal.
+- `contentCardPresentation.getContentCardDateLabel` usa esa regla; fichas place no muestran `EventScheduleSection` fuera de eventos.
 
 ## 8c. Descubrimiento público — cerrado
 

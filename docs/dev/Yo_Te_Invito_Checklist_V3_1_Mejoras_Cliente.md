@@ -237,11 +237,11 @@
 
 ## 3.3 Botones de filtros más sutiles
 
-- [ ] Revisar estética de botones de filtros.
-- [ ] Evaluar diseño tipo carrusel horizontal.
-- [ ] Tomar como referencia visual ideas de Central Ticket, sin copiar identidad.
-- [ ] Reducir peso visual de filtros en mobile.
-- [ ] Mantener accesibilidad y claridad.
+- [x] Revisar estética de botones de filtros — Etapa 2 slice 2.1: pills `SubcategoryFilterChip`.
+- [x] Evaluar diseño tipo carrusel horizontal — `SubcategoryRail` + explore category chips.
+- [x] Tomar como referencia visual ideas de Central Ticket, sin copiar identidad.
+- [x] Reducir peso visual de filtros en mobile — altura ~40px, scroll horizontal.
+- [x] Mantener accesibilidad y claridad — `aria-pressed`, focus ring, `snap-x`.
 
 **Prioridad:** Media  
 **Tipo:** Visual / UX
@@ -400,19 +400,15 @@
 
 ## 8.1 Aclarar botón “Lo espero”
 
-- [ ] Revisar texto y función del botón “Lo espero”.
-- [ ] Definir si representa:
-  - Me interesa.
-  - Quiero recibir alerta.
-  - Avisarme cuando haya novedades.
-  - Lista de espera.
-- [ ] Cambiar copy si genera confusión.
-- [ ] Posibles alternativas:
-  - “Me interesa”.
-  - “Avisarme”.
-  - “Quiero ir”.
-  - “Esperar novedades”.
-- [ ] Agregar tooltip o microcopy si se mantiene.
+- [x] Revisar texto y función del botón “Lo espero” — Etapa 2 slice 2.3.
+- [x] Definir si representa:
+  - Me interesa. ✓ (elegido)
+  - Quiero recibir alerta. (vía preferencias, no en el CTA)
+  - Avisarme cuando haya novedades. (tooltip)
+  - Lista de espera. ✗
+- [x] Cambiar copy si genera confusión — «Me interesa».
+- [x] Posibles alternativas evaluadas (ver audit Etapa 2).
+- [x] Agregar tooltip o microcopy — `EXPECTED_EVENT_BUTTON_TITLE`.
 
 **Prioridad:** Media  
 **Tipo:** UX / Producto
@@ -423,15 +419,15 @@
 
 ## 9.1 Buscador “Explorá Bariloche”
 
-- [ ] Revisar experiencia actual del buscador grande.
-- [ ] Evaluar quitar modal/buscador gigante.
-- [ ] Propuesta alternativa:
-  - Buscador simple en barra superior.
-  - Input compacto por palabra clave.
-  - Búsqueda desde navbar o header.
-  - Filtros avanzados dentro de páginas de categoría.
-- [ ] Definir comportamiento en mobile.
-- [ ] Revisar impacto en home y categorías.
+- [x] Revisar experiencia actual del buscador grande — Etapa 2 slice 2.2.
+- [x] Evaluar quitar modal/buscador gigante — sin modal; input compacto.
+- [x] Propuesta alternativa (fase 1):
+  - Buscador simple en barra superior. — pendiente navbar global.
+  - Input compacto por palabra clave. ✓ `PublicSearchBar`
+  - Búsqueda desde navbar o header. — pendiente.
+  - Filtros avanzados dentro de páginas de categoría. ✓ explore «Más filtros»
+- [x] Definir comportamiento en mobile — compact, sin fullscreen.
+- [x] Revisar impacto en home y categorías — home + explore.
 
 **Prioridad:** Media/Alta  
 **Tipo:** UX / Navegación
@@ -640,7 +636,7 @@
 - [ ] Fondo dark global.
 - [ ] Revisar menú de categorías superior.
 - [ ] Evitar duplicación con cards inferiores.
-- [ ] Evaluar buscador compacto en navbar/header.
+- [x] Evaluar buscador compacto en navbar/header — fase 1 en home/explore; navbar pendiente.
 - [ ] Revisar banners desde Admin.
 - [ ] Probar nuevas cards editoriales.
 
@@ -649,7 +645,7 @@
 ## 16.2 Categoría Eventos
 
 - [ ] Calendario no debe tapar filtros.
-- [ ] Filtros más sutiles.
+- [x] Filtros más sutiles — Etapa 2 slice 2.1.
 - [ ] Cards con badges correctos.
 - [ ] Revisar subcategorías múltiples si aplica.
 - [ ] Probar card tipo poster con fecha destacada.
@@ -746,9 +742,9 @@
 
 - [ ] Rediseñar detalle excursión.
 - [ ] Nueva alternativa a “Ver más”.
-- [ ] Botones/filtros más sutiles estilo carrusel.
-- [ ] Mejorar buscador “Explorá Bariloche”.
-- [ ] Revisar “Lo espero”.
+- [x] Botones/filtros más sutiles estilo carrusel — Etapa 2.
+- [x] Mejorar buscador “Explorá Bariloche” — Etapa 2 fase 1.
+- [x] Revisar “Lo espero” — → «Me interesa».
 - [x] Rediseñar cards públicas estilo poster/editorial — fase 1 (Slice 13); §14.2 completo pendiente.
 - [x] Probar nueva card primero en eventos — fase 1 global `ContentCard`.
 - [ ] Adaptar variante de card para excursiones, gastro y rentals (fase 2).
@@ -1232,18 +1228,15 @@ Reactivar cada perfil desde admin dispara sync sin script destructivo.
 
 ## 28.1 Ocultar fechas de alta en publicaciones públicas
 
-- [ ] Revisar dónde se muestran fechas de alta/carga de publicaciones.
-- [ ] Ocultar fecha de creación en publicaciones públicas donde no aporta valor.
-- [ ] Aplicar a:
+- [x] Revisar dónde se muestran fechas de alta/carga de publicaciones — Etapa 2 slice 2.4.
+- [x] Ocultar fecha de creación en publicaciones públicas donde no aporta valor — `shouldShowPublicEventDate`.
+- [x] Aplicar a:
   - Gastronomía.
   - Rentals.
   - Excursiones (si no corresponde mostrar fecha de carga).
   - Hoteles (cuando estén activos).
-- [ ] Evitar textos tipo:
-  - «Publicado el…».
-  - «Creado el…».
-  - «Fecha de alta…».
-- [ ] Mantener fecha de alta solo en Admin si sirve para gestión interna.
+- [x] Evitar textos tipo «Publicado el…» en fichas públicas de contenido (no legal).
+- [x] Mantener fecha de alta solo en Admin si sirve para gestión interna.
 
 **Prioridad:** Alta  
 **Tipo:** UX pública / Contenido  
@@ -1253,12 +1246,12 @@ Reactivar cada perfil desde admin dispara sync sin script destructivo.
 
 ## 28.2 Eventos muestran fecha del evento, no fecha de carga
 
-- [ ] En eventos, mostrar únicamente la fecha real del evento (`startAt`).
+- [x] En eventos, mostrar únicamente la fecha real del evento (`startAt`) — Etapa 2 slice 2.5.
 - [ ] Si el evento tiene múltiples fechas (§25), mostrar:
   - Próxima fecha disponible.
   - Selector/listado de fechas.
-- [ ] Evitar confusión entre fecha de publicación y fecha del evento.
-- [ ] Revisar cards, modal, detalle público, checkout y tickets.
+- [x] Evitar confusión entre fecha de publicación y fecha del evento — cards/modal/highlights.
+- [x] Revisar cards, modal, detalle público, checkout y tickets — fichas evento ya usaban `startAt`; cards corregidas.
 
 **Prioridad:** Alta  
 **Tipo:** Eventos / UX pública  
