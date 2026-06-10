@@ -28,7 +28,7 @@ High-level project-wide summary. **Current state as verified from the repository
 yo-te-invito-v0.1/
 ├── apps/web/       # Next.js — discovery, portals
 ├── apps/api/       # NestJS + Prisma + PostgreSQL
-├── apps/scanner/   # PWA puerta — manifest, cámara QR, scope por ScannerAccount (V3.1 Etapa 5 cerrada)
+├── apps/scanner/   # PWA puerta — manifest, cámara QR, scope por ScannerAccount; multi-fecha (V3.1 Etapa 7)
 ├── packages/shared/  # Zod schemas, contracts
 └── docs/
 ```
@@ -71,7 +71,7 @@ yo-te-invito-v0.1/
 
 ### Producer / Admin / Gastro / Hotel / Referrer
 
-- **Producer (productoras / “Proveedores v2”)**: portal pulido (slices 1–10 en checklist V2): dashboard `/producer` (métricas, engagement, alertas de aprobación/rechazo admin vía `/me/notifications`), eventos por estado, create/edit, tandas, cortesías, referidos, **perfil por bloques** (`/producer/profile` + slug **auto-único** desde nombre), **comentarios** (`/producer/comments`), **usuarios scanner** (`/producer/scanners` + CTA PWA — V3.1 Etapa 5). Ficha pública `/producers/[id|slug]`. Valoraciones **comerciales** B2B. Navegación principal en **sidebar** del layout productor (sin duplicar accesos rápidos en dashboard).
+- **Producer (productoras / “Proveedores v2”)**: portal pulido (slices 1–10 en checklist V2): dashboard `/producer` (métricas, engagement, alertas de aprobación/rechazo admin vía `/me/notifications`), eventos por estado, create/edit (**multi-fecha V3.1 Etapa 7**), tandas, cortesías, referidos, **perfil por bloques** (`/producer/profile` + slug **auto-único** desde nombre), **comentarios** (`/producer/comments`), **usuarios scanner** (`/producer/scanners` + CTA PWA — V3.1 Etapa 5). Ficha pública `/producers/[id|slug]`. Valoraciones **comerciales** B2B. Navegación principal en **sidebar** del layout productor (sin duplicar accesos rápidos en dashboard).
 - **Admin**: rol `ADMIN` en `User.role`; web `/admin/*` restringido a ADMIN; aprobación/rechazo de eventos notifica a productoras (in-app + email + push según preferencias). Inbox, **cola disputas** (`/admin/review-disputes`), **reporte reputación** (`/admin/reviews`), users, config, **rentals** locales/productos, **`/admin/legales`** (documentos versionados), audit. Cuenta maestro: `user:restore-master` + re-login.
 - **Gastro V2 (cerrado):** portal `/gastro/*` (dashboard, contenido Prisma, descuentos, validaciones, **usuarios scanner** `/gastro/scanners`, valoraciones), ficha `/restaurants/[id]`, QR + scanner PWA con scope por local, follows + alertas descuento. Docs: `docs/gastro/`, `docs/audits/GASTRO_HOTELES_V2_AUDIT.md`, `docs/audits/V3_1_STAGE_5_CLOSING.md`.
 - **Hoteles V2 (liviano, cerrado):** discovery Próximamente (sin gateway/carrusel); portal `/hotel` + `/hotel/editar`; ficha pública `/hoteles/[id]`; valoraciones `/hotel/valoraciones`; E2E `pnpm e2e:hotel` (`docs/hotel/HOTEL_E2E.md`).
@@ -213,6 +213,8 @@ Guías: `docs/guides/README.md`, `DEVELOPER_SCRIPTS_GUIDE.md`, `SMOKE_TESTS_GUID
 **Google Cloud / Storage / SEO / Maps (bloque cerrado prod 2026-06-01):** GCP + GCS privado/público + backups; upload GCS en portales admin/productora/gastro/hotel; SEO técnico base + GSC; Maps con key prod, persistencia `googlePlaceId`/`province`, Ver ubicación, JSON-LD local. Docs: `docs/deploy/GOOGLE_CLOUD_RUNBOOK.md`, `GCS_STORAGE_STRATEGY.md`, `SEARCH_CONSOLE_SEO_RUNBOOK.md`, `docs/audits/MAPS_LOCATION_AUDIT.md`, `SEO_TECHNICAL_AUDIT.md`. Build VPS: `pnpm build` desde raíz (`db:generate` + `shared` + apps).
 
 **Getnet Web Checkout Redirect (2026-06):** `feat/v1-s03-api-foundation` desplegada en VPS; redirect a Getnet hosted checkout validado desde app; webhook Portal Getnet y pago real pendientes; `main` sin merge. Ver `docs/payments/GETNET_WEBCHECKOUT_VPS_REDIRECT_SMOKE.md`.
+
+**Eventos multi-fecha V3.1 (2026-06-10):** Etapa 7 cerrada (slices 7.1–7.10) — modelo `EventOccurrence`, flujo productora→checkout→tickets→scanner; compatibilidad single-date; §25.3 cambio de fecha → Etapa 8. Doc: `docs/audits/V3_1_STAGE_7_MULTI_DATE_EVENTS_CLOSING.md`.
 
 ---
 

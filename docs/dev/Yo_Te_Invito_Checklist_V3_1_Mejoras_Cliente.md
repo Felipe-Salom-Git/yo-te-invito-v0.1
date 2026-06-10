@@ -1091,29 +1091,33 @@ Reactivar cada perfil desde admin dispara sync sin script destructivo.
 
 # 25. Eventos con múltiples fechas
 
-> **Slice 7.1 (2026-06-10):** Base técnica — modelo `EventOccurrence`, `TicketType.occurrenceId` opcional, schemas shared, helpers compatibilidad, `EventOccurrencesService`, smoke `smoke:v31-event-occurrences`. Doc: `docs/audits/V3_1_STAGE_7_EVENT_OCCURRENCES_MODEL_SMOKE.md`. Checkout/scanner sin cambios.
+> **Slice 7.1 (2026-06-10):** Base técnica — modelo `EventOccurrence`, `TicketType.occurrenceId` opcional, schemas shared, helpers compatibilidad, `EventOccurrencesService`, smoke `smoke:v31-event-occurrences`. Doc: `docs/audits/V3_1_STAGE_7_EVENT_OCCURRENCES_MODEL_SMOKE.md`.
+>
+> **Etapa 7 cerrada (código slices 7.1–7.10):** `docs/audits/V3_1_STAGE_7_MULTI_DATE_EVENTS_CLOSING.md`  
+> Smokes: `smoke:v31-event-occurrences`; docs por slice en `docs/audits/V3_1_STAGE_7_*`  
+> Pendiente operativo: QA manual puerta multi-fecha; §25.3 cambio de fecha → Etapa 8.
 
 ## 25.1 Múltiples fechas por evento
 
 - [x] **Base técnica:** modelo `EventOccurrence` + relación con `Event` y `TicketType` (Slice 7.1).
-- [ ] Permitir que una productora cargue un evento con múltiples fechas.
-- [ ] Cada fecha debe tener su propia configuración operativa.
-- [ ] Para cada fecha, permitir cargar:
-  - Fecha y horario.
-  - Lugar si cambia.
-  - Capacidad/stock.
-  - Tipos de entrada.
-  - Precio por tipo de entrada.
-  - Estado de venta.
-- [ ] Definir si las fechas comparten:
-  - Misma portada.
-  - Misma descripción.
-  - Misma ubicación.
-  - Mismos términos.
-- [ ] Mostrar en detalle público selector de fecha cuando el evento tenga más de una.
-- [ ] Al comprar, el usuario debe elegir fecha antes de seleccionar entradas.
-- [ ] Evitar mezclar stock entre fechas distintas.
-- [ ] En Admin y Productora, mostrar ventas separadas por fecha.
+- [x] Permitir que una productora cargue un evento con múltiples fechas (Slice 7.2 — `EventOccurrencesEditor`, CRUD API).
+- [x] Cada fecha debe tener su propia configuración operativa (Slice 7.2 — venue, capacity, status por occurrence).
+- [x] Para cada fecha, permitir cargar:
+  - [x] Fecha y horario.
+  - [x] Lugar si cambia.
+  - [x] Capacidad/stock.
+  - [x] Tipos de entrada (Slice 7.3).
+  - [x] Precio por tipo de entrada.
+  - [x] Estado de venta (occurrence status + ticket type sales).
+- [x] Definir si las fechas comparten:
+  - [x] Misma portada.
+  - [x] Misma descripción.
+  - [x] Misma ubicación (default evento; override por occurrence).
+  - [x] Mismos términos.
+- [x] Mostrar en detalle público selector de fecha cuando el evento tenga más de una (Slice 7.5 — `EventDateSelector`).
+- [x] Al comprar, el usuario debe elegir fecha antes de seleccionar entradas (Slice 7.5/7.6).
+- [x] Evitar mezclar stock entre fechas distintas (Slice 7.3 — ticket types por occurrence).
+- [x] En Admin y Productora, mostrar ventas separadas por fecha (Slice 7.4 admin badge + stats API; productora por tab fecha).
 
 **Prioridad:** Alta  
 **Tipo:** Modelo de datos / Checkout / Productora  
@@ -1123,16 +1127,16 @@ Reactivar cada perfil desde admin dispara sync sin script destructivo.
 
 ## 25.2 Entradas por fecha
 
-- [ ] Cada fecha del evento debe tener sus propios tipos de entradas.
-- [ ] Permitir que una fecha tenga entradas diferentes a otra.
-- [ ] Permitir activar/desactivar ventas por fecha.
-- [ ] Evitar que una entrada comprada para una fecha valide en otra fecha.
-- [ ] En el ticket, mostrar claramente:
-  - Evento.
-  - Fecha elegida.
-  - Horario.
-  - Tipo de entrada.
-  - QR asociado a esa fecha.
+- [x] Cada fecha del evento debe tener sus propios tipos de entradas (Slice 7.3).
+- [x] Permitir que una fecha tenga entradas diferentes a otra (Slice 7.3).
+- [x] Permitir activar/desactivar ventas por fecha (occurrence PAUSED + ticket type status).
+- [x] Evitar que una entrada comprada para una fecha valide en otra fecha (Slice 7.8 — `WRONG_OCCURRENCE`).
+- [x] En el ticket, mostrar claramente:
+  - [x] Evento.
+  - [x] Fecha elegida.
+  - [x] Horario.
+  - [x] Tipo de entrada.
+  - [x] QR asociado a esa fecha (ticket ligado a `occurrenceId`; validación scanner por fecha).
 
 **Prioridad:** Alta  
 **Tipo:** Tickets / Stock / Checkout  

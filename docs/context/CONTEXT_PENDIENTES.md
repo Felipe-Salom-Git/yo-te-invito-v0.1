@@ -521,6 +521,9 @@ _(Trending con `viewCount`: ver ítem Slice 2 arriba en § K.)_
 - [x] V3.1 Etapa 5 — scanner PWA (slices 5.1–5.8); doc `V3_1_STAGE_5_CLOSING.md`; checklist §24.1–24.4
 - [ ] V3.1 Etapa 5 — QA manual móvil + verificación prod `scanner.yoteinvito.club` (§24.2–24.3)
 - [x] V3.1 Etapa 6 — PDF entradas (§24.5) + scanner offline (§24.6) — `docs/audits/V3_1_STAGE_6_SCANNER_OFFLINE_CLOSING.md`
+- [x] V3.1 Etapa 7 — eventos multi-fecha (§25.1–25.2, slices 7.1–7.10) — `docs/audits/V3_1_STAGE_7_MULTI_DATE_EVENTS_CLOSING.md`; smoke `smoke:v31-event-occurrences`
+- [ ] V3.1 Etapa 7 — QA manual puerta multi-fecha + regresión single-date en dispositivo
+- [ ] V3.1 Etapa 8 — cambio de fecha de entrada por usuario (§25.3)
 - [ ] V3.1 Scanner PWA prod — JWT login (pendiente desde Etapa 5)
 - [ ] V3.1 — restante no bloqueante (maps prod §4.1, §5.2 links en descripciones, multi-subcategorías otras verticales, drag galería, migración DB ratings 1–5)
 - [ ] V3.1 legal al publicar evento Caso A (bloqueante; coordinar con publicación `producer_terms` real)
@@ -565,6 +568,7 @@ _(Trending con `viewCount`: ver ítem Slice 2 arriba en § K.)_
 | `docs/audits/V3_1_STAGE_3_CARDS_RATINGS_CLOSING.md` | Cierre V3.1 Etapa 3 — cards + ratings 5/5 |
 | `docs/audits/V3_1_STAGE_4_TAGS_CLOSING.md` | Cierre V3.1 Etapa 4 — etiquetas/tags |
 | `docs/audits/V3_1_STAGE_5_CLOSING.md` | Cierre V3.1 Etapa 5 — scanner PWA (5.1–5.8) |
+| `docs/audits/V3_1_STAGE_7_MULTI_DATE_EVENTS_CLOSING.md` | Cierre V3.1 Etapa 7 — eventos multi-fecha (7.1–7.10) |
 | `docs/audits/V3_1_STAGE_5_SCANNER_ACCOUNTS_SMOKE.md` | Smoke ownership `ScannerAccount` |
 | `docs/audits/V3_1_STAGE_5_SCANNER_USERS_SMOKE.md` | Smoke gestión usuarios scanner portales |
 
