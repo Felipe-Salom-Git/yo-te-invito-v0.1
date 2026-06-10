@@ -18,6 +18,8 @@ export type { ProvinceOption } from './location/types';
 export * from './schemas/event-subcategories';
 export * from './schemas/events';
 export * from './schemas/scanner';
+export * from './schemas/ticket-list-export';
+export * from './tickets/ticket-code.util';
 export * from './schemas/scanner-gastro-discount';
 export * from './schemas/scanner-accounts';
 export * from './schemas/foundation-test.schema';

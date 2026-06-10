@@ -6,6 +6,7 @@ import {
   Post,
   Query,
   Req,
+  StreamableFile,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -21,6 +22,8 @@ import {
   type ScanBody,
   type EventTicketsParams,
   type ScannerLogsQuery,
+  offlineValidationSyncBodySchema,
+  type OfflineValidationSyncBody,
 } from '@yo-te-invito/shared';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { JwtOrDevAuthGuard } from '../auth/jwt-or-dev-auth.guard';
@@ -31,6 +34,7 @@ import { Role } from '@yo-te-invito/shared';
 import { ScannerService } from './scanner.service';
 import { ScannerGastroDiscountService } from './scanner-gastro-discount.service';
 import { ScannerAccountsService } from '../modules/scanner-accounts/scanner-accounts.service';
+import { TicketListExportService } from '../modules/tickets/ticket-list-export.service';
 
 @Controller('scanner')
 export class ScannerController {
@@ -38,6 +42,7 @@ export class ScannerController {
     private readonly service: ScannerService,
     private readonly gastroDiscountScanner: ScannerGastroDiscountService,
     private readonly scannerAccounts: ScannerAccountsService,
+    private readonly ticketListExport: TicketListExportService,
   ) {}
 
   @Get('scan-targets')
@@ -83,6 +88,47 @@ export class ScannerController {
     @Param(new ZodValidationPipe(eventTicketsParamsSchema)) params: EventTicketsParams,
   ) {
     return this.service.getEventTickets(user.tenantId, user.id, params.eventId);
+  }
+
+  @Get('events/:eventId/tickets/export.pdf')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.SCANNER)
+  async exportTicketsPdf(
+    @CurrentUser() user: { tenantId: string; id: string; role: string },
+    @Param(new ZodValidationPipe(eventTicketsParamsSchema)) params: EventTicketsParams,
+  ): Promise<StreamableFile> {
+    const { buffer, filename } = await this.ticketListExport.exportPdfForScanner(
+      user,
+      params.eventId,
+    );
+    return new StreamableFile(buffer, {
+      type: 'application/pdf',
+      disposition: `attachment; filename="${filename}"`,
+    });
+  }
+
+  @Get('events/:eventId/snapshot')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.SCANNER)
+  async getEventSnapshot(
+    @CurrentUser() user: { tenantId: string; id: string },
+    @Param(new ZodValidationPipe(eventTicketsParamsSchema)) params: EventTicketsParams,
+  ) {
+    return this.ticketListExport.buildOfflineSnapshot(
+      user.tenantId,
+      user.id,
+      params.eventId,
+    );
+  }
+
+  @Post('offline-validations/sync')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.SCANNER)
+  async syncOfflineValidations(
+    @CurrentUser() user: { tenantId: string; id: string },
+    @Body(new ZodValidationPipe(offlineValidationSyncBodySchema)) body: OfflineValidationSyncBody,
+  ) {
+    return this.ticketListExport.syncOfflineValidations(user.tenantId, user.id, body);
   }
 
   @Post('scan')

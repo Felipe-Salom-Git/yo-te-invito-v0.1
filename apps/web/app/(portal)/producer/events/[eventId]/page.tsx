@@ -11,6 +11,7 @@ import { deriveEventModeFromEvent } from '@/lib/producer/event-mode';
 import { getErrorMessage } from '@/lib/errors';
 import { TicketTypesEditor } from '@/components/producer/ticket-types/TicketTypesEditor';
 import { ProducerEventPostSavePanel } from '@/components/producer/events/ProducerEventPostSavePanel';
+import { TicketListPdfDownload } from '@/components/producer/events/TicketListPdfDownload';
 import type { ProducerReviewRow } from '@/repositories/interfaces';
 
 export default function ProducerEventManagePage() {
@@ -155,7 +156,8 @@ export default function ProducerEventManagePage() {
 
       {!event.isGeneralPublication ? (
       <section className="mt-12 border-t border-border pt-8">
-        <h2 className="font-semibold text-text">Tickets vendidos</h2>
+        <TicketListPdfDownload eventId={eventId} ticketCount={tickets?.length ?? 0} />
+        <h2 className="mt-8 font-semibold text-text">Tickets vendidos</h2>
         <div className="mt-2 flex gap-2">
           {['ALL', 'VALID', 'USED', 'REVOKED'].map((s) => (
             <button

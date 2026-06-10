@@ -1889,6 +1889,7 @@ enum AuditAction {
   SCANNER_ACCOUNT_DEACTIVATED
   SCANNER_ACCOUNT_ACTIVATED
   SCANNER_PASSWORD_RESET
+  TICKET_LIST_EXPORTED
 }
 
 /// Scanner user bound to one parent commercial account (tenant-scoped).

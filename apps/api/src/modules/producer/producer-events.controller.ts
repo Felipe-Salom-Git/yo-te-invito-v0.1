@@ -1,4 +1,14 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  StreamableFile,
+  UseGuards,
+} from '@nestjs/common';
 import {
   producerEventMetricsParamsSchema,
   eventCreateDtoSchema,
@@ -18,6 +28,7 @@ import { ProducerEventsCrudService } from './producer-events-crud.service';
 import { ProducerTicketTypesService } from './producer-ticket-types.service';
 import { ReferralsService } from '../referrals/referrals.service';
 import { ReviewsService } from '../reviews/reviews.service';
+import { TicketListExportService } from '../tickets/ticket-list-export.service';
 
 @Controller('producer/events')
 @UseGuards(JwtOrDevAuthGuard, ProducerRolesGuard)
@@ -29,6 +40,7 @@ export class ProducerEventsController {
     private readonly ticketTypesService: ProducerTicketTypesService,
     private readonly referralsService: ReferralsService,
     private readonly reviews: ReviewsService,
+    private readonly ticketListExport: TicketListExportService,
   ) {}
 
   @Get()
@@ -99,6 +111,21 @@ export class ProducerEventsController {
       user.id,
       user.role,
     );
+  }
+
+  @Get(':eventId/tickets/export.pdf')
+  async exportTicketsPdf(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param('eventId') eventId: string,
+  ): Promise<StreamableFile> {
+    const { buffer, filename } = await this.ticketListExport.exportPdfForProducer(
+      user,
+      eventId,
+    );
+    return new StreamableFile(buffer, {
+      type: 'application/pdf',
+      disposition: `attachment; filename="${filename}"`,
+    });
   }
 
   @Get(':eventId/commission-requests')

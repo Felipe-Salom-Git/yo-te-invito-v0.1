@@ -3,6 +3,7 @@ import { SubcategoriesModule } from '../subcategories/subcategories.module';
 import { RentalLocationsModule } from '../rental-locations/rental-locations.module';
 import { AuthModule } from '../../auth/auth.module';
 import { TicketingModule } from '../../ticketing/ticketing.module';
+import { TicketsModule } from '../tickets/tickets.module';
 import { ReferralsModule } from '../referrals/referrals.module';
 import { ReviewsModule } from '../reviews/reviews.module';
 import { CommercialReviewsModule } from '../commercial-reviews/commercial-reviews.module';
@@ -32,6 +33,7 @@ import { ProducerDashboardMetricsService } from './producer-dashboard-metrics.se
     AuthModule,
     ReferralsModule,
     TicketingModule,
+    TicketsModule,
     ReviewsModule,
     CommercialReviewsModule,
     SubcategoriesModule,
