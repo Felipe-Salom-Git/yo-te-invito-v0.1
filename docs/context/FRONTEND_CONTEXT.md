@@ -188,7 +188,7 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`). Shared UI tokens:
 | **FieldCharacterCounter**, `RentalSummaryField` | `components/forms/`, `components/rentals/` — contador resumen 220 y campos con límite (V3.1 Slice 1) |
 | **PublicDescriptionBlock** | `components/public/` — preview + «Leer descripción completa» modal (V3.1 Slice 2); `sectionTitle` = copy, `null` oculta h2 (hotfix className) |
 | **RentalDescriptionBlock** | wrapper rentals/gastro/excursiones; usa `RENTAL_DETAIL_DESCRIPTION_LABEL` / `RENTAL_DETAIL_SECTION_HEADING_CLASS` en `rentalDetailUi.ts` |
-| **getContentCardPrimaryBadge** | `lib/home/contentCardPresentation.ts` — badges útiles en cards (subcategoría > genérico; V3.1 Slice 2) |
+| **contentCardPresentation** | `lib/home/contentCardPresentation.ts` — badges y metadata por vertical (evento/excursión/gastro/rental; V3.1 Etapa 3) |
 | **HomeCategoryStrip** | `components/home/` — grid categorías en home; oculto en mobile (`md+` only; Slice 3) |
 | **ExcursionDetailInfoGrid** | `components/excursions/` — cards info clave en detalle excursión (Slice 3) |
 | **RentalProductImagesForm** | galería con Subir/Bajar; orden → API `sortOrder` (Slice 5) |
@@ -223,8 +223,9 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`). Shared UI tokens:
 | Usuarios admin | `components/admin/users/` — `AdminUsersPageClient`, filtros URL, tabla + cards mobile, badges rol/perfiles; cambio de rol con confirmación; cuenta maestro sin selector; hook `lib/query/admin-users.ts` |
 | Subcategorías admin | `components/admin/subcategories/` — `AdminSubcategoriesPageClient`, tabs por vertical, CRUD vía `SubcategoriesRepo`, hotel `AdminHotelComingSoonPanel`; banners editoriales `AdminCategoryEditorialBannerPanel` + eventos `AdminCategoryBannerPanel`; hooks `useAdminSubcategories`, `useCategoryHeroBanner` |
 | Productora eventos | `ProducerEventCreateForm` / `ProducerEventEditForm` — wizard 3 pasos (`ProducerEventWizardProgress`, `wizardStep`); `ProducerEventPublicationLegalNotice` paso 3; ticket types post-create en `/producer/events/[id]` |
-| Ratings públicos 5/5 | `lib/reviews/ratingDisplay.ts` — `formatPublicRatingLabel`; sin cambio DB/API (Slice 13) |
-| ContentCard editorial | `components/home/ContentCard.tsx` — fase 1 afiche (fecha badge, badges sutiles, poster title; Slice 13) |
+| Ratings públicos 5/5 | `lib/reviews/ratingDisplay.ts` — visual 5 ↔ interno 10; formularios, filtros, admin UI, JSON-LD `bestRating: 5` (Etapa 3) |
+| ContentCard editorial | `components/home/ContentCard.tsx` — fase 2 por vertical: evento (fecha afiche, productora, precio), excursión, gastro (rating), rental (CTA) |
+| PublicSearchBar | `components/public/PublicSearchBar.tsx` — búsqueda compacta → `/explore?q=...` (Etapa 2) |
 | **QA pre-deploy V3.1** | Slice 14 — builds OK; QA manual browser pendiente (`V3_1_PRE_DEPLOY_QA_CLOSING.md` §6) |
 | **Admin gastro → discovery** | Cards gastro → `/restaurants/[publicEventId]` (`getContentDetailHref`); admin canónico `/gastronomicos/[profileId]`; sin redirect Next `/restaurants`→`/gastronomicos` (`V3_1_HOTFIX_GASTRO_PUBLIC_LINKS.md`) |
 | **Legales admin** | `components/admin/legal/` — `/admin/legales` (tabla desktop `md+` con `overflow-x-auto` + `min-w-[900px]`; cards `md:hidden`), detalle, versiones; `LegalDocumentsRepo` + `lib/query/admin-legal-documents.ts` |

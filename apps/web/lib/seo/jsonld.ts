@@ -1,3 +1,5 @@
+import { ratingTenToFive } from '@/lib/reviews/ratingDisplay';
+
 export type JsonLdNode = Record<string, unknown>;
 
 function stripHtml(text: string): string {
@@ -19,15 +21,19 @@ function pickNumber(value: unknown): number | null {
 }
 
 export function buildAggregateRating(input: {
+  /** Internal 1–10 from API; emitted as public 5-scale in JSON-LD. */
   ratingValue: number | null;
   ratingCount: number | null;
 }): JsonLdNode | null {
-  const ratingValue = input.ratingValue != null && input.ratingValue > 0 ? input.ratingValue : null;
+  const internal =
+    input.ratingValue != null && input.ratingValue > 0 ? input.ratingValue : null;
   const ratingCount = input.ratingCount != null && input.ratingCount > 0 ? input.ratingCount : null;
-  if (ratingValue == null || ratingCount == null) return null;
+  if (internal == null || ratingCount == null) return null;
   return {
     '@type': 'AggregateRating',
-    ratingValue,
+    ratingValue: ratingTenToFive(internal),
+    bestRating: 5,
+    worstRating: 1,
     ratingCount,
   };
 }

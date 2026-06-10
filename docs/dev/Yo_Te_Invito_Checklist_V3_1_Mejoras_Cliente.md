@@ -549,23 +549,23 @@
 ## 14.1 Rediseño de cards públicas estilo editorial / Central Ticket (Slice 13 fase 1)
 
 - [x] Fase 1 en `ContentCard` — fecha afiche, badges sutiles, título poster, dark premium.
-- [ ] Rediseño completo por vertical (§14.2).
-- [ ] Mantener identidad de Yo Te Invito:
+- [x] Rediseño completo por vertical (§14.2) — Etapa 3 slices 3.1–3.4.
+- [x] Mantener identidad de Yo Te Invito:
   - Fondo dark.
   - Verde como acento.
   - Estética premium/turística.
   - No copiar colores ni marca de terceros.
-- [ ] Probar una card más editorial con:
+- [x] Probar una card más editorial con:
   - Imagen protagonista grande.
   - Fecha destacada en bloque lateral o inferior.
   - Título con mayor jerarquía.
   - Ubicación clara.
   - Badge/categoría menos invasiva.
-  - Acción secundaria tipo guardar/favorito.
-- [ ] Aplicar primero a eventos.
-- [ ] Evaluar adaptación a excursiones, gastronomía y rentals.
-- [ ] Mantener compatibilidad con carruseles horizontales mobile.
-- [ ] Evitar que la nueva card rompa home, categoría, explore y carruseles cruzados.
+  - Acción secundaria tipo guardar/favorito — en ficha evento (`EventEngagementRow`).
+- [x] Aplicar primero a eventos — fase 2 Etapa 3.
+- [x] Evaluar adaptación a excursiones, gastronomía y rentals — Etapa 3.
+- [x] Mantener compatibilidad con carruseles horizontales mobile.
+- [x] Evitar que la nueva card rompa home, categoría, explore y carruseles cruzados — build OK; QA browser pendiente.
 
 **Prioridad:** Media/Alta  
 **Tipo:** Visual / UX / Discovery  
@@ -575,11 +575,11 @@
 
 ## 14.2 Variantes de card por vertical
 
-- [ ] Eventos: fecha + lugar + precio desde + productor.
-- [ ] Excursiones: subcategoría + ciudad + horario/duración si existe.
-- [ ] Gastronomía: tipo de local + ciudad + rating.
-- [ ] Rentals: local + subcategoría + CTA disponibilidad.
-- [ ] Mantener una base visual común, pero metadata específica por categoría.
+- [x] Eventos: fecha + lugar + precio desde + productor — Etapa 3.1.
+- [x] Excursiones: subcategoría + ciudad + horario/duración si existe — Etapa 3.2 (duración si viene en payload list).
+- [x] Gastronomía: tipo de local + ciudad + rating — Etapa 3.3.
+- [x] Rentals: local + subcategoría + CTA disponibilidad — Etapa 3.4.
+- [x] Mantener una base visual común, pero metadata específica por categoría.
 
 **Prioridad:** Media  
 **Tipo:** Visual / Arquitectura UI
@@ -592,24 +592,21 @@
 
 - [x] Helper `ratingDisplay.ts` — conversión visual 10→5.
 - [x] UI pública: cards, fichas, reviews summary/card, perfiles comentarista.
-- [ ] Definir si el cambio será:
-  - Solo visual, convirtiendo internamente 10 → 5.
-  - O cambio real de modelo/validación a escala 1–5.
-- [ ] Recomendación inicial: mantener compatibilidad interna y migrar visualmente primero.
-- [ ] Mostrar estrellas de 1 a 5 en UI pública.
-- [ ] Ajustar formularios de carga de reseñas para que el usuario valore con 5 estrellas.
-- [ ] Ajustar filtros públicos de reviews si actualmente filtran de 1 a 10.
-- [ ] Revisar promedios, badges y textos:
-  - “4.7/5”.
-  - “5 estrellas”.
-  - “Valoración promedio”.
-- [ ] Revisar paneles de:
+- [x] Definir si el cambio será:
+  - Solo visual, convirtiendo internamente 10 → 5. ✓ (Etapa 3)
+  - O cambio real de modelo/validación a escala 1–5. — pendiente cliente.
+- [x] Recomendación inicial: mantener compatibilidad interna y migrar visualmente primero.
+- [x] Mostrar estrellas de 1 a 5 en UI pública.
+- [x] Ajustar formularios de carga de reseñas para que el usuario valore con 5 estrellas — Etapa 3.5.
+- [x] Ajustar filtros públicos de reviews si actualmente filtran de 1 a 10 — Etapa 3.6.
+- [x] Revisar promedios, badges y textos — Etapa 3.7.
+- [x] Revisar paneles de:
   - Productora.
   - Gastro.
   - Hotel.
   - Admin reviews.
   - Perfil público de comentarista.
-- [ ] Revisar si las valoraciones B2B productor ↔ referido también deben pasar a escala 5/5.
+- [x] Revisar si las valoraciones B2B productor ↔ referido también deben pasar a escala 5/5 — se mantiene 1–10 (privado).
 
 **Prioridad:** Media/Alta  
 **Tipo:** UX / Reviews / Modelo visual
@@ -621,7 +618,7 @@
 - [x] Conversión visual 10 → 5 en público (Slice 13).
 - [x] Sin migrar DB.
 - [x] Helper centralizado `formatPublicRatingLabel`.
-- [ ] Evitar duplicar lógica en componentes.
+- [x] Evitar duplicar lógica en componentes — `ratingDisplay.ts` centralizado Etapa 3.
 - [ ] Luego evaluar migración real a 1–5 si el cliente confirma.
 
 **Prioridad:** Media  
@@ -646,6 +643,8 @@
 
 - [ ] Calendario no debe tapar filtros.
 - [x] Filtros más sutiles — Etapa 2 slice 2.1.
+- [x] Cards con badges correctos — Etapa 3 fase 2 eventos.
+- [x] Probar card tipo poster con fecha destacada — Etapa 3.1.
 - [ ] Cards con badges correctos.
 - [ ] Revisar subcategorías múltiples si aplica.
 - [ ] Probar card tipo poster con fecha destacada.
@@ -659,7 +658,7 @@
 - [ ] Maps/ubicación.
 - [x] Horarios visibles — Slice 7 (detalle público + carga admin).
 - [ ] Links externos/redes.
-- [ ] Cards sin etiqueta genérica “Excursión”.
+- [x] Cards sin etiqueta genérica “Excursión” — subcategoría prioritaria Etapa 3.2.
 - [ ] Detalle con mejor diseño visual.
 - [ ] Probar card tipo poster adaptada a excursiones.
 
@@ -672,7 +671,7 @@
 - [ ] Revisar resumen ampliado.
 - [ ] Revisar etiquetas/badges.
 - [ ] Confirmar diseño de detalle público.
-- [ ] Probar rating visible en escala 5/5.
+- [x] Probar rating visible en escala 5/5 — Etapa 3.3.
 
 ---
 
@@ -747,7 +746,7 @@
 - [x] Revisar “Lo espero” — → «Me interesa».
 - [x] Rediseñar cards públicas estilo poster/editorial — fase 1 (Slice 13); §14.2 completo pendiente.
 - [x] Probar nueva card primero en eventos — fase 1 global `ContentCard`.
-- [ ] Adaptar variante de card para excursiones, gastro y rentals (fase 2).
+- [x] Adaptar variante de card para excursiones, gastro y rentals (fase 2) — Etapa 3.
 
 ---
 
@@ -756,11 +755,11 @@
 - [x] Auditar escala actual de reviews 1–10 — Slice 13; interno sin cambio.
 - [x] Definir estrategia 5/5: visual primero (Slice 13).
 - [x] Ajustar componentes públicos de estrellas — Slice 13.
-- [ ] Ajustar formularios de reseña (escala 5 visual).
-- [ ] Ajustar filtros de reviews.
-- [ ] Ajustar reportes admin (siguen 1–10).
-- [ ] Revisar impacto en ranking, promedio y reputación.
-- [ ] JSON-LD `bestRating: 5`.
+- [x] Ajustar formularios de reseña (escala 5 visual) — Etapa 3.5.
+- [x] Ajustar filtros de reviews — Etapa 3.6.
+- [x] Ajustar reportes admin (siguen 1–10) — UI 5/5; CSV interno 1–10 Etapa 3.7.
+- [x] Revisar impacto en ranking, promedio y reputación — sin cambio backend.
+- [x] JSON-LD `bestRating: 5` — Etapa 3.8.
 
 ---
 

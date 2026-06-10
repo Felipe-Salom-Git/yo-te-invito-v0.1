@@ -514,7 +514,9 @@ _(Trending con `viewCount`: ver ítem Slice 2 arriba en § K.)_
 - [x] V3.1 Etapa 2 — UX pública (filtros, buscador, «Me interesa», fechas) — slices 2.1–2.5 código; doc `V3_1_STAGE_2_PUBLIC_UX_CLOSING.md`
 - [ ] V3.1 Etapa 2 — QA manual browser UX pública (matriz §4 doc cierre)
 - [ ] V3.1 Etapa 2 — buscador en navbar global (fase 2)
-- [ ] V3.1 — restante no bloqueante (maps prod §4.1, §5.2 links en descripciones, multi-subcategorías otras verticales, drag galería, cards fase 2, JSON-LD bestRating)
+- [x] V3.1 Etapa 3 — cards editoriales fase 2 + ratings 5/5 — slices 3.1–3.8; doc `V3_1_STAGE_3_CARDS_RATINGS_CLOSING.md`
+- [ ] V3.1 Etapa 3 — QA manual browser cards + reviews (matriz §7 doc cierre)
+- [ ] V3.1 — restante no bloqueante (maps prod §4.1, §5.2 links en descripciones, multi-subcategorías otras verticales, drag galería, migración DB ratings 1–5)
 - [ ] V3.1 legal al publicar evento Caso A (bloqueante; coordinar con publicación `producer_terms` real)
 
 ---
@@ -554,4 +556,5 @@ _(Trending con `viewCount`: ver ítem Slice 2 arriba en § K.)_
 | `docs/audits/V3_1_HOTFIX_GASTRO_PUBLIC_LINKS.md` | Hotfix links cards gastro (`/restaurants` vs `/gastronomicos`) |
 | `docs/dev/Yo_Te_Invito_Checklist_V3_1_Mejoras_Cliente.md` | Checklist mejoras cliente V3.1 (source of truth) |
 | `docs/audits/V3_1_STAGE_2_PUBLIC_UX_CLOSING.md` | Cierre V3.1 Etapa 2 — UX pública |
+| `docs/audits/V3_1_STAGE_3_CARDS_RATINGS_CLOSING.md` | Cierre V3.1 Etapa 3 — cards + ratings 5/5 |
 
