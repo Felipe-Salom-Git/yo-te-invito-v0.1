@@ -16,7 +16,11 @@ import {
   ErrorCode,
   Role,
   type AdminScannerAccountsListQuery,
+  type CreateScannerUserBody,
+  type CreateScannerUserResponse,
   type LinkScannerAccountBody,
+  type ResetScannerPasswordBody,
+  type ResetScannerPasswordResponse,
   type ScannerAccountSelfResponse,
   type ScannerAccountSummary,
   type ScannerAccountsListResponse,
@@ -25,6 +29,7 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { ProfilesAuthorizationService } from '../../common/profiles-authorization.service';
 import { AuditService } from '../audit/audit.service';
+import { generateTemporaryPassword, hashPassword } from '../../common/password.util';
 
 type AuthUser = { id: string; tenantId: string; role: string };
 
@@ -212,6 +217,368 @@ export class ScannerAccountsService {
       parentProfileType: ScannerParentProfileType.PRODUCER,
       ...(user.role === Role.ADMIN ? {} : { parentProfileId: { in: profileIds } }),
     });
+  }
+
+  private async resolveParentProfileId(
+    tenantId: string,
+    userId: string,
+    userRole: string,
+    parentProfileType: ScannerParentProfileType,
+    explicitId?: string,
+  ): Promise<string> {
+    const ids =
+      parentProfileType === ScannerParentProfileType.PRODUCER
+        ? await this.getManagedProducerProfileIds(tenantId, userId)
+        : await this.getManagedGastroProfileIds(tenantId, userId);
+
+    if (explicitId?.trim()) {
+      const id = explicitId.trim();
+      if (userRole !== Role.ADMIN && !ids.includes(id)) {
+        throw this.forbiddenParent();
+      }
+      return id;
+    }
+
+    if (userRole === Role.ADMIN) {
+      throw new BadRequestException({
+        code: ErrorCode.VALIDATION_FAILED,
+        message: 'parentProfileId is required for admin create',
+      });
+    }
+
+    if (ids.length === 1) return ids[0]!;
+    if (ids.length === 0) {
+      throw new NotFoundException({
+        code: ErrorCode.NOT_FOUND,
+        message: 'No active parent profile found',
+      });
+    }
+
+    throw new BadRequestException({
+      code: ErrorCode.VALIDATION_FAILED,
+      message: 'parentProfileId is required when managing multiple profiles',
+    });
+  }
+
+  private async getAccountForParentManagement(
+    tenantId: string,
+    userId: string,
+    userRole: string,
+    accountId: string,
+    expectedType: ScannerParentProfileType,
+  ) {
+    const row = await this.prisma.scannerAccount.findFirst({
+      where: { id: accountId, tenantId, parentProfileType: expectedType },
+      include: {
+        scannerUser: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            status: true,
+            role: true,
+          },
+        },
+      },
+    });
+    if (!row) {
+      throw new NotFoundException({
+        code: ErrorCode.NOT_FOUND,
+        message: 'Scanner account not found',
+      });
+    }
+    await this.assertParentProfileAccess(
+      tenantId,
+      userId,
+      userRole,
+      expectedType,
+      row.parentProfileId,
+    );
+    return row;
+  }
+
+  private async createScannerForParent(
+    actor: AuthUser,
+    parentProfileType: ScannerParentProfileType,
+    body: CreateScannerUserBody,
+  ): Promise<CreateScannerUserResponse> {
+    if (actor.role === Role.SCANNER) {
+      throw new ForbiddenException({
+        code: ErrorCode.FORBIDDEN,
+        message: 'Scanner users cannot create other scanners',
+      });
+    }
+
+    const parentProfileId = await this.resolveParentProfileId(
+      actor.tenantId,
+      actor.id,
+      actor.role,
+      parentProfileType,
+      body.parentProfileId,
+    );
+    await this.assertParentProfileAccess(
+      actor.tenantId,
+      actor.id,
+      actor.role,
+      parentProfileType,
+      parentProfileId,
+    );
+    await this.assertParentProfileExists(actor.tenantId, parentProfileType, parentProfileId);
+
+    const email = body.email.trim().toLowerCase();
+    const existing = await this.prisma.user.findFirst({
+      where: { tenantId: actor.tenantId, email, deletedAt: null },
+    });
+    if (existing) {
+      throw new ConflictException({
+        code: ErrorCode.EMAIL_ALREADY_EXISTS,
+        message: 'Ya existe un usuario con este email',
+      });
+    }
+
+    let temporaryPassword: string | undefined;
+    const plainPassword = body.password ?? (temporaryPassword = generateTemporaryPassword());
+
+    const row = await this.prisma.$transaction(async (tx) => {
+      const scannerUser = await tx.user.create({
+        data: {
+          tenantId: actor.tenantId,
+          email,
+          firstName: body.firstName.trim(),
+          lastName: body.lastName.trim(),
+          role: PrismaRole.SCANNER,
+          status: UserStatus.ACTIVE,
+          passwordHash: hashPassword(plainPassword),
+        },
+      });
+
+      return tx.scannerAccount.create({
+        data: {
+          tenantId: actor.tenantId,
+          scannerUserId: scannerUser.id,
+          parentUserId: actor.id,
+          parentProfileType,
+          parentProfileId,
+        },
+        include: {
+          scannerUser: {
+            select: {
+              id: true,
+              email: true,
+              firstName: true,
+              lastName: true,
+              status: true,
+              role: true,
+            },
+          },
+        },
+      });
+    });
+
+    await this.audit.logAction({
+      tenantId: actor.tenantId,
+      actorId: actor.id,
+      actorRole: actor.role,
+      action: AuditAction.SCANNER_ACCOUNT_LINKED,
+      entityType: 'ScannerAccount',
+      entityId: row.id,
+      after: {
+        scannerUserId: row.scannerUserId,
+        parentProfileType: row.parentProfileType,
+        parentProfileId: row.parentProfileId,
+        source: 'portal_create',
+      },
+    });
+
+    return {
+      ...this.mapRow(row),
+      ...(temporaryPassword ? { temporaryPassword } : {}),
+    };
+  }
+
+  async createForProducer(
+    actor: AuthUser,
+    body: CreateScannerUserBody,
+  ): Promise<CreateScannerUserResponse> {
+    if (
+      actor.role !== Role.ADMIN &&
+      !(await this.profiles.hasProducerAccess(actor.tenantId, actor.id))
+    ) {
+      throw new ForbiddenException({
+        code: ErrorCode.FORBIDDEN,
+        message: 'Insufficient permissions',
+      });
+    }
+    return this.createScannerForParent(actor, ScannerParentProfileType.PRODUCER, body);
+  }
+
+  async createForGastro(
+    actor: AuthUser,
+    body: CreateScannerUserBody,
+  ): Promise<CreateScannerUserResponse> {
+    if (
+      actor.role !== Role.ADMIN &&
+      !(await this.profiles.hasGastroAccess(actor.tenantId, actor.id))
+    ) {
+      throw new ForbiddenException({
+        code: ErrorCode.FORBIDDEN,
+        message: 'Insufficient permissions',
+      });
+    }
+    return this.createScannerForParent(actor, ScannerParentProfileType.GASTRO, body);
+  }
+
+  private async setAccountActive(
+    actor: AuthUser,
+    accountId: string,
+    expectedType: ScannerParentProfileType,
+    isActive: boolean,
+  ): Promise<ScannerAccountSummary> {
+    const row = await this.getAccountForParentManagement(
+      actor.tenantId,
+      actor.id,
+      actor.role,
+      accountId,
+      expectedType,
+    );
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const account = await tx.scannerAccount.update({
+        where: { id: row.id },
+        data: { isActive },
+        include: {
+          scannerUser: {
+            select: {
+              id: true,
+              email: true,
+              firstName: true,
+              lastName: true,
+              status: true,
+              role: true,
+            },
+          },
+        },
+      });
+
+      await tx.user.update({
+        where: { id: row.scannerUserId },
+        data: { status: isActive ? UserStatus.ACTIVE : UserStatus.SUSPENDED },
+      });
+
+      return account;
+    });
+
+    await this.audit.logAction({
+      tenantId: actor.tenantId,
+      actorId: actor.id,
+      actorRole: actor.role,
+      action: isActive
+        ? AuditAction.SCANNER_ACCOUNT_ACTIVATED
+        : AuditAction.SCANNER_ACCOUNT_DEACTIVATED,
+      entityType: 'ScannerAccount',
+      entityId: updated.id,
+      before: { isActive: row.isActive, userStatus: row.scannerUser.status },
+      after: { isActive: updated.isActive, userStatus: isActive ? 'ACTIVE' : 'SUSPENDED' },
+    });
+
+    return this.mapRow(updated);
+  }
+
+  async updateProducerAccountStatus(
+    actor: AuthUser,
+    accountId: string,
+    isActive: boolean,
+  ): Promise<ScannerAccountSummary> {
+    return this.setAccountActive(
+      actor,
+      accountId,
+      ScannerParentProfileType.PRODUCER,
+      isActive,
+    );
+  }
+
+  async updateGastroAccountStatus(
+    actor: AuthUser,
+    accountId: string,
+    isActive: boolean,
+  ): Promise<ScannerAccountSummary> {
+    return this.setAccountActive(actor, accountId, ScannerParentProfileType.GASTRO, isActive);
+  }
+
+  async resetProducerPassword(
+    actor: AuthUser,
+    accountId: string,
+    body: ResetScannerPasswordBody,
+  ): Promise<ResetScannerPasswordResponse> {
+    return this.resetPasswordForParent(
+      actor,
+      accountId,
+      ScannerParentProfileType.PRODUCER,
+      body,
+    );
+  }
+
+  async resetGastroPassword(
+    actor: AuthUser,
+    accountId: string,
+    body: ResetScannerPasswordBody,
+  ): Promise<ResetScannerPasswordResponse> {
+    return this.resetPasswordForParent(actor, accountId, ScannerParentProfileType.GASTRO, body);
+  }
+
+  private async resetPasswordForParent(
+    actor: AuthUser,
+    accountId: string,
+    expectedType: ScannerParentProfileType,
+    body: ResetScannerPasswordBody,
+  ): Promise<ResetScannerPasswordResponse> {
+    const row = await this.getAccountForParentManagement(
+      actor.tenantId,
+      actor.id,
+      actor.role,
+      accountId,
+      expectedType,
+    );
+
+    let temporaryPassword: string | undefined;
+    const plainPassword = body.password ?? (temporaryPassword = generateTemporaryPassword());
+
+    await this.prisma.user.update({
+      where: { id: row.scannerUserId },
+      data: { passwordHash: hashPassword(plainPassword) },
+    });
+
+    const refreshed = await this.prisma.scannerAccount.findUniqueOrThrow({
+      where: { id: row.id },
+      include: {
+        scannerUser: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            status: true,
+            role: true,
+          },
+        },
+      },
+    });
+
+    await this.audit.logAction({
+      tenantId: actor.tenantId,
+      actorId: actor.id,
+      actorRole: actor.role,
+      action: AuditAction.SCANNER_PASSWORD_RESET,
+      entityType: 'ScannerAccount',
+      entityId: row.id,
+      metadata: { scannerUserId: row.scannerUserId },
+    });
+
+    return {
+      account: this.mapRow(refreshed),
+      ...(temporaryPassword ? { temporaryPassword } : {}),
+    };
   }
 
   async listForGastro(user: AuthUser): Promise<ScannerAccountsListResponse> {

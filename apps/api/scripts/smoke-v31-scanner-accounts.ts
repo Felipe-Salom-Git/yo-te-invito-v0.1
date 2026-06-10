@@ -167,6 +167,88 @@ async function smokeOwnership(
   return ok;
 }
 
+async function smokePortalUserManagement(
+  prisma: PrismaService,
+  cleanup: Cleanup,
+): Promise<boolean> {
+  const service = new ScannerAccountsService(
+    prisma,
+    new ProfilesAuthorizationService(prisma),
+    new AuditService(prisma),
+  );
+  let ok = true;
+
+  const producer = await prisma.producerProfile.findFirst({
+    where: { tenantId: TENANT, status: 'ACTIVE' },
+    include: { memberships: { where: { status: 'ACTIVE' }, take: 1 } },
+  });
+  if (!producer?.memberships[0]) {
+    fail('seed producer for portal create smoke');
+    return false;
+  }
+  const parentUserId = producer.memberships[0]!.userId;
+  const parentActor = { id: parentUserId, tenantId: TENANT, role: 'PRODUCER_OWNER' };
+
+  const created = await service.createForProducer(parentActor, {
+    email: `${MARKER}-portal@${Date.now()}.test`,
+    firstName: 'Portal',
+    lastName: 'Scanner',
+  });
+  cleanup.scannerAccountIds.push(created.id);
+  cleanup.userIds.push(created.scannerUserId);
+  if (!created.temporaryPassword) {
+    fail('portal create returns temporaryPassword');
+    ok = false;
+  } else {
+    pass('portal create scanner user with temp password');
+  }
+
+  const deactivated = await service.updateProducerAccountStatus(
+    parentActor,
+    created.id,
+    false,
+  );
+  if (deactivated.isActive) {
+    fail('deactivate scanner account');
+    ok = false;
+  } else {
+    pass('deactivate scanner account');
+  }
+
+  const reactivated = await service.updateProducerAccountStatus(parentActor, created.id, true);
+  if (!reactivated.isActive) {
+    fail('reactivate scanner account');
+    ok = false;
+  } else {
+    pass('reactivate scanner account');
+  }
+
+  const reset = await service.resetProducerPassword(parentActor, created.id, {});
+  if (!reset.temporaryPassword) {
+    fail('reset password returns temporaryPassword');
+    ok = false;
+  } else {
+    pass('reset scanner password');
+  }
+
+  try {
+    await service.createForProducer(
+      { id: created.scannerUserId, tenantId: TENANT, role: 'SCANNER' },
+      {
+        email: `${MARKER}-blocked@${Date.now()}.test`,
+        firstName: 'Blocked',
+        lastName: 'Scanner',
+      },
+    );
+    fail('scanner should not create other scanners');
+    ok = false;
+  } catch {
+    pass('scanner forbidden from creating scanners');
+  }
+
+  return ok;
+}
+
 async function cleanupAll(prisma: PrismaClient, cleanup: Cleanup) {
   if (cleanup.scannerAccountIds.length) {
     await prisma.scannerAccount.deleteMany({ where: { id: { in: cleanup.scannerAccountIds } } });
@@ -190,6 +272,7 @@ async function main(): Promise<number> {
 
     if (!(await assertSchema(prisma))) exitCode = 1;
     if (exitCode === 0 && !(await smokeOwnership(prismaService, cleanup))) exitCode = 1;
+    if (exitCode === 0 && !(await smokePortalUserManagement(prismaService, cleanup))) exitCode = 1;
   } catch (e) {
     fail('unexpected', String(e));
     exitCode = 1;

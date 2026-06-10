@@ -208,6 +208,11 @@ export const contentTagsKeys = {
   adminList: (filters: string) => [...contentTagsKeys.all, 'admin', filters] as const,
 };
 
+export const scannerAccountsKeys = {
+  all: ['scannerAccounts'] as const,
+  list: (portal: string) => [...scannerAccountsKeys.all, 'list', portal] as const,
+};
+
 export const generalPublicationsKeys = {
   all: ['general-publications'] as const,
   list: (filters: string) => [...generalPublicationsKeys.all, 'list', filters] as const,

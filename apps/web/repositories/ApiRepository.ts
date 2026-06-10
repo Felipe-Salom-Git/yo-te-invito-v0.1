@@ -60,6 +60,8 @@ import type {
   ProducerSummary,
   ProducerDetail,
   ScannerRepo,
+  ScannerAccountsRepo,
+  ScannerAccountsPortal,
   ScanResult,
   TicketScanLogItem,
   PayoutRequest,
@@ -1737,6 +1739,31 @@ export class ApiRepository implements Repositories {
       return this.client.post(
         `/referrer/me/producer-relationships/${encodeURIComponent(producerProfileId)}/commercial-reviews`,
         payload,
+      );
+    },
+  };
+
+  scannerAccounts: ScannerAccountsRepo = {
+    list: async (portal: ScannerAccountsPortal) => {
+      const base = portal === 'producer' ? '/producer/scanners' : '/gastro/scanners';
+      return this.client.get<import('@yo-te-invito/shared').ScannerAccountsListResponse>(base);
+    },
+    create: async (portal, body) => {
+      const base = portal === 'producer' ? '/producer/scanners' : '/gastro/scanners';
+      return this.client.post<import('@yo-te-invito/shared').CreateScannerUserResponse>(base, body);
+    },
+    updateStatus: async (portal, accountId, isActive) => {
+      const base = portal === 'producer' ? '/producer/scanners' : '/gastro/scanners';
+      return this.client.patch<import('@yo-te-invito/shared').ScannerAccountSummary>(
+        `${base}/${encodeURIComponent(accountId)}`,
+        { isActive },
+      );
+    },
+    resetPassword: async (portal, accountId, body = {}) => {
+      const base = portal === 'producer' ? '/producer/scanners' : '/gastro/scanners';
+      return this.client.post<import('@yo-te-invito/shared').ResetScannerPasswordResponse>(
+        `${base}/${encodeURIComponent(accountId)}/reset-password`,
+        body,
       );
     },
   };

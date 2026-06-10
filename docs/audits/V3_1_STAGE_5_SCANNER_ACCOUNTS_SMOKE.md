@@ -53,8 +53,15 @@ pnpm --filter api run smoke:v31-scanner-accounts
 | Usuario USER | Forbidden en listado productora |
 | `getActiveAccountForScanner` | Resuelve parent profile |
 
-## Pendiente Slice 5.2
+## Slice 5.2 (completado)
 
-- Crear usuario scanner desde portales (email + password).
+Ver `docs/audits/V3_1_STAGE_5_SCANNER_USERS_SMOKE.md`.
+
+- Crear usuario scanner desde portales productora/gastro.
 - Activar/desactivar y reset password.
-- UI en `/producer`, `/gastro`, operador.
+- UI: `/producer/scanners`, `/gastro/scanners`.
+
+## Pendiente
+
+- Operador excursión (sin portal propio hoy).
+- Slice 5.3+: PWA install CTA, cámara, scope.

@@ -2148,6 +2148,28 @@ export interface ScannerRepo {
   listScanLogs(eventId?: string, limit?: number): Promise<TicketScanLogItem[]>;
 }
 
+export type ScannerAccountsPortal = 'producer' | 'gastro';
+
+export interface ScannerAccountsRepo {
+  list(
+    portal: ScannerAccountsPortal,
+  ): Promise<import('@yo-te-invito/shared').ScannerAccountsListResponse>;
+  create(
+    portal: ScannerAccountsPortal,
+    body: import('@yo-te-invito/shared').CreateScannerUserBody,
+  ): Promise<import('@yo-te-invito/shared').CreateScannerUserResponse>;
+  updateStatus(
+    portal: ScannerAccountsPortal,
+    accountId: string,
+    isActive: boolean,
+  ): Promise<import('@yo-te-invito/shared').ScannerAccountSummary>;
+  resetPassword(
+    portal: ScannerAccountsPortal,
+    accountId: string,
+    body?: import('@yo-te-invito/shared').ResetScannerPasswordBody,
+  ): Promise<import('@yo-te-invito/shared').ResetScannerPasswordResponse>;
+}
+
 export type GastroContentStatus = 'draft' | 'published' | 'inactive';
 
 export interface GastroContent {
@@ -2840,6 +2862,7 @@ export interface Repositories {
   adminReviews: AdminReviewsRepo;
   adminReviewDisputes: AdminReviewDisputesRepo;
   scanner: ScannerRepo;
+  scannerAccounts: ScannerAccountsRepo;
   payouts: PayoutsRepo;
   platformConfig: PlatformConfigRepo;
   publicPlatformConfig: PublicPlatformConfigRepo;

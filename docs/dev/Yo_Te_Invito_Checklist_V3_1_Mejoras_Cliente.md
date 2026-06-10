@@ -969,8 +969,8 @@ Reactivar cada perfil desde admin dispara sync sin script destructivo.
 
 ## 24.1 Crear usuario scanner desde Productoras, Proveedores y Gastros
 
-- [ ] En paneles de Productora, Gastro y Proveedor/Operador, agregar opción para crear usuario scanner.
-- [ ] Permitir configurar email/usuario y contraseña inicial.
+- [x] En paneles de Productora y Gastro, agregar opción para crear usuario scanner (`/producer/scanners`, `/gastro/scanners` — Slice 5.2). Operador excursión pendiente (sin portal).
+- [x] Permitir configurar email/usuario y contraseña inicial (Slice 5.2).
 - [x] Asociar el usuario scanner a la cuenta padre (tenant + perfil comercial) — backend `ScannerAccount` (Slice 5.1).
 - [x] Definir permisos limitados (modelo): rol `SCANNER` + tabla dedicada, sin membership de portal (Slice 5.1).
 - [ ] Validar permisos limitados en portales y scanner PWA:
@@ -978,8 +978,8 @@ Reactivar cada perfil desde admin dispara sync sin script destructivo.
   - No acceder al panel administrativo completo.
   - No modificar publicaciones.
   - No ver datos sensibles innecesarios.
-- [ ] Permitir activar/desactivar usuarios scanner.
-- [ ] Permitir resetear contraseña desde la cuenta padre o desde Admin.
+- [x] Permitir activar/desactivar usuarios scanner (Slice 5.2).
+- [x] Permitir resetear contraseña desde la cuenta padre (Slice 5.2). Admin `/admin/usuarios` pendiente.
 - [ ] Agregar opción visible para copiar o abrir link de descarga/instalación del Scanner PWA.
 
 **Prioridad:** Alta  
