@@ -60,6 +60,8 @@ HTTP → Controller (thin) → ZodValidationPipe → Service → Prisma → Post
 
 **V3.1 Etapa 10 — Horarios gastro avanzados (cerrada 2026-06-10):** `GastroProfile.openingHoursMode` (`simple`|`weekly`) + `openingHoursWeekly` JSONB; convive con `openingHours` (rental) + `openingHoursNote`. Schemas: `gastro-weekly-opening-hours.ts`; helpers `gastro-profile-fields.util.ts`; público `PublicGastroLocationsService`. Smoke: `smoke:v31-gastro-weekly-hours`. Doc cierre: `docs/audits/V3_1_STAGE_10_GASTRO_HOURS_CLOSING.md`; checklist §27.1–27.2.
 
+**V3.1 Etapa 11 — Legales pendientes (cerrada con observaciones 2026-06-10):** `LegalAcceptanceContext.EVENT_PUBLICATION` + `UserLegalAcceptance.eventId`; `EventPublicationLegalService`; `GET/POST /producer/events/:eventId/legal/*`; bloqueo `producer-events-crud` al pasar `DRAFT → PENDING` (`LEGAL_ACCEPTANCE_REQUIRED` / `LEGAL_DOCUMENT_NOT_PUBLISHED`). Migración `20260610130000_event_publication_legal_acceptance`. Smokes: `smoke:v31-event-publication-legal`, `smoke:legal`. Doc: `docs/audits/V3_1_STAGE_11_LEGAL_CLOSING.md`. **Pendiente cliente:** publicar `producer_terms` y resto docs en `/admin/legales`.
+
 **Admin endpoints** (`AdminRentalLocationsController`, role `ADMIN`):
 
 | Method | Path |
@@ -275,6 +277,8 @@ Opcional cron: `NOTIFICATIONS_CRON_ENABLED=false`, `NOTIFICATION_REMINDER_HOURS`
 | GET | `/me/legal/requirements` | Usuario | Pendientes por contexto |
 | POST | `/me/legal/accept` | Usuario | `{ documentVersionIds, context }` — idempotente |
 | GET | `/me/legal/acceptances` | Usuario | Historial |
+| GET | `/producer/events/:eventId/legal/publication-terms` | Productora | Estado aceptación `producer_terms` por evento |
+| POST | `/producer/events/:eventId/legal/accept-publication-terms` | Productora | Registra `EVENT_PUBLICATION` + `eventId` |
 
 **Seguridad:** `RolesGuard` + `Role.ADMIN` en admin; aceptación rechaza INTERNAL y no-PUBLISHED; tenant isolation.
 

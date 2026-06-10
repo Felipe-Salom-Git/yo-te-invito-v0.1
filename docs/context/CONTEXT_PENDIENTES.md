@@ -68,7 +68,9 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 - [x] **Slice Legal Content 2 (2026-05-24):** aclaraciones productor ↔ referido en `docs/legal/` (`terms_general`, `producer_terms`, `referrer_terms`) + disclaimers UI referidos/productor; actualizar borradores con `seed:legal-content --force` (sin auto-publish)
 - [ ] Revisión/aprobación cliente y **publicación** de versiones legales en `/admin/legales` — en prod hay **bootstrap temporal** (Mayo 2026); reemplazar antes de cerrar go-live
 - [ ] Confirmar publicación de aclaraciones legales productor ↔ referido (tras publish manual en admin)
-- [ ] Bloqueos duros portal (publicar evento, descuentos gastro, pago referido, etc.) si faltan términos
+- [x] **V3.1 Etapa 11 (2026-06-10):** auditoría publicación legales + `EVENT_PUBLICATION` + bloqueo publicar evento — `docs/audits/V3_1_STAGE_11_LEGAL_CLOSING.md`; smoke `smoke:v31-event-publication-legal`
+- [ ] Publicar `producer_terms` (y resto docs) tras aprobación cliente — BD local: solo DRAFT v1
+- [ ] Bloqueos duros otras verticales (descuentos gastro, pago referido, etc.) si faltan términos
 - [ ] Migrar disclaimers hardcoded (transferencia, referidos) a documentos publicados
 
 ### Registro / legales (checklist V2 — integración)
@@ -526,7 +528,8 @@ _(Trending con `viewCount`: ver ítem Slice 2 arriba en § K.)_
 - [ ] V3.1 Etapa 8 — cambio de fecha de entrada por usuario (§25.3)
 - [ ] V3.1 Scanner PWA prod — JWT login (pendiente desde Etapa 5)
 - [ ] V3.1 — restante no bloqueante (maps prod §4.1, §5.2 links en descripciones, multi-subcategorías otras verticales, drag galería, migración DB ratings 1–5)
-- [ ] V3.1 legal al publicar evento Caso A (bloqueante; coordinar con publicación `producer_terms` real)
+- [x] V3.1 Etapa 11 — legales Caso A código (`EVENT_PUBLICATION`, bloqueo `PENDING`) — `V3_1_STAGE_11_LEGAL_CLOSING.md`
+- [ ] V3.1 Etapa 11 — QA manual browser legales + publicar `producer_terms` real (cliente)
 
 ---
 

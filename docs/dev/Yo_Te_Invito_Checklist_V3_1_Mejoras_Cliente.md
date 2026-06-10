@@ -514,14 +514,17 @@
 
 ---
 
-## 12.2 Términos y condiciones para eventos (Slice 12 — Caso B)
+## 12.2 Términos y condiciones para eventos (Slice 12 — Caso A/B, Etapa 11)
 
-- [x] Aviso informativo en paso 3 wizard (`ProducerEventPublicationLegalNotice`).
+- [x] Aviso legal en paso 3 wizard (`ProducerEventPublicationLegalNotice`).
 - [x] Link `/legal/productores`.
-- [ ] **Bloqueo duro pendiente** — `producer_terms` no publicado oficialmente (Caso A).
-- [ ] Registrar aceptación por evento (`EVENT_PUBLICATION` + `eventId`) — requiere migración.
-- [ ] Impedir publicación si no acepta — pendiente Caso A.
-- [x] Doc `V3_1_SLICE_12_EVENT_PUBLICATION_LEGAL_SMOKE.md`.
+- [x] Migración `EVENT_PUBLICATION` + `UserLegalAcceptance.eventId` — `20260610130000_event_publication_legal_acceptance`.
+- [x] Endpoints `GET/POST /producer/events/:eventId/legal/*` — aceptación por evento.
+- [x] Bloqueo backend `DRAFT → PENDING` sin aceptación (`LEGAL_ACCEPTANCE_REQUIRED`).
+- [x] UI: registrar aceptación + deshabilitar envío a revisión si falta.
+- [ ] **`producer_terms` publicado por cliente** — en BD local solo DRAFT; `/legal/productores` → 404 hasta publish manual.
+- [x] Docs: `V3_1_STAGE_11_*` + `V3_1_SLICE_12_EVENT_PUBLICATION_LEGAL_SMOKE.md`.
+- [x] Smoke: `smoke:v31-event-publication-legal`.
 
 **Prioridad:** Alta  
 **Tipo:** Legal / Productora / Admin
@@ -1230,6 +1233,40 @@ Reactivar cada perfil desde admin dispara sync sin script destructivo.
 **Prioridad:** Media/Alta  
 **Tipo:** Gastro / UX carga / Ficha pública  
 **Pantallas:** `GastroLocalForm` (portal + admin); ficha pública gastro
+
+---
+
+# 31. Legales pendientes — Etapa 11 (2026-06-10)
+
+> Cierre: `docs/audits/V3_1_STAGE_11_LEGAL_CLOSING.md`
+
+## 31.1 Auditoría publicación documentos
+
+- [x] Slice 11.1 — tabla estado 10 documentos, slugs, draft/published — `V3_1_STAGE_11_LEGAL_PUBLICATION_AUDIT.md`.
+- [x] Script audit: `audit-legal-publication-status.ts`.
+- [ ] Publicación manual textos aprobados en `/admin/legales` (cliente/asesor).
+
+## 31.2 `producer_terms`
+
+- [x] Slice 11.2 — slug `productores`, verificación links — `V3_1_STAGE_11_PRODUCER_TERMS_PUBLICATION.md`.
+- [ ] Versión **PUBLISHED** en prod/local (pendiente aprobación cliente).
+
+## 31.3 Aceptación `EVENT_PUBLICATION`
+
+- [x] Slice 11.3 — modelo, endpoints, UI aceptación — `V3_1_STAGE_11_EVENT_PUBLICATION_LEGAL_ACCEPTANCE.md`.
+
+## 31.4 Bloqueo publicar evento
+
+- [x] Slice 11.4 — backend + frontend wizard — `V3_1_STAGE_11_EVENT_PUBLICATION_LEGAL_BLOCKING.md`.
+
+## 31.5 QA cierre etapa
+
+- [x] Slice 11.5 — matriz QA + builds — `V3_1_STAGE_11_LEGAL_CLOSING.md`.
+- [ ] QA manual browser registro/checkout/portal/productora (matriz §11 doc cierre).
+
+**Prioridad:** Alta  
+**Tipo:** Legal / Admin / Productora  
+**Bloqueante go-live:** publicar `terms_general`, `privacy_policy`, `purchase_refund_policy`, `producer_terms`.
 
 ---
 
