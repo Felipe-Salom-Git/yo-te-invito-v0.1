@@ -242,6 +242,7 @@ export class OrderFulfillmentService {
               orderItemId: oi.id,
               ticketTypeId: oi.ticketTypeId,
               ticketBatchId: oi.ticketBatchId ?? null,
+              occurrenceId: oi.occurrenceId ?? order.occurrenceId ?? null,
               eventId: order.eventId,
               qrPayload,
               status: 'VALID',

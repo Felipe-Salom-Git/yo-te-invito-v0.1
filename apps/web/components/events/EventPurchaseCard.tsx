@@ -1,9 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import type { TicketTypeResponse } from '@/repositories/interfaces';
+import type { EventOccurrenceResponse, TicketTypeResponse } from '@/repositories/interfaces';
 import { Button } from '@/components';
 import { useAddToCart } from '@/hooks/useAddToCart';
+import { formatOccurrenceDateTime } from '@/lib/producer/event-occurrences';
 
 const TRUST_BULLETS = [
   'Tickets digitales con QR',
@@ -21,6 +22,7 @@ export interface EventPurchaseCardProps {
   /** Optional: show popularity badge when ratingAvg >= 9 (4.5/5 visual) and ratingCount >= 10 */
   ratingAvg?: number | null;
   ratingCount?: number;
+  selectedOccurrence?: EventOccurrenceResponse | null;
 }
 
 export function EventPurchaseCard({
@@ -33,6 +35,7 @@ export function EventPurchaseCard({
   onAddToCart,
   ratingAvg,
   ratingCount,
+  selectedOccurrence,
 }: EventPurchaseCardProps) {
   const { cartHref } = useAddToCart();
 
@@ -49,6 +52,12 @@ export function EventPurchaseCard({
       id="comprar"
       className="rounded-xl border border-border bg-bg-muted p-5 shadow-lg md:sticky md:top-6"
     >
+      {selectedOccurrence ? (
+        <p className="mb-3 rounded-lg border border-border/80 bg-bg/50 px-3 py-2 text-sm text-text-muted">
+          <span className="font-medium text-text">Fecha elegida: </span>
+          {formatOccurrenceDateTime(selectedOccurrence.startAt, selectedOccurrence.endAt)}
+        </p>
+      ) : null}
       <div className="flex flex-wrap items-center gap-2">
         <h2 className="text-lg font-semibold text-white">Entradas</h2>
         {showPopular && (
@@ -115,7 +124,9 @@ export function EventPurchaseCard({
           Ir al carrito
         </Link>
         <Link
-          href={`/checkout/${eventId}?tenantId=${tenantId}`}
+          href={`/checkout/${eventId}?tenantId=${tenantId}${
+            selectedOccurrence ? `&occurrenceId=${encodeURIComponent(selectedOccurrence.id)}` : ''
+          }`}
           className="inline-flex items-center justify-center rounded-lg bg-accent px-4 py-2.5 font-semibold text-bg shadow-accent-glow transition-all hover:bg-accent-hover"
         >
           Comprar directo

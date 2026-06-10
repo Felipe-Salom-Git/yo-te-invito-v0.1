@@ -289,10 +289,12 @@ export const userCartItemSchema = z.object({
   id: z.string(),
   eventId: z.string(),
   ticketTypeId: z.string(),
+  occurrenceId: z.string().nullable().optional(),
   quantity: z.number().int().min(1),
   unitPrice: z.string(),
   eventTitle: z.string().optional(),
   ticketTypeName: z.string().optional(),
+  occurrenceStartAt: z.string().datetime().nullable().optional(),
   category: z.string().optional(),
 });
 export type UserCartItem = z.infer<typeof userCartItemSchema>;
@@ -309,6 +311,7 @@ export type MeCartResponse = z.infer<typeof meCartResponseSchema>;
 export const addUserCartItemBodySchema = z.object({
   eventId: z.string().min(1),
   ticketTypeId: z.string().min(1),
+  occurrenceId: z.string().min(1).optional(),
   quantity: z.coerce.number().int().min(1).max(20),
   tenantId: z.string().min(1),
 });

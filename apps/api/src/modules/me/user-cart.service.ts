@@ -40,6 +40,7 @@ export class UserCartService {
       include: {
         event: { select: { id: true, title: true, category: true } },
         ticketType: { select: { id: true, name: true, currency: true } },
+        occurrence: { select: { startAt: true } },
       },
       orderBy: { createdAt: 'asc' },
     });
@@ -52,10 +53,12 @@ export class UserCartService {
         id: row.id,
         eventId: row.eventId,
         ticketTypeId: row.ticketTypeId,
+        occurrenceId: row.occurrenceId,
         quantity: row.quantity,
         unitPrice: row.unitPrice.toString(),
         eventTitle: row.event.title,
         ticketTypeName: row.ticketType.name,
+        occurrenceStartAt: row.occurrence?.startAt.toISOString() ?? null,
         category: row.event.category ?? 'event',
       };
     });
@@ -97,6 +100,25 @@ export class UserCartService {
         message: 'Ticket type not found',
       });
     }
+
+    const occurrenceCount = await this.prisma.eventOccurrence.count({
+      where: { eventId: body.eventId, status: { not: 'CANCELLED' } },
+    });
+    if (occurrenceCount > 0) {
+      if (!body.occurrenceId) {
+        throw new BadRequestException({
+          code: ErrorCode.VALIDATION_FAILED,
+          message: 'occurrenceId is required for multi-date events',
+        });
+      }
+      if (ticketType.occurrenceId && ticketType.occurrenceId !== body.occurrenceId) {
+        throw new BadRequestException({
+          code: ErrorCode.VALIDATION_FAILED,
+          message: 'Ticket type does not belong to selected date',
+        });
+      }
+    }
+
     if (body.quantity > ticketType.maxPerOrder) {
       throw new ConflictException({
         code: ErrorCode.CONFLICT,
@@ -113,10 +135,15 @@ export class UserCartService {
         cartId: cart.id,
         eventId: body.eventId,
         ticketTypeId: body.ticketTypeId,
+        occurrenceId: body.occurrenceId ?? ticketType.occurrenceId ?? null,
         quantity: body.quantity,
         unitPrice: ticketType.price,
       },
-      update: { quantity: body.quantity, unitPrice: ticketType.price },
+      update: {
+        quantity: body.quantity,
+        unitPrice: ticketType.price,
+        occurrenceId: body.occurrenceId ?? ticketType.occurrenceId ?? null,
+      },
     });
 
     return this.getCart(tenantId, userId);
@@ -259,18 +286,22 @@ export class UserCartService {
       });
     }
 
-    const byEvent = new Map<string, typeof cart.items>();
+    const byEventDate = new Map<string, typeof cart.items>();
     for (const item of cart.items) {
-      const list = byEvent.get(item.eventId) ?? [];
+      const key = `${item.eventId}:${item.occurrenceId ?? 'legacy'}`;
+      const list = byEventDate.get(key) ?? [];
       list.push(item);
-      byEvent.set(item.eventId, list);
+      byEventDate.set(key, list);
     }
 
     const orderIds: string[] = [];
     const checkoutUrls: string[] = [];
-    for (const [eventId, items] of byEvent) {
+    for (const [, items] of byEventDate) {
+      const eventId = items[0]!.eventId;
+      const occurrenceId = items[0]!.occurrenceId ?? undefined;
       const order = await this.publicOrders.create(tenantId, {
         eventId,
+        occurrenceId,
         buyer: {
           email: user.email,
           firstName: user.firstName,

@@ -74,6 +74,10 @@ export const meTicketItemSchema = z.object({
     startAt: z.string().datetime(),
     venueName: z.string().nullable(),
     city: z.string().nullable().optional(),
+    /** Multi-date: selected show date (falls back to event.startAt for legacy). */
+    occurrenceStartAt: z.string().datetime().nullable().optional(),
+    occurrenceEndAt: z.string().datetime().nullable().optional(),
+    occurrenceVenueName: z.string().nullable().optional(),
   }),
   ticketType: z.object({
     id: z.string(),

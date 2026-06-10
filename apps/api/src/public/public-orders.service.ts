@@ -12,6 +12,7 @@ import { TicketBatchService } from '../ticketing/ticket-batch.service';
 import type { CreateOrderDto, OrderResponse } from '@yo-te-invito/shared';
 import { ErrorCode } from '@yo-te-invito/shared';
 import { mergePublicEventVisibility } from '../common/utils/event-public-visibility.util';
+import { assertOrderOccurrenceValid } from '../common/utils/event-occurrence-order.util';
 
 const ORDER_EXPIRY_MINUTES = 15;
 
@@ -65,11 +66,19 @@ export class PublicOrdersService {
       }
 
       const typeMap = new Map(ticketTypes.map((t) => [t.id, t]));
+      const resolvedOccurrenceId = await assertOrderOccurrenceValid(
+        tx,
+        tenantId,
+        dto.eventId,
+        dto.occurrenceId,
+        ticketTypes,
+      );
       const now = new Date();
       let totalAmount = 0;
       const orderItemsData: Array<{
         ticketTypeId: string;
         ticketBatchId: string;
+        occurrenceId: string | null;
         quantity: number;
         unitPrice: Decimal;
         subtotal: Decimal;
@@ -107,6 +116,7 @@ export class PublicOrdersService {
         orderItemsData.push({
           ticketTypeId: tt.id,
           ticketBatchId: batchReserve.batchId,
+          occurrenceId: resolvedOccurrenceId,
           quantity: item.quantity,
           unitPrice,
           subtotal,
@@ -154,6 +164,7 @@ export class PublicOrdersService {
         data: {
           tenantId,
           eventId: dto.eventId,
+          occurrenceId: resolvedOccurrenceId,
           status: 'PENDING_PAYMENT',
           buyerEmail: dto.buyer.email,
           buyerFirstName: dto.buyer.firstName,
@@ -184,6 +195,7 @@ export class PublicOrdersService {
             orderId: createdOrder.id,
             ticketTypeId: item.ticketTypeId,
             ticketBatchId: item.ticketBatchId,
+            occurrenceId: item.occurrenceId,
             quantity: item.quantity,
             unitPrice: item.unitPrice,
             subtotal: item.subtotal,
@@ -198,9 +210,11 @@ export class PublicOrdersService {
             include: {
               ticketType: true,
               tickets: true,
+              occurrence: true,
             },
           },
           tickets: true,
+          occurrence: true,
         },
       });
 
@@ -212,8 +226,9 @@ export class PublicOrdersService {
     const order = await this.prisma.order.findFirst({
       where: { id: orderId, tenantId },
       include: {
-        orderItems: { include: { ticketType: true, tickets: true } },
+        orderItems: { include: { ticketType: true, tickets: true, occurrence: true } },
         tickets: true,
+        occurrence: true,
       },
     });
 
@@ -230,6 +245,8 @@ export class PublicOrdersService {
   private mapOrderToResponse(order: {
     id: string;
     eventId: string;
+    occurrenceId?: string | null;
+    occurrence?: { startAt: Date } | null;
     tenantId: string;
     status: string;
     buyerEmail: string;
@@ -243,6 +260,8 @@ export class PublicOrdersService {
       id: string;
       ticketTypeId: string;
       ticketBatchId: string | null;
+      occurrenceId?: string | null;
+      occurrence?: { startAt: Date } | null;
       ticketType: { name: string };
       quantity: number;
       unitPrice: { toString: () => string };
@@ -268,6 +287,8 @@ export class PublicOrdersService {
       id: oi.id,
       ticketTypeId: oi.ticketTypeId,
       ticketBatchId: oi.ticketBatchId ?? undefined,
+      occurrenceId: oi.occurrenceId ?? undefined,
+      occurrenceStartAt: oi.occurrence?.startAt.toISOString() ?? order.occurrence?.startAt.toISOString() ?? null,
       ticketTypeName: oi.ticketType.name,
       quantity: oi.quantity,
       unitPrice: oi.unitPrice.toString(),
@@ -299,6 +320,8 @@ export class PublicOrdersService {
     return {
       id: order.id,
       eventId: order.eventId,
+      occurrenceId: order.occurrenceId ?? undefined,
+      occurrenceStartAt: order.occurrence?.startAt.toISOString() ?? null,
       tenantId: order.tenantId,
       status: order.status as OrderResponse['status'],
       buyerEmail: order.buyerEmail,

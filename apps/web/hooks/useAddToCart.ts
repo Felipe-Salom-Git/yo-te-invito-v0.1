@@ -13,6 +13,7 @@ export type AddToCartInput = {
   eventId: string;
   ticketTypeId: string;
   quantity: number;
+  occurrenceId?: string;
   /** Solo carrito local (invitados) */
   eventTitle?: string;
   ticketTypeName?: string;
@@ -47,6 +48,7 @@ export function useAddToCart() {
           ticketTypeId: input.ticketTypeId,
           quantity: input.quantity,
           tenantId: t,
+          ...(input.occurrenceId ? { occurrenceId: input.occurrenceId } : {}),
         },
         {
           onSuccess: () => {
