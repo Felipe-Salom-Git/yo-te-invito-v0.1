@@ -16,6 +16,7 @@ import type { ContentCardItem } from './ContentCard';
 import { ContentPreviewMeta } from './ContentPreviewMeta';
 import { ContentPreviewActions } from './ContentPreviewActions';
 import { ContentPreviewChips } from './ContentPreviewChips';
+import { ContentTagChips } from '@/components/content-tags/ContentTagChips';
 import { ContentPreviewExpanded } from './ContentPreviewExpanded';
 
 export interface ContentPreviewModalProps {
@@ -233,6 +234,15 @@ function ContentPreviewContent({
             {item.description}
           </p>
         )}
+
+        {item.tags && item.tags.length > 0 ? (
+          <ContentTagChips
+            tags={item.tags}
+            category={item.category}
+            variant="dark"
+            className="mt-4"
+          />
+        ) : null}
 
         {/* Producer / local */}
         {(isRental ? item.venueName : item.producerName || item.venueName) && (

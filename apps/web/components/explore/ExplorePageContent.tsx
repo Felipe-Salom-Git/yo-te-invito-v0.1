@@ -36,7 +36,8 @@ function hasAdvancedExploreFilters(filters: ExploreFiltersState): boolean {
     !!filters.dateFrom.trim() ||
     !!filters.dateTo.trim() ||
     !!filters.category.trim() ||
-    !!filters.subcategoryId.trim()
+    !!filters.subcategoryId.trim() ||
+    !!filters.tag.trim()
   );
 }
 
@@ -181,6 +182,22 @@ export function ExplorePageContent() {
       <div className="mt-6 max-w-2xl">
         <PublicSearchBar defaultQuery={urlFilters.q} variant="default" />
       </div>
+
+      {urlFilters.tag.trim() ? (
+        <div className="mt-4 flex flex-wrap items-center gap-2 rounded-lg border border-accent/30 bg-accent/10 px-4 py-2.5">
+          <span className="text-sm text-text">
+            Etiqueta:{' '}
+            <span className="font-medium text-accent">#{urlFilters.tag.trim()}</span>
+          </span>
+          <button
+            type="button"
+            onClick={() => applyFilters({ ...urlFilters, tag: '', page: 1 })}
+            className="rounded-full border border-white/15 px-3 py-1 text-xs text-text-muted transition-colors hover:border-accent hover:text-accent"
+          >
+            Quitar etiqueta
+          </button>
+        </div>
+      ) : null}
 
       <div
         className="mt-4 -mx-1 flex gap-2 overflow-x-auto overscroll-x-contain px-1 pb-1 snap-x snap-mandatory scrollbar-thin"
@@ -357,7 +374,9 @@ export function ExplorePageContent() {
               description={
                 urlFilters.category === 'rental'
                   ? RENTAL_EXPLORE_EMPTY_HINT
-                  : 'Probá cambiar la categoría, la subcategoría, la fecha o la ciudad.'
+                  : urlFilters.tag.trim()
+                    ? 'No hay publicaciones con esa etiqueta. Probá otra etiqueta o quitá el filtro.'
+                    : 'Probá cambiar la categoría, la subcategoría, la fecha o la ciudad.'
               }
             />
           </div>

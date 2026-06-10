@@ -35,7 +35,9 @@ pnpm --filter api run smoke:v31-tags-model
 - `POST /admin/tags/:id/archive` / `restore`
 - `GET /public/tags?tenantId=...&category=event`
 
-## Pendiente Slice 4.2
+## Etapas siguientes (cerradas)
 
-- UI Admin `/admin/etiquetas`
-- Integración formularios (4.3+)
+- 4.2 UI Admin `/admin/etiquetas`
+- 4.3–4.4 Formularios por vertical
+- 4.5–4.6 Display público + filtro `/explore?tag=`
+- Cierre: `docs/audits/V3_1_STAGE_4_TAGS_CLOSING.md`

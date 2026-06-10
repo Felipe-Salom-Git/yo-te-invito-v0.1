@@ -43,6 +43,7 @@ export interface EventsSearchQuery {
   category?: string;
   subcategoryId?: string;
   subcategorySlug?: string;
+  tag?: string;
   page?: number;
   limit?: number;
   dateFrom?: string;

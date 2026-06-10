@@ -33,6 +33,7 @@ import { EventProducerCard } from '@/components/events/EventProducerCard';
 import { EventPublicityInfoCard } from '@/components/events/detail/EventPublicityInfoCard';
 import { EventSectionCard } from '@/components/events/detail/EventSectionCard';
 import { useToast } from '@/components';
+import { ContentTagChips } from '@/components/content-tags/ContentTagChips';
 
 const DEFAULT_TENANT_ID = 'tenant-demo';
 
@@ -256,6 +257,17 @@ export default function EventDetailPage() {
                 </p>
               </section>
             )}
+
+            {event.tags && event.tags.length > 0 ? (
+              <section>
+                <h2 className="text-lg font-semibold text-white">Etiquetas</h2>
+                <ContentTagChips
+                  tags={event.tags}
+                  category={event.category}
+                  className="mt-3"
+                />
+              </section>
+            ) : null}
 
             <EventHighlightsSection
               className="mt-0"

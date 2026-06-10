@@ -36,6 +36,7 @@ export function exploreFiltersToSearchQuery(
     subcategorySlug: subcategoryId ? undefined : subcategorySlug,
     dateFrom: exploreDateToApiIso(filters.dateFrom, false),
     dateTo: exploreDateToApiIso(filters.dateTo, true),
+    tag: filters.tag.trim() || undefined,
     page: filters.page,
     limit: 24,
   };

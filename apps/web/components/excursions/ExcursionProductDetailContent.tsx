@@ -38,6 +38,7 @@ import {
 } from '@/lib/excursions/publicLocation';
 import type { EntitySocialLinks, ExcursionSchedulePublic } from '@yo-te-invito/shared';
 import type { RentalOpeningHours } from '@yo-te-invito/shared';
+import { ContentTagChips } from '@/components/content-tags/ContentTagChips';
 
 type ExcursionOperatorOnEvent = {
   id: string;
@@ -233,6 +234,9 @@ export function ExcursionProductDetailContent({
                 description={event.description}
                 sectionTitle={null}
               />
+              {event.tags && event.tags.length > 0 ? (
+                <ContentTagChips tags={event.tags} category="excursion" className="pt-1" />
+              ) : null}
             </section>
 
             {hasGallery && (

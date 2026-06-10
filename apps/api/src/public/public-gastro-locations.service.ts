@@ -7,6 +7,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { GastroContentService } from '../modules/gastro/gastro-content.service';
 import { readEntitySocialLinks } from '../common/entity-social-links.util';
+import { loadEventTagsPublic } from '../common/event-tags.util';
 
 @Injectable()
 export class PublicGastroLocationsService {
@@ -110,6 +111,7 @@ export class PublicGastroLocationsService {
         ? (row.galleryUrls as string[])
         : null;
     const content = await this.gastroContent.listPublishedForProfile(tenantId, row.id);
+    const tags = await loadEventTagsPublic(this.prisma, row.publicEventId);
     return {
       id: row.id,
       tenantId: row.tenantId,
@@ -143,6 +145,7 @@ export class PublicGastroLocationsService {
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
       content,
+      tags,
     };
   }
 

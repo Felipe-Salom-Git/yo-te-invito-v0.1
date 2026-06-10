@@ -33,6 +33,7 @@ import { RentalMobileStickyCta } from './RentalMobileStickyCta';
 import { RentalProviderContactCta } from './RentalProviderContactCta';
 import { RENTAL_DETAIL_SECTION_HEADING_CLASS } from '@/lib/rentals/rentalDetailUi';
 import type { RentalOpeningHours } from '@yo-te-invito/shared';
+import { ContentTagChips } from '@/components/content-tags/ContentTagChips';
 
 type RentalLocationOnEvent = {
   id: string;
@@ -218,6 +219,10 @@ export function RentalProductDetailContent({
               productTitle={event.title}
               description={event.description}
             />
+
+            {event.tags && event.tags.length > 0 ? (
+              <ContentTagChips tags={event.tags} category="rental" />
+            ) : null}
 
             {hasGallery && (
               <section className="min-w-0">

@@ -916,11 +916,11 @@ Reactivar cada perfil desde admin dispara sync sin script destructivo.
 
 ## 23.1 Admin — creación de etiquetas
 
-- [ ] Crear módulo de administración de etiquetas en `/admin` (CRUD dedicado o subsección de contenido).
-- [ ] Permitir crear, editar, activar/desactivar y archivar etiquetas.
-- [ ] Evitar duplicados o etiquetas demasiado similares (normalización, validación de nombre, sugerencias al crear).
-- [ ] Definir formato recomendado tipo hashtag (`#nieve`, `#recitales`, `#bariloche`, `#familia`, `#promo`).
-- [ ] Definir si las etiquetas son globales o por vertical:
+- [x] Crear módulo de administración de etiquetas en `/admin` (CRUD dedicado o subsección de contenido).
+- [x] Permitir crear, editar, activar/desactivar y archivar etiquetas.
+- [x] Evitar duplicados o etiquetas demasiado similares (normalización, validación de nombre, sugerencias al crear).
+- [x] Definir formato recomendado tipo hashtag (`#nieve`, `#recitales`, `#bariloche`, `#familia`, `#promo`).
+- [x] Definir si las etiquetas son globales o por vertical:
   - Eventos.
   - Gastronomía.
   - Excursiones.
@@ -936,26 +936,28 @@ Reactivar cada perfil desde admin dispara sync sin script destructivo.
 
 ## 23.2 Publicaciones — etiquetas en carga de contenido
 
-- [ ] Al cargar una publicación desde cualquier portal, permitir agregar etiquetas.
-- [ ] Aplicar a:
+- [x] Al cargar una publicación desde cualquier portal, permitir agregar etiquetas.
+- [x] Aplicar a:
   - Eventos de productora.
   - Excursiones.
   - Gastronomía.
   - Rentals.
   - Hoteles (cuando estén activos).
-- [ ] Permitir seleccionar etiquetas existentes (autocomplete o chips).
-- [ ] Definir si perfiles comerciales pueden crear etiquetas o solo elegir las creadas por Admin.
-- [ ] Validar cantidad máxima de etiquetas por publicación.
-- [ ] Mostrar ayuda visual:
+- [x] Permitir seleccionar etiquetas existentes (autocomplete o chips).
+- [x] Definir si perfiles comerciales pueden crear etiquetas o solo elegir las creadas por Admin.
+- [x] Validar cantidad máxima de etiquetas por publicación.
+- [x] Mostrar ayuda visual:
   - «Agregá etiquetas para mejorar la búsqueda en Explorar».
   - «Ejemplo: nieve, cena, teatro, aventura».
-- [ ] Usar etiquetas como parte del buscador/explorer (`/explore`, búsqueda pública).
-- [ ] Permitir filtrar o encontrar publicaciones por etiqueta.
-- [ ] Mostrar etiquetas en:
+- [x] Usar etiquetas como parte del buscador/explorer (`/explore`, búsqueda pública).
+- [x] Permitir filtrar o encontrar publicaciones por etiqueta.
+- [x] Mostrar etiquetas en:
   - Modal de publicación (`ContentPreviewModal`).
   - Página pública de publicación.
   - Cards públicas solo si no saturan visualmente.
-- [ ] Evitar mostrar demasiadas etiquetas en cards (límite visual + truncado).
+- [x] Evitar mostrar demasiadas etiquetas en cards (límite visual + truncado).
+
+> Doc cierre Etapa 4: `docs/audits/V3_1_STAGE_4_TAGS_CLOSING.md`
 
 **Prioridad:** Alta  
 **Tipo:** Funcional / Discovery / UX carga  

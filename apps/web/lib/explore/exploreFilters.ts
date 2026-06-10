@@ -23,6 +23,8 @@ export interface ExploreFiltersState {
   subcategoryId: string;
   /** Slug from URL (`?subcategory=`); resolved to id when subcategories load */
   subcategorySlug: string;
+  /** Active content tag slug (`?tag=`). */
+  tag: string;
   page: number;
 }
 
@@ -34,6 +36,7 @@ export const EXPLORE_DEFAULT_FILTERS: ExploreFiltersState = {
   category: '',
   subcategoryId: '',
   subcategorySlug: '',
+  tag: '',
   page: 1,
 };
 
@@ -52,6 +55,7 @@ export function parseExploreSearchParams(params: URLSearchParams): ExploreFilter
     subcategoryId: params.get('subcategoryId') ?? '',
     subcategorySlug:
       params.get('subcategory') ?? params.get('subcategorySlug') ?? '',
+    tag: params.get('tag') ?? '',
     page: Number.isFinite(pageRaw) && pageRaw >= 1 ? pageRaw : 1,
   };
 }
@@ -73,6 +77,7 @@ export function buildExploreSearchParams(filters: ExploreFiltersState): URLSearc
   ) {
     qs.set('subcategory', filters.subcategorySlug.trim());
   }
+  if (filters.tag.trim()) qs.set('tag', filters.tag.trim());
   if (filters.page > 1) qs.set('page', String(filters.page));
   return qs;
 }
@@ -84,7 +89,8 @@ export function hasActiveExploreFilters(filters: ExploreFiltersState): boolean {
     !!filters.dateFrom.trim() ||
     !!filters.dateTo.trim() ||
     !!filters.category.trim() ||
-    !!filters.subcategoryId.trim()
+    !!filters.subcategoryId.trim() ||
+    !!filters.tag.trim()
   );
 }
 

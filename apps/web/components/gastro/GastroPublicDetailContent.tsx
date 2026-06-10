@@ -22,6 +22,7 @@ import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import type { EventSummary, PublicGastroLocation } from '@/repositories/interfaces';
 import { formatPublicRatingLabel } from '@/lib/reviews/ratingDisplay';
 import type { PublicGastroLocationDiscount } from '@/repositories/interfaces';
+import { ContentTagChips } from '@/components/content-tags/ContentTagChips';
 
 export type GastroPublicDetailContentProps = {
   location: PublicGastroLocation;
@@ -144,6 +145,13 @@ export function GastroPublicDetailContent({
               description={description}
               hasEditorialContent={hasEditorial}
             />
+
+            {location.tags && location.tags.length > 0 ? (
+              <section>
+                <h2 className="text-lg font-semibold text-white">Etiquetas</h2>
+                <ContentTagChips tags={location.tags} category="gastro" className="mt-3" />
+              </section>
+            ) : null}
 
             <GastroDiscountsSection discounts={discounts} />
 

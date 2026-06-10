@@ -24,6 +24,10 @@ import { formatPublicRatingLabel, publicRatingAriaLabel } from '@/lib/reviews/ra
 import { ExpandedContentCardOverlay, type ContentCardMetadata } from './ExpandedContentCardOverlay';
 import { PriceBadge } from './PriceBadge';
 import { ProducerMeta } from './ProducerMeta';
+import {
+  CONTENT_CARD_MAX_VISIBLE_TAGS,
+  ContentTagChips,
+} from '@/components/content-tags/ContentTagChips';
 
 export interface ContentCardItem extends EventSummary {
   description?: string | null;
@@ -241,6 +245,15 @@ export function ContentCard({ item, onClick, tenantId }: ContentCardProps) {
             </span>
           ) : null}
         </div>
+        {item.tags && item.tags.length > 0 ? (
+          <ContentTagChips
+            tags={item.tags}
+            maxVisible={CONTENT_CARD_MAX_VISIBLE_TAGS}
+            category={item.category}
+            variant="muted"
+            className="mt-2 opacity-90"
+          />
+        ) : null}
       </div>
 
       <div className="absolute inset-0 hidden md:block">

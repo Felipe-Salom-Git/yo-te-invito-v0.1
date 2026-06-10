@@ -23,7 +23,7 @@ import {
   mapEventSubcategoriesPublic,
   subcategoryFilterWhere,
 } from '../common/event-subcategories.util';
-import { mapEventTagsPublic } from '../common/event-tags.util';
+import { mapEventTagsPublic, tagSlugFilterWhere } from '../common/event-tags.util';
 import { mergePublicEventVisibility } from '../common/utils/event-public-visibility.util';
 import { mergePublicParentEntitiesActive } from '../common/utils/public-content-availability.util';
 import { TRENDING_PRISMA_ORDER_BY } from '../common/utils/event-trending.util';
@@ -101,6 +101,15 @@ export class PublicEventsService {
     );
   }
 
+  private eventTagsListSelect() {
+    return {
+      where: { tag: { isActive: true } },
+      select: {
+        tag: { select: { id: true, name: true, slug: true, isActive: true } },
+      },
+    } as const;
+  }
+
   private listSummarySelect() {
     return {
       id: true,
@@ -127,7 +136,19 @@ export class PublicEventsService {
         select: { id: true },
         take: 1,
       },
+      eventTags: this.eventTagsListSelect(),
     } as const;
+  }
+
+  private applyTagFilter(base: Prisma.EventWhereInput, tagSlug?: string): void {
+    const clause = tagSlugFilterWhere(tagSlug);
+    if (!clause) return;
+    const existingAnd = base.AND
+      ? Array.isArray(base.AND)
+        ? base.AND
+        : [base.AND]
+      : [];
+    base.AND = [...existingAnd, clause];
   }
 
   private async attachFromPriceToSummaries(
@@ -223,6 +244,7 @@ export class PublicEventsService {
         ? this.prisma.event.findMany({
             where,
             include: {
+              eventTags: this.eventTagsListSelect(),
               gastroDiscounts: {
                 where: {
                   status: 'ACTIVE',
@@ -279,6 +301,9 @@ export class PublicEventsService {
               displayTitle: string | null;
               displayImageUrls: unknown;
             }>;
+            eventTags: Array<{
+              tag: { id: string; name: string; slug: string; isActive: boolean };
+            }>;
           }>
         ).map((e) => {
           priceCandidates.push({
@@ -315,6 +340,7 @@ export class PublicEventsService {
             gastroPromoImageUrl: promoImg ?? null,
             producerName: resolvePublicProducerName(e.producerProfile),
             fromPrice: null,
+            tags: mapEventTagsPublic(e.eventTags),
           };
         })
       : (
@@ -336,6 +362,9 @@ export class PublicEventsService {
             subcategory: { name: string } | null;
             producerProfile: { displayName: string } | null;
             ticketTypes: Array<{ id: string }>;
+            eventTags: Array<{
+              tag: { id: string; name: string; slug: string; isActive: boolean };
+            }>;
           }>
         ).map((e) => {
           priceCandidates.push({
@@ -362,6 +391,7 @@ export class PublicEventsService {
             hasTicketing: this.mapHasTicketing(e),
             producerName: resolvePublicProducerName(e.producerProfile),
             fromPrice: null,
+            tags: mapEventTagsPublic(e.eventTags),
           };
         });
 
@@ -416,6 +446,7 @@ export class PublicEventsService {
 
     this.applyCategoryFilter(base, query.category);
     this.applySubcategoryFilter(base, query);
+    this.applyTagFilter(base, query.tag);
 
     if (query.dateFrom || query.dateTo) {
       base.startAt = {};
@@ -465,6 +496,9 @@ export class PublicEventsService {
         subcategory: { name: string } | null;
         producerProfile: { displayName: string } | null;
         ticketTypes: Array<{ id: string }>;
+        eventTags: Array<{
+          tag: { id: string; name: string; slug: string; isActive: boolean };
+        }>;
       }>
     ).map((e) => {
       priceCandidates.push({
@@ -491,6 +525,7 @@ export class PublicEventsService {
         hasTicketing: this.mapHasTicketing(e),
         producerName: resolvePublicProducerName(e.producerProfile),
         fromPrice: null,
+        tags: mapEventTagsPublic(e.eventTags),
       };
     });
 
@@ -558,6 +593,9 @@ export class PublicEventsService {
         subcategory: { name: string } | null;
         producerProfile: { displayName: string } | null;
         ticketTypes: Array<{ id: string }>;
+        eventTags: Array<{
+          tag: { id: string; name: string; slug: string; isActive: boolean };
+        }>;
       }>
     ).map((e) => {
       priceCandidates.push({
@@ -584,6 +622,7 @@ export class PublicEventsService {
         hasTicketing: this.mapHasTicketing(e),
         producerName: resolvePublicProducerName(e.producerProfile),
         fromPrice: null,
+        tags: mapEventTagsPublic(e.eventTags),
       };
     });
 
