@@ -9,6 +9,7 @@ import { TicketListExportService } from './ticket-list-export.service';
 import { TicketDateChangeEligibilityService } from './ticket-date-change-eligibility.service';
 import { TicketDateChangeService } from './ticket-date-change.service';
 import { TicketDateChangeNotificationsService } from './ticket-date-change-notifications.service';
+import { TicketTransferEligibilityService } from './ticket-transfer-eligibility.service';
 
 @Module({
   imports: [AuthModule, AuditModule, NotificationsModule, ScannerAccountsModule],
@@ -19,11 +20,13 @@ import { TicketDateChangeNotificationsService } from './ticket-date-change-notif
     TicketDateChangeEligibilityService,
     TicketDateChangeService,
     TicketDateChangeNotificationsService,
+    TicketTransferEligibilityService,
   ],
   exports: [
     TicketListExportService,
     TicketDateChangeEligibilityService,
     TicketDateChangeService,
+    TicketTransferEligibilityService,
   ],
 })
 export class TicketsModule {}

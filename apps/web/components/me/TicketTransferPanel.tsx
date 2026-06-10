@@ -11,6 +11,7 @@ import { useTicketTransferMutations } from '@/lib/query/me-portal';
 import { buildTransferAcceptUrl } from '@/lib/me/transfer';
 import { TRANSFER_OFFER_STATUS_LABELS } from '@/lib/domainLabels';
 import { getErrorMessage } from '@/lib/errors';
+import { getTransferErrorMessage } from '@/lib/me/ticket-transfer-labels';
 
 type Props = {
   ticket: MeTicketDetail;
@@ -52,7 +53,8 @@ export function TicketTransferPanel({ ticket, offer, canTransfer }: Props) {
             addToast('Enlace copiado al portapapeles', 'success');
           });
         },
-        onError: (err) => addToast(getErrorMessage(err), 'error'),
+        onError: (err) =>
+          addToast(getTransferErrorMessage(err) ?? getErrorMessage(err), 'error'),
       },
     );
   };
@@ -70,7 +72,8 @@ export function TicketTransferPanel({ ticket, offer, canTransfer }: Props) {
     if (!activeOffer) return;
     cancel.mutate(activeOffer.id, {
       onSuccess: () => addToast('Transferencia cancelada. Tu ticket volvió a estar válido.', 'success'),
-      onError: (err) => addToast(getErrorMessage(err), 'error'),
+      onError: (err) =>
+        addToast(getTransferErrorMessage(err) ?? getErrorMessage(err), 'error'),
     });
   };
 

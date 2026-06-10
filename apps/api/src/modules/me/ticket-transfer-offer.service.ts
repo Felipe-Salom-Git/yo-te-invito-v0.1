@@ -22,11 +22,14 @@ import {
 import { ErrorCode } from '@yo-te-invito/shared';
 import { readPortalPreferences } from './user-portal-preferences.util';
 import { UserNotificationsService } from '../notifications/user-notifications.service';
+import { TicketTransferEligibilityService } from '../tickets/ticket-transfer-eligibility.service';
 import {
   buildTicketTransferCancelledVariables,
+  buildTicketTransferExpiredVariables,
   buildTicketTransferReceivedVariables,
   buildTicketTransferSenderVariables,
   buildTransferEventContext,
+  formatExpiresAt,
   formatPersonName,
   TRANSFER_EMAIL_TEMPLATES,
   transferOfferUrl,
@@ -75,6 +78,7 @@ export class TicketTransferOfferService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: UserNotificationsService,
+    private readonly transferEligibility: TicketTransferEligibilityService,
   ) {}
 
   private mapOffer(row: OfferRow): TicketTransferOfferSummary {
@@ -180,17 +184,6 @@ export class TicketTransferOfferService {
     });
   }
 
-  private assertEventNotPast(event: { startAt: Date; endAt: Date | null }) {
-    const now = new Date();
-    const end = event.endAt ?? event.startAt;
-    if (end < now) {
-      throw new ConflictException({
-        code: ErrorCode.TICKET_NOT_TRANSFERABLE,
-        message: 'Event has already ended',
-      });
-    }
-  }
-
   private async resolveBuyer(
     tenantId: string,
     sellerUserId: string,
@@ -254,48 +247,18 @@ export class TicketTransferOfferService {
     userId: string,
     ticketId: string,
   ) {
-    const ticket = await this.prisma.ticket.findFirst({
-      where: { id: ticketId, event: { tenantId } },
-      include: { event: true },
-    });
+    const ticket = await this.transferEligibility.loadTicketForEligibility(tenantId, ticketId);
     if (!ticket) {
       throw new NotFoundException({
         code: ErrorCode.TICKET_NOT_FOUND,
         message: 'Ticket not found',
       });
     }
-    if (ticket.ownerUserId !== userId) {
-      throw new ForbiddenException({
-        code: ErrorCode.FORBIDDEN,
-        message: 'You are not the ticket owner',
-      });
-    }
-    if (ticket.status !== 'VALID') {
-      throw new ConflictException({
-        code: ErrorCode.TICKET_NOT_TRANSFERABLE,
-        message: `Ticket is not transferable (status: ${ticket.status})`,
-      });
-    }
-    if (ticket.usedAt || ticket.revokedAt) {
-      throw new ConflictException({
-        code: ErrorCode.TICKET_NOT_TRANSFERABLE,
-        message: 'Ticket has been used or revoked',
-      });
-    }
-    this.assertEventNotPast(ticket.event);
-
-    const active = await this.prisma.ticketTransferOffer.findFirst({
-      where: {
-        sourceTicketId: ticketId,
-        status: { in: ['AVAILABLE', 'RESERVED'] },
-      },
-    });
-    if (active) {
-      throw new ConflictException({
-        code: ErrorCode.CONFLICT,
-        message: 'An active transfer already exists for this ticket',
-      });
-    }
+    const eligibility = await this.transferEligibility.evaluateWithPendingDateChange(
+      ticket,
+      userId,
+    );
+    this.transferEligibility.assertTransferable(eligibility);
     return ticket;
   }
 
@@ -593,10 +556,15 @@ export class TicketTransferOfferService {
                 id: true,
                 title: true,
                 startAt: true,
+                endAt: true,
+                status: true,
                 venueName: true,
                 category: true,
                 tenantId: true,
               },
+            },
+            occurrence: {
+              select: { id: true, startAt: true, endAt: true, status: true },
             },
             ticketType: true,
             order: true,
@@ -645,12 +613,13 @@ export class TicketTransferOfferService {
     }
 
     const source = offer.sourceTicket;
-    if (!source || source.status !== 'TRANSFER_PENDING') {
+    if (!source) {
       throw new ConflictException({
         code: ErrorCode.TICKET_NOT_TRANSFERABLE,
         message: 'Source ticket is not in transferable state',
       });
     }
+    this.transferEligibility.assertAcceptableSource(source);
 
     const result = await this.prisma.$transaction(async (tx) => {
       let qrPayload = generateTicketQrPayload();
@@ -667,6 +636,7 @@ export class TicketTransferOfferService {
           orderItemId: source.orderItemId,
           ticketTypeId: source.ticketTypeId,
           ticketBatchId: source.ticketBatchId,
+          occurrenceId: source.occurrenceId,
           status: 'VALID',
           source: source.source,
           ownerUserId: buyerUserId,
@@ -885,7 +855,7 @@ export class TicketTransferOfferService {
   private async expireOffer(offerId: string) {
     const offer = await this.prisma.ticketTransferOffer.findUnique({
       where: { id: offerId },
-      select: { id: true, sourceTicketId: true, tenantId: true, sellerUserId: true },
+      include: this.offerInclude(),
     });
     if (!offer) return;
 
@@ -902,6 +872,87 @@ export class TicketTransferOfferService {
       { status: 'VALID' },
       { offerId },
     );
+
+    void this.notifyTransferExpired(offer.tenantId, offer).catch(() => undefined);
+  }
+
+  private async notifyTransferExpired(tenantId: string, offer: OfferRow): Promise<void> {
+    const seller = await this.prisma.user.findFirst({
+      where: { id: offer.sellerUserId, tenantId },
+      select: {
+        id: true,
+        tenantId: true,
+        email: true,
+        preferences: true,
+        firstName: true,
+        lastName: true,
+      },
+    });
+    if (!seller?.email?.trim()) return;
+
+    const prefs = readPortalPreferences(seller.id, seller.preferences);
+    const eventTitle = offer.sourceTicket?.event?.title ?? 'tu evento';
+    const eventCtx = this.eventContextFromOffer(offer);
+
+    await this.notifications.deliver({
+      tenantId: seller.tenantId,
+      userId: seller.id,
+      userEmail: seller.email,
+      kind: NotificationKind.TICKET_TRANSFER_CANCELLED,
+      referenceKey: `transfer:${offer.id}:expired`,
+      title: 'Transferencia vencida',
+      body: `La transferencia para «${eventTitle}» venció sin ser aceptada. Tu ticket volvió a estar válido.`,
+      href: '/me/tickets',
+      sendInApp: prefs.webNotificationsEnabled,
+      sendEmail: prefs.emailNotificationsEnabled,
+      preferences: prefs,
+      emailTemplateId: TRANSFER_EMAIL_TEMPLATES.expired,
+      emailTemplateVariables: buildTicketTransferExpiredVariables({
+        userName: formatPersonName(seller.firstName, seller.lastName),
+        ticketsUrl: transferTicketsUrl(),
+        transferExpiresAt: formatExpiresAt(offer.expiresAt),
+        ticketName: this.ticketNameFromOffer(offer),
+        event: eventCtx,
+      }),
+    });
+
+    if (!offer.buyerUserId) return;
+
+    const buyer = await this.prisma.user.findFirst({
+      where: { id: offer.buyerUserId, tenantId },
+      select: {
+        id: true,
+        tenantId: true,
+        email: true,
+        preferences: true,
+        firstName: true,
+        lastName: true,
+      },
+    });
+    if (!buyer?.email?.trim()) return;
+
+    const buyerPrefs = readPortalPreferences(buyer.id, buyer.preferences);
+    await this.notifications.deliver({
+      tenantId: buyer.tenantId,
+      userId: buyer.id,
+      userEmail: buyer.email,
+      kind: NotificationKind.TICKET_TRANSFER_CANCELLED,
+      referenceKey: `transfer:${offer.id}:expired:buyer`,
+      title: 'Transferencia vencida',
+      body: `La transferencia para «${eventTitle}» venció.`,
+      href: '/me/activity?tab=transfers',
+      sendInApp: buyerPrefs.webNotificationsEnabled,
+      sendEmail: buyerPrefs.emailNotificationsEnabled,
+      preferences: buyerPrefs,
+      emailTemplateId: TRANSFER_EMAIL_TEMPLATES.expired,
+      emailTemplateVariables: buildTicketTransferExpiredVariables({
+        userName: formatPersonName(buyer.firstName, buyer.lastName),
+        ticketsUrl: transferTicketsUrl(),
+        transferExpiresAt: formatExpiresAt(offer.expiresAt),
+        ticketName: this.ticketNameFromOffer(offer),
+        event: eventCtx,
+      }),
+    });
   }
 
   async listForUser(

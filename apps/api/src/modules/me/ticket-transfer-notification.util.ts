@@ -126,9 +126,27 @@ export function transferOfferUrl(acceptToken: string): string {
   return `${getAppUrl()}/me/ticket-transfer/${acceptToken}`;
 }
 
+export function buildTicketTransferExpiredVariables(input: {
+  userName: string;
+  ticketsUrl: string;
+  transferExpiresAt: string;
+  ticketName?: string;
+  event: TransferEventContext;
+}): Record<string, unknown> {
+  return {
+    userName: input.userName,
+    ticketName: input.ticketName ?? 'Entrada',
+    transferExpiresAt: input.transferExpiresAt,
+    ticketsUrl: input.ticketsUrl,
+    supportEmail: getDefaultSupportEmail(),
+    ...input.event,
+  };
+}
+
 export const TRANSFER_EMAIL_TEMPLATES = {
   received: 'TICKET_TRANSFER_RECEIVED' as EmailTemplateId,
   accepted: 'TICKET_TRANSFER_ACCEPTED' as EmailTemplateId,
   rejected: 'TICKET_TRANSFER_REJECTED' as EmailTemplateId,
   cancelled: 'TICKET_TRANSFER_CANCELLED' as EmailTemplateId,
+  expired: 'TICKET_TRANSFER_EXPIRED' as EmailTemplateId,
 } as const;

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import type { TicketTransferOfferSummary } from '@yo-te-invito/shared';
-import { TRANSFER_OFFER_STATUS_LABELS } from '@/lib/domainLabels';
+import { transferOfferStatusLabel } from '@/lib/me/ticket-transfer-labels';
 import { buildTransferAcceptUrl } from '@/lib/me/transfer';
 import { Button, useToast } from '@/components';
 import { useTicketTransferMutations } from '@/lib/query/me-portal';
@@ -51,7 +51,7 @@ export function TransferOfferRow({ offer, currentUserId, onCancel, cancelling }:
           </p>
           <p className="text-sm text-text-muted">
             {isSeller ? 'Enviada' : isBuyer ? 'Recibida' : 'Transferencia'} ·{' '}
-            {TRANSFER_OFFER_STATUS_LABELS[offer.status] ?? offer.status}
+            {transferOfferStatusLabel(offer.status, offer.rejectedAt)}
           </p>
           {offer.sellerDisplayName && isBuyer && (
             <p className="text-xs text-text-muted">De: {offer.sellerDisplayName}</p>

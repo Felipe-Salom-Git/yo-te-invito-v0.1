@@ -20,6 +20,7 @@ import { renderReviewModerationRestored } from './templates/review-moderation-re
 import { renderReviewOfficialReply } from './templates/review-official-reply.template';
 import { renderReviewReceived } from './templates/review-received.template';
 import { renderTicketTransferRejected } from './templates/ticket-transfer-rejected.template';
+import { renderTicketTransferExpired } from './templates/ticket-transfer-expired.template';
 import { renderReferralCommissionGenerated } from './templates/referral-commission-generated.template';
 import { renderReferralPaymentMarkedAsPaid } from './templates/referral-payment-marked-as-paid.template';
 import { renderReferralPaymentRequestCreated } from './templates/referral-payment-request-created.template';
@@ -60,6 +61,7 @@ const REGISTRY: Record<EmailTemplateId, EmailTemplateRenderer> = {
   TICKET_TRANSFER_ACCEPTED: renderTicketTransferAccepted,
   TICKET_TRANSFER_REJECTED: renderTicketTransferRejected,
   TICKET_TRANSFER_CANCELLED: renderTicketTransferCancelled,
+  TICKET_TRANSFER_EXPIRED: renderTicketTransferExpired,
   EVENT_REMINDER_24H: renderEventReminder24h,
   REVIEW_RECEIVED: renderReviewReceived,
   REVIEW_OFFICIAL_REPLY: renderReviewOfficialReply,

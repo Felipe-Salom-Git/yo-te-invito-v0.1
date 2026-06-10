@@ -213,6 +213,7 @@ export class MeService {
           { ownerUserId: userId },
           {
             ownerUserId: null,
+            status: { not: 'TRANSFERRED' },
             order: {
               tenantId,
               status: 'PAID',
@@ -252,6 +253,7 @@ export class MeService {
           { ownerUserId: userId },
           {
             ownerUserId: null,
+            status: { not: 'TRANSFERRED' },
             order: {
               tenantId,
               status: 'PAID',
@@ -426,6 +428,7 @@ export class MeService {
           { ownerUserId: userId },
           {
             ownerUserId: null,
+            status: { not: 'TRANSFERRED' },
             order: {
               tenantId,
               status: 'PAID',
