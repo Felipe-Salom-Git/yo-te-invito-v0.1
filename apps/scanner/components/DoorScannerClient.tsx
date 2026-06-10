@@ -10,18 +10,24 @@ import {
 } from '@yo-te-invito/shared';
 import {
   scanTicket,
-  fetchEventTickets,
+  fetchEventSnapshot,
   validateGastroDiscount,
   fetchScanTargets,
+  downloadEventTicketsPdf,
 } from '@/lib/api/scanner';
-import { scanOffline } from '@/lib/scan/offline-scan';
+import { scanOffline, type OfflineScanResult } from '@/lib/scan/offline-scan';
 import { useOfflineSync } from '@/lib/hooks/use-offline-sync';
 import {
   clearTicketsForEvent,
-  saveTickets,
-  getAllQueuedScans,
+  saveSnapshot,
+  getSnapshotMeta,
+  getPendingQueuedScans,
+  getConflictQueuedScans,
+  type SnapshotMeta,
 } from '@/lib/db/offline-scanner';
 import { QrCameraScanner } from '@/components/QrCameraScanner';
+import { ScannerConnectionStatus } from '@/components/ScannerConnectionStatus';
+import { OfflineConflictPanel } from '@/components/OfflineConflictPanel';
 
 const MAX_HISTORY = 20;
 const LS_DEV_USER = 'scanner:devUserId';
@@ -30,7 +36,7 @@ const LS_LAST_DISCOUNT = 'scanner:lastDiscountId';
 const LS_INPUT_MODE = 'scanner:inputMode';
 
 type ScanHistoryItem =
-  | { kind: 'ticket'; result: ScanResponse }
+  | { kind: 'ticket'; result: ScanResponse | OfflineScanResult }
   | { kind: 'gastro-discount'; result: ValidateGastroDiscountResponse };
 
 type InputMode = 'camera' | 'manual';
@@ -41,9 +47,7 @@ function gastroStatusClass(status: ValidateGastroDiscountResponse['status']): st
   return 'bg-red-700 text-white';
 }
 
-function formatEventLabel(
-  e: ScannerScanTargetsResponse['events'][number],
-): string {
+function formatEventLabel(e: ScannerScanTargetsResponse['events'][number]): string {
   const date = e.startAt
     ? new Date(e.startAt).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' })
     : 'Sin fecha';
@@ -58,20 +62,40 @@ export function DoorScannerClient() {
   const [selectedDiscountId, setSelectedDiscountId] = useState('');
   const [qrPayload, setQrPayload] = useState('');
   const [inputMode, setInputMode] = useState<InputMode>('camera');
-  const [lastTicket, setLastTicket] = useState<ScanResponse | null>(null);
+  const [lastTicket, setLastTicket] = useState<ScanResponse | OfflineScanResult | null>(null);
   const [lastGastro, setLastGastro] = useState<ValidateGastroDiscountResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [history, setHistory] = useState<ScanHistoryItem[]>([]);
   const [isOnline, setIsOnline] = useState(true);
-  const [queuedCount, setQueuedCount] = useState(0);
-  const [preloadStatus, setPreloadStatus] = useState<string | null>(null);
+  const [snapshotMeta, setSnapshotMeta] = useState<SnapshotMeta | null>(null);
+  const [pendingCount, setPendingCount] = useState(0);
+  const [conflicts, setConflicts] = useState<Awaited<ReturnType<typeof getConflictQueuedScans>>>([]);
+  const [offlineStatus, setOfflineStatus] = useState<string | null>(null);
+  const [pdfStatus, setPdfStatus] = useState<string | null>(null);
   const scanningRef = useRef(false);
+
+  const { sync, syncing, lastSummary } = useOfflineSync();
 
   const payloadFamily = classifyQrScanPayload(qrPayload);
   const isProducer = targets?.parentProfileType === 'PRODUCER';
   const isGastro = targets?.parentProfileType === 'GASTRO';
 
-  useOfflineSync();
+  const refreshOfflineState = useCallback(async (eventId: string) => {
+    if (!eventId) {
+      setSnapshotMeta(null);
+      setPendingCount(0);
+      setConflicts([]);
+      return;
+    }
+    const [meta, pending, conflictItems] = await Promise.all([
+      getSnapshotMeta(eventId),
+      getPendingQueuedScans(),
+      getConflictQueuedScans(),
+    ]);
+    setSnapshotMeta(meta);
+    setPendingCount(pending.filter((p) => p.eventId === eventId).length);
+    setConflicts(conflictItems.filter((c) => c.eventId === eventId));
+  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -82,6 +106,10 @@ export function DoorScannerClient() {
     if (mode === 'manual' || mode === 'camera') setInputMode(mode);
     setIsOnline(navigator.onLine);
   }, []);
+
+  useEffect(() => {
+    if (selectedEventId) void refreshOfflineState(selectedEventId);
+  }, [selectedEventId, refreshOfflineState, lastTicket, lastSummary]);
 
   const handleDevUserIdChange = useCallback((v: string) => {
     setDevUserId(v);
@@ -132,20 +160,6 @@ export function DoorScannerClient() {
     };
   }, []);
 
-  useEffect(() => {
-    let cancelled = false;
-    const refresh = async () => {
-      const count = await getAllQueuedScans().then((q) => q.length);
-      if (!cancelled) setQueuedCount(count);
-    };
-    refresh();
-    const id = setInterval(refresh, 2000);
-    return () => {
-      cancelled = true;
-      clearInterval(id);
-    };
-  }, [lastTicket, lastGastro]);
-
   const setMode = (mode: InputMode) => {
     setInputMode(mode);
     localStorage.setItem(LS_INPUT_MODE, mode);
@@ -187,8 +201,9 @@ export function DoorScannerClient() {
             devUserId: devUserId.trim(),
           });
           setLastGastro(res);
-          const item: ScanHistoryItem = { kind: 'gastro-discount', result: res };
-          setHistory((prev) => [item, ...prev].slice(0, MAX_HISTORY));
+          setHistory((prev) =>
+            [{ kind: 'gastro-discount' as const, result: res }, ...prev].slice(0, MAX_HISTORY),
+          );
         } catch {
           setLastGastro({
             status: 'INVALID',
@@ -214,7 +229,7 @@ export function DoorScannerClient() {
       setLastGastro(null);
       setLastTicket(null);
       try {
-        let res: ScanResponse;
+        let res: ScanResponse | OfflineScanResult;
         if (isOnline) {
           try {
             res = await scanTicket({
@@ -229,38 +244,111 @@ export function DoorScannerClient() {
           res = await scanOffline(eventId, trimmed);
         }
         setLastTicket(res);
-        const item: ScanHistoryItem = { kind: 'ticket', result: res };
-        setHistory((prev) => [item, ...prev].slice(0, MAX_HISTORY));
+        setHistory((prev) =>
+          [{ kind: 'ticket' as const, result: res }, ...prev].slice(0, MAX_HISTORY),
+        );
+        await refreshOfflineState(eventId);
       } catch {
         const invalid: ScanResponse = { result: 'INVALID' };
         setLastTicket(invalid);
-        const invalidItem: ScanHistoryItem = { kind: 'ticket', result: invalid };
-        setHistory((prev) => [invalidItem, ...prev].slice(0, MAX_HISTORY));
+        setHistory((prev) =>
+          [{ kind: 'ticket' as const, result: invalid }, ...prev].slice(0, MAX_HISTORY),
+        );
       } finally {
         setLoading(false);
         scanningRef.current = false;
       }
     },
-    [devUserId, isOnline, isGastro, selectedDiscountId, selectedEventId],
+    [
+      devUserId,
+      isOnline,
+      isGastro,
+      selectedDiscountId,
+      selectedEventId,
+      refreshOfflineState,
+    ],
   );
 
-  async function handlePreload() {
-    if (!selectedEventId.trim() || !devUserId.trim()) {
-      setPreloadStatus('Seleccioná un evento y configurá el usuario scanner');
+  async function handleSaveSnapshot() {
+    const eventId = selectedEventId.trim();
+    if (!eventId || !devUserId.trim()) {
+      setOfflineStatus('Seleccioná un evento y configurá el usuario scanner');
       return;
     }
-    setPreloadStatus('Cargando…');
+    if (!isOnline) {
+      setOfflineStatus('Necesitás conexión para descargar el listado');
+      return;
+    }
+    const existing = await getSnapshotMeta(eventId);
+    if (existing) {
+      const ok = window.confirm(
+        'Ya hay un listado guardado para este evento. ¿Querés reemplazarlo?',
+      );
+      if (!ok) return;
+    }
+    setOfflineStatus('Guardando listado…');
     try {
-      const tickets = await fetchEventTickets(selectedEventId.trim(), devUserId.trim());
-      await clearTicketsForEvent(selectedEventId.trim());
-      await saveTickets(selectedEventId.trim(), tickets);
-      setPreloadStatus(`${tickets.length} entradas listas para modo offline`);
+      const snapshot = await fetchEventSnapshot(eventId, devUserId.trim());
+      await saveSnapshot(snapshot);
+      await refreshOfflineState(eventId);
+      setOfflineStatus(`${snapshot.tickets.length} entradas guardadas para modo offline`);
     } catch {
-      setPreloadStatus('Error al precargar. Verificá permisos y conexión.');
+      setOfflineStatus('Error al guardar. Verificá permisos y conexión.');
+    }
+  }
+
+  async function handleDeleteSnapshot() {
+    const eventId = selectedEventId.trim();
+    if (!eventId) return;
+    const ok = window.confirm('¿Borrar el listado offline de este evento?');
+    if (!ok) return;
+    await clearTicketsForEvent(eventId);
+    await refreshOfflineState(eventId);
+    setOfflineStatus('Listado local borrado');
+  }
+
+  async function handleDownloadPdf() {
+    const eventId = selectedEventId.trim();
+    if (!eventId || !devUserId.trim()) {
+      setPdfStatus('Seleccioná un evento primero');
+      return;
+    }
+    if (!isOnline) {
+      setPdfStatus('Necesitás conexión para descargar el PDF');
+      return;
+    }
+    setPdfStatus('Descargando…');
+    try {
+      const { blob, filename } = await downloadEventTicketsPdf(eventId, devUserId.trim());
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      setPdfStatus('PDF descargado');
+    } catch (e) {
+      setPdfStatus(e instanceof Error ? e.message : 'Error al descargar PDF');
+    }
+  }
+
+  async function handleManualSync() {
+    if (!isOnline) {
+      setOfflineStatus('Sin conexión para sincronizar');
+      return;
+    }
+    const summary = await sync();
+    if (selectedEventId) await refreshOfflineState(selectedEventId);
+    if (summary) {
+      setOfflineStatus(
+        `Sync: ${summary.synced} OK · ${summary.conflicts} conflictos · ${summary.errors} errores`,
+      );
     }
   }
 
   const ticketOk = lastTicket?.result === 'OK';
+  const ticketOffline = (lastTicket as OfflineScanResult | null)?.offline;
+  const ticketPending = (lastTicket as OfflineScanResult | null)?.pendingSync;
 
   return (
     <main className="mx-auto flex min-h-screen max-w-lg flex-col gap-6 p-6">
@@ -273,20 +361,16 @@ export function DoorScannerClient() {
         </p>
       </header>
 
-      <div className="flex flex-wrap items-center gap-2 text-sm">
-        <span
-          className={`rounded-full px-3 py-1 font-medium ${
-            isOnline ? 'bg-emerald-600/80 text-white' : 'bg-amber-600/80 text-white'
-          }`}
-        >
-          {isOnline ? 'Online' : 'Offline'}
-        </span>
-        {queuedCount > 0 && (
-          <span className="rounded-full bg-slate-600 px-3 py-1 text-slate-200">
-            {queuedCount} pendiente{queuedCount === 1 ? '' : 's'} sync
-          </span>
-        )}
-      </div>
+      <ScannerConnectionStatus
+        isOnline={isOnline}
+        snapshotMeta={snapshotMeta}
+        pendingCount={pendingCount}
+        conflictCount={conflicts.length}
+        syncing={syncing}
+        lastSummary={lastSummary}
+      />
+
+      <OfflineConflictPanel conflicts={conflicts} />
 
       <div className="flex flex-col gap-4 rounded-xl border border-slate-700 bg-slate-800/50 p-4">
         <label className="text-sm text-slate-400">
@@ -352,21 +436,48 @@ export function DoorScannerClient() {
         )}
 
         {isProducer && selectedEventId && (
-          <>
-            <button
-              type="button"
-              onClick={() => void handlePreload()}
-              className="rounded-lg border border-slate-500 px-4 py-2 text-sm text-white hover:bg-slate-700"
-            >
-              Precargar entradas (offline)
-            </button>
-            {preloadStatus && <p className="text-xs text-slate-400">{preloadStatus}</p>}
-            {!isOnline && (
-              <p className="text-xs text-amber-300">
-                Modo offline: sincronizá validaciones al recuperar internet.
-              </p>
-            )}
-          </>
+          <div className="flex flex-col gap-2">
+            <p className="text-xs text-slate-400">
+              Descargá un listado de control para puerta. La validación oficial sigue siendo con QR.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => void handleSaveSnapshot()}
+                className="rounded-lg border border-emerald-600 px-3 py-2 text-sm text-emerald-300 hover:bg-emerald-900/30"
+              >
+                Guardar listado offline
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleDownloadPdf()}
+                className="rounded-lg border border-slate-500 px-3 py-2 text-sm text-white hover:bg-slate-700"
+              >
+                Descargar listado PDF
+              </button>
+              {snapshotMeta && (
+                <button
+                  type="button"
+                  onClick={() => void handleDeleteSnapshot()}
+                  className="rounded-lg border border-red-800 px-3 py-2 text-sm text-red-300 hover:bg-red-900/20"
+                >
+                  Borrar listado local
+                </button>
+              )}
+              {pendingCount > 0 && (
+                <button
+                  type="button"
+                  onClick={() => void handleManualSync()}
+                  disabled={syncing || !isOnline}
+                  className="rounded-lg bg-amber-700 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+                >
+                  {syncing ? 'Sincronizando…' : 'Sincronizar pendientes'}
+                </button>
+              )}
+            </div>
+            {offlineStatus && <p className="text-xs text-slate-400">{offlineStatus}</p>}
+            {pdfStatus && <p className="text-xs text-slate-400">{pdfStatus}</p>}
+          </div>
         )}
       </div>
 
@@ -440,6 +551,11 @@ export function DoorScannerClient() {
           {ticketOk
             ? `OK — ${lastTicket.ticketTypeName ?? 'Válida'}`
             : lastTicket.result}
+          {ticketOffline && (
+            <p className="mt-2 text-sm font-normal opacity-90">
+              Validación offline{ticketPending ? ' — pendiente de sincronizar' : ''}
+            </p>
+          )}
         </div>
       )}
 
@@ -468,6 +584,7 @@ export function DoorScannerClient() {
                   }`}
                 >
                   Entrada · {h.result.result}
+                  {(h.result as OfflineScanResult).offline ? ' (offline)' : ''}
                 </li>
               ) : (
                 <li
