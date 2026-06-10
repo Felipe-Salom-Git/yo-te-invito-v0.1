@@ -10,6 +10,7 @@ import {
 } from '@/lib/upload/gcs-image-upload-config';
 import { useGcsImageUpload } from '@/lib/upload/use-gcs-image-upload';
 import { ImageUploadHint } from '@/components/upload/ImageUploadHint';
+import { SortableImageList } from '@/components/upload/SortableImageList';
 import { isDataImageUrl } from '@/lib/upload/validate-public-image-file';
 
 export type { GcsImageUploadConfig } from '@/lib/upload/gcs-image-upload-config';
@@ -57,19 +58,8 @@ export function RentalProductImagesForm({
 
   const setHeader = (headerImageUrl: string) => onChange({ ...value, headerImageUrl });
 
-  const removeGalleryAt = (index: number) =>
-    onChange({
-      ...value,
-      galleryImageUrls: value.galleryImageUrls.filter((_, i) => i !== index),
-    });
-
-  const moveGalleryItem = (index: number, direction: -1 | 1) => {
-    const urls = [...value.galleryImageUrls];
-    const target = index + direction;
-    if (target < 0 || target >= urls.length) return;
-    [urls[index], urls[target]] = [urls[target], urls[index]];
-    onChange({ ...value, galleryImageUrls: urls });
-  };
+  const setGalleryOrder = (galleryImageUrls: string[]) =>
+    onChange({ ...value, galleryImageUrls });
 
   const appendGalleryUrls = (urls: string[]) => {
     if (urls.length === 0) return;
@@ -202,50 +192,11 @@ export function RentalProductImagesForm({
         />
 
         {value.galleryImageUrls.length > 0 ? (
-          <ul className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5">
-            {value.galleryImageUrls.map((url, index) => (
-              <li key={`${index}-${url.slice(0, 32)}`} className="group relative">
-                <div className="aspect-square overflow-hidden rounded-lg border border-border bg-bg-muted">
-                  {url.trim() && (url.startsWith('data:image') || /^https?:\/\//i.test(url.trim())) ? (
-                    <img src={url.trim()} alt="" className="h-full w-full object-cover" />
-                  ) : (
-                    <div className="flex h-full items-center justify-center p-2 text-center text-[10px] text-text-muted">
-                      Sin vista previa
-                    </div>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => removeGalleryAt(index)}
-                  disabled={isUploading}
-                  className="absolute -right-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full border border-border bg-bg text-xs text-red-400 shadow hover:bg-bg-muted disabled:opacity-50"
-                  aria-label={`Quitar imagen ${index + 1}`}
-                >
-                  ×
-                </button>
-                <div className="absolute bottom-0 left-0 right-0 flex justify-center gap-0.5 bg-black/70 p-1">
-                  <button
-                    type="button"
-                    onClick={() => moveGalleryItem(index, -1)}
-                    disabled={isUploading || index === 0}
-                    className="rounded px-2 py-0.5 text-[10px] font-medium text-white hover:bg-white/15 disabled:opacity-30"
-                    aria-label={`Subir imagen ${index + 1}`}
-                  >
-                    Subir
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => moveGalleryItem(index, 1)}
-                    disabled={isUploading || index === value.galleryImageUrls.length - 1}
-                    className="rounded px-2 py-0.5 text-[10px] font-medium text-white hover:bg-white/15 disabled:opacity-30"
-                    aria-label={`Bajar imagen ${index + 1}`}
-                  >
-                    Bajar
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
+          <SortableImageList
+            urls={value.galleryImageUrls}
+            onChange={setGalleryOrder}
+            disabled={isUploading}
+          />
         ) : (
           <p className="text-sm text-text-muted">Sin imágenes en galería.</p>
         )}
