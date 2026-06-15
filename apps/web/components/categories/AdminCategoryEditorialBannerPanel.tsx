@@ -85,7 +85,8 @@ export function AdminCategoryEditorialBannerPanel({
         ctaHref: form.ctaHref.trim() || null,
         isActive: true,
       }),
-    onSuccess: () => {
+    onSuccess: (data) => {
+      qc.setQueryData(categoryEditorialBannersKeys.admin(category), data);
       addToast('Banner editorial creado', 'success');
       setMode('list');
       setForm(emptyForm());
