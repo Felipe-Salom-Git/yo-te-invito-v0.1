@@ -11,6 +11,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
+import { normalizeCityKey, resolveCanonicalCityValue } from '@yo-te-invito/shared';
 import { PROVINCE_CITY_CATALOG } from '@/lib/me/preferred-cities';
 import { useRepositories } from '@/repositories/context';
 import type { Repositories } from '@/repositories/interfaces';
@@ -67,10 +68,18 @@ export function useNavbarDiscoveryCities(category?: string | null) {
       const fromSample = new Set<string>(fromCatalog);
       for (const event of broad.data) {
         const c = event.city?.trim();
-        if (c) fromSample.add(c);
+        if (c) fromSample.add(resolveCanonicalCityValue(c));
       }
 
-      return [...fromSample].sort((a, b) => a.localeCompare(b, 'es'));
+      const deduped = new Map<string, string>();
+      for (const raw of fromSample) {
+        const canonical = resolveCanonicalCityValue(raw);
+        const key = normalizeCityKey(canonical);
+        if (!canonical || deduped.has(key)) continue;
+        deduped.set(key, canonical);
+      }
+
+      return [...deduped.values()].sort((a, b) => a.localeCompare(b, 'es'));
     },
     enabled: !!t,
     staleTime: 5 * 60_000,

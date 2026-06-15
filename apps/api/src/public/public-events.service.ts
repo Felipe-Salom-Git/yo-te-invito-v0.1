@@ -15,6 +15,7 @@ import {
   ErrorCode,
   RECOMMENDED_LIST_MIN_VALID_REVIEWS,
   parseRentalOpeningHours,
+  cityDisplayLabel,
   type EventsRecommendedQuery,
 } from '@yo-te-invito/shared';
 import { readEntitySocialLinks } from '../common/entity-social-links.util';
@@ -28,6 +29,7 @@ import { mapEventTagsPublic, tagSlugFilterWhere } from '../common/event-tags.uti
 import { mergePublicEventVisibility } from '../common/utils/event-public-visibility.util';
 import { mergePublicParentEntitiesActive } from '../common/utils/public-content-availability.util';
 import { TRENDING_PRISMA_ORDER_BY } from '../common/utils/event-trending.util';
+import { cityWhereInput } from '../common/utils/city-filter.util';
 import {
   loadPublicFromPriceByEventId,
   resolvePublicProducerName,
@@ -185,7 +187,7 @@ export class PublicEventsService {
       id: e.id,
       title: e.title,
       startAt: e.startAt.toISOString(),
-      city: e.city,
+      city: e.city ? cityDisplayLabel(e.city) : e.city,
       venueName: e.venueName,
       coverImageUrl: e.coverImageUrl,
       category: e.category ?? undefined,
@@ -285,7 +287,7 @@ export class PublicEventsService {
     };
 
     if (query.city) {
-      base.city = query.city;
+      Object.assign(base, cityWhereInput(query.city));
     }
 
     this.applyCategoryFilter(base, query.category);
@@ -404,7 +406,7 @@ export class PublicEventsService {
             id: e.id,
             title: e.title,
             startAt: e.startAt.toISOString(),
-            city: e.city,
+            city: e.city ? cityDisplayLabel(e.city) : e.city,
             venueName: e.venueName,
             coverImageUrl: e.coverImageUrl,
             category: e.category ?? undefined,
@@ -472,7 +474,7 @@ export class PublicEventsService {
     }
 
     if (query.city?.trim()) {
-      base.city = query.city.trim();
+      Object.assign(base, cityWhereInput(query.city.trim()));
     }
 
     this.applyCategoryFilter(base, query.category);

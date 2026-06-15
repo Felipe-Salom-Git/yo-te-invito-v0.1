@@ -44,6 +44,27 @@ export function cityDisplayLabel(value: string): string {
     .join(' ');
 }
 
+/** Alias — human-readable label (never show raw slugs in UI). */
+export const formatCityLabel = cityDisplayLabel;
+
+/** Alias — normalized slug key for compare/filter. */
+export const cityToSlug = normalizeCityKey;
+
+/** Build display label from slug key. */
+export function slugToCityLabel(slug: string): string {
+  return cityDisplayLabel(slug);
+}
+
+/** Short label for compact UI (navbar). */
+export function cityNavbarLabel(value: string): string {
+  const full = cityDisplayLabel(value);
+  if (full.length <= 14) return full;
+  const parts = full.split(/\s+/).filter(Boolean);
+  const last = parts[parts.length - 1];
+  if (last && last.length <= 14) return last;
+  return `${full.slice(0, 12)}…`;
+}
+
 /** Query-safe city value (catalog slug when known). */
 export function cityQueryValue(value: string): string {
   return resolveCanonicalCityValue(value);
