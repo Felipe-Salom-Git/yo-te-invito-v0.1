@@ -30,6 +30,14 @@ async function fetchCrossCategoryItems(
       mode: 'recommended',
     });
     if (recommended.length >= 3) return recommended.slice(0, CROSS_CATEGORY_LIMIT);
+  } else {
+    const recommended = await repos.events.recommended({
+      tenantId,
+      category: 'event',
+      limit: CROSS_CATEGORY_LIMIT,
+      mode: 'recommended',
+    });
+    if (recommended.length > 0) return recommended.slice(0, CROSS_CATEGORY_LIMIT);
   }
 
   const res = await repos.events.list({
