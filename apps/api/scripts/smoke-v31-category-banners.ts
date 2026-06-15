@@ -122,14 +122,19 @@ async function main() {
       where: { id: b2.id },
       data: { isActive: false },
     });
-    const afterDeactivate = await prisma.categoryEditorialBanner.count({
-      where: { tenantId: TENANT, category: 'event', isActive: true },
+    const afterDeactivate = await prisma.categoryEditorialBanner.findMany({
+      where: {
+        tenantId: TENANT,
+        category: 'event',
+        isActive: true,
+        id: { in: cleanup.bannerIds },
+      },
     });
-    if (afterDeactivate !== 1) {
-      fail('deactivate', `active count ${afterDeactivate}`);
+    if (afterDeactivate.length !== 1 || afterDeactivate[0]?.id !== b1.id) {
+      fail('deactivate', `smoke active ids ${afterDeactivate.map((r) => r.id).join(',')}`);
       exitCode = 1;
     } else {
-      pass('deactivate hides from active set');
+      pass('deactivate hides smoke banner from active set');
     }
 
     await prisma.categoryEditorialBanner.update({

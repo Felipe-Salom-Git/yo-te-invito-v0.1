@@ -9,6 +9,7 @@ import type { ContentMainCategory, CategoryEditorialBannerItem } from '@/reposit
 import { useRepositories } from '@/repositories/context';
 import { useAdminCategoryEditorialBanners } from '@/lib/query/useCategoryEditorialBanner';
 import { categoryEditorialBannersKeys } from '@/lib/query/keys';
+import { syncAdminEditorialBannerList } from '@/lib/navigation/editorialBannerCache';
 import { useTenant } from '@/hooks/useTenant';
 import { getErrorMessage } from '@/lib/errors';
 import { useGcsImageUpload } from '@/lib/upload/use-gcs-image-upload';
@@ -69,9 +70,13 @@ export function AdminCategoryEditorialBannerPanel({
     scope: 'platform',
   });
 
-  const invalidate = () => {
-    qc.invalidateQueries({ queryKey: categoryEditorialBannersKeys.admin(category) });
+  const invalidatePublic = () => {
     qc.invalidateQueries({ queryKey: categoryEditorialBannersKeys.public(t, category) });
+  };
+
+  const syncList = (response: unknown) => {
+    syncAdminEditorialBannerList(qc, category, response);
+    invalidatePublic();
   };
 
   const createMutation = useMutation({
@@ -86,11 +91,10 @@ export function AdminCategoryEditorialBannerPanel({
         isActive: true,
       }),
     onSuccess: (data) => {
-      qc.setQueryData(categoryEditorialBannersKeys.admin(category), data);
+      syncList(data);
       addToast('Banner editorial creado', 'success');
       setMode('list');
       setForm(emptyForm());
-      invalidate();
     },
     onError: (err) => addToast(getErrorMessage(err), 'error'),
   });
@@ -104,31 +108,31 @@ export function AdminCategoryEditorialBannerPanel({
         ctaLabel: form.ctaLabel.trim() || null,
         ctaHref: form.ctaHref.trim() || null,
       }),
-    onSuccess: () => {
+    onSuccess: (data) => {
+      syncList(data);
       addToast('Banner editorial actualizado', 'success');
       setMode('list');
       setEditingId(null);
       setForm(emptyForm());
-      invalidate();
     },
     onError: (err) => addToast(getErrorMessage(err), 'error'),
   });
 
   const activateMutation = useMutation({
     mutationFn: (id: string) => repos.categoryEditorialBanners.update(id, { isActive: true }),
-    onSuccess: () => {
+    onSuccess: (data) => {
+      syncList(data);
       addToast('Banner activado', 'success');
-      invalidate();
     },
     onError: (err) => addToast(getErrorMessage(err), 'error'),
   });
 
   const deactivateMutation = useMutation({
     mutationFn: (id: string) => repos.categoryEditorialBanners.update(id, { isActive: false }),
-    onSuccess: () => {
+    onSuccess: (data) => {
+      syncList(data);
       addToast('Banner desactivado', 'success');
       setDeactivateTarget(null);
-      invalidate();
     },
     onError: (err) => addToast(getErrorMessage(err), 'error'),
   });
@@ -136,7 +140,7 @@ export function AdminCategoryEditorialBannerPanel({
   const reorderMutation = useMutation({
     mutationFn: ({ id, direction }: { id: string; direction: 'up' | 'down' }) =>
       repos.categoryEditorialBanners.reorder(id, direction),
-    onSuccess: invalidate,
+    onSuccess: (data) => syncList(data),
     onError: (err) => addToast(getErrorMessage(err), 'error'),
   });
 
