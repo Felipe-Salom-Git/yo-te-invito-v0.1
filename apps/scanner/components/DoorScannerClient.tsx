@@ -39,6 +39,9 @@ const LS_LAST_EVENT = 'scanner:lastEventId';
 const LS_LAST_DISCOUNT = 'scanner:lastDiscountId';
 const LS_LAST_OCCURRENCE = 'scanner:lastOccurrenceId';
 const LS_INPUT_MODE = 'scanner:inputMode';
+const LS_SCREEN = 'scanner:screen';
+
+type ScannerScreen = 'setup' | 'scan';
 
 type DoorScannerClientProps = {
   userLabel: string;
@@ -112,6 +115,7 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
   const scanModeRef = useRef<ScanMode>('idle');
   const lastScannedCodeRef = useRef<{ code: string; at: number } | null>(null);
   const [hasScannedOnce, setHasScannedOnce] = useState(false);
+  const [screen, setScreen] = useState<ScannerScreen>('setup');
   const targetSectionRef = useRef<HTMLDivElement>(null);
   const scanSectionRef = useRef<HTMLDivElement>(null);
 
@@ -147,6 +151,8 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
     setSelectedDiscountId(localStorage.getItem(LS_LAST_DISCOUNT) ?? '');
     const mode = localStorage.getItem(LS_INPUT_MODE);
     if (mode === 'manual' || mode === 'camera') setInputMode(mode);
+    const storedScreen = localStorage.getItem(LS_SCREEN);
+    if (storedScreen === 'setup' || storedScreen === 'scan') setScreen(storedScreen);
     setIsOnline(navigator.onLine);
   }, []);
 
@@ -278,6 +284,38 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
     setScanMode('idle');
     setScanError(null);
   }, []);
+
+  const goToSetup = useCallback(() => {
+    setScanMode('idle');
+    setScanError(null);
+    setScreen('setup');
+    localStorage.setItem(LS_SCREEN, 'setup');
+  }, []);
+
+  const goToScan = useCallback(() => {
+    setScanMode('idle');
+    setScanError(null);
+    setScreen('scan');
+    localStorage.setItem(LS_SCREEN, 'scan');
+  }, []);
+
+  const selectedEvent = targets?.events.find((e) => e.id === selectedEventId);
+  const selectedDiscount = targets?.discounts.find((d) => d.id === selectedDiscountId);
+  const selectedOccurrence = eventOccurrences.find((o) => o.id === selectedOccurrenceId);
+
+  const canGoToScan =
+    isProducer
+      ? !!selectedEventId &&
+        (!eventOccurrences.length || !!selectedOccurrenceId)
+      : isGastro
+        ? !!selectedDiscountId
+        : false;
+
+  const targetLabel = isProducer
+    ? selectedEvent?.title ?? null
+    : isGastro
+      ? selectedDiscount?.title ?? null
+      : null;
 
   const enrichTicketResult = useCallback(
     (res: ScanResponse | OfflineScanResult, connectionError?: boolean): ScanResultModalData => {
@@ -517,216 +555,104 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
     }
   }
 
-  const selectedEvent = targets?.events.find((e) => e.id === selectedEventId);
-  const selectedDiscount = targets?.discounts.find((d) => d.id === selectedDiscountId);
-  const targetLabel = isProducer
-    ? selectedEvent?.title ?? null
-    : isGastro
-      ? selectedDiscount?.title ?? null
-      : null;
-
-  return (
-    <main className="mx-auto flex min-h-screen max-w-lg flex-col gap-6 p-4 pb-8 sm:p-6">
-      <header className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-bold text-white sm:text-2xl">Scanner — Puerta</h1>
-          <p className="mt-1 text-xs text-slate-400 sm:text-sm">
-            {userLabel} · {userEmail}
-          </p>
-          {targets?.parentDisplayName && (
-            <p className="mt-0.5 text-xs text-slate-500">
-              Cuenta: {targets.parentDisplayName}
-            </p>
-          )}
-        </div>
-        <button
-          type="button"
-          onClick={() => setMenuOpen(true)}
-          className="shrink-0 rounded-lg border border-slate-600 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800"
-          aria-label="Abrir menú"
-        >
-          Menú
-        </button>
-      </header>
-
-      <ScannerOperationalMenu
-        open={menuOpen}
-        onClose={() => setMenuOpen(false)}
-        isOnline={isOnline}
-        userLabel={userLabel}
-        parentLabel={targets?.parentDisplayName ?? null}
-        targetLabel={targetLabel}
-        canDownloadPdf={isProducer && !!selectedEventId}
-        canSaveOffline={isProducer && !!selectedEventId}
-        canTicketList={isProducer && !!selectedEventId}
-        canSync={isProducer && pendingCount > 0}
-        syncing={syncing}
-        actions={{
-          onScanFocus: () => scanSectionRef.current?.scrollIntoView({ behavior: 'smooth' }),
-          onSelectTarget: () => targetSectionRef.current?.scrollIntoView({ behavior: 'smooth' }),
-          onTicketList: () => setTicketListOpen(true),
-          onDownloadPdf: () => void handleDownloadPdf(),
-          onSaveOffline: () => void handleSaveSnapshot(),
-          onSync: () => void handleManualSync(),
-          onLogout,
-        }}
-      />
-
-      <ScannerTicketListPanel
-        open={ticketListOpen}
-        onClose={() => setTicketListOpen(false)}
-        eventId={selectedEventId}
-        eventTitle={selectedEvent?.title ?? null}
-        isOnline={isOnline}
-        selectedOccurrenceId={selectedOccurrenceId}
-      />
-
-      <ScannerConnectionStatus
-        isOnline={isOnline}
-        snapshotMeta={snapshotMeta}
-        pendingCount={pendingCount}
-        conflictCount={conflicts.length}
-        syncing={syncing}
-        lastSummary={lastSummary}
-      />
-
-      <OfflineConflictPanel conflicts={conflicts} />
-
-      <div
-        ref={targetSectionRef}
-        className="flex flex-col gap-4 rounded-xl border border-slate-700 bg-slate-800/50 p-4"
-      >
-        {targetsError && <p className="text-sm text-red-300">{targetsError}</p>}
-
-        {isProducer && targets && targets.events.length > 0 && (
-          <label className="text-sm text-slate-400">
-            Evento
-            <select
-              value={selectedEventId}
-              onChange={(e) => {
-                setSelectedEventId(e.target.value);
-                localStorage.setItem(LS_LAST_EVENT, e.target.value);
-              }}
-              className="mt-1 block w-full rounded-lg border border-slate-600 bg-slate-900 px-4 py-2 text-white"
-            >
-              {targets.events.map((e) => (
-                <option key={e.id} value={e.id}>
-                  {formatEventLabel(e)}
-                  {e.ticketsValid != null ? ` · ${e.ticketsValid} válidas` : ''}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
-
-        {isProducer && occurrencesError && (
-          <p className="text-sm text-amber-300" role="alert">
-            {occurrencesError}
-          </p>
-        )}
-
-        {isProducer && eventOccurrences.length > 0 && (
-          <label className="text-sm text-slate-400">
-            Función / fecha
-            <select
-              value={selectedOccurrenceId}
-              onChange={(e) => {
-                setSelectedOccurrenceId(e.target.value);
-                localStorage.setItem(LS_LAST_OCCURRENCE, e.target.value);
-              }}
-              className="mt-1 block w-full rounded-lg border border-slate-600 bg-slate-900 px-4 py-2 text-white"
-            >
-              {eventOccurrences.map((occ) => (
-                <option key={occ.id} value={occ.id}>
-                  {formatOccurrenceLabel(occ)}
-                  {occ.venueName ? ` · ${occ.venueName}` : ''}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
-
-        {isProducer && targets && targets.events.length === 0 && (
-          <p className="text-sm text-amber-300">No hay eventos con entradas para escanear.</p>
-        )}
-
-        {isGastro && targets && targets.discounts.length > 0 && (
-          <label className="text-sm text-slate-400">
-            Descuento activo
-            <select
-              value={selectedDiscountId}
-              onChange={(e) => {
-                setSelectedDiscountId(e.target.value);
-                localStorage.setItem(LS_LAST_DISCOUNT, e.target.value);
-              }}
-              className="mt-1 block w-full rounded-lg border border-slate-600 bg-slate-900 px-4 py-2 text-white"
-            >
-              {targets.discounts.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.title} · {d.status}
-                  {d.validationCount != null ? ` · ${d.validationCount} validaciones` : ''}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
-
-        {isGastro && targets && targets.discounts.length === 0 && (
-          <p className="text-sm text-amber-300">No hay descuentos activos para validar.</p>
-        )}
-
-        {isProducer && selectedEventId && (
-          <div className="flex flex-col gap-2">
-            <p className="text-xs text-slate-400">
-              Descargá un listado de control para puerta. La validación oficial sigue siendo con QR.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => void handleSaveSnapshot()}
-                className="rounded-lg border border-emerald-600 px-3 py-2 text-sm text-emerald-300 hover:bg-emerald-900/30"
-              >
-                Guardar listado offline
-              </button>
-              <button
-                type="button"
-                onClick={() => void handleDownloadPdf()}
-                className="rounded-lg border border-slate-500 px-3 py-2 text-sm text-white hover:bg-slate-700"
-              >
-                Descargar listado PDF
-              </button>
-              {snapshotMeta && (
-                <button
-                  type="button"
-                  onClick={() => void handleDeleteSnapshot()}
-                  className="rounded-lg border border-red-800 px-3 py-2 text-sm text-red-300 hover:bg-red-900/20"
-                >
-                  Borrar listado local
-                </button>
-              )}
-              {pendingCount > 0 && (
-                <button
-                  type="button"
-                  onClick={() => void handleManualSync()}
-                  disabled={syncing || !isOnline}
-                  className="rounded-lg bg-amber-700 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
-                >
-                  {syncing ? 'Sincronizando…' : 'Sincronizar pendientes'}
-                </button>
-              )}
-            </div>
-            {offlineStatus && <p className="text-xs text-slate-400">{offlineStatus}</p>}
-            {pdfStatus && <p className="text-xs text-slate-400">{pdfStatus}</p>}
-          </div>
+  const headerBlock = (
+    <header className="flex items-start justify-between gap-3">
+      <div>
+        <h1 className="text-xl font-bold text-white sm:text-2xl">
+          {screen === 'setup' ? 'Scanner — Configuración' : 'Scanner — Puerta'}
+        </h1>
+        <p className="mt-1 text-xs text-slate-400 sm:text-sm">
+          {userLabel} · {userEmail}
+        </p>
+        {targets?.parentDisplayName && (
+          <p className="mt-0.5 text-xs text-slate-500">Cuenta: {targets.parentDisplayName}</p>
         )}
       </div>
+      <button
+        type="button"
+        onClick={() => setMenuOpen(true)}
+        className="shrink-0 rounded-lg border border-slate-600 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800"
+        aria-label="Abrir menú"
+      >
+        Menú
+      </button>
+    </header>
+  );
 
-      <div ref={scanSectionRef} className="flex flex-col gap-3">
+  const menuBlock = (
+    <ScannerOperationalMenu
+      open={menuOpen}
+      onClose={() => setMenuOpen(false)}
+      isOnline={isOnline}
+      userLabel={userLabel}
+      parentLabel={targets?.parentDisplayName ?? null}
+      targetLabel={targetLabel}
+      canDownloadPdf={isProducer && !!selectedEventId}
+      canSaveOffline={isProducer && !!selectedEventId}
+      canTicketList={isProducer && !!selectedEventId}
+      canSync={isProducer && pendingCount > 0}
+      syncing={syncing}
+      actions={{
+        onScanFocus: () => {
+          if (screen === 'setup' && canGoToScan) goToScan();
+        },
+        onSelectTarget: goToSetup,
+        onTicketList: () => setTicketListOpen(true),
+        onDownloadPdf: () => void handleDownloadPdf(),
+        onSaveOffline: () => void handleSaveSnapshot(),
+        onSync: () => void handleManualSync(),
+        onLogout,
+      }}
+    />
+  );
+
+  const ticketListBlock = (
+    <ScannerTicketListPanel
+      open={ticketListOpen}
+      onClose={() => setTicketListOpen(false)}
+      eventId={selectedEventId}
+      eventTitle={selectedEvent?.title ?? null}
+      isOnline={isOnline}
+      selectedOccurrenceId={selectedOccurrenceId}
+    />
+  );
+
+  const scanSummaryBlock = (
+    <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-700 bg-slate-800/80 px-3 py-2 text-sm">
+      <div className="min-w-0 flex-1">
+        <p className="truncate font-medium text-white">
+          {isProducer ? selectedEvent?.title : selectedDiscount?.title}
+        </p>
+        {isProducer && selectedOccurrence && (
+          <p className="truncate text-xs text-slate-400">{formatOccurrenceLabel(selectedOccurrence)}</p>
+        )}
+      </div>
+      <div className="flex shrink-0 items-center gap-2">
+        <span
+          className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+            isOnline ? 'bg-emerald-900 text-emerald-300' : 'bg-amber-900 text-amber-300'
+          }`}
+        >
+          {isOnline ? 'Online' : 'Offline'}
+        </span>
+        <button
+          type="button"
+          onClick={goToSetup}
+          className="text-xs text-slate-400 underline hover:text-white"
+        >
+          Cambiar evento
+        </button>
+      </div>
+    </div>
+  );
+
+  const scanControlsBlock = (
+    <div className="flex flex-col gap-2">
       <div className="flex gap-2">
         <button
           type="button"
           onClick={() => setMode('camera')}
-          className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium ${
+          className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium ${
             inputMode === 'camera'
               ? 'bg-emerald-600 text-white'
               : 'border border-slate-600 text-slate-300'
@@ -737,7 +663,7 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
         <button
           type="button"
           onClick={() => setMode('manual')}
-          className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium ${
+          className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium ${
             inputMode === 'manual'
               ? 'bg-emerald-600 text-white'
               : 'border border-slate-600 text-slate-300'
@@ -748,8 +674,9 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
       </div>
 
       {inputMode === 'camera' ? (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-2">
           <QrCameraScanner
+            compact
             scanning={scanMode === 'scanning'}
             onScan={handleCameraScan}
             onScanTimeout={handleCameraScanTimeout}
@@ -763,7 +690,7 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
             <button
               type="button"
               onClick={handleCancelCameraScan}
-              className="h-12 rounded-xl border border-slate-500 text-base font-medium text-slate-200 hover:bg-slate-800"
+              className="h-11 rounded-xl border border-slate-500 text-sm font-medium text-slate-200 hover:bg-slate-800"
             >
               Cancelar
             </button>
@@ -772,7 +699,7 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
           {scanMode === 'idle' && (
             <>
               {scanError && (
-                <div className="rounded-lg border border-amber-700/50 bg-amber-950/40 px-4 py-3 text-sm text-amber-200">
+                <div className="rounded-lg border border-amber-700/50 bg-amber-950/40 px-3 py-2 text-sm text-amber-200">
                   {scanError}
                 </div>
               )}
@@ -795,15 +722,15 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
           )}
         </div>
       ) : (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-2">
           <label className="text-sm text-slate-400">
             Código QR (texto)
             <textarea
               value={qrPayload}
               onChange={(e) => setQrPayload(e.target.value)}
               placeholder="yti:v1:… o yti:gastro-discount:v1:…"
-              rows={3}
-              className="mt-1 block w-full rounded-lg border border-slate-600 bg-slate-900 px-4 py-2 font-mono text-sm text-white"
+              rows={2}
+              className="mt-1 block w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 font-mono text-sm text-white"
             />
           </label>
           <button
@@ -819,63 +746,231 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
 
       {payloadFamily !== 'unknown' && qrPayload.trim() && (
         <span
-          className={`inline-block w-fit rounded-full px-3 py-1 text-xs font-medium ${
+          className={`inline-block w-fit rounded-full px-2 py-0.5 text-xs font-medium ${
             payloadFamily === 'gastro-discount' ? 'bg-violet-600/80' : 'bg-sky-600/80'
           }`}
         >
           {payloadFamily === 'gastro-discount' ? 'Descuento gastro' : 'Entrada'}
         </span>
       )}
+    </div>
+  );
 
-      <ScanResultModal
-        open={scanModalOpen}
-        result={lastTicket}
-        onClose={handleCloseScanModal}
-      />
+  const historyBlock =
+    history.length > 0 ? (
+      <section>
+        <h2 className="mb-1 text-xs font-medium text-slate-400">Últimos escaneos</h2>
+        <ul className="flex max-h-32 flex-col gap-1 overflow-y-auto">
+          {history.map((h, i) =>
+            h.kind === 'ticket' ? (
+              <li
+                key={i}
+                className={`rounded px-2 py-1.5 text-xs ${
+                  h.result.result === 'OK'
+                    ? 'bg-emerald-800/50 text-emerald-300'
+                    : 'bg-red-900/50 text-red-300'
+                }`}
+              >
+                Entrada · {scanResultLabel(h.result.result)}
+                {(h.result as OfflineScanResult).offline ? ' (offline)' : ''}
+              </li>
+            ) : (
+              <li
+                key={i}
+                className={`rounded px-2 py-1.5 text-xs ${
+                  h.result.status === 'VALID'
+                    ? 'bg-violet-800/50 text-violet-200'
+                    : 'bg-red-900/50 text-red-300'
+                }`}
+              >
+                Gastro · {h.result.status} — {h.result.title}
+              </li>
+            ),
+          )}
+        </ul>
+      </section>
+    ) : null;
 
-      {lastGastro && (
-        <div className={`rounded-xl px-6 py-4 ${gastroStatusClass(lastGastro.status)}`}>
-          <p className="text-xs font-normal uppercase opacity-80">
-            Descuento · {lastGastro.status}
-          </p>
-          <p className="mt-1 text-lg font-semibold">{lastGastro.title}</p>
-          <p className="mt-2 text-sm opacity-90">{lastGastro.message}</p>
-        </div>
-      )}
-      </div>
+  return (
+    <main className="mx-auto flex min-h-screen max-w-lg flex-col gap-4 p-3 pb-6 sm:p-4">
+      {headerBlock}
+      {menuBlock}
+      {ticketListBlock}
 
-      {history.length > 0 && (
-        <section>
-          <h2 className="mb-2 text-sm font-medium text-slate-400">Últimos escaneos</h2>
-          <ul className="flex flex-col gap-1">
-            {history.map((h, i) =>
-              h.kind === 'ticket' ? (
-                <li
-                  key={i}
-                  className={`rounded px-3 py-2 text-sm ${
-                    h.result.result === 'OK'
-                      ? 'bg-emerald-800/50 text-emerald-300'
-                      : 'bg-red-900/50 text-red-300'
-                  }`}
+      <ScanResultModal open={scanModalOpen} result={lastTicket} onClose={handleCloseScanModal} />
+
+      {screen === 'setup' ? (
+        <>
+          <ScannerConnectionStatus
+            isOnline={isOnline}
+            snapshotMeta={snapshotMeta}
+            pendingCount={pendingCount}
+            conflictCount={conflicts.length}
+            syncing={syncing}
+            lastSummary={lastSummary}
+          />
+          <OfflineConflictPanel conflicts={conflicts} />
+
+          <div
+            ref={targetSectionRef}
+            className="flex flex-col gap-4 rounded-xl border border-slate-700 bg-slate-800/50 p-4"
+          >
+            {targetsError && <p className="text-sm text-red-300">{targetsError}</p>}
+
+            {isProducer && targets && targets.events.length > 0 && (
+              <label className="text-sm text-slate-400">
+                Evento
+                <select
+                  value={selectedEventId}
+                  onChange={(e) => {
+                    setSelectedEventId(e.target.value);
+                    localStorage.setItem(LS_LAST_EVENT, e.target.value);
+                  }}
+                  className="mt-1 block w-full rounded-lg border border-slate-600 bg-slate-900 px-4 py-2 text-white"
                 >
-                  Entrada · {scanResultLabel(h.result.result)}
-                  {(h.result as OfflineScanResult).offline ? ' (offline)' : ''}
-                </li>
-              ) : (
-                <li
-                  key={i}
-                  className={`rounded px-3 py-2 text-sm ${
-                    h.result.status === 'VALID'
-                      ? 'bg-violet-800/50 text-violet-200'
-                      : 'bg-red-900/50 text-red-300'
-                  }`}
-                >
-                  Gastro · {h.result.status} — {h.result.title}
-                </li>
-              ),
+                  {targets.events.map((e) => (
+                    <option key={e.id} value={e.id}>
+                      {formatEventLabel(e)}
+                      {e.ticketsValid != null ? ` · ${e.ticketsValid} válidas` : ''}
+                    </option>
+                  ))}
+                </select>
+              </label>
             )}
-          </ul>
-        </section>
+
+            {isProducer && occurrencesError && (
+              <p className="text-sm text-amber-300" role="alert">
+                {occurrencesError}
+              </p>
+            )}
+
+            {isProducer && eventOccurrences.length > 0 && (
+              <label className="text-sm text-slate-400">
+                Función / fecha
+                <select
+                  value={selectedOccurrenceId}
+                  onChange={(e) => {
+                    setSelectedOccurrenceId(e.target.value);
+                    localStorage.setItem(LS_LAST_OCCURRENCE, e.target.value);
+                  }}
+                  className="mt-1 block w-full rounded-lg border border-slate-600 bg-slate-900 px-4 py-2 text-white"
+                >
+                  {eventOccurrences.map((occ) => (
+                    <option key={occ.id} value={occ.id}>
+                      {formatOccurrenceLabel(occ)}
+                      {occ.venueName ? ` · ${occ.venueName}` : ''}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+
+            {isProducer && targets && targets.events.length === 0 && (
+              <p className="text-sm text-amber-300">No hay eventos con entradas para escanear.</p>
+            )}
+
+            {isGastro && targets && targets.discounts.length > 0 && (
+              <label className="text-sm text-slate-400">
+                Descuento activo
+                <select
+                  value={selectedDiscountId}
+                  onChange={(e) => {
+                    setSelectedDiscountId(e.target.value);
+                    localStorage.setItem(LS_LAST_DISCOUNT, e.target.value);
+                  }}
+                  className="mt-1 block w-full rounded-lg border border-slate-600 bg-slate-900 px-4 py-2 text-white"
+                >
+                  {targets.discounts.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.title} · {d.status}
+                      {d.validationCount != null ? ` · ${d.validationCount} validaciones` : ''}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+
+            {isGastro && targets && targets.discounts.length === 0 && (
+              <p className="text-sm text-amber-300">No hay descuentos activos para validar.</p>
+            )}
+
+            {isProducer && selectedEventId && (
+              <div className="flex flex-col gap-2 border-t border-slate-700 pt-4">
+                <p className="text-xs text-slate-400">
+                  Listado de control para puerta (offline / PDF). La validación oficial es con QR.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void handleSaveSnapshot()}
+                    className="rounded-lg border border-emerald-600 px-3 py-2 text-sm text-emerald-300 hover:bg-emerald-900/30"
+                  >
+                    Guardar listado offline
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void handleDownloadPdf()}
+                    className="rounded-lg border border-slate-500 px-3 py-2 text-sm text-white hover:bg-slate-700"
+                  >
+                    Descargar listado PDF
+                  </button>
+                  {snapshotMeta && (
+                    <button
+                      type="button"
+                      onClick={() => void handleDeleteSnapshot()}
+                      className="rounded-lg border border-red-800 px-3 py-2 text-sm text-red-300 hover:bg-red-900/20"
+                    >
+                      Borrar listado local
+                    </button>
+                  )}
+                  {pendingCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => void handleManualSync()}
+                      disabled={syncing || !isOnline}
+                      className="rounded-lg bg-amber-700 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+                    >
+                      {syncing ? 'Sincronizando…' : 'Sincronizar pendientes'}
+                    </button>
+                  )}
+                </div>
+                {offlineStatus && <p className="text-xs text-slate-400">{offlineStatus}</p>}
+                {pdfStatus && <p className="text-xs text-slate-400">{pdfStatus}</p>}
+              </div>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={goToScan}
+            disabled={!canGoToScan}
+            className="h-14 rounded-xl bg-emerald-600 text-lg font-bold text-white disabled:opacity-40"
+          >
+            Ir al escáner
+          </button>
+          {!canGoToScan && (
+            <p className="text-center text-xs text-slate-500">
+              Seleccioná un evento{eventOccurrences.length > 0 ? ' y una función' : ''} para continuar.
+            </p>
+          )}
+        </>
+      ) : (
+        <div ref={scanSectionRef} className="flex flex-col gap-3">
+          {scanSummaryBlock}
+          {scanControlsBlock}
+
+          {lastGastro && (
+            <div className={`rounded-xl px-4 py-3 ${gastroStatusClass(lastGastro.status)}`}>
+              <p className="text-xs font-normal uppercase opacity-80">
+                Descuento · {lastGastro.status}
+              </p>
+              <p className="mt-1 text-base font-semibold">{lastGastro.title}</p>
+              <p className="mt-1 text-sm opacity-90">{lastGastro.message}</p>
+            </div>
+          )}
+
+          {historyBlock}
+        </div>
       )}
     </main>
   );

@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect, useCallback } from 'react';
 import type { ScanResponse } from '@yo-te-invito/shared';
 import type { OfflineScanResult } from '@/lib/scan/offline-scan';
 
@@ -29,7 +28,6 @@ function resolvePresentation(result: ScanResultModalData): {
   icon: string;
   title: string;
   subtitle: string;
-  autoCloseMs: number | null;
 } {
   if (result.connectionError) {
     return {
@@ -37,22 +35,18 @@ function resolvePresentation(result: ScanResultModalData): {
       icon: '❌',
       title: 'Error de conexión',
       subtitle: 'No se pudo validar en línea. Revisá la red o usá el listado offline.',
-      autoCloseMs: null,
     };
   }
 
-  if (result.offline) {
-    if (result.result === 'OK') {
-      return {
-        tone: 'ok',
-        icon: '✅',
-        title: 'Entrada válida',
-        subtitle: result.pendingSync
-          ? 'Acceso permitido (offline — pendiente de sincronizar)'
-          : 'Acceso permitido (validación offline)',
-        autoCloseMs: 2500,
-      };
-    }
+  if (result.offline && result.result === 'OK') {
+    return {
+      tone: 'ok',
+      icon: '✅',
+      title: 'Entrada válida',
+      subtitle: result.pendingSync
+        ? 'Acceso permitido (offline — pendiente de sincronizar)'
+        : 'Acceso permitido (validación offline)',
+    };
   }
 
   switch (result.result) {
@@ -62,7 +56,6 @@ function resolvePresentation(result: ScanResultModalData): {
         icon: '✅',
         title: 'Entrada válida',
         subtitle: 'Acceso permitido',
-        autoCloseMs: 2500,
       };
     case 'ALREADY_USED':
       return {
@@ -72,7 +65,6 @@ function resolvePresentation(result: ScanResultModalData): {
         subtitle: result.firstScannedAt
           ? `Fue validada el ${formatDateTime(result.firstScannedAt)}`
           : 'Esta entrada ya fue utilizada',
-        autoCloseMs: null,
       };
     case 'WRONG_OCCURRENCE':
       return {
@@ -80,7 +72,6 @@ function resolvePresentation(result: ScanResultModalData): {
         icon: '❌',
         title: 'Fecha incorrecta',
         subtitle: result.message ?? 'Esta entrada es para otra función',
-        autoCloseMs: null,
       };
     case 'REVOKED':
       return {
@@ -88,7 +79,6 @@ function resolvePresentation(result: ScanResultModalData): {
         icon: '❌',
         title: 'Entrada revocada',
         subtitle: 'No permitir acceso',
-        autoCloseMs: null,
       };
     default:
       if (result.ticketStatus === 'TRANSFER_PENDING') {
@@ -97,7 +87,6 @@ function resolvePresentation(result: ScanResultModalData): {
           icon: '❌',
           title: 'Transferencia pendiente',
           subtitle: 'No permitir acceso hasta completar la transferencia',
-          autoCloseMs: null,
         };
       }
       if (result.ticketStatus === 'TRANSFERRED') {
@@ -106,7 +95,6 @@ function resolvePresentation(result: ScanResultModalData): {
           icon: '❌',
           title: 'Entrada transferida',
           subtitle: 'No permitir acceso con este código',
-          autoCloseMs: null,
         };
       }
       return {
@@ -114,7 +102,6 @@ function resolvePresentation(result: ScanResultModalData): {
         icon: '❌',
         title: 'Entrada inválida',
         subtitle: result.message ?? 'No permitir acceso',
-        autoCloseMs: null,
       };
   }
 }
@@ -132,27 +119,6 @@ const titleClasses = {
 };
 
 export function ScanResultModal({ open, result, onClose }: Props) {
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    },
-    [onClose],
-  );
-
-  useEffect(() => {
-    if (!open) return;
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [open, handleKeyDown]);
-
-  useEffect(() => {
-    if (!open || !result) return;
-    const { autoCloseMs } = resolvePresentation(result);
-    if (autoCloseMs == null) return;
-    const t = window.setTimeout(onClose, autoCloseMs);
-    return () => window.clearTimeout(t);
-  }, [open, result, onClose]);
-
   if (!open || !result) return null;
 
   const pres = resolvePresentation(result);
@@ -170,17 +136,12 @@ export function ScanResultModal({ open, result, onClose }: Props) {
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" role="dialog" aria-modal="true">
-      <button
-        type="button"
-        className="absolute inset-0 bg-black/70"
-        aria-label="Cerrar resultado"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-black/70" aria-hidden="true" />
       <div
         className={`relative w-full max-w-md rounded-2xl border-2 p-6 shadow-2xl ${toneClasses[pres.tone]}`}
       >
         <p className={`text-4xl ${titleClasses[pres.tone]}`}>{pres.icon}</p>
-        <h2 className={`mt-3 text-2xl font-bold text-white`}>{pres.title}</h2>
+        <h2 className="mt-3 text-2xl font-bold text-white">{pres.title}</h2>
         <p className="mt-2 text-lg text-slate-200">{pres.subtitle}</p>
         {details.length > 0 && (
           <ul className="mt-4 space-y-1 text-sm text-slate-300">
@@ -194,7 +155,7 @@ export function ScanResultModal({ open, result, onClose }: Props) {
           onClick={onClose}
           className="mt-6 w-full rounded-xl bg-white/10 px-4 py-3 text-base font-semibold text-white hover:bg-white/20"
         >
-          Cerrar y seguir escaneando
+          Escanear otra entrada
         </button>
       </div>
     </div>

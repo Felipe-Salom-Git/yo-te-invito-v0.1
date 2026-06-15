@@ -10,6 +10,7 @@ type Props = {
   scanning: boolean;
   onScanTimeout?: () => void;
   scanTimeoutMs?: number;
+  compact?: boolean;
 };
 
 const READER_ID = 'yti-qr-reader';
@@ -20,6 +21,7 @@ export function QrCameraScanner({
   scanning,
   onScanTimeout,
   scanTimeoutMs = DEFAULT_TIMEOUT_MS,
+  compact = false,
 }: Props) {
   const [state, setState] = useState<CameraState>('idle');
   const [message, setMessage] = useState<string | null>(null);
@@ -112,9 +114,9 @@ export function QrCameraScanner({
     <div className="flex flex-col gap-3">
       <div
         id={READER_ID}
-        className={`overflow-hidden rounded-xl border border-slate-600 bg-black min-h-[280px] ${
-          state === 'denied' || state === 'error' ? 'hidden' : ''
-        }`}
+        className={`overflow-hidden rounded-xl border border-slate-600 bg-black ${
+          compact ? 'min-h-[220px]' : 'min-h-[280px]'
+        } ${state === 'denied' || state === 'error' ? 'hidden' : ''}`}
       />
       {(state === 'denied' || state === 'error') && (
         <div className="flex min-h-[200px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-600 bg-slate-900/50 p-6 text-center">
