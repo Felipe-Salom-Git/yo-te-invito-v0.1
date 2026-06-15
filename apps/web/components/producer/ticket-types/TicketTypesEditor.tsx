@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -22,14 +22,16 @@ import { ProducerTicketTypeFormFields } from './ProducerTicketTypeFormFields';
 import { ProducerTicketTypeCard } from './ProducerTicketTypeCard';
 import { ProducerTicketTypesHelp } from './ProducerTicketTypesHelp';
 import { ProducerTicketFormErrorSummary } from './ProducerTicketFormErrorSummary';
-import { formatOccurrenceShortLabel } from '@/lib/producer/event-occurrences';
+import { formatOccurrenceShortLabel, formatOccurrenceSelectLabel } from '@/lib/producer/event-occurrences';
 import type { EventOccurrenceWithStats } from '@yo-te-invito/shared';
 
 type Props = {
   eventId: string;
+  /** From producer event detail — keeps multi-date mode while occurrences load. */
+  eventIsMultiDate?: boolean;
 };
 
-export function TicketTypesEditor({ eventId }: Props) {
+export function TicketTypesEditor({ eventId, eventIsMultiDate = false }: Props) {
   const { data: session } = useSession();
   const userId =
     (session?.user as { userId?: string })?.userId ?? (session?.user as { id?: string })?.id ?? '';
@@ -47,13 +49,14 @@ export function TicketTypesEditor({ eventId }: Props) {
   );
   const [activeOccurrenceId, setActiveOccurrenceId] = useState<string | null>(null);
 
-  const { data: occurrences } = useQuery({
+  const { data: occurrences, isLoading: loadingOccurrences } = useQuery({
     queryKey: ['eventOccurrences', eventId],
     queryFn: () => repos.events.listEventOccurrences(eventId),
     enabled: !!eventId && !!userId,
   });
 
-  const isMultiDate = (occurrences?.length ?? 0) > 0;
+  const hasOccurrences = (occurrences?.length ?? 0) > 0;
+  const isMultiDate = hasOccurrences || (eventIsMultiDate && loadingOccurrences);
 
   const { data: ticketTypes, isLoading, isError, error } = useQuery({
     queryKey: ticketTypesKeys.producerByEvent(eventId),
@@ -167,13 +170,53 @@ export function TicketTypesEditor({ eventId }: Props) {
     ? activeOccurrenceId ?? occurrences?.[0]?.id ?? null
     : null;
 
+  useEffect(() => {
+    if (!hasOccurrences || activeOccurrenceId) return;
+    setActiveOccurrenceId(occurrences![0]!.id);
+  }, [hasOccurrences, occurrences, activeOccurrenceId]);
+
+  const occurrenceOptions =
+    occurrences?.map((occ) => ({
+      value: occ.id,
+      label: formatOccurrenceSelectLabel(occ),
+    })) ?? [];
+
+  const resolveOccurrenceLabel = (occurrenceId: string | null | undefined) => {
+    if (!occurrenceId) return null;
+    const occ = occurrences?.find((o) => o.id === occurrenceId);
+    return occ ? formatOccurrenceSelectLabel(occ) : formatOccurrenceShortLabel(occurrenceId);
+  };
+
+  const validateOccurrenceForCreate = (): boolean => {
+    if (!isMultiDate) return true;
+    if (loadingOccurrences) {
+      addToast('Cargando fechas del evento…', 'error');
+      return false;
+    }
+    if (!resolvedOccurrenceId) {
+      const err: TicketTypeBatchValidationError = {
+        message: 'Seleccioná para qué fecha es esta entrada.',
+        fieldErrors: { occurrenceId: 'Seleccioná para qué fecha es esta entrada.' },
+        batchErrors: {},
+      };
+      setValidationError(err);
+      errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return false;
+    }
+    return true;
+  };
+
   const ticketTypesForSection = isMultiDate
     ? (ticketTypes ?? []).filter((tt) => tt.occurrenceId === resolvedOccurrenceId)
     : ticketTypes ?? [];
 
   const startNew = () => {
+    if (isMultiDate && loadingOccurrences) {
+      addToast('Cargando fechas del evento…', 'error');
+      return;
+    }
     if (isMultiDate && !resolvedOccurrenceId) {
-      addToast('Seleccioná una fecha antes de crear tipos de entrada.', 'error');
+      addToast('Seleccioná para qué fecha es esta entrada.', 'error');
       return;
     }
     setNewOpen(true);
@@ -231,10 +274,14 @@ export function TicketTypesEditor({ eventId }: Props) {
       {isMultiDate ? (
         <div className="mt-6">
           <p className="mb-2 text-sm text-text-muted">
-            Cada fecha tiene sus propios tipos de entrada y stock.
+            Cada fecha tiene sus propios tipos de entrada y stock. Elegí la función antes de crear
+            entradas.
           </p>
-          <div className="flex flex-wrap gap-2">
-            {occurrenceTabs.map((occ: EventOccurrenceWithStats) => (
+          {loadingOccurrences ? (
+            <p className="text-sm text-text-muted">Cargando fechas…</p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {occurrenceTabs.map((occ: EventOccurrenceWithStats) => (
               <button
                 key={occ.id}
                 type="button"
@@ -252,7 +299,8 @@ export function TicketTypesEditor({ eventId }: Props) {
                 {formatOccurrenceShortLabel(occ.startAt)}
               </button>
             ))}
-          </div>
+            </div>
+          )}
         </div>
       ) : null}
 
@@ -296,6 +344,9 @@ export function TicketTypesEditor({ eventId }: Props) {
                     fieldErrors={validationError?.fieldErrors}
                     batchErrors={validationError?.batchErrors}
                     previewTicketType={managingTicketType ?? tt}
+                    occurrenceReadOnlyLabel={
+                      tt.occurrenceId ? resolveOccurrenceLabel(tt.occurrenceId) ?? undefined : undefined
+                    }
                   />
                   <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                     <Button type="button" variant="outline" onClick={closeManage}>
@@ -329,6 +380,10 @@ export function TicketTypesEditor({ eventId }: Props) {
               hasSold={false}
               fieldErrors={validationError?.fieldErrors}
               batchErrors={validationError?.batchErrors}
+              occurrenceOptions={occurrenceOptions}
+              selectedOccurrenceId={resolvedOccurrenceId ?? ''}
+              onOccurrenceChange={(id) => setActiveOccurrenceId(id || null)}
+              occurrenceRequired={isMultiDate}
             />
           </div>
           <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
@@ -347,6 +402,7 @@ export function TicketTypesEditor({ eventId }: Props) {
               type="button"
               disabled={createMut.isPending}
               onClick={() => {
+                if (!validateOccurrenceForCreate()) return;
                 if (!runValidation(newForm, false)) return;
                 createMut.mutate({
                   form: newForm,

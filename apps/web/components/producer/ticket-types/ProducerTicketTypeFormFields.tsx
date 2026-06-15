@@ -18,6 +18,12 @@ type Props = {
   fieldErrors?: Record<string, string>;
   batchErrors?: Record<string, string>;
   previewTicketType?: TicketTypeResponse | null;
+  /** Multi-date: required select when creating a ticket type. */
+  occurrenceOptions?: Array<{ value: string; label: string }>;
+  selectedOccurrenceId?: string;
+  onOccurrenceChange?: (occurrenceId: string) => void;
+  occurrenceReadOnlyLabel?: string;
+  occurrenceRequired?: boolean;
 };
 
 export function ProducerTicketTypeFormFields({
@@ -27,6 +33,11 @@ export function ProducerTicketTypeFormFields({
   fieldErrors = {},
   batchErrors = {},
   previewTicketType,
+  occurrenceOptions,
+  selectedOccurrenceId,
+  onOccurrenceChange,
+  occurrenceReadOnlyLabel,
+  occurrenceRequired,
 }: Props) {
   const batchDisabled = hasSold;
 
@@ -48,6 +59,25 @@ export function ProducerTicketTypeFormFields({
           Ya hay ventas para este tipo: no podés reemplazar tandas ni la capacidad total. Podés ajustar
           nombre, descripción, tope por orden y estado (activo/pausado).
         </p>
+      ) : null}
+
+      {occurrenceReadOnlyLabel ? (
+        <div className="rounded-lg border border-border bg-bg-muted px-3 py-2 text-sm">
+          <p className="text-xs font-medium uppercase tracking-wide text-text-muted">Fecha / función</p>
+          <p className="mt-1 text-text">{occurrenceReadOnlyLabel}</p>
+        </div>
+      ) : occurrenceOptions && occurrenceOptions.length > 0 ? (
+        <Select
+          label="Fecha / función"
+          value={selectedOccurrenceId ?? ''}
+          onChange={(e) => onOccurrenceChange?.(e.target.value)}
+          required={occurrenceRequired}
+          error={fieldErrors.occurrenceId}
+          options={[
+            { value: '', label: 'Seleccioná una fecha…' },
+            ...occurrenceOptions,
+          ]}
+        />
       ) : null}
 
       <Input

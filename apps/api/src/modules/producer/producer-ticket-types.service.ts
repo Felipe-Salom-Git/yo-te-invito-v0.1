@@ -193,8 +193,8 @@ export class ProducerTicketTypesService {
     if (occurrenceCount > 0) {
       if (!body.occurrenceId) {
         throw new BadRequestException({
-          code: ErrorCode.VALIDATION_FAILED,
-          message: 'occurrenceId is required for multi-date events',
+          code: ErrorCode.OCCURRENCE_REQUIRED,
+          message: 'Seleccioná para qué fecha es esta entrada',
         });
       }
       const occ = await this.prisma.eventOccurrence.findFirst({

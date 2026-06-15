@@ -116,7 +116,7 @@ export default function ProducerEventManagePage() {
           incluye venta de entradas ni gestión de ticketera.
         </div>
       ) : (
-        <TicketTypesEditor eventId={eventId} />
+        <TicketTypesEditor eventId={eventId} eventIsMultiDate={!!event.isMultiDate} />
       )}
 
       {!event.isGeneralPublication && <ProducerTicketDateChangesPanel eventId={eventId} />}

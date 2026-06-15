@@ -830,6 +830,7 @@ export class ApiRepository implements Repositories {
         if (input.saleStart) body.salesStartAt = new Date(input.saleStart).toISOString();
         if (input.saleEnd) body.salesEndAt = new Date(input.saleEnd).toISOString();
       }
+      if (input.occurrenceId) body.occurrenceId = input.occurrenceId;
       const raw = await this.client.post<TicketTypeResponse>(
         `/producer/events/${encodeURIComponent(eventId)}/ticket-types`,
         body

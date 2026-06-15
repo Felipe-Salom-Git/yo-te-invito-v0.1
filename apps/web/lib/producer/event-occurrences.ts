@@ -87,6 +87,19 @@ export function occurrenceStatusLabel(status: EventOccurrenceStatus): string {
   }
 }
 
+/** Label for producer ticket-type occurrence select (date, status, capacity). */
+export function formatOccurrenceSelectLabel(occ: EventOccurrenceWithStats): string {
+  const date = formatOccurrenceShortLabel(occ.startAt);
+  const status = occurrenceStatusLabel(occ.status);
+  const cap =
+    occ.capacity != null && occ.capacity > 0
+      ? ` · cupo ${occ.capacity}`
+      : occ.capacityAvailable > 0
+        ? ` · disp. ${occ.capacityAvailable}`
+        : '';
+  return `${date} — ${status}${cap}`;
+}
+
 export function draftToCreateBody(
   draft: OccurrenceDraft,
   defaultVenue?: { venueName?: string | null; city?: string | null },
