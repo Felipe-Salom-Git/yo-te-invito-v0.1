@@ -81,6 +81,7 @@ export * from './schemas/public-hotel-locations';
 export * from './schemas/gastro-content';
 export * from './gastro-discount-qr';
 export * from './schemas/gastro-discounts';
+export * from './schemas/gastro-courtesy-discounts';
 export * from './schemas/gastro-dashboard';
 export * from './schemas/admin-gastro';
 export * from './schemas/user-portal';

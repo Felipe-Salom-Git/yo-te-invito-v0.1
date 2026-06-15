@@ -96,6 +96,29 @@ enum GastroDiscountStatus {
   EXPIRED
 }
 
+enum GastroDiscountVisibility {
+  PUBLIC
+  COURTESY_ONLY
+}
+
+enum GastroDiscountClaimType {
+  PUBLIC_REQUEST
+  COURTESY
+}
+
+enum GastroDiscountClaimSource {
+  WEB
+  MANUAL_EMAIL
+  FOLLOWERS
+}
+
+enum GastroDiscountClaimStatus {
+  ACTIVE
+  USED
+  EXPIRED
+  CANCELLED
+}
+
 enum GastroContentType {
   EDITORIAL
   IMAGE
@@ -168,6 +191,7 @@ model Tenant {
   inboxItems              InboxItem[]
   gastroDiscounts         GastroDiscount[]
   gastroDiscountClaims    GastroDiscountClaim[]
+  gastroCourtesyCampaigns GastroCourtesyCampaign[]
   gastroContents          GastroContent[]
   contentSubcategories    ContentSubcategory[]
   contentTags             ContentTag[]
@@ -338,6 +362,7 @@ model GastroProfile {
   gastroDiscounts GastroDiscount[]
   followers       UserGastroFollow[]
   contentItems    GastroContent[]
+  courtesyCampaigns GastroCourtesyCampaign[]
 
   @@index([tenantId])
   @@index([tenantId, status])
@@ -708,6 +733,7 @@ model User {
   reviewsModerated    Review[]               @relation("ReviewModerator")
   reviewsHidden       Review[]               @relation("ReviewHiddenBy")
   gastroDiscountClaims GastroDiscountClaim[]
+  gastroCourtesyCampaignsCreated GastroCourtesyCampaign[]
   commercialRelationshipReviews CommercialRelationshipReview[]
   reviewDisputesRequested       ReviewDisputeRequest[]         @relation("ReviewDisputeRequester")
   reviewDisputesResolved        ReviewDisputeRequest[]         @relation("ReviewDisputeResolver")
@@ -1988,6 +2014,10 @@ enum AuditAction {
   GASTRO_DISCOUNT_CANCELLED
   GASTRO_DISCOUNT_ACTIVATED
   GASTRO_DISCOUNT_QR_EMAIL_SENT
+  GASTRO_DISCOUNT_COURTESY_CREATED
+  GASTRO_DISCOUNT_COURTESY_SENT
+  GASTRO_DISCOUNT_REQUESTED
+  GASTRO_DISCOUNT_REDEEMED
   REVIEW_DISPUTE_IN_REVIEW
   REVIEW_DISPUTE_ACCEPTED
   REVIEW_DISPUTE_REJECTED
@@ -2188,6 +2218,7 @@ model GastroDiscount {
   rejectionReason   String?
   commissionCoordinationAcceptedAt DateTime?
   sourceInboxItemId String?              @unique
+  visibility        GastroDiscountVisibility @default(PUBLIC)
   createdAt         DateTime             @default(now())
   updatedAt         DateTime             @updatedAt
 
@@ -2196,11 +2227,37 @@ model GastroDiscount {
   gastroProfile GastroProfile?          @relation(fields: [gastroProfileId], references: [id], onDelete: SetNull)
   validations   GastroDiscountValidation[]
   claims        GastroDiscountClaim[]
+  courtesyCampaign GastroCourtesyCampaign?
 
   @@unique([eventId, code])
   @@index([tenantId, eventId])
   @@index([tenantId, status])
   @@index([gastroProfileId, status])
+  @@index([gastroProfileId, visibility, status])
+}
+
+model GastroCourtesyCampaign {
+  id              String    @id @default(cuid())
+  tenantId        String
+  gastroProfileId String
+  discountId      String    @unique
+  title           String
+  description     String?
+  discountLabel   String?
+  message         String?
+  validFrom       DateTime?
+  validTo         DateTime?
+  createdByUserId String
+  createdAt       DateTime  @default(now())
+
+  tenant        Tenant              @relation(fields: [tenantId], references: [id])
+  gastroProfile GastroProfile       @relation(fields: [gastroProfileId], references: [id], onDelete: Cascade)
+  discount      GastroDiscount      @relation(fields: [discountId], references: [id], onDelete: Cascade)
+  createdBy     User                @relation(fields: [createdByUserId], references: [id])
+  claims        GastroDiscountClaim[]
+
+  @@index([tenantId, gastroProfileId])
+  @@index([createdByUserId])
 }
 
 model GastroDiscountValidation {
@@ -2218,25 +2275,36 @@ model GastroDiscountValidation {
 }
 
 model GastroDiscountClaim {
-  id             String    @id @default(cuid())
-  tenantId       String
-  discountId     String
-  userId         String?
-  email          String
-  qrToken        String    @unique
-  accessToken    String    @unique
-  emailSentAt    DateTime?
-  emailSendError String?
-  createdAt      DateTime  @default(now())
+  id                 String                    @id @default(cuid())
+  tenantId           String
+  discountId         String
+  userId             String?
+  email              String
+  qrToken            String                    @unique
+  accessToken        String                    @unique
+  type               GastroDiscountClaimType   @default(PUBLIC_REQUEST)
+  source             GastroDiscountClaimSource @default(WEB)
+  status             GastroDiscountClaimStatus @default(ACTIVE)
+  expiresAt          DateTime?
+  usedAt             DateTime?
+  recipientName      String?
+  courtesyCampaignId String?
+  emailSentAt        DateTime?
+  emailSendError     String?
+  createdAt          DateTime                  @default(now())
 
-  tenant       Tenant                     @relation(fields: [tenantId], references: [id])
-  discount     GastroDiscount             @relation(fields: [discountId], references: [id], onDelete: Cascade)
-  user         User?                      @relation(fields: [userId], references: [id], onDelete: SetNull)
-  validations  GastroDiscountValidation[]
+  tenant           Tenant                     @relation(fields: [tenantId], references: [id])
+  discount         GastroDiscount             @relation(fields: [discountId], references: [id], onDelete: Cascade)
+  user             User?                      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  courtesyCampaign GastroCourtesyCampaign?    @relation(fields: [courtesyCampaignId], references: [id], onDelete: SetNull)
+  validations      GastroDiscountValidation[]
 
   @@unique([discountId, email])
+  @@unique([courtesyCampaignId, email])
   @@index([tenantId, discountId])
   @@index([userId])
+  @@index([email])
+  @@index([courtesyCampaignId])
 }
 
 // ─── Legal documents (administrable TyC / policies) ───────────────────────────
