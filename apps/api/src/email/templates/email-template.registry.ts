@@ -42,6 +42,10 @@ import { renderTicketDateChangeRequested } from './templates/ticket-date-change-
 import { renderTicketDateChangePendingProducer } from './templates/ticket-date-change-pending-producer.template';
 import { renderTicketDateChangeApplied } from './templates/ticket-date-change-applied.template';
 import { renderTicketDateChangeRejected } from './templates/ticket-date-change-rejected.template';
+import {
+  renderGastroDiscountQrCourtesy,
+  renderGastroDiscountQrRequested,
+} from './templates/gastro-discount-qr.template';
 
 export type EmailTemplateRenderer = (
   variables: Record<string, unknown>,
@@ -91,6 +95,8 @@ const REGISTRY: Record<EmailTemplateId, EmailTemplateRenderer> = {
   TICKET_DATE_CHANGE_PENDING_PRODUCER: renderTicketDateChangePendingProducer,
   TICKET_DATE_CHANGE_APPLIED: renderTicketDateChangeApplied,
   TICKET_DATE_CHANGE_REJECTED: renderTicketDateChangeRejected,
+  GASTRO_DISCOUNT_QR_REQUESTED: renderGastroDiscountQrRequested,
+  GASTRO_DISCOUNT_QR_COURTESY: renderGastroDiscountQrCourtesy,
 };
 
 export function getEmailTemplateRenderer(

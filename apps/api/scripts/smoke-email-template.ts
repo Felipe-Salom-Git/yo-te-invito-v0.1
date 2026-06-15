@@ -324,6 +324,39 @@ function sampleVariables(templateId: EmailTemplateId): Record<string, unknown> {
         preferencesUrl: `${appUrl}/me/preferences`,
         supportEmail: 'soporte@yoteinvito.club',
       };
+    case 'GASTRO_DISCOUNT_QR_REQUESTED':
+      return {
+        userName: 'Usuario Demo',
+        recipientEmail: 'usuario@example.com',
+        gastroName: 'Local Smoke',
+        discountTitle: '20% en cena',
+        discountDescription: 'Válido de lun a jue. No acumulable con otras promos.',
+        discountLabel: '20% en cena',
+        qrImageUrl:
+          'https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=yti%3Agastro-discount%3Av1%3Ademo%3Aabc123',
+        qrCode: 'abc123def456',
+        validTo: '30/06/2026, 23:59',
+        conditions: 'Presentá este QR en el local.',
+        accountUrl: `${appUrl}/me/descuentos`,
+        supportEmail: 'soporte@yoteinvito.club',
+      };
+    case 'GASTRO_DISCOUNT_QR_COURTESY':
+      return {
+        userName: 'Usuario Demo',
+        recipientEmail: 'usuario@example.com',
+        gastroName: 'Local Smoke',
+        discountTitle: 'Cortesía especial',
+        discountDescription: 'Beneficio exclusivo para clientes invitados.',
+        discountLabel: 'Postre de cortesía',
+        courtesyMessage: 'Gracias por elegirnos. Te esperamos con este beneficio.',
+        qrImageUrl:
+          'https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=yti%3Agastro-discount%3Av1%3Ademo%3Aabc123',
+        qrCode: 'abc123def456',
+        validTo: '30/06/2026, 23:59',
+        conditions: 'Presentá este QR en el local.',
+        accountUrl: `${appUrl}/me/descuentos`,
+        supportEmail: 'soporte@yoteinvito.club',
+      };
     case 'ADMIN_NEW_EVENT_PENDING':
       return {
         eventTitle: 'Evento Smoke Admin',
