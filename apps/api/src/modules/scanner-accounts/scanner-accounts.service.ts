@@ -184,7 +184,11 @@ export class ScannerAccountsService {
       },
       select: { profileId: true },
     });
-    return memberships.map((m) => m.profileId);
+    const owned = await this.prisma.producerProfile.findMany({
+      where: { tenantId, status: 'ACTIVE', createdByUserId: userId },
+      select: { id: true },
+    });
+    return [...new Set([...memberships.map((m) => m.profileId), ...owned.map((p) => p.id)])];
   }
 
   private async getManagedGastroProfileIds(tenantId: string, userId: string): Promise<string[]> {
@@ -197,7 +201,54 @@ export class ScannerAccountsService {
       },
       select: { profileId: true },
     });
-    return memberships.map((m) => m.profileId);
+    const owned = await this.prisma.gastroProfile.findMany({
+      where: { tenantId, status: 'ACTIVE', createdByUserId: userId },
+      select: { id: true },
+    });
+    return [...new Set([...memberships.map((m) => m.profileId), ...owned.map((p) => p.id)])];
+  }
+
+  private portalParentProfileNotFound(
+    parentProfileType: ScannerParentProfileType,
+  ): NotFoundException {
+    const isProducer = parentProfileType === ScannerParentProfileType.PRODUCER;
+    return new NotFoundException({
+      code: isProducer ? ErrorCode.PRODUCER_PROFILE_NOT_FOUND : ErrorCode.GASTRO_PROFILE_NOT_FOUND,
+      message: isProducer
+        ? 'No tenés una productora activa asociada a tu cuenta'
+        : 'No tenés un local gastronómico activo asociado a tu cuenta',
+    });
+  }
+
+  /** Portal create: infer parent from session memberships — never admin-only parentProfileId rule. */
+  private async resolvePortalParentProfileId(
+    tenantId: string,
+    userId: string,
+    parentProfileType: ScannerParentProfileType,
+    explicitId?: string,
+  ): Promise<string> {
+    const ids =
+      parentProfileType === ScannerParentProfileType.PRODUCER
+        ? await this.getManagedProducerProfileIds(tenantId, userId)
+        : await this.getManagedGastroProfileIds(tenantId, userId);
+
+    if (explicitId?.trim()) {
+      const id = explicitId.trim();
+      if (!ids.includes(id)) {
+        throw this.forbiddenParent();
+      }
+      return id;
+    }
+
+    if (ids.length === 1) return ids[0]!;
+    if (ids.length === 0) {
+      throw this.portalParentProfileNotFound(parentProfileType);
+    }
+
+    throw new BadRequestException({
+      code: ErrorCode.VALIDATION_FAILED,
+      message: 'parentProfileId is required when managing multiple profiles',
+    });
   }
 
   async listForProducer(user: AuthUser): Promise<ScannerAccountsListResponse> {
@@ -217,47 +268,6 @@ export class ScannerAccountsService {
       tenantId: user.tenantId,
       parentProfileType: ScannerParentProfileType.PRODUCER,
       ...(user.role === Role.ADMIN ? {} : { parentProfileId: { in: profileIds } }),
-    });
-  }
-
-  private async resolveParentProfileId(
-    tenantId: string,
-    userId: string,
-    userRole: string,
-    parentProfileType: ScannerParentProfileType,
-    explicitId?: string,
-  ): Promise<string> {
-    const ids =
-      parentProfileType === ScannerParentProfileType.PRODUCER
-        ? await this.getManagedProducerProfileIds(tenantId, userId)
-        : await this.getManagedGastroProfileIds(tenantId, userId);
-
-    if (explicitId?.trim()) {
-      const id = explicitId.trim();
-      if (userRole !== Role.ADMIN && !ids.includes(id)) {
-        throw this.forbiddenParent();
-      }
-      return id;
-    }
-
-    if (userRole === Role.ADMIN) {
-      throw new BadRequestException({
-        code: ErrorCode.VALIDATION_FAILED,
-        message: 'parentProfileId is required for admin create',
-      });
-    }
-
-    if (ids.length === 1) return ids[0]!;
-    if (ids.length === 0) {
-      throw new NotFoundException({
-        code: ErrorCode.NOT_FOUND,
-        message: 'No active parent profile found',
-      });
-    }
-
-    throw new BadRequestException({
-      code: ErrorCode.VALIDATION_FAILED,
-      message: 'parentProfileId is required when managing multiple profiles',
     });
   }
 
@@ -311,10 +321,9 @@ export class ScannerAccountsService {
       });
     }
 
-    const parentProfileId = await this.resolveParentProfileId(
+    const parentProfileId = await this.resolvePortalParentProfileId(
       actor.tenantId,
       actor.id,
-      actor.role,
       parentProfileType,
       body.parentProfileId,
     );
@@ -334,7 +343,7 @@ export class ScannerAccountsService {
     if (existing) {
       throw new ConflictException({
         code: ErrorCode.EMAIL_ALREADY_EXISTS,
-        message: 'Ya existe un usuario con este email',
+        message: 'Ya existe un usuario con ese email',
       });
     }
 
@@ -402,6 +411,10 @@ export class ScannerAccountsService {
     actor: AuthUser,
     body: CreateScannerUserBody,
   ): Promise<CreateScannerUserResponse> {
+    const managedIds = await this.getManagedProducerProfileIds(actor.tenantId, actor.id);
+    if (managedIds.length === 0) {
+      throw this.portalParentProfileNotFound(ScannerParentProfileType.PRODUCER);
+    }
     if (
       actor.role !== Role.ADMIN &&
       !(await this.profiles.hasProducerAccess(actor.tenantId, actor.id))
@@ -418,6 +431,10 @@ export class ScannerAccountsService {
     actor: AuthUser,
     body: CreateScannerUserBody,
   ): Promise<CreateScannerUserResponse> {
+    const managedIds = await this.getManagedGastroProfileIds(actor.tenantId, actor.id);
+    if (managedIds.length === 0) {
+      throw this.portalParentProfileNotFound(ScannerParentProfileType.GASTRO);
+    }
     if (
       actor.role !== Role.ADMIN &&
       !(await this.profiles.hasGastroAccess(actor.tenantId, actor.id))

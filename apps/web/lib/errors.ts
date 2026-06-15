@@ -14,6 +14,13 @@ const STATUS_MESSAGES: Record<number, string> = {
   500: 'Error del servidor. Intenta más tarde.',
 };
 
+const ERROR_CODE_MESSAGES: Record<string, string> = {
+  EMAIL_ALREADY_EXISTS: 'Ya existe un usuario con ese email.',
+  PRODUCER_PROFILE_NOT_FOUND: 'No tenés una productora activa asociada a tu cuenta.',
+  GASTRO_PROFILE_NOT_FOUND: 'No tenés un local gastronómico activo asociado a tu cuenta.',
+  FORBIDDEN: 'No tenés permiso para esta acción.',
+};
+
 export function isApiNotFoundError(err: unknown): boolean {
   return err instanceof ApiClientError && err.status === 404;
 }
@@ -33,6 +40,8 @@ export function getErrorMessage(err: unknown): string {
     }
     const fromBody =
       body && 'message' in body && typeof body.message === 'string' ? body.message : null;
+    const code = body && 'code' in body && typeof body.code === 'string' ? body.code : null;
+    if (code && ERROR_CODE_MESSAGES[code]) return ERROR_CODE_MESSAGES[code];
     if (fromBody && fromBody.trim() && fromBody !== 'Validation failed') return fromBody;
     return STATUS_MESSAGES[err.status] ?? err.message ?? `Error (${err.status})`;
   }
