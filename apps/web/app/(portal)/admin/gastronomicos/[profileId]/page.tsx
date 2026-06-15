@@ -7,6 +7,7 @@ import { useRepositories } from '@/repositories/context';
 import { adminGastroKeys } from '@/lib/query/keys';
 import { PageContainer, SectionTitle } from '@/components';
 import { AdminGastroDiscountsTable } from '@/components/admin/gastro/AdminGastroDiscountsTable';
+import { AdminGastroHardDeleteActions } from '@/components/admin/gastro/AdminGastroHardDeleteActions';
 
 export default function AdminGastroLocationDetailPage() {
   const params = useParams();
@@ -77,6 +78,7 @@ export default function AdminGastroLocationDetailPage() {
                   Ver ficha pública
                 </Link>
               ) : null}
+              <AdminGastroHardDeleteActions profileId={profileId} />
             </div>
           </div>
 

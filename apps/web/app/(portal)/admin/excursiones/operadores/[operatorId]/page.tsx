@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { useRepositories } from '@/repositories/context';
 import { excursionOperatorsKeys } from '@/lib/query/keys';
@@ -13,6 +13,7 @@ import { AdminEventLifecycleActions } from '@/components/admin/AdminEventLifecyc
 
 export default function AdminExcursionOperadorDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const operatorId = (params?.operatorId as string) ?? '';
   const repos = useRepositories();
 
@@ -78,6 +79,7 @@ export default function AdminExcursionOperadorDetailPage() {
             <AdminExcursionOperatorLifecycleActions
               operatorId={operatorId}
               isActive={operator.isActive}
+              onHardDeleted={() => router.push('/admin/excursiones')}
             />
           </div>
 

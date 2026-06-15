@@ -85,3 +85,55 @@ export function useExcursionOperatorLifecycleMutation() {
     },
   });
 }
+
+export function useHardDeleteAdminEventMutation() {
+  const repos = useRepositories();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ eventId, reason }: { eventId: string; reason?: string }) =>
+      repos.adminContentLifecycle.hardDeleteEvent(eventId, reason),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: adminEventsKeys.all });
+    },
+  });
+}
+
+export function useHardDeleteGastroProfileMutation() {
+  const repos = useRepositories();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ profileId, reason }: { profileId: string; reason?: string }) =>
+      repos.adminContentLifecycle.hardDeleteGastroProfile(profileId, reason),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'gastro-locations'] });
+    },
+  });
+}
+
+export function useHardDeleteRentalLocationMutation() {
+  const repos = useRepositories();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ locationId, reason }: { locationId: string; reason?: string }) =>
+      repos.adminContentLifecycle.hardDeleteRentalLocation(locationId, reason),
+    onSuccess: (_data, vars) => {
+      void queryClient.invalidateQueries({ queryKey: ['rental-locations', 'admin', vars.locationId] });
+      void queryClient.invalidateQueries({ queryKey: ['rental-locations', 'admin'] });
+    },
+  });
+}
+
+export function useHardDeleteExcursionOperatorMutation() {
+  const repos = useRepositories();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ operatorId, reason }: { operatorId: string; reason?: string }) =>
+      repos.adminContentLifecycle.hardDeleteExcursionOperator(operatorId, reason),
+    onSuccess: (_data, vars) => {
+      void queryClient.invalidateQueries({
+        queryKey: ['excursion-operators', 'admin', vars.operatorId],
+      });
+      void queryClient.invalidateQueries({ queryKey: ['excursion-operators', 'admin'] });
+    },
+  });
+}

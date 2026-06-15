@@ -1495,6 +1495,34 @@ export class ApiRepository implements Repositories {
         reason ? { reason } : {},
       );
     },
+    hardDeleteEvent: async (eventId, reason) => {
+      return this.client.delete<{ id: string; deleted: true }>(
+        `/admin/events/${encodeURIComponent(eventId)}/hard-delete`,
+        undefined,
+        reason ? { reason } : {},
+      );
+    },
+    hardDeleteGastroProfile: async (profileId, reason) => {
+      return this.client.delete<{ id: string; deleted: true }>(
+        `/admin/gastronomicos/${encodeURIComponent(profileId)}/hard-delete`,
+        undefined,
+        reason ? { reason } : {},
+      );
+    },
+    hardDeleteRentalLocation: async (locationId, reason) => {
+      return this.client.delete<{ id: string; deleted: true }>(
+        `/admin/rental-locations/${encodeURIComponent(locationId)}/hard-delete`,
+        undefined,
+        reason ? { reason } : {},
+      );
+    },
+    hardDeleteExcursionOperator: async (operatorId, reason) => {
+      return this.client.delete<{ id: string; deleted: true }>(
+        `/admin/excursion-operators/${encodeURIComponent(operatorId)}/hard-delete`,
+        undefined,
+        reason ? { reason } : {},
+      );
+    },
   };
 
   adminHotelProfiles: import('./interfaces').AdminHotelProfilesRepo = {

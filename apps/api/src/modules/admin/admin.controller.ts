@@ -1,4 +1,5 @@
 import {
+  Delete,
   Body,
   Controller,
   Get,
@@ -105,6 +106,7 @@ import { AdminProfilesService } from './admin-profiles.service';
 import { ReferralsService } from '../referrals/referrals.service';
 import { InboxService } from '../inbox/inbox.service';
 import { AdminContentLifecycleService } from './admin-content-lifecycle.service';
+import { AdminContentPurgeService } from './admin-content-purge.service';
 import { AdminHotelProfilesService } from './admin-hotel-profiles.service';
 
 @Controller('admin')
@@ -112,6 +114,7 @@ export class AdminController {
   constructor(
     private readonly events: AdminEventsService,
     private readonly contentLifecycle: AdminContentLifecycleService,
+    private readonly contentPurge: AdminContentPurgeService,
     private readonly audit: AdminAuditService,
     private readonly tickets: AdminTicketsService,
     private readonly fraud: AdminFraudService,
@@ -340,6 +343,61 @@ export class AdminController {
     );
   }
 
+  @Delete('events/:eventId/hard-delete')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async hardDeleteEvent(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param(new ZodValidationPipe(adminEventIdParamsSchema)) params: AdminEventIdParams,
+    @Body(new ZodValidationPipe(adminContentLifecycleBodySchema))
+    body: AdminContentLifecycleBody,
+  ) {
+    return this.contentPurge.hardDeleteEvent(
+      user.tenantId,
+      user.id,
+      user.role,
+      params.eventId,
+      body.reason,
+    );
+  }
+
+  @Delete('gastronomicos/:profileId/hard-delete')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async hardDeleteGastroProfile(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param(new ZodValidationPipe(adminGastroProfileIdParamsSchema))
+    params: AdminGastroProfileIdParams,
+    @Body(new ZodValidationPipe(adminContentLifecycleBodySchema))
+    body: AdminContentLifecycleBody,
+  ) {
+    return this.contentPurge.hardDeleteGastroProfile(
+      user.tenantId,
+      user.id,
+      user.role,
+      params.profileId,
+      body.reason,
+    );
+  }
+
+  @Delete('rental-locations/:id/hard-delete')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async hardDeleteRentalLocation(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param(new ZodValidationPipe(rentalLocationIdParamsSchema)) params: RentalLocationIdParams,
+    @Body(new ZodValidationPipe(adminContentLifecycleBodySchema))
+    body: AdminContentLifecycleBody,
+  ) {
+    return this.contentPurge.hardDeleteRentalLocation(
+      user.tenantId,
+      user.id,
+      user.role,
+      params.id,
+      body.reason,
+    );
+  }
+
   @Post('rental-locations/:id/deactivate')
   @UseGuards(JwtOrDevAuthGuard, RolesGuard)
   @RequireRole(Role.ADMIN)
@@ -368,6 +426,25 @@ export class AdminController {
     body: AdminContentLifecycleBody,
   ) {
     return this.contentLifecycle.activateRentalLocation(
+      user.tenantId,
+      user.id,
+      user.role,
+      params.id,
+      body.reason,
+    );
+  }
+
+  @Delete('excursion-operators/:id/hard-delete')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async hardDeleteExcursionOperator(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param(new ZodValidationPipe(excursionOperatorIdParamsSchema))
+    params: ExcursionOperatorIdParams,
+    @Body(new ZodValidationPipe(adminContentLifecycleBodySchema))
+    body: AdminContentLifecycleBody,
+  ) {
+    return this.contentPurge.hardDeleteExcursionOperator(
       user.tenantId,
       user.id,
       user.role,

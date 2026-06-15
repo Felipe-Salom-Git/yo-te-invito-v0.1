@@ -1444,6 +1444,16 @@ export interface AdminContentLifecycleRepo {
     profileId: string,
     reason?: string,
   ): Promise<{ id: string; status: string }>;
+  hardDeleteEvent(eventId: string, reason?: string): Promise<{ id: string; deleted: true }>;
+  hardDeleteGastroProfile(profileId: string, reason?: string): Promise<{ id: string; deleted: true }>;
+  hardDeleteRentalLocation(
+    locationId: string,
+    reason?: string,
+  ): Promise<{ id: string; deleted: true }>;
+  hardDeleteExcursionOperator(
+    operatorId: string,
+    reason?: string,
+  ): Promise<{ id: string; deleted: true }>;
 }
 
 export type AdminHotelProfilesListQuery =
