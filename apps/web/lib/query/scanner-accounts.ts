@@ -18,6 +18,15 @@ export function useScannerAccountsList(portal: ScannerAccountsPortal, enabled = 
   });
 }
 
+export function useScannerParentProfiles(portal: ScannerAccountsPortal, enabled = true) {
+  const repos = useRepositories();
+  return useQuery({
+    queryKey: scannerAccountsKeys.parentProfiles(portal),
+    queryFn: () => repos.scannerAccounts.listParentProfiles(portal),
+    enabled,
+  });
+}
+
 export function useScannerAccountsMutations(portal: ScannerAccountsPortal) {
   const repos = useRepositories();
   const qc = useQueryClient();

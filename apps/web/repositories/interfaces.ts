@@ -2243,6 +2243,9 @@ export interface ScannerAccountsRepo {
   list(
     portal: ScannerAccountsPortal,
   ): Promise<import('@yo-te-invito/shared').ScannerAccountsListResponse>;
+  listParentProfiles(
+    portal: ScannerAccountsPortal,
+  ): Promise<import('@yo-te-invito/shared').ScannerParentProfilesResponse>;
   create(
     portal: ScannerAccountsPortal,
     body: import('@yo-te-invito/shared').CreateScannerUserBody,

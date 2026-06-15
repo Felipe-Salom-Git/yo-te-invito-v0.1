@@ -213,6 +213,8 @@ export const contentTagsKeys = {
 export const scannerAccountsKeys = {
   all: ['scannerAccounts'] as const,
   list: (portal: string) => [...scannerAccountsKeys.all, 'list', portal] as const,
+  parentProfiles: (portal: string) =>
+    [...scannerAccountsKeys.all, 'parentProfiles', portal] as const,
 };
 
 export const generalPublicationsKeys = {

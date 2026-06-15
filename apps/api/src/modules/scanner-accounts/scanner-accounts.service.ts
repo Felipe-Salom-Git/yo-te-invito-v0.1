@@ -209,6 +209,119 @@ export class ScannerAccountsService {
     return [...new Set([...memberships.map((m) => m.profileId), ...owned.map((p) => p.id)])];
   }
 
+  private async getPrimaryGastroProfileId(tenantId: string, userId: string): Promise<string | null> {
+    const membership = await this.prisma.userGastroMembership.findFirst({
+      where: {
+        tenantId,
+        userId,
+        status: 'ACTIVE',
+        profile: { status: 'ACTIVE' },
+      },
+      select: { profileId: true },
+      orderBy: { profile: { updatedAt: 'desc' } },
+    });
+    return membership?.profileId ?? null;
+  }
+
+  private async getPrimaryProducerProfileId(
+    tenantId: string,
+    userId: string,
+  ): Promise<string | null> {
+    const membership = await this.prisma.userProducerMembership.findFirst({
+      where: {
+        tenantId,
+        userId,
+        status: 'ACTIVE',
+        profile: { status: 'ACTIVE' },
+      },
+      select: { profileId: true },
+      orderBy: { profile: { updatedAt: 'desc' } },
+    });
+    return membership?.profileId ?? null;
+  }
+
+  async listGastroParentProfiles(user: AuthUser) {
+    if (
+      user.role !== Role.ADMIN &&
+      !(await this.profiles.hasGastroAccess(user.tenantId, user.id))
+    ) {
+      throw new ForbiddenException({
+        code: ErrorCode.FORBIDDEN,
+        message: 'Insufficient permissions',
+      });
+    }
+    return this.listParentProfileOptions(
+      user.tenantId,
+      user.id,
+      ScannerParentProfileType.GASTRO,
+    );
+  }
+
+  async listProducerParentProfiles(user: AuthUser) {
+    if (
+      user.role !== Role.ADMIN &&
+      !(await this.profiles.hasProducerAccess(user.tenantId, user.id))
+    ) {
+      throw new ForbiddenException({
+        code: ErrorCode.FORBIDDEN,
+        message: 'Insufficient permissions',
+      });
+    }
+    return this.listParentProfileOptions(
+      user.tenantId,
+      user.id,
+      ScannerParentProfileType.PRODUCER,
+    );
+  }
+
+  private async listParentProfileOptions(
+    tenantId: string,
+    userId: string,
+    parentProfileType: ScannerParentProfileType,
+  ) {
+    const ids =
+      parentProfileType === ScannerParentProfileType.PRODUCER
+        ? await this.getManagedProducerProfileIds(tenantId, userId)
+        : await this.getManagedGastroProfileIds(tenantId, userId);
+
+    if (ids.length === 0) {
+      throw this.portalParentProfileNotFound(parentProfileType);
+    }
+
+    const primaryId =
+      parentProfileType === ScannerParentProfileType.GASTRO
+        ? await this.getPrimaryGastroProfileId(tenantId, userId)
+        : await this.getPrimaryProducerProfileId(tenantId, userId);
+
+    if (parentProfileType === ScannerParentProfileType.GASTRO) {
+      const rows = await this.prisma.gastroProfile.findMany({
+        where: { tenantId, id: { in: ids } },
+        select: { id: true, displayName: true },
+        orderBy: { displayName: 'asc' },
+      });
+      return {
+        data: rows.map((row) => ({
+          id: row.id,
+          displayName: row.displayName,
+          isPrimary: row.id === primaryId,
+        })),
+      };
+    }
+
+    const rows = await this.prisma.producerProfile.findMany({
+      where: { tenantId, id: { in: ids } },
+      select: { id: true, displayName: true },
+      orderBy: { displayName: 'asc' },
+    });
+    return {
+      data: rows.map((row) => ({
+        id: row.id,
+        displayName: row.displayName,
+        isPrimary: row.id === primaryId,
+      })),
+    };
+  }
+
   private portalParentProfileNotFound(
     parentProfileType: ScannerParentProfileType,
   ): NotFoundException {
@@ -246,9 +359,17 @@ export class ScannerAccountsService {
       throw this.portalParentProfileNotFound(parentProfileType);
     }
 
+    const primaryId =
+      parentProfileType === ScannerParentProfileType.GASTRO
+        ? await this.getPrimaryGastroProfileId(tenantId, userId)
+        : await this.getPrimaryProducerProfileId(tenantId, userId);
+    if (primaryId && ids.includes(primaryId)) {
+      return primaryId;
+    }
+
     throw new BadRequestException({
       code: ErrorCode.VALIDATION_FAILED,
-      message: 'parentProfileId is required when managing multiple profiles',
+      message: 'Seleccioná el local o perfil comercial al que pertenece el scanner',
     });
   }
 

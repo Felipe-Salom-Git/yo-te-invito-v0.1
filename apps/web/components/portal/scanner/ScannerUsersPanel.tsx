@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   PageContainer,
@@ -16,6 +16,7 @@ import {
 import {
   useScannerAccountsList,
   useScannerAccountsMutations,
+  useScannerParentProfiles,
 } from '@/lib/query/scanner-accounts';
 import { getErrorMessage } from '@/lib/errors';
 import type { ScannerAccountsPortal } from '@/repositories/interfaces';
@@ -24,17 +25,17 @@ import { ScannerPwaCta } from '@/components/portal/scanner/ScannerPwaCta';
 
 const PORTAL_COPY: Record<
   ScannerAccountsPortal,
-  { backHref: string; backLabel: string; parentHint: string }
+  { backHref: string; backLabel: string; parentLabel: string }
 > = {
   producer: {
     backHref: '/producer',
     backLabel: 'Dashboard',
-    parentHint: 'Productora (opcional si tenés más de una)',
+    parentLabel: 'Productora',
   },
   gastro: {
     backHref: '/gastro',
     backLabel: 'Dashboard',
-    parentHint: 'Local gastronómico (opcional si tenés más de uno)',
+    parentLabel: 'Local gastronómico',
   },
 };
 
@@ -61,6 +62,7 @@ export function ScannerUsersPanel({ portal }: Props) {
   const copy = PORTAL_COPY[portal];
   const { addToast } = useToast();
   const listQuery = useScannerAccountsList(portal);
+  const parentProfilesQuery = useScannerParentProfiles(portal);
   const { create, updateStatus, resetPassword } = useScannerAccountsMutations(portal);
 
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -71,6 +73,23 @@ export function ScannerUsersPanel({ portal }: Props) {
   const [parentProfileId, setParentProfileId] = useState('');
   const [tempPasswordModal, setTempPasswordModal] = useState<string | null>(null);
 
+  const parentOptions = parentProfilesQuery.data?.data ?? [];
+  const showParentPicker = parentOptions.length > 1;
+
+  const defaultParentId = useMemo(() => {
+    if (parentOptions.length === 0) return '';
+    const primary = parentOptions.find((p) => p.isPrimary);
+    if (primary) return primary.id;
+    if (parentOptions.length === 1) return parentOptions[0]!.id;
+    return '';
+  }, [parentOptions]);
+
+  useEffect(() => {
+    if (!sheetOpen) return;
+    if (parentProfileId) return;
+    if (defaultParentId) setParentProfileId(defaultParentId);
+  }, [sheetOpen, defaultParentId, parentProfileId]);
+
   const items = listQuery.data?.data ?? [];
 
   const resetForm = () => {
@@ -78,18 +97,23 @@ export function ScannerUsersPanel({ portal }: Props) {
     setFirstName('');
     setLastName('');
     setPassword('');
-    setParentProfileId('');
+    setParentProfileId(defaultParentId);
   };
 
   const handleCreate = async (e?: React.FormEvent) => {
     e?.preventDefault();
+    const resolvedParentId = parentProfileId.trim() || defaultParentId;
+    if (showParentPicker && !resolvedParentId) {
+      addToast(`Seleccioná ${copy.parentLabel.toLowerCase()}.`, 'error');
+      return;
+    }
     try {
       const result = await create.mutateAsync({
         email: email.trim(),
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         ...(password.trim() ? { password: password.trim() } : {}),
-        ...(parentProfileId.trim() ? { parentProfileId: parentProfileId.trim() } : {}),
+        ...(resolvedParentId ? { parentProfileId: resolvedParentId } : {}),
       });
       setSheetOpen(false);
       resetForm();
@@ -99,8 +123,8 @@ export function ScannerUsersPanel({ portal }: Props) {
       } else {
         addToast('Usuario scanner creado.', 'success');
       }
-    } catch (e) {
-      addToast(getErrorMessage(e), 'error');
+    } catch (err) {
+      addToast(getErrorMessage(err), 'error');
     }
   };
 
@@ -111,8 +135,8 @@ export function ScannerUsersPanel({ portal }: Props) {
         isActive: !account.isActive,
       });
       addToast(account.isActive ? 'Scanner desactivado.' : 'Scanner activado.', 'success');
-    } catch (e) {
-      addToast(getErrorMessage(e), 'error');
+    } catch (err) {
+      addToast(getErrorMessage(err), 'error');
     }
   };
 
@@ -125,8 +149,8 @@ export function ScannerUsersPanel({ portal }: Props) {
       } else {
         addToast('Contraseña restablecida.', 'success');
       }
-    } catch (e) {
-      addToast(getErrorMessage(e), 'error');
+    } catch (err) {
+      addToast(getErrorMessage(err), 'error');
     }
   };
 
@@ -247,7 +271,13 @@ export function ScannerUsersPanel({ portal }: Props) {
             <Button
               type="submit"
               form="scanner-create-form"
-              disabled={create.isPending || !email.trim() || !firstName.trim() || !lastName.trim()}
+              disabled={
+                create.isPending ||
+                !email.trim() ||
+                !firstName.trim() ||
+                !lastName.trim() ||
+                (showParentPicker && !parentProfileId.trim() && !defaultParentId)
+              }
             >
               {create.isPending ? 'Creando…' : 'Crear scanner'}
             </Button>
@@ -302,19 +332,42 @@ export function ScannerUsersPanel({ portal }: Props) {
               Si la dejás vacía, generamos una contraseña temporal.
             </p>
           </div>
-          <div>
-            <Input
-              label={copy.parentHint}
-              id="scanner-create-parent-profile"
-              name="scanner-create-parent-profile"
-              value={parentProfileId}
-              onChange={(e) => setParentProfileId(e.target.value)}
-              autoComplete="off"
-            />
-            <p className="mt-1 text-xs text-text-muted">
-              Solo necesario si gestionás más de un perfil comercial.
+
+          {showParentPicker && (
+            <div>
+              <label
+                className="mb-1 block text-sm font-medium text-text"
+                htmlFor="scanner-create-parent-profile"
+              >
+                {copy.parentLabel}
+              </label>
+              <select
+                id="scanner-create-parent-profile"
+                name="scanner-create-parent-profile"
+                value={parentProfileId}
+                onChange={(e) => setParentProfileId(e.target.value)}
+                className="w-full rounded-lg border border-border bg-bg px-3 py-2 text-sm text-text"
+                required
+              >
+                <option value="">Seleccioná…</option>
+                {parentOptions.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.displayName}
+                    {option.isPrimary ? ' (principal)' : ''}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-text-muted">
+                Tu cuenta gestiona más de un perfil. Elegí dónde operará este scanner.
+              </p>
+            </div>
+          )}
+
+          {!showParentPicker && parentOptions.length === 1 && (
+            <p className="text-xs text-text-muted">
+              Scanner para: <strong className="text-text">{parentOptions[0]!.displayName}</strong>
             </p>
-          </div>
+          )}
         </form>
       </Modal>
 

@@ -1872,6 +1872,12 @@ export class ApiRepository implements Repositories {
       const base = portal === 'producer' ? '/producer/scanners' : '/gastro/scanners';
       return this.client.get<import('@yo-te-invito/shared').ScannerAccountsListResponse>(base);
     },
+    listParentProfiles: async (portal: ScannerAccountsPortal) => {
+      const base = portal === 'producer' ? '/producer/scanners' : '/gastro/scanners';
+      return this.client.get<import('@yo-te-invito/shared').ScannerParentProfilesResponse>(
+        `${base}/parent-profiles`,
+      );
+    },
     create: async (portal, body) => {
       const base = portal === 'producer' ? '/producer/scanners' : '/gastro/scanners';
       return this.client.post<import('@yo-te-invito/shared').CreateScannerUserResponse>(base, body);

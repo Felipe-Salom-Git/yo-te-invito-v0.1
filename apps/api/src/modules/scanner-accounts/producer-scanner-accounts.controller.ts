@@ -26,6 +26,12 @@ export class ProducerScannerAccountsController {
     return this.scannerAccounts.listForProducer(user);
   }
 
+  @Get('parent-profiles')
+  @RequireRole(Role.ADMIN, Role.PRODUCER_OWNER, Role.PRODUCER_STAFF)
+  listParentProfiles(@CurrentUser() user: { id: string; tenantId: string; role: string }) {
+    return this.scannerAccounts.listProducerParentProfiles(user);
+  }
+
   @Post()
   @RequireRole(Role.ADMIN, Role.PRODUCER_OWNER, Role.PRODUCER_STAFF)
   create(

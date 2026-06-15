@@ -91,3 +91,15 @@ export const resetScannerPasswordResponseSchema = z.object({
   account: scannerAccountSummarySchema,
 });
 export type ResetScannerPasswordResponse = z.infer<typeof resetScannerPasswordResponseSchema>;
+
+export const scannerParentProfileOptionSchema = z.object({
+  id: z.string(),
+  displayName: z.string(),
+  isPrimary: z.boolean().optional(),
+});
+export type ScannerParentProfileOption = z.infer<typeof scannerParentProfileOptionSchema>;
+
+export const scannerParentProfilesResponseSchema = z.object({
+  data: z.array(scannerParentProfileOptionSchema),
+});
+export type ScannerParentProfilesResponse = z.infer<typeof scannerParentProfilesResponseSchema>;

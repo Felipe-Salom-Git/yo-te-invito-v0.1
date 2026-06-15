@@ -26,6 +26,12 @@ export class GastroScannerAccountsController {
     return this.scannerAccounts.listForGastro(user);
   }
 
+  @Get('parent-profiles')
+  @RequireRole(Role.ADMIN, Role.GASTRO_OWNER)
+  listParentProfiles(@CurrentUser() user: { id: string; tenantId: string; role: string }) {
+    return this.scannerAccounts.listGastroParentProfiles(user);
+  }
+
   @Post()
   @RequireRole(Role.ADMIN, Role.GASTRO_OWNER)
   create(
