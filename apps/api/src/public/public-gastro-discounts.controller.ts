@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 import {
   publicGastroDiscountClaimBodySchema,
   publicGastroDiscountClaimViewQuerySchema,
@@ -8,6 +8,7 @@ import {
   type PublicGastroDiscountListQuery,
 } from '@yo-te-invito/shared';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
+import { OptionalJwtOrDevAuthGuard } from '../auth/optional-jwt-or-dev-auth.guard';
 import { PublicGastroDiscountsService } from './public-gastro-discounts.service';
 
 @Controller('public/gastro-discounts')
@@ -53,11 +54,22 @@ export class PublicGastroDiscountsController {
   }
 
   @Post(':discountId/claim')
+  @UseGuards(OptionalJwtOrDevAuthGuard)
   async claim(
     @Param('discountId') discountId: string,
     @Body(new ZodValidationPipe(publicGastroDiscountClaimBodySchema))
     body: PublicGastroDiscountClaimBody,
+    @Req() req: { user?: { id: string; role: string } },
   ) {
-    return this.discounts.claim(body.tenantId, discountId, body.email);
+    const user = req.user;
+    return this.discounts.claim(
+      body.tenantId,
+      discountId,
+      body.email,
+      user?.id ?? null,
+      process.env.WEB_BASE_URL,
+      user?.role ?? 'GUEST',
+      user?.id,
+    );
   }
 }

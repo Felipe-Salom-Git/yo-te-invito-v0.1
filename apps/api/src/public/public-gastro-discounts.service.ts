@@ -6,7 +6,8 @@ import {
 import { randomBytes } from 'crypto';
 import { buildGastroDiscountQrPayload, ErrorCode } from '@yo-te-invito/shared';
 import { PrismaService } from '../prisma/prisma.service';
-import { EmailService } from '../email/email.service';
+import { AuditService } from '../modules/audit/audit.service';
+import { GastroDiscountClaimEmailService } from '../modules/gastro/gastro-discount-claim-email.service';
 
 const PUBLIC_STATUSES = ['APPROVED', 'ACTIVE'] as const;
 
@@ -61,17 +62,30 @@ function mapListRow(
   };
 }
 
+function isClaimActive(claim: {
+  status: string;
+  expiresAt: Date | null;
+  usedAt: Date | null;
+}): boolean {
+  if (claim.status === 'CANCELLED' || claim.status === 'USED' || claim.usedAt) return false;
+  if (claim.status === 'EXPIRED') return false;
+  if (claim.expiresAt && claim.expiresAt < new Date()) return false;
+  return claim.status === 'ACTIVE';
+}
+
 @Injectable()
 export class PublicGastroDiscountsService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly email: EmailService,
+    private readonly claimEmail: GastroDiscountClaimEmailService,
+    private readonly audit: AuditService,
   ) {}
 
   private discountsWhere(tenantId: string, subcategorySlug?: string) {
     const now = new Date();
     return {
       tenantId,
+      visibility: 'PUBLIC' as const,
       status: { in: [...PUBLIC_STATUSES] },
       gastroProfile: {
         status: 'ACTIVE' as const,
@@ -140,39 +154,28 @@ export class PublicGastroDiscountsService {
     };
   }
 
-  private buildQrPayload(discountId: string, qrToken: string) {
-    return buildGastroDiscountQrPayload(discountId, qrToken);
-  }
-
-  private claimEmailHtml(opts: {
-    title: string;
-    locationName: string;
-    qrPayload: string;
-    viewUrl: string;
-  }) {
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(opts.qrPayload)}`;
-    return `<motion style="font-family:sans-serif;max-width:480px;margin:0 auto;">
-<h2 style="margin:0 0 8px;">Tu descuento en ${opts.locationName}</h2>
-<p style="color:#444;">${opts.title}</p>
-<p style="color:#666;font-size:14px;">Presentá este código QR en el local. Es gratuito — no requiere compra previa.</p>
-<p style="text-align:center;margin:24px 0;"><img src="${qrUrl}" alt="Código QR" width="280" height="280" style="border:1px solid #eee;border-radius:8px;" /></p>
-<p style="font-size:13px;color:#666;">También podés ver tu QR en: <a href="${opts.viewUrl}">abrir en la web</a></p>
-<p style="font-size:12px;color:#999;">Yo Te Invito</p>
-</motion>`.replace(/motion/g, 'div');
-  }
-
   async claim(
     tenantId: string,
     discountId: string,
     email: string,
     userId?: string | null,
     webBaseUrl?: string,
+    actorRole = 'GUEST',
+    actorId?: string,
   ) {
-    const normalizedEmail = email.trim().toLowerCase();
+    let normalizedEmail = email.trim().toLowerCase();
+    if (userId) {
+      const user = await this.prisma.user.findFirst({
+        where: { id: userId, tenantId, deletedAt: null },
+        select: { email: true },
+      });
+      if (user?.email) normalizedEmail = user.email.trim().toLowerCase();
+    }
     const discount = await this.prisma.gastroDiscount.findFirst({
       where: {
         id: discountId,
         tenantId,
+        visibility: 'PUBLIC',
         status: { in: [...PUBLIC_STATUSES] },
       },
       include: {
@@ -198,24 +201,29 @@ export class PublicGastroDiscountsService {
       },
     });
 
-    const baseUrl = (webBaseUrl ?? process.env.WEB_BASE_URL ?? 'http://localhost:3000').replace(
-      /\/$/,
-      '',
-    );
     const title = discount.displayTitle?.trim() || 'Descuento';
     const locationName = discount.gastroProfile.displayName;
+    const expiresAt = discount.validTo ?? discount.discountDate ?? null;
 
-    const finish = async (claim: { id: string; accessToken: string; qrToken: string }) => {
-      const qrPayload = this.buildQrPayload(discount.id, claim.qrToken);
-      const viewUrl = `${baseUrl}/descuentos/reclamo/${claim.id}?token=${claim.accessToken}&tenantId=${encodeURIComponent(tenantId)}`;
-      const emailSent = await this.sendClaimEmail(
-        normalizedEmail,
-        title,
-        locationName,
+    const finish = async (claim: {
+      id: string;
+      accessToken: string;
+      qrToken: string;
+      emailSentAt: Date | null;
+    }) => {
+      const qrPayload = this.claimEmail.buildQrPayload(discount.id, claim.qrToken);
+      const emailSent = await this.claimEmail.sendClaimEmail({
+        claimId: claim.id,
+        to: normalizedEmail,
+        kind: 'REQUESTED',
+        gastroName: locationName,
+        discountTitle: title,
+        discountDescription: discount.summary ?? discount.detail,
         qrPayload,
-        viewUrl,
-        claim.id,
-      );
+        qrCode: claim.qrToken,
+        validTo: expiresAt?.toISOString() ?? null,
+        webBaseUrl,
+      });
       return {
         claimId: claim.id,
         accessToken: claim.accessToken,
@@ -224,11 +232,19 @@ export class PublicGastroDiscountsService {
         qrPayload,
         discountTitle: discount.displayTitle,
         locationName,
+        message: 'Te enviamos el QR de descuento por email. También podés verlo desde Mi cuenta.',
       };
     };
 
-    if (existing) {
+    if (existing && isClaimActive(existing)) {
       return finish(existing);
+    }
+
+    if (existing) {
+      throw new BadRequestException({
+        code: ErrorCode.VALIDATION_FAILED,
+        message: 'Ya tenés un QR para este descuento que no está activo',
+      });
     }
 
     const claim = await this.prisma.gastroDiscountClaim.create({
@@ -239,43 +255,24 @@ export class PublicGastroDiscountsService {
         userId: userId ?? null,
         qrToken: randomBytes(24).toString('hex'),
         accessToken: randomBytes(32).toString('hex'),
+        type: 'PUBLIC_REQUEST',
+        source: 'WEB',
+        status: 'ACTIVE',
+        expiresAt,
       },
     });
 
-    return finish(claim);
-  }
-
-  private async sendClaimEmail(
-    to: string,
-    title: string,
-    locationName: string,
-    qrPayload: string,
-    viewUrl: string,
-    claimId: string,
-  ): Promise<boolean> {
-    let emailSentAt: Date | null = null;
-    let emailSendError: string | null = null;
-    let sent = false;
-
-    if (!this.email.isConfigured()) {
-      emailSendError = 'Email service not configured';
-    } else {
-      sent = await this.email.send({
-        to,
-        subject: `Tu descuento — ${locationName}`,
-        html: this.claimEmailHtml({ title, locationName, qrPayload, viewUrl }),
-        text: `Tu descuento en ${locationName}: ${title}\n\nQR: ${qrPayload}\n\nVer online: ${viewUrl}`,
-      });
-      if (sent) emailSentAt = new Date();
-      else emailSendError = 'Failed to send email';
-    }
-
-    await this.prisma.gastroDiscountClaim.update({
-      where: { id: claimId },
-      data: { emailSentAt, emailSendError },
+    await this.audit.logAction({
+      tenantId,
+      actorId: actorId ?? userId ?? 'anonymous',
+      actorRole,
+      action: 'GASTRO_DISCOUNT_REQUESTED',
+      entityType: 'GastroDiscountClaim',
+      entityId: claim.id,
+      metadata: { discountId, email: normalizedEmail },
     });
 
-    return sent;
+    return finish(claim);
   }
 
   async getClaimView(tenantId: string, claimId: string, accessToken: string) {
@@ -300,13 +297,15 @@ export class PublicGastroDiscountsService {
     return {
       claimId: claim.id,
       email: claim.email,
-      qrPayload: this.buildQrPayload(d.id, claim.qrToken),
+      qrPayload: this.claimEmail.buildQrPayload(d.id, claim.qrToken),
       discountTitle: d.displayTitle,
       discountSummary: d.summary,
       locationName: profile.displayName,
       locationId: profile.id,
       discountDate: d.discountDate?.toISOString() ?? null,
       emailSentAt: claim.emailSentAt?.toISOString() ?? null,
+      status: claim.status,
+      type: claim.type,
     };
   }
 }

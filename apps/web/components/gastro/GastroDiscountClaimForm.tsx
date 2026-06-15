@@ -16,12 +16,13 @@ export function GastroDiscountClaimForm({
   discountId: string;
   claimable: boolean;
 }) {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
   const repos = useRepositories();
   const { tenantId } = useTenant();
   const t = tenantId || TENANT_FALLBACK;
 
+  const isLoggedIn = status === 'authenticated' && !!session?.user;
   const sessionEmail =
     (session?.user as { email?: string } | undefined)?.email?.trim() ?? '';
 
@@ -32,7 +33,7 @@ export function GastroDiscountClaimForm({
     mutationFn: () =>
       repos.publicGastro.claimDiscount(discountId, {
         tenantId: t,
-        email: email.trim(),
+        email: isLoggedIn ? sessionEmail : email.trim(),
       }),
     onSuccess: (result) => {
       const params = new URLSearchParams({
@@ -60,31 +61,38 @@ export function GastroDiscountClaimForm({
       onSubmit={(e) => {
         e.preventDefault();
         setError(null);
-        if (!email.trim()) {
+        const targetEmail = isLoggedIn ? sessionEmail : email.trim();
+        if (!targetEmail) {
           setError('Ingresá tu email');
           return;
         }
         claimMutation.mutate();
       }}
     >
-      <h2 className="text-lg font-semibold text-text">Reclamá tu código QR</h2>
+      <h2 className="text-lg font-semibold text-text">Solicitar descuento</h2>
       <p className="mt-1 text-sm text-text-muted">
-        Es gratis, como un ticket sin costo. Te enviamos el QR por email para presentar en el local.
+        {isLoggedIn
+          ? `Te enviamos el QR a ${sessionEmail}. También podés verlo desde Mi cuenta.`
+          : 'Es gratis. Te enviamos el QR por email para presentar en el local.'}
       </p>
 
-      <label className="mt-4 block text-sm font-medium text-text" htmlFor="claim-email">
-        Email
-      </label>
-      <input
-        id="claim-email"
-        type="email"
-        required
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        className="mt-1 w-full rounded-lg border border-border bg-bg px-3 py-2 text-text"
-        placeholder="tu@email.com"
-        disabled={claimMutation.isPending}
-      />
+      {!isLoggedIn && (
+        <>
+          <label className="mt-4 block text-sm font-medium text-text" htmlFor="claim-email">
+            Email
+          </label>
+          <input
+            id="claim-email"
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="mt-1 w-full rounded-lg border border-border bg-bg px-3 py-2 text-text"
+            placeholder="tu@email.com"
+            disabled={claimMutation.isPending}
+          />
+        </>
+      )}
 
       {error && <p className="mt-2 text-sm text-red-400">{error}</p>}
 
@@ -93,7 +101,11 @@ export function GastroDiscountClaimForm({
         disabled={claimMutation.isPending}
         className="mt-4 w-full rounded-lg bg-accent px-4 py-3 text-sm font-semibold text-bg transition hover:opacity-90 disabled:opacity-60"
       >
-        {claimMutation.isPending ? 'Enviando…' : 'Enviar QR a mi email'}
+        {claimMutation.isPending
+          ? 'Enviando…'
+          : isLoggedIn
+            ? 'Enviar QR a mi email'
+            : 'Solicitar descuento'}
       </button>
     </form>
   );

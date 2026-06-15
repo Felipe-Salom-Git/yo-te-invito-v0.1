@@ -175,6 +175,7 @@ export class PublicGastroLocationsService {
       where: {
         tenantId,
         gastroProfileId: profile.id,
+        visibility: 'PUBLIC',
         status: { in: ['APPROVED', 'ACTIVE'] },
         OR: [{ discountDate: null }, { discountDate: { gte: now } }],
       },

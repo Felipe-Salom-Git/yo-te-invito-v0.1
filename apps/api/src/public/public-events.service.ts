@@ -329,6 +329,7 @@ export class PublicEventsService {
               gastroDiscounts: {
                 where: {
                   status: 'ACTIVE',
+                  visibility: 'PUBLIC',
                   AND: [
                     { OR: [{ validFrom: null }, { validFrom: { lte: now } }] },
                     { OR: [{ validTo: null }, { validTo: { gte: now } }] },
@@ -594,6 +595,7 @@ export class PublicEventsService {
         tenantId,
         eventId,
         status: 'ACTIVE',
+        visibility: 'PUBLIC',
         AND: [
           { OR: [{ validFrom: null }, { validFrom: { lte: now } }] },
           { OR: [{ validTo: null }, { validTo: { gte: now } }] },
