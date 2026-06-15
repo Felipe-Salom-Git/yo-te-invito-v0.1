@@ -10,7 +10,7 @@ import {
   EmptyState,
   Button,
   Input,
-  SideSheet,
+  Modal,
   useToast,
 } from '@/components';
 import {
@@ -81,7 +81,8 @@ export function ScannerUsersPanel({ portal }: Props) {
     setParentProfileId('');
   };
 
-  const handleCreate = async () => {
+  const handleCreate = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     try {
       const result = await create.mutateAsync({
         email: email.trim(),
@@ -224,17 +225,45 @@ export function ScannerUsersPanel({ portal }: Props) {
         </div>
       )}
 
-      <SideSheet
+      <Modal
         isOpen={sheetOpen}
         onClose={() => {
           setSheetOpen(false);
           resetForm();
         }}
         title="Nuevo usuario scanner"
+        footer={
+          <>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                setSheetOpen(false);
+                resetForm();
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              form="scanner-create-form"
+              disabled={create.isPending || !email.trim() || !firstName.trim() || !lastName.trim()}
+            >
+              {create.isPending ? 'Creando…' : 'Crear scanner'}
+            </Button>
+          </>
+        }
       >
-        <div className="space-y-4">
+        <form
+          id="scanner-create-form"
+          autoComplete="off"
+          onSubmit={(e) => void handleCreate(e)}
+          className="space-y-4"
+        >
           <Input
             label="Email"
+            id="scanner-create-email"
+            name="scanner-create-email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -243,19 +272,27 @@ export function ScannerUsersPanel({ portal }: Props) {
           />
           <Input
             label="Nombre"
+            id="scanner-create-first-name"
+            name="scanner-create-first-name"
             value={firstName}
             onChange={(e) => setFirstName(e.target.value)}
+            autoComplete="off"
             required
           />
           <Input
             label="Apellido"
+            id="scanner-create-last-name"
+            name="scanner-create-last-name"
             value={lastName}
             onChange={(e) => setLastName(e.target.value)}
+            autoComplete="off"
             required
           />
           <div>
             <Input
               label="Contraseña inicial (opcional)"
+              id="scanner-create-password"
+              name="scanner-create-password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -268,39 +305,30 @@ export function ScannerUsersPanel({ portal }: Props) {
           <div>
             <Input
               label={copy.parentHint}
+              id="scanner-create-parent-profile"
+              name="scanner-create-parent-profile"
               value={parentProfileId}
               onChange={(e) => setParentProfileId(e.target.value)}
+              autoComplete="off"
             />
             <p className="mt-1 text-xs text-text-muted">
               Solo necesario si gestionás más de un perfil comercial.
             </p>
           </div>
-          <div className="flex gap-2 pt-2">
-            <Button
-              type="button"
-              disabled={create.isPending || !email.trim() || !firstName.trim() || !lastName.trim()}
-              onClick={() => void handleCreate()}
-            >
-              {create.isPending ? 'Creando…' : 'Crear scanner'}
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => {
-                setSheetOpen(false);
-                resetForm();
-              }}
-            >
-              Cancelar
-            </Button>
-          </div>
-        </div>
-      </SideSheet>
+        </form>
+      </Modal>
 
-      <SideSheet
+      <Modal
         isOpen={tempPasswordModal !== null}
         onClose={() => setTempPasswordModal(null)}
         title="Contraseña temporal"
+        footer={
+          tempPasswordModal ? (
+            <Button type="button" onClick={() => void copyPassword(tempPasswordModal)}>
+              Copiar contraseña
+            </Button>
+          ) : undefined
+        }
       >
         {tempPasswordModal ? (
           <div className="space-y-4">
@@ -310,12 +338,9 @@ export function ScannerUsersPanel({ portal }: Props) {
             <div className="rounded-lg border border-border bg-bg-muted/40 p-3 font-mono text-sm break-all">
               {tempPasswordModal}
             </div>
-            <Button type="button" onClick={() => void copyPassword(tempPasswordModal)}>
-              Copiar contraseña
-            </Button>
           </div>
         ) : null}
-      </SideSheet>
+      </Modal>
     </PageContainer>
   );
 }

@@ -20,12 +20,16 @@ export function NavbarCitySelectField({
   className = '',
   onCityApplied,
 }: NavbarCitySelectFieldProps) {
-  const { filterCategory, currentCity, applyCity } = useNavbarCitySelection();
+  const { filterCategory, currentCity, applyCity, route } = useNavbarCitySelection();
   const { data: cities = [], isLoading, isError } = useNavbarDiscoveryCities(
     filterCategory || null,
   );
 
   const groups = useMemo(() => groupCitiesByProvince(cities), [cities]);
+
+  if (route.kind === 'other') {
+    return null;
+  }
 
   if (isError || (!isLoading && cities.length === 0)) {
     return null;
