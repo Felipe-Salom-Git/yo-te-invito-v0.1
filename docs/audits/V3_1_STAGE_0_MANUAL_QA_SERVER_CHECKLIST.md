@@ -96,7 +96,10 @@ Probar con **sistema/navegador en modo claro**:
 
 ## 8. Scanner PWA
 
+> Actualizado Etapa 14 — login + menú operativo (`V3_1_STAGE_14_QA_HOTFIXES_CLOSING.md` §3).
+
 - [ ] https://scanner.yoteinvito.club carga
+- [ ] Sin sesión → pantalla login visible
 - [ ] Login usuario scanner (prod: JWT real)
 - [ ] Selección evento / descuento gastro
 - [ ] Modo cámara QR

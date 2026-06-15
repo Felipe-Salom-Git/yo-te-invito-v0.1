@@ -825,6 +825,8 @@ FAQs, editor enriquecido, palabras cliqueables, cropper de imágenes, SEO fino y
 
 ## 19.2 QA manual pendiente (browser)
 
+> Hotfixes Etapa 14 cerrados técnicamente — ver `docs/audits/V3_1_STAGE_14_QA_HOTFIXES_CLOSING.md`. Retomar QA post-redeploy.
+
 - [ ] Discovery público (`/`, `/home`, `/categorias`, `/explore`, `/categoria/*`).
 - [ ] Fichas públicas (eventos, excursiones, gastro, rentals, hoteles).
 - [ ] Admin (archivar, banners, auditoría).
