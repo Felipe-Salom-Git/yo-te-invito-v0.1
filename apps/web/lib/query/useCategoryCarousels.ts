@@ -42,7 +42,6 @@ async function fetchCategoryList(
     excludeGeneralPublications?: boolean;
     dateFrom?: string;
     dateTo?: string;
-    city?: string;
   },
 ): Promise<EventSummary[]> {
   const res = await repos.events.list({
@@ -57,7 +56,6 @@ async function fetchCategoryList(
     excludeGeneralPublications: opts.excludeGeneralPublications,
     dateFrom: opts.dateFrom,
     dateTo: opts.dateTo,
-    city: opts.city?.trim() || undefined,
   });
   return res.data;
 }
@@ -74,14 +72,11 @@ function findActiveSubcategory(
 export function useCategoryCarousels(
   category: CategoryGatewayId,
   subcategorySlug?: string | null,
-  cityFilter?: string,
 ) {
   const repos = useRepositories();
   const { tenantId } = useTenant();
   const t = tenantId || TENANT_FALLBACK;
   const slug = subcategorySlug?.trim() || undefined;
-  const city = cityFilter?.trim() || undefined;
-  const cityKey = city ?? '';
 
   const { subcategories, isLoading: subcategoriesLoading } = useCategorySubcategories(category);
 
@@ -101,68 +96,62 @@ export function useCategoryCarousels(
   );
 
   const filteredQuery = useQuery({
-    queryKey: categoryLandingKeys.carousel(t, category, 'filtered', slug ?? '', cityKey),
+    queryKey: categoryLandingKeys.carousel(t, category, 'filtered', slug ?? ''),
     queryFn: () =>
       fetchCategoryList(repos, t, category, {
         subcategorySlug: slug,
         sort: category === 'event' ? 'upcoming' : 'recent',
-        city,
       }),
     enabled: !!t && filterMode && !!slug,
   });
 
   const recommendedQuery = useQuery({
-    queryKey: categoryLandingKeys.carousel(t, category, 'recommended', '', cityKey),
+    queryKey: categoryLandingKeys.carousel(t, category, 'recommended', ''),
     queryFn: async () => {
       if (category === 'event') {
         return fetchCategoryList(repos, t, category, {
           sort: 'featured_event',
           hasTicketing: true,
           excludeGeneralPublications: true,
-          city,
         });
       }
       const items = await fetchCategoryList(repos, t, category, {
         sort: 'recommended',
         minValidReviews: RECOMMENDED_LIST_MIN_VALID_REVIEWS,
-        city,
       });
       if (items.length > 0) return items;
       return fetchCategoryList(repos, t, category, {
         sort: featuredSortForCategory(category),
-        city,
       });
     },
     enabled: !!t && !filterMode,
   });
 
   const topRatedQuery = useQuery({
-    queryKey: categoryLandingKeys.carousel(t, category, 'top-rated', '', cityKey),
+    queryKey: categoryLandingKeys.carousel(t, category, 'top-rated', ''),
     queryFn: () =>
       fetchCategoryList(repos, t, category, {
         sort: 'top_rated',
         minValidReviews: RECOMMENDED_LIST_MIN_VALID_REVIEWS,
-        city,
       }),
     enabled: !!t && !filterMode && category !== 'event',
   });
 
   const upcomingQuery = useQuery({
-    queryKey: categoryLandingKeys.carousel(t, category, 'upcoming', '', cityKey),
+    queryKey: categoryLandingKeys.carousel(t, category, 'upcoming', ''),
     queryFn: () =>
       fetchCategoryList(repos, t, category, {
         sort: 'upcoming',
         hasTicketing: true,
         excludeGeneralPublications: true,
-        city,
       }),
     enabled: !!t && !filterMode && category === 'event',
   });
 
   const recentQuery = useQuery({
-    queryKey: categoryLandingKeys.carousel(t, category, 'recent', '', cityKey),
+    queryKey: categoryLandingKeys.carousel(t, category, 'recent', ''),
     queryFn: async () => {
-      const items = await fetchCategoryList(repos, t, category, { sort: 'recent', city });
+      const items = await fetchCategoryList(repos, t, category, { sort: 'recent' });
       return sortRecentItems(items);
     },
     enabled: !!t && !filterMode,

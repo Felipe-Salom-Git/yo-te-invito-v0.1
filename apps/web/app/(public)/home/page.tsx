@@ -5,10 +5,8 @@ import { useSearchParams } from 'next/navigation';
 import { HomeLanding } from '@/components/home/HomeLanding';
 import { isCategoryGatewayId } from '@/lib/home/categoryGatewayConfig';
 import { clearLastSeen } from '@/lib/introStorage';
-import { useDiscoveryCityFilter } from '@/hooks/useDiscoveryCityFilter';
 
 function HomePageContent() {
-  const cityFilter = useDiscoveryCityFilter();
   const searchParams = useSearchParams();
   const categoryParam = searchParams.get('category');
 
@@ -25,10 +23,7 @@ function HomePageContent() {
 
   return (
     <>
-      <HomeLanding
-        initialCategory={initialCategory}
-        cityFilter={cityFilter || undefined}
-      />
+      <HomeLanding initialCategory={initialCategory} />
       <div className="mx-auto max-w-6xl px-4 pt-4">
         <button
           type="button"

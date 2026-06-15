@@ -11,8 +11,8 @@ const DATE_VIEW_MONTHS_AHEAD = 8;
 
 export const eventDiscoveryKeys = {
   all: ['event-discovery'] as const,
-  byDate: (tenantId: string, subcategorySlug: string, city = '') =>
-    [...eventDiscoveryKeys.all, 'by-date', tenantId, subcategorySlug, city] as const,
+  byDate: (tenantId: string, subcategorySlug: string) =>
+    [...eventDiscoveryKeys.all, 'by-date', tenantId, subcategorySlug] as const,
   calendarMonth: (tenantId: string, month: string, subcategorySlug: string) =>
     [...eventDiscoveryKeys.all, 'calendar', tenantId, month, subcategorySlug] as const,
 };
@@ -24,19 +24,14 @@ function dateToForDiscovery(): string {
   return to.toISOString();
 }
 
-export function useEventsByDate(
-  subcategorySlug?: string | null,
-  enabled = true,
-  cityFilter?: string,
-) {
+export function useEventsByDate(subcategorySlug?: string | null, enabled = true) {
   const repos = useRepositories();
   const { tenantId } = useTenant();
   const t = tenantId || TENANT_FALLBACK;
   const slug = subcategorySlug?.trim() ?? '';
-  const city = cityFilter?.trim() || undefined;
 
   return useQuery({
-    queryKey: eventDiscoveryKeys.byDate(t, slug, city ?? ''),
+    queryKey: eventDiscoveryKeys.byDate(t, slug),
     queryFn: async () => {
       const res = await repos.events.list({
         tenantId: t,
@@ -46,7 +41,6 @@ export function useEventsByDate(
         limit: DATE_VIEW_LIMIT,
         page: 1,
         dateTo: dateToForDiscovery(),
-        city,
       });
       return res.data;
     },

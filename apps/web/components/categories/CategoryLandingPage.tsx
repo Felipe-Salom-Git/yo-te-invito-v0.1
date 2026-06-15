@@ -20,16 +20,11 @@ import { EventDiscoveryContent } from '@/components/events/discovery/EventDiscov
 export interface CategoryLandingPageProps {
   category: CategoryGatewayId;
   subcategorySlug?: string | null;
-  cityFilter?: string;
 }
 
-export function CategoryLandingPage({
-  category,
-  subcategorySlug,
-  cityFilter,
-}: CategoryLandingPageProps) {
+export function CategoryLandingPage({ category, subcategorySlug }: CategoryLandingPageProps) {
   if (category === 'event') {
-    return <EventDiscoveryContent subcategorySlug={subcategorySlug} cityFilter={cityFilter} />;
+    return <EventDiscoveryContent subcategorySlug={subcategorySlug} />;
   }
 
   const {
@@ -42,7 +37,7 @@ export function CategoryLandingPage({
     discountsSubcategoryMode,
     publishedDiscounts,
     publishedDiscountsLoading,
-  } = useCategoryCarousels(category, subcategorySlug, cityFilter);
+  } = useCategoryCarousels(category, subcategorySlug);
 
   const heroBanner = useCategoryHeroBanner(toContentMainCategory(category));
 
@@ -143,13 +138,7 @@ export function CategoryLandingPage({
         </div>
       ) : null}
 
-      {!filterMode && (
-        <CrossCategoryRails
-          selectedCategory={category}
-          onCardClick={handleCardClick}
-          cityFilter={cityFilter}
-        />
-      )}
+      {!filterMode && <CrossCategoryRails selectedCategory={category} onCardClick={handleCardClick} />}
 
       <ContentPreviewModal
         isOpen={previewItem !== null}

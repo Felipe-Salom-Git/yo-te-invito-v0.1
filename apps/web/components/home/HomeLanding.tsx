@@ -19,6 +19,7 @@ import {
 } from '@/lib/home/categoryGatewayConfig';
 import { resolveHomeStrategy } from '@/lib/home/homeStrategy';
 import { buildHomeViewModel } from '@/lib/home/homeViewModel';
+import { useEventsList } from '@/lib/query/events';
 import { useHomeCarousels } from '@/lib/query/home';
 import { useRepositories } from '@/repositories/context';
 
@@ -27,31 +28,19 @@ const TENANT_ID = 'tenant-demo';
 export interface HomeLandingProps {
   /** Category from gateway (?category=) — focuses hero tab and scrolls to rail */
   initialCategory?: CategoryGatewayId | null;
-  /** Navbar city filter (?city=) */
-  cityFilter?: string;
 }
 
-export function HomeLanding({ initialCategory = null, cityFilter }: HomeLandingProps) {
+export function HomeLanding({ initialCategory = null }: HomeLandingProps) {
   const { tenantId } = useTenant();
   const t = tenantId || TENANT_ID;
   const { isAuthenticated } = useMe();
   const { preferences } = usePreferences();
   const repos = useRepositories();
 
-  const { data: eventsData, isLoading: eventsLoading } = useQuery({
-    queryKey: ['home', 'highlights', t, cityFilter ?? ''],
-    queryFn: () =>
-      repos.events.list({
-        tenantId: t,
-        page: 1,
-        limit: 8,
-        city: cityFilter?.trim() || undefined,
-      }),
-    enabled: !!t,
-  });
+  const { data: eventsData, isLoading: eventsLoading } = useEventsList(t, 1, 8);
   const highlights = eventsData?.data ?? [];
 
-  const preferredCity = cityFilter?.trim() || preferences?.preferredCity?.trim() || null;
+  const preferredCity = preferences?.preferredCity?.trim() || null;
 
   const {
     trending,
@@ -63,7 +52,7 @@ export function HomeLanding({ initialCategory = null, cityFilter }: HomeLandingP
     excursion,
     rental,
     isLoading: carouselsLoading,
-  } = useHomeCarousels({ preferredCity, cityFilter: cityFilter?.trim() || undefined });
+  } = useHomeCarousels({ preferredCity });
 
   const { data: favoritesData, isLoading: favoritesLoading } = useMeFavorites(isAuthenticated);
   const favoriteEventIds = (favoritesData?.favorites ?? [])

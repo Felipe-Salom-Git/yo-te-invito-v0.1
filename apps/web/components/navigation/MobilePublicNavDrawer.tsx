@@ -12,7 +12,6 @@ import {
 } from '@/lib/navigation/publicNavConfig';
 import { getPortalHomeMenuLabel } from '@/lib/navigation/rolePortalHome';
 import { getUserMenuLoggedInItems } from '@/lib/navigation/userNavConfig';
-import { NavbarCitySelectField } from './NavbarCitySelectField';
 
 const linkBase = `block rounded-lg px-3 py-2.5 text-base text-text transition-colors hover:bg-bg-muted ${navFocusRing}`;
 
@@ -93,13 +92,6 @@ export function MobilePublicNavDrawer({ isOpen, onClose }: MobilePublicNavDrawer
               </li>
             ))}
           </ul>
-
-          <div className="mt-6 border-t border-border pt-4">
-            <NavbarCitySelectField
-              id="navbar-city-select-mobile-drawer"
-              onCityApplied={onClose}
-            />
-          </div>
 
           <div className="mt-6 border-t border-border pt-4">
             <p className="mb-2 text-xs font-medium uppercase tracking-wide text-text-muted">Cuenta</p>

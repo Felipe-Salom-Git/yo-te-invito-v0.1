@@ -21,6 +21,8 @@ import { PageContainer, SectionTitle, EmptyState, QueryError } from '@/component
 import { RENTAL_EXPLORE_EMPTY_HINT, RENTAL_PUBLIC_TAGLINE } from '@/lib/rentals/publicCopy';
 import { HotelsComingSoonScreen } from '@/components/hotel/HotelsComingSoonScreen';
 import type { ContentMainCategory } from '@/repositories/interfaces';
+import { ExploreCityFilter } from '@/components/explore/ExploreCityFilter';
+import { cityDisplayLabel } from '@yo-te-invito/shared';
 
 const TENANT_ID = 'tenant-demo';
 
@@ -32,7 +34,6 @@ const selectClass =
 
 function hasAdvancedExploreFilters(filters: ExploreFiltersState): boolean {
   return (
-    !!filters.city.trim() ||
     !!filters.dateFrom.trim() ||
     !!filters.dateTo.trim() ||
     !!filters.category.trim() ||
@@ -141,6 +142,15 @@ export function ExplorePageContent() {
     [applyFilters, draft],
   );
 
+  const handleCityChange = useCallback(
+    (city: string) => {
+      const next = { ...draft, city, page: 1 };
+      setDraft(next);
+      applyFilters(next);
+    },
+    [applyFilters, draft],
+  );
+
   const handleClear = useCallback(() => {
     clearFilters();
   }, [clearFilters]);
@@ -182,6 +192,30 @@ export function ExplorePageContent() {
       <div className="mt-6 max-w-2xl">
         <PublicSearchBar defaultQuery={urlFilters.q} variant="default" />
       </div>
+
+      <div className="mt-6">
+        <ExploreCityFilter
+          value={urlFilters.city}
+          category={draft.category}
+          onChange={handleCityChange}
+        />
+        {urlFilters.city.trim() ? (
+          <button
+            type="button"
+            onClick={() => handleCityChange('')}
+            className="mt-2 text-xs text-text-muted transition-colors hover:text-accent"
+          >
+            Ver todo — quitar filtro de ciudad
+          </button>
+        ) : null}
+      </div>
+
+      {urlFilters.city.trim() ? (
+        <p className="mt-3 text-sm text-text-muted">
+          Mostrando resultados en{' '}
+          <span className="font-medium text-text">{cityDisplayLabel(urlFilters.city)}</span>
+        </p>
+      ) : null}
 
       {urlFilters.tag.trim() ? (
         <div className="mt-4 flex flex-wrap items-center gap-2 rounded-lg border border-accent/30 bg-accent/10 px-4 py-2.5">
@@ -274,20 +308,6 @@ export function ExplorePageContent() {
             </select>
           </div>
 
-          <div>
-            <label htmlFor="explore-city" className="block text-sm font-medium text-text-muted">
-              Ciudad
-            </label>
-            <input
-              id="explore-city"
-              type="text"
-              value={draft.city}
-              onChange={(e) => setDraft((d) => ({ ...d, city: e.target.value }))}
-              placeholder="Bariloche"
-              className={inputClass}
-            />
-          </div>
-
           <div className="grid grid-cols-2 gap-3 sm:col-span-2 lg:col-span-1">
             <div>
               <label htmlFor="explore-from" className="block text-sm font-medium text-text-muted">
@@ -372,11 +392,13 @@ export function ExplorePageContent() {
             <EmptyState
               title="No encontramos resultados con esos filtros"
               description={
-                urlFilters.category === 'rental'
-                  ? RENTAL_EXPLORE_EMPTY_HINT
-                  : urlFilters.tag.trim()
-                    ? 'No hay publicaciones con esa etiqueta. Probá otra etiqueta o quitá el filtro.'
-                    : 'Probá cambiar la categoría, la subcategoría, la fecha o la ciudad.'
+                urlFilters.city.trim()
+                  ? 'No encontramos publicaciones para esta ciudad con esos filtros.'
+                  : urlFilters.category === 'rental'
+                    ? RENTAL_EXPLORE_EMPTY_HINT
+                    : urlFilters.tag.trim()
+                      ? 'No hay publicaciones con esa etiqueta. Probá otra etiqueta o quitá el filtro.'
+                      : 'Probá cambiar la categoría, la subcategoría o la fecha.'
               }
             />
           </div>

@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { exploreDateToApiIso } from '@/lib/explore/exploreFilters';
 import type { ExploreFiltersState } from '@/lib/explore/exploreFilters';
+import { cityQueryValue } from '@yo-te-invito/shared';
 import { useRepositories } from '@/repositories/context';
 import { useTenant } from '@/hooks/useTenant';
 import type { EventsSearchQuery, PublicSubcategorySummary } from '@/repositories/interfaces';
@@ -30,7 +31,7 @@ export function exploreFiltersToSearchQuery(
   return {
     tenantId,
     q: filters.q.trim() || undefined,
-    city: filters.city.trim() || undefined,
+    city: filters.city.trim() ? cityQueryValue(filters.city.trim()) : undefined,
     category,
     subcategoryId,
     subcategorySlug: subcategoryId ? undefined : subcategorySlug,

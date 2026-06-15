@@ -2,6 +2,8 @@
  * Explore page filter state + URL query params (shareable / refresh-safe).
  */
 
+import { cityQueryValue } from '@yo-te-invito/shared';
+
 export const EXPLORE_MAIN_CATEGORIES = ['event', 'gastro', 'rental', 'excursion'] as const;
 
 export type ExploreMainCategory = (typeof EXPLORE_MAIN_CATEGORIES)[number];
@@ -46,9 +48,10 @@ export function isExploreMainCategory(value: string): value is ExploreMainCatego
 
 export function parseExploreSearchParams(params: URLSearchParams): ExploreFiltersState {
   const pageRaw = parseInt(params.get('page') ?? '1', 10);
+  const rawCity = params.get('city') ?? '';
   return {
     q: params.get('q') ?? '',
-    city: params.get('city') ?? '',
+    city: rawCity.trim() ? cityQueryValue(rawCity.trim()) : '',
     dateFrom: params.get('from') ?? params.get('dateFrom') ?? '',
     dateTo: params.get('to') ?? params.get('dateTo') ?? '',
     category: params.get('category') ?? '',
@@ -65,7 +68,7 @@ export function buildExploreSearchParams(filters: ExploreFiltersState): URLSearc
   const q = filters.q.trim();
   const city = filters.city.trim();
   if (q) qs.set('q', q);
-  if (city) qs.set('city', city);
+  if (city) qs.set('city', cityQueryValue(city));
   if (filters.dateFrom.trim()) qs.set('from', filters.dateFrom.trim());
   if (filters.dateTo.trim()) qs.set('to', filters.dateTo.trim());
   if (filters.category.trim()) qs.set('category', filters.category.trim());

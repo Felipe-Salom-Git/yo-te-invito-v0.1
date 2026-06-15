@@ -14,27 +14,13 @@ const HOME_RAIL_LIMIT = 8;
 export interface UseHomeCarouselsOptions {
   /** When provided, nearYou fetches events in this city (personalized path) */
   preferredCity?: string | null;
-  /** Navbar ?city= filter — applies to all home rails when set */
-  cityFilter?: string;
 }
 
 async function fetchCategoryRecommended(
   repos: Repositories,
   tenantId: string,
   category: string,
-  city?: string,
 ): Promise<EventSummary[]> {
-  const cityOpt = city?.trim() || undefined;
-  if (cityOpt) {
-    const res = await repos.events.list({
-      tenantId,
-      category,
-      limit: HOME_RAIL_LIMIT,
-      page: 1,
-      city: cityOpt,
-    });
-    return res.data;
-  }
   const items = await repos.events.recommended({
     tenantId,
     category,
@@ -56,24 +42,17 @@ export function useHomeCarousels(options?: UseHomeCarouselsOptions) {
   const repos = useRepositories();
   const { tenantId } = useTenant();
   const t = tenantId || TENANT_ID;
-  const cityFilter = options?.cityFilter?.trim();
-  const city = cityFilter || options?.preferredCity?.trim() || DEFAULT_CITY;
+  const city = options?.preferredCity?.trim() || DEFAULT_CITY;
 
   const trending = useQuery({
-    queryKey: homeKeys.trending(t, cityFilter ?? ''),
-    queryFn: () =>
-      cityFilter
-        ? repos.events.list({ tenantId: t, city: cityFilter, limit: HOME_RAIL_LIMIT }).then((r) => r.data)
-        : repos.events.trending(t, HOME_RAIL_LIMIT),
+    queryKey: homeKeys.trending(t),
+    queryFn: () => repos.events.trending(t, HOME_RAIL_LIMIT),
     enabled: !!t,
   });
 
   const recommendedGlobal = useQuery({
-    queryKey: homeKeys.recommended(t, cityFilter ?? ''),
+    queryKey: homeKeys.recommended(t),
     queryFn: async () => {
-      if (cityFilter) {
-        return repos.events.list({ tenantId: t, city: cityFilter, limit: HOME_RAIL_LIMIT }).then((r) => r.data);
-      }
       const items = await repos.events.recommended({
         tenantId: t,
         limit: HOME_RAIL_LIMIT,
@@ -94,38 +73,32 @@ export function useHomeCarousels(options?: UseHomeCarouselsOptions) {
 
   const now = new Date().toISOString().slice(0, 10);
   const newEvents = useQuery({
-    queryKey: homeKeys.new(t, now, cityFilter ?? ''),
-    queryFn: () =>
-      repos.events.list({
-        tenantId: t,
-        dateFrom: now,
-        limit: HOME_RAIL_LIMIT,
-        city: cityFilter || undefined,
-      }),
+    queryKey: homeKeys.new(t, now),
+    queryFn: () => repos.events.list({ tenantId: t, dateFrom: now, limit: HOME_RAIL_LIMIT }),
     enabled: !!t,
   });
 
   const eventCategory = useQuery({
-    queryKey: homeKeys.categoryRecommended(t, 'event', cityFilter ?? ''),
-    queryFn: () => fetchCategoryRecommended(repos, t, 'event', cityFilter),
+    queryKey: homeKeys.categoryRecommended(t, 'event'),
+    queryFn: () => fetchCategoryRecommended(repos, t, 'event'),
     enabled: !!t,
   });
 
   const gastro = useQuery({
-    queryKey: homeKeys.categoryRecommended(t, 'gastro', cityFilter ?? ''),
-    queryFn: () => fetchCategoryRecommended(repos, t, 'gastro', cityFilter),
+    queryKey: homeKeys.categoryRecommended(t, 'gastro'),
+    queryFn: () => fetchCategoryRecommended(repos, t, 'gastro'),
     enabled: !!t,
   });
 
   const excursion = useQuery({
-    queryKey: homeKeys.categoryRecommended(t, 'excursion', cityFilter ?? ''),
-    queryFn: () => fetchCategoryRecommended(repos, t, 'excursion', cityFilter),
+    queryKey: homeKeys.categoryRecommended(t, 'excursion'),
+    queryFn: () => fetchCategoryRecommended(repos, t, 'excursion'),
     enabled: !!t,
   });
 
   const rental = useQuery({
-    queryKey: homeKeys.categoryRecommended(t, 'rental', cityFilter ?? ''),
-    queryFn: () => fetchCategoryRecommended(repos, t, 'rental', cityFilter),
+    queryKey: homeKeys.categoryRecommended(t, 'rental'),
+    queryFn: () => fetchCategoryRecommended(repos, t, 'rental'),
     enabled: !!t,
   });
 

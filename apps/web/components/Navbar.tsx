@@ -6,7 +6,6 @@ import { NavbarUserMenu } from './NavbarUserMenu';
 import { NavbarCartButton } from './navbar/NavbarCartButton';
 import { NavbarHomeButton } from './navbar/NavbarHomeButton';
 import { NavbarPublicLinks } from './navbar/NavbarPublicLinks';
-import { NavbarCitySlot } from './navbar/NavbarCitySlot';
 import { NavbarMobileNav } from './navigation/NavbarMobileNav';
 import { PUBLIC_NAV_LOGO_HREF } from '@/lib/navigation/publicNavConfig';
 import { navFocusRing } from '@/lib/navigation/navA11yClasses';
@@ -37,7 +36,6 @@ export function Navbar() {
         </div>
 
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-          <NavbarCitySlot />
           <NavbarCartButton />
           <NavbarMobileNav />
           <div className="hidden md:flex md:items-center">
