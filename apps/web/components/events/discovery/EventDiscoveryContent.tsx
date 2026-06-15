@@ -144,7 +144,11 @@ export function EventDiscoveryContent({
       </div>
 
       {!carousel.filterMode && (
-        <CrossCategoryRails selectedCategory={category} onCardClick={handleCardClick} />
+        <CrossCategoryRails
+          selectedCategory={category}
+          onCardClick={handleCardClick}
+          cityFilter={cityFilter}
+        />
       )}
 
       <EventCalendarModal

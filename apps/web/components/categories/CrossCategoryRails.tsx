@@ -14,13 +14,15 @@ import type { ContentCardItem } from '@/components/home/ContentCard';
 export interface CrossCategoryRailsProps {
   selectedCategory: CategoryGatewayId;
   onCardClick?: (item: ContentCardItem) => void;
+  cityFilter?: string;
 }
 
 export function CrossCategoryRails({
   selectedCategory,
   onCardClick,
+  cityFilter,
 }: CrossCategoryRailsProps) {
-  const rails = useCrossCategoryRails(selectedCategory);
+  const rails = useCrossCategoryRails(selectedCategory, cityFilter);
   const anyLoading = rails.some((r) => r.isLoading);
   const anyContent = rails.some((r) => r.items.length > 0);
 

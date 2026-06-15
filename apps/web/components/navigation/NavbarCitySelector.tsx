@@ -1,21 +1,23 @@
 'use client';
 
 import { NavbarCitySelectField } from './NavbarCitySelectField';
+import { useSyncDiscoveryCityUrl } from '@/hooks/useSyncDiscoveryCityUrl';
 
-/** Desktop navbar city picker (`md+`) — right cluster, compact width. */
-export function NavbarCitySelector() {
+function NavbarCitySelectorInner() {
+  useSyncDiscoveryCityUrl();
   return (
-    <div className="hidden min-w-0 shrink md:block">
-      <NavbarCitySelectField id="navbar-city-select-desktop" hideLabel />
-    </div>
+    <>
+      <div className="min-w-0 shrink md:hidden">
+        <NavbarCitySelectField id="navbar-city-select-mobile" compact />
+      </div>
+      <div className="hidden min-w-0 shrink md:block">
+        <NavbarCitySelectField id="navbar-city-select-desktop" compact />
+      </div>
+    </>
   );
 }
 
-/** Mobile header city picker — compact, visible below `md`. */
-export function NavbarCitySelectorMobile() {
-  return (
-    <div className="min-w-0 shrink md:hidden">
-      <NavbarCitySelectField id="navbar-city-select-mobile" hideLabel />
-    </div>
-  );
+/** Desktop + mobile navbar city picker (requires Suspense for search params). */
+export function NavbarCitySelector() {
+  return <NavbarCitySelectorInner />;
 }

@@ -259,8 +259,8 @@ export const categoryLandingKeys = {
     [...categoryLandingKeys.all, tenantId, category, subcategorySlug ?? ''] as const,
   carousel: (tenantId: string, category: string, kind: string, slug: string, city = '') =>
     [...categoryLandingKeys.all, 'carousel', tenantId, category, kind, slug, city] as const,
-  crossCategory: (tenantId: string, selected: string, other: string) =>
-    [...categoryLandingKeys.all, 'cross', tenantId, selected, other] as const,
+  crossCategory: (tenantId: string, selected: string, other: string, city = '') =>
+    [...categoryLandingKeys.all, 'cross', tenantId, selected, other, city] as const,
 };
 
 // ─── Producers ─────────────────────────────────────────────────────────────

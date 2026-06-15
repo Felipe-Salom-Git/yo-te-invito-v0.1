@@ -143,7 +143,13 @@ export function CategoryLandingPage({
         </div>
       ) : null}
 
-      {!filterMode && <CrossCategoryRails selectedCategory={category} onCardClick={handleCardClick} />}
+      {!filterMode && (
+        <CrossCategoryRails
+          selectedCategory={category}
+          onCardClick={handleCardClick}
+          cityFilter={cityFilter}
+        />
+      )}
 
       <ContentPreviewModal
         isOpen={previewItem !== null}

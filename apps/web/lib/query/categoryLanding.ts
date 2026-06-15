@@ -20,7 +20,23 @@ async function fetchCrossCategoryItems(
   repos: Repositories,
   tenantId: string,
   category: CategoryGatewayId,
+  city?: string,
 ): Promise<EventSummary[]> {
+  const cityOpt = city?.trim() || undefined;
+  if (cityOpt) {
+    const res = await repos.events.list({
+      tenantId,
+      category,
+      limit: CROSS_CATEGORY_LIMIT,
+      page: 1,
+      city: cityOpt,
+      sort: category === 'event' ? 'upcoming' : undefined,
+      hasTicketing: category === 'event' ? true : undefined,
+      excludeGeneralPublications: category === 'event' ? true : undefined,
+    });
+    return res.data;
+  }
+
   if (category !== 'event') {
     const recommended = await repos.events.recommended({
       tenantId,
@@ -53,16 +69,21 @@ async function fetchCrossCategoryItems(
 }
 
 /** Discovery rails for other categories at the bottom of a category landing page. */
-export function useCrossCategoryRails(selectedCategory: CategoryGatewayId) {
+export function useCrossCategoryRails(
+  selectedCategory: CategoryGatewayId,
+  cityFilter?: string,
+) {
   const repos = useRepositories();
   const { tenantId } = useTenant();
   const t = tenantId || TENANT_ID;
   const crossRails = getCrossCategoryRails(selectedCategory);
+  const city = cityFilter?.trim() || undefined;
+  const cityKey = city ?? '';
 
   const results = useQueries({
     queries: crossRails.map((meta: CrossCategoryRailMeta) => ({
-      queryKey: categoryLandingKeys.crossCategory(t, selectedCategory, meta.category),
-      queryFn: () => fetchCrossCategoryItems(repos, t, meta.category),
+      queryKey: categoryLandingKeys.crossCategory(t, selectedCategory, meta.category, cityKey),
+      queryFn: () => fetchCrossCategoryItems(repos, t, meta.category, city),
       enabled: !!t,
     })),
   });

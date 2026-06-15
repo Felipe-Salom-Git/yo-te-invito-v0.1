@@ -19,7 +19,6 @@ import {
 } from '@/lib/home/categoryGatewayConfig';
 import { resolveHomeStrategy } from '@/lib/home/homeStrategy';
 import { buildHomeViewModel } from '@/lib/home/homeViewModel';
-import { useEventsList } from '@/lib/query/events';
 import { useHomeCarousels } from '@/lib/query/home';
 import { useRepositories } from '@/repositories/context';
 
@@ -39,7 +38,17 @@ export function HomeLanding({ initialCategory = null, cityFilter }: HomeLandingP
   const { preferences } = usePreferences();
   const repos = useRepositories();
 
-  const { data: eventsData, isLoading: eventsLoading } = useEventsList(t, 1, 8);
+  const { data: eventsData, isLoading: eventsLoading } = useQuery({
+    queryKey: ['home', 'highlights', t, cityFilter ?? ''],
+    queryFn: () =>
+      repos.events.list({
+        tenantId: t,
+        page: 1,
+        limit: 8,
+        city: cityFilter?.trim() || undefined,
+      }),
+    enabled: !!t,
+  });
   const highlights = eventsData?.data ?? [];
 
   const preferredCity = cityFilter?.trim() || preferences?.preferredCity?.trim() || null;
