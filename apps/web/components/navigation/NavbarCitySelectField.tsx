@@ -7,7 +7,7 @@ import { useNavbarCitySelection } from '@/hooks/useNavbarCitySelection';
 import { useNavbarDiscoveryCities } from '@/lib/query/navbar-cities';
 
 const selectClass =
-  'w-full rounded border border-border bg-bg-muted px-3 py-2.5 text-sm text-text focus:border-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-60';
+  'w-full max-w-[8.5rem] rounded border border-border bg-bg-muted px-2 py-2 text-sm text-text focus:border-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-60 lg:max-w-[9.5rem]';
 
 export interface NavbarCitySelectFieldProps {
   id?: string;
@@ -37,7 +37,10 @@ export function NavbarCitySelectField({
 
   return (
     <div className={className}>
-      <label htmlFor={id} className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-text-muted">
+      <label
+        htmlFor={id}
+        className="mb-1 hidden text-xs font-medium uppercase tracking-wide text-text-muted md:block lg:mb-1.5"
+      >
         Ciudad
       </label>
       <select
