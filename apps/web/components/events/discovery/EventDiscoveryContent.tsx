@@ -11,7 +11,6 @@ import { ContentPreviewModal } from '@/components/home/ContentPreviewModal';
 import { SubcategoryRail } from '@/components/categories/SubcategoryRail';
 import { CrossCategoryRails } from '@/components/categories/CrossCategoryRails';
 import { CategoryHeroBanner } from '@/components/categories/CategoryHeroBanner';
-import { CategoryEventBannerRail } from '@/components/categories/CategoryEventBannerRail';
 import { CategoryLandingEditorial } from '@/components/categories/CategoryLandingEditorial';
 import { useCategoryHeroBanner } from '@/lib/query/useCategoryHeroBanner';
 import { toContentMainCategory } from '@/lib/categories/categoryLandingConfig';
@@ -75,15 +74,8 @@ export function EventDiscoveryContent({
         editorialItems={heroBanner.editorialItems}
         eventItems={heroBanner.eventItems}
         isLoading={heroBanner.isLoading}
+        isPublicationLoading={heroBanner.isEventLoading}
       />
-
-      {heroBanner.editorialItems.length > 0 ? (
-        <CategoryEventBannerRail
-          items={heroBanner.eventItems}
-          isLoading={heroBanner.isEventLoading}
-          onCardClick={handleCardClick}
-        />
-      ) : null}
 
       <CategoryLandingEditorial category={category} />
 

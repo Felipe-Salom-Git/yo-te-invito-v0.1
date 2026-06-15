@@ -9,7 +9,6 @@ import { ContentPreviewModal } from '@/components/home/ContentPreviewModal';
 import { SubcategoryRail } from './SubcategoryRail';
 import { CrossCategoryRails } from './CrossCategoryRails';
 import { CategoryHeroBanner } from './CategoryHeroBanner';
-import { CategoryEventBannerRail } from './CategoryEventBannerRail';
 import { CategoryLandingEditorial } from './CategoryLandingEditorial';
 import { useCategoryHeroBanner } from '@/lib/query/useCategoryHeroBanner';
 import { toContentMainCategory } from '@/lib/categories/categoryLandingConfig';
@@ -65,15 +64,8 @@ export function CategoryLandingPage({ category, subcategorySlug }: CategoryLandi
         editorialItems={heroBanner.editorialItems}
         eventItems={heroBanner.eventItems}
         isLoading={heroBanner.isLoading}
+        isPublicationLoading={heroBanner.isEventLoading}
       />
-
-      {heroBanner.editorialItems.length > 0 ? (
-        <CategoryEventBannerRail
-          items={heroBanner.eventItems}
-          isLoading={heroBanner.isEventLoading}
-          onCardClick={handleCardClick}
-        />
-      ) : null}
 
       <CategoryLandingEditorial category={category} />
 
