@@ -101,7 +101,7 @@ export async function fetchEventOccurrences(
     { headers: getAuthHeaders() },
   );
   if (res.status === 403 || res.status === 404) {
-    throw new Error('Este evento ya no está disponible para esta cuenta scanner.');
+    throw new Error('Este evento ya no está disponible para escanear.');
   }
   if (!res.ok) throw new Error('No se pudo cargar las fechas del evento');
   return res.json();

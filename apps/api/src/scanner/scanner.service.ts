@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ScannerAccountsService } from '../modules/scanner-accounts/scanner-accounts.service';
+import { isOccurrenceScannable } from '../common/utils/scanner-event-eligibility.util';
 import type {
   ValidateTicketBody,
   ValidateTicketQuery,
@@ -82,7 +83,7 @@ export class ScannerService {
     }
 
     const occurrenceRows = await this.prisma.eventOccurrence.findMany({
-      where: { eventId, tenantId, status: { not: 'CANCELLED' } },
+      where: { eventId, tenantId, status: 'ACTIVE' },
       orderBy: [{ sortOrder: 'asc' }, { startAt: 'asc' }],
       select: {
         id: true,
@@ -93,13 +94,15 @@ export class ScannerService {
       },
     });
 
-    if (occurrenceRows.length === 0) {
-      return { isMultiDate: false, occurrences: [] };
+    const scannable = occurrenceRows.filter((o) => isOccurrenceScannable(o));
+
+    if (scannable.length === 0) {
+      return { isMultiDate: occurrenceRows.length > 0, occurrences: [] };
     }
 
     return {
       isMultiDate: true,
-      occurrences: occurrenceRows.map((o) => ({
+      occurrences: scannable.map((o) => ({
         id: o.id,
         startAt: o.startAt.toISOString(),
         endAt: o.endAt?.toISOString() ?? null,

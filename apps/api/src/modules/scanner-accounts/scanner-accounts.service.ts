@@ -31,6 +31,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { ProfilesAuthorizationService } from '../../common/profiles-authorization.service';
 import { AuditService } from '../audit/audit.service';
 import { generateTemporaryPassword, hashPassword } from '../../common/password.util';
+import { isEventScannableForScanner } from '../../common/utils/scanner-event-eligibility.util';
 
 type AuthUser = { id: string; tenantId: string; role: string };
 
@@ -836,6 +837,13 @@ export class ScannerAccountsService {
     };
   }
 
+  private scannerEventUnavailableForbidden(): ForbiddenException {
+    return new ForbiddenException({
+      code: ErrorCode.FORBIDDEN,
+      message: 'Este evento ya no está disponible para escanear',
+    });
+  }
+
   async assertScannerCanAccessEvent(
     tenantId: string,
     scannerUserId: string,
@@ -847,10 +855,26 @@ export class ScannerAccountsService {
     }
     const event = await this.prisma.event.findFirst({
       where: { id: eventId, tenantId, deletedAt: null },
-      select: { producerProfileId: true },
+      select: {
+        producerProfileId: true,
+        status: true,
+        startAt: true,
+        endAt: true,
+        category: true,
+        occurrences: {
+          where: { status: { not: 'CANCELLED' } },
+          select: { startAt: true, endAt: true, status: true },
+        },
+      },
     });
     if (!event?.producerProfileId || event.producerProfileId !== account.parentProfileId) {
       throw this.scannerScopeForbidden();
+    }
+    if (event.status !== 'APPROVED') {
+      throw this.scannerEventUnavailableForbidden();
+    }
+    if (!isEventScannableForScanner(event, event.occurrences)) {
+      throw this.scannerEventUnavailableForbidden();
     }
   }
 
@@ -888,20 +912,27 @@ export class ScannerAccountsService {
     );
 
     if (account.parentProfileType === ScannerParentProfileType.PRODUCER) {
-      const events = await this.prisma.event.findMany({
+      const now = new Date();
+      const rawEvents = await this.prisma.event.findMany({
         where: {
           tenantId: user.tenantId,
           deletedAt: null,
           producerProfileId: account.parentProfileId,
-          status: { in: ['APPROVED', 'PAUSED'] },
+          status: 'APPROVED',
           ticketTypes: { some: {} },
         },
         select: {
           id: true,
           title: true,
           startAt: true,
+          endAt: true,
           city: true,
+          category: true,
           status: true,
+          occurrences: {
+            where: { status: { not: 'CANCELLED' } },
+            select: { startAt: true, endAt: true, status: true },
+          },
           _count: {
             select: {
               tickets: { where: { status: 'VALID' } },
@@ -912,6 +943,8 @@ export class ScannerAccountsService {
         orderBy: [{ startAt: 'asc' }, { createdAt: 'desc' }],
         take: 100,
       });
+
+      const events = rawEvents.filter((e) => isEventScannableForScanner(e, e.occurrences, now));
 
       return {
         parentProfileType: account.parentProfileType,
@@ -931,11 +964,13 @@ export class ScannerAccountsService {
     }
 
     if (account.parentProfileType === ScannerParentProfileType.GASTRO) {
+      const now = new Date();
       const discounts = await this.prisma.gastroDiscount.findMany({
         where: {
           tenantId: user.tenantId,
           gastroProfileId: account.parentProfileId,
           status: { in: ['ACTIVE', 'APPROVED'] },
+          OR: [{ validTo: null }, { validTo: { gte: now } }],
         },
         select: {
           id: true,

@@ -141,15 +141,30 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
 
   const loadTargets = useCallback(async () => {
     setTargetsError(null);
+    setOccurrencesError(null);
     try {
       const data = await fetchScanTargets();
       setTargets(data);
-      if (data.parentProfileType === 'PRODUCER' && data.events.length > 0) {
+      if (data.parentProfileType === 'PRODUCER') {
         const stored = localStorage.getItem(LS_LAST_EVENT);
-        const valid = stored && data.events.some((e) => e.id === stored);
-        const id = valid ? stored! : data.events[0]!.id;
-        setSelectedEventId(id);
-        localStorage.setItem(LS_LAST_EVENT, id);
+        if (data.events.length === 0) {
+          setSelectedEventId('');
+          localStorage.removeItem(LS_LAST_EVENT);
+          localStorage.removeItem(LS_LAST_OCCURRENCE);
+          if (stored) {
+            setOccurrencesError('Este evento ya no está disponible para escanear.');
+          }
+        } else {
+          const valid = stored && data.events.some((e) => e.id === stored);
+          if (stored && !valid) {
+            setOccurrencesError('Este evento ya no está disponible para escanear.');
+            localStorage.removeItem(LS_LAST_EVENT);
+            localStorage.removeItem(LS_LAST_OCCURRENCE);
+          }
+          const id = valid ? stored! : data.events[0]!.id;
+          setSelectedEventId(id);
+          localStorage.setItem(LS_LAST_EVENT, id);
+        }
       }
       if (data.parentProfileType === 'GASTRO' && data.discounts.length > 0) {
         const stored = localStorage.getItem(LS_LAST_DISCOUNT);
@@ -177,7 +192,10 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
     const inTargets = targets?.events.some((e) => e.id === selectedEventId);
     if (targets && !inTargets) {
       setEventOccurrences([]);
-      setOccurrencesError('Este evento ya no está disponible para esta cuenta scanner.');
+      setSelectedEventId('');
+      localStorage.removeItem(LS_LAST_EVENT);
+      localStorage.removeItem(LS_LAST_OCCURRENCE);
+      setOccurrencesError('Este evento ya no está disponible para escanear.');
       return;
     }
     setOccurrencesError(null);
@@ -200,7 +218,7 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
         setOccurrencesError(
           err instanceof Error
             ? err.message
-            : 'Este evento ya no está disponible para esta cuenta scanner.',
+            : 'Este evento ya no está disponible para escanear.',
         );
       });
   }, [selectedEventId, isProducer, targets]);
