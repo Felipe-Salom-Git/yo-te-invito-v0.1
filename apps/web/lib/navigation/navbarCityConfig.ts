@@ -12,6 +12,7 @@ import {
   type ExploreFiltersState,
 } from '@/lib/explore/exploreFilters';
 import { isCategoryLandingId } from '@/lib/categories/categoryLandingConfig';
+import { cityQueryValue } from '@yo-te-invito/shared';
 
 export const NAVBAR_CITY_ALL_VALUE = '';
 
@@ -43,7 +44,8 @@ export function readCityFromSearchParams(
   params: URLSearchParams,
 ): string {
   if (kind === 'explore' || kind === 'category' || kind === 'home') {
-    return params.get('city')?.trim() ?? '';
+    const raw = params.get('city')?.trim() ?? '';
+    return raw ? cityQueryValue(raw) : '';
   }
   return '';
 }
@@ -72,19 +74,14 @@ export function buildNavbarCityNavigationHref(
     const base = `/categoria/${ctx.categoryLandingId}`;
     if (!trimmed) return base;
     const qs = new URLSearchParams();
-    qs.set('city', trimmed);
+    qs.set('city', cityQueryValue(trimmed));
     return `${base}?${qs.toString()}`;
   }
   if (ctx.kind === 'home') {
     if (!trimmed) return '/home';
     const qs = new URLSearchParams();
-    qs.set('city', trimmed);
+    qs.set('city', cityQueryValue(trimmed));
     return `/home?${qs.toString()}`;
   }
-  if (trimmed) {
-    const qs = new URLSearchParams();
-    qs.set('city', trimmed);
-    return `/explore?${qs.toString()}`;
-  }
-  return '/explore';
+  return '';
 }

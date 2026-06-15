@@ -20,11 +20,16 @@ import { EventDiscoveryContent } from '@/components/events/discovery/EventDiscov
 export interface CategoryLandingPageProps {
   category: CategoryGatewayId;
   subcategorySlug?: string | null;
+  cityFilter?: string;
 }
 
-export function CategoryLandingPage({ category, subcategorySlug }: CategoryLandingPageProps) {
+export function CategoryLandingPage({
+  category,
+  subcategorySlug,
+  cityFilter,
+}: CategoryLandingPageProps) {
   if (category === 'event') {
-    return <EventDiscoveryContent subcategorySlug={subcategorySlug} />;
+    return <EventDiscoveryContent subcategorySlug={subcategorySlug} cityFilter={cityFilter} />;
   }
 
   const {
@@ -37,7 +42,7 @@ export function CategoryLandingPage({ category, subcategorySlug }: CategoryLandi
     discountsSubcategoryMode,
     publishedDiscounts,
     publishedDiscountsLoading,
-  } = useCategoryCarousels(category, subcategorySlug);
+  } = useCategoryCarousels(category, subcategorySlug, cityFilter);
 
   const heroBanner = useCategoryHeroBanner(toContentMainCategory(category));
 

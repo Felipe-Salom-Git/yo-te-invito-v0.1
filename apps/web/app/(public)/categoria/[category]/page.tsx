@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import { useParams, useSearchParams } from 'next/navigation';
 import { CategoryLandingPage } from '@/components/categories/CategoryLandingPage';
 import { isCategoryLandingId } from '@/lib/categories/categoryLandingConfig';
+import { normalizeDiscoveryCityParam } from '@/hooks/useDiscoveryCityFilter';
 
 function CategoryPageContent() {
   const params = useParams();
@@ -18,7 +19,11 @@ function CategoryPageContent() {
   }
 
   return (
-    <CategoryLandingPage category={categoryParam} subcategorySlug={subcategory} />
+    <CategoryLandingPage
+      category={categoryParam}
+      subcategorySlug={subcategory}
+      cityFilter={normalizeDiscoveryCityParam(searchParams.get('city')) || undefined}
+    />
   );
 }
 

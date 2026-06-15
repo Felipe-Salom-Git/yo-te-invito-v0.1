@@ -28,9 +28,11 @@ const TENANT_ID = 'tenant-demo';
 export interface HomeLandingProps {
   /** Category from gateway (?category=) — focuses hero tab and scrolls to rail */
   initialCategory?: CategoryGatewayId | null;
+  /** Navbar city filter (?city=) */
+  cityFilter?: string;
 }
 
-export function HomeLanding({ initialCategory = null }: HomeLandingProps) {
+export function HomeLanding({ initialCategory = null, cityFilter }: HomeLandingProps) {
   const { tenantId } = useTenant();
   const t = tenantId || TENANT_ID;
   const { isAuthenticated } = useMe();
@@ -40,7 +42,7 @@ export function HomeLanding({ initialCategory = null }: HomeLandingProps) {
   const { data: eventsData, isLoading: eventsLoading } = useEventsList(t, 1, 8);
   const highlights = eventsData?.data ?? [];
 
-  const preferredCity = preferences?.preferredCity?.trim() || null;
+  const preferredCity = cityFilter?.trim() || preferences?.preferredCity?.trim() || null;
 
   const {
     trending,
@@ -52,7 +54,7 @@ export function HomeLanding({ initialCategory = null }: HomeLandingProps) {
     excursion,
     rental,
     isLoading: carouselsLoading,
-  } = useHomeCarousels({ preferredCity });
+  } = useHomeCarousels({ preferredCity, cityFilter: cityFilter?.trim() || undefined });
 
   const { data: favoritesData, isLoading: favoritesLoading } = useMeFavorites(isAuthenticated);
   const favoriteEventIds = (favoritesData?.favorites ?? [])

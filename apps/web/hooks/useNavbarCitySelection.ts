@@ -1,7 +1,8 @@
 'use client';
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { cityQueryValue } from '@yo-te-invito/shared';
 import { isExploreMainCategory } from '@/lib/explore/exploreFilters';
 import {
   buildNavbarCityNavigationHref,
@@ -9,6 +10,7 @@ import {
   readCityFromSearchParams,
   resolveNavbarCityRoute,
 } from '@/lib/navigation/navbarCityConfig';
+import { readStoredNavbarCity, writeStoredNavbarCity } from '@/lib/navigation/navbarCityStorage';
 
 /** Category scope for discovery city list + navigation. */
 export function useNavbarCitySelection() {
@@ -24,26 +26,42 @@ export function useNavbarCitySelection() {
       const c = searchParams.get('category')?.trim() ?? '';
       return isExploreMainCategory(c) ? c : '';
     }
+    if (route.kind === 'home') return '';
     return '';
   }, [route, searchParams]);
 
-  const currentCity = useMemo(
+  const urlCity = useMemo(
     () => readCityFromSearchParams(route.kind, searchParams),
     [route.kind, searchParams],
   );
 
+  const currentCity = useMemo(() => {
+    if (urlCity) return urlCity;
+    if (route.kind === 'other') return readStoredNavbarCity();
+    return '';
+  }, [urlCity, route.kind]);
+
+  // Persist URL city to storage so detail pages remember the last selection.
+  useEffect(() => {
+    if (urlCity) writeStoredNavbarCity(urlCity);
+  }, [urlCity]);
+
   const applyCity = useCallback(
     (city: string) => {
+      const normalized = city.trim() ? cityQueryValue(city.trim()) : NAVBAR_CITY_ALL_VALUE;
+      writeStoredNavbarCity(normalized);
+
+      if (route.kind === 'other') {
+        return;
+      }
+
       const href = buildNavbarCityNavigationHref(
         { ...route, category: filterCategory || route.category },
-        city,
+        normalized,
         route.kind === 'explore' ? searchParams : undefined,
       );
-      if (route.kind === 'explore' || route.kind === 'home' || route.kind === 'category') {
-        router.replace(href);
-      } else {
-        router.push(href);
-      }
+      if (!href) return;
+      router.replace(href);
     },
     [route, filterCategory, searchParams, router],
   );

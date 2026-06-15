@@ -20,15 +20,17 @@ import { EventCalendarModal } from './EventCalendarModal';
 
 export function EventDiscoveryContent({
   subcategorySlug,
+  cityFilter,
 }: {
   subcategorySlug?: string | null;
+  cityFilter?: string;
 }) {
   const category: CategoryGatewayId = 'event';
   const [view, setView] = useState<EventDiscoveryView>('carousels');
   const [calendarOpen, setCalendarOpen] = useState(false);
 
-  const carousel = useCategoryCarousels(category, subcategorySlug);
-  const dateQuery = useEventsByDate(subcategorySlug, view === 'date');
+  const carousel = useCategoryCarousels(category, subcategorySlug, cityFilter);
+  const dateQuery = useEventsByDate(subcategorySlug, view === 'date', cityFilter);
 
   const heroBanner = useCategoryHeroBanner(toContentMainCategory(category));
 

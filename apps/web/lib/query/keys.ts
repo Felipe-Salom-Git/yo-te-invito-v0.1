@@ -24,16 +24,17 @@ export const eventsKeys = {
 
 export const homeKeys = {
   all: ['home'] as const,
-  trending: (tenantId: string) => [...homeKeys.all, 'trending', tenantId] as const,
-  recommended: (tenantId: string) => [...homeKeys.all, 'recommended', tenantId] as const,
+  trending: (tenantId: string, city = '') => [...homeKeys.all, 'trending', tenantId, city] as const,
+  recommended: (tenantId: string, city = '') =>
+    [...homeKeys.all, 'recommended', tenantId, city] as const,
   nearYou: (tenantId: string, city: string) =>
     [...homeKeys.all, 'nearYou', tenantId, city] as const,
-  new: (tenantId: string, dateFrom: string) =>
-    [...homeKeys.all, 'new', tenantId, dateFrom] as const,
+  new: (tenantId: string, dateFrom: string, city = '') =>
+    [...homeKeys.all, 'new', tenantId, dateFrom, city] as const,
   category: (tenantId: string, category: string) =>
     [...homeKeys.all, category, tenantId] as const,
-  categoryRecommended: (tenantId: string, category: string) =>
-    [...homeKeys.all, 'category-recommended', tenantId, category] as const,
+  categoryRecommended: (tenantId: string, category: string, city = '') =>
+    [...homeKeys.all, 'category-recommended', tenantId, category, city] as const,
 };
 
 // ─── Tickets ───────────────────────────────────────────────────────────────
@@ -256,8 +257,8 @@ export const categoryLandingKeys = {
   all: ['categoryLanding'] as const,
   rails: (tenantId: string, category: string, subcategorySlug?: string) =>
     [...categoryLandingKeys.all, tenantId, category, subcategorySlug ?? ''] as const,
-  carousel: (tenantId: string, category: string, kind: string, slug: string) =>
-    [...categoryLandingKeys.all, 'carousel', tenantId, category, kind, slug] as const,
+  carousel: (tenantId: string, category: string, kind: string, slug: string, city = '') =>
+    [...categoryLandingKeys.all, 'carousel', tenantId, category, kind, slug, city] as const,
   crossCategory: (tenantId: string, selected: string, other: string) =>
     [...categoryLandingKeys.all, 'cross', tenantId, selected, other] as const,
 };

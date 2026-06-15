@@ -5,10 +5,12 @@ import { useSearchParams } from 'next/navigation';
 import { HomeLanding } from '@/components/home/HomeLanding';
 import { isCategoryGatewayId } from '@/lib/home/categoryGatewayConfig';
 import { clearLastSeen } from '@/lib/introStorage';
+import { normalizeDiscoveryCityParam } from '@/hooks/useDiscoveryCityFilter';
 
 function HomePageContent() {
   const searchParams = useSearchParams();
   const categoryParam = searchParams.get('category');
+  const cityFilter = normalizeDiscoveryCityParam(searchParams.get('city'));
 
   const initialCategory = useMemo(() => {
     if (isCategoryGatewayId(categoryParam)) return categoryParam;
@@ -23,7 +25,7 @@ function HomePageContent() {
 
   return (
     <>
-      <HomeLanding initialCategory={initialCategory} />
+      <HomeLanding initialCategory={initialCategory} cityFilter={cityFilter || undefined} />
       <div className="mx-auto max-w-6xl px-4 pt-4">
         <button
           type="button"
