@@ -21,6 +21,7 @@ export * from './schemas/event-subcategories';
 export * from './schemas/events';
 export * from './schemas/scanner';
 export * from './schemas/ticket-list-export';
+export * from './schemas/event-ticket-list';
 export * from './tickets/ticket-code.util';
 export * from './schemas/scanner-gastro-discount';
 export * from './schemas/scanner-accounts';

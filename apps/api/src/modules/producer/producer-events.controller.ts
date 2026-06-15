@@ -29,6 +29,11 @@ import { ProducerTicketTypesService } from './producer-ticket-types.service';
 import { ReferralsService } from '../referrals/referrals.service';
 import { ReviewsService } from '../reviews/reviews.service';
 import { TicketListExportService } from '../tickets/ticket-list-export.service';
+import { EventTicketListService } from '../tickets/event-ticket-list.service';
+import {
+  producerEventTicketsQuerySchema,
+  type ProducerEventTicketsQuery,
+} from '@yo-te-invito/shared';
 
 @Controller('producer/events')
 @UseGuards(JwtOrDevAuthGuard, ProducerRolesGuard)
@@ -41,6 +46,7 @@ export class ProducerEventsController {
     private readonly referralsService: ReferralsService,
     private readonly reviews: ReviewsService,
     private readonly ticketListExport: TicketListExportService,
+    private readonly eventTicketList: EventTicketListService,
   ) {}
 
   @Get()
@@ -104,12 +110,15 @@ export class ProducerEventsController {
   async getEventTickets(
     @CurrentUser() user: { id: string; tenantId: string; role: string },
     @Param('eventId') eventId: string,
+    @Query(new ZodValidationPipe(producerEventTicketsQuerySchema))
+    query: ProducerEventTicketsQuery,
   ) {
-    return this.ticketTypesService.getEventTicketsForProducer(
+    return this.eventTicketList.listForProducer(
       user.tenantId,
       eventId,
       user.id,
       user.role,
+      query,
     );
   }
 

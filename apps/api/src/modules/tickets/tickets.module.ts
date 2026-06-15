@@ -6,6 +6,7 @@ import { ScannerAccountsModule } from '../scanner-accounts/scanner-accounts.modu
 import { TicketsController } from './tickets.controller';
 import { TicketTransferService } from './ticket-transfer.service';
 import { TicketListExportService } from './ticket-list-export.service';
+import { EventTicketListService } from './event-ticket-list.service';
 import { TicketDateChangeEligibilityService } from './ticket-date-change-eligibility.service';
 import { TicketDateChangeService } from './ticket-date-change.service';
 import { TicketDateChangeNotificationsService } from './ticket-date-change-notifications.service';
@@ -17,6 +18,7 @@ import { TicketTransferEligibilityService } from './ticket-transfer-eligibility.
   providers: [
     TicketTransferService,
     TicketListExportService,
+    EventTicketListService,
     TicketDateChangeEligibilityService,
     TicketDateChangeService,
     TicketDateChangeNotificationsService,
@@ -24,6 +26,7 @@ import { TicketTransferEligibilityService } from './ticket-transfer-eligibility.
   ],
   exports: [
     TicketListExportService,
+    EventTicketListService,
     TicketDateChangeEligibilityService,
     TicketDateChangeService,
     TicketTransferEligibilityService,

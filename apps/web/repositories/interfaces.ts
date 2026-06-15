@@ -1693,6 +1693,10 @@ export interface EventsRepo {
 export interface TicketsRepo {
   listByOwner(userId: string): Promise<Ticket[]>;
   listByEvent(eventId: string): Promise<Ticket[]>;
+  listOperationalByEvent(
+    eventId: string,
+    query?: import('@yo-te-invito/shared').ProducerEventTicketsQuery,
+  ): Promise<import('@yo-te-invito/shared').ProducerEventTicketsResponse>;
   get(id: string): Promise<Ticket | null>;
   create(item: Omit<Ticket, 'id'> & { id?: string }): Promise<Ticket>;
   update(id: string, patch: Partial<Ticket>): Promise<Ticket | null>;

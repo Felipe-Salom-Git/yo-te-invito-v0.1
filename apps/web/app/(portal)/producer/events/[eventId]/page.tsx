@@ -11,7 +11,7 @@ import { deriveEventModeFromEvent } from '@/lib/producer/event-mode';
 import { getErrorMessage } from '@/lib/errors';
 import { TicketTypesEditor } from '@/components/producer/ticket-types/TicketTypesEditor';
 import { ProducerEventPostSavePanel } from '@/components/producer/events/ProducerEventPostSavePanel';
-import { TicketListPdfDownload } from '@/components/producer/events/TicketListPdfDownload';
+import { ProducerEventTicketsPanel } from '@/components/producer/events/ProducerEventTicketsPanel';
 import { ProducerTicketDateChangesPanel } from '@/components/producer/events/ProducerTicketDateChangesPanel';
 import type { ProducerReviewRow } from '@/repositories/interfaces';
 
@@ -21,17 +21,10 @@ export default function ProducerEventManagePage() {
   const repos = useRepositories();
   const queryClient = useQueryClient();
   const { addToast } = useToast();
-  const [ticketStatusFilter, setTicketStatusFilter] = useState<string>('ALL');
   const [modReview, setModReview] = useState<ProducerReviewRow | null>(null);
   const [modType, setModType] = useState<'HIDE_FROM_PUBLIC' | 'OFFICIAL_REPLY' | 'BOTH'>('HIDE_FROM_PUBLIC');
   const [modReason, setModReason] = useState('');
   const [modReply, setModReply] = useState('');
-
-  const { data: tickets } = useQuery({
-    queryKey: ['tickets', 'event', eventId],
-    queryFn: () => repos.tickets.listByEvent(eventId),
-    enabled: !!eventId,
-  });
 
   const { data: event, isLoading } = useQuery({
     queryKey: ['event', 'producer', eventId],
@@ -158,39 +151,7 @@ export default function ProducerEventManagePage() {
       </section>
 
       {!event.isGeneralPublication ? (
-      <section className="mt-12 border-t border-border pt-8">
-        <TicketListPdfDownload eventId={eventId} ticketCount={tickets?.length ?? 0} />
-        <h2 className="mt-8 font-semibold text-text">Tickets vendidos</h2>
-        <div className="mt-2 flex gap-2">
-          {['ALL', 'VALID', 'USED', 'REVOKED'].map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => setTicketStatusFilter(s)}
-              className={`rounded px-2 py-1 text-sm ${ticketStatusFilter === s ? 'bg-accent text-bg' : 'bg-bg-muted text-text-muted'}`}
-            >
-              {s}
-            </button>
-          ))}
-        </div>
-        {tickets && tickets.length > 0 ? (
-          <ul className="mt-4 space-y-2">
-            {(ticketStatusFilter === 'ALL' ? tickets : tickets.filter((t) => t.status === ticketStatusFilter)).map(
-              (t) => (
-                <li
-                  key={t.id}
-                  className="flex items-center justify-between rounded border border-border bg-bg-muted px-4 py-2 text-sm"
-                >
-                  <span>{t.id}</span>
-                  <span className="rounded bg-border px-2 py-0.5 text-xs font-medium">{t.status}</span>
-                </li>
-              ),
-            )}
-          </ul>
-        ) : (
-          <p className="mt-4 text-text-muted">Sin tickets</p>
-        )}
-      </section>
+        <ProducerEventTicketsPanel eventId={eventId} isMultiDate={!!event.isMultiDate} />
       ) : null}
 
       <p className="mt-6 max-w-2xl text-sm text-text-muted">

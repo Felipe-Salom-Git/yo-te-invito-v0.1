@@ -921,6 +921,20 @@ export class ApiRepository implements Repositories {
         return { id, eventId: evId, qrPayload: t.qrPayload, status: t.status as Ticket['status'] };
       });
     },
+    listOperationalByEvent: async (eventId, query) => {
+      const params = new URLSearchParams();
+      if (query?.page) params.set('page', String(query.page));
+      if (query?.limit) params.set('limit', String(query.limit));
+      if (query?.status) params.set('status', query.status);
+      if (query?.occurrenceId) params.set('occurrenceId', query.occurrenceId);
+      if (query?.q) params.set('q', query.q);
+      if (query?.referrer) params.set('referrer', query.referrer);
+      if (query?.scanned) params.set('scanned', query.scanned);
+      const qs = params.toString();
+      return this.client.get(
+        `/producer/events/${encodeURIComponent(eventId)}/tickets${qs ? `?${qs}` : ''}`,
+      );
+    },
     get: async (ticketId: string) => {
       try {
         const raw = await this.client.get<MeTicketApiRow>(
