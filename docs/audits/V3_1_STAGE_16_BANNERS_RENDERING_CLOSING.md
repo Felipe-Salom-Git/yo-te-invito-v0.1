@@ -88,9 +88,11 @@ pnpm --filter api run smoke:v31-category-banners
 Validaciones añadidas:
 
 - Baseline de publicaciones aprobadas en categoría event.
-- Banners editoriales smoke activos en set público.
+- Banners editoriales smoke activos en set público (solo IDs `SMOKE_`, no compite con banners reales).
 - Conteo de publicaciones intacto tras create y tras deactivate.
 - Cleanup solo de IDs `SMOKE_`.
+
+**Nota VPS:** el check `public active order` global fallaba cuando ya había banners reales en la categoría. Corregido: smoke crea al final (`max(sortOrder)+1`) y valida orden/reorder solo entre IDs smoke.
 
 ---
 
