@@ -16,18 +16,17 @@ import type { HeroViewModel } from '@/lib/home/heroModel';
 const HERO_HEIGHT =
   'relative h-[34vh] min-h-[220px] max-h-[320px] overflow-hidden bg-black sm:min-h-[240px] sm:max-h-[340px] md:max-h-[360px]';
 
-const HERO_HEIGHT_COMPACT =
-  'relative h-[28vh] min-h-[180px] max-h-[260px] overflow-hidden bg-black sm:min-h-[200px] sm:max-h-[280px]';
-
 const HERO_CONTENT_PAD = 'px-4 pb-10 sm:px-6 sm:pb-12 md:px-10 md:pb-14 lg:px-16';
+
+const MAX_EDITORIAL_SLIDES = 5;
+const MAX_PUBLICATION_SLIDES = 5;
 
 export interface CategoryHeroBannerProps {
   category: CategoryGatewayId;
   editorialItems?: CategoryEditorialBannerPublicItem[];
-  /** Real publication banners — shown below editorial hero when both exist. */
+  /** Real publication banners — same carousel playlist as editorials. */
   eventItems?: CategoryBannerResolvedItem[];
   isLoading?: boolean;
-  isPublicationLoading?: boolean;
 }
 
 function HeroBackground({ model }: { model: HeroViewModel }) {
@@ -201,26 +200,48 @@ function CategoryHeroBannerSlider({
   );
 }
 
-function CategoryHeroSlider({
+/** Editorials first (admin order), then real publications — one shared playlist. */
+export function buildCategoryHeroPlaylist(
+  category: CategoryGatewayId,
+  editorialItems: CategoryEditorialBannerPublicItem[],
+  eventItems: CategoryBannerResolvedItem[],
+): HeroViewModel[] {
+  const editorialModels = editorialItems
+    .slice(0, MAX_EDITORIAL_SLIDES)
+    .map((item) => mapCategoryEditorialBannerToHeroModel(item, category));
+
+  const seen = new Set(editorialModels.map((m) => m.id));
+  const publicationModels = eventItems
+    .slice(0, MAX_PUBLICATION_SLIDES)
+    .map((item) => mapCategoryBannerToHeroModel(item))
+    .filter((model) => {
+      if (seen.has(model.id)) return false;
+      seen.add(model.id);
+      return true;
+    });
+
+  return [...editorialModels, ...publicationModels];
+}
+
+export function CategoryHeroBanner({
   category,
-  models,
-  compact = false,
-  showCategoryLabel = true,
-}: {
-  category: CategoryGatewayId;
-  models: HeroViewModel[];
-  compact?: boolean;
-  showCategoryLabel?: boolean;
-}) {
+  editorialItems = [],
+  eventItems = [],
+  isLoading,
+}: CategoryHeroBannerProps) {
   const meta = CATEGORY_LANDING_META[category];
+  const models = useMemo(
+    () => buildCategoryHeroPlaylist(category, editorialItems, eventItems),
+    [category, editorialItems, eventItems],
+  );
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
+
   const model = models[index] ?? null;
-  const heightClass = compact ? HERO_HEIGHT_COMPACT : HERO_HEIGHT;
 
   useEffect(() => {
     setIndex(0);
-  }, [models]);
+  }, [category, editorialItems, eventItems]);
 
   useEffect(() => {
     if (models.length <= 1 || paused) return;
@@ -232,11 +253,28 @@ function CategoryHeroSlider({
 
   const handleDotClick = useCallback((i: number) => setIndex(i), []);
 
-  if (!model) return null;
+  if (isLoading) {
+    return (
+      <section className={HERO_HEIGHT}>
+        <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/20 via-black to-black" />
+        <div className={`relative flex h-full items-end ${HERO_CONTENT_PAD}`}>
+          <div className="max-w-2xl animate-pulse">
+            <div className="h-3 w-20 rounded bg-white/10" />
+            <div className="mt-3 h-8 w-3/4 rounded bg-white/10" />
+            <div className="mt-2 h-4 w-1/2 rounded bg-white/10" />
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (!model) {
+    return <CategoryHeroEmpty category={category} />;
+  }
 
   return (
     <section
-      className={heightClass}
+      className={HERO_HEIGHT}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
@@ -253,19 +291,17 @@ function CategoryHeroSlider({
         </motion.div>
       </AnimatePresence>
 
-      {showCategoryLabel ? (
-        <div className="absolute left-0 right-0 top-3 z-10 px-4 sm:top-4 sm:px-6 md:px-10 lg:px-16">
-          <Link
-            href="/"
-            className="text-[10px] font-medium uppercase tracking-widest text-white/60 hover:text-accent sm:text-xs"
-          >
-            &larr; Inicio
-          </Link>
-          <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.2em] text-accent/90 sm:mt-2 sm:text-xs">
-            {meta.title}
-          </p>
-        </div>
-      ) : null}
+      <div className="absolute left-0 right-0 top-3 z-10 px-4 sm:top-4 sm:px-6 md:px-10 lg:px-16">
+        <Link
+          href="/"
+          className="text-[10px] font-medium uppercase tracking-widest text-white/60 hover:text-accent sm:text-xs"
+        >
+          &larr; Inicio
+        </Link>
+        <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.2em] text-accent/90 sm:mt-2 sm:text-xs">
+          {meta.title}
+        </p>
+      </div>
 
       <div className={`relative flex h-full items-end ${HERO_CONTENT_PAD}`}>
         <AnimatePresence mode="wait">
@@ -281,12 +317,12 @@ function CategoryHeroSlider({
           </motion.div>
         </AnimatePresence>
 
-        {models.length > 1 ? (
+        {models.length > 1 && (
           <CategoryHeroBannerSlider models={models} index={index} onIndexChange={setIndex} />
-        ) : null}
+        )}
       </div>
 
-      {models.length > 1 ? (
+      {models.length > 1 && (
         <div className="absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 gap-2 sm:bottom-4">
           {models.map((m, i) => (
             <button
@@ -300,81 +336,9 @@ function CategoryHeroSlider({
             />
           ))}
         </div>
-      ) : null}
+      )}
 
       <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-bg to-transparent sm:h-24" />
     </section>
-  );
-}
-
-function CategoryHeroSkeleton({ compact = false }: { compact?: boolean }) {
-  const heightClass = compact ? HERO_HEIGHT_COMPACT : HERO_HEIGHT;
-  return (
-    <section className={heightClass}>
-      <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/20 via-black to-black" />
-      <div className={`relative flex h-full items-end ${HERO_CONTENT_PAD}`}>
-        <div className="max-w-2xl animate-pulse">
-          <div className="h-3 w-20 rounded bg-white/10" />
-          <div className="mt-3 h-8 w-3/4 rounded bg-white/10" />
-          <div className="mt-2 h-4 w-1/2 rounded bg-white/10" />
-        </div>
-      </div>
-    </section>
-  );
-}
-
-export function CategoryHeroBanner({
-  category,
-  editorialItems = [],
-  eventItems = [],
-  isLoading,
-  isPublicationLoading,
-}: CategoryHeroBannerProps) {
-  const editorialModels = useMemo(
-    () =>
-      editorialItems
-        .slice(0, 5)
-        .map((item) => mapCategoryEditorialBannerToHeroModel(item, category)),
-    [category, editorialItems],
-  );
-
-  const publicationModels = useMemo(
-    () => eventItems.slice(0, 5).map((item) => mapCategoryBannerToHeroModel(item)),
-    [eventItems],
-  );
-
-  const hasEditorial = editorialModels.length > 0;
-  const hasPublications = publicationModels.length > 0;
-
-  if (isLoading && !hasEditorial && !hasPublications) {
-    return <CategoryHeroSkeleton />;
-  }
-
-  if (!hasEditorial && !hasPublications) {
-    if (isPublicationLoading) {
-      return <CategoryHeroSkeleton />;
-    }
-    return <CategoryHeroEmpty category={category} />;
-  }
-
-  return (
-    <div>
-      {isLoading && hasEditorial ? (
-        <CategoryHeroSkeleton />
-      ) : hasEditorial ? (
-        <CategoryHeroSlider category={category} models={editorialModels} />
-      ) : null}
-
-      {isPublicationLoading && !hasPublications ? (
-        <CategoryHeroSkeleton compact={hasEditorial} />
-      ) : hasPublications ? (
-        <CategoryHeroSlider
-          category={category}
-          models={publicationModels}
-          compact={hasEditorial}
-          showCategoryLabel={!hasEditorial}
-        />
-      ) : null}
-    </div>
   );
 }

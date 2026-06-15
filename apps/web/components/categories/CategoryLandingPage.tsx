@@ -64,7 +64,6 @@ export function CategoryLandingPage({ category, subcategorySlug }: CategoryLandi
         editorialItems={heroBanner.editorialItems}
         eventItems={heroBanner.eventItems}
         isLoading={heroBanner.isLoading}
-        isPublicationLoading={heroBanner.isEventLoading}
       />
 
       <CategoryLandingEditorial category={category} />

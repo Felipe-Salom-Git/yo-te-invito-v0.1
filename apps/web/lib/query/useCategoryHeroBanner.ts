@@ -22,7 +22,7 @@ function toGatewayCategory(category: ContentMainCategory): CategoryGatewayId {
 }
 
 /**
- * Public category hero: editorial block on top; real publication banners always available below.
+ * Public category hero: one playlist — editorials + publication banners in the same carousel.
  */
 export function useCategoryHeroBanner(category: ContentMainCategory) {
   const repos = useRepositories();
@@ -74,6 +74,6 @@ export function useCategoryHeroBanner(category: ContentMainCategory) {
     eventItems,
     isEditorialLoading: editorial.isLoading,
     isEventLoading: isPublicationLoading,
-    isLoading: editorial.isLoading || (!hasEditorial && isPublicationLoading),
+    isLoading: editorial.isLoading || isPublicationLoading,
   };
 }

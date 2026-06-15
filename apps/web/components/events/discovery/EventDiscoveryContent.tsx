@@ -74,7 +74,6 @@ export function EventDiscoveryContent({
         editorialItems={heroBanner.editorialItems}
         eventItems={heroBanner.eventItems}
         isLoading={heroBanner.isLoading}
-        isPublicationLoading={heroBanner.isEventLoading}
       />
 
       <CategoryLandingEditorial category={category} />

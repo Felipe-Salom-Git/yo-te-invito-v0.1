@@ -32,7 +32,7 @@ Sin cambios funcionales. Se amplió el smoke `smoke:v31-category-banners` para v
 | Archivo | Cambio |
 |---------|--------|
 | `useCategoryHeroBanner.ts` | Siempre expone `eventItems`; fallback a listado `recent` si banners vacíos con editorial activo. |
-| `CategoryHeroBanner.tsx` | **Apila** hero editorial + hero de publicaciones (fix either/or en `models`). |
+| `CategoryHeroBanner.tsx` | Una sola playlist: editoriales primero + publicaciones en el mismo carrusel (`buildCategoryHeroPlaylist`). |
 | `categoryBannerCards.ts` | Mappers banner / `EventSummary` → cards y hero items. |
 | `CategoryLandingPage.tsx` / `EventDiscoveryContent.tsx` | Pasan ambos bloques al hero; carruseles sin cambios. |
 | `AdminCategoryEditorialBannerPanel.tsx` | Copy: banners complementarios, no reemplazo. |
@@ -40,10 +40,9 @@ Sin cambios funcionales. Se amplió el smoke `smoke:v31-category-banners` para v
 
 Comportamiento resultante:
 
-1. Banner editorial → hero promocional arriba (carrusel si hay varios).
-2. Publicaciones reales → **segundo hero** debajo (mismo formato que antes del editorial).
-3. Carruseles de categoría (`useCategoryCarousels`) y «Más para hacer» (`CrossCategoryRails`) sin cambios.
-4. Sin banners editoriales → hero con eventos destacados (fallback anterior).
+1. Banner editorial y publicaciones reales → **misma lista de reproducción** del hero (editoriales primero, luego publicaciones).
+2. Carruseles de categoría (`useCategoryCarousels`) y «Más para hacer» (`CrossCategoryRails`) sin cambios.
+3. Sin banners editoriales → hero solo con publicaciones (comportamiento anterior).
 
 ---
 
