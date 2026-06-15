@@ -30,12 +30,20 @@ export default function GastroDescuentosPage() {
     <PageContainer>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <SectionTitle>Tickets de descuento</SectionTitle>
-        <Link
-          href="/gastro/descuentos/nuevo"
-          className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-bg hover:bg-accent-hover"
-        >
-          Nuevo ticket
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="/gastro/descuentos/cortesia"
+            className="rounded-lg border border-accent px-4 py-2 text-sm font-medium text-accent hover:bg-accent/10"
+          >
+            Enviar cortesías
+          </Link>
+          <Link
+            href="/gastro/descuentos/nuevo"
+            className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-bg hover:bg-accent-hover"
+          >
+            Nuevo ticket
+          </Link>
+        </div>
       </div>
       <p className="mb-4 text-sm text-text-muted">
         Los tickets se envían a revisión. Administración coordinará la comisión antes de activarlos.

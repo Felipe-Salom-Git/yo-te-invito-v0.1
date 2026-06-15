@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../../auth/auth.module';
+import { EmailModule } from '../../email/email.module';
 import { ProfilesAuthorizationService } from '../../common/profiles-authorization.service';
 import { GastroRolesGuard } from '../../common/guards/gastro-roles.guard';
 import { SubcategoriesModule } from '../subcategories/subcategories.module';
@@ -13,9 +14,11 @@ import { GastroPortalDiscountsService } from './gastro-portal-discounts.service'
 import { GastroContentService } from './gastro-content.service';
 import { GastroDashboardService } from './gastro-dashboard.service';
 import { GastroPublicEventSyncService } from './gastro-public-event-sync.service';
+import { GastroCourtesyDiscountsService } from './gastro-courtesy-discounts.service';
+import { GastroDiscountClaimEmailService } from './gastro-discount-claim-email.service';
 
 @Module({
-  imports: [AuthModule, SubcategoriesModule, ReviewDisputesModule, ReviewsModule],
+  imports: [AuthModule, EmailModule, SubcategoriesModule, ReviewDisputesModule, ReviewsModule],
   controllers: [GastroController, GastroReviewsController],
   providers: [
     ProfilesAuthorizationService,
@@ -26,11 +29,14 @@ import { GastroPublicEventSyncService } from './gastro-public-event-sync.service
     GastroContentService,
     GastroDashboardService,
     GastroPublicEventSyncService,
+    GastroCourtesyDiscountsService,
+    GastroDiscountClaimEmailService,
   ],
   exports: [
     GastroPortalDiscountsService,
     GastroContentService,
     GastroPublicEventSyncService,
+    GastroDiscountClaimEmailService,
   ],
 })
 export class GastroModule {}

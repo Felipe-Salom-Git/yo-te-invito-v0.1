@@ -21,6 +21,7 @@ export const PORTAL_NAV_BY_KEY: Record<PortalNavKey, PortalNavDefinition> = {
     items: [
       { href: '/me', label: 'Inicio' },
       { href: '/me/tickets', label: 'Mis tickets' },
+      { href: '/me/descuentos', label: 'Mis descuentos' },
       { href: '/me/cart', label: 'Mi Carro' },
       { href: '/me/preferences', label: 'Preferencias' },
       { href: '/me/activity', label: 'Actividad' },
@@ -71,6 +72,7 @@ export const PORTAL_NAV_BY_KEY: Record<PortalNavKey, PortalNavDefinition> = {
       { href: '/gastro/local', label: 'Mi local' },
       { href: '/gastro/contenido', label: 'Contenido' },
       { href: '/gastro/descuentos', label: 'Descuentos' },
+      { href: '/gastro/descuentos/cortesia', label: 'Cortesías' },
       { href: '/gastro/validaciones', label: 'Resumen descuentos' },
       { href: '/gastro/scanners', label: 'Scanners' },
       { href: '/gastro/valoraciones', label: 'Valoraciones' },

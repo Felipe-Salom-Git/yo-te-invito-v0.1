@@ -2000,6 +2000,24 @@ export class ApiRepository implements Repositories {
         `/gastro/discounts/${encodeURIComponent(id)}`,
         payload,
       ),
+    previewCourtesyRecipients: async (params) =>
+      this.client.get<import('@yo-te-invito/shared').GastroCourtesyRecipientsPreviewResponse>(
+        '/gastro/discounts/courtesy/recipients-preview',
+        {
+          gastroProfileId: params.gastroProfileId,
+          ...(params.manualEmails?.length
+            ? { manualEmails: params.manualEmails.join(',') }
+            : {}),
+          ...(params.sendToFollowers !== undefined
+            ? { sendToFollowers: params.sendToFollowers }
+            : {}),
+        },
+      ),
+    sendCourtesyDiscounts: async (body) =>
+      this.client.post<import('@yo-te-invito/shared').GastroCourtesySendResponse>(
+        '/gastro/discounts/courtesy/send',
+        body,
+      ),
   };
 
   publicHotel: PublicHotelLocationsRepo = {
@@ -2243,6 +2261,10 @@ export class ApiRepository implements Repositories {
       this.client.post('/me/push-subscriptions/test', body),
     getRecommendations: async (limit = 12) =>
       this.client.get('/me/recommendations', { limit: String(limit) }),
+    listGastroDiscounts: async () =>
+      this.client.get<import('@yo-te-invito/shared').MeGastroDiscountsResponse>(
+        '/me/gastro-discounts',
+      ),
   };
 
   platformConfig: PlatformConfigRepo = {

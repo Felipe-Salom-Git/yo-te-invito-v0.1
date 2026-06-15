@@ -1985,6 +1985,7 @@ export interface MePortalRepo {
   ): Promise<
     import('@yo-te-invito/shared').TicketDateChangeRequestResponse & { autoApproved?: boolean }
   >;
+  listGastroDiscounts(): Promise<import('@yo-te-invito/shared').MeGastroDiscountsResponse>;
 }
 
 export interface UsersRepo {
@@ -2500,6 +2501,7 @@ export interface PublicGastroDiscountClaimResult {
   qrPayload: string;
   discountTitle: string | null;
   locationName: string;
+  message?: string;
 }
 
 export interface PublicGastroDiscountClaimView {
@@ -2576,6 +2578,12 @@ export interface GastroRepo {
   getMyDiscount(id: string): Promise<GastroPortalDiscount>;
   createMyDiscount(payload: GastroDiscountCreatePayload): Promise<GastroPortalDiscount>;
   updateMyDiscount(id: string, payload: Partial<Omit<GastroDiscountCreatePayload, 'commissionCoordinationAccepted'>>): Promise<GastroPortalDiscount>;
+  previewCourtesyRecipients(
+    params: import('@yo-te-invito/shared').GastroCourtesyRecipientsPreviewQuery,
+  ): Promise<import('@yo-te-invito/shared').GastroCourtesyRecipientsPreviewResponse>;
+  sendCourtesyDiscounts(
+    body: import('@yo-te-invito/shared').GastroCourtesySendBody,
+  ): Promise<import('@yo-te-invito/shared').GastroCourtesySendResponse>;
 }
 
 export interface AdminGastroLocationListItem {

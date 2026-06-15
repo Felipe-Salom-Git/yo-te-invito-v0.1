@@ -6,6 +6,8 @@ import {
   gastroDiscountUpdateSchema,
   gastroLocalCreateSchema,
   gastroLocalUpdateSchema,
+  gastroCourtesyRecipientsPreviewQuerySchema,
+  gastroCourtesySendBodySchema,
   Role,
   type GastroContentCreateInput,
   type GastroContentUpdateInput,
@@ -15,6 +17,8 @@ import {
   type GastroLocalCreateInput,
   type GastroLocalUpdateInput,
   type GastroValidationListQuery,
+  type GastroCourtesyRecipientsPreviewQuery,
+  type GastroCourtesySendBody,
 } from '@yo-te-invito/shared';
 import { JwtOrDevAuthGuard } from '../../auth/jwt-or-dev-auth.guard';
 import { GastroRolesGuard } from '../../common/guards/gastro-roles.guard';
@@ -26,6 +30,7 @@ import { GastroLocalService } from './gastro-local.service';
 import { GastroPortalDiscountsService } from './gastro-portal-discounts.service';
 import { GastroContentService } from './gastro-content.service';
 import { GastroDashboardService } from './gastro-dashboard.service';
+import { GastroCourtesyDiscountsService } from './gastro-courtesy-discounts.service';
 
 @Controller('gastro')
 @UseGuards(JwtOrDevAuthGuard, GastroRolesGuard)
@@ -37,6 +42,7 @@ export class GastroController {
     private readonly portalDiscounts: GastroPortalDiscountsService,
     private readonly contentService: GastroContentService,
     private readonly dashboard: GastroDashboardService,
+    private readonly courtesyDiscounts: GastroCourtesyDiscountsService,
   ) {}
 
   @Get('dashboard')
@@ -68,6 +74,34 @@ export class GastroController {
   @Get('discounts')
   async listMyDiscounts(@CurrentUser() user: { id: string; tenantId: string; role: string }) {
     return this.portalDiscounts.listMyDiscounts(user.tenantId, user.id, user.role);
+  }
+
+  @Get('discounts/courtesy/recipients-preview')
+  async previewCourtesyRecipients(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Query(new ZodValidationPipe(gastroCourtesyRecipientsPreviewQuerySchema))
+    query: GastroCourtesyRecipientsPreviewQuery,
+  ) {
+    return this.courtesyDiscounts.previewRecipients(
+      user.tenantId,
+      user.id,
+      user.role,
+      query,
+    );
+  }
+
+  @Post('discounts/courtesy/send')
+  async sendCourtesyDiscounts(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Body(new ZodValidationPipe(gastroCourtesySendBodySchema)) body: GastroCourtesySendBody,
+  ) {
+    return this.courtesyDiscounts.sendCourtesy(
+      user.tenantId,
+      user.id,
+      user.role,
+      body,
+      process.env.WEB_BASE_URL,
+    );
   }
 
   @Get('discounts/:id')
