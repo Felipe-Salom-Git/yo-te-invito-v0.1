@@ -18,6 +18,34 @@ import type {
 } from '@yo-te-invito/shared';
 import { ErrorCode } from '@yo-te-invito/shared';
 
+function buyerDisplayName(input: {
+  order?: { buyerFirstName: string; buyerLastName: string; buyerEmail: string } | null;
+  ownerUser?: { firstName: string | null; lastName: string | null; email: string } | null;
+}): string | undefined {
+  if (input.order) {
+    const name = `${input.order.buyerFirstName} ${input.order.buyerLastName}`.trim();
+    if (name) return name;
+    return input.order.buyerEmail;
+  }
+  if (input.ownerUser) {
+    const name = `${input.ownerUser.firstName ?? ''} ${input.ownerUser.lastName ?? ''}`.trim();
+    if (name) return name;
+    return input.ownerUser.email;
+  }
+  return undefined;
+}
+
+function occurrenceLabel(startAt: Date | null | undefined): string | undefined {
+  if (!startAt) return undefined;
+  return startAt.toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' });
+}
+
+type ScanTicketContext = {
+  eventTitle: string;
+  holderName?: string;
+  occurrenceLabel?: string;
+};
+
 @Injectable()
 export class ScannerService {
   constructor(
@@ -121,13 +149,48 @@ export class ScannerService {
 
     await this.scannerAccounts.assertScannerCanAccessEvent(tenantId, scannerId, eventId);
 
+    const event = await this.prisma.event.findFirst({
+      where: { id: eventId, tenantId, deletedAt: null },
+      select: { id: true, title: true },
+    });
+    if (!event) {
+      return { result: 'INVALID', message: 'Evento no encontrado' };
+    }
+
     const ticket = await this.prisma.ticket.findFirst({
       where: {
         qrPayload,
         eventId,
         event: { tenantId },
       },
-      include: { ticketType: true },
+      include: {
+        ticketType: true,
+        occurrence: { select: { startAt: true } },
+        order: {
+          select: { buyerFirstName: true, buyerLastName: true, buyerEmail: true },
+        },
+        ownerUser: {
+          select: { firstName: true, lastName: true, email: true },
+        },
+      },
+    });
+
+    const ctx: ScanTicketContext = {
+      eventTitle: event.title,
+      holderName: ticket
+        ? buyerDisplayName({ order: ticket.order, ownerUser: ticket.ownerUser })
+        : undefined,
+      occurrenceLabel: ticket
+        ? occurrenceLabel(ticket.occurrence?.startAt ?? null)
+        : undefined,
+    };
+
+    const withCtx = (res: ScanResponse): ScanResponse => ({
+      ...ctx,
+      ...res,
+      eventTitle: res.eventTitle ?? ctx.eventTitle,
+      holderName: res.holderName ?? ctx.holderName,
+      occurrenceLabel: res.occurrenceLabel ?? ctx.occurrenceLabel,
     });
 
     if (!ticket) {
@@ -142,7 +205,7 @@ export class ScannerService {
           result: 'INVALID',
         },
       });
-      return { result: 'INVALID' };
+      return withCtx({ result: 'INVALID' });
     }
 
     if (ticket.status === 'USED') {
@@ -157,7 +220,12 @@ export class ScannerService {
           result: 'ALREADY_USED',
         },
       });
-      return { result: 'ALREADY_USED', ticketId: ticket.id, ticketTypeName: ticket.ticketType?.name };
+      return withCtx({
+        result: 'ALREADY_USED',
+        ticketId: ticket.id,
+        ticketTypeName: ticket.ticketType?.name,
+        firstScannedAt: ticket.usedAt?.toISOString(),
+      });
     }
 
     if (ticket.status === 'REVOKED') {
@@ -172,7 +240,12 @@ export class ScannerService {
           result: 'REVOKED',
         },
       });
-      return { result: 'REVOKED', ticketId: ticket.id, ticketTypeName: ticket.ticketType?.name };
+      return withCtx({
+        result: 'REVOKED',
+        ticketId: ticket.id,
+        ticketTypeName: ticket.ticketType?.name,
+        ticketStatus: 'REVOKED',
+      });
     }
 
     if (ticket.status === 'TRANSFER_PENDING' || ticket.status === 'TRANSFERRED') {
@@ -187,7 +260,12 @@ export class ScannerService {
           result: 'INVALID',
         },
       });
-      return { result: 'INVALID', ticketId: ticket.id, ticketTypeName: ticket.ticketType?.name };
+      return withCtx({
+        result: 'INVALID',
+        ticketId: ticket.id,
+        ticketTypeName: ticket.ticketType?.name,
+        ticketStatus: ticket.status,
+      });
     }
 
     const ticketOccurrenceId = ticket.occurrenceId ?? ticket.ticketType?.occurrenceId ?? null;
@@ -207,12 +285,12 @@ export class ScannerService {
           result: 'INVALID',
         },
       });
-      return {
+      return withCtx({
         result: 'WRONG_OCCURRENCE',
         ticketId: ticket.id,
         ticketTypeName: ticket.ticketType?.name,
         message: 'Esta entrada corresponde a otra fecha.',
-      };
+      });
     }
 
     const now = new Date();
@@ -222,6 +300,10 @@ export class ScannerService {
     });
 
     if (count === 0) {
+      const refreshed = await this.prisma.ticket.findUnique({
+        where: { id: ticket.id },
+        select: { usedAt: true },
+      });
       await this.prisma.ticketScanLog.create({
         data: {
           tenantId,
@@ -233,7 +315,12 @@ export class ScannerService {
           result: 'ALREADY_USED',
         },
       });
-      return { result: 'ALREADY_USED', ticketId: ticket.id, ticketTypeName: ticket.ticketType?.name };
+      return withCtx({
+        result: 'ALREADY_USED',
+        ticketId: ticket.id,
+        ticketTypeName: ticket.ticketType?.name,
+        firstScannedAt: refreshed?.usedAt?.toISOString(),
+      });
     }
 
     await this.prisma.ticketScanLog.create({
@@ -248,11 +335,12 @@ export class ScannerService {
       },
     });
 
-    return {
+    return withCtx({
       result: 'OK',
       ticketId: ticket.id,
       ticketTypeName: ticket.ticketType?.name ?? undefined,
-    };
+      scannedAt: now.toISOString(),
+    });
   }
 
   async validate(

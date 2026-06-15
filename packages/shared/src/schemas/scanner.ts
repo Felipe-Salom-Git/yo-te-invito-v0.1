@@ -52,6 +52,12 @@ export const scanResponseSchema = z.object({
   ticketId: z.string().optional(),
   ticketTypeName: z.string().optional(),
   message: z.string().optional(),
+  eventTitle: z.string().optional(),
+  holderName: z.string().optional(),
+  occurrenceLabel: z.string().optional(),
+  scannedAt: z.string().datetime().optional(),
+  firstScannedAt: z.string().datetime().optional(),
+  ticketStatus: ticketStatusWithTransferSchema.optional(),
 });
 export type ScanResponse = z.infer<typeof scanResponseSchema>;
 

@@ -31,6 +31,8 @@ import { QrCameraScanner } from '@/components/QrCameraScanner';
 import { ScannerConnectionStatus } from '@/components/ScannerConnectionStatus';
 import { OfflineConflictPanel } from '@/components/OfflineConflictPanel';
 import { ScannerOperationalMenu } from '@/components/ScannerOperationalMenu';
+import { ScanResultModal, type ScanResultModalData } from '@/components/ScanResultModal';
+import { ScannerTicketListPanel } from '@/components/ScannerTicketListPanel';
 
 const MAX_HISTORY = 20;
 const LS_LAST_EVENT = 'scanner:lastEventId';
@@ -79,6 +81,7 @@ function formatEventLabel(e: ScannerScanTargetsResponse['events'][number]): stri
 
 export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScannerClientProps) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [ticketListOpen, setTicketListOpen] = useState(false);
   const [targets, setTargets] = useState<ScannerScanTargetsResponse | null>(null);
   const [targetsError, setTargetsError] = useState<string | null>(null);
   const [selectedEventId, setSelectedEventId] = useState('');
@@ -88,7 +91,8 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
   const [selectedDiscountId, setSelectedDiscountId] = useState('');
   const [qrPayload, setQrPayload] = useState('');
   const [inputMode, setInputMode] = useState<InputMode>('camera');
-  const [lastTicket, setLastTicket] = useState<ScanResponse | OfflineScanResult | null>(null);
+  const [lastTicket, setLastTicket] = useState<ScanResultModalData | null>(null);
+  const [scanModalOpen, setScanModalOpen] = useState(false);
   const [lastGastro, setLastGastro] = useState<ValidateGastroDiscountResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [history, setHistory] = useState<ScanHistoryItem[]>([]);
@@ -239,6 +243,21 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
     localStorage.setItem(LS_INPUT_MODE, mode);
   };
 
+  const enrichTicketResult = useCallback(
+    (res: ScanResponse | OfflineScanResult, connectionError?: boolean): ScanResultModalData => {
+      const eventTitle = targets?.events.find((e) => e.id === selectedEventId)?.title;
+      const occ = eventOccurrences.find((o) => o.id === selectedOccurrenceId);
+      const occurrenceLabel = occ ? formatOccurrenceLabel(occ) : undefined;
+      return {
+        ...res,
+        eventTitle: res.eventTitle ?? eventTitle,
+        occurrenceLabel: res.occurrenceLabel ?? occurrenceLabel,
+        connectionError,
+      };
+    },
+    [targets, selectedEventId, eventOccurrences, selectedOccurrenceId],
+  );
+
   const processScan = useCallback(
     async (rawPayload: string) => {
       const trimmed = rawPayload.trim();
@@ -293,6 +312,7 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
       const eventId = selectedEventId.trim();
       if (!eventId) {
         setLastTicket({ result: 'INVALID' });
+        setScanModalOpen(true);
         setLastGastro(null);
         scanningRef.current = false;
         return;
@@ -303,6 +323,7 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
       setLastTicket(null);
       try {
         let res: ScanResponse | OfflineScanResult;
+        let connectionError = false;
         if (isOnline) {
           try {
             res = await scanTicket({
@@ -311,19 +332,33 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
               ...(selectedOccurrenceId ? { occurrenceId: selectedOccurrenceId } : {}),
             });
           } catch {
+            connectionError = true;
             res = await scanOffline(eventId, trimmed);
           }
         } else {
           res = await scanOffline(eventId, trimmed);
         }
-        setLastTicket(res);
+        const enriched = enrichTicketResult(
+          res,
+          connectionError &&
+            res.result === 'INVALID' &&
+            !('offline' in res && res.offline)
+            ? true
+            : undefined,
+        );
+        setLastTicket(enriched);
+        setScanModalOpen(true);
         setHistory((prev) =>
           [{ kind: 'ticket' as const, result: res }, ...prev].slice(0, MAX_HISTORY),
         );
         await refreshOfflineState(eventId);
       } catch {
-        const invalid: ScanResponse = { result: 'INVALID' };
+        const invalid: ScanResultModalData = enrichTicketResult(
+          { result: 'INVALID' },
+          true,
+        );
         setLastTicket(invalid);
+        setScanModalOpen(true);
         setHistory((prev) =>
           [{ kind: 'ticket' as const, result: invalid }, ...prev].slice(0, MAX_HISTORY),
         );
@@ -339,6 +374,7 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
       selectedEventId,
       selectedOccurrenceId,
       refreshOfflineState,
+      enrichTicketResult,
     ],
   );
 
@@ -419,10 +455,6 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
     }
   }
 
-  const ticketOk = lastTicket?.result === 'OK';
-  const ticketOffline = (lastTicket as OfflineScanResult | null)?.offline;
-  const ticketPending = (lastTicket as OfflineScanResult | null)?.pendingSync;
-
   const selectedEvent = targets?.events.find((e) => e.id === selectedEventId);
   const selectedDiscount = targets?.discounts.find((d) => d.id === selectedDiscountId);
   const targetLabel = isProducer
@@ -464,16 +496,27 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
         targetLabel={targetLabel}
         canDownloadPdf={isProducer && !!selectedEventId}
         canSaveOffline={isProducer && !!selectedEventId}
+        canTicketList={isProducer && !!selectedEventId}
         canSync={isProducer && pendingCount > 0}
         syncing={syncing}
         actions={{
           onScanFocus: () => scanSectionRef.current?.scrollIntoView({ behavior: 'smooth' }),
           onSelectTarget: () => targetSectionRef.current?.scrollIntoView({ behavior: 'smooth' }),
+          onTicketList: () => setTicketListOpen(true),
           onDownloadPdf: () => void handleDownloadPdf(),
           onSaveOffline: () => void handleSaveSnapshot(),
           onSync: () => void handleManualSync(),
           onLogout,
         }}
+      />
+
+      <ScannerTicketListPanel
+        open={ticketListOpen}
+        onClose={() => setTicketListOpen(false)}
+        eventId={selectedEventId}
+        eventTitle={selectedEvent?.title ?? null}
+        isOnline={isOnline}
+        selectedOccurrenceId={selectedOccurrenceId}
       />
 
       <ScannerConnectionStatus
@@ -677,23 +720,11 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
         </span>
       )}
 
-      {lastTicket && (
-        <div
-          className={`rounded-xl px-6 py-4 text-lg font-semibold ${
-            ticketOk ? 'bg-emerald-700 text-white' : 'bg-red-700 text-white'
-          }`}
-        >
-          <p className="text-xs font-normal uppercase opacity-80">Entrada</p>
-          {ticketOk
-            ? `OK — ${lastTicket.ticketTypeName ?? 'Válida'}`
-            : scanResultLabel(lastTicket.result)}
-          {ticketOffline && (
-            <p className="mt-2 text-sm font-normal opacity-90">
-              Validación offline{ticketPending ? ' — pendiente de sincronizar' : ''}
-            </p>
-          )}
-        </div>
-      )}
+      <ScanResultModal
+        open={scanModalOpen}
+        result={lastTicket}
+        onClose={() => setScanModalOpen(false)}
+      />
 
       {lastGastro && (
         <div className={`rounded-xl px-6 py-4 ${gastroStatusClass(lastGastro.status)}`}>
