@@ -6,14 +6,18 @@ import type {
   ScannerScanTargetsResponse,
   ValidateGastroDiscountResponse,
 } from '@yo-te-invito/shared';
+import { getAuthHeaders } from '@/lib/auth/session';
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL ??
   process.env.NEXT_PUBLIC_API_BASE_URL ??
   'http://localhost:3001';
 
-function authHeaders(devUserId: string): HeadersInit {
-  return { 'X-Dev-User-Id': devUserId };
+function jsonHeaders(): HeadersInit {
+  return {
+    'Content-Type': 'application/json',
+    ...getAuthHeaders(),
+  };
 }
 
 export interface OfflineTicket {
@@ -22,43 +26,35 @@ export interface OfflineTicket {
   status: string;
 }
 
-export async function fetchScannerAccount(
-  devUserId: string,
-): Promise<ScannerAccountSelfResponse | null> {
+export async function fetchScannerAccount(): Promise<ScannerAccountSelfResponse | null> {
   const res = await fetch(`${API_BASE}/scanner/account`, {
-    headers: authHeaders(devUserId),
+    headers: getAuthHeaders(),
   });
   if (res.status === 404 || res.status === 403) return null;
   if (!res.ok) throw new Error('Failed to fetch scanner account');
   return res.json();
 }
 
-export async function fetchScanTargets(devUserId: string): Promise<ScannerScanTargetsResponse> {
+export async function fetchScanTargets(): Promise<ScannerScanTargetsResponse> {
   const res = await fetch(`${API_BASE}/scanner/scan-targets`, {
-    headers: authHeaders(devUserId),
+    headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error('Failed to fetch scan targets');
   return res.json();
 }
 
-export async function fetchEventTickets(
-  eventId: string,
-  devUserId: string,
-): Promise<OfflineTicket[]> {
+export async function fetchEventTickets(eventId: string): Promise<OfflineTicket[]> {
   const res = await fetch(`${API_BASE}/scanner/events/${encodeURIComponent(eventId)}/tickets`, {
-    headers: authHeaders(devUserId),
+    headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error('Failed to fetch event tickets');
   const data = (await res.json()) as { tickets: OfflineTicket[] };
   return data.tickets ?? [];
 }
 
-export async function fetchEventSnapshot(
-  eventId: string,
-  devUserId: string,
-): Promise<OfflineSnapshotResponse> {
+export async function fetchEventSnapshot(eventId: string): Promise<OfflineSnapshotResponse> {
   const res = await fetch(`${API_BASE}/scanner/events/${encodeURIComponent(eventId)}/snapshot`, {
-    headers: authHeaders(devUserId),
+    headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error('Failed to fetch event snapshot');
   return res.json();
@@ -66,11 +62,10 @@ export async function fetchEventSnapshot(
 
 export async function downloadEventTicketsPdf(
   eventId: string,
-  devUserId: string,
 ): Promise<{ blob: Blob; filename: string }> {
   const res = await fetch(
     `${API_BASE}/scanner/events/${encodeURIComponent(eventId)}/tickets/export.pdf`,
-    { headers: authHeaders(devUserId) },
+    { headers: getAuthHeaders() },
   );
   if (!res.ok) {
     let message = 'Error al descargar PDF';
@@ -92,7 +87,6 @@ export interface ScanParams {
   eventId: string;
   qrPayload: string;
   deviceId?: string;
-  devUserId: string;
   occurrenceId?: string;
 }
 
@@ -125,10 +119,7 @@ export async function fetchEventOccurrences(
 export async function scanTicket(params: ScanParams): Promise<ScanResponse> {
   const res = await fetch(`${API_BASE}/scanner/scan`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...authHeaders(params.devUserId),
-    },
+    headers: jsonHeaders(),
     body: JSON.stringify({
       eventId: params.eventId,
       qrPayload: params.qrPayload,
@@ -140,26 +131,20 @@ export async function scanTicket(params: ScanParams): Promise<ScanResponse> {
   return res.json();
 }
 
-export async function syncOfflineValidations(
-  devUserId: string,
-  body: {
-    snapshotVersion: string;
-    contentId: string;
-    contentType: 'EVENT';
-    validations: Array<{
-      localId: string;
-      qrPayload: string;
-      scannedAt: string;
-      deviceId?: string;
-    }>;
-  },
-): Promise<OfflineValidationSyncResponse> {
+export async function syncOfflineValidations(body: {
+  snapshotVersion: string;
+  contentId: string;
+  contentType: 'EVENT';
+  validations: Array<{
+    localId: string;
+    qrPayload: string;
+    scannedAt: string;
+    deviceId?: string;
+  }>;
+}): Promise<OfflineValidationSyncResponse> {
   const res = await fetch(`${API_BASE}/scanner/offline-validations/sync`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...authHeaders(devUserId),
-    },
+    headers: jsonHeaders(),
     body: JSON.stringify(body),
   });
   if (!res.ok) throw new Error('Sync request failed');
@@ -169,14 +154,10 @@ export async function syncOfflineValidations(
 export async function validateGastroDiscount(params: {
   qrPayload: string;
   deviceId?: string;
-  devUserId: string;
 }): Promise<ValidateGastroDiscountResponse> {
   const res = await fetch(`${API_BASE}/scanner/gastro-discounts/validate`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...authHeaders(params.devUserId),
-    },
+    headers: jsonHeaders(),
     body: JSON.stringify({
       qrPayload: params.qrPayload,
       deviceId: params.deviceId,

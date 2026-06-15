@@ -1,5 +1,5 @@
-import { DoorScannerClient } from '@/components/DoorScannerClient';
+import { ScannerDoorPageClient } from '@/components/ScannerDoorPageClient';
 
 export default function DoorPage() {
-  return <DoorScannerClient />;
+  return <ScannerDoorPageClient />;
 }

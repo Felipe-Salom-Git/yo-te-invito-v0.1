@@ -31,13 +31,19 @@ import {
 import { QrCameraScanner } from '@/components/QrCameraScanner';
 import { ScannerConnectionStatus } from '@/components/ScannerConnectionStatus';
 import { OfflineConflictPanel } from '@/components/OfflineConflictPanel';
+import { ScannerOperationalMenu } from '@/components/ScannerOperationalMenu';
 
 const MAX_HISTORY = 20;
-const LS_DEV_USER = 'scanner:devUserId';
 const LS_LAST_EVENT = 'scanner:lastEventId';
 const LS_LAST_DISCOUNT = 'scanner:lastDiscountId';
 const LS_LAST_OCCURRENCE = 'scanner:lastOccurrenceId';
 const LS_INPUT_MODE = 'scanner:inputMode';
+
+type DoorScannerClientProps = {
+  userLabel: string;
+  userEmail: string;
+  onLogout: () => void;
+};
 
 type ScanHistoryItem =
   | { kind: 'ticket'; result: ScanResponse | OfflineScanResult }
@@ -72,8 +78,8 @@ function formatEventLabel(e: ScannerScanTargetsResponse['events'][number]): stri
   return `${e.title} · ${date}${e.city ? ` · ${e.city}` : ''}`;
 }
 
-export function DoorScannerClient() {
-  const [devUserId, setDevUserId] = useState('');
+export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScannerClientProps) {
+  const [menuOpen, setMenuOpen] = useState(false);
   const [targets, setTargets] = useState<ScannerScanTargetsResponse | null>(null);
   const [targetsError, setTargetsError] = useState<string | null>(null);
   const [selectedEventId, setSelectedEventId] = useState('');
@@ -94,6 +100,8 @@ export function DoorScannerClient() {
   const [offlineStatus, setOfflineStatus] = useState<string | null>(null);
   const [pdfStatus, setPdfStatus] = useState<string | null>(null);
   const scanningRef = useRef(false);
+  const targetSectionRef = useRef<HTMLDivElement>(null);
+  const scanSectionRef = useRef<HTMLDivElement>(null);
 
   const { sync, syncing, lastSummary } = useOfflineSync();
 
@@ -120,7 +128,6 @@ export function DoorScannerClient() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    setDevUserId(localStorage.getItem(LS_DEV_USER) ?? '');
     setSelectedEventId(localStorage.getItem(LS_LAST_EVENT) ?? '');
     setSelectedOccurrenceId(localStorage.getItem(LS_LAST_OCCURRENCE) ?? '');
     setSelectedDiscountId(localStorage.getItem(LS_LAST_DISCOUNT) ?? '');
@@ -133,19 +140,10 @@ export function DoorScannerClient() {
     if (selectedEventId) void refreshOfflineState(selectedEventId);
   }, [selectedEventId, refreshOfflineState, lastTicket, lastSummary]);
 
-  const handleDevUserIdChange = useCallback((v: string) => {
-    setDevUserId(v);
-    localStorage.setItem(LS_DEV_USER, v);
-  }, []);
-
-  const loadTargets = useCallback(async (userId: string) => {
-    if (!userId.trim()) {
-      setTargets(null);
-      return;
-    }
+  const loadTargets = useCallback(async () => {
     setTargetsError(null);
     try {
-      const data = await fetchScanTargets(userId.trim());
+      const data = await fetchScanTargets();
       setTargets(data);
       if (data.parentProfileType === 'PRODUCER' && data.events.length > 0) {
         const stored = localStorage.getItem(LS_LAST_EVENT);
@@ -168,15 +166,14 @@ export function DoorScannerClient() {
   }, []);
 
   useEffect(() => {
-    if (devUserId) void loadTargets(devUserId);
-  }, [devUserId, loadTargets]);
+    void loadTargets();
+  }, [loadTargets]);
 
   useEffect(() => {
-    if (!devUserId.trim()) return;
-    void fetchScannerAccount(devUserId.trim()).then((account) => {
+    void fetchScannerAccount().then((account) => {
       if (account?.tenantId) setScannerTenantId(account.tenantId);
     });
-  }, [devUserId]);
+  }, []);
 
   useEffect(() => {
     if (!selectedEventId || !isProducer) {
@@ -217,7 +214,7 @@ export function DoorScannerClient() {
   const processScan = useCallback(
     async (rawPayload: string) => {
       const trimmed = rawPayload.trim();
-      if (!trimmed || !devUserId.trim() || scanningRef.current) return;
+      if (!trimmed || scanningRef.current) return;
 
       scanningRef.current = true;
       setQrPayload(trimmed);
@@ -247,7 +244,6 @@ export function DoorScannerClient() {
           }
           const res = await validateGastroDiscount({
             qrPayload: trimmed,
-            devUserId: devUserId.trim(),
           });
           setLastGastro(res);
           setHistory((prev) =>
@@ -284,7 +280,6 @@ export function DoorScannerClient() {
             res = await scanTicket({
               eventId,
               qrPayload: trimmed,
-              devUserId: devUserId.trim(),
               ...(selectedOccurrenceId ? { occurrenceId: selectedOccurrenceId } : {}),
             });
           } catch {
@@ -310,7 +305,6 @@ export function DoorScannerClient() {
       }
     },
     [
-      devUserId,
       isOnline,
       isGastro,
       selectedDiscountId,
@@ -322,8 +316,8 @@ export function DoorScannerClient() {
 
   async function handleSaveSnapshot() {
     const eventId = selectedEventId.trim();
-    if (!eventId || !devUserId.trim()) {
-      setOfflineStatus('Seleccioná un evento y configurá el usuario scanner');
+    if (!eventId) {
+      setOfflineStatus('Seleccioná un evento primero');
       return;
     }
     if (!isOnline) {
@@ -339,7 +333,7 @@ export function DoorScannerClient() {
     }
     setOfflineStatus('Guardando listado…');
     try {
-      const snapshot = await fetchEventSnapshot(eventId, devUserId.trim());
+      const snapshot = await fetchEventSnapshot(eventId);
       await saveSnapshot(snapshot);
       await refreshOfflineState(eventId);
       setOfflineStatus(`${snapshot.tickets.length} entradas guardadas para modo offline`);
@@ -360,7 +354,7 @@ export function DoorScannerClient() {
 
   async function handleDownloadPdf() {
     const eventId = selectedEventId.trim();
-    if (!eventId || !devUserId.trim()) {
+    if (!eventId) {
       setPdfStatus('Seleccioná un evento primero');
       return;
     }
@@ -370,7 +364,7 @@ export function DoorScannerClient() {
     }
     setPdfStatus('Descargando…');
     try {
-      const { blob, filename } = await downloadEventTicketsPdf(eventId, devUserId.trim());
+      const { blob, filename } = await downloadEventTicketsPdf(eventId);
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -401,16 +395,58 @@ export function DoorScannerClient() {
   const ticketOffline = (lastTicket as OfflineScanResult | null)?.offline;
   const ticketPending = (lastTicket as OfflineScanResult | null)?.pendingSync;
 
+  const selectedEvent = targets?.events.find((e) => e.id === selectedEventId);
+  const selectedDiscount = targets?.discounts.find((d) => d.id === selectedDiscountId);
+  const targetLabel = isProducer
+    ? selectedEvent?.title ?? null
+    : isGastro
+      ? selectedDiscount?.title ?? null
+      : null;
+
   return (
-    <main className="mx-auto flex min-h-screen max-w-lg flex-col gap-6 p-6">
-      <header>
-        <h1 className="text-2xl font-bold text-white">Scanner — Puerta</h1>
-        <p className="mt-1 text-sm text-slate-400">
-          {targets?.parentDisplayName
-            ? `Cuenta: ${targets.parentDisplayName}`
-            : 'Validá entradas y descuentos de tu cuenta'}
-        </p>
+    <main className="mx-auto flex min-h-screen max-w-lg flex-col gap-6 p-4 pb-8 sm:p-6">
+      <header className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-bold text-white sm:text-2xl">Scanner — Puerta</h1>
+          <p className="mt-1 text-xs text-slate-400 sm:text-sm">
+            {userLabel} · {userEmail}
+          </p>
+          {targets?.parentDisplayName && (
+            <p className="mt-0.5 text-xs text-slate-500">
+              Cuenta: {targets.parentDisplayName}
+            </p>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={() => setMenuOpen(true)}
+          className="shrink-0 rounded-lg border border-slate-600 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800"
+          aria-label="Abrir menú"
+        >
+          Menú
+        </button>
       </header>
+
+      <ScannerOperationalMenu
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        isOnline={isOnline}
+        userLabel={userLabel}
+        parentLabel={targets?.parentDisplayName ?? null}
+        targetLabel={targetLabel}
+        canDownloadPdf={isProducer && !!selectedEventId}
+        canSaveOffline={isProducer && !!selectedEventId}
+        canSync={isProducer && pendingCount > 0}
+        syncing={syncing}
+        actions={{
+          onScanFocus: () => scanSectionRef.current?.scrollIntoView({ behavior: 'smooth' }),
+          onSelectTarget: () => targetSectionRef.current?.scrollIntoView({ behavior: 'smooth' }),
+          onDownloadPdf: () => void handleDownloadPdf(),
+          onSaveOffline: () => void handleSaveSnapshot(),
+          onSync: () => void handleManualSync(),
+          onLogout,
+        }}
+      />
 
       <ScannerConnectionStatus
         isOnline={isOnline}
@@ -423,17 +459,10 @@ export function DoorScannerClient() {
 
       <OfflineConflictPanel conflicts={conflicts} />
 
-      <div className="flex flex-col gap-4 rounded-xl border border-slate-700 bg-slate-800/50 p-4">
-        <label className="text-sm text-slate-400">
-          Usuario scanner (dev: X-Dev-User-Id)
-          <input
-            type="text"
-            value={devUserId}
-            onChange={(e) => handleDevUserIdChange(e.target.value)}
-            placeholder="ID usuario rol SCANNER"
-            className="mt-1 block w-full rounded-lg border border-slate-600 bg-slate-900 px-4 py-2 text-white"
-          />
-        </label>
+      <div
+        ref={targetSectionRef}
+        className="flex flex-col gap-4 rounded-xl border border-slate-700 bg-slate-800/50 p-4"
+      >
         {targetsError && <p className="text-sm text-red-300">{targetsError}</p>}
 
         {isProducer && targets && targets.events.length > 0 && (
@@ -553,6 +582,7 @@ export function DoorScannerClient() {
         )}
       </div>
 
+      <div ref={scanSectionRef} className="flex flex-col gap-3">
       <div className="flex gap-2">
         <button
           type="button"
@@ -640,6 +670,7 @@ export function DoorScannerClient() {
           <p className="mt-2 text-sm opacity-90">{lastGastro.message}</p>
         </div>
       )}
+      </div>
 
       {history.length > 0 && (
         <section>

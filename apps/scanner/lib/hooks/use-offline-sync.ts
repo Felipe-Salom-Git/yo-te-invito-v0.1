@@ -10,8 +10,6 @@ import {
   type QueuedScan,
 } from '@/lib/db/offline-scanner';
 
-const DEV_USER_ID_KEY = 'scanner:devUserId';
-
 export type SyncSummary = {
   synced: number;
   conflicts: number;
@@ -38,9 +36,6 @@ export function useOfflineSync() {
 
   const sync = useCallback(async (): Promise<SyncSummary | null> => {
     if (!navigator.onLine || syncing) return null;
-    const devUserId =
-      typeof window !== 'undefined' ? localStorage.getItem(DEV_USER_ID_KEY) : null;
-    if (!devUserId) return null;
 
     const pending = await getPendingQueuedScans();
     if (pending.length === 0) return null;
@@ -51,7 +46,7 @@ export function useOfflineSync() {
 
     setSyncing(true);
     try {
-      const response = await syncOfflineValidations(devUserId, {
+      const response = await syncOfflineValidations({
         snapshotVersion: meta.version,
         contentId: eventId,
         contentType: 'EVENT',
