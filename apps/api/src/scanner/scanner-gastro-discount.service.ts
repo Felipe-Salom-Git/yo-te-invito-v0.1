@@ -10,6 +10,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { ProfilesAuthorizationService } from '../common/profiles-authorization.service';
 import { ScannerAccountsService } from '../modules/scanner-accounts/scanner-accounts.service';
+import { AuditService } from '../modules/audit/audit.service';
 import { Role } from '@yo-te-invito/shared';
 
 function formatValueLabel(type: string, value: number): string {
@@ -30,6 +31,7 @@ export class ScannerGastroDiscountService {
     private readonly prisma: PrismaService,
     private readonly profiles: ProfilesAuthorizationService,
     private readonly scannerAccounts: ScannerAccountsService,
+    private readonly audit: AuditService,
   ) {}
 
   private response(
@@ -39,6 +41,17 @@ export class ScannerGastroDiscountService {
     discount?: ValidateGastroDiscountResponse['discount'],
   ): ValidateGastroDiscountResponse {
     return { status, title, message, ...(discount ? { discount } : {}) };
+  }
+
+  private isClaimExpired(claim: {
+    status: string;
+    expiresAt: Date | null;
+    usedAt: Date | null;
+  }): boolean {
+    if (claim.status === 'EXPIRED' || claim.status === 'CANCELLED') return true;
+    if (claim.status === 'USED' || claim.usedAt) return true;
+    if (claim.expiresAt && claim.expiresAt < new Date()) return true;
+    return false;
   }
 
   private isExpired(d: {
@@ -170,6 +183,19 @@ export class ScannerGastroDiscountService {
     });
 
     if (claim) {
+      if (this.isClaimExpired(claim)) {
+        const msg =
+          claim.status === 'USED' || claim.usedAt
+            ? 'Este QR de descuento ya fue validado anteriormente.'
+            : 'El QR de descuento está vencido o cancelado.';
+        return this.response(
+          claim.status === 'USED' || claim.usedAt ? 'ALREADY_USED' : 'EXPIRED',
+          claim.status === 'USED' || claim.usedAt ? 'Ya utilizado' : 'Descuento vencido',
+          msg,
+          discountInfo,
+        );
+      }
+
       const existing = await this.prisma.gastroDiscountValidation.findUnique({
         where: { claimId: claim.id },
       });
@@ -183,13 +209,19 @@ export class ScannerGastroDiscountService {
       }
 
       try {
-        await this.prisma.gastroDiscountValidation.create({
-          data: {
-            discountId: discount.id,
-            claimId: claim.id,
-            userId: claim.userId,
-          },
-        });
+        await this.prisma.$transaction([
+          this.prisma.gastroDiscountValidation.create({
+            data: {
+              discountId: discount.id,
+              claimId: claim.id,
+              userId: claim.userId,
+            },
+          }),
+          this.prisma.gastroDiscountClaim.update({
+            where: { id: claim.id },
+            data: { status: 'USED', usedAt: new Date() },
+          }),
+        ]);
       } catch (err) {
         if (
           err instanceof Prisma.PrismaClientKnownRequestError &&
@@ -204,6 +236,16 @@ export class ScannerGastroDiscountService {
         }
         throw err;
       }
+
+      await this.audit.logAction({
+        tenantId,
+        actorId: userId,
+        actorRole: userRole,
+        action: 'GASTRO_DISCOUNT_REDEEMED',
+        entityType: 'GastroDiscountClaim',
+        entityId: claim.id,
+        metadata: { discountId: discount.id },
+      });
 
       return this.response(
         'VALID',
