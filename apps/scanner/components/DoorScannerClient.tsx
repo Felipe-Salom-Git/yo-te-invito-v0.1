@@ -15,7 +15,6 @@ import {
   fetchScanTargets,
   downloadEventTicketsPdf,
   fetchEventOccurrences,
-  fetchScannerAccount,
   type ScannerEventOccurrence,
 } from '@/lib/api/scanner';
 import { scanOffline, type OfflineScanResult } from '@/lib/scan/offline-scan';
@@ -85,7 +84,7 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
   const [selectedEventId, setSelectedEventId] = useState('');
   const [selectedOccurrenceId, setSelectedOccurrenceId] = useState('');
   const [eventOccurrences, setEventOccurrences] = useState<ScannerEventOccurrence[]>([]);
-  const [scannerTenantId, setScannerTenantId] = useState('tenant-demo');
+  const [occurrencesError, setOccurrencesError] = useState<string | null>(null);
   const [selectedDiscountId, setSelectedDiscountId] = useState('');
   const [qrPayload, setQrPayload] = useState('');
   const [inputMode, setInputMode] = useState<InputMode>('camera');
@@ -170,30 +169,41 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
   }, [loadTargets]);
 
   useEffect(() => {
-    void fetchScannerAccount().then((account) => {
-      if (account?.tenantId) setScannerTenantId(account.tenantId);
-    });
-  }, []);
-
-  useEffect(() => {
     if (!selectedEventId || !isProducer) {
       setEventOccurrences([]);
+      setOccurrencesError(null);
       return;
     }
-    void fetchEventOccurrences(selectedEventId, scannerTenantId).then((data) => {
-      setEventOccurrences(data.isMultiDate ? data.occurrences : []);
-      if (!data.isMultiDate || data.occurrences.length === 0) {
-        setSelectedOccurrenceId('');
-        localStorage.removeItem(LS_LAST_OCCURRENCE);
-        return;
-      }
-      const stored = localStorage.getItem(LS_LAST_OCCURRENCE);
-      const valid = stored && data.occurrences.some((o) => o.id === stored);
-      const id = valid ? stored! : data.occurrences[0]!.id;
-      setSelectedOccurrenceId(id);
-      localStorage.setItem(LS_LAST_OCCURRENCE, id);
-    });
-  }, [selectedEventId, scannerTenantId, isProducer]);
+    const inTargets = targets?.events.some((e) => e.id === selectedEventId);
+    if (targets && !inTargets) {
+      setEventOccurrences([]);
+      setOccurrencesError('Este evento ya no está disponible para esta cuenta scanner.');
+      return;
+    }
+    setOccurrencesError(null);
+    void fetchEventOccurrences(selectedEventId)
+      .then((data) => {
+        setEventOccurrences(data.isMultiDate ? data.occurrences : []);
+        if (!data.isMultiDate || data.occurrences.length === 0) {
+          setSelectedOccurrenceId('');
+          localStorage.removeItem(LS_LAST_OCCURRENCE);
+          return;
+        }
+        const stored = localStorage.getItem(LS_LAST_OCCURRENCE);
+        const valid = stored && data.occurrences.some((o) => o.id === stored);
+        const id = valid ? stored! : data.occurrences[0]!.id;
+        setSelectedOccurrenceId(id);
+        localStorage.setItem(LS_LAST_OCCURRENCE, id);
+      })
+      .catch((err: unknown) => {
+        setEventOccurrences([]);
+        setOccurrencesError(
+          err instanceof Error
+            ? err.message
+            : 'Este evento ya no está disponible para esta cuenta scanner.',
+        );
+      });
+  }, [selectedEventId, isProducer, targets]);
 
   useEffect(() => {
     const onOnline = () => setIsOnline(true);
@@ -484,6 +494,12 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
               ))}
             </select>
           </label>
+        )}
+
+        {isProducer && occurrencesError && (
+          <p className="text-sm text-amber-300" role="alert">
+            {occurrencesError}
+          </p>
         )}
 
         {isProducer && eventOccurrences.length > 0 && (

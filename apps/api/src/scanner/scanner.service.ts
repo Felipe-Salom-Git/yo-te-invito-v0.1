@@ -13,6 +13,7 @@ import type {
   ScanResponse,
   EventTicketsResponse,
   TicketScanLogItem,
+  ScannerEventOccurrencesResponse,
 } from '@yo-te-invito/shared';
 import { ErrorCode } from '@yo-te-invito/shared';
 
@@ -58,6 +59,52 @@ export class ScannerService {
         ticketId: t.id,
         qrPayload: t.qrPayload,
         status: t.status,
+      })),
+    };
+  }
+
+  async getEventOccurrences(
+    tenantId: string,
+    scannerUserId: string,
+    eventId: string,
+  ): Promise<ScannerEventOccurrencesResponse> {
+    await this.scannerAccounts.assertScannerCanAccessEvent(tenantId, scannerUserId, eventId);
+
+    const event = await this.prisma.event.findFirst({
+      where: { id: eventId, tenantId, deletedAt: null },
+      select: { id: true },
+    });
+    if (!event) {
+      throw new NotFoundException({
+        code: ErrorCode.NOT_FOUND,
+        message: 'Event not found',
+      });
+    }
+
+    const occurrenceRows = await this.prisma.eventOccurrence.findMany({
+      where: { eventId, tenantId, status: { not: 'CANCELLED' } },
+      orderBy: [{ sortOrder: 'asc' }, { startAt: 'asc' }],
+      select: {
+        id: true,
+        startAt: true,
+        endAt: true,
+        venueName: true,
+        status: true,
+      },
+    });
+
+    if (occurrenceRows.length === 0) {
+      return { isMultiDate: false, occurrences: [] };
+    }
+
+    return {
+      isMultiDate: true,
+      occurrences: occurrenceRows.map((o) => ({
+        id: o.id,
+        startAt: o.startAt.toISOString(),
+        endAt: o.endAt?.toISOString() ?? null,
+        venueName: o.venueName,
+        status: o.status,
       })),
     };
   }

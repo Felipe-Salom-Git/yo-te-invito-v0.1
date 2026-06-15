@@ -4,6 +4,7 @@ import type {
   ScanResponse,
   ScannerAccountSelfResponse,
   ScannerScanTargetsResponse,
+  ScannerEventOccurrencesResponse,
   ValidateGastroDiscountResponse,
 } from '@yo-te-invito/shared';
 import { getAuthHeaders } from '@/lib/auth/session';
@@ -90,30 +91,20 @@ export interface ScanParams {
   occurrenceId?: string;
 }
 
-export interface ScannerEventOccurrence {
-  id: string;
-  startAt: string;
-  endAt?: string | null;
-  venueName?: string | null;
-  status: string;
-}
+export type { ScannerEventOccurrence } from '@yo-te-invito/shared';
 
 export async function fetchEventOccurrences(
   eventId: string,
-  tenantId: string,
-): Promise<{ isMultiDate: boolean; occurrences: ScannerEventOccurrence[] }> {
+): Promise<ScannerEventOccurrencesResponse> {
   const res = await fetch(
-    `${API_BASE}/public/events/${encodeURIComponent(eventId)}?tenantId=${encodeURIComponent(tenantId)}`,
+    `${API_BASE}/scanner/events/${encodeURIComponent(eventId)}/occurrences`,
+    { headers: getAuthHeaders() },
   );
-  if (!res.ok) return { isMultiDate: false, occurrences: [] };
-  const data = (await res.json()) as {
-    isMultiDate?: boolean;
-    occurrences?: ScannerEventOccurrence[];
-  };
-  return {
-    isMultiDate: !!data.isMultiDate,
-    occurrences: data.occurrences ?? [],
-  };
+  if (res.status === 403 || res.status === 404) {
+    throw new Error('Este evento ya no está disponible para esta cuenta scanner.');
+  }
+  if (!res.ok) throw new Error('No se pudo cargar las fechas del evento');
+  return res.json();
 }
 
 export async function scanTicket(params: ScanParams): Promise<ScanResponse> {

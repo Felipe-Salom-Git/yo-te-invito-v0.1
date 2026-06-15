@@ -90,6 +90,16 @@ export class ScannerController {
     return this.service.getEventTickets(user.tenantId, user.id, params.eventId);
   }
 
+  @Get('events/:eventId/occurrences')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.SCANNER)
+  async getEventOccurrences(
+    @CurrentUser() user: { tenantId: string; id: string },
+    @Param(new ZodValidationPipe(eventTicketsParamsSchema)) params: EventTicketsParams,
+  ) {
+    return this.service.getEventOccurrences(user.tenantId, user.id, params.eventId);
+  }
+
   @Get('events/:eventId/tickets/export.pdf')
   @UseGuards(JwtOrDevAuthGuard, RolesGuard)
   @RequireRole(Role.SCANNER)

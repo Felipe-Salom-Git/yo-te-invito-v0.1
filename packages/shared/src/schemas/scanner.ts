@@ -81,6 +81,24 @@ export const eventTicketsResponseSchema = z.object({
 });
 export type EventTicketsResponse = z.infer<typeof eventTicketsResponseSchema>;
 
+/** GET /scanner/events/:eventId/occurrences — multi-date selector for scanner PWA. */
+export const scannerEventOccurrenceSchema = z.object({
+  id: z.string(),
+  startAt: z.string().datetime(),
+  endAt: z.string().datetime().nullable(),
+  venueName: z.string().nullable(),
+  status: z.string(),
+});
+export type ScannerEventOccurrence = z.infer<typeof scannerEventOccurrenceSchema>;
+
+export const scannerEventOccurrencesResponseSchema = z.object({
+  isMultiDate: z.boolean(),
+  occurrences: z.array(scannerEventOccurrenceSchema),
+});
+export type ScannerEventOccurrencesResponse = z.infer<
+  typeof scannerEventOccurrencesResponseSchema
+>;
+
 /**
  * Request body for ticket scan validation (legacy)
  */

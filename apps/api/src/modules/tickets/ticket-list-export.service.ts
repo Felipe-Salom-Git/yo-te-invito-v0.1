@@ -5,7 +5,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { AuditAction } from '@prisma/client';
-import PDFDocument from 'pdfkit';
+import PDFDocument = require('pdfkit');
 import {
   ErrorCode,
   Role,
@@ -264,12 +264,6 @@ export class TicketListExportService {
   ): Promise<{ buffer: Buffer; filename: string }> {
     const event = await this.assertScannerCanExport(actor.tenantId, actor.id, eventId);
     const rows = await this.fetchTicketRows(eventId);
-    if (rows.length === 0) {
-      throw new BadRequestException({
-        code: 'NO_TICKETS',
-        message: 'No hay entradas para exportar',
-      });
-    }
     const generatedAt = new Date();
     const buffer = await this.buildPdfBuffer(event, rows, generatedAt);
     await this.audit.logAction({
