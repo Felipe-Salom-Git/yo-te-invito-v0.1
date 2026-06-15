@@ -19,6 +19,7 @@ import { MeNotificationsController } from './me-notifications.controller';
 import { MeProducerFollowsController } from './me-producer-follows.controller';
 import { MeGastroFollowsController } from './me-gastro-follows.controller';
 import { MePushSubscriptionsController } from './me-push-subscriptions.controller';
+import { MeGastroDiscountsController } from './me-gastro-discounts.controller';
 import { MeRecommendationsController } from './me-recommendations.controller';
 import { MeLegalController } from './me-legal.controller';
 import { MeService } from './me.service';
@@ -33,6 +34,7 @@ import { TicketTransferSchedulerService } from './ticket-transfer-scheduler.serv
 import { UserProducerFollowsService } from './user-producer-follows.service';
 import { UserGastroFollowsService } from './user-gastro-follows.service';
 import { UserPushSubscriptionsService } from './user-push-subscriptions.service';
+import { MeGastroDiscountsService } from './me-gastro-discounts.service';
 import { MeRecommendationsService } from './me-recommendations.service';
 
 @Module({
@@ -57,6 +59,7 @@ import { MeRecommendationsService } from './me-recommendations.service';
     MeNotificationsController,
     MeProducerFollowsController,
     MeGastroFollowsController,
+    MeGastroDiscountsController,
     MePushSubscriptionsController,
     MeRecommendationsController,
   ],
@@ -74,6 +77,7 @@ import { MeRecommendationsService } from './me-recommendations.service';
     TicketTransferSchedulerService,
     UserProducerFollowsService,
     UserGastroFollowsService,
+    MeGastroDiscountsService,
     UserPushSubscriptionsService,
     MeRecommendationsService,
   ],
