@@ -149,9 +149,10 @@ export function AdminSubcategoriesPageClient() {
             <>
               <AdminCategoryEditorialBannerPanel category={tab as ContentMainCategory} />
               <div className="mt-10 border-t border-border pt-8">
-                <p className="text-sm font-medium text-text">Eventos destacados (fallback)</p>
+                <p className="text-sm font-medium text-text">Publicaciones destacadas (hero / carrusel)</p>
                 <p className="mt-1 text-xs text-text-muted">
-                  Solo aplica cuando no hay banners editoriales activos en la landing pública.
+                  Eventos reales para el hero cuando no hay editoriales activos, o como carrusel
+                  destacado debajo del banner editorial.
                 </p>
                 <AdminCategoryBannerPanel category={tab as ContentMainCategory} />
               </div>

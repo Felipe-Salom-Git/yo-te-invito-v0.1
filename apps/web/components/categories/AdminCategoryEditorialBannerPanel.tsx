@@ -300,8 +300,8 @@ export function AdminCategoryEditorialBannerPanel({
       <div className="rounded-xl border border-border bg-bg-muted p-4">
         <p className="text-sm font-medium text-text">Banners editoriales</p>
         <p className="mt-1 text-text-muted text-sm">
-          Imagen, título y subtítulo personalizados para el hero de la categoría. Si hay banners
-          activos, reemplazan el carrusel de eventos destacados en la landing pública.
+          Imagen, título y subtítulo personalizados para el bloque promocional del hero. Se muestran
+          arriba y no ocultan las publicaciones reales ni los carruseles de la categoría.
         </p>
         <p className="mt-2 text-xs text-text-muted">
           Activos: {activeCount} · Máximo {MAX_ITEMS} por categoría
@@ -318,7 +318,8 @@ export function AdminCategoryEditorialBannerPanel({
         <p className="text-text-muted">Cargando banners…</p>
       ) : items.length === 0 ? (
         <p className="text-sm text-text-muted">
-          Sin banners editoriales. El hero público usa eventos destacados o contenido automático.
+          Sin banners editoriales. El hero público usa eventos destacados o contenido automático como
+          fallback.
         </p>
       ) : (
         <div className="space-y-3">

@@ -55,6 +55,45 @@ async function main() {
     cleanup.bannerIds.push(b1.id, b2.id);
     pass('seed two active editorial banners');
 
+    const publicationsBefore = await prisma.event.count({
+      where: {
+        tenantId: TENANT,
+        deletedAt: null,
+        status: 'APPROVED',
+        OR: [{ category: 'event' }, { category: null }],
+      },
+    });
+    pass(`publications baseline (event category): ${publicationsBefore}`);
+
+    const editorialSmokeActive = await prisma.categoryEditorialBanner.findMany({
+      where: { tenantId: TENANT, category: 'event', isActive: true, id: { in: cleanup.bannerIds } },
+      orderBy: { sortOrder: 'asc' },
+    });
+    if (editorialSmokeActive.length < 2) {
+      fail('editorial public active set', `expected 2 smoke banners, got ${editorialSmokeActive.length}`);
+      exitCode = 1;
+    } else {
+      pass('editorial public active smoke banners');
+    }
+
+    const publicationsAfterCreate = await prisma.event.count({
+      where: {
+        tenantId: TENANT,
+        deletedAt: null,
+        status: 'APPROVED',
+        OR: [{ category: 'event' }, { category: null }],
+      },
+    });
+    if (publicationsAfterCreate !== publicationsBefore) {
+      fail(
+        'editorial banners must not affect publications',
+        `before=${publicationsBefore} after=${publicationsAfterCreate}`,
+      );
+      exitCode = 1;
+    } else {
+      pass('editorial banners do not modify publication count');
+    }
+
     await prisma.auditLog.create({
       data: {
         tenantId: TENANT,
@@ -122,6 +161,24 @@ async function main() {
       where: { id: b2.id },
       data: { isActive: false },
     });
+    const publicationsAfterDeactivate = await prisma.event.count({
+      where: {
+        tenantId: TENANT,
+        deletedAt: null,
+        status: 'APPROVED',
+        OR: [{ category: 'event' }, { category: null }],
+      },
+    });
+    if (publicationsAfterDeactivate !== publicationsBefore) {
+      fail(
+        'deactivate editorial must not affect publications',
+        `before=${publicationsBefore} after=${publicationsAfterDeactivate}`,
+      );
+      exitCode = 1;
+    } else {
+      pass('deactivate editorial keeps publications intact');
+    }
+
     const afterDeactivate = await prisma.categoryEditorialBanner.findMany({
       where: {
         tenantId: TENANT,

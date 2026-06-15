@@ -21,9 +21,9 @@ const HERO_CONTENT_PAD = 'px-4 pb-10 sm:px-6 sm:pb-12 md:px-10 md:pb-14 lg:px-16
 
 export interface CategoryHeroBannerProps {
   category: CategoryGatewayId;
-  /** Editorial banners take priority when non-empty. */
+  /** Editorial promotional banners — hero when non-empty. */
   editorialItems?: CategoryEditorialBannerPublicItem[];
-  /** Event-based banners used when no active editorial banners. */
+  /** Event-based banners — hero fallback when there are no editorials. */
   eventItems?: CategoryBannerResolvedItem[];
   isLoading?: boolean;
 }
