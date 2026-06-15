@@ -39,7 +39,7 @@ export function useNavbarCitySelection() {
         city,
         route.kind === 'explore' ? searchParams : undefined,
       );
-      if (route.kind === 'explore') {
+      if (route.kind === 'explore' || route.kind === 'home' || route.kind === 'category') {
         router.replace(href);
       } else {
         router.push(href);

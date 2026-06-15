@@ -6,16 +6,12 @@
  */
 
 import type { CategoryGatewayId } from '@/lib/home/categoryGatewayConfig';
-import { isExploreMainCategory } from '@/lib/explore/exploreFilters';
 import {
   buildExploreSearchParams,
   parseExploreSearchParams,
   type ExploreFiltersState,
 } from '@/lib/explore/exploreFilters';
-import {
-  getCategoryExploreHref,
-  isCategoryLandingId,
-} from '@/lib/categories/categoryLandingConfig';
+import { isCategoryLandingId } from '@/lib/categories/categoryLandingConfig';
 
 export const NAVBAR_CITY_ALL_VALUE = '';
 
@@ -46,7 +42,7 @@ export function readCityFromSearchParams(
   kind: NavbarCityRouteKind,
   params: URLSearchParams,
 ): string {
-  if (kind === 'explore') {
+  if (kind === 'explore' || kind === 'category' || kind === 'home') {
     return params.get('city')?.trim() ?? '';
   }
   return '';
@@ -57,7 +53,7 @@ export function buildExploreUrlFromFilters(filters: ExploreFiltersState): string
   return qs.toString() ? `/explore?${qs.toString()}` : '/explore';
 }
 
-/** Navigate target when user picks a city outside /explore. */
+/** Navigate target when user picks a city — stay on current discovery context. */
 export function buildNavbarCityNavigationHref(
   ctx: NavbarCityRouteContext,
   city: string,
@@ -73,18 +69,22 @@ export function buildNavbarCityNavigationHref(
     });
   }
   if (ctx.kind === 'category' && ctx.categoryLandingId) {
-    return getCategoryExploreHref(ctx.categoryLandingId, { city: trimmed || undefined });
+    const base = `/categoria/${ctx.categoryLandingId}`;
+    if (!trimmed) return base;
+    const qs = new URLSearchParams();
+    qs.set('city', trimmed);
+    return `${base}?${qs.toString()}`;
+  }
+  if (ctx.kind === 'home') {
+    if (!trimmed) return '/home';
+    const qs = new URLSearchParams();
+    qs.set('city', trimmed);
+    return `/home?${qs.toString()}`;
   }
   if (trimmed) {
     const qs = new URLSearchParams();
     qs.set('city', trimmed);
-    if (ctx.category && isExploreMainCategory(ctx.category)) {
-      qs.set('category', ctx.category);
-    }
     return `/explore?${qs.toString()}`;
-  }
-  if (ctx.category && isExploreMainCategory(ctx.category)) {
-    return `/explore?category=${ctx.category}`;
   }
   return '/explore';
 }

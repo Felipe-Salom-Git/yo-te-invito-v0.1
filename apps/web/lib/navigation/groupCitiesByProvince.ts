@@ -1,4 +1,9 @@
 import {
+  cityDisplayLabel,
+  normalizeCityKey,
+  resolveCanonicalCityValue,
+} from '@yo-te-invito/shared';
+import {
   findProvinceLabelForCity,
   PROVINCE_CITY_CATALOG,
 } from '@/lib/me/preferred-cities';
@@ -12,19 +17,26 @@ const FALLBACK_GROUP_LABEL = 'Ciudades';
 
 /**
  * Groups discovery cities under province labels from `PROVINCE_CITY_CATALOG`.
- * Unknown city names (from API, not in catalog) go under «Ciudades».
+ * Normalizes duplicates (slug vs label) and shows readable labels.
  */
 export function groupCitiesByProvince(cityNames: string[]): NavbarCityGroup[] {
-  const unique = [...new Set(cityNames.map((c) => c.trim()).filter(Boolean))].sort((a, b) =>
-    a.localeCompare(b, 'es'),
-  );
+  const seen = new Set<string>();
+  const unique: string[] = [];
+  for (const raw of cityNames) {
+    const canonical = resolveCanonicalCityValue(raw);
+    const key = normalizeCityKey(canonical);
+    if (!canonical || seen.has(key)) continue;
+    seen.add(key);
+    unique.push(canonical);
+  }
+  unique.sort((a, b) => cityDisplayLabel(a).localeCompare(cityDisplayLabel(b), 'es'));
 
   const groups: NavbarCityGroup[] = PROVINCE_CITY_CATALOG.filter((p) => p.id !== 'otra')
     .map((p) => ({
       provinceLabel: p.label,
       cities: unique
         .filter((city) => (p.cities as readonly string[]).includes(city))
-        .map((city) => ({ value: city, label: city })),
+        .map((city) => ({ value: city, label: cityDisplayLabel(city) })),
     }))
     .filter((g) => g.cities.length > 0);
 
@@ -35,7 +47,7 @@ export function groupCitiesByProvince(cityNames: string[]): NavbarCityGroup[] {
   if (extras.length > 0) {
     groups.push({
       provinceLabel: FALLBACK_GROUP_LABEL,
-      cities: extras.map((city) => ({ value: city, label: city })),
+      cities: extras.map((city) => ({ value: city, label: cityDisplayLabel(city) })),
     });
   }
 

@@ -15,6 +15,7 @@ export * from './constants/legal-signup';
 export * from './constants/auth-register';
 export * from './location/argentina-locations';
 export * from './location/labels';
+export * from './location/city-normalization';
 export type { ProvinceOption } from './location/types';
 export * from './schemas/event-subcategories';
 export * from './schemas/events';
