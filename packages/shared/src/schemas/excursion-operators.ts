@@ -129,6 +129,14 @@ export type AdminExcursionOperatorsListResponse = z.infer<
   typeof adminExcursionOperatorsListResponseSchema
 >;
 
+export const publicExcursionOperatorDetailResponseSchema = z.object({
+  operator: publicExcursionOperatorSchema,
+  excursions: z.array(eventSummarySchema),
+});
+export type PublicExcursionOperatorDetailResponse = z.infer<
+  typeof publicExcursionOperatorDetailResponseSchema
+>;
+
 export const excursionProductGalleryImageSchema = z.object({
   url: z.string().min(1),
   type: z.nativeEnum(EventMediaType).optional(),

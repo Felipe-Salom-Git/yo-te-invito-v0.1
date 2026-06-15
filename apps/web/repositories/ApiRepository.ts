@@ -474,6 +474,11 @@ export class ApiRepository implements Repositories {
       this.client.delete<{ ok: true }>(
         `/admin/rental-locations/${encodeURIComponent(id)}`,
       ),
+    getPublic: async (tenantId, id) =>
+      this.client.get<import('@yo-te-invito/shared').PublicRentalLocationDetailResponse>(
+        `/public/rental-locations/${encodeURIComponent(id)}`,
+        { tenantId },
+      ),
     createProduct: async (locationId, input) =>
       this.client.post<{ id: string; title: string }>(
         `/admin/rental-locations/${encodeURIComponent(locationId)}/products`,
@@ -570,6 +575,11 @@ export class ApiRepository implements Repositories {
     remove: async (id) =>
       this.client.delete<{ ok: true }>(
         `/admin/excursion-operators/${encodeURIComponent(id)}`,
+      ),
+    getPublic: async (tenantId, id) =>
+      this.client.get<import('@yo-te-invito/shared').PublicExcursionOperatorDetailResponse>(
+        `/public/excursion-operators/${encodeURIComponent(id)}`,
+        { tenantId },
       ),
     createExcursion: async (operatorId, input) =>
       this.client.post<{ id: string; title: string }>(

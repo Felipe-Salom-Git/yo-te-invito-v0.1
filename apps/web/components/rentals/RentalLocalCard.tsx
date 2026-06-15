@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import type { RentalOpeningHours } from '@yo-te-invito/shared';
 import {
   hasRentalOpeningHoursContent,
@@ -14,6 +15,7 @@ type RentalLocalCardProps = {
   openingHoursNote?: string | null;
   hasLocation: boolean;
   onViewLocation?: () => void;
+  profileHref?: string;
 };
 
 export function RentalLocalCard({
@@ -23,6 +25,7 @@ export function RentalLocalCard({
   openingHoursNote,
   hasLocation,
   onViewLocation,
+  profileHref,
 }: RentalLocalCardProps) {
   const showHours = hasRentalOpeningHoursContent(openingHours, openingHoursNote);
 
@@ -30,6 +33,11 @@ export function RentalLocalCard({
     <section className={RENTAL_DETAIL_CARD_CLASS}>
       <h2 className="text-sm font-semibold uppercase tracking-wide text-text-muted">Local</h2>
       <p className="mt-2 text-base font-medium text-white">{name}</p>
+      {profileHref && (
+        <Link href={profileHref} className="mt-1 inline-block text-sm text-accent hover:underline">
+          Ver ficha del local
+        </Link>
+      )}
       {address?.trim() && (
         <p className="mt-1.5 text-sm leading-relaxed text-text-muted">{address.trim()}</p>
       )}

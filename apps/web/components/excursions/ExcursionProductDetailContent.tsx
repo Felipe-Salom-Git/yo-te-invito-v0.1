@@ -266,6 +266,7 @@ export function ExcursionProductDetailContent({
                 openingHoursNote={operator?.openingHoursNote}
                 hasLocation={hasLocation}
                 onViewLocation={hasLocation ? () => setIsLocationModalOpen(true) : undefined}
+                profileHref={operator?.id ? `/excursiones/operadores/${operator.id}` : undefined}
               />
             )}
           </aside>

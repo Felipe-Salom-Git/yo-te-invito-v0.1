@@ -203,6 +203,7 @@ export function RentalProductDetailContent({
                 openingHours={rentalLoc.openingHours}
                 openingHoursNote={rentalLoc.openingHoursNote}
                 hasLocation={hasLocation}
+                profileHref={`/rentals/locales/${rentalLoc.id}`}
                 onViewLocation={
                   hasLocation ? () => setIsLocationModalOpen(true) : undefined
                 }

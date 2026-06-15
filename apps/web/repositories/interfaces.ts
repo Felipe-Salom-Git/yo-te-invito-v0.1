@@ -151,6 +151,10 @@ export interface RentalLocationsRepo {
     },
   ): Promise<RentalLocationSummary>;
   remove(id: string): Promise<{ ok: true }>;
+  getPublic(
+    tenantId: string,
+    id: string,
+  ): Promise<import('@yo-te-invito/shared').PublicRentalLocationDetailResponse>;
   createProduct(
     locationId: string,
     input: {
@@ -265,6 +269,10 @@ export interface ExcursionOperatorsRepo {
     },
   ): Promise<ExcursionOperatorSummary>;
   remove(id: string): Promise<{ ok: true }>;
+  getPublic(
+    tenantId: string,
+    id: string,
+  ): Promise<import('@yo-te-invito/shared').PublicExcursionOperatorDetailResponse>;
   createExcursion(
     operatorId: string,
     input: {

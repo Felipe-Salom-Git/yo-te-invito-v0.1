@@ -508,4 +508,49 @@ export class ExcursionOperatorsService {
     }
     return row;
   }
+
+  private toPublicOperator(row: ExcursionOperator) {
+    return {
+      id: row.id,
+      name: row.name,
+      address: row.address,
+      city: row.city,
+      province: row.province,
+      googlePlaceId: row.googlePlaceId,
+      openingHours: this.readOpeningHours(row),
+      openingHoursNote: row.openingHoursNote,
+      contactPhone: row.contactPhone,
+      websiteUrl: row.websiteUrl,
+      bookingUrl: row.bookingUrl,
+      socialLinks: readEntitySocialLinks(row.socialLinks),
+      geoLat: row.geoLat,
+      geoLng: row.geoLng,
+    };
+  }
+
+  async getPublicDetail(tenantId: string, id: string) {
+    const row = await this.prisma.excursionOperator.findFirst({
+      where: { id, tenantId, deletedAt: null, isActive: true },
+      include: {
+        excursions: {
+          where: {
+            deletedAt: null,
+            category: 'excursion',
+            status: 'APPROVED',
+          },
+          orderBy: { title: 'asc' },
+        },
+      },
+    });
+    if (!row) {
+      throw new NotFoundException({
+        code: ErrorCode.NOT_FOUND,
+        message: 'Excursion operator not found',
+      });
+    }
+    return {
+      operator: this.toPublicOperator(row),
+      excursions: row.excursions.map((e) => this.eventToSummary(e)),
+    };
+  }
 }
