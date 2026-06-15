@@ -34,10 +34,10 @@ export function Navbar() {
           </Link>
           <NavbarHomeButton />
           <NavbarPublicLinks />
-          <NavbarCitySlot />
         </div>
 
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+          <NavbarCitySlot />
           <NavbarCartButton />
           <NavbarMobileNav />
           <div className="hidden md:flex md:items-center">

@@ -1,19 +1,20 @@
 import { Suspense } from 'react';
-import { NavbarCitySelector } from '@/components/navigation/NavbarCitySelector';
+import { NavbarCitySelector, NavbarCitySelectorMobile } from '@/components/navigation/NavbarCitySelector';
 
 function NavbarCitySelectorFallback() {
   return (
     <div
-      className="hidden h-9 w-[7.5rem] shrink-0 rounded border border-border/50 bg-bg-muted/40 md:block"
+      className="h-8 w-[6rem] shrink-0 rounded border border-border/50 bg-bg-muted/40 sm:w-[6.5rem]"
       aria-hidden
     />
   );
 }
 
-/** Slice 5 — city selector (requires Suspense for `useSearchParams`). */
+/** City selector — compact on mobile header + desktop right cluster. */
 export function NavbarCitySlot() {
   return (
     <Suspense fallback={<NavbarCitySelectorFallback />}>
+      <NavbarCitySelectorMobile />
       <NavbarCitySelector />
     </Suspense>
   );
