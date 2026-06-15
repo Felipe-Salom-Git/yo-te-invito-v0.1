@@ -52,6 +52,10 @@ type ScanHistoryItem =
 
 type InputMode = 'camera' | 'manual';
 
+type ScanMode = 'idle' | 'scanning' | 'validating' | 'error';
+
+const SCAN_COOLDOWN_MS = 2500;
+
 function gastroStatusClass(status: ValidateGastroDiscountResponse['status']): string {
   if (status === 'VALID') return 'bg-emerald-700 text-white';
   if (status === 'ALREADY_USED' || status === 'LIMIT_REACHED') return 'bg-amber-700 text-white';
@@ -91,6 +95,8 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
   const [selectedDiscountId, setSelectedDiscountId] = useState('');
   const [qrPayload, setQrPayload] = useState('');
   const [inputMode, setInputMode] = useState<InputMode>('camera');
+  const [scanMode, setScanMode] = useState<ScanMode>('idle');
+  const [scanError, setScanError] = useState<string | null>(null);
   const [lastTicket, setLastTicket] = useState<ScanResultModalData | null>(null);
   const [scanModalOpen, setScanModalOpen] = useState(false);
   const [lastGastro, setLastGastro] = useState<ValidateGastroDiscountResponse | null>(null);
@@ -103,8 +109,13 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
   const [offlineStatus, setOfflineStatus] = useState<string | null>(null);
   const [pdfStatus, setPdfStatus] = useState<string | null>(null);
   const scanningRef = useRef(false);
+  const scanModeRef = useRef<ScanMode>('idle');
+  const lastScannedCodeRef = useRef<{ code: string; at: number } | null>(null);
+  const [hasScannedOnce, setHasScannedOnce] = useState(false);
   const targetSectionRef = useRef<HTMLDivElement>(null);
   const scanSectionRef = useRef<HTMLDivElement>(null);
+
+  scanModeRef.current = scanMode;
 
   const { sync, syncing, lastSummary } = useOfflineSync();
 
@@ -241,7 +252,32 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
   const setMode = (mode: InputMode) => {
     setInputMode(mode);
     localStorage.setItem(LS_INPUT_MODE, mode);
+    if (mode === 'manual') {
+      setScanMode('idle');
+      setScanError(null);
+    }
   };
+
+  const handleStartCameraScan = useCallback(() => {
+    setScanError(null);
+    setScanMode('scanning');
+  }, []);
+
+  const handleCancelCameraScan = useCallback(() => {
+    setScanMode('idle');
+    setScanError(null);
+  }, []);
+
+  const handleCameraScanTimeout = useCallback(() => {
+    setScanMode('idle');
+    setScanError('No se detectó ningún QR. Intentá nuevamente.');
+  }, []);
+
+  const handleCloseScanModal = useCallback(() => {
+    setScanModalOpen(false);
+    setScanMode('idle');
+    setScanError(null);
+  }, []);
 
   const enrichTicketResult = useCallback(
     (res: ScanResponse | OfflineScanResult, connectionError?: boolean): ScanResultModalData => {
@@ -305,6 +341,7 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
         } finally {
           setLoading(false);
           scanningRef.current = false;
+          setScanMode('idle');
         }
         return;
       }
@@ -315,6 +352,7 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
         setScanModalOpen(true);
         setLastGastro(null);
         scanningRef.current = false;
+        setScanMode('idle');
         return;
       }
 
@@ -348,6 +386,7 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
         );
         setLastTicket(enriched);
         setScanModalOpen(true);
+        setScanMode('idle');
         setHistory((prev) =>
           [{ kind: 'ticket' as const, result: res }, ...prev].slice(0, MAX_HISTORY),
         );
@@ -359,12 +398,16 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
         );
         setLastTicket(invalid);
         setScanModalOpen(true);
+        setScanMode('idle');
         setHistory((prev) =>
           [{ kind: 'ticket' as const, result: invalid }, ...prev].slice(0, MAX_HISTORY),
         );
       } finally {
         setLoading(false);
         scanningRef.current = false;
+        if (scanModeRef.current === 'validating') {
+          setScanMode('idle');
+        }
       }
     },
     [
@@ -376,6 +419,25 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
       refreshOfflineState,
       enrichTicketResult,
     ],
+  );
+
+  const handleCameraScan = useCallback(
+    (rawPayload: string) => {
+      if (scanModeRef.current !== 'scanning' || scanningRef.current) return;
+
+      const trimmed = rawPayload.trim();
+      if (!trimmed) return;
+
+      const now = Date.now();
+      const last = lastScannedCodeRef.current;
+      if (last && last.code === trimmed && now - last.at < SCAN_COOLDOWN_MS) return;
+
+      lastScannedCodeRef.current = { code: trimmed, at: now };
+      setHasScannedOnce(true);
+      setScanMode('validating');
+      void processScan(trimmed);
+    },
+    [processScan],
   );
 
   async function handleSaveSnapshot() {
@@ -686,7 +748,52 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
       </div>
 
       {inputMode === 'camera' ? (
-        <QrCameraScanner active={!loading} onScan={(text) => void processScan(text)} />
+        <div className="flex flex-col gap-3">
+          <QrCameraScanner
+            scanning={scanMode === 'scanning'}
+            onScan={handleCameraScan}
+            onScanTimeout={handleCameraScanTimeout}
+          />
+
+          {scanMode === 'validating' && (
+            <p className="text-center text-sm font-medium text-slate-300">Validando entrada…</p>
+          )}
+
+          {scanMode === 'scanning' && (
+            <button
+              type="button"
+              onClick={handleCancelCameraScan}
+              className="h-12 rounded-xl border border-slate-500 text-base font-medium text-slate-200 hover:bg-slate-800"
+            >
+              Cancelar
+            </button>
+          )}
+
+          {scanMode === 'idle' && (
+            <>
+              {scanError && (
+                <div className="rounded-lg border border-amber-700/50 bg-amber-950/40 px-4 py-3 text-sm text-amber-200">
+                  {scanError}
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  setScanError(null);
+                  handleStartCameraScan();
+                }}
+                disabled={loading}
+                className="h-14 rounded-xl bg-emerald-600 text-lg font-bold text-white disabled:opacity-50"
+              >
+                {scanError
+                  ? 'Intentar nuevamente'
+                  : hasScannedOnce
+                    ? 'Escanear otra entrada'
+                    : 'Escanear entrada'}
+              </button>
+            </>
+          )}
+        </div>
       ) : (
         <div className="flex flex-col gap-3">
           <label className="text-sm text-slate-400">
@@ -723,7 +830,7 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
       <ScanResultModal
         open={scanModalOpen}
         result={lastTicket}
-        onClose={() => setScanModalOpen(false)}
+        onClose={handleCloseScanModal}
       />
 
       {lastGastro && (
