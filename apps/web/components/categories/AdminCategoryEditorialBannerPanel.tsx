@@ -9,7 +9,7 @@ import type { ContentMainCategory, CategoryEditorialBannerItem } from '@/reposit
 import { useRepositories } from '@/repositories/context';
 import { useAdminCategoryEditorialBanners } from '@/lib/query/useCategoryEditorialBanner';
 import { categoryEditorialBannersKeys } from '@/lib/query/keys';
-import { syncAdminEditorialBannerList } from '@/lib/navigation/editorialBannerCache';
+import { syncAdminEditorialBannerList, refetchAdminEditorialBannerList } from '@/lib/navigation/editorialBannerCache';
 import { useTenant } from '@/hooks/useTenant';
 import { getErrorMessage } from '@/lib/errors';
 import { useGcsImageUpload } from '@/lib/upload/use-gcs-image-upload';
@@ -76,6 +76,7 @@ export function AdminCategoryEditorialBannerPanel({
 
   const syncList = (response: unknown) => {
     syncAdminEditorialBannerList(qc, category, response);
+    refetchAdminEditorialBannerList(qc, category);
     invalidatePublic();
   };
 
