@@ -5,6 +5,7 @@ import { usePwaInstall } from '@/hooks/use-pwa-install';
 export type ScannerMenuActions = {
   onScanFocus?: () => void;
   onSelectTarget?: () => void;
+  onTicketList?: () => void;
   onDownloadPdf?: () => void;
   onSaveOffline?: () => void;
   onSync?: () => void;
@@ -20,6 +21,7 @@ type Props = {
   targetLabel: string | null;
   canDownloadPdf: boolean;
   canSaveOffline: boolean;
+  canTicketList: boolean;
   canSync: boolean;
   syncing: boolean;
   actions: ScannerMenuActions;
@@ -34,6 +36,7 @@ export function ScannerOperationalMenu({
   targetLabel,
   canDownloadPdf,
   canSaveOffline,
+  canTicketList,
   canSync,
   syncing,
   actions,
@@ -110,6 +113,18 @@ export function ScannerOperationalMenu({
           >
             Seleccionar evento/descuento
           </button>
+          {canTicketList && (
+            <button
+              type="button"
+              className={itemClass}
+              onClick={() => {
+                actions.onTicketList?.();
+                onClose();
+              }}
+            >
+              Listado de entradas
+            </button>
+          )}
           {canDownloadPdf && (
             <button
               type="button"

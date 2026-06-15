@@ -24,6 +24,8 @@ import {
   type ScannerLogsQuery,
   offlineValidationSyncBodySchema,
   type OfflineValidationSyncBody,
+  scannerEventTicketsQuerySchema,
+  type ScannerEventTicketsQuery,
 } from '@yo-te-invito/shared';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { JwtOrDevAuthGuard } from '../auth/jwt-or-dev-auth.guard';
@@ -35,6 +37,7 @@ import { ScannerService } from './scanner.service';
 import { ScannerGastroDiscountService } from './scanner-gastro-discount.service';
 import { ScannerAccountsService } from '../modules/scanner-accounts/scanner-accounts.service';
 import { TicketListExportService } from '../modules/tickets/ticket-list-export.service';
+import { EventTicketListService } from '../modules/tickets/event-ticket-list.service';
 
 @Controller('scanner')
 export class ScannerController {
@@ -43,6 +46,7 @@ export class ScannerController {
     private readonly gastroDiscountScanner: ScannerGastroDiscountService,
     private readonly scannerAccounts: ScannerAccountsService,
     private readonly ticketListExport: TicketListExportService,
+    private readonly eventTicketList: EventTicketListService,
   ) {}
 
   @Get('scan-targets')
@@ -86,8 +90,14 @@ export class ScannerController {
   async getEventTickets(
     @CurrentUser() user: { tenantId: string; id: string },
     @Param(new ZodValidationPipe(eventTicketsParamsSchema)) params: EventTicketsParams,
+    @Query(new ZodValidationPipe(scannerEventTicketsQuerySchema)) query: ScannerEventTicketsQuery,
   ) {
-    return this.service.getEventTickets(user.tenantId, user.id, params.eventId);
+    await this.scannerAccounts.assertScannerCanAccessEvent(
+      user.tenantId,
+      user.id,
+      params.eventId,
+    );
+    return this.eventTicketList.listForScanner(user.tenantId, params.eventId, query);
   }
 
   @Get('events/:eventId/occurrences')

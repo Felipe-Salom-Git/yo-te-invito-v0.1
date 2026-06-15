@@ -5,6 +5,7 @@ import type {
   ScannerAccountSelfResponse,
   ScannerScanTargetsResponse,
   ScannerEventOccurrencesResponse,
+  ScannerEventTicketsResponse,
   ValidateGastroDiscountResponse,
 } from '@yo-te-invito/shared';
 import { getAuthHeaders } from '@/lib/auth/session';
@@ -44,6 +45,30 @@ export async function fetchScanTargets(): Promise<ScannerScanTargetsResponse> {
   return res.json();
 }
 
+export async function fetchEventTicketsOperational(
+  eventId: string,
+  query?: {
+    occurrenceId?: string;
+    q?: string;
+    status?: string;
+    scanned?: 'true' | 'false';
+  },
+): Promise<ScannerEventTicketsResponse> {
+  const params = new URLSearchParams();
+  if (query?.occurrenceId) params.set('occurrenceId', query.occurrenceId);
+  if (query?.q) params.set('q', query.q);
+  if (query?.status) params.set('status', query.status);
+  if (query?.scanned) params.set('scanned', query.scanned);
+  const qs = params.toString();
+  const res = await fetch(
+    `${API_BASE}/scanner/events/${encodeURIComponent(eventId)}/tickets${qs ? `?${qs}` : ''}`,
+    { headers: getAuthHeaders() },
+  );
+  if (!res.ok) throw new Error('Failed to fetch event tickets');
+  return res.json();
+}
+
+/** @deprecated Use fetchEventSnapshot for offline preload. */
 export async function fetchEventTickets(eventId: string): Promise<OfflineTicket[]> {
   const res = await fetch(`${API_BASE}/scanner/events/${encodeURIComponent(eventId)}/tickets`, {
     headers: getAuthHeaders(),
