@@ -49,6 +49,7 @@ export const auditActionSchema = z.enum([
   'TICKET_DATE_CHANGE_APPROVED',
   'TICKET_DATE_CHANGE_REJECTED',
   'TICKET_DATE_CHANGE_APPLIED',
+  'GEO_ADDRESS_RESOLVED',
 ]);
 export type AuditActionValue = z.infer<typeof auditActionSchema>;
 

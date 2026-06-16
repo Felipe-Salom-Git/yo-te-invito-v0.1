@@ -28,6 +28,7 @@ import { EmailModule } from './email/email.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { UploadsModule } from './modules/uploads/uploads.module';
 import { ScannerAccountsModule } from './modules/scanner-accounts/scanner-accounts.module';
+import { GeoModule } from './modules/geo/geo.module';
 
 @Module({
   imports: [
@@ -60,6 +61,7 @@ import { ScannerAccountsModule } from './modules/scanner-accounts/scanner-accoun
     LegalModule,
     UploadsModule,
     ScannerAccountsModule,
+    GeoModule,
   ],
 })
 export class AppModule {}

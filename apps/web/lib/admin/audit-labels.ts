@@ -38,6 +38,7 @@ export const AUDIT_ACTION_LABELS: Record<AuditActionValue | string, string> = {
   TICKET_DATE_CHANGE_APPROVED: 'Cambio de fecha aprobado',
   TICKET_DATE_CHANGE_REJECTED: 'Cambio de fecha rechazado',
   TICKET_DATE_CHANGE_APPLIED: 'Cambio de fecha aplicado',
+  GEO_ADDRESS_RESOLVED: 'Dirección geocodificada',
 };
 
 export const AUDIT_ACTION_OPTIONS: Array<{ value: AuditActionValue; label: string }> =
