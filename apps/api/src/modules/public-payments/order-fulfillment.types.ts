@@ -22,6 +22,11 @@ export interface FulfillPaidOrderInput {
    * When false, returns `skipped` instead (e.g. future reconciliation).
    */
   rejectIfExpired?: boolean;
+  /**
+   * When true, allows fulfilling orders in `EXPIRED` status (manual Getnet recovery).
+   * Transitions EXPIRED → PAID and sells from batch without prior reservation.
+   */
+  allowExpiredRecovery?: boolean;
 }
 
 export interface FulfillPaidOrderResult {

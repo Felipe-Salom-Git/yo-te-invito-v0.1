@@ -246,7 +246,12 @@ export class GetnetReconciliationService {
           : undefined;
       message = decision.kind;
 
-      if (decision.kind === 'MANUAL_REVIEW') {
+      const forceExpiredFulfill =
+        options.forceExpiredApprovedFulfillment === true &&
+        decision.kind === 'MANUAL_REVIEW' &&
+        decision.reason === 'ORDER_EXPIRED_PAYMENT_APPROVED';
+
+      if (decision.kind === 'MANUAL_REVIEW' && !forceExpiredFulfill) {
         if (!dryRun) {
           await this.prisma.payment.update({
             where: { id: payment.id },
@@ -306,62 +311,67 @@ export class GetnetReconciliationService {
         });
       }
 
-      // FULFILL
-      if (dryRun) {
-        return this.result(payment, order.status, remoteStatus, 'FULFILLED', {
-          dryRun: true,
-          message: 'would_fulfill',
+      // FULFILL (including manual expired-order recovery)
+      if (decision.kind === 'FULFILL' || forceExpiredFulfill) {
+        if (dryRun) {
+          return this.result(payment, order.status, remoteStatus, 'FULFILLED', {
+            dryRun: true,
+            message: forceExpiredFulfill
+              ? 'would_fulfill_expired_recovery'
+              : 'would_fulfill',
+          });
+        }
+
+        const fulfillResult = await this.orderFulfillment.fulfillPaidOrder({
+          tenantId: order.tenantId,
+          orderId: order.id,
+          paymentId: payment.id,
+          source: toFulfillSource(options.source),
+          rejectIfExpired: false,
+          allowExpiredRecovery: forceExpiredFulfill,
         });
-      }
 
-      const fulfillResult = await this.orderFulfillment.fulfillPaidOrder({
-        tenantId: order.tenantId,
-        orderId: order.id,
-        paymentId: payment.id,
-        source: toFulfillSource(options.source),
-        rejectIfExpired: false,
-      });
+        fulfillOutcome =
+          fulfillResult.outcome === 'fulfilled' ||
+          fulfillResult.outcome === 'alreadyFulfilled' ||
+          fulfillResult.outcome === 'skipped'
+            ? fulfillResult.outcome
+            : undefined;
 
-      fulfillOutcome =
-        fulfillResult.outcome === 'fulfilled' ||
-        fulfillResult.outcome === 'alreadyFulfilled' ||
-        fulfillResult.outcome === 'skipped'
-          ? fulfillResult.outcome
-          : undefined;
+        outcome =
+          fulfillResult.outcome === 'fulfilled'
+            ? 'FULFILLED'
+            : fulfillResult.outcome === 'alreadyFulfilled'
+              ? 'ALREADY_FULFILLED'
+              : 'SKIPPED';
 
-      outcome =
-        fulfillResult.outcome === 'fulfilled'
-          ? 'FULFILLED'
-          : fulfillResult.outcome === 'alreadyFulfilled'
-            ? 'ALREADY_FULFILLED'
-            : 'SKIPPED';
+        if (fulfillResult.newCommissionId) {
+          this.referralEmails.notifyCommissionGenerated(
+            order.tenantId,
+            fulfillResult.newCommissionId,
+          );
+        }
 
-      if (fulfillResult.newCommissionId) {
-        this.referralEmails.notifyCommissionGenerated(
-          order.tenantId,
-          fulfillResult.newCommissionId,
+        const refreshedOrder = await this.prisma.order.findUnique({
+          where: { id: order.id },
+          select: { status: true },
+        });
+
+        await this.persistReconciliation(payment.id, payment.metadata, {
+          outcome,
+          source: options.source,
+          remoteStatus,
+          reconciliationStatus: 'AUTO_OK',
+        });
+
+        return this.result(
+          payment,
+          refreshedOrder?.status ?? order.status,
+          remoteStatus,
+          outcome,
+          { fulfillOutcome, dryRun },
         );
       }
-
-      const refreshedOrder = await this.prisma.order.findUnique({
-        where: { id: order.id },
-        select: { status: true },
-      });
-
-      await this.persistReconciliation(payment.id, payment.metadata, {
-        outcome,
-        source: options.source,
-        remoteStatus,
-        reconciliationStatus: 'AUTO_OK',
-      });
-
-      return this.result(
-        payment,
-        refreshedOrder?.status ?? order.status,
-        remoteStatus,
-        outcome,
-        { fulfillOutcome, dryRun },
-      );
     }
 
     // Non-approved terminal states

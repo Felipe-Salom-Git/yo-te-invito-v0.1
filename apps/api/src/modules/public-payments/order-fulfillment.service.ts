@@ -58,6 +58,7 @@ export class OrderFulfillmentService {
   async fulfillPaidOrder(input: FulfillPaidOrderInput): Promise<FulfillPaidOrderResult> {
     const { tenantId, orderId, paymentId, source } = input;
     const rejectIfExpired = input.rejectIfExpired ?? true;
+    const allowExpiredRecovery = input.allowExpiredRecovery ?? false;
 
     const payment = await this.prisma.payment.findFirst({
       where: { id: paymentId, tenantId },
@@ -134,13 +135,14 @@ export class OrderFulfillmentService {
       }
 
       const now = new Date();
+      const isExpiredStatus = order.status === 'EXPIRED';
       const isExpiredPending =
-        order.status === 'EXPIRED' ||
+        isExpiredStatus ||
         (order.status === 'PENDING_PAYMENT' &&
           order.expiresAt != null &&
           order.expiresAt < now);
 
-      if (isExpiredPending) {
+      if (isExpiredPending && !allowExpiredRecovery) {
         if (rejectIfExpired) {
           throw new ConflictException({
             code: ErrorCode.ORDER_EXPIRED,
@@ -153,7 +155,11 @@ export class OrderFulfillmentService {
         return { outcome: 'skipped' as const, ticketsCreated: 0 };
       }
 
-      if (order.status !== 'PENDING_PAYMENT' && order.status !== 'PAID') {
+      const allowedStatuses = allowExpiredRecovery
+        ? new Set(['PENDING_PAYMENT', 'PAID', 'EXPIRED'])
+        : new Set(['PENDING_PAYMENT', 'PAID']);
+
+      if (!allowedStatuses.has(order.status)) {
         this.logger.warn(
           `fulfillPaidOrder skipped order ${orderId} status=${order.status} (source=${source})`,
         );
@@ -161,14 +167,25 @@ export class OrderFulfillmentService {
       }
 
       let transitionedToPaid = false;
-      if (order.status === 'PENDING_PAYMENT') {
+      if (order.status === 'EXPIRED' && allowExpiredRecovery) {
         const orderUpdate = await tx.order.updateMany({
-          where: {
-            id: orderId,
-            tenantId,
-            status: 'PENDING_PAYMENT',
-            OR: [{ expiresAt: null }, { expiresAt: { gte: now } }],
-          },
+          where: { id: orderId, tenantId, status: 'EXPIRED' },
+          data: { status: 'PAID', paidAt: now },
+        });
+        if (orderUpdate.count === 0) {
+          return { outcome: 'skipped' as const, ticketsCreated: 0 };
+        }
+        transitionedToPaid = true;
+      } else if (order.status === 'PENDING_PAYMENT') {
+        const orderUpdate = await tx.order.updateMany({
+          where: allowExpiredRecovery
+            ? { id: orderId, tenantId, status: 'PENDING_PAYMENT' }
+            : {
+                id: orderId,
+                tenantId,
+                status: 'PENDING_PAYMENT',
+                OR: [{ expiresAt: null }, { expiresAt: { gte: now } }],
+              },
           data: { status: 'PAID', paidAt: now },
         });
         if (orderUpdate.count === 0) {
@@ -223,11 +240,19 @@ export class OrderFulfillmentService {
         const toCreate = oi.quantity - itemExisting;
         if (toCreate <= 0) continue;
 
-        await this.ticketBatches.confirmReservedAsSold(
-          tx,
-          oi.ticketBatchId ?? null,
-          toCreate,
-        );
+        if (allowExpiredRecovery) {
+          await this.ticketBatches.sellDirectFromBatch(
+            tx,
+            oi.ticketBatchId ?? null,
+            toCreate,
+          );
+        } else {
+          await this.ticketBatches.confirmReservedAsSold(
+            tx,
+            oi.ticketBatchId ?? null,
+            toCreate,
+          );
+        }
 
         for (let i = 0; i < toCreate; i++) {
           let qrPayload = generateQrPayload();

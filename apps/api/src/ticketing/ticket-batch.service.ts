@@ -192,6 +192,28 @@ export class TicketBatchService {
     }
   }
 
+  /** Direct sale without reservation (e.g. manual fulfill after order expiration released stock). */
+  async sellDirectFromBatch(
+    tx: Tx,
+    ticketBatchId: string | null,
+    quantity: number,
+  ): Promise<void> {
+    if (quantity <= 0 || !ticketBatchId) return;
+    const n = await tx.$executeRaw(
+      Prisma.sql`
+        UPDATE "TicketBatch"
+        SET "soldCount" = "soldCount" + ${quantity}
+        WHERE "id" = ${ticketBatchId}
+          AND ("effectiveQuantity" - "soldCount" - "reservedQuantity") >= ${quantity}
+      `,
+    );
+    if (n !== 1) {
+      throw Object.assign(new Error('INSUFFICIENT_BATCH_STOCK'), {
+        code: 'INSUFFICIENT_BATCH_STOCK',
+      });
+    }
+  }
+
   /** Courtesy / immediate sale: no pending reservation on the order flow. */
   async consumeFromActiveBatch(
     tx: Tx,

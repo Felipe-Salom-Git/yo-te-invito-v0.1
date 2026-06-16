@@ -348,7 +348,7 @@ Sin cambios en período: customer, product, amount, headers, redirect frontend, 
 2. **Revert `56a9af8` aplicado** (`3e009f4`) — payload payment-intent sin URLs en HTTP; validar en VPS si AF persiste.
 3. **Consultar Getnet** sobre regla AF, `installment-quotes 400` y CORS en `lx/afgi`.
 4. **Reducir reintentos** y usar DNI real en checkout antes de nuevos intentos productivos.
-5. **Reconciliar 3 pagos PENDING aprobados en portal** vía `reconcile:getnet-approved` — ver runbook.
+5. **Reconciliar 3 pagos PENDING aprobados en portal** vía `payments:reconcile-getnet-approved-manual` — ver runbook (órdenes `EXPIRED`).
 
 ---
 
@@ -356,7 +356,7 @@ Sin cambios en período: customer, product, amount, headers, redirect frontend, 
 
 ### Situación
 
-Tres pagos Web Checkout figuran **aprobados en portal Getnet** pero `Payment.status = PENDING` en Yo Te Invito porque webhooks anteriores fallaron por schema (`invalid_payload` pre-`ed0cc3e`).
+Tres pagos Web Checkout figuran **aprobados en portal Getnet** pero `Payment.status = PENDING` y `Order.status = EXPIRED` (0 tickets) porque webhooks anteriores fallaron por schema (`invalid_payload` pre-`ed0cc3e`) y las órdenes expiraron antes de reconciliar.
 
 | Payment | Order | paymentIntentId |
 |---------|-------|-----------------|
@@ -368,9 +368,20 @@ Tres pagos Web Checkout figuran **aprobados en portal Getnet** pero `Payment.sta
 
 **No.** Web Checkout no tiene poll remoto; el endpoint no pasa `remoteStatusOverride` → `REMOTE_STATUS_UNAVAILABLE`.
 
-### Mecanismo preparado
+### Mecanismo preparado (2026-06-16, sin ejecutar en prod)
 
-Script `reconcile:getnet-approved` — runbook [GETNET_MANUAL_RECONCILIATION_RUNBOOK.md](../payments/GETNET_MANUAL_RECONCILIATION_RUNBOOK.md). Flujo: metadata `manualReconciliation` → `GetnetReconciliationService` → `OrderFulfillmentService`. **No ejecutado** en esta tarea.
+| Script | Caso |
+|--------|------|
+| `reconcile:getnet-approved` | `PENDING_PAYMENT` vigente — **no** cumple con `EXPIRED` |
+| `payments:reconcile-getnet-approved-manual` | `PENDING` + `EXPIRED` + 0 tickets — **usar para los 3 pagos** |
+
+Cambios de dominio:
+
+- `GetnetReconciliationService`: `forceExpiredApprovedFulfillment` bypass `ORDER_EXPIRED_PAYMENT_APPROVED` → fulfill.
+- `OrderFulfillmentService`: `allowExpiredRecovery` — `EXPIRED` → `PAID`, `TicketBatchService.sellDirectFromBatch` (sin reserva previa).
+- Script: `apps/api/scripts/reconcile-getnet-approved-manual.ts` — gate `CONFIRM_GETNET_APPROVED_MANUAL=yes`.
+
+Runbook: [GETNET_MANUAL_RECONCILIATION_RUNBOOK.md](../payments/GETNET_MANUAL_RECONCILIATION_RUNBOOK.md). **No ejecutado** en prod.
 
 ---
 
@@ -386,7 +397,8 @@ apps/api/src/modules/public-payments/getnet-reconciliation.service.ts
 apps/api/src/modules/public-payments/order-fulfillment.service.ts
 apps/api/src/modules/public-payments/getnet-return-url.util.ts
 apps/api/scripts/smoke-getnet-webcheckout.ts
-apps/api/scripts/test-getnet-webhook.util.ts
+apps/api/scripts/reconcile-getnet-approved-manual.ts
+apps/api/scripts/reconcile-approved-getnet-webcheckout-payment.ts
 apps/web/app/(public)/checkout/**
 apps/web/app/api/getnet/callback/route.ts
 apps/web/lib/getnet-portal-redirect.ts

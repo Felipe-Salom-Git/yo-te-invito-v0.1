@@ -36,6 +36,8 @@ export interface ReconcilePaymentOptions {
   /** When set (webhook), skip Getnet API fetch. */
   remoteStatusOverride?: string;
   tenantId?: string;
+  /** Manual recovery: fulfill approved payments on EXPIRED orders (portal-confirmed). */
+  forceExpiredApprovedFulfillment?: boolean;
 }
 
 export interface ReconcilePaymentResult {

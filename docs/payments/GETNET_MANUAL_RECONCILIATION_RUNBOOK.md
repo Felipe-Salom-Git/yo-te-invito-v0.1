@@ -23,21 +23,36 @@ El script batch existente `payments:reconcile-getnet` tiene la misma limitación
 
 ---
 
-## 2. Mecanismo recomendado
+## 2. Mecanismos disponibles
 
-Script:
+### 2.1 `reconcile:getnet-approved` — órdenes `PENDING_PAYMENT` vigentes
+
+Script legacy para pagos aprobados en portal con orden aún en `PENDING_PAYMENT` (no expirada).
 
 ```bash
 pnpm --filter api run reconcile:getnet-approved -- --paymentId <id> --dry-run
 ```
 
+### 2.2 `payments:reconcile-getnet-approved-manual` — órdenes `EXPIRED` (caso actual)
+
+**Usar este script** para los 3 pagos afectados: `Payment PENDING` + `Order EXPIRED` + 0 tickets.
+
+El script valida precondiciones, escribe `metadata.manualReconciliation`, invoca `GetnetReconciliationService` con `forceExpiredApprovedFulfillment` y `OrderFulfillmentService` con `allowExpiredRecovery` (venta directa en batch tras liberar reserva al expirar).
+
+```bash
+pnpm --filter api run payments:reconcile-getnet-approved-manual -- \
+  --payment-id <paymentId> \
+  --remote-payment-id <uuid-portal> \
+  --dry-run
+```
+
 Flujo:
 
 ```txt
-Validación local (GETNET + webcheckout + paymentIntentId + PENDING)
+Validación local (GETNET + webcheckout + PENDING + order EXPIRED|PENDING_PAYMENT + sin tickets)
 → metadata manualReconciliation (live)
-→ GetnetReconciliationService.reconcilePayment(remoteStatusOverride)
-→ OrderFulfillmentService (si aplica)
+→ GetnetReconciliationService.reconcilePayment(APPROVED + forceExpiredApprovedFulfillment)
+→ OrderFulfillmentService (allowExpiredRecovery)
 → Payment APPROVED / Order PAID / tickets
 ```
 
@@ -68,30 +83,25 @@ Confirmar en portal Getnet que cada `paymentIntentId` figura **Authorized/Approv
 
 ## 5. Dry-run (sin mutar DB)
 
-Por cada pago:
+Por cada pago (orden `EXPIRED`):
 
 ```bash
-pnpm --filter api run reconcile:getnet-approved -- \
-  --paymentId cmqfvq3he000g4xc0momiekpo \
+pnpm --filter api run payments:reconcile-getnet-approved-manual -- \
+  --payment-id cmqfvq3he000g4xc0momiekpo \
+  --remote-payment-id <uuid-from-portal> \
   --dry-run
 ```
 
-Opcional (simula estado remoto explícito):
-
-```bash
-REMOTE_STATUS=Authorized \
-  pnpm --filter api run reconcile:getnet-approved -- \
-  --paymentId cmqfvq3he000g4xc0momiekpo \
-  --dry-run
-```
+Repetir para los otros dos `payment-id` (el `remote-payment-id` puede ser placeholder en dry-run si solo se valida estado local; en live es obligatorio).
 
 **Resultado esperado dry-run:**
 
-- `outcome: FULFILLED` o `ALREADY_FULFILLED` si la orden ya tiene tickets.
-- `dryRun: true`
-- `message: would_fulfill` si procedería a emitir tickets.
+- Snapshot: payment, order, items, tickets `0/N`
+- `abort conditions` vacío
+- `outcome: FULFILLED`, `dryRun: true`
+- `message: would_fulfill_expired_recovery`
 
-Repetir para los otros dos `paymentId`.
+Si `reconcile:getnet-approved` se usa por error en orden `EXPIRED`, dry-run devuelve `REQUIRES_MANUAL_REVIEW` / `ORDER_EXPIRED_PAYMENT_APPROVED` **sin** emitir tickets.
 
 ---
 
@@ -101,21 +111,42 @@ Variables requeridas:
 
 | Variable | Requerida | Ejemplo |
 |----------|-----------|---------|
-| `CONFIRM_APPROVED_GETNET_RECONCILE` | **Sí** | `yes` |
-| `REMOTE_STATUS` | **Sí** | `Authorized` o `APPROVED` |
-| `REMOTE_PAYMENT_ID` | Recomendada | UUID del pago en Getnet |
-| `REMOTE_AUTHORIZATION_CODE` | Opcional | código autorización portal |
-| `REMOTE_CHECKOUT_ID` | Opcional | checkout id portal |
+| `CONFIRM_GETNET_APPROVED_MANUAL` | **Sí** | `yes` |
 
-Comando propuesto (ejemplo pago 1):
+Argumentos CLI:
+
+| Flag | Requerida (live) | Descripción |
+|------|------------------|-------------|
+| `--payment-id` | **Sí** | ID local del Payment |
+| `--remote-payment-id` | **Sí** | UUID del pago en portal Getnet |
+| `--remote-checkout-id` | Opcional | checkout id portal |
+| `--authorization-code` | Opcional | código autorización portal |
+
+Comando propuesto — pago 1:
 
 ```bash
-CONFIRM_APPROVED_GETNET_RECONCILE=yes \
-REMOTE_STATUS=Authorized \
-REMOTE_PAYMENT_ID=<uuid-from-portal> \
-pnpm --filter api run reconcile:getnet-approved -- \
-  --paymentId cmqfvq3he000g4xc0momiekpo \
-  --confirm
+CONFIRM_GETNET_APPROVED_MANUAL=yes \
+pnpm --filter api run payments:reconcile-getnet-approved-manual -- \
+  --payment-id cmqfvq3he000g4xc0momiekpo \
+  --remote-payment-id <uuid-from-portal>
+```
+
+Pago 2:
+
+```bash
+CONFIRM_GETNET_APPROVED_MANUAL=yes \
+pnpm --filter api run payments:reconcile-getnet-approved-manual -- \
+  --payment-id cmpxtuix7001d40xb4xk2net3 \
+  --remote-payment-id <uuid-from-portal>
+```
+
+Pago 3:
+
+```bash
+CONFIRM_GETNET_APPROVED_MANUAL=yes \
+pnpm --filter api run payments:reconcile-getnet-approved-manual -- \
+  --payment-id cmpxsxjhx000t40xb2m3c04mz \
+  --remote-payment-id <uuid-from-portal>
 ```
 
 **Un pago por ejecución.** Verificar post-check antes del siguiente.
@@ -141,8 +172,9 @@ SELECT COUNT(*) FROM "Ticket" WHERE "orderId" = '<orderId>' AND source = 'ORDER'
 ### Metadata esperada
 
 - `manualReconciliation.source`: `GETNET_PORTAL_MANUAL_CONFIRMATION`
-- `manualReconciliation.remoteStatus`: `AUTHORIZED` / `APPROVED`
+- `manualReconciliation.remoteStatus`: `APPROVED`
 - `manualReconciliation.paymentIntentId`: coincide con portal
+- `manualReconciliation.remotePaymentId`: UUID portal
 - `lastReconciliationOutcome`: `FULFILLED` o `ALREADY_FULFILLED`
 - `reconciliationSource`: `GETNET_PORTAL_MANUAL_CONFIRMATION`
 
@@ -161,16 +193,18 @@ SELECT COUNT(*) FROM "Ticket" WHERE "orderId" = '<orderId>' AND source = 'ORDER'
 | Payment ya `APPROVED` + Order `PAID` + tickets completos | Script sale OK sin duplicar |
 | Payment `APPROVED` pero sin tickets | Reconcile puede `FULFILL` o `ALREADY_FULFILLED` |
 | Re-ejecutar tras `FULFILLED` | `OrderFulfillmentService` → `alreadyFulfilled` |
-| Orden expirada con pago aprobado | `REQUIRES_MANUAL_REVIEW` — alerta operativa |
+| Orden expirada + pago aprobado portal | `payments:reconcile-getnet-approved-manual` con `forceExpiredApprovedFulfillment` |
+| `reconcile:getnet-approved` en orden EXPIRED | `REQUIRES_MANUAL_REVIEW` — no emite tickets |
 
 ---
 
 ## 9. Riesgos
 
-1. **Falso positivo:** reconciliar sin confirmar en portal → cobro no real pero tickets emitidos. Mitigar: evidencia portal obligatoria.
-2. **Orden expirada:** pago aprobado tardío → revisión manual (`ORDER_EXPIRED_PAYMENT_APPROVED`).
-3. **Doble pago:** otra orden ya `PAID` → `ORDER_ALREADY_PAID_BY_ANOTHER_PAYMENT`.
-4. **Entorno incorrecto:** `DATABASE_URL` local vs prod.
+1. **Falso positivo:** reconciliar sin confirmar en portal → cobro no real pero tickets emitidos. Mitigar: evidencia portal + `--remote-payment-id` obligatorio en live.
+2. **Orden expirada:** reserva de batch liberada — fulfillment usa venta directa; validar cupo batch antes de live.
+3. **Stock insuficiente:** si el batch se agotó tras expiración → `INSUFFICIENT_BATCH_STOCK` en live.
+4. **Doble pago:** otra orden ya `PAID` → `ORDER_ALREADY_PAID_BY_ANOTHER_PAYMENT`.
+5. **Entorno incorrecto:** `DATABASE_URL` local vs prod.
 
 ---
 
@@ -181,7 +215,8 @@ SELECT COUNT(*) FROM "Ticket" WHERE "orderId" = '<orderId>' AND source = 'ORDER'
 | Webhook `ed0cc3e` | Futuros `Authorized` automáticos |
 | `POST /admin/payments/:id/reconcile` | **No** — sin override |
 | `payments:reconcile-getnet` | **No** — sin poll WC |
-| `reconcile:getnet-approved` | **Sí** — con evidencia portal |
+| `reconcile:getnet-approved` | Parcial — solo si orden no `EXPIRED` |
+| `payments:reconcile-getnet-approved-manual` | **Sí** — `EXPIRED` + evidencia portal |
 
 ---
 
@@ -189,4 +224,5 @@ SELECT COUNT(*) FROM "Ticket" WHERE "orderId" = '<orderId>' AND source = 'ORDER'
 
 - [GETNET_WEBHOOK.md](./GETNET_WEBHOOK.md)
 - [GETNET_WEBHOOK_PERIOD_CHANGE_AUDIT.md](../audits/GETNET_WEBHOOK_PERIOD_CHANGE_AUDIT.md)
-- Script: `apps/api/scripts/reconcile-approved-getnet-webcheckout-payment.ts`
+- Script EXPIRED: `apps/api/scripts/reconcile-getnet-approved-manual.ts`
+- Script legacy: `apps/api/scripts/reconcile-approved-getnet-webcheckout-payment.ts`
