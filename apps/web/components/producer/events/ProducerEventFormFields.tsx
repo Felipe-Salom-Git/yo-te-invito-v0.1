@@ -300,7 +300,7 @@ export function ProducerEventFormFields({
           error={errors.venueName}
           placeholder="Ej: Estadio GEBA, Club XYZ"
         />
-        <EventLocationFields value={location} onChange={onLocationChange} />
+        <EventLocationFields value={location} onChange={onLocationChange} geoContext="EVENT" />
         {errors.city ? (
           <p className="text-sm text-red-400">{errors.city}</p>
         ) : null}

@@ -191,7 +191,7 @@ export function EventCategoryPublicationFields({
         value={value.ofertas}
         onChange={(e) => patch({ ofertas: e.target.value })}
       />
-      <EventLocationFields value={value.location} onChange={(location) => patch({ location })} />
+      <EventLocationFields value={value.location} onChange={(location) => patch({ location })} geoContext="EVENT" />
       <SubcategorySelect
         category={category === 'hotel' ? 'event' : category}
         value={value.subcategoryId}
