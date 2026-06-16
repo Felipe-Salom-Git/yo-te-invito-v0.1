@@ -1,9 +1,10 @@
 'use client';
 
 import { ProvinceCitySelect } from './ProvinceCitySelect';
-import { LocationPickerMap } from './LocationPickerMap';
+import { AddressMapPicker } from './AddressMapPicker';
 import { applyProvinceToLocationValue } from './location.utils';
 import type { LocationValue } from './location.types';
+import type { GeoContext } from '@yo-te-invito/shared';
 
 type RentalLocationFieldsProps = {
   value: LocationValue;
@@ -14,9 +15,10 @@ type RentalLocationFieldsProps = {
   mapError?: string;
   provinceError?: string;
   cityError?: string;
+  geoContext?: Extract<GeoContext, 'RENTAL_LOCATION' | 'EXCURSION_OPERATOR'>;
 };
 
-/** Location block for RentalLocation admin forms (province/city are UI-normalized; API stores address + geo). */
+/** Location block for RentalLocation / ExcursionOperator admin forms. */
 export function RentalLocationFields({
   value,
   onChange,
@@ -26,6 +28,7 @@ export function RentalLocationFields({
   mapError,
   provinceError,
   cityError,
+  geoContext = 'RENTAL_LOCATION',
 }: RentalLocationFieldsProps) {
   return (
     <fieldset className="space-y-4 rounded-xl border border-border bg-bg-muted p-4">
@@ -40,14 +43,14 @@ export function RentalLocationFields({
         provinceError={provinceError}
         cityError={cityError}
       />
-      <LocationPickerMap
+      <AddressMapPicker
         value={value}
         onChange={onChange}
+        context={geoContext}
         disabled={disabled}
         label="Dirección y mapa"
         helperText="La dirección y coordenadas se muestran al público en la ficha del local y productos asociados."
         error={addressError ?? mapError}
-        required={required}
       />
     </fieldset>
   );

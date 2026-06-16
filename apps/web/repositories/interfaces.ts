@@ -2923,9 +2923,16 @@ export interface UploadsRepo {
   ): Promise<import('@yo-te-invito/shared').PublicImageUploadResponse>;
 }
 
+export interface GeoRepo {
+  resolveAddress(
+    input: import('@yo-te-invito/shared').ResolveAddressBody,
+  ): Promise<import('@yo-te-invito/shared').ResolveAddressResponse>;
+}
+
 export interface Repositories {
   auth: AuthRepo;
   uploads: UploadsRepo;
+  geo: GeoRepo;
   events: EventsRepo;
   generalPublications: GeneralPublicationsRepo;
   adminProducers: AdminProducersRepo;

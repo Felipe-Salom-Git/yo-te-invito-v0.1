@@ -10,6 +10,8 @@ export { ProvinceCitySelect } from './ProvinceCitySelect';
 export { GastroProvinceCityFields } from './GastroProvinceCityFields';
 export type { GastroLocationFieldValues } from './GastroProvinceCityFields';
 export { LocationPickerMap } from './LocationPickerMap';
+export { AddressMapPicker } from './AddressMapPicker';
+export type { AddressMapPickerProps } from './AddressMapPicker';
 export { EventLocationFields } from './EventLocationFields';
 export { RentalLocationFields } from './RentalLocationFields';
 export {

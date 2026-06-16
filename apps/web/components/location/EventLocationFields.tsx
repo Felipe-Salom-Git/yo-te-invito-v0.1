@@ -1,21 +1,22 @@
 'use client';
 
 import { ProvinceCitySelect } from './ProvinceCitySelect';
-import { LocationPickerMap } from './LocationPickerMap';
+import { AddressMapPicker } from './AddressMapPicker';
 import { applyProvinceToLocationValue } from './location.utils';
 import type { LocationValue } from './location.types';
+import type { GeoContext } from '@yo-te-invito/shared';
 
 type EventLocationFieldsProps = {
   value: LocationValue;
   onChange: (value: LocationValue) => void;
   disabled?: boolean;
-  /** When true, province/city/address are required in parent validation */
   required?: boolean;
   addressError?: string;
   mapError?: string;
   provinceError?: string;
   cityError?: string;
   showVenueHint?: boolean;
+  geoContext?: GeoContext;
 };
 
 export function EventLocationFields({
@@ -27,6 +28,7 @@ export function EventLocationFields({
   mapError,
   provinceError,
   cityError,
+  geoContext = 'EVENT',
 }: EventLocationFieldsProps) {
   return (
     <div className="space-y-4">
@@ -40,14 +42,14 @@ export function EventLocationFields({
         provinceError={provinceError}
         cityError={cityError}
       />
-      <LocationPickerMap
+      <AddressMapPicker
         value={value}
         onChange={onChange}
+        context={geoContext}
         disabled={disabled}
         label="Dirección y mapa"
-        helperText="Buscá la dirección o hacé clic en el mapa para colocar el pin. Podés arrastrarlo para ajustar."
+        helperText="Completá provincia, ciudad y dirección. Ubicá en el mapa y arrastrá el pin si hace falta ajustar."
         error={addressError ?? mapError}
-        required={required}
       />
     </div>
   );

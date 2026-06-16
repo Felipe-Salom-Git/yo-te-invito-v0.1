@@ -2305,4 +2305,12 @@ export class ApiRepository implements Repositories {
       return publicImageUploadResponseSchema.parse(raw);
     },
   };
+
+  geo: import('./interfaces').GeoRepo = {
+    resolveAddress: async (input) => {
+      const raw = await this.client.post<unknown>('/geo/resolve-address', input);
+      const { resolveAddressResponseSchema } = await import('@yo-te-invito/shared');
+      return resolveAddressResponseSchema.parse(raw);
+    },
+  };
 }
