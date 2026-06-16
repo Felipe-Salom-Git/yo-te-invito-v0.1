@@ -298,16 +298,17 @@ sudo journalctl -u yti-api -n 120 --no-pager -l | grep -i -E "resolve-address|ge
 - [x] Prueba de pago VPS — webhook **recibido** en API; rechazado por schema pre-`ed0cc3e` (`invalid_payload: status Required`).
 - [ ] Deploy VPS con `ed0cc3e` (fix webhook payload).
 - [ ] Re-prueba pago mínimo autorizado + webhook `Authorized` procesado + emisión tickets automática.
+- [ ] **Reconciliar 3 pagos Web Checkout aprobados en portal** que quedaron `PENDING` (webhook pre-`ed0cc3e`) — script `reconcile:getnet-approved` — [GETNET_MANUAL_RECONCILIATION_RUNBOOK.md](../payments/GETNET_MANUAL_RECONCILIATION_RUNBOOK.md).
 
 ## Getnet Web Checkout Redirect — estado VPS
 
-- Rama: `feat/v1-s03-api-foundation` (`ed0cc3e` fix webhook; docs `9602fe9`).
+- Rama: `feat/v1-s03-api-foundation` (`ed0cc3e` webhook; revert URLs `3e009f4`).
 - `main` sin cambios.
 - Redirect a Getnet hosted checkout: OK.
 - Webhook portal configurado; prueba de pago: webhook **llegó** pero VPS previo a `ed0cc3e` lo rechazó (`invalid_payload`).
 - Getnet envía estado en `payment.result.status`; no usar solo `status` raíz.
 - `Authorized` → aprobado → `OrderFulfillmentService` vía reconciliación.
-- Pendiente: deploy fix en VPS y cerrar ciclo pago + tickets.
+- Pendiente: deploy fix en VPS; reconciliar 3 aprobados PENDING vía [GETNET_MANUAL_RECONCILIATION_RUNBOOK.md](../payments/GETNET_MANUAL_RECONCILIATION_RUNBOOK.md).
 - [ ] **SEO técnico (SEO 2–9):** robots/sitemap, no-index portales, metadata dinámica, JSON-LD, GSC — baseline [`SEO_TECHNICAL_AUDIT.md`](../audits/SEO_TECHNICAL_AUDIT.md)
 
 ### Google Cloud — Etapa A manual (cerrada) / Etapa B (Storage cerrado; Maps/SEO pendiente)

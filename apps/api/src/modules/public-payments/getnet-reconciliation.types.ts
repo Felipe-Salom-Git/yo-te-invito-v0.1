@@ -5,7 +5,8 @@ export type GetnetReconciliationSource =
   | 'GETNET_WEBHOOK'
   | 'MANUAL_RECONCILIATION'
   | 'ADMIN_MANUAL'
-  | 'GETNET_SCRIPT';
+  | 'GETNET_SCRIPT'
+  | 'GETNET_PORTAL_MANUAL_CONFIRMATION';
 
 export type GetnetReconciliationOutcome =
   | 'FULFILLED'
@@ -82,6 +83,7 @@ export function toFulfillSource(
     case 'MANUAL_RECONCILIATION':
     case 'ADMIN_MANUAL':
     case 'GETNET_SCRIPT':
+    case 'GETNET_PORTAL_MANUAL_CONFIRMATION':
       return 'MANUAL_RECONCILIATION';
   }
 }

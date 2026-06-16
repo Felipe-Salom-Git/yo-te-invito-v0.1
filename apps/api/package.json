@@ -37,6 +37,7 @@
     "test:getnet-webhook": "tsx scripts/test-getnet-webhook.util.ts",
     "test:getnet-reconciliation": "tsx scripts/test-getnet-reconciliation.util.ts",
     "payments:reconcile-getnet": "tsx --tsconfig tsconfig.scripts.json scripts/payments-reconcile-getnet.ts",
+    "reconcile:getnet-approved": "tsx --tsconfig tsconfig.scripts.json scripts/reconcile-approved-getnet-webcheckout-payment.ts",
     "smoke:getnet": "tsx scripts/smoke-getnet.ts",
     "smoke:getnet-webcheckout": "tsx scripts/smoke-getnet-webcheckout.ts",
     "smoke:notifications": "tsx scripts/smoke-notifications.ts",
