@@ -51,6 +51,7 @@ export interface ReconcilePaymentResult {
   reconciliationReason?: ReconciliationReason;
   message?: string;
   dryRun?: boolean;
+  ticketsCreated?: number;
 }
 
 export interface ReconcilePendingPaymentsOptions {

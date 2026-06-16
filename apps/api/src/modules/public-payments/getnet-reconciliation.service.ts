@@ -7,7 +7,10 @@ import { mapGetnetWebhookStatusToLocal } from './providers/getnet/getnet-webhook
 import { shouldApplyPaymentStatusUpdate } from './providers/getnet/getnet-webhook.util';
 import { OrderFulfillmentService } from './order-fulfillment.service';
 import { ReferralEmailsService } from '../referrals/referral-emails.service';
-import { expectedTicketCountFromItems } from './order-fulfillment.util';
+import {
+  expectedTicketCountFromItems,
+  isOrderTicketFulfillmentComplete,
+} from './order-fulfillment.util';
 import {
   asMetadataJson,
   mergeReconciliationMetadata,
@@ -55,6 +58,7 @@ export class GetnetReconciliationService {
           'Run payments:reconcile-getnet via Nest ApplicationContext (see scripts/payments-reconcile-getnet.ts).',
       );
     }
+    this.orderFulfillment.assertDatabaseReady();
   }
 
   async reconcilePayment(
@@ -91,6 +95,30 @@ export class GetnetReconciliationService {
         message: 'Order missing',
         dryRun,
       };
+    }
+
+    const expectedTickets = expectedTicketCountFromItems(order.orderItems);
+    const existingTickets = await this.prisma.ticket.count({
+      where: { orderId: order.id, source: 'ORDER' },
+    });
+
+    const partialResume = this.detectPartialExpiredApprovedRecovery(
+      payment.status,
+      order.status,
+      existingTickets,
+      expectedTickets,
+      options,
+    );
+    if (partialResume) {
+      const remoteStatus =
+        options.remoteStatusOverride?.trim().toUpperCase() || 'APPROVED';
+      return this.executeExpiredApprovedFulfillment(
+        payment,
+        order,
+        options,
+        remoteStatus,
+        partialResume,
+      );
     }
 
     let remoteStatus = options.remoteStatusOverride?.trim().toUpperCase() ?? '';
@@ -152,11 +180,6 @@ export class GetnetReconciliationService {
     }
 
     const statusMapping = mapGetnetWebhookStatusToLocal(remoteStatus);
-    const expectedTickets = expectedTicketCountFromItems(order.orderItems);
-    const existingTickets = await this.prisma.ticket.count({
-      where: { orderId: order.id, source: 'ORDER' },
-    });
-
     const otherApproved = await this.prisma.payment.findMany({
       where: {
         orderId: order.id,
@@ -313,63 +336,12 @@ export class GetnetReconciliationService {
 
       // FULFILL (including manual expired-order recovery)
       if (decision.kind === 'FULFILL' || forceExpiredFulfill) {
-        if (dryRun) {
-          return this.result(payment, order.status, remoteStatus, 'FULFILLED', {
-            dryRun: true,
-            message: forceExpiredFulfill
-              ? 'would_fulfill_expired_recovery'
-              : 'would_fulfill',
-          });
-        }
-
-        const fulfillResult = await this.orderFulfillment.fulfillPaidOrder({
-          tenantId: order.tenantId,
-          orderId: order.id,
-          paymentId: payment.id,
-          source: toFulfillSource(options.source),
-          rejectIfExpired: false,
-          allowExpiredRecovery: forceExpiredFulfill,
-        });
-
-        fulfillOutcome =
-          fulfillResult.outcome === 'fulfilled' ||
-          fulfillResult.outcome === 'alreadyFulfilled' ||
-          fulfillResult.outcome === 'skipped'
-            ? fulfillResult.outcome
-            : undefined;
-
-        outcome =
-          fulfillResult.outcome === 'fulfilled'
-            ? 'FULFILLED'
-            : fulfillResult.outcome === 'alreadyFulfilled'
-              ? 'ALREADY_FULFILLED'
-              : 'SKIPPED';
-
-        if (fulfillResult.newCommissionId) {
-          this.referralEmails.notifyCommissionGenerated(
-            order.tenantId,
-            fulfillResult.newCommissionId,
-          );
-        }
-
-        const refreshedOrder = await this.prisma.order.findUnique({
-          where: { id: order.id },
-          select: { status: true },
-        });
-
-        await this.persistReconciliation(payment.id, payment.metadata, {
-          outcome,
-          source: options.source,
-          remoteStatus,
-          reconciliationStatus: 'AUTO_OK',
-        });
-
-        return this.result(
+        return this.executeExpiredApprovedFulfillment(
           payment,
-          refreshedOrder?.status ?? order.status,
+          order,
+          options,
           remoteStatus,
-          outcome,
-          { fulfillOutcome, dryRun },
+          forceExpiredFulfill ? 'new_expired_recovery' : 'standard_fulfill',
         );
       }
     }
@@ -447,6 +419,122 @@ export class GetnetReconciliationService {
     }
 
     return summary;
+  }
+
+  private detectPartialExpiredApprovedRecovery(
+    paymentStatus: PaymentStatus,
+    orderStatus: string,
+    existingTicketCount: number,
+    expectedTicketCount: number,
+    options: ReconcilePaymentOptions,
+  ): 'resume' | false {
+    if (options.forceExpiredApprovedFulfillment !== true) return false;
+    if (paymentStatus !== 'APPROVED') return false;
+    if (orderStatus !== 'EXPIRED' && orderStatus !== 'PENDING_PAYMENT') {
+      return false;
+    }
+    if (
+      isOrderTicketFulfillmentComplete(existingTicketCount, expectedTicketCount)
+    ) {
+      return false;
+    }
+    return 'resume';
+  }
+
+  private async executeExpiredApprovedFulfillment(
+    payment: {
+      id: string;
+      orderId: string;
+      status: PaymentStatus;
+      metadata: unknown;
+    },
+    order: { id: string; tenantId: string; status: string },
+    options: ReconcilePaymentOptions,
+    remoteStatus: string,
+    mode: 'resume' | 'new_expired_recovery' | 'standard_fulfill',
+  ): Promise<ReconcilePaymentResult> {
+    const dryRun = options.dryRun ?? false;
+    const allowExpiredRecovery =
+      mode === 'resume' || mode === 'new_expired_recovery';
+
+    const dryRunMessage =
+      mode === 'resume'
+        ? 'would_resume_fulfillment_expired_recovery'
+        : allowExpiredRecovery
+          ? 'would_fulfill_expired_recovery'
+          : 'would_fulfill';
+    const liveMessage =
+      mode === 'resume' ? 'fulfilled_expired_recovery' : 'fulfilled_expired_recovery';
+
+    if (dryRun) {
+      return this.result(payment, order.status, remoteStatus, 'FULFILLED', {
+        dryRun: true,
+        message: dryRunMessage,
+        ticketsCreated: 0,
+      });
+    }
+
+    const fulfillResult = await this.orderFulfillment.fulfillPaidOrder({
+      tenantId: order.tenantId,
+      orderId: order.id,
+      paymentId: payment.id,
+      source: toFulfillSource(options.source),
+      rejectIfExpired: false,
+      allowExpiredRecovery,
+    });
+
+    const fulfillOutcome =
+      fulfillResult.outcome === 'fulfilled' ||
+      fulfillResult.outcome === 'alreadyFulfilled' ||
+      fulfillResult.outcome === 'skipped'
+        ? fulfillResult.outcome
+        : undefined;
+
+    const outcome =
+      fulfillResult.outcome === 'fulfilled'
+        ? 'FULFILLED'
+        : fulfillResult.outcome === 'alreadyFulfilled'
+          ? 'ALREADY_FULFILLED'
+          : 'SKIPPED';
+
+    if (fulfillResult.newCommissionId) {
+      this.referralEmails.notifyCommissionGenerated(
+        order.tenantId,
+        fulfillResult.newCommissionId,
+      );
+    }
+
+    const refreshedPayment = await this.prisma.payment.findUnique({
+      where: { id: payment.id },
+      select: { status: true },
+    });
+    const refreshedOrder = await this.prisma.order.findUnique({
+      where: { id: order.id },
+      select: { status: true },
+    });
+
+    await this.persistReconciliation(payment.id, payment.metadata, {
+      outcome,
+      source: options.source,
+      remoteStatus,
+      reconciliationStatus: 'AUTO_OK',
+    });
+
+    return this.result(
+      {
+        ...payment,
+        status: refreshedPayment?.status ?? payment.status,
+      },
+      refreshedOrder?.status ?? order.status,
+      remoteStatus,
+      outcome,
+      {
+        fulfillOutcome,
+        dryRun,
+        message: liveMessage,
+        ticketsCreated: fulfillResult.ticketsCreated,
+      },
+    );
   }
 
   private accumulateSummary(

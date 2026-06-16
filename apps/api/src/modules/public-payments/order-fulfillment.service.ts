@@ -1,5 +1,6 @@
 import {
   ConflictException,
+  Inject,
   Injectable,
   Logger,
   NotFoundException,
@@ -44,12 +45,24 @@ export class OrderFulfillmentService {
   private readonly logger = new Logger(OrderFulfillmentService.name);
 
   constructor(
-    private readonly prisma: PrismaService,
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(EventCapacityGuardService)
     private readonly capacityGuard: EventCapacityGuardService,
-    private readonly emailQueue: EmailQueueService,
-    private readonly ticketBatches: TicketBatchService,
+    @Inject(EmailQueueService) private readonly emailQueue: EmailQueueService,
+    @Inject(TicketBatchService) private readonly ticketBatches: TicketBatchService,
+    @Inject(ReferralCommissionService)
     private readonly referralCommissions: ReferralCommissionService,
   ) {}
+
+  /** Used by CLI scripts to fail fast when Nest DI did not wire Prisma. */
+  assertDatabaseReady(): void {
+    if (!this.prisma?.payment?.findFirst) {
+      throw new Error(
+        'OrderFulfillmentService: PrismaService is not injected. ' +
+          'Run manual reconcile via Nest ApplicationContext (GetnetReconcileScriptModule).',
+      );
+    }
+  }
 
   /**
    * Single entry point: mark order paid, approve payment, emit tickets, email, referral commission.

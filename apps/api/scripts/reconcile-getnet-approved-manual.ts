@@ -24,7 +24,7 @@ import {
   mergeReconciliationMetadata,
 } from '../src/modules/public-payments/getnet-reconciliation.metadata.util';
 import { isWebCheckoutPaymentMetadata } from '../src/modules/public-payments/providers/getnet/webcheckout/getnet-webcheckout.config';
-import { expectedTicketCountFromItems } from '../src/modules/public-payments/order-fulfillment.util';
+import { expectedTicketCountFromItems, isOrderTicketFulfillmentComplete } from '../src/modules/public-payments/order-fulfillment.util';
 import { GetnetReconcileScriptModule } from './getnet-reconcile-script.module';
 
 type ManualReconciliationMetadata = {
@@ -123,8 +123,35 @@ function fail(msg: string): never {
   process.exit(1);
 }
 
-function warn(msg: string) {
-  console.warn(`WARN: ${msg}`);
+function extractManualReconciliation(metadata: unknown): Record<string, unknown> | null {
+  const meta = readMetadataRecord(metadata);
+  const manual = meta.manualReconciliation;
+  if (!manual || typeof manual !== 'object' || Array.isArray(manual)) {
+    return null;
+  }
+  return manual as Record<string, unknown>;
+}
+
+function isPartialResumeState(input: {
+  paymentStatus: string;
+  orderStatus: string;
+  existingTickets: number;
+  expectedTickets: number;
+}): boolean {
+  return (
+    input.paymentStatus === 'APPROVED' &&
+    (input.orderStatus === 'EXPIRED' || input.orderStatus === 'PENDING_PAYMENT') &&
+    !isOrderTicketFulfillmentComplete(
+      input.existingTickets,
+      input.expectedTickets,
+    )
+  );
+}
+
+function printPartialFailureHint() {
+  console.error(
+    '\nPayment may be APPROVED but fulfillment incomplete. Re-run after fix in resume mode.',
+  );
 }
 
 async function main() {
@@ -213,21 +240,44 @@ async function main() {
     }
 
     if (payment.status === 'APPROVED') {
-      console.log('\n--- idempotency ---');
-      console.log('Payment already APPROVED — would no-op reconciliation');
-      if (order?.status === 'PAID') {
-        const tickets = order
-          ? await prisma.ticket.count({
-              where: { orderId: order.id, source: 'ORDER' },
-            })
-          : 0;
-        const expected = order
-          ? expectedTicketCountFromItems(order.orderItems)
-          : 0;
-        if (tickets >= expected && expected > 0) {
-          console.log('Order PAID with tickets — nothing to do');
+      const manual = extractManualReconciliation(payment.metadata);
+      if (order) {
+        existingTickets = await prisma.ticket.count({
+          where: { orderId: order.id, source: 'ORDER' },
+        });
+        expectedTickets = expectedTicketCountFromItems(order.orderItems);
+      }
+
+      if (
+        order &&
+        isPartialResumeState({
+          paymentStatus: payment.status,
+          orderStatus: order.status,
+          existingTickets,
+          expectedTickets,
+        })
+      ) {
+        console.log('\n--- partial resume detected ---');
+        console.log(
+          'Payment APPROVED but order/tickets incomplete — will resume fulfillment',
+        );
+        if (
+          !manual ||
+          manual.source !== 'GETNET_PORTAL_MANUAL_CONFIRMATION'
+        ) {
+          abortConditions.push(
+            'Payment APPROVED partial state requires metadata.manualReconciliation.source = GETNET_PORTAL_MANUAL_CONFIRMATION',
+          );
+        }
+      } else if (order?.status === 'PAID') {
+        if (isOrderTicketFulfillmentComplete(existingTickets, expectedTickets)) {
+          console.log('\n--- idempotency ---');
+          console.log('Payment APPROVED, order PAID, tickets complete — nothing to do');
           return;
         }
+      } else {
+        console.log('\n--- idempotency ---');
+        console.log('Payment APPROVED — checking whether fulfillment can proceed');
       }
     } else if (payment.status !== 'PENDING') {
       abortConditions.push(
@@ -313,12 +363,25 @@ async function main() {
       console.log(`existing: ${existingTickets}`);
       console.log(`expected: ${expectedTickets}`);
 
-      if (existingTickets > 0) {
+      if (existingTickets >= expectedTickets && expectedTickets > 0) {
         abortConditions.push(
-          `${existingTickets} tickets already exist — would duplicate`,
+          `tickets already complete (${existingTickets}/${expectedTickets}) — would duplicate`,
+        );
+      } else if (existingTickets > 0) {
+        risks.push(
+          `Partial tickets exist (${existingTickets}/${expectedTickets}) — resume will fulfill remainder`,
         );
       }
     }
+
+    const partialResume =
+      order &&
+      isPartialResumeState({
+        paymentStatus: payment.status,
+        orderStatus: order.status,
+        existingTickets,
+        expectedTickets,
+      });
 
     if (order?.status === 'EXPIRED') {
       risks.push(
@@ -329,11 +392,15 @@ async function main() {
     const plannedAction =
       abortConditions.length > 0
         ? 'ABORT'
-        : payment.status === 'APPROVED'
-          ? 'NO-OP (already approved)'
-          : args.dryRun
-            ? 'DRY-RUN reconcile with remoteStatus=APPROVED + forceExpiredApprovedFulfillment'
-            : 'LIVE: metadata manualReconciliation → reconcile → fulfill';
+        : partialResume
+          ? args.dryRun
+            ? 'DRY-RUN resume fulfillment (APPROVED + EXPIRED + incomplete tickets)'
+            : 'LIVE resume: fulfill only (no re-approve payment)'
+          : payment.status === 'APPROVED'
+            ? 'FULFILL incomplete approved payment'
+            : args.dryRun
+              ? 'DRY-RUN reconcile with remoteStatus=APPROVED + forceExpiredApprovedFulfillment'
+              : 'LIVE: metadata manualReconciliation → reconcile → fulfill';
 
     console.log('\n--- planned action ---');
     console.log(plannedAction);
@@ -368,41 +435,62 @@ async function main() {
       return;
     }
 
-    const confirmedAt = new Date().toISOString();
-    const manualPatch: ManualReconciliationMetadata = {
-      manualReconciliation: {
+    let metadataUpdated = false;
+    const existingManual = extractManualReconciliation(payment.metadata);
+    const shouldWriteMetadata =
+      payment.status === 'PENDING' ||
+      !existingManual ||
+      existingManual.source !== 'GETNET_PORTAL_MANUAL_CONFIRMATION';
+
+    if (shouldWriteMetadata) {
+      const confirmedAt = new Date().toISOString();
+      const manualPatch: ManualReconciliationMetadata = {
+        manualReconciliation: {
+          source: 'GETNET_PORTAL_MANUAL_CONFIRMATION',
+          remoteStatus: 'APPROVED',
+          confirmedAt,
+          paymentIntentId: paymentIntentId!,
+          remotePaymentId: remotePaymentId!,
+          ...(remoteCheckoutId ? { remoteCheckoutId } : {}),
+          ...(authorizationCode ? { authorizationCode } : {}),
+          note: 'Confirmed approved in Getnet portal after webhook schema bug',
+        },
+      };
+
+      const nextMetadata = mergeReconciliationMetadata(
+        payment.metadata,
+        manualPatch,
+      );
+
+      await prisma.payment.update({
+        where: { id: paymentId },
+        data: {
+          metadata: asMetadataJson(nextMetadata),
+          ...(remotePaymentId && !payment.externalPaymentId
+            ? { externalPaymentId: remotePaymentId }
+            : {}),
+        },
+      });
+      metadataUpdated = true;
+    } else {
+      console.log('\n--- metadata ---');
+      console.log('manualReconciliation already present — skipping metadata write');
+    }
+
+    let result;
+    try {
+      result = await reconciliation.reconcilePayment(paymentId, {
         source: 'GETNET_PORTAL_MANUAL_CONFIRMATION',
-        remoteStatus: 'APPROVED',
-        confirmedAt,
-        paymentIntentId: paymentIntentId!,
-        remotePaymentId: remotePaymentId!,
-        ...(remoteCheckoutId ? { remoteCheckoutId } : {}),
-        ...(authorizationCode ? { authorizationCode } : {}),
-        note: 'Confirmed approved in Getnet portal after webhook schema bug',
-      },
-    };
-
-    const nextMetadata = mergeReconciliationMetadata(
-      payment.metadata,
-      manualPatch,
-    );
-
-    await prisma.payment.update({
-      where: { id: paymentId },
-      data: {
-        metadata: asMetadataJson(nextMetadata),
-        ...(remotePaymentId && !payment.externalPaymentId
-          ? { externalPaymentId: remotePaymentId }
-          : {}),
-      },
-    });
-
-    const result = await reconciliation.reconcilePayment(paymentId, {
-      source: 'GETNET_PORTAL_MANUAL_CONFIRMATION',
-      dryRun: false,
-      remoteStatusOverride: 'APPROVED',
-      forceExpiredApprovedFulfillment: true,
-    });
+        dryRun: false,
+        remoteStatusOverride: 'APPROVED',
+        forceExpiredApprovedFulfillment: true,
+      });
+    } catch (err) {
+      if (metadataUpdated || partialResume) {
+        printPartialFailureHint();
+      }
+      throw err;
+    }
 
     console.log('\n--- reconcile result ---');
     console.log(JSON.stringify(result, null, 2));
@@ -428,6 +516,18 @@ async function main() {
     console.log(
       `manualReconciliation: ${manual ? 'present' : 'MISSING'}`,
     );
+    console.log(
+      `lastReconciliationOutcome: ${meta.lastReconciliationOutcome ?? '(empty)'}`,
+    );
+
+    if (
+      refreshed?.status === 'APPROVED' &&
+      refreshed.order?.status !== 'PAID' &&
+      ticketCount < expectedTickets
+    ) {
+      printPartialFailureHint();
+      fail('Fulfillment incomplete after reconcile');
+    }
   } finally {
     await app.close();
   }
@@ -435,5 +535,6 @@ async function main() {
 
 main().catch((e) => {
   console.error(e instanceof Error ? e.message : e);
+  printPartialFailureHint();
   process.exit(1);
 });
