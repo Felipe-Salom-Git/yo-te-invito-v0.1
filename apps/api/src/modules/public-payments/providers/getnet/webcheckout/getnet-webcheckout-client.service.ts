@@ -71,8 +71,6 @@ export class GetnetWebCheckoutClientService {
 
     const payload = {
       order_id: input.orderId,
-      success_url: input.successUrl,
-      error_url: input.errorUrl,
       payment: {
         currency: input.currency,
         amount: input.amountMinor,

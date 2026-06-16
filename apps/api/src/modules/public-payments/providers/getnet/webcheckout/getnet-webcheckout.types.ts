@@ -42,8 +42,6 @@ export interface CreateWebCheckoutPaymentIntentInput {
   amountMinor: number;
   products: GetnetWebCheckoutProductLine[];
   customer: WebCheckoutCustomerInput;
-  successUrl: string;
-  errorUrl: string;
 }
 
 export interface CreateWebCheckoutPaymentIntentResult {
