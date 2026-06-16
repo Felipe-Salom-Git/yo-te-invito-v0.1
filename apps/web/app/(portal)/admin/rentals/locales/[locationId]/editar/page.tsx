@@ -117,6 +117,7 @@ export default function AdminRentalLocalEditarPage() {
         <RentalLocationFields
           value={locationValue}
           onChange={setLocationValue}
+          geoContext="RENTAL_LOCATION"
           mapError={locationError ?? undefined}
         />
 

@@ -79,6 +79,7 @@ export default function AdminRentalLocalNuevoPage() {
         <RentalLocationFields
           value={location}
           onChange={setLocation}
+          geoContext="RENTAL_LOCATION"
           mapError={locationError ?? undefined}
         />
 
