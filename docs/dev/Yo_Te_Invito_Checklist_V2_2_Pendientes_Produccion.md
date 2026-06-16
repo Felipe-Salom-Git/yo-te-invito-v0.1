@@ -5,9 +5,17 @@
 
 ---
 
-## 1. Pagos reales y checkout productivo
+## Jornada 2026-06-15 — ops pendientes (no bloqueantes de código)
 
-> **Implementación Getnet (código):** slices A–G en `main` — [GETNET_CLOSING_AUDIT.md](../payments/GETNET_CLOSING_AUDIT.md). **Web Checkout Redirect** en `feat/v1-s03-api-foundation` (`5a5c794`) — [GETNET_WEBCHECKOUT_REDIRECT_CLOSING.md](../payments/GETNET_WEBCHECKOUT_REDIRECT_CLOSING.md). Activación prod: [GETNET_ACTIVATION_CHECKLIST.md](../payments/GETNET_ACTIVATION_CHECKLIST.md), smoke: [GETNET_PRODUCTION_SMOKE.md](../payments/GETNET_PRODUCTION_SMOKE.md). **No** marcar go-live hasta smokes PRE/VPS. **No** usar rama `development` (eliminada).
+- [ ] **GEO:** `GOOGLE_GEOCODING_API_KEY` en API VPS; IPs `179.43.124.145/32` + `2800:6c0:5::2bdc/128` en Google Cloud (solo Geocoding API, sin referrer). Ver `GEO_ADDRESS_MAP_PIN_CLOSING.md`.
+- [ ] **Deploy:** migraciones `20260615200000_geo_address_resolved_audit`, `20260615120000_gastro_courtesy_discount_claims` + restart `yti-api yti-web yti-scanner`.
+- [ ] **Getnet:** deploy `ed0cc3e` + re-prueba pago + tickets automáticos.
+- [ ] **Scanner:** QA extendida puerta real (opcional).
+- [ ] **Banners:** QA prod post-deploy Etapa 16.
+
+---
+
+> **Implementación Getnet (código):** slices A–G en `main` — [GETNET_CLOSING_AUDIT.md](../payments/GETNET_CLOSING_AUDIT.md). **Web Checkout Redirect** en `feat/v1-s03-api-foundation` (base `5a5c794`; último fix webhook `ed0cc3e`) — [GETNET_WEBCHECKOUT_REDIRECT_CLOSING.md](../payments/GETNET_WEBCHECKOUT_REDIRECT_CLOSING.md). Activación prod: [GETNET_ACTIVATION_CHECKLIST.md](../payments/GETNET_ACTIVATION_CHECKLIST.md), smoke: [GETNET_PRODUCTION_SMOKE.md](../payments/GETNET_PRODUCTION_SMOKE.md). **No** marcar go-live hasta deploy `ed0cc3e` + re-prueba pago/tickets en VPS. **No** usar rama `development` (eliminada).
 
 ### Definición proveedor y flujo
 
@@ -37,6 +45,7 @@
 - [x] Smoke payment-intent producción local controlado (`GETNET_WEBCHECKOUT_CONFIRM_PROD=yes`, logs sanitizados).
 - [x] Configurar webhook **Basic Auth** en Portal Getnet (URL + user/password = `GETNET_WEBHOOK_BASIC_*` en API).
 - [x] Código webhook Web Checkout — `payment.result.status`, lookup `payment_intent_id` (`ed0cc3e`) — [GETNET_WEBHOOK.md](../payments/GETNET_WEBHOOK.md).
+- [x] Prueba de pago VPS — webhook recibido en API; rechazado por schema pre-fix (`invalid_payload`).
 - [ ] Deploy VPS con fix webhook `ed0cc3e`.
 - [ ] Re-prueba pago mínimo autorizado.
 - [ ] Confirmar webhook `Authorized` procesado + emisión automática de tickets.

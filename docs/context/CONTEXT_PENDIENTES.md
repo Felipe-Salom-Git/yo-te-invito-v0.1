@@ -4,7 +4,109 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 
 **Convención:** `- [ ]` pendiente · `- [x]` hecho
 
-## Google Cloud / Storage / SEO / Maps — bloque cerrado (2026-06-01)
+---
+
+## Jornada 2026-06-15 — cierre documental
+
+Rama: `feat/v1-s03-api-foundation` · últimos commits relevantes: `7d21279` (GEO docs) … `9602fe9` (Getnet docs).
+
+### Scanner — cerrado funcionalmente por ahora
+
+> QA extendida en evento real/mobile opcional.
+
+- [x] Login scanner + menú operativo (`0ad9564`)
+- [x] PDF entradas — fix `pdfkit_1.default is not a constructor` (import CJS) (`ea09816`, `12058e1`)
+- [x] Carga de target sin depender de `GET /public/events/:id` — usa `GET /scanner/scan-targets`
+- [x] Selector: ocultar eventos pasados/vencidos (corte 1 AM local AR) (`12058e1`)
+- [x] Flujo manual: cada escaneo inicia con botón, no loop automático (`8bf56a3`)
+- [x] Modal resultado de escaneo (`d7dc305`); sin auto-cierre (`cbc4866`)
+- [x] Pantalla dividida: configuración vs escaneo operativo (`cbc4866`)
+- [x] Listado entradas + estado + hora de escaneo (`b22b5ef`)
+- [x] Validación contra fecha/función seleccionada (`0317a17`)
+- [x] Portal gastro scanners — fix `parentProfileId` al crear usuario (`84707cd`)
+- [ ] QA manual puerta real (móvil, offline, multi-fecha, gastro QR)
+
+Etapas base: `V3_1_STAGE_5_CLOSING.md`, `V3_1_STAGE_6_SCANNER_OFFLINE_CLOSING.md`.
+
+### Multi-fecha / ticket types — corregido
+
+- [x] Backend exige `occurrenceId` en eventos multi-fecha al crear ticket type
+- [x] Frontend `TicketTypesEditor` — selector obligatorio de fecha + payload con `occurrenceId` (`ea9c2d7`)
+- [ ] QA manual: crear tanda en evento multi-fecha desde productora
+
+### Banners editoriales — observación abierta / QA prod
+
+**Regla de producto:** banner editorial = bloque complementario; publicaciones reales = contenido principal; un banner nunca debe reemplazar publicaciones.
+
+- [x] Fix código: playlist unificada editorial + publicaciones (`d48741c`–`ae971ba`)
+- [x] Doc cierre técnico: `V3_1_STAGE_16_BANNERS_RENDERING_CLOSING.md`
+- [ ] **QA manual prod:** crear banner admin y verificar que Home/categorías siguen mostrando publicaciones
+- [ ] Si persiste en prod tras deploy: retomar render en `CategoryHeroBanner` / `useCategoryHeroBanner`
+
+### Ciudad / Navbar / Explore — implementado, validar
+
+**Decisión:** sacar filtro ciudad del navbar; concentrar en Explore.
+
+- [x] Navbar sin selector ciudad (`fda9bc6`)
+- [x] `ExploreCityFilter` — labels legibles, dedupe, `?city=`, limpiar filtro
+- [x] Doc: `V3_1_STAGE_16_EXPLORE_CITY_FILTER_CLOSING.md`, `V3_1_STAGE_16_BANNERS_CITY_FILTER_CLOSING.md`
+- [ ] QA manual: filtrar por ciudad en `/explore` y verificar resultados reales
+- [ ] Normalización ciudad en listados API si quedan inconsistencias
+
+### GEO / Maps — código listo, ops pendiente
+
+- [x] `POST /geo/resolve-address` + `GeoService` (`5932f3b`)
+- [x] `AddressMapPicker` + formularios (`21bcdb1`–`1936cb3`)
+- [x] Doc: `GEO_ADDRESS_MAP_PIN_CLOSING.md`
+- [x] Push rama remoto
+- [ ] Deploy VPS: `prisma migrate deploy` (`GEO_ADDRESS_RESOLVED` audit)
+- [ ] `GOOGLE_GEOCODING_API_KEY` en `/opt/yoteinvito/apps/api/.env`
+- [ ] Google Cloud: key **solo Geocoding API**, restricción por **IP** (no HTTP referrer). IPs VPS:
+  - `179.43.124.145/32`
+  - `2800:6c0:5::2bdc/128`
+- [ ] Verificación post-config:
+
+```bash
+sudo systemctl restart yti-api
+curl -I https://api.yoteinvito.club/health
+sudo journalctl -u yti-api -n 120 --no-pager -l | grep -i -E "resolve-address|geocoding|google|503|GEO|REQUEST_DENIED|denied"
+```
+
+- [ ] QA manual: botón «Ubicar en el mapa» en eventos, gastro, rentals, operadores, excursiones
+
+### Gastro descuentos / cortesías / QR — implementado, deploy/QA pendiente
+
+- [x] Modelo `GastroCourtesyCampaign` + claims extendidos (`601c7e4`)
+- [x] Cortesías por email manual + seguidores (`35d7fa8`)
+- [x] Email QR solicitud web (`e8ecfbb`)
+- [x] `/me/descuentos` — listado QR usuario (`641a534`)
+- [x] Validación scanner claims (`58e3704`)
+- [x] Doc: `GASTRO_DISCOUNTS_QR_COURTESY_CLOSING.md`
+- [ ] Deploy VPS + migración `20260615120000_gastro_courtesy_discount_claims`
+- [ ] QA manual: solicitud web, cortesía, email, Mi cuenta, scanner
+
+### Hard delete Admin — postergado
+
+- [ ] Borrado completo desde Admin (no mezclar con banners/ciudad/geo/gastro)
+
+### Getnet — sin cerrar pagos productivos
+
+- [x] Web Checkout redirect integrado; webhook portal configurado
+- [x] Fix payload `payment.result.status` (`ed0cc3e`)
+- [ ] Deploy VPS con `ed0cc3e` + re-prueba pago mínimo
+- [ ] Confirmar `Authorized` → tickets automáticos
+- [ ] Handoff: `NEXT_CHAT_GETNET_WEBCHECKOUT_HANDOFF.md`
+
+### Prioridad próxima sesión
+
+1. Google Geocoding ops (IPs + env + restart + curl/journalctl + «Ubicar en el mapa»)
+2. QA banners editoriales en prod (o fix si persiste)
+3. QA filtro ciudad Explore
+4. Deploy + QA gastro descuentos QR/cortesías
+5. Hard delete seguro (cuando corresponda)
+6. Getnet callbacks cuando soporte habilite / tras deploy fix
+
+---
 
 > Checklist V2 § Google Cloud · § GSC/SEO · Runbooks: [`GOOGLE_CLOUD_RUNBOOK.md`](../deploy/GOOGLE_CLOUD_RUNBOOK.md) · [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) · [`SEARCH_CONSOLE_SEO_RUNBOOK.md`](../deploy/SEARCH_CONSOLE_SEO_RUNBOOK.md) · Auditorías: [`MAPS_LOCATION_AUDIT.md`](../audits/MAPS_LOCATION_AUDIT.md) · [`SEO_TECHNICAL_AUDIT.md`](../audits/SEO_TECHNICAL_AUDIT.md)
 
@@ -193,15 +295,16 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 - [x] Redirect productivo app → Getnet hosted checkout (VPS) — [GETNET_WEBCHECKOUT_VPS_REDIRECT_SMOKE.md](../payments/GETNET_WEBCHECKOUT_VPS_REDIRECT_SMOKE.md).
 - [x] Webhook payload Web Checkout — acepta `payment.result.status` (`Authorized`/`Denied`); lookup `payment_intent_id` + `order_id`; commit `ed0cc3e` — [GETNET_WEBHOOK.md](../payments/GETNET_WEBHOOK.md).
 - [x] Webhook Portal Getnet — URL callback + Basic Auth configurados (`.env` + portal).
+- [x] Prueba de pago VPS — webhook **recibido** en API; rechazado por schema pre-`ed0cc3e` (`invalid_payload: status Required`).
 - [ ] Deploy VPS con `ed0cc3e` (fix webhook payload).
 - [ ] Re-prueba pago mínimo autorizado + webhook `Authorized` procesado + emisión tickets automática.
 
 ## Getnet Web Checkout Redirect — estado VPS
 
-- Rama: `feat/v1-s03-api-foundation` (`ed0cc3e` último fix webhook).
+- Rama: `feat/v1-s03-api-foundation` (`ed0cc3e` fix webhook; docs `9602fe9`).
 - `main` sin cambios.
 - Redirect a Getnet hosted checkout: OK.
-- Webhook llegó en prueba de pago pero falló schema (status en raíz) — **fix en repo**.
+- Webhook portal configurado; prueba de pago: webhook **llegó** pero VPS previo a `ed0cc3e` lo rechazó (`invalid_payload`).
 - Getnet envía estado en `payment.result.status`; no usar solo `status` raíz.
 - `Authorized` → aprobado → `OrderFulfillmentService` vía reconciliación.
 - Pendiente: deploy fix en VPS y cerrar ciclo pago + tickets.
@@ -583,4 +686,8 @@ _(Trending con `viewCount`: ver ítem Slice 2 arriba en § K.)_
 | `docs/audits/V3_1_STAGE_7_MULTI_DATE_EVENTS_CLOSING.md` | Cierre V3.1 Etapa 7 — eventos multi-fecha (7.1–7.10) |
 | `docs/audits/V3_1_STAGE_5_SCANNER_ACCOUNTS_SMOKE.md` | Smoke ownership `ScannerAccount` |
 | `docs/audits/V3_1_STAGE_5_SCANNER_USERS_SMOKE.md` | Smoke gestión usuarios scanner portales |
+| `docs/audits/V3_1_STAGE_16_BANNERS_RENDERING_CLOSING.md` | Etapa 16 — banners editoriales sin reemplazar publicaciones |
+| `docs/audits/V3_1_STAGE_16_EXPLORE_CITY_FILTER_CLOSING.md` | Etapa 16 — filtro ciudad en Explore (navbar sin ciudad) |
+| `docs/audits/GEO_ADDRESS_MAP_PIN_CLOSING.md` | Etapa GEO — geocoding backend + AddressMapPicker |
+| `docs/audits/GASTRO_DISCOUNTS_QR_COURTESY_CLOSING.md` | Gastro descuentos QR, cortesías, Mi cuenta |
 

@@ -59,7 +59,7 @@ yo-te-invito-v0.1/
 
 - Home, explore, category detail pages, checkout (demo), tickets, referrers directory, referral redirect `/r/[code]`.
 - **Legales:** `/legal/[slug]` (documentos publicados); footer con enlaces; aceptación en registro/checkout/portales — ver §5d.
-- **Navbar V2 (2026-05):** navegación responsive modular (drawer mobile, selector ciudad, carro con badge, menú usuario simplificado, portales con sidebar/mobile nav). Auditoría: `docs/audits/NAVBAR_RESPONSIVE_AUDIT.md`. Usuario maestro: sidebar unificado multi-portal (`MASTER_USER_EMAIL`).
+- **Navbar V2 (2026-05):** navegación responsive modular (drawer mobile, carro con badge, menú usuario simplificado, portales con sidebar/mobile nav). **Sin selector de ciudad desde 2026-06-15** — filtro ciudad en `/explore` (`ExploreCityFilter`). Auditoría: `docs/audits/NAVBAR_RESPONSIVE_AUDIT.md`, `V3_1_STAGE_16_EXPLORE_CITY_FILTER_CLOSING.md`.
 - **Footer público V2 (2026-05-24):** pie modular dark premium; variantes por ruta; contacto vía `GET /public/platform-config`; oculto en portales. Auditoría: `docs/audits/PUBLIC_FOOTER_CLOSING_AUDIT.md`.
 
 ### Rentals (Equipos y Rentals) — V2 cerrado (checklist)
@@ -215,6 +215,10 @@ Guías: `docs/guides/README.md`, `DEVELOPER_SCRIPTS_GUIDE.md`, `SMOKE_TESTS_GUID
 **Getnet Web Checkout Redirect (2026-06):** `feat/v1-s03-api-foundation` en VPS; redirect OK; webhook portal configurado; fix payload `payment.result.status` (`ed0cc3e`); pendiente deploy VPS + re-prueba pago/tickets; `main` sin merge. Ver [GETNET_WEBCHECKOUT_VPS_REDIRECT_SMOKE.md](../payments/GETNET_WEBCHECKOUT_VPS_REDIRECT_SMOKE.md), [GETNET_WEBHOOK.md](../payments/GETNET_WEBHOOK.md).
 
 **Eventos multi-fecha V3.1 (2026-06-10):** Etapa 7 cerrada (slices 7.1–7.10) — modelo `EventOccurrence`, flujo productora→checkout→tickets→scanner; compatibilidad single-date; §25.3 cambio de fecha → Etapa 8. Doc: `docs/audits/V3_1_STAGE_7_MULTI_DATE_EVENTS_CLOSING.md`.
+
+**Hotfix multi-fecha ticket types (2026-06-15):** el formulario productora envía `occurrenceId` al crear tandas en eventos multi-fecha (`ea9c2d7`); backend ya validaba correctamente.
+
+**Jornada 2026-06-15:** scanner operativo, GEO, gastro QR cortesía, banners/ciudad Etapa 16, Getnet webhook fix — ver `CONTEXT_PENDIENTES.md` § Jornada 2026-06-15 y `AI_ENTRYPOINT.md` § Jornada.
 
 ---
 

@@ -72,7 +72,8 @@ ApiClient → HTTP (NEXT_PUBLIC_API_BASE_URL)
 | **ProducersRepo** | ✓ | público + `getMyProfile` / `createMyProfile` / `updateMyProfile*` + reviews agregadas |
 | **producerReviews** / **adminReviewDisputes** | ✓ | comentarios productora + cola admin disputas |
 | **commercialReviews** | ✓ | valoraciones privadas productora↔referidor |
-| **MePortalRepo** | ✓ | dashboard, cart, favorites, expected-events, activity, account, transfer offers, notifications, **push subscriptions** |
+| **MePortalRepo** | ✓ | dashboard, cart, favorites, expected-events, activity, account, transfer offers, notifications, **push subscriptions**, **`GET /me/gastro-discounts`** (QR descuentos) |
+| **GeoRepo** | ✓ | `POST /geo/resolve-address` — geocoding server-side (Etapa GEO 2026-06-15) |
 | **adminDashboard** | ✓ | `GET /admin/dashboard` — KPIs + cola eventos pendientes |
 | **adminEvents** | ✓ | `GET /admin/events` — listado operativo con filtros |
 | **adminAudit** | ✓ | `GET /admin/audit-logs` — auditoría con filtros |
@@ -265,6 +266,7 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`). Shared UI tokens:
 - **Público mobile:** `[Logo] [Carro] [☰]` — links y cuenta en `MobilePublicNavDrawer`; ciudad en drawer.
 - **Menú cuenta:** Inicio según rol (`rolePortalHome.ts` — ej. `/me`, `/admin`, `/producer`); maestro → `/me` + sidebar multi-portal; ADMIN no maestro: solo Panel admin; comprador: tickets + cuenta.
 - **Portales:** sidebar vertical `md+`; mobile `MobilePortalNav` por ruta; sin scroll horizontal en navbar (`overflow-x-clip`, `scroll-padding-top` global).
+- **Navbar (2026-06-15):** sin selector de ciudad — navegación + carrito + menú usuario. Filtro ciudad solo en `/explore` (`ExploreCityFilter`, labels legibles, dedupe). Doc: `V3_1_STAGE_16_EXPLORE_CITY_FILTER_CLOSING.md`.
 - **Dropdown usuario:** panel en portal (`fixed`, `z-[60]`) — no expande altura del navbar.
 - **Usuario maestro** (`packages/shared` `MASTER_USER_EMAIL`): `MasterPortalNavSections` — acordeones Usuario / Productora / Administración / Gastronómico / Hotel / Referido.
 
@@ -391,7 +393,7 @@ Módulo técnico **cerrado**; contenido base en `docs/legal/` importable como bo
 
 Runbook: [`docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTION_RUNBOOK.md). Pendiente: smoke dominio real, legales bootstrap → contenido aprobado.
 
-**Google Maps (prod 2026-06-01):** `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` en VPS; autocomplete + mapa + fallback manual OK. Persistencia `googlePlaceId`/`province` (+ `city` rentals); `lib/maps/public-location.ts` (Ver ubicación); JSON-LD local en `lib/seo/jsonld.ts`. Productoras: solo texto city/country (sin mapa exacto). [`MAPS_LOCATION_AUDIT.md`](../audits/MAPS_LOCATION_AUDIT.md) §18–25.
+**Google Maps (prod 2026-06-01 + GEO 2026-06-15):** `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` en VPS (mapa JS en browser). **Geocoding server-side:** `GOOGLE_GEOCODING_API_KEY` en API — botón «Ubicar en el mapa» vía `AddressMapPicker` → `repos.geo.resolveAddress`. Componentes: `AddressMapPicker`, `EventLocationFields`, `RentalLocationFields` (eventos, gastro, rentals, operadores/excursiones). Pin draggable; fallback OSM si falla Maps JS. Pendiente ops: key Geocoding con IP VPS autorizada. Docs: [`MAPS_LOCATION_AUDIT.md`](../audits/MAPS_LOCATION_AUDIT.md), [`GEO_ADDRESS_MAP_PIN_CLOSING.md`](../audits/GEO_ADDRESS_MAP_PIN_CLOSING.md).
 
 **Storage imágenes (prod 2026-05-31):** GCS `yti-prod-public-assets`; `useGcsImageUpload` en rentals, admin eventos/excursiones, productora, gastro, hotel. [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §17–22. Ops pendiente: data-URL/orphans (no bloqueante).
 

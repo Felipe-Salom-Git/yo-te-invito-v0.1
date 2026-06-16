@@ -8,7 +8,22 @@
 
 ---
 
-## 0. Criterio general de V3.1
+## Jornada 2026-06-15 — estado y retomar
+
+| Tema | Estado código | Pendiente |
+|------|---------------|-----------|
+| Scanner operativo | Cerrado (`0ad9564`…`84707cd`) | QA puerta real/mobile |
+| Multi-fecha ticket types | Corregido (`ea9c2d7`) | QA productora |
+| Banners editoriales | Fix (`ae971ba`) | **QA prod** — ver §16.1 |
+| Ciudad → Explore | Implementado (`fda9bc6`) | QA `/explore?city=` |
+| GEO Maps + pin | Implementado (`7d21279`) | VPS key + IPs Google |
+| Gastro QR/cortesías | Implementado (`58e3704`) | Deploy + QA |
+| Getnet webhook | Fix (`ed0cc3e`) | Deploy VPS + pago real |
+| Hard delete Admin | Postergado | — |
+
+Contexto detallado: `docs/context/CONTEXT_PENDIENTES.md` § Jornada 2026-06-15.
+
+---
 
 - [ ] Mantener estética dark premium de Yo Te Invito.
 - [ ] Mantener verde como acento principal.
@@ -639,7 +654,7 @@
 - [ ] Revisar menú de categorías superior.
 - [ ] Evitar duplicación con cards inferiores.
 - [x] Evaluar buscador compacto en navbar/header — fase 1 en home/explore; navbar pendiente.
-- [ ] Revisar banners desde Admin.
+- [ ] Revisar banners desde Admin — **fix código 2026-06-15** (`V3_1_STAGE_16_BANNERS_RENDERING_CLOSING.md`); pendiente QA manual prod.
 - [ ] Probar nuevas cards editoriales.
 
 ---

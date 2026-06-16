@@ -21,7 +21,7 @@ Detalle histórico demo: [guides/DEMO_REMOVAL.md](../guides/DEMO_REMOVAL.md). Po
 
 ## Getnet Web Checkout Redirect — estado actual
 
-- **Rama activa:** `feat/v1-s03-api-foundation` (desplegada en VPS; último fix webhook: `ed0cc3e`).
+- **Rama activa:** `feat/v1-s03-api-foundation` (desplegada en VPS; último fix código: `ed0cc3e`; docs contexto: `9602fe9`).
 - **`main`:** sin cambios.
 - **`development`:** descartada y eliminada — no mergear spikes ni commits.
 - **V1:** Redirect (`redirect_url`); iFrame/Lightbox fuera de V1.
@@ -31,6 +31,25 @@ Detalle histórico demo: [guides/DEMO_REMOVAL.md](../guides/DEMO_REMOVAL.md). Po
 - **Pendiente operativo:** deploy `ed0cc3e` en VPS → re-probar pago mínimo → confirmar `Authorized` procesado + tickets automáticos.
 - **Fulfillment:** `OrderFulfillmentService` vía `GetnetReconciliationService`; no emitir tickets fuera de ahí.
 - **Handoff:** [NEXT_CHAT_GETNET_WEBCHECKOUT_HANDOFF.md](./NEXT_CHAT_GETNET_WEBCHECKOUT_HANDOFF.md) · cierre [GETNET_WEBCHECKOUT_REDIRECT_CLOSING.md](../payments/GETNET_WEBCHECKOUT_REDIRECT_CLOSING.md).
+
+---
+
+## Jornada 2026-06-15 — resumen operativo
+
+Rama activa: `feat/v1-s03-api-foundation` (último push documental: ver `git log`).
+
+| Bloque | Estado | Referencia |
+|--------|--------|------------|
+| **Scanner PWA operativo** | Cerrado funcionalmente; QA extendida en evento real/mobile opcional | Commits `0ad9564`…`cbc4866`, `84707cd`; Etapas 5–6 previas |
+| **Multi-fecha / ticket types** | Corregido — formulario envía `occurrenceId` | `ea9c2d7` |
+| **Banners editoriales** | Fix código pusheado; **QA manual prod pendiente** si persiste reemplazo | `d48741c`–`ae971ba`; `V3_1_STAGE_16_BANNERS_RENDERING_CLOSING.md` |
+| **Ciudad / Explore** | Selector sacado del navbar; filtro en `/explore` | `fda9bc6`; `V3_1_STAGE_16_EXPLORE_CITY_FILTER_CLOSING.md` |
+| **GEO dirección → pin** | Código + push OK; **deploy VPS + Google Geocoding key** pendiente | `5932f3b`–`7d21279`; `GEO_ADDRESS_MAP_PIN_CLOSING.md` |
+| **Gastro descuentos QR / cortesías** | Código + push OK; deploy + QA pendiente | `601c7e4`–`58e3704`; `GASTRO_DISCOUNTS_QR_COURTESY_CLOSING.md` |
+| **Getnet webhook** | Fix payload en código; deploy VPS + re-prueba pago pendiente | `ed0cc3e` |
+| **Hard delete Admin** | Postergado | — |
+
+Detalle y pendientes priorizados: **`CONTEXT_PENDIENTES.md` § Jornada 2026-06-15**.
 
 ---
 
@@ -77,12 +96,24 @@ Controllers: HTTP + Zod only. Services: business logic. Prisma: persistence only
 | **`docs/audits/PUBLIC_FOOTER_SMOKE.md`** | Smoke / QA footer |
 | **`docs/audits/PUBLIC_FOOTER_CLOSING_AUDIT.md`** | Auditoría de cierre footer |
 | **`docs/audits/ADMIN_GASTRO_LOCATIONS_AUDIT.md`** | Admin Gastro Locations — bloque cerrado (CRUD admin + smoke Slice 5) |
+| **`docs/audits/GEO_ADDRESS_MAP_PIN_CLOSING.md`** | Etapa GEO — geocoding + pin editable |
+| **`docs/audits/GASTRO_DISCOUNTS_QR_COURTESY_CLOSING.md`** | Gastro descuentos QR y cortesías |
+| **`docs/audits/V3_1_STAGE_16_BANNERS_RENDERING_CLOSING.md`** | Banners editoriales sin reemplazar publicaciones |
+| **`docs/audits/V3_1_STAGE_16_EXPLORE_CITY_FILTER_CLOSING.md`** | Filtro ciudad en Explore |
 | **`CONTEXT_PENDIENTES.md`** | Checkbox backlog — mark `[x]` when done |
 | **`NEXT_CHAT_GETNET_WEBCHECKOUT_HANDOFF.md`** | Handoff Getnet Web Checkout Redirect |
 | **`docs/payments/GETNET_WEBCHECKOUT_REDIRECT_CLOSING.md`** | Cierre slice Redirect |
 | **`docs/legal/LEGAL_ADMIN_MODULE.md`** | Legal Admin — modelos, endpoints, flujos, staging (módulo cerrado 2026-05-24) |
 | **`docs/onboarding/`** | Registro V2 por perfil — wizard, schemas, legales signup, slices 12.5–12.6 |
 | **`FRONTEND_DEMO_NOTES.md`** | Legacy demo mapping (not current persistence) |
+
+**V3.1 Etapa 16 — Banners + ciudad (2026-06-15):** hotfix render banners editoriales sin reemplazar publicaciones (`V3_1_STAGE_16_BANNERS_RENDERING_CLOSING.md`); filtro ciudad movido a Explore (`V3_1_STAGE_16_EXPLORE_CITY_FILTER_CLOSING.md`). QA manual prod pendiente banners.
+
+**Etapa GEO — dirección a Maps + pin editable (2026-06-15):** `POST /geo/resolve-address`, `AddressMapPicker`, formularios eventos/gastro/rentals/excursiones. Doc: `docs/audits/GEO_ADDRESS_MAP_PIN_CLOSING.md`. Pendiente: `GOOGLE_GEOCODING_API_KEY` en VPS + IPs autorizadas en Google Cloud.
+
+**Gastro descuentos QR cortesía (2026-06-15):** claims, emails QR, cortesías manuales/seguidores, `/me/descuentos`, scanner. Doc: `docs/audits/GASTRO_DISCOUNTS_QR_COURTESY_CLOSING.md`.
+
+**Scanner operativo jornada (2026-06-15):** login, PDF fix (`pdfkit` CJS), targets sin `/public/events/:id`, eventos vencidos ocultos (corte 1 AM AR), escaneo manual por botón, modal sin auto-cierre, setup vs operación, listado entradas + hora escaneo. Cerrado funcionalmente; QA puerta real opcional.
 
 **Portal productor:** `PROJECT_CONTEXT.md`, `BACKEND_CONTEXT.md`, `FRONTEND_CONTEXT.md`, `CONTEXT_PENDIENTES.md` § K (slices 1–10 cerrados en checklist V2; slug auto en perfil; notificaciones `EVENT_*_BY_ADMIN`).
 
