@@ -191,7 +191,7 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 - [x] Web Checkout contrato producción (OAuth body, `GETNET_GLOBAL_*` fallback, payload `customer` + `physical_goods`, `merchant_id` opcional) — [GETNET_WEBCHECKOUT_REDIRECT_IMPLEMENTATION.md](../payments/GETNET_WEBCHECKOUT_REDIRECT_IMPLEMENTATION.md).
 - [x] Smoke productivo payment-intent local (`GETNET_WEBCHECKOUT_CONFIRM_PROD=yes`, amount 50000) — [GETNET_PRODUCTION_SMOKE.md](../payments/GETNET_PRODUCTION_SMOKE.md).
 - [x] Redirect productivo app → Getnet hosted checkout (VPS, sin pago real) — [GETNET_WEBCHECKOUT_VPS_REDIRECT_SMOKE.md](../payments/GETNET_WEBCHECKOUT_VPS_REDIRECT_SMOKE.md).
-- [ ] Webhook Basic Auth registrado en Portal Getnet (mismo user/password que API).
+- [ ] Webhook Basic Auth registrado en Portal Getnet — **URL configurada**; validar procesamiento payload Web Checkout (`payment.result.status=Authorized`) en VPS tras deploy.
 - [ ] Pago mínimo autorizado + webhook recibido + emisión tickets automática.
 
 ## Getnet Web Checkout Redirect — VPS smoke OK

@@ -192,6 +192,10 @@ Estado (deploy controlado `feat/v1-s03-api-foundation` en VPS):
 
 Detalle: [GETNET_WEBCHECKOUT_VPS_REDIRECT_SMOKE.md](./GETNET_WEBCHECKOUT_VPS_REDIRECT_SMOKE.md).
 
+## Webhook Web Checkout
+
+Getnet Web Checkout envía estado en `payment.result.status` (ej. `Authorized`, `Denied`). No exigir `status` en raíz. `Authorized` → aprobado vía `GetnetReconciliationService` → `OrderFulfillmentService`. Ver [GETNET_WEBHOOK.md](./GETNET_WEBHOOK.md).
+
 ---
 
 ## 11. Código

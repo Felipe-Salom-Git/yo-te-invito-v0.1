@@ -14,9 +14,12 @@ import { GetnetReconciliationService } from './getnet-reconciliation.service';
 import { loadGetnetWebhookConfig } from './providers/getnet/getnet-webhook.config';
 import {
   appendWebhookEventMetadata,
+  appendWebCheckoutWebhookMetadata,
   buildWebhookIdempotencyKey,
   extractGetnetExternalPaymentId,
+  extractGetnetPaymentLookupKeys,
   extractGetnetRemoteStatus,
+  extractGetnetWebCheckoutWebhookInfo,
   extractGetnetWebhookEventId,
   hashWebhookPayload,
   isDuplicateWebhookEvent,
@@ -56,14 +59,16 @@ export class GetnetWebhookService {
     }
 
     const body = parsed.data;
+    const lookupKeys = extractGetnetPaymentLookupKeys(body);
     const externalPaymentId = extractGetnetExternalPaymentId(body);
     const remoteStatus = extractGetnetRemoteStatus(body);
+    const webCheckoutInfo = extractGetnetWebCheckoutWebhookInfo(body);
 
     if (!externalPaymentId || !remoteStatus) {
       return {
         ok: false,
         outcome: 'invalid_payload',
-        message: 'Missing externalPaymentId or status',
+        message: 'Missing payment reference or status',
       };
     }
 
@@ -79,11 +84,11 @@ export class GetnetWebhookService {
       payloadHash,
     });
 
-    const payment = await this.findGetnetPayment(externalPaymentId, body.tenantId);
+    const payment = await this.findGetnetPayment(lookupKeys, body.tenantId);
 
     if (!payment) {
       this.logger.warn(
-        `Getnet webhook: payment not found for externalId=${externalPaymentId}`,
+        `Getnet webhook: payment not found paymentIntentId=${lookupKeys.paymentIntentId ?? 'n/a'} orderId=${lookupKeys.orderId ?? 'n/a'} resultPaymentId=${lookupKeys.resultPaymentId ?? 'n/a'}`,
       );
       this.operationalAlerts.enqueueCriticalAlert({
         alertTitle: 'Getnet webhook sin pago local',
@@ -129,6 +134,11 @@ export class GetnetWebhookService {
         processedOutcome,
         payloadHash,
         idempotencyKey,
+      }, {
+        webCheckoutInfo,
+        remoteStatus,
+        processedOutcome,
+        sanitizedPayload: sanitized,
       });
 
       return {
@@ -240,7 +250,7 @@ export class GetnetWebhookService {
   }
 
   private async findGetnetPayment(
-    externalPaymentId: string,
+    keys: ReturnType<typeof extractGetnetPaymentLookupKeys>,
     tenantId?: string,
   ) {
     const baseWhere = {
@@ -248,21 +258,45 @@ export class GetnetWebhookService {
       ...(tenantId ? { tenantId } : {}),
     };
 
-    const direct = await this.prisma.payment.findFirst({
-      where: {
-        ...baseWhere,
-        OR: [
-          { externalReference: externalPaymentId },
-          { externalPaymentId: externalPaymentId },
-        ],
-      },
-      select: {
-        id: true,
-        orderId: true,
-        metadata: true,
-      },
-    });
-    if (direct) return direct;
+    const lookupIds = [
+      keys.paymentIntentId,
+      keys.resultPaymentId,
+      keys.legacyExternalId,
+    ].filter((id): id is string => !!id);
+
+    for (const id of lookupIds) {
+      const direct = await this.prisma.payment.findFirst({
+        where: {
+          ...baseWhere,
+          OR: [
+            { externalReference: id },
+            { externalPaymentId: id },
+          ],
+        },
+        select: {
+          id: true,
+          orderId: true,
+          metadata: true,
+        },
+      });
+      if (direct) return direct;
+    }
+
+    if (keys.orderId) {
+      const byOrder = await this.prisma.payment.findFirst({
+        where: {
+          ...baseWhere,
+          orderId: keys.orderId,
+        },
+        select: {
+          id: true,
+          orderId: true,
+          metadata: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+      if (byOrder) return byOrder;
+    }
 
     const candidates = await this.prisma.payment.findMany({
       where: baseWhere,
@@ -275,25 +309,50 @@ export class GetnetWebhookService {
       orderBy: { createdAt: 'desc' },
     });
 
-    return (
-      candidates.find((p) => {
-        if (!p.metadata || typeof p.metadata !== 'object') return false;
-        const meta = p.metadata as Record<string, unknown>;
-        return meta.paymentIntentId === externalPaymentId;
-      }) ?? null
-    );
+    const metaMatch = candidates.find((p) => {
+      if (!p.metadata || typeof p.metadata !== 'object') return false;
+      const meta = p.metadata as Record<string, unknown>;
+      return lookupIds.some((id) => meta.paymentIntentId === id);
+    });
+    if (metaMatch) return metaMatch;
+
+    if (keys.orderId) {
+      return (
+        candidates.find((p) => p.orderId === keys.orderId) ?? null
+      );
+    }
+
+    return null;
   }
 
   private async persistWebhookEvent(
     paymentId: string,
     existingMetadata: unknown,
     event: StoredWebhookEvent,
+    webCheckout?: {
+      webCheckoutInfo: ReturnType<typeof extractGetnetWebCheckoutWebhookInfo>;
+      remoteStatus: string;
+      processedOutcome: string;
+      sanitizedPayload: Record<string, unknown>;
+    },
   ): Promise<void> {
-    const nextMeta = appendWebhookEventMetadata(
+    let nextMeta = appendWebhookEventMetadata(
       existingMetadata,
       event,
       event.idempotencyKey,
     );
+    if (
+      webCheckout?.webCheckoutInfo.webCheckoutStatusRaw ||
+      webCheckout?.webCheckoutInfo.paymentIntentId ||
+      webCheckout?.webCheckoutInfo.checkoutId
+    ) {
+      nextMeta = appendWebCheckoutWebhookMetadata(nextMeta, {
+        info: webCheckout.webCheckoutInfo,
+        remoteStatus: webCheckout.remoteStatus,
+        processedOutcome: webCheckout.processedOutcome,
+        sanitizedPayload: webCheckout.sanitizedPayload,
+      });
+    }
     await this.prisma.payment.update({
       where: { id: paymentId },
       data: { metadata: nextMeta as Prisma.InputJsonValue },

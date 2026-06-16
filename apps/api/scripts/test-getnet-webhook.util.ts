@@ -3,15 +3,21 @@
  * Run: pnpm --filter api run test:getnet-webhook
  */
 
+import { getnetWebhookBodySchema } from '@yo-te-invito/shared';
 import {
+  appendWebCheckoutWebhookMetadata,
   buildWebhookIdempotencyKey,
   isDuplicateWebhookEvent,
   mapGetnetWebhookStatusToLocal,
+  normalizeGetnetWebhookStatus,
   shouldApplyPaymentStatusUpdate,
   verifyWebhookSecret,
   verifyWebhookBasicAuth,
   appendWebhookEventMetadata,
   extractGetnetExternalPaymentId,
+  extractGetnetPaymentLookupKeys,
+  extractGetnetRemoteStatus,
+  extractGetnetWebCheckoutWebhookInfo,
   hashWebhookPayload,
 } from '../src/modules/public-payments/providers/getnet/getnet-webhook.util';
 
@@ -24,6 +30,18 @@ function assert(cond: boolean, msg: string) {
 
 const approved = mapGetnetWebhookStatusToLocal('APPROVED');
 assert(approved.kind === 'mapped' && approved.localStatus === 'APPROVED', 'APPROVED maps');
+
+const authorized = mapGetnetWebhookStatusToLocal('AUTHORIZED');
+assert(
+  authorized.kind === 'mapped' && authorized.localStatus === 'APPROVED',
+  'AUTHORIZED maps to APPROVED',
+);
+
+const denied = mapGetnetWebhookStatusToLocal('DENIED');
+assert(
+  denied.kind === 'mapped' && denied.localStatus === 'REJECTED',
+  'DENIED maps to REJECTED',
+);
 
 const pending = mapGetnetWebhookStatusToLocal('PENDING');
 assert(pending.kind === 'mapped' && pending.localStatus === 'PENDING', 'PENDING maps');
@@ -82,15 +100,86 @@ assert(
     status: 'APPROVED',
     uuid: 'uuid-123',
   }) === 'uuid-123',
-  'extract uuid',
+  'extract uuid legacy',
 );
 
 assert(
   extractGetnetExternalPaymentId({
-    status: 'APPROVED',
     payment_intent_id: 'pi_abc',
+    payment: { result: { status: 'Authorized', payment_id: 'pay-xyz' } },
   }) === 'pi_abc',
-  'extract payment_intent_id',
+  'extract payment_intent_id over result payment_id',
 );
+
+const webCheckoutAuthorized = {
+  payment_intent_id: 'uuid-intent',
+  checkout_id: 'checkout-1',
+  order_id: 'order-id',
+  payment: {
+    amount: 50000,
+    currency: 'ARS',
+    method: 'credit',
+    result: {
+      payment_id: 'payment-id',
+      status: 'Authorized',
+      authorization_code: '999999',
+    },
+  },
+};
+
+const parsedAuthorized = getnetWebhookBodySchema.safeParse(webCheckoutAuthorized);
+assert(parsedAuthorized.success, 'Web Checkout Authorized schema parses');
+
+assert(
+  normalizeGetnetWebhookStatus(webCheckoutAuthorized) === 'AUTHORIZED',
+  'normalize Authorized from payment.result.status',
+);
+assert(
+  extractGetnetRemoteStatus(parsedAuthorized.data!) === 'AUTHORIZED',
+  'extractGetnetRemoteStatus Web Checkout',
+);
+
+const keys = extractGetnetPaymentLookupKeys(parsedAuthorized.data!);
+assert(keys.paymentIntentId === 'uuid-intent', 'lookup paymentIntentId');
+assert(keys.orderId === 'order-id', 'lookup orderId');
+assert(keys.resultPaymentId === 'payment-id', 'lookup result payment_id');
+
+const info = extractGetnetWebCheckoutWebhookInfo(parsedAuthorized.data!);
+assert(info.authorizationCode === '999999', 'authorization code');
+assert(info.paymentMethod === 'credit', 'payment method');
+
+const wcMeta = appendWebCheckoutWebhookMetadata({}, {
+  info,
+  remoteStatus: 'AUTHORIZED',
+  processedOutcome: 'reconcile:APPROVED',
+});
+assert(
+  wcMeta.lastWebCheckoutWebhook?.webCheckoutStatusRaw === 'Authorized',
+  'webCheckout metadata stored',
+);
+
+const webCheckoutDenied = {
+  payment_intent_id: 'uuid-intent-2',
+  order_id: 'order-2',
+  payment: {
+    result: { payment_id: 'pay-denied', status: 'Denied', return_message: 'Declined' },
+  },
+};
+
+const parsedDenied = getnetWebhookBodySchema.safeParse(webCheckoutDenied);
+assert(parsedDenied.success, 'Web Checkout Denied schema parses');
+const deniedStatus = mapGetnetWebhookStatusToLocal(
+  extractGetnetRemoteStatus(parsedDenied.data!),
+);
+assert(
+  deniedStatus.kind === 'mapped' && deniedStatus.localStatus === 'REJECTED',
+  'Denied webhook maps to REJECTED',
+);
+
+const missingStatus = getnetWebhookBodySchema.safeParse({
+  payment_intent_id: 'pi-only',
+  order_id: 'ord',
+});
+assert(!missingStatus.success, 'rejects payload without status');
 
 console.log('OK: getnet-webhook util tests passed');

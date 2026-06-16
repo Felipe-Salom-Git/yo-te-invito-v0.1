@@ -41,6 +41,14 @@ export function mapGetnetWebhookStatusToLocal(
     return { kind: 'mapped', localStatus: 'CANCELLED' };
   }
 
+  if (normalized === 'AUTHORIZED') {
+    return { kind: 'mapped', localStatus: 'APPROVED' };
+  }
+
+  if (normalized === 'DENIED') {
+    return { kind: 'mapped', localStatus: 'REJECTED' };
+  }
+
   const known = new Set([
     'SUCCESS',
     'APPROVED',
@@ -58,32 +66,126 @@ export function mapGetnetWebhookStatusToLocal(
   return { kind: 'mapped', localStatus: mapGetnetStatusToLocal(normalized as GetnetRemoteStatus) };
 }
 
+export function normalizeGetnetWebhookStatus(
+  payload: GetnetWebhookBody | Record<string, unknown>,
+): string | null {
+  const body = payload as GetnetWebhookBody & {
+    payment?: { result?: { status?: string } };
+  };
+  const root = body.status?.trim() || body.paymentStatus?.trim();
+  if (root) return root.toUpperCase();
+
+  const nested = body.payment?.result?.status?.trim();
+  if (nested) return nested.toUpperCase();
+
+  return null;
+}
+
+export type GetnetPaymentLookupKeys = {
+  paymentIntentId: string | null;
+  orderId: string | null;
+  resultPaymentId: string | null;
+  legacyExternalId: string | null;
+};
+
+export function extractGetnetPaymentLookupKeys(
+  body: GetnetWebhookBody,
+): GetnetPaymentLookupKeys {
+  const raw = body as Record<string, unknown>;
+  const payment = raw.payment as Record<string, unknown> | undefined;
+  const result = payment?.result as Record<string, unknown> | undefined;
+
+  const paymentIntentId =
+    (typeof raw.payment_intent_id === 'string' && raw.payment_intent_id.trim()) ||
+    (typeof raw.paymentIntentId === 'string' && raw.paymentIntentId.trim()) ||
+    null;
+
+  const resultPaymentId =
+    (typeof result?.payment_id === 'string' && result.payment_id.trim()) || null;
+
+  const orderId =
+    (typeof raw.order_id === 'string' && raw.order_id.trim()) ||
+    body.orderId?.trim() ||
+    null;
+
+  const legacyExternalId =
+    body.externalPaymentId?.trim() ||
+    body.externalReference?.trim() ||
+    body.uuid?.trim() ||
+    null;
+
+  return { paymentIntentId, orderId, resultPaymentId, legacyExternalId };
+}
+
+export type WebCheckoutWebhookInfo = {
+  paymentIntentId: string | null;
+  checkoutId: string | null;
+  externalPaymentId: string | null;
+  authorizationCode: string | null;
+  webCheckoutStatusRaw: string | null;
+  paymentMethod: string | null;
+  installment: unknown;
+  returnMessage: string | null;
+};
+
+export function extractGetnetWebCheckoutWebhookInfo(
+  body: GetnetWebhookBody,
+): WebCheckoutWebhookInfo {
+  const raw = body as Record<string, unknown>;
+  const payment = raw.payment as Record<string, unknown> | undefined;
+  const result = payment?.result as Record<string, unknown> | undefined;
+  const keys = extractGetnetPaymentLookupKeys(body);
+
+  return {
+    paymentIntentId: keys.paymentIntentId,
+    checkoutId:
+      (typeof raw.checkout_id === 'string' && raw.checkout_id.trim()) ||
+      (typeof raw.checkoutId === 'string' && raw.checkoutId.trim()) ||
+      null,
+    externalPaymentId: keys.resultPaymentId,
+    authorizationCode:
+      (typeof result?.authorization_code === 'string' &&
+        result.authorization_code.trim()) ||
+      null,
+    webCheckoutStatusRaw:
+      (typeof result?.status === 'string' && result.status.trim()) || null,
+    paymentMethod:
+      (typeof payment?.method === 'string' && payment.method.trim()) || null,
+    installment: payment?.installment,
+    returnMessage:
+      (typeof result?.return_message === 'string' && result.return_message.trim()) ||
+      null,
+  };
+}
+
 export function extractGetnetWebhookEventId(body: GetnetWebhookBody): string | null {
-  const id = body.eventId?.trim() || body.id?.trim();
+  const raw = body as Record<string, unknown>;
+  const info = extractGetnetWebCheckoutWebhookInfo(body);
+  const id =
+    body.eventId?.trim() ||
+    body.id?.trim() ||
+    info.checkoutId ||
+    info.externalPaymentId ||
+    info.paymentIntentId ||
+    null;
   return id || null;
 }
 
 export function extractGetnetExternalPaymentId(
   body: GetnetWebhookBody,
 ): string | null {
-  const raw = body as Record<string, unknown>;
-  const paymentIntentId =
-    (typeof raw.paymentIntentId === 'string' && raw.paymentIntentId.trim()) ||
-    (typeof raw.payment_intent_id === 'string' && raw.payment_intent_id.trim()) ||
-    null;
-
+  const keys = extractGetnetPaymentLookupKeys(body);
   return (
-    paymentIntentId ||
-    body.externalPaymentId?.trim() ||
-    body.externalReference?.trim() ||
-    body.uuid?.trim() ||
-    body.orderId?.trim() ||
+    keys.paymentIntentId ||
+    keys.resultPaymentId ||
+    keys.legacyExternalId ||
+    keys.orderId ||
     null
   );
 }
 
 export function extractGetnetRemoteStatus(body: GetnetWebhookBody): string {
-  return (body.status?.trim() || body.paymentStatus?.trim() || '').toUpperCase();
+  return normalizeGetnetWebhookStatus(body) ?? '';
 }
 
 /** SHA-256 hex of canonical JSON (no PAN/CVV — caller must not pass card fields). */
@@ -144,6 +246,29 @@ export type PaymentWebhookMetadata = {
   getnetWebhookEvents?: StoredWebhookEvent[];
   processedWebhookEventIds?: string[];
   orderConfirmationEmailSent?: boolean;
+  webCheckoutWebhookEvents?: WebCheckoutWebhookStoredEvent[];
+  lastWebCheckoutWebhook?: WebCheckoutWebhookStoredEvent;
+  paymentIntentId?: string;
+  checkoutId?: string;
+  externalPaymentId?: string;
+  authorizationCode?: string;
+  webCheckoutStatusRaw?: string;
+  paymentMethod?: string;
+  installment?: unknown;
+};
+
+export type WebCheckoutWebhookStoredEvent = {
+  receivedAt: string;
+  paymentIntentId?: string;
+  checkoutId?: string;
+  externalPaymentId?: string;
+  authorizationCode?: string;
+  webCheckoutStatusRaw?: string;
+  paymentMethod?: string;
+  installment?: unknown;
+  returnMessage?: string;
+  remoteStatus: string;
+  processedOutcome?: string;
 };
 
 export function readPaymentWebhookMetadata(metadata: unknown): PaymentWebhookMetadata {
@@ -188,6 +313,55 @@ export function appendWebhookEventMetadata(
     ...base,
     getnetWebhookEvents: events,
     processedWebhookEventIds: [...new Set(processedIds)],
+  };
+}
+
+export function appendWebCheckoutWebhookMetadata(
+  existing: unknown,
+  input: {
+    info: WebCheckoutWebhookInfo;
+    remoteStatus: string;
+    processedOutcome?: string;
+    sanitizedPayload?: Record<string, unknown>;
+  },
+  maxEvents = 30,
+): PaymentWebhookMetadata {
+  const base = readPaymentWebhookMetadata(existing);
+  const event: WebCheckoutWebhookStoredEvent = {
+    receivedAt: new Date().toISOString(),
+    paymentIntentId: input.info.paymentIntentId ?? undefined,
+    checkoutId: input.info.checkoutId ?? undefined,
+    externalPaymentId: input.info.externalPaymentId ?? undefined,
+    authorizationCode: input.info.authorizationCode ?? undefined,
+    webCheckoutStatusRaw: input.info.webCheckoutStatusRaw ?? undefined,
+    paymentMethod: input.info.paymentMethod ?? undefined,
+    installment: input.info.installment,
+    returnMessage: input.info.returnMessage ?? undefined,
+    remoteStatus: input.remoteStatus,
+    processedOutcome: input.processedOutcome,
+  };
+  const events = [...(base.webCheckoutWebhookEvents ?? []), event].slice(-maxEvents);
+  return {
+    ...base,
+    webCheckoutWebhookEvents: events,
+    lastWebCheckoutWebhook: event,
+    ...(input.info.paymentIntentId
+      ? { paymentIntentId: input.info.paymentIntentId }
+      : {}),
+    ...(input.info.checkoutId ? { checkoutId: input.info.checkoutId } : {}),
+    ...(input.info.externalPaymentId
+      ? { externalPaymentId: input.info.externalPaymentId }
+      : {}),
+    ...(input.info.authorizationCode
+      ? { authorizationCode: input.info.authorizationCode }
+      : {}),
+    ...(input.info.webCheckoutStatusRaw
+      ? { webCheckoutStatusRaw: input.info.webCheckoutStatusRaw }
+      : {}),
+    ...(input.info.paymentMethod ? { paymentMethod: input.info.paymentMethod } : {}),
+    ...(input.info.installment !== undefined
+      ? { installment: input.info.installment }
+      : {}),
   };
 }
 

@@ -66,7 +66,7 @@ Estado (VPS, rama `feat/v1-s03-api-foundation`):
 | Pago real | No ejecutado |
 | Webhook Portal Getnet | Pendiente |
 
-**Riesgo:** no pagar hasta registrar webhook en portal. Ver [GETNET_WEBCHECKOUT_VPS_REDIRECT_SMOKE.md](./GETNET_WEBCHECKOUT_VPS_REDIRECT_SMOKE.md).
+**Riesgo:** no pagar hasta registrar webhook en portal. Tras deploy, validar que webhooks Web Checkout con `payment.result.status` se procesan (no solo `status` raíz). Ver [GETNET_WEBHOOK.md](./GETNET_WEBHOOK.md).
 
 Tests unitarios helpers:
 

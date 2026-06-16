@@ -43,24 +43,71 @@ Cuando Getnet publique firma oficial (HMAC), ajustar `GetnetWebhookService.asser
 
 ## 4. Payload esperado
 
-Schema Zod flexible (`packages/shared/src/schemas/getnet-webhook.ts`):
+Schema Zod (`packages/shared/src/schemas/getnet-webhook.ts`) — **legacy GeoPagos** y **Web Checkout Authorization Data**.
+
+### Legacy (raíz)
 
 ```json
 {
   "eventId": "evt_…",
-  "externalPaymentId": "uuid-getnet-order",
+  "externalPaymentId": "…",
   "status": "APPROVED"
 }
 ```
 
-Alias aceptados:
+Campos reconocidos en raíz:
 
-- `externalPaymentId` | `externalReference` | `uuid` | `orderId` (referencia externa)
 - `eventId` | `id`
+- `externalPaymentId` | `externalReference` | `uuid` | `orderId`
 - `status` | `paymentStatus`
-- `tenantId` (opcional, acota búsqueda)
 
-**No enviar** datos de tarjeta (PAN, CVV). El servicio sanitiza keys conocidas antes de hashear.
+### Web Checkout Redirect (producción validada)
+
+Getnet envía el estado en **`payment.result.status`**, no en la raíz.
+
+```json
+{
+  "payment_intent_id": "uuid",
+  "checkout_id": "…",
+  "order_id": "order-id",
+  "payment": {
+    "method": "credit",
+    "amount": 50000,
+    "currency": "ARS",
+    "result": {
+      "payment_id": "…",
+      "status": "Authorized",
+      "authorization_code": "999999"
+    }
+  }
+}
+```
+
+| Campo | Uso |
+|-------|-----|
+| `payment_intent_id` | Lookup `Payment.externalReference` / `metadata.paymentIntentId` |
+| `order_id` | Lookup `Payment.orderId` |
+| `payment.result.payment_id` | Lookup `externalPaymentId` + metadata |
+| `payment.result.status` | Estado remoto (`Authorized` → aprobado) |
+
+**No usar solo `status` en raíz** para Web Checkout.
+
+Mapeo `payment.result.status`:
+
+| Remoto | Normalizado | `Payment.status` |
+|--------|-------------|------------------|
+| `Authorized` | `AUTHORIZED` | `APPROVED` |
+| `Denied` | `DENIED` | `REJECTED` |
+| `Rejected` | `REJECTED` | `REJECTED` |
+| `Cancelled` / `Canceled` | `CANCELLED` | `CANCELLED` |
+| `Expired` | `EXPIRED` | `CANCELLED` |
+| `Pending` | `PENDING` | `PENDING` |
+
+Helpers: `normalizeGetnetWebhookStatus`, `extractGetnetPaymentLookupKeys`, `extractGetnetWebCheckoutWebhookInfo` en `getnet-webhook.util.ts`.
+
+Metadata Web Checkout (sanitizada, sin PCI): `webCheckoutWebhookEvents[]`, `lastWebCheckoutWebhook`, `paymentIntentId`, `checkoutId`, `authorizationCode`, etc.
+
+`tenantId` opcional en payload acota búsqueda. **No enviar** datos de tarjeta (PAN, CVV). El servicio sanitiza keys conocidas antes de hashear.
 
 ---
 
@@ -70,9 +117,9 @@ Helper: `mapGetnetWebhookStatusToLocal` (reutiliza `mapGetnetStatusToLocal` dond
 
 | Remoto | `Payment.status` | Fulfill |
 |--------|------------------|---------|
-| `SUCCESS`, `APPROVED` | `APPROVED` | Sí |
+| `SUCCESS`, `APPROVED`, `AUTHORIZED` | `APPROVED` | Sí |
 | `PENDING`, `IN_PROGRESS`, `PROCESSING` | `PENDING` | No |
-| `FAILED`, `REJECTED` | `REJECTED` | No |
+| `FAILED`, `REJECTED`, `DENIED` | `REJECTED` | No |
 | `EXPIRED` | `CANCELLED` | No |
 | `CANCELLED`, `CANCELED` | `CANCELLED` | No |
 | `REFUNDED`, `CHARGEBACK` | — | Ignorado (sin reversa de tickets) |
