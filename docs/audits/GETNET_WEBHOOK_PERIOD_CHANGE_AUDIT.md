@@ -348,7 +348,7 @@ Sin cambios en período: customer, product, amount, headers, redirect frontend, 
 2. **Revert `56a9af8` aplicado** (`3e009f4`) — payload payment-intent sin URLs en HTTP; validar en VPS si AF persiste.
 3. **Consultar Getnet** sobre regla AF, `installment-quotes 400` y CORS en `lx/afgi`.
 4. **Reducir reintentos** y usar DNI real en checkout antes de nuevos intentos productivos.
-5. **Reconciliar 3 pagos PENDING aprobados en portal** vía `payments:reconcile-getnet-approved-manual` — ver runbook (órdenes `EXPIRED`).
+5. ~~**Reconciliar 3 pagos PENDING aprobados en portal**~~ — **cerrado** vía `payments:reconcile-getnet-approved-manual` (ver §15).
 
 ---
 
@@ -368,12 +368,12 @@ Tres pagos Web Checkout figuran **aprobados en portal Getnet** pero `Payment.sta
 
 **No.** Web Checkout no tiene poll remoto; el endpoint no pasa `remoteStatusOverride` → `REMOTE_STATUS_UNAVAILABLE`.
 
-### Mecanismo preparado (2026-06-16, sin ejecutar en prod)
+### Mecanismo implementado
 
 | Script | Caso |
 |--------|------|
 | `reconcile:getnet-approved` | `PENDING_PAYMENT` vigente — **no** cumple con `EXPIRED` |
-| `payments:reconcile-getnet-approved-manual` | `PENDING` + `EXPIRED` + 0 tickets — **usar para los 3 pagos** |
+| `payments:reconcile-getnet-approved-manual` | `PENDING`/`APPROVED` + `EXPIRED` + tickets incompletos |
 
 Cambios de dominio:
 
@@ -381,7 +381,43 @@ Cambios de dominio:
 - `OrderFulfillmentService`: `allowExpiredRecovery` — `EXPIRED` → `PAID`, `TicketBatchService.sellDirectFromBatch` (sin reserva previa).
 - Script: `apps/api/scripts/reconcile-getnet-approved-manual.ts` — gate `CONFIRM_GETNET_APPROVED_MANUAL=yes`.
 
-Runbook: [GETNET_MANUAL_RECONCILIATION_RUNBOOK.md](../payments/GETNET_MANUAL_RECONCILIATION_RUNBOOK.md). **No ejecutado** en prod.
+Runbook: [GETNET_MANUAL_RECONCILIATION_RUNBOOK.md](../payments/GETNET_MANUAL_RECONCILIATION_RUNBOOK.md).
+
+---
+
+## 15. Cierre recovery manual Web Checkout (2026-06)
+
+### Resultado productivo
+
+Los 3 pagos afectados por webhook pre-`ed0cc3e` quedaron recuperados:
+
+| Payment | Order | Estado final |
+|---------|-------|--------------|
+| `cmqfvq3he000g4xc0momiekpo` | `cmqfvq0zw000c4xc0tpbs1qjg` | `APPROVED` / `FULFILLED` / `PAID` / 1 ticket |
+| `cmpxsxjhx000t40xb2m3c04mz` | `cmpxsxf44000p40xbc6r458ck` | `APPROVED` / `FULFILLED` / `PAID` / 1 ticket |
+| `cmpxtuix7001d40xb4xk2net3` | `cmpxtuh3y001940xbqom4b7xn` | `APPROVED` / `FULFILLED` / `PAID` / 1 ticket |
+
+### Commits del recovery
+
+| Commit | Descripción |
+|--------|-------------|
+| `ed0cc3e` | Fix webhook — acepta `payment.result.status` |
+| `9e3b406` | Script manual + `allowExpiredRecovery` / `forceExpiredApprovedFulfillment` |
+| `35cb725` | Resume tras fulfillment parcial (`OrderFulfillmentService` DI) |
+| `4707af5` | Fix TDZ `existingTickets` en script CLI |
+
+### Validaciones
+
+- Webhook fix `ed0cc3e`: desplegado; futuros `Authorized`/`Denied` procesables.
+- Recovery manual: probado en prod; incluye resume de estado parcial (`APPROVED` + `EXPIRED` + 0 tickets).
+- Sin SQL manual, inserts directos de tickets ni bypass de dominio.
+
+### Pendiente separado (fuera de este bloque)
+
+- Rechazos antifraude Getnet (`Denied`, `Anti-fraud rule achieved`) en **nuevas** operaciones — revisión con soporte Getnet.
+- Re-prueba pago mínimo autorizado end-to-end con webhook automático post-deploy.
+
+Runbook: [GETNET_MANUAL_RECONCILIATION_RUNBOOK.md](../payments/GETNET_MANUAL_RECONCILIATION_RUNBOOK.md).
 
 ---
 
@@ -409,4 +445,4 @@ docs/context/CONTEXT_PENDIENTES.md
 
 ---
 
-*Documento generado en auditoría read-only. No commitear hasta revisión del responsable.*
+*Documento actualizado con cierre recovery manual (2026-06).*

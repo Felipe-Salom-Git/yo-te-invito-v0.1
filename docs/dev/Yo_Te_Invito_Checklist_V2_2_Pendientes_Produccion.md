@@ -52,6 +52,7 @@
 - [ ] Merge controlado a `main` (solo con instrucción explícita).
 - [ ] Mantener pago demo solo en desarrollo/staging — **política operativa** (botón aún visible en UI dev).
 - [x] Implementar webhooks del proveedor de pago — `POST /public/payments/getnet/webhook`.
+- [x] Reconciliar pagos históricos Web Checkout aprobados en portal con orden `EXPIRED` — script `payments:reconcile-getnet-approved-manual` (3 pagos, prod 2026-06) — [GETNET_MANUAL_RECONCILIATION_RUNBOOK.md](../payments/GETNET_MANUAL_RECONCILIATION_RUNBOOK.md).
 - [x] Reconciliar pagos con órdenes/tickets — `GetnetReconciliationService` + script batch.
 - [x] Asegurar idempotencia ante webhooks repetidos.
 - [x] Evitar doble emisión de tickets ante reintentos o webhooks duplicados — `OrderFulfillmentService`.

@@ -1,7 +1,10 @@
 # Getnet — Reconciliación manual Web Checkout aprobados
 
 **Rama:** `feat/v1-s03-api-foundation`  
-**Caso:** pagos **aprobados/autorizados en portal Getnet** que quedaron `Payment.status = PENDING` en Yo Te Invito porque el webhook falló por schema (`status` raíz requerido vs `payment.result.status`) antes de `ed0cc3e`.
+**Estado:** **cerrado en producción (2026-06)** — 3 pagos recuperados vía script CLI + dominio.  
+**Caso:** pagos **aprobados/autorizados en portal Getnet** que quedaron inconsistentes porque el webhook falló por schema (`status` raíz requerido vs `payment.result.status`) antes de `ed0cc3e`.
+
+**Commits del recovery:** `9e3b406`, `35cb725`, `4707af5` (sobre webhook fix `ed0cc3e`).
 
 ---
 
@@ -60,15 +63,31 @@ Validación local (GETNET + webcheckout + PENDING + order EXPIRED|PENDING_PAYMEN
 
 ---
 
-## 3. Pagos afectados (referencia operativa)
+## 3. Pagos afectados — resultado final (prod)
 
-| Payment local | Order | paymentIntentId |
-|---------------|-------|-----------------|
-| `cmqfvq3he000g4xc0momiekpo` | `cmqfvq0zw000c4xc0tpbs1qjg` | `4e0060d6-db64-43b8-a233-b20393f87c64` |
-| `cmpxtuix7001d40xb4xk2net3` | `cmpxtuh3y001940xbqom4b7xn` | `4eda2db5-5606-4f84-9fb5-8584d58ecead` |
-| `cmpxsxjhx000t40xb2m3c04mz` | `cmpxsxf44000p40xbc6r458ck` | `27985504-01e5-42b5-8421-218d209d1893` |
+| Payment | Order | Estado final confirmado |
+|---------|-------|-------------------------|
+| `cmqfvq3he000g4xc0momiekpo` | `cmqfvq0zw000c4xc0tpbs1qjg` | `APPROVED` / `FULFILLED` / `PAID` / 1 ticket |
+| `cmpxsxjhx000t40xb2m3c04mz` | `cmpxsxf44000p40xbc6r458ck` | `APPROVED` / `FULFILLED` / `PAID` / 1 ticket |
+| `cmpxtuix7001d40xb4xk2net3` | `cmpxtuh3y001940xbqom4b7xn` | `APPROVED` / `FULFILLED` / `PAID` / 1 ticket |
 
-Confirmar en portal Getnet que cada `paymentIntentId` figura **Authorized/Approved** antes de reconciliar.
+Query de cierre (prod):
+
+```sql
+SELECT p.id, p.status, p.metadata->>'lastReconciliationOutcome' AS outcome, o.status AS order_status,
+       (SELECT COUNT(*) FROM "Ticket" t WHERE t."orderId" = o.id AND t.source = 'ORDER') AS tickets
+FROM "Payment" p
+JOIN "Order" o ON o.id = p."orderId"
+WHERE p.id IN (
+  'cmqfvq3he000g4xc0momiekpo',
+  'cmpxsxjhx000t40xb2m3c04mz',
+  'cmpxtuix7001d40xb4xk2net3'
+);
+```
+
+Resultado esperado: **3 filas** — `APPROVED`, `FULFILLED`, `PAID`, `tickets = 1`.
+
+**No** se usó SQL manual, inserts directos de tickets ni bypass de dominio.
 
 ---
 
@@ -94,24 +113,68 @@ pnpm --filter api run payments:reconcile-getnet-approved-manual -- \
 
 Repetir para los otros dos `payment-id` (el `remote-payment-id` puede ser placeholder en dry-run si solo se valida estado local; en live es obligatorio).
 
-**Resultado esperado dry-run:**
+**Resultado esperado dry-run (orden `EXPIRED`, pago `PENDING`):**
 
 - Snapshot: payment, order, items, tickets `0/N`
 - `abort conditions` vacío
 - `outcome: FULFILLED`, `dryRun: true`
 - `message: would_fulfill_expired_recovery`
 
+**Resultado esperado dry-run (resume parcial — pago ya `APPROVED`, orden `EXPIRED`, 0 tickets):**
+
+- `--- partial resume detected ---`
+- `message: would_resume_fulfillment_expired_recovery`
+- Sin mutaciones en DB
+
 Si `reconcile:getnet-approved` se usa por error en orden `EXPIRED`, dry-run devuelve `REQUIRES_MANUAL_REVIEW` / `ORDER_EXPIRED_PAYMENT_APPROVED` **sin** emitir tickets.
 
 ---
 
-## 6. Reconciliación real (propuesta — no ejecutar sin autorización)
+## 5b. Caso parcial — resume seguro
 
-Variables requeridas:
+Durante el primer intento live, un pago quedó en estado intermedio:
+
+```txt
+Payment.status = APPROVED
+Order.status = EXPIRED
+Tickets = 0
+manualReconciliation presente
+lastReconciliationOutcome vacío
+```
+
+**Re-run seguro** (tras fix `35cb725` + `4707af5`):
+
+```bash
+pnpm --filter api run payments:reconcile-getnet-approved-manual -- \
+  --payment-id <paymentId> \
+  --remote-payment-id <uuid-portal> \
+  --dry-run
+```
+
+Dry-run debe mostrar `would_resume_fulfillment_expired_recovery`. Live:
+
+```bash
+CONFIRM_GETNET_APPROVED_MANUAL=yes \
+pnpm --filter api run payments:reconcile-getnet-approved-manual -- \
+  --payment-id <paymentId> \
+  --remote-payment-id <uuid-portal>
+```
+
+El script **no re-aprueba** el payment; completa fulfillment vía `OrderFulfillmentService` (`allowExpiredRecovery`). Si `manualReconciliation` ya existe, omite reescritura de metadata.
+
+---
+
+## 6. Reconciliación real (referencia histórica — bloque cerrado)
+
+> **Bloque cerrado en prod.** Conservar como referencia si aparece un caso similar futuro. Siempre dry-run primero.
+
+Variables requeridas para live:
 
 | Variable | Requerida | Ejemplo |
 |----------|-----------|---------|
 | `CONFIRM_GETNET_APPROVED_MANUAL` | **Sí** | `yes` |
+
+Sin `CONFIRM_GETNET_APPROVED_MANUAL=yes` el script **aborta** en modo live.
 
 Argumentos CLI:
 
@@ -191,7 +254,8 @@ SELECT COUNT(*) FROM "Ticket" WHERE "orderId" = '<orderId>' AND source = 'ORDER'
 | Caso | Comportamiento |
 |------|----------------|
 | Payment ya `APPROVED` + Order `PAID` + tickets completos | Script sale OK sin duplicar |
-| Payment `APPROVED` pero sin tickets | Reconcile puede `FULFILL` o `ALREADY_FULFILLED` |
+| Payment ya `APPROVED` + Order `EXPIRED` + tickets incompletos + `manualReconciliation` | Resume idempotente — `would_resume_fulfillment_expired_recovery` / `fulfilled_expired_recovery` |
+| Payment `APPROVED` pero sin tickets (orden no expirada) | Reconcile puede `FULFILL` o `ALREADY_FULFILLED` |
 | Re-ejecutar tras `FULFILLED` | `OrderFulfillmentService` → `alreadyFulfilled` |
 | Orden expirada + pago aprobado portal | `payments:reconcile-getnet-approved-manual` con `forceExpiredApprovedFulfillment` |
 | `reconcile:getnet-approved` en orden EXPIRED | `REQUIRES_MANUAL_REVIEW` — no emite tickets |
