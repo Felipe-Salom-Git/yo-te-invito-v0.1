@@ -21,13 +21,15 @@ Detalle histórico demo: [guides/DEMO_REMOVAL.md](../guides/DEMO_REMOVAL.md). Po
 
 ## Getnet Web Checkout Redirect — estado actual
 
-- **Rama activa:** `feat/v1-s03-api-foundation` (desplegada en VPS para redirect smoke).
+- **Rama activa:** `feat/v1-s03-api-foundation` (desplegada en VPS; último fix webhook: `ed0cc3e`).
 - **`main`:** sin cambios.
 - **`development`:** descartada y eliminada — no mergear spikes ni commits.
 - **V1:** Redirect (`redirect_url`); iFrame/Lightbox fuera de V1.
 - **VPS:** smokes config/auth/dry-run OK; aliases portal OK; redirect app → Getnet hosted checkout OK — [GETNET_WEBCHECKOUT_VPS_REDIRECT_SMOKE.md](../payments/GETNET_WEBCHECKOUT_VPS_REDIRECT_SMOKE.md).
-- **Webhook Portal Getnet:** pendiente registrar URL + Basic Auth (no pago real hasta entonces).
-- **Fulfillment/reconciliación:** reutilizados (`OrderFulfillmentService`); ciclo cerrado solo tras webhook validado.
+- **Webhook Portal Getnet:** URL + Basic Auth configurados en portal (`api.yoteinvito.club/.../webhook`). Prueba de pago: webhook **llegó** al API pero fue rechazado por schema (`status` en raíz vs `payment.result.status`) — **corregido en código** (`ed0cc3e`).
+- **Payload Web Checkout:** estado en `payment.result.status` (`Authorized` → aprobado); lookup por `payment_intent_id` / `order_id` — [GETNET_WEBHOOK.md](../payments/GETNET_WEBHOOK.md).
+- **Pendiente operativo:** deploy `ed0cc3e` en VPS → re-probar pago mínimo → confirmar `Authorized` procesado + tickets automáticos.
+- **Fulfillment:** `OrderFulfillmentService` vía `GetnetReconciliationService`; no emitir tickets fuera de ahí.
 - **Handoff:** [NEXT_CHAT_GETNET_WEBCHECKOUT_HANDOFF.md](./NEXT_CHAT_GETNET_WEBCHECKOUT_HANDOFF.md) · cierre [GETNET_WEBCHECKOUT_REDIRECT_CLOSING.md](../payments/GETNET_WEBCHECKOUT_REDIRECT_CLOSING.md).
 
 ---

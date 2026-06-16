@@ -35,10 +35,11 @@
 - [x] Getnet Web Checkout Redirect — aliases portal `/checkout/success`, `/checkout/error`, `/api/getnet/callback`.
 - [x] Deploy VPS `feat/v1-s03-api-foundation` — redirect a Getnet hosted checkout desde app (sin pago real).
 - [x] Smoke payment-intent producción local controlado (`GETNET_WEBCHECKOUT_CONFIRM_PROD=yes`, logs sanitizados).
-- [ ] Configurar webhook **Basic Auth** en Portal Getnet (URL + user/password = `GETNET_WEBHOOK_BASIC_*` en API).
-- [ ] Probar pago mínimo autorizado.
-- [ ] Confirmar webhook recibido.
-- [ ] Confirmar emisión automática de tickets.
+- [x] Configurar webhook **Basic Auth** en Portal Getnet (URL + user/password = `GETNET_WEBHOOK_BASIC_*` en API).
+- [x] Código webhook Web Checkout — `payment.result.status`, lookup `payment_intent_id` (`ed0cc3e`) — [GETNET_WEBHOOK.md](../payments/GETNET_WEBHOOK.md).
+- [ ] Deploy VPS con fix webhook `ed0cc3e`.
+- [ ] Re-prueba pago mínimo autorizado.
+- [ ] Confirmar webhook `Authorized` procesado + emisión automática de tickets.
 - [ ] Merge controlado a `main` (solo con instrucción explícita).
 - [ ] Mantener pago demo solo en desarrollo/staging — **política operativa** (botón aún visible en UI dev).
 - [x] Implementar webhooks del proveedor de pago — `POST /public/payments/getnet/webhook`.

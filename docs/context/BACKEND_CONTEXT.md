@@ -290,7 +290,9 @@ Opcional cron: `NOTIFICATIONS_CRON_ENABLED=false`, `NOTIFICATION_REMINDER_HOURS`
 
 **Smokes:** `pnpm --filter api run smoke:legal` | `test:legal-documents` | `test:me-legal-acceptance`. Requiere API + `DEV_AUTH_ENABLED=true` (o JWT) y usuario ADMIN para tests admin.
 
-**Getnet portal callback:** el webhook real sigue en `POST /public/payments/getnet/webhook` (Basic Auth / header). La URL fija del portal `https://yoteinvito.club/api/getnet/callback` la atiende Next.js y reenvía al API — ver [GETNET_PORTAL_URL_COMPATIBILITY.md](../payments/GETNET_PORTAL_URL_COMPATIBILITY.md).
+**Getnet portal callback:** webhook en `POST /public/payments/getnet/webhook` (Basic Auth). Alias Next.js `/api/getnet/callback` — [GETNET_PORTAL_URL_COMPATIBILITY.md](../payments/GETNET_PORTAL_URL_COMPATIBILITY.md).
+
+**Getnet Web Checkout webhook (2026-06):** payload real usa `payment.result.status` (`Authorized`/`Denied`), no `status` en raíz. Lookup `payment_intent_id`, `order_id`, `payment.result.payment_id`. Fix `ed0cc3e`. Prueba VPS: webhook llegó, schema lo rechazó antes del fix. Pendiente deploy + re-prueba fulfill — [GETNET_WEBHOOK.md](../payments/GETNET_WEBHOOK.md).
 
 **Docs:** `docs/legal/LEGAL_ADMIN_MODULE.md`, `docs/dev/LEGAL_ADMIN_QA_SMOKE.md`, `docs/audits/LEGAL_ADMIN_AUDIT.md`. UI: `FRONTEND_CONTEXT.md` §8e.
 
@@ -300,7 +302,7 @@ Opcional cron: `NOTIFICATIONS_CRON_ENABLED=false`, `NOTIFICATION_REMINDER_HOURS`
 
 ## 9. Debt / risks
 
-- Payments: `DEMO` + `demo-confirm`; Getnet implementado (webhook, reconcile, return UI, `/admin/pagos`) — [GETNET_CLOSING_AUDIT.md](../payments/GETNET_CLOSING_AUDIT.md); **Web Checkout Redirect** en `feat/v1-s03-api-foundation` — VPS redirect smoke OK ([GETNET_WEBCHECKOUT_VPS_REDIRECT_SMOKE.md](../payments/GETNET_WEBCHECKOUT_VPS_REDIRECT_SMOKE.md)); webhook Portal Getnet **pendiente**; pago real no ejecutado; `main` sin merge. Rama `development` **eliminada** — no usar.
+- Payments: `DEMO` + `demo-confirm`; Getnet (webhook, reconcile, return UI, `/admin/pagos`) — **Web Checkout Redirect** en `feat/v1-s03-api-foundation`; VPS redirect OK; webhook payload fix `ed0cc3e` (`payment.result.status`); portal webhook configurado; pendiente deploy VPS + ciclo pago/tickets — [GETNET_WEBHOOK.md](../payments/GETNET_WEBHOOK.md), [GETNET_WEBCHECKOUT_VPS_REDIRECT_SMOKE.md](../payments/GETNET_WEBCHECKOUT_VPS_REDIRECT_SMOKE.md). `main` sin merge.
 - Image uploads: portales + Admin → GCS **cerrado funcional prod 2026-05-31.** Ops legacy no bloqueante: `storage:audit-data-urls`, `storage:migrate-data-urls` (§21), `storage:audit-orphans`, `storage:cleanup-orphans` (§22).
 - Public list `EventSummary` includes `fromPrice` (min active ticket/batch price, major units) and `producerName` (`ProducerProfile.displayName`, ACTIVE only) — see `public-event-summary.util.ts`.
 - Run `prisma migrate deploy` + `prisma generate` after schema changes — **prod:** `https://api.yoteinvito.club`, migraciones vía `migrate deploy` (no `pnpm db:migrate`). **Build monorepo:** `pnpm build` desde raíz (genera Prisma client, compila `shared` con schemas Maps, luego api/web/scanner); no compilar `api` aislado sin `shared` recién buildado.

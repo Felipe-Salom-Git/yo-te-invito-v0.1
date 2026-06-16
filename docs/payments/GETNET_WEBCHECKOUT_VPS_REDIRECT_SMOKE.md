@@ -6,7 +6,25 @@ El flujo Web Checkout Redirect fue desplegado de forma controlada en VPS desde `
 
 Se validó que Yo Te Invito crea el flujo de checkout y redirige correctamente al hosted checkout de Getnet.
 
-**No está cerrado** el ciclo completo: pago aprobado + webhook + emisión automática de tickets (webhook Portal Getnet pendiente).
+**No está cerrado** el ciclo completo: pago aprobado + webhook procesado + emisión automática de tickets. Redirect y recepción webhook OK; fix payload `ed0cc3e` pendiente de deploy en VPS.
+
+## 1b. Fix webhook payload (`ed0cc3e`)
+
+En prueba de pago real, Getnet envió webhook al API pero fue rechazado:
+
+```txt
+invalid_payload: status Required (esperaba status en raíz)
+```
+
+Causa: Web Checkout envía estado en `payment.result.status` (ej. `Authorized`).
+
+Fix en `feat/v1-s03-api-foundation` (`ed0cc3e`):
+
+- Schema acepta `payment.result.status` sin `status` raíz.
+- `Authorized` → aprobado; lookup por `payment_intent_id` / `order_id`.
+- Fulfillment vía `GetnetReconciliationService` → `OrderFulfillmentService`.
+
+**Pendiente:** deploy VPS con `ed0cc3e` y re-probar pago mínimo.
 
 ## 2. Rama
 

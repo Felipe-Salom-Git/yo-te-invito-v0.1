@@ -114,16 +114,17 @@ GETNET_WEBCHECKOUT_CONFIRM_PRE=yes pnpm --filter api run smoke:getnet-webcheckou
 
 ## 8. Próximo slice sugerido
 
-**Getnet Redirect Smoke PRE** — validar credenciales PRE reales + POST payment-intent controlado + un pago homologación de punta a punta (sin merge a `main`).
+**Deploy VPS `ed0cc3e` + re-prueba pago Web Checkout** — webhook portal ya configurado; código acepta `payment.result.status`. Confirmar `Authorized` → `OrderFulfillmentService` → tickets. Sin merge a `main` hasta ciclo cerrado.
 
 ---
 
 ## 9. Riesgos / pendientes
 
-- Poll remoto Web Checkout status **no implementado** — return page depende de webhook / refresh sin consulta GET a Getnet.
-- Portal Getnet puede exigir URLs fijas; si no permite editar, evaluar rutas alias (`/checkout/success`, callback API).
+- **Webhook Web Checkout:** Getnet envía `payment.result.status`, no `status` raíz. Fix `ed0cc3e` en repo; VPS en deploy anterior lo rechazaba (`invalid_payload`). Ver [GETNET_WEBHOOK.md](../payments/GETNET_WEBHOOK.md).
+- Poll remoto Web Checkout status **no implementado** — return page depende de webhook / refresh.
+- URLs portal: aliases implementados (`/checkout/success`, `/api/getnet/callback` proxy).
 - `main` tiene bloque Getnet A–G (GeoPagos legacy); merge de `feat/v1-s03-api-foundation` requiere plan explícito.
-- No marcar go-live en checklist hasta VPS + prueba real autorizada.
+- No marcar go-live hasta re-prueba pago + tickets automáticos post-deploy.
 
 ---
 
@@ -133,5 +134,7 @@ GETNET_WEBCHECKOUT_CONFIRM_PRE=yes pnpm --filter api run smoke:getnet-webcheckou
 |-----|--|
 | Cierre slice | [GETNET_WEBCHECKOUT_REDIRECT_CLOSING.md](../payments/GETNET_WEBCHECKOUT_REDIRECT_CLOSING.md) |
 | Implementación | [GETNET_WEBCHECKOUT_REDIRECT_IMPLEMENTATION.md](../payments/GETNET_WEBCHECKOUT_REDIRECT_IMPLEMENTATION.md) |
+| Webhook Web Checkout | [GETNET_WEBHOOK.md](../payments/GETNET_WEBHOOK.md) |
+| VPS smoke | [GETNET_WEBCHECKOUT_VPS_REDIRECT_SMOKE.md](../payments/GETNET_WEBCHECKOUT_VPS_REDIRECT_SMOKE.md) |
 | Checklist prod | [Yo_Te_Invito_Checklist_V2_2_Pendientes_Produccion.md](../dev/Yo_Te_Invito_Checklist_V2_2_Pendientes_Produccion.md) §1 |
 | AI entry | [AI_ENTRYPOINT.md](./AI_ENTRYPOINT.md) |
