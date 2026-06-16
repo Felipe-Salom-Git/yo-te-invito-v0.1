@@ -86,6 +86,7 @@ export default function AdminExcursionOperadorNuevoPage() {
         <RentalLocationFields
           value={location}
           onChange={setLocation}
+          geoContext="EXCURSION_OPERATOR"
           mapError={locationError ?? undefined}
         />
         <Input
