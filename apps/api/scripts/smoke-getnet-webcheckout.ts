@@ -205,6 +205,11 @@ async function main() {
     }
 
     const orderId = `yti_smoke_${Date.now()}`;
+    const appUrl =
+      (process.env.WEB_APP_URL && process.env.WEB_APP_URL.trim()) ||
+      'http://localhost:3000';
+    const successUrl = `${appUrl.replace(/\/+$/, '')}/checkout/success`;
+    const errorUrl = `${appUrl.replace(/\/+$/, '')}/checkout/error`;
     const customer = buildSmokeWebCheckoutCustomer({
       documentNumber: args.documentNumber,
       email: args.email,
@@ -214,6 +219,8 @@ async function main() {
 
     const payloadPreview = {
       order_id: orderId,
+      success_url: successUrl,
+      error_url: errorUrl,
       payment: { currency: 'ARS', amount: args.amount },
       product: [
         {
@@ -272,6 +279,8 @@ async function main() {
           email: customer.email,
           documentNumber: customer.document_number,
         },
+        successUrl,
+        errorUrl,
       });
       console.log('\nOK: payment-intent created');
       console.log(`payment_intent_id: ${result.paymentIntentId}`);

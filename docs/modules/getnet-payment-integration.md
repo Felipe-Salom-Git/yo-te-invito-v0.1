@@ -42,7 +42,7 @@ When `GETNET_WEBCHECKOUT_CLIENT_ID`, `SECRET_KEY`, and `SELLER_ID` are set, **We
 | [GETNET_WEBCHECKOUT_REDIRECT_CLOSING.md](../payments/GETNET_WEBCHECKOUT_REDIRECT_CLOSING.md) | Cierre slice |
 | [NEXT_CHAT_GETNET_WEBCHECKOUT_HANDOFF.md](../context/NEXT_CHAT_GETNET_WEBCHECKOUT_HANDOFF.md) | Handoff próximo chat |
 
-**Rama:** `feat/v1-s03-api-foundation` · commit `5a5c794` · **`main` sin cambios** · **`development` eliminada — no usar**
+**Rama:** `feat/v1-s03-api-foundation` · base `5a5c794` · último fix webhook `ed0cc3e` · **`main` sin cambios** · **`development` eliminada — no usar**
 
 | Variable | Description |
 |----------|-------------|
@@ -57,7 +57,7 @@ Smoke: `pnpm --filter api run smoke:getnet-webcheckout -- --config|--auth|--paym
 
 **Smoke productivo payment-intent (validado):** con `GETNET_WEBCHECKOUT_CONFIRM_PROD=yes` y `--confirm --amount 50000` → auth + intent OK en `api.globalgetnet.com`; `payment_intent_id` recibido; `redirect_url` recibido (salida smoke sanitizada, sin URL completa). No captura pago. Ver [GETNET_PRODUCTION_SMOKE.md](../payments/GETNET_PRODUCTION_SMOKE.md).
 
-**VPS Redirect Smoke:** deploy `feat/v1-s03-api-foundation` OK; redirect app OK; webhook Portal configurado — procesar payload Web Checkout (`payment.result.status`). Ver [GETNET_WEBHOOK.md](../payments/GETNET_WEBHOOK.md).
+**VPS Redirect Smoke:** deploy `feat/v1-s03-api-foundation` OK; redirect app OK; webhook portal configurado; prueba de pago recibió webhook (schema fix `ed0cc3e` pendiente deploy). Ver [GETNET_WEBHOOK.md](../payments/GETNET_WEBHOOK.md), [GETNET_WEBCHECKOUT_VPS_REDIRECT_SMOKE.md](../payments/GETNET_WEBCHECKOUT_VPS_REDIRECT_SMOKE.md).
 
 ## GETNET_WEB_CHECKOUT_* (legacy note)
 

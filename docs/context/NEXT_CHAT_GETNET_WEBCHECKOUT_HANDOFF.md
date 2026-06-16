@@ -37,12 +37,15 @@ feat/v1-s03-api-foundation
 ## 4. Último commit técnico
 
 ```txt
-5a5c794 — feat(getnet): integrate webcheckout redirect payment intent
+ed0cc3e — fix(getnet): accept webcheckout authorization webhook payload
+9602fe9 — docs(getnet): align vps smoke doc with webhook payload fix
 ```
 
-Push: `origin/feat/v1-s03-api-foundation`
+Push: `origin/feat/v1-s03-api-foundation` (HEAD `9602fe9`)
 
-Cierre documental (este handoff): commit posterior `docs(getnet): close webcheckout redirect handoff`.
+Commits previos relevantes: `5a5c794` (payment-intent redirect), `4ded271` (contrato producción), `f4d943b` (DI Nest).
+
+Cierre documental webhook: `2b78d96` — `docs(getnet): update context for webcheckout webhook payload fix`.
 
 ---
 
@@ -53,7 +56,8 @@ Cierre documental (este handoff): commit posterior `docs(getnet): close webcheck
 - `PublicPaymentsService`: prioridad Web Checkout si `GETNET_WEBCHECKOUT_*` configurado
 - `Payment.metadata`: `getnetIntegration: webcheckout`, `paymentIntentId`, `redirectUrl`
 - Respuesta API: `checkoutUrl` + `redirectUrl` (frontend ya usa `checkoutUrl`)
-- Webhook: `GETNET_WEBHOOK_AUTH_MODE=basic` + lookup por `payment_intent_id`
+- Webhook: `GETNET_WEBHOOK_AUTH_MODE=basic` + lookup por `payment_intent_id` / `order_id` / `payment.result.payment_id`
+- **Fix payload Web Checkout (`ed0cc3e`):** acepta `payment.result.status` (`Authorized`/`Denied`); `status` raíz opcional — [GETNET_WEBHOOK.md](../payments/GETNET_WEBHOOK.md)
 - `OrderFulfillmentService` / reconciliación: **sin reescribir**
 - Smoke: `pnpm --filter api run smoke:getnet-webcheckout`
 - Docs: [GETNET_WEBCHECKOUT_REDIRECT_IMPLEMENTATION.md](../payments/GETNET_WEBCHECKOUT_REDIRECT_IMPLEMENTATION.md), [GETNET_WEBCHECKOUT_REDIRECT_CLOSING.md](../payments/GETNET_WEBCHECKOUT_REDIRECT_CLOSING.md)
@@ -104,11 +108,13 @@ GETNET_WEBCHECKOUT_CONFIRM_PRE=yes pnpm --filter api run smoke:getnet-webcheckou
 
 ## 7. Criterio para avanzar
 
-- [ ] Auth PRE OK (`smoke:getnet-webcheckout -- --auth`)
-- [ ] payment-intent PRE devuelve `payment_intent_id` + `redirect_url`
-- [ ] Webhook Basic Auth configurado en portal y probado
-- [ ] Build OK (`shared`, `api`, `web`)
-- [ ] E2E homologación con monto mínimo (autorizado)
+- [x] Auth producción OK (`smoke:getnet-webcheckout -- --auth` en VPS)
+- [x] payment-intent producción devuelve `payment_intent_id` + `redirect_url` (smoke local + redirect VPS)
+- [x] Webhook Basic Auth configurado en portal y probado (webhook **recibido** en API)
+- [x] Código acepta payload Web Checkout (`payment.result.status`) — `ed0cc3e`
+- [x] Build OK (`shared`, `api`, `web`)
+- [ ] Deploy VPS con `ed0cc3e`
+- [ ] E2E producción: pago mínimo autorizado → webhook `Authorized` procesado → tickets automáticos
 
 ---
 

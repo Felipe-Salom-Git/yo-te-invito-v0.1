@@ -187,8 +187,9 @@ Estado (deploy controlado `feat/v1-s03-api-foundation` en VPS):
 | Smokes config / auth / dry-run (VPS) | OK |
 | Aliases portal (`/checkout/success`, `/checkout/error`, `/api/getnet/callback`) | OK |
 | Redirección a Getnet hosted checkout desde app (`yoteinvito.club`) | OK |
-| Pago real | No ejecutado |
-| Webhook Portal Getnet (Basic Auth registrado) | **Pendiente** |
+| Prueba de pago (webhook) | Ejecutada — webhook llegó; rechazado pre-`ed0cc3e` (`invalid_payload`) |
+| Webhook Portal Getnet (Basic Auth registrado) | **OK** — URL + credenciales en portal y `.env` |
+| Procesamiento `Authorized` + tickets | **Pendiente** — deploy `ed0cc3e` + re-prueba |
 
 Detalle: [GETNET_WEBCHECKOUT_VPS_REDIRECT_SMOKE.md](./GETNET_WEBCHECKOUT_VPS_REDIRECT_SMOKE.md).
 

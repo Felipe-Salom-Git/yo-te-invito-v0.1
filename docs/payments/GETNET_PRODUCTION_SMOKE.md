@@ -63,10 +63,11 @@ Estado (VPS, rama `feat/v1-s03-api-foundation`):
 | Smokes config / auth / dry-run | OK |
 | Aliases portal | OK |
 | Redirect app → `hosted-web-checkout` Getnet | OK |
-| Pago real | No ejecutado |
-| Webhook Portal Getnet | Pendiente |
+| Prueba de pago (webhook) | Ejecutada — webhook llegó; rechazado pre-`ed0cc3e` |
+| Webhook Portal Getnet | **OK** (URL + Basic Auth) |
+| Ciclo pago + tickets | **Pendiente** — deploy `ed0cc3e` + re-prueba |
 
-**Riesgo:** no pagar hasta registrar webhook en portal. Tras deploy, validar que webhooks Web Checkout con `payment.result.status` se procesan (no solo `status` raíz). Ver [GETNET_WEBHOOK.md](./GETNET_WEBHOOK.md).
+**Riesgo:** con VPS sin `ed0cc3e`, un pago aprobado puede no emitir tickets. Tras deploy, validar webhooks con `payment.result.status` (no solo `status` raíz). Ver [GETNET_WEBHOOK.md](./GETNET_WEBHOOK.md).
 
 Tests unitarios helpers:
 

@@ -341,6 +341,8 @@ export class PublicPaymentsService {
           email: customerPayload.email,
           documentNumber: customerPayload.document_number,
         },
+        successUrl: returnUrl,
+        errorUrl: errorUrl,
       });
     } catch (e) {
       await this.prisma.payment.update({

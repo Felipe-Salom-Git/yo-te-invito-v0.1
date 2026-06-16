@@ -257,3 +257,26 @@ Flujo demo + portal: `pnpm --filter api run smoke:user-portal`
 ```bash
 pnpm --filter api run smoke:getnet -- --simulate-webhook --payment-id <id> --status APPROVED --event-id <unique>
 ```
+
+---
+
+## 12. Incidente VPS (2026-06) — payload Web Checkout
+
+En prueba de pago real contra VPS (`feat/v1-s03-api-foundation` **anterior** a `ed0cc3e`):
+
+```txt
+invalid_payload: status Required (esperaba status en raíz)
+```
+
+Getnet Web Checkout envía el estado en `payment.result.status` (ej. `Authorized`), no en la raíz.
+
+**Fix (`ed0cc3e`):**
+
+- Schema Zod: `status` raíz opcional; acepta `payment.result.status`.
+- `normalizeGetnetWebhookStatus()` — `Authorized` → `APPROVED`, `Denied` → `REJECTED`.
+- Lookup: `payment_intent_id`, `order_id`, `payment.result.payment_id`.
+- Fulfillment: `GetnetReconciliationService` → `OrderFulfillmentService`.
+
+**Pendiente operativo:** deploy VPS con `ed0cc3e` → re-prueba pago mínimo → confirmar tickets automáticos.
+
+Ver [GETNET_WEBCHECKOUT_VPS_REDIRECT_SMOKE.md](./GETNET_WEBCHECKOUT_VPS_REDIRECT_SMOKE.md).
