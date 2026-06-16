@@ -264,6 +264,7 @@ export function GastroLocalForm({
         value={location}
         onChange={setLocation}
         required
+        geoContext="GASTRO"
         provinceError={locationError ?? undefined}
       />
       {isAdmin ? <p className="text-sm font-medium text-text">Horarios y contacto</p> : null}
