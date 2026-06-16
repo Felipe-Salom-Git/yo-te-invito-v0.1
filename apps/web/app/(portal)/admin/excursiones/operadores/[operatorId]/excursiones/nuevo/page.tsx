@@ -138,6 +138,7 @@ export default function AdminExcursionNuevoPage() {
             <EventLocationFields
               value={location}
               onChange={setLocation}
+              geoContext="EXCURSION_MEETING_POINT"
               mapError={locationError ?? undefined}
             />
           ) : null}

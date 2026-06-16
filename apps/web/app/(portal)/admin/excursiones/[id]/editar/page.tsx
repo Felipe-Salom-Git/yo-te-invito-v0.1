@@ -218,7 +218,7 @@ export default function AdminExcursionEditarPage() {
         <ExcursionScheduleFormFields value={schedule} onChange={setSchedule} />
         <div>
           <label className="mb-1.5 block text-sm font-medium text-text">Ubicación (opcional)</label>
-          <EventLocationFields value={location} onChange={setLocation} mapError={locationError ?? undefined} />
+          <EventLocationFields value={location} onChange={setLocation} geoContext="EXCURSION_MEETING_POINT" mapError={locationError ?? undefined} />
         </div>
         <ExcursionSubcategoryMultiSelect value={subcategoryIds} onChange={setSubcategoryIds} />
         <ContentTagSelector category="excursion" value={tagIds} onChange={setTagIds} />
