@@ -239,54 +239,61 @@ async function main() {
       abortConditions.push('order record not found');
     }
 
-    if (payment.status === 'APPROVED') {
-      const manual = extractManualReconciliation(payment.metadata);
-      if (order) {
-        existingTickets = await prisma.ticket.count({
-          where: { orderId: order.id, source: 'ORDER' },
-        });
-        expectedTickets = expectedTicketCountFromItems(order.orderItems);
-      }
+    const manualReconciliation = extractManualReconciliation(payment.metadata);
+    let expectedTickets = 0;
+    let existingTickets = 0;
 
-      if (
-        order &&
+    if (order) {
+      expectedTickets = expectedTicketCountFromItems(order.orderItems);
+      existingTickets = await prisma.ticket.count({
+        where: { orderId: order.id, source: 'ORDER' },
+      });
+    }
+
+    const partialResume = Boolean(
+      order &&
         isPartialResumeState({
           paymentStatus: payment.status,
           orderStatus: order.status,
           existingTickets,
           expectedTickets,
-        })
+        }),
+    );
+
+    const alreadyFulfilled = Boolean(
+      order &&
+        payment.status === 'APPROVED' &&
+        order.status === 'PAID' &&
+        isOrderTicketFulfillmentComplete(existingTickets, expectedTickets),
+    );
+
+    if (alreadyFulfilled) {
+      console.log('\n--- idempotency ---');
+      console.log('Payment APPROVED, order PAID, tickets complete — nothing to do');
+      return;
+    }
+
+    if (partialResume) {
+      console.log('\n--- partial resume detected ---');
+      console.log(
+        'Payment APPROVED but order/tickets incomplete — will resume fulfillment',
+      );
+      if (
+        !manualReconciliation ||
+        manualReconciliation.source !== 'GETNET_PORTAL_MANUAL_CONFIRMATION'
       ) {
-        console.log('\n--- partial resume detected ---');
-        console.log(
-          'Payment APPROVED but order/tickets incomplete — will resume fulfillment',
+        abortConditions.push(
+          'Payment APPROVED partial state requires metadata.manualReconciliation.source = GETNET_PORTAL_MANUAL_CONFIRMATION',
         );
-        if (
-          !manual ||
-          manual.source !== 'GETNET_PORTAL_MANUAL_CONFIRMATION'
-        ) {
-          abortConditions.push(
-            'Payment APPROVED partial state requires metadata.manualReconciliation.source = GETNET_PORTAL_MANUAL_CONFIRMATION',
-          );
-        }
-      } else if (order?.status === 'PAID') {
-        if (isOrderTicketFulfillmentComplete(existingTickets, expectedTickets)) {
-          console.log('\n--- idempotency ---');
-          console.log('Payment APPROVED, order PAID, tickets complete — nothing to do');
-          return;
-        }
-      } else {
-        console.log('\n--- idempotency ---');
-        console.log('Payment APPROVED — checking whether fulfillment can proceed');
       }
+    } else if (payment.status === 'APPROVED') {
+      console.log('\n--- idempotency ---');
+      console.log('Payment APPROVED — checking whether fulfillment can proceed');
     } else if (payment.status !== 'PENDING') {
       abortConditions.push(
         `payment status is ${payment.status}; expected PENDING or APPROVED`,
       );
     }
-
-    let expectedTickets = 0;
-    let existingTickets = 0;
 
     if (order) {
       console.log('\n--- order ---');
@@ -297,17 +304,13 @@ async function main() {
         order.status !== 'EXPIRED' &&
         order.status !== 'PENDING_PAYMENT'
       ) {
-        if (order.status === 'PAID') {
-          existingTickets = await prisma.ticket.count({
-            where: { orderId: order.id, source: 'ORDER' },
-          });
-          expectedTickets = expectedTicketCountFromItems(order.orderItems);
+        if (order.status === 'PAID' && !partialResume) {
           if (existingTickets > 0) {
             abortConditions.push(
               `order PAID with ${existingTickets} tickets — duplicate risk`,
             );
           }
-        } else {
+        } else if (order.status !== 'PAID') {
           abortConditions.push(
             `order status is ${order.status}; expected EXPIRED or PENDING_PAYMENT`,
           );
@@ -354,11 +357,6 @@ async function main() {
         }
       }
 
-      expectedTickets = expectedTicketCountFromItems(order.orderItems);
-      existingTickets = await prisma.ticket.count({
-        where: { orderId: order.id, source: 'ORDER' },
-      });
-
       console.log('\n--- tickets ---');
       console.log(`existing: ${existingTickets}`);
       console.log(`expected: ${expectedTickets}`);
@@ -373,15 +371,6 @@ async function main() {
         );
       }
     }
-
-    const partialResume =
-      order &&
-      isPartialResumeState({
-        paymentStatus: payment.status,
-        orderStatus: order.status,
-        existingTickets,
-        expectedTickets,
-      });
 
     if (order?.status === 'EXPIRED') {
       risks.push(
