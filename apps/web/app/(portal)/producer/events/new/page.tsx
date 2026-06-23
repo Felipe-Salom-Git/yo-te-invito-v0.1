@@ -8,6 +8,8 @@ import { ProducerEventModeSelector } from '@/components/producer/events/Producer
 import { ProducerEventCreateForm } from '@/components/producer/events/ProducerEventCreateForm';
 import { EventModeBadge } from '@/components/producer/events/EventModeBadge';
 import { parseProducerEventModeFromQuery } from '@/lib/producer/event-mode';
+import { TICKETING_CREATION_ENABLED } from '@/lib/producer/ticketing-config';
+import { ProducerTicketingComingSoonPanel } from '@/components/producer/events/ProducerTicketingComingSoonPanel';
 
 export default function CreateEventPage() {
   const { status } = useSession();
@@ -36,6 +38,8 @@ export default function CreateEventPage() {
 
       {!mode ? (
         <ProducerEventModeSelector />
+      ) : mode === 'TICKETED' && !TICKETING_CREATION_ENABLED ? (
+        <ProducerTicketingComingSoonPanel />
       ) : (
         <div>
           <div className="mb-8 flex flex-wrap items-center gap-3">

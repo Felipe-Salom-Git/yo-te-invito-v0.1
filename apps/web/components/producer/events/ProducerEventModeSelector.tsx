@@ -6,6 +6,11 @@ import { useState } from 'react';
 import { SectionTitle, Button } from '@/components';
 import { ProducerEventModeCard } from './ProducerEventModeCard';
 import { producerEventModeToQuery, type ProducerEventMode } from '@/lib/producer/event-mode';
+import {
+  TICKETING_COMING_SOON_BADGE,
+  TICKETING_COMING_SOON_CARD_HINT,
+  TICKETING_CREATION_ENABLED,
+} from '@/lib/producer/ticketing-config';
 
 export function ProducerEventModeSelector() {
   const router = useRouter();
@@ -40,6 +45,9 @@ export function ProducerEventModeSelector() {
           cta="Crear evento con ticketera"
           selected={selected === 'TICKETED'}
           onSelect={() => setSelected('TICKETED')}
+          comingSoon={!TICKETING_CREATION_ENABLED}
+          comingSoonBadge={TICKETING_COMING_SOON_BADGE}
+          comingSoonHint={TICKETING_COMING_SOON_CARD_HINT}
         />
       </div>
 
