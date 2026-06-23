@@ -33,16 +33,26 @@ function normalizeName(value: string): string {
   return value.trim().replace(/\s+/g, ' ');
 }
 
+/** Collapse accents/case/spacing so Georef duplicates map to one select option. */
+function normalizeLocalityKey(value: string): string {
+  return value
+    .trim()
+    .toLocaleLowerCase('es-AR')
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .replace(/\s+/g, ' ');
+}
+
 function sortByName<T extends { name: string }>(items: T[]): T[] {
   return [...items].sort((a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base' }));
 }
 
-function dedupeById<T extends { id: string; name: string }>(items: T[]): T[] {
+function dedupeByNormalizedName<T extends { name: string }>(items: T[]): T[] {
   const seen = new Set<string>();
   const out: T[] = [];
   for (const item of items) {
-    const key = item.id || item.name.toLowerCase();
-    if (seen.has(key)) continue;
+    const key = normalizeLocalityKey(item.name);
+    if (!key || seen.has(key)) continue;
     seen.add(key);
     out.push(item);
   }
@@ -81,7 +91,7 @@ export class GeoRefService {
     }
 
     const provinces = sortByName(
-      dedupeById(
+      dedupeByNormalizedName(
         (payload.provincias ?? [])
           .map((row) => {
             const id = row.id?.trim();
@@ -142,7 +152,7 @@ export class GeoRefService {
       });
     }
 
-    const localities = sortByName(dedupeById(mapped));
+    const localities = sortByName(dedupeByNormalizedName(mapped));
 
     this.writeLocalitiesCache(cacheKey, localities);
     return localities;

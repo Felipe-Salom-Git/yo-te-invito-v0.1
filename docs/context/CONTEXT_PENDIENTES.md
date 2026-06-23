@@ -63,6 +63,13 @@ Etapas base: `V3_1_STAGE_5_CLOSING.md`, `V3_1_STAGE_6_SCANNER_OFFLINE_CLOSING.md
 - [x] Fichas públicas sin duplicar ubicación
 - [x] Docs: `GEO_MAPS_STAGE_AUDIT.md`, `GEO_MAPS_STAGE_CLOSING.md`
 
+### GEO / Maps — hotfix post-deploy (2026-06-23)
+
+- [x] Dedupe localidades por nombre normalizado (backend + frontend)
+- [x] Fallback local solo si Georef falla o devuelve vacío
+- [x] Mapa/pin se actualiza tras `resolve-address` (`mapEpoch` + `panTo`)
+- [ ] QA manual producción: Quime 695 / Mitre 250 en Bariloche
+
 ### GEO / Maps — pendientes operativos
 
 - [ ] Configurar `GOOGLE_GEOCODING_API_KEY` en VPS si falta

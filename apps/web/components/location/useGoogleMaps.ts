@@ -22,11 +22,16 @@ type GoogleMapsNamespace = {
   };
 };
 
-type GoogleMap = { setCenter: (c: object) => void; setZoom: (z: number) => void };
+type GoogleMap = {
+  setCenter: (c: object) => void;
+  setZoom: (z: number) => void;
+  panTo: (c: object) => void;
+};
 type GoogleMarker = {
   setPosition: (p: object) => void;
   getPosition: () => { lat: () => number; lng: () => number } | null;
   setMap: (m: GoogleMap | null) => void;
+  setDraggable: (d: boolean) => void;
   addListener: (event: string, fn: () => void) => void;
 };
 type GoogleGeocoder = {

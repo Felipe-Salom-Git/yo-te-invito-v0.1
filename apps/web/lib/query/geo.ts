@@ -26,5 +26,7 @@ export function useGeoLocalities(province: string | null | undefined) {
     queryFn: () => repos.geo.listLocalities({ province: provinceName }),
     enabled: provinceName.length > 0,
     staleTime: LOCALITIES_STALE_MS,
+    // Do not show localities from the previous province while the new query loads.
+    placeholderData: undefined,
   });
 }

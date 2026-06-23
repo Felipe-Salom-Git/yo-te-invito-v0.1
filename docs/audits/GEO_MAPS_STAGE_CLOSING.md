@@ -148,6 +148,27 @@ pnpm --filter web run build
 
 ---
 
+## Hotfix GEO post-deploy (2026-06-23)
+
+**Problemas corregidos:**
+
+- Localidades duplicadas en select (Georef devuelve el mismo nombre con IDs distintos; ej. San Carlos de Bariloche ×2 en Río Negro).
+- Pin/mapa no se actualizaba tras geocoding exitoso (mapa montado sin recentrar; `mapEpoch` + `panTo`).
+
+**Causa raíz:**
+
+- Backend deduplicaba por `id`, no por nombre normalizado.
+- Frontend mezclaba fallback local con datos Georef cuando `data?.length` era falsy durante carga.
+- `MapCanvas` no recentraba de forma confiable al resolver nueva dirección.
+
+**QA:**
+
+- [x] Build shared + api + web
+- [x] Verificado Georef raw: 149 filas → 143 nombres únicos normalizados para Río Negro
+- [ ] QA manual producción post-deploy (Quime 695 / Mitre 250, Bariloche)
+
+---
+
 ## Referencias
 
 - Auditoría: `docs/audits/GEO_MAPS_STAGE_AUDIT.md`

@@ -26,29 +26,35 @@ function fingerprint(value: Pick<LocationValue, 'address' | 'city' | 'province'>
   return `${value.address}|${value.city}|${value.province}`.trim().toLowerCase();
 }
 
+function isValidCoord(n: number | null | undefined): n is number {
+  return n != null && Number.isFinite(n);
+}
+
 type MapCanvasProps = {
   lat: number | null;
   lng: number | null;
+  mapEpoch: number;
   disabled?: boolean;
   onPinMove: (lat: number, lng: number) => void;
 };
 
-function MapCanvas({ lat, lng, disabled, onPinMove }: MapCanvasProps) {
+function MapCanvas({ lat, lng, mapEpoch, disabled, onPinMove }: MapCanvasProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<GoogleMap | null>(null);
   const markerRef = useRef<GoogleMarker | null>(null);
   const onPinMoveRef = useRef(onPinMove);
   onPinMoveRef.current = onPinMove;
 
+  const hasPin = isValidCoord(lat) && isValidCoord(lng);
+  const center = hasPin ? { lat: lat!, lng: lng! } : DEFAULT_CENTER;
+
   useEffect(() => {
     const g = window.google;
     if (!g?.maps || !mapRef.current) return;
 
-    const center =
-      lat != null && lng != null ? { lat, lng } : DEFAULT_CENTER;
     const map = new g.maps.Map(mapRef.current, {
       center,
-      zoom: lat != null ? 15 : 6,
+      zoom: hasPin ? 15 : 6,
       disableDefaultUI: false,
       zoomControl: true,
       mapTypeControl: false,
@@ -59,8 +65,8 @@ function MapCanvas({ lat, lng, disabled, onPinMove }: MapCanvasProps) {
 
     const marker = new g.maps.Marker({
       map,
-      position: lat != null && lng != null ? center : undefined,
-      draggable: !disabled,
+      position: hasPin ? center : undefined,
+      draggable: !disabled && hasPin,
     });
     markerRef.current = marker;
 
@@ -73,6 +79,7 @@ function MapCanvas({ lat, lng, disabled, onPinMove }: MapCanvasProps) {
     g.maps.event.addListener(map, 'click', (e: { latLng?: { lat: () => number; lng: () => number } }) => {
       if (disabled || !e.latLng) return;
       marker.setPosition(e.latLng);
+      marker.setDraggable(!disabled);
       onPinMoveRef.current(e.latLng.lat(), e.latLng.lng());
     });
 
@@ -81,17 +88,23 @@ function MapCanvas({ lat, lng, disabled, onPinMove }: MapCanvasProps) {
       mapInstance.current = null;
       markerRef.current = null;
     };
-  }, [disabled]);
+  }, [disabled, mapEpoch]);
 
   useEffect(() => {
     const marker = markerRef.current;
     const map = mapInstance.current;
-    if (!marker || !map || lat == null || lng == null) return;
-    const pos = { lat, lng };
+    if (!marker || !map || !hasPin) return;
+
+    const pos = { lat: lat!, lng: lng! };
     marker.setPosition(pos);
-    map.setCenter(pos);
+    marker.setDraggable(!disabled);
+    if (typeof map.panTo === 'function') {
+      map.panTo(pos);
+    } else {
+      map.setCenter(pos);
+    }
     map.setZoom(15);
-  }, [lat, lng]);
+  }, [disabled, hasPin, lat, lng]);
 
   return (
     <div
@@ -120,11 +133,13 @@ export function AddressMapPicker({
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [manualAdjust, setManualAdjust] = useState(false);
   const [resolvedFingerprint, setResolvedFingerprint] = useState<string | null>(null);
+  const [mapEpoch, setMapEpoch] = useState(0);
 
   const currentFingerprint = useMemo(() => fingerprint(value), [value]);
+  const hasCoords = isValidCoord(value.lat) && isValidCoord(value.lng);
   const isStale =
     resolvedFingerprint != null &&
-    value.lat != null &&
+    hasCoords &&
     currentFingerprint !== resolvedFingerprint &&
     !manualAdjust;
 
@@ -146,14 +161,23 @@ export function AddressMapPicker({
         country: 'Argentina',
         context,
       });
+
+      const nextLat = result.lat;
+      const nextLng = result.lng;
+      if (!isValidCoord(nextLat) || !isValidCoord(nextLng)) {
+        setResolveError('No pudimos obtener coordenadas válidas para esta dirección.');
+        return;
+      }
+
       onChange({
         ...value,
-        lat: result.lat,
-        lng: result.lng,
+        lat: nextLat,
+        lng: nextLng,
         placeId: result.placeId ?? value.placeId ?? null,
       });
       setResolvedFingerprint(currentFingerprint);
       setManualAdjust(false);
+      setMapEpoch((n) => n + 1);
       setStatusMessage('Ubicación encontrada. Revisá el pin antes de guardar.');
     } catch (err) {
       const message = getErrorMessage(err);
@@ -218,18 +242,23 @@ export function AddressMapPicker({
         </p>
       ) : null}
 
-      {value.lat != null && value.lng != null ? (
-        <>
-          {showGoogleMap ? (
-            <MapCanvas lat={value.lat} lng={value.lng} disabled={disabled} onPinMove={handlePinMove} />
-          ) : (
-            <LatLngMapPreview lat={String(value.lat)} lng={String(value.lng)} />
-          )}
-          <p className="text-xs text-text-muted">
-            Pin: {value.lat.toFixed(5)}, {value.lng.toFixed(5)}
-            {manualAdjust ? ' · ajustado manualmente' : ''}
-          </p>
-        </>
+      {showGoogleMap ? (
+        <MapCanvas
+          lat={value.lat}
+          lng={value.lng}
+          mapEpoch={mapEpoch}
+          disabled={disabled}
+          onPinMove={handlePinMove}
+        />
+      ) : hasCoords ? (
+        <LatLngMapPreview lat={String(value.lat)} lng={String(value.lng)} />
+      ) : null}
+
+      {hasCoords ? (
+        <p className="text-xs text-text-muted">
+          Pin: {value.lat!.toFixed(5)}, {value.lng!.toFixed(5)}
+          {manualAdjust ? ' · ajustado manualmente' : ''}
+        </p>
       ) : (
         <p className="text-xs text-text-muted">
           Completá la dirección y tocá «Ubicar en el mapa» para colocar el pin.

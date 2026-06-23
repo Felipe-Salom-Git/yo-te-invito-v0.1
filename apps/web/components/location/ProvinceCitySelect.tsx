@@ -5,6 +5,7 @@ import { Input } from '@/components';
 import { Select } from '@/components/ui/Select';
 import { useGeoLocalities, useGeoProvinces } from '@/lib/query/geo';
 import { ARGENTINA_PROVINCES } from './argentina-locations';
+import { dedupeSelectOptions } from './location-geo.utils';
 import {
   MANUAL_LOCALITY_LABEL,
   MANUAL_LOCALITY_VALUE,
@@ -31,31 +32,48 @@ export function ProvinceCitySelect({
 
   const provinceOptions = useMemo(() => {
     if (provincesQuery.data?.length) {
-      return provincesQuery.data.map((p) => ({ value: p.name, label: p.name }));
+      return dedupeSelectOptions(
+        provincesQuery.data.map((p) => ({ value: p.name, label: p.name })),
+      );
     }
     if (provincesQuery.isError) {
-      return ARGENTINA_PROVINCES.map((p) => ({ value: p.label, label: p.label }));
+      return dedupeSelectOptions(
+        ARGENTINA_PROVINCES.map((p) => ({ value: p.label, label: p.label })),
+      );
     }
     return [];
   }, [provincesQuery.data, provincesQuery.isError]);
 
   const localityOptions = useMemo(() => {
-    const opts: { value: string; label: string }[] = [];
-    if (localitiesQuery.data?.length) {
-      for (const loc of localitiesQuery.data) {
-        opts.push({ value: loc.name, label: loc.name });
-      }
-    } else if (localitiesQuery.isError && province) {
+    const manualOption = { value: MANUAL_LOCALITY_VALUE, label: MANUAL_LOCALITY_LABEL };
+    const georefRows = localitiesQuery.data ?? [];
+    const useGeoref = localitiesQuery.isSuccess && georefRows.length > 0;
+
+    if (useGeoref) {
+      return [
+        ...dedupeSelectOptions(georefRows.map((loc) => ({ value: loc.name, label: loc.name }))),
+        manualOption,
+      ];
+    }
+
+    if (localitiesQuery.isError && province) {
       const p = ARGENTINA_PROVINCES.find(
         (x) => x.label === province || x.value === province,
       );
-      for (const c of p?.cities ?? []) {
-        opts.push({ value: c.label, label: c.label });
-      }
+      return [
+        ...dedupeSelectOptions(
+          (p?.cities ?? []).map((c) => ({ value: c.label, label: c.label })),
+        ),
+        manualOption,
+      ];
     }
-    opts.push({ value: MANUAL_LOCALITY_VALUE, label: MANUAL_LOCALITY_LABEL });
-    return opts;
-  }, [localitiesQuery.data, localitiesQuery.isError, province]);
+
+    return [manualOption];
+  }, [localitiesQuery.data, localitiesQuery.isError, localitiesQuery.isSuccess, province]);
+
+  useEffect(() => {
+    setManualLocality(false);
+  }, [province]);
 
   useEffect(() => {
     if (!city.trim() || !province.trim()) {
@@ -87,7 +105,8 @@ export function ProvinceCitySelect({
 
   const citySelectValue = manualLocality ? MANUAL_LOCALITY_VALUE : city;
   const provincesLoading = provincesQuery.isLoading && provinceOptions.length === 0;
-  const localitiesLoading = Boolean(province) && localitiesQuery.isLoading && !localitiesQuery.isError;
+  const localitiesLoading =
+    Boolean(province) && localitiesQuery.isFetching && !localitiesQuery.isError;
 
   return (
     <div className="space-y-4">
