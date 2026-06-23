@@ -199,3 +199,15 @@ Georef: API pública sin key.
 - Auditoría Maps histórica: `docs/audits/MAPS_LOCATION_AUDIT.md`
 - Pendientes ops: `docs/context/CONTEXT_PENDIENTES.md` § GEO / Maps
 - Georef API: `https://apis.datos.gob.ar/georef/api`
+
+---
+
+## 13. Slice GEO 1 — implementado (2026-06-23)
+
+| Item | Detalle |
+|------|---------|
+| Servicio | `GeoRefService` (`apps/api/src/modules/geo/georef.service.ts`) |
+| Endpoints | `GET /geo/provinces`, `GET /geo/localities?province=...` (públicos) |
+| Cache | Provincias 24h, localidades 12h (in-memory) |
+| Schemas | `geoProvinceOptionSchema`, `geoLocalityOptionSchema`, `composeFullAddress` en `packages/shared/src/schemas/geo.ts` |
+| Auth | Solo `POST /geo/resolve-address` requiere JWT |

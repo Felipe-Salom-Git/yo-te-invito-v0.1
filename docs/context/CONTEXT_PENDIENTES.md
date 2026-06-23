@@ -53,12 +53,14 @@ Etapas base: `V3_1_STAGE_5_CLOSING.md`, `V3_1_STAGE_6_SCANNER_OFFLINE_CLOSING.md
 - [ ] QA manual: filtrar por ciudad en `/explore` y verificar resultados reales
 - [ ] Normalización ciudad en listados API si quedan inconsistencias
 
-### GEO / Maps — código listo, ops pendiente
+### GEO / Maps — etapa Georef en curso (2026-06-23)
 
 - [x] `POST /geo/resolve-address` + `GeoService` (`5932f3b`)
 - [x] `AddressMapPicker` + formularios (`21bcdb1`–`1936cb3`)
 - [x] Doc: `GEO_ADDRESS_MAP_PIN_CLOSING.md`
-- [x] Push rama remoto
+- [x] `GET /geo/provinces` + `GET /geo/localities` + `GeoRefService` (etapa GEO slice 1)
+- [x] Auditoría etapa: `docs/audits/GEO_MAPS_STAGE_AUDIT.md`
+- [ ] UI dinámica Georef + localidad manual + dirección compuesta (slices 2–5)
 - [ ] Deploy VPS: `prisma migrate deploy` (`GEO_ADDRESS_RESOLVED` audit)
 - [ ] `GOOGLE_GEOCODING_API_KEY` en `/opt/yoteinvito/apps/api/.env`
 - [ ] Google Cloud: key **solo Geocoding API**, restricción por **IP** (no HTTP referrer). IPs VPS:

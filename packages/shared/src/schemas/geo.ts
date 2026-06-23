@@ -30,3 +30,45 @@ export const resolveAddressResponseSchema = z.object({
   placeId: z.string().nullable().optional(),
 });
 export type ResolveAddressResponse = z.infer<typeof resolveAddressResponseSchema>;
+
+export const geoProvinceOptionSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+});
+export type GeoProvinceOption = z.infer<typeof geoProvinceOptionSchema>;
+
+export const geoLocalityOptionSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  provinceId: z.string().optional(),
+  provinceName: z.string().optional(),
+});
+export type GeoLocalityOption = z.infer<typeof geoLocalityOptionSchema>;
+
+export const geoProvincesResponseSchema = z.object({
+  provinces: z.array(geoProvinceOptionSchema),
+});
+export type GeoProvincesResponse = z.infer<typeof geoProvincesResponseSchema>;
+
+export const geoLocalitiesQuerySchema = z.object({
+  province: z.string().min(1).max(120),
+});
+export type GeoLocalitiesQuery = z.infer<typeof geoLocalitiesQuerySchema>;
+
+export const geoLocalitiesResponseSchema = z.object({
+  localities: z.array(geoLocalityOptionSchema),
+});
+export type GeoLocalitiesResponse = z.infer<typeof geoLocalitiesResponseSchema>;
+
+/** Compose a full address string for geocoding only (not for DB storage). */
+export function composeFullAddress(parts: {
+  address?: string | null;
+  city?: string | null;
+  province?: string | null;
+  country?: string | null;
+}): string {
+  return [parts.address, parts.city, parts.province, parts.country ?? 'Argentina']
+    .map((p) => p?.trim())
+    .filter(Boolean)
+    .join(', ');
+}
