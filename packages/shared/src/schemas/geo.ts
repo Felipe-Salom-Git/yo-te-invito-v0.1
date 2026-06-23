@@ -18,6 +18,8 @@ export const resolveAddressBodySchema = z.object({
   province: z.string().min(1).max(120),
   country: z.string().max(80).default('Argentina'),
   context: geoContextSchema,
+  /** Pre-composed geocoding query (street, city, province, country). Optional but preferred when sent. */
+  query: z.string().min(1).max(600).optional(),
 });
 export type ResolveAddressBody = z.infer<typeof resolveAddressBodySchema>;
 

@@ -144,13 +144,11 @@ export function locationValueFromEventFields(input: {
 }): LocationValue {
   const province = normalizeProvinceStored(input.province);
   const cityNorm = normalizeCityStored(input.city);
-  const fromCity = province
-    ? { province, city: resolveProvinceCityFromCityLabel(cityNorm).city || cityNorm }
-    : resolveProvinceCityFromCityLabel(cityNorm);
+  const fromCity = resolveProvinceCityFromCityLabel(cityNorm);
   return {
     address: input.venueAddress ?? '',
-    province: fromCity.province || province,
-    city: fromCity.city || cityNorm,
+    province: province || normalizeProvinceStored(fromCity.province),
+    city: cityNorm,
     lat: input.geoLat ?? null,
     lng: input.geoLng ?? null,
     placeId: input.googlePlaceId ?? null,
@@ -187,13 +185,11 @@ export function locationValueFromRentalLocation(input: {
 }): LocationValue {
   const province = normalizeProvinceStored(input.province);
   const cityNorm = normalizeCityStored(input.city);
-  const fromCity = province
-    ? { province, city: resolveProvinceCityFromCityLabel(cityNorm).city || cityNorm }
-    : resolveProvinceCityFromCityLabel(cityNorm);
+  const fromCity = resolveProvinceCityFromCityLabel(cityNorm);
   return {
     address: input.address ?? '',
-    province: fromCity.province || province,
-    city: fromCity.city || cityNorm,
+    province: province || normalizeProvinceStored(fromCity.province),
+    city: cityNorm,
     lat: input.geoLat ?? null,
     lng: input.geoLng ?? null,
     placeId: input.googlePlaceId ?? null,
@@ -241,13 +237,11 @@ export function locationValueFromExcursionOperator(input: {
 }): LocationValue {
   const province = normalizeProvinceStored(input.province);
   const cityNorm = normalizeCityStored(input.city);
-  const fromCity = province
-    ? { province, city: resolveProvinceCityFromCityLabel(cityNorm).city || cityNorm }
-    : resolveProvinceCityFromCityLabel(cityNorm);
+  const fromCity = resolveProvinceCityFromCityLabel(cityNorm);
   return {
     address: input.address ?? '',
-    province: fromCity.province || province,
-    city: fromCity.city || cityNorm,
+    province: province || normalizeProvinceStored(fromCity.province),
+    city: cityNorm,
     lat: input.geoLat ?? null,
     lng: input.geoLng ?? null,
     placeId: input.googlePlaceId ?? null,

@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import {
   cityLabelFromValue,
+  composeFullAddress,
   ErrorCode,
   provinceLabelFromValue,
   type GeoConfidence,
@@ -43,7 +44,13 @@ function buildQuery(body: ResolveAddressBody): string {
   const province = normalizePart(provinceLabelFromValue(body.province) || body.province);
   const address = normalizePart(body.address);
   const country = normalizePart(body.country || 'Argentina');
-  return [address, city, province, country].filter(Boolean).join(', ');
+
+  const explicitQuery = body.query?.trim();
+  if (explicitQuery) {
+    return normalizePart(explicitQuery);
+  }
+
+  return composeFullAddress({ address, city, province, country });
 }
 
 function cacheKey(body: ResolveAddressBody): string {
@@ -142,6 +149,9 @@ export class GeoService {
     }
 
     const addressQuery = buildQuery(body);
+    this.logger.debug(
+      `Geocoding context=${body.context} query="${addressQuery.replace(/"/g, '')}"`,
+    );
     const url = new URL('https://maps.googleapis.com/maps/api/geocode/json');
     url.searchParams.set('address', addressQuery);
     url.searchParams.set('key', apiKey);

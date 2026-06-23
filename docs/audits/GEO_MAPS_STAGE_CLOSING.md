@@ -169,6 +169,32 @@ pnpm --filter web run build
 
 ---
 
+## Hotfix GEO — address input en geocoding (2026-06-23)
+
+**Problema corregido:**
+
+- La calle/altura escrita en «Dirección / punto de encuentro» no se incluía al resolver el pin; Google geocodificaba solo ciudad/provincia.
+
+**Causa raíz:**
+
+- El handler «Ubicar en el mapa» podía leer un `value.address` desactualizado (closure de React) en lugar del texto visible del input.
+- La query enviada a geocoding no quedaba trazable de forma explícita en el contrato frontend → backend.
+
+**Solución:**
+
+- `AddressMapPicker` lee la dirección desde ref del input al resolver y compone `query` con `composeFullAddress({ address, city, province, country })`.
+- Validación explícita: provincia, ciudad y dirección obligatorias antes de llamar a Google.
+- Backend acepta campo opcional `query` y lo usa como string de geocoding; fallback a composición con campos separados.
+- Log sanitizado en API: `Geocoding context=… query="…"`.
+- Debug en frontend solo en development: `[geo] resolve payload`.
+
+**QA:**
+
+- [x] Build shared + api + web
+- [ ] QA manual producción: Quime 695 / Mitre 250 en Bariloche; cambio de dirección re-ubica pin; dirección vacía muestra error sin llamar a Google
+
+---
+
 ## Referencias
 
 - Auditoría: `docs/audits/GEO_MAPS_STAGE_AUDIT.md`

@@ -6,7 +6,7 @@ import { LatLngMapPreview } from '@/components/admin/LatLngMapPreview';
 import { getErrorMessage } from '@/lib/errors';
 import { useRepositories } from '@/repositories/context';
 import type { GeoContext } from '@yo-te-invito/shared';
-import { cityLabelFromValue, provinceLabelFromValue } from '@yo-te-invito/shared';
+import { cityLabelFromValue, composeFullAddress, provinceLabelFromValue } from '@yo-te-invito/shared';
 import { getGoogleMapsApiKey, useGoogleMaps, type GoogleMap, type GoogleMarker } from './useGoogleMaps';
 import type { LocationValue } from './location.types';
 
@@ -22,8 +22,12 @@ export type AddressMapPickerProps = {
   helperText?: string;
 };
 
-function fingerprint(value: Pick<LocationValue, 'address' | 'city' | 'province'>): string {
-  return `${value.address}|${value.city}|${value.province}`.trim().toLowerCase();
+function fingerprintParts(parts: {
+  address: string;
+  city: string;
+  province: string;
+}): string {
+  return `${parts.address}|${parts.city}|${parts.province}`.trim().toLowerCase();
 }
 
 function isValidCoord(n: number | null | undefined): n is number {
@@ -134,8 +138,12 @@ export function AddressMapPicker({
   const [manualAdjust, setManualAdjust] = useState(false);
   const [resolvedFingerprint, setResolvedFingerprint] = useState<string | null>(null);
   const [mapEpoch, setMapEpoch] = useState(0);
+  const addressInputRef = useRef<HTMLInputElement>(null);
 
-  const currentFingerprint = useMemo(() => fingerprint(value), [value]);
+  const currentFingerprint = useMemo(
+    () => fingerprintParts({ address: value.address, city: value.city, province: value.province }),
+    [value.address, value.city, value.province],
+  );
   const hasCoords = isValidCoord(value.lat) && isValidCoord(value.lng);
   const isStale =
     resolvedFingerprint != null &&
@@ -146,21 +154,39 @@ export function AddressMapPicker({
   const handleResolve = useCallback(async () => {
     setResolveError(null);
     setStatusMessage(null);
-    if (!value.address.trim() || !value.city.trim() || !value.province.trim()) {
+
+    const trimmedAddress = (addressInputRef.current?.value ?? value.address).trim();
+    const trimmedCity = (cityLabelFromValue(value.city) || value.city).trim();
+    const trimmedProvince = (provinceLabelFromValue(value.province) || value.province).trim();
+
+    if (!trimmedAddress || !trimmedCity || !trimmedProvince) {
       setResolveError('Completá provincia, ciudad y dirección para ubicar el pin.');
       return;
     }
+
+    const fullAddress = composeFullAddress({
+      address: trimmedAddress,
+      city: trimmedCity,
+      province: trimmedProvince,
+      country: 'Argentina',
+    });
+
+    const payload = {
+      address: trimmedAddress,
+      city: trimmedCity,
+      province: trimmedProvince,
+      country: 'Argentina' as const,
+      context,
+      query: fullAddress,
+    };
+
+    if (process.env.NODE_ENV !== 'production') {
+      console.debug('[geo] resolve payload', payload);
+    }
+
     setResolving(true);
     try {
-      const city = cityLabelFromValue(value.city) || value.city.trim();
-      const province = provinceLabelFromValue(value.province) || value.province.trim();
-      const result = await repos.geo.resolveAddress({
-        address: value.address.trim(),
-        city,
-        province,
-        country: 'Argentina',
-        context,
-      });
+      const result = await repos.geo.resolveAddress(payload);
 
       const nextLat = result.lat;
       const nextLng = result.lng;
@@ -171,11 +197,20 @@ export function AddressMapPicker({
 
       onChange({
         ...value,
+        address: trimmedAddress,
+        city: trimmedCity,
+        province: trimmedProvince,
         lat: nextLat,
         lng: nextLng,
         placeId: result.placeId ?? value.placeId ?? null,
       });
-      setResolvedFingerprint(currentFingerprint);
+      setResolvedFingerprint(
+        fingerprintParts({
+          address: trimmedAddress,
+          city: trimmedCity,
+          province: trimmedProvince,
+        }),
+      );
       setManualAdjust(false);
       setMapEpoch((n) => n + 1);
       setStatusMessage('Ubicación encontrada. Revisá el pin antes de guardar.');
@@ -191,7 +226,7 @@ export function AddressMapPicker({
     } finally {
       setResolving(false);
     }
-  }, [context, currentFingerprint, onChange, repos.geo, value]);
+  }, [context, onChange, repos.geo, value]);
 
   const handlePinMove = useCallback(
     (lat: number, lng: number) => {
@@ -209,6 +244,7 @@ export function AddressMapPicker({
       {label ? <p className="text-sm font-medium text-text">{label}</p> : null}
 
       <Input
+        ref={addressInputRef}
         label="Dirección / punto de encuentro"
         value={value.address}
         onChange={(e) => onChange({ ...value, address: e.target.value })}

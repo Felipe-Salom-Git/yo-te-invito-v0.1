@@ -68,6 +68,7 @@ Etapas base: `V3_1_STAGE_5_CLOSING.md`, `V3_1_STAGE_6_SCANNER_OFFLINE_CLOSING.md
 - [x] Dedupe localidades por nombre normalizado (backend + frontend)
 - [x] Fallback local solo si Georef falla o devuelve vacío
 - [x] Mapa/pin se actualiza tras `resolve-address` (`mapEpoch` + `panTo`)
+- [x] Hotfix GEO — address input en geocoding: calle/altura incluida en query `{address}, {city}, {province}, Argentina`
 - [ ] QA manual producción: Quime 695 / Mitre 250 en Bariloche
 
 ### GEO / Maps — pendientes operativos
