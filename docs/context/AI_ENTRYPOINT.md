@@ -44,7 +44,7 @@ Rama activa: `feat/v1-s03-api-foundation` (último push documental: ver `git log
 | **Multi-fecha / ticket types** | Corregido — formulario envía `occurrenceId` | `ea9c2d7` |
 | **Banners editoriales** | Fix código pusheado; **QA manual prod pendiente** si persiste reemplazo | `d48741c`–`ae971ba`; `V3_1_STAGE_16_BANNERS_RENDERING_CLOSING.md` |
 | **Ciudad / Explore** | Selector sacado del navbar; filtro en `/explore` | `fda9bc6`; `V3_1_STAGE_16_EXPLORE_CITY_FILTER_CLOSING.md` |
-| **GEO dirección → pin** | Código + push OK; **deploy VPS + Google Geocoding key** pendiente | `5932f3b`–`7d21279`; `GEO_ADDRESS_MAP_PIN_CLOSING.md` |
+| **GEO dirección → pin** | Etapa Georef completa (código); **deploy VPS + keys** pendiente | `7957994`–`f098b8a`; `GEO_MAPS_STAGE_CLOSING.md` |
 | **Gastro descuentos QR / cortesías** | Código + push OK; deploy + QA pendiente | `601c7e4`–`58e3704`; `GASTRO_DISCOUNTS_QR_COURTESY_CLOSING.md` |
 | **Getnet webhook** | Fix payload en código; deploy VPS + re-prueba pago pendiente | `ed0cc3e` |
 | **Hard delete Admin** | Postergado | — |
@@ -96,7 +96,9 @@ Controllers: HTTP + Zod only. Services: business logic. Prisma: persistence only
 | **`docs/audits/PUBLIC_FOOTER_SMOKE.md`** | Smoke / QA footer |
 | **`docs/audits/PUBLIC_FOOTER_CLOSING_AUDIT.md`** | Auditoría de cierre footer |
 | **`docs/audits/ADMIN_GASTRO_LOCATIONS_AUDIT.md`** | Admin Gastro Locations — bloque cerrado (CRUD admin + smoke Slice 5) |
-| **`docs/audits/GEO_ADDRESS_MAP_PIN_CLOSING.md`** | Etapa GEO — geocoding + pin editable |
+| **`docs/audits/GEO_MAPS_STAGE_CLOSING.md`** | Etapa GEO/Maps Georef — cierre completo (2026-06-23) |
+| **`docs/audits/GEO_MAPS_STAGE_AUDIT.md`** | Auditoría etapa GEO/Maps |
+| **`docs/audits/GEO_ADDRESS_MAP_PIN_CLOSING.md`** | Etapa GEO — geocoding + pin editable (previo) |
 | **`docs/audits/GASTRO_DISCOUNTS_QR_COURTESY_CLOSING.md`** | Gastro descuentos QR y cortesías |
 | **`docs/audits/V3_1_STAGE_16_BANNERS_RENDERING_CLOSING.md`** | Banners editoriales sin reemplazar publicaciones |
 | **`docs/audits/V3_1_STAGE_16_EXPLORE_CITY_FILTER_CLOSING.md`** | Filtro ciudad en Explore |
@@ -109,7 +111,9 @@ Controllers: HTTP + Zod only. Services: business logic. Prisma: persistence only
 
 **V3.1 Etapa 16 — Banners + ciudad (2026-06-15):** hotfix render banners editoriales sin reemplazar publicaciones (`V3_1_STAGE_16_BANNERS_RENDERING_CLOSING.md`); filtro ciudad movido a Explore (`V3_1_STAGE_16_EXPLORE_CITY_FILTER_CLOSING.md`). QA manual prod pendiente banners.
 
-**Etapa GEO — dirección a Maps + pin editable (2026-06-15):** `POST /geo/resolve-address`, `AddressMapPicker`, formularios eventos/gastro/rentals/excursiones. Doc: `docs/audits/GEO_ADDRESS_MAP_PIN_CLOSING.md`. Pendiente: `GOOGLE_GEOCODING_API_KEY` en VPS + IPs autorizadas en Google Cloud.
+**Etapa GEO / Maps — Georef + dirección compuesta (2026-06-23):** `GET /geo/provinces`, `GET /geo/localities`, `GeoRefService`, hooks `useGeoProvinces`/`useGeoLocalities`, provincia/ciudad dinámica + localidad manual, dirección calle/altura, geocoding compuesto sin contaminar `address`, fichas públicas sin duplicados. Doc: `docs/audits/GEO_MAPS_STAGE_CLOSING.md`. Pendiente ops: `GOOGLE_GEOCODING_API_KEY` VPS + QA prod.
+
+**Etapa GEO — dirección a Maps + pin editable (2026-06-15):** `POST /geo/resolve-address`, `AddressMapPicker`, formularios eventos/gastro/rentals/excursiones. Doc: `docs/audits/GEO_ADDRESS_MAP_PIN_CLOSING.md`.
 
 **Gastro descuentos QR cortesía (2026-06-15):** claims, emails QR, cortesías manuales/seguidores, `/me/descuentos`, scanner. Doc: `docs/audits/GASTRO_DISCOUNTS_QR_COURTESY_CLOSING.md`.
 

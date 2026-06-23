@@ -210,6 +210,8 @@ Script cleanup: `apps/api/prisma/scripts/cleanup-content.ts` (preserva `felipe.e
 
 Guías: `docs/guides/README.md`, `DEVELOPER_SCRIPTS_GUIDE.md`, `SMOKE_TESTS_GUIDE.md`, `DEMO_REMOVAL.md`. Histórico: `docs/legacy/guides/`.
 
+**GEO / Maps (etapa Georef 2026-06-23):** provincias/localidades desde Georef Argentina (`GET /geo/provinces`, `GET /geo/localities`); Google Geocoding solo para pin/coords (`POST /geo/resolve-address`); formularios con provincia/ciudad dinámica + localidad manual; dirección = calle/altura; geocoding compuesto internamente; fichas públicas sin duplicar ubicación. Doc: `docs/audits/GEO_MAPS_STAGE_CLOSING.md`. Ops pendiente: keys VPS + QA prod.
+
 **Google Cloud / Storage / SEO / Maps (bloque cerrado prod 2026-06-01):** GCP + GCS privado/público + backups; upload GCS en portales admin/productora/gastro/hotel; SEO técnico base + GSC; Maps con key prod, persistencia `googlePlaceId`/`province`, Ver ubicación, JSON-LD local. Docs: `docs/deploy/GOOGLE_CLOUD_RUNBOOK.md`, `GCS_STORAGE_STRATEGY.md`, `SEARCH_CONSOLE_SEO_RUNBOOK.md`, `docs/audits/MAPS_LOCATION_AUDIT.md`, `SEO_TECHNICAL_AUDIT.md`. Build VPS: `pnpm build` desde raíz (`db:generate` + `shared` + apps).
 
 **Getnet Web Checkout Redirect (2026-06):** `feat/v1-s03-api-foundation` en VPS; redirect OK; webhook portal configurado; fix payload `payment.result.status` (`ed0cc3e`); pendiente deploy VPS + re-prueba pago/tickets; `main` sin merge. Ver [GETNET_WEBCHECKOUT_VPS_REDIRECT_SMOKE.md](../payments/GETNET_WEBCHECKOUT_VPS_REDIRECT_SMOKE.md), [GETNET_WEBHOOK.md](../payments/GETNET_WEBHOOK.md).

@@ -73,7 +73,7 @@ ApiClient → HTTP (NEXT_PUBLIC_API_BASE_URL)
 | **producerReviews** / **adminReviewDisputes** | ✓ | comentarios productora + cola admin disputas |
 | **commercialReviews** | ✓ | valoraciones privadas productora↔referidor |
 | **MePortalRepo** | ✓ | dashboard, cart, favorites, expected-events, activity, account, transfer offers, notifications, **push subscriptions**, **`GET /me/gastro-discounts`** (QR descuentos) |
-| **GeoRepo** | ✓ | `POST /geo/resolve-address` — geocoding server-side (Etapa GEO 2026-06-15) |
+| **GeoRepo** | ✓ | `GET /geo/provinces`, `GET /geo/localities`, `POST /geo/resolve-address` |
 | **adminDashboard** | ✓ | `GET /admin/dashboard` — KPIs + cola eventos pendientes |
 | **adminEvents** | ✓ | `GET /admin/events` — listado operativo con filtros |
 | **adminAudit** | ✓ | `GET /admin/audit-logs` — auditoría con filtros |
@@ -239,7 +239,7 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`). Shared UI tokens:
 | **Admin gastro → discovery** | Cards gastro → `/restaurants/[publicEventId]` (`getContentDetailHref`); admin canónico `/gastronomicos/[profileId]`; sin redirect Next `/restaurants`→`/gastronomicos` (`V3_1_HOTFIX_GASTRO_PUBLIC_LINKS.md`) |
 | **Legales admin** | `components/admin/legal/` — `/admin/legales` (tabla desktop `md+` con `overflow-x-auto` + `min-w-[900px]`; cards `md:hidden`), detalle, versiones; `LegalDocumentsRepo` + `lib/query/admin-legal-documents.ts` |
 | **Legales público** | `components/legal/` — `/legal/[slug]` (server fetch, ISR); preview Markdown |
-| **Registro V2** | `components/auth/RegisterWizard.tsx`, `components/auth/register/*` (pasos comprador/productora/gastro/hotel/referido), `lib/auth/register-error-messages.ts`, `lib/auth/register-validation.ts`, `lib/onboarding/*-portal-onboarding.ts`, `OnboardingChecklistCard`; ubicación: `ProvinceCitySelect`, `GastroProvinceCityFields`, catálogo `@yo-te-invito/shared` → `ARGENTINA_PROVINCES` |
+| **Registro V2** | `components/auth/RegisterWizard.tsx`, `components/auth/register/*` (pasos comprador/productora/gastro/hotel/referido), `lib/auth/register-error-messages.ts`, `lib/auth/register-validation.ts`, `lib/onboarding/*-portal-onboarding.ts`, `OnboardingChecklistCard`; ubicación: `ProvinceCitySelect` (Georef + fallback), `GastroProvinceCityFields`, hooks `useGeoProvinces`/`useGeoLocalities` |
 | **Aceptación legal (reutilizable)** | `LegalAcceptanceCheckboxList`, `LegalRequirementNotice`, `LegalDocumentsLinksList`, `LegalFlowAcceptanceBlock`, `PortalLegalPendingBanner`; hooks `lib/query/me-legal.ts`, `lib/query/public-legal-requirements.ts`; integración en `RegisterWizard`, `/me/cart`, checkout público, `PortalLayoutShell` |
 | **Footer público** | `components/footer/*` + `RouteAwareFooter` — variantes full/minimal/hidden; legales `footerLegalLinks.ts`; config `footerPublicConfig.ts`; contacto `usePublicPlatformConfig`; smoke `docs/audits/PUBLIC_FOOTER_SMOKE.md` |
 | **Portal legales** | `PortalLegalPendingBanner` en portales comerciales (`PORTAL_ACCESS`); `lib/navigation/portalLegalProfile.ts` |
@@ -393,7 +393,7 @@ Módulo técnico **cerrado**; contenido base en `docs/legal/` importable como bo
 
 Runbook: [`docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTION_RUNBOOK.md). Pendiente: smoke dominio real, legales bootstrap → contenido aprobado.
 
-**Google Maps (prod 2026-06-01 + GEO 2026-06-15):** `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` en VPS (mapa JS en browser). **Geocoding server-side:** `GOOGLE_GEOCODING_API_KEY` en API — botón «Ubicar en el mapa» vía `AddressMapPicker` → `repos.geo.resolveAddress`. Componentes: `AddressMapPicker`, `EventLocationFields`, `RentalLocationFields` (eventos, gastro, rentals, operadores/excursiones). Pin draggable; fallback OSM si falla Maps JS. Pendiente ops: key Geocoding con IP VPS autorizada. Docs: [`MAPS_LOCATION_AUDIT.md`](../audits/MAPS_LOCATION_AUDIT.md), [`GEO_ADDRESS_MAP_PIN_CLOSING.md`](../audits/GEO_ADDRESS_MAP_PIN_CLOSING.md).
+**Google Maps (prod 2026-06-01 + GEO 2026-06-23):** `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` en VPS (mapa JS). **Geocoding server-side:** `GOOGLE_GEOCODING_API_KEY` en API. **Georef:** `useGeoProvinces` / `useGeoLocalities` → `ProvinceCitySelect` (localidad manual + fallback catálogo). **Mapa:** `AddressMapPicker` compone dirección para geocoding pero persiste solo calle/altura en `address`. Componentes: `EventLocationFields`, `RentalLocationFields`. Display público: `formatPublicLocationDisplay`. Docs: [`GEO_MAPS_STAGE_CLOSING.md`](../audits/GEO_MAPS_STAGE_CLOSING.md), [`GEO_ADDRESS_MAP_PIN_CLOSING.md`](../audits/GEO_ADDRESS_MAP_PIN_CLOSING.md).
 
 **Storage imágenes (prod 2026-05-31):** GCS `yti-prod-public-assets`; `useGcsImageUpload` en rentals, admin eventos/excursiones, productora, gastro, hotel. [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §17–22. Ops pendiente: data-URL/orphans (no bloqueante).
 

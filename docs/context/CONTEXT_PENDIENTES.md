@@ -53,28 +53,27 @@ Etapas base: `V3_1_STAGE_5_CLOSING.md`, `V3_1_STAGE_6_SCANNER_OFFLINE_CLOSING.md
 - [ ] QA manual: filtrar por ciudad en `/explore` y verificar resultados reales
 - [ ] Normalización ciudad en listados API si quedan inconsistencias
 
-### GEO / Maps — etapa Georef en curso (2026-06-23)
+### GEO / Maps — etapa Georef completada (código 2026-06-23)
 
-- [x] `POST /geo/resolve-address` + `GeoService` (`5932f3b`)
-- [x] `AddressMapPicker` + formularios (`21bcdb1`–`1936cb3`)
-- [x] Doc: `GEO_ADDRESS_MAP_PIN_CLOSING.md`
-- [x] `GET /geo/provinces` + `GET /geo/localities` + `GeoRefService` (etapa GEO slice 1)
-- [x] Auditoría etapa: `docs/audits/GEO_MAPS_STAGE_AUDIT.md`
-- [ ] UI dinámica Georef + localidad manual + dirección compuesta (slices 2–5)
-- [ ] Deploy VPS: `prisma migrate deploy` (`GEO_ADDRESS_RESOLVED` audit)
-- [ ] `GOOGLE_GEOCODING_API_KEY` en `/opt/yoteinvito/apps/api/.env`
-- [ ] Google Cloud: key **solo Geocoding API**, restricción por **IP** (no HTTP referrer). IPs VPS:
-  - `179.43.124.145/32`
-  - `2800:6c0:5::2bdc/128`
-- [ ] Verificación post-config:
+- [x] `POST /geo/resolve-address` + `GeoService`
+- [x] `GET /geo/provinces` + `GET /geo/localities` + `GeoRefService`
+- [x] `AddressMapPicker` + formularios con provincia/ciudad Georef
+- [x] Localidad manual («No encuentro mi localidad»)
+- [x] Dirección compuesta solo para geocoding (no sobrescribe `address`)
+- [x] Fichas públicas sin duplicar ubicación
+- [x] Docs: `GEO_MAPS_STAGE_AUDIT.md`, `GEO_MAPS_STAGE_CLOSING.md`
 
-```bash
-sudo systemctl restart yti-api
-curl -I https://api.yoteinvito.club/health
-sudo journalctl -u yti-api -n 120 --no-pager -l | grep -i -E "resolve-address|geocoding|google|503|GEO|REQUEST_DENIED|denied"
-```
+### GEO / Maps — pendientes operativos
 
-- [ ] QA manual: botón «Ubicar en el mapa» en eventos, gastro, rentals, operadores, excursiones
+- [ ] Configurar `GOOGLE_GEOCODING_API_KEY` en VPS si falta
+- [ ] Confirmar restricciones IP en Google Cloud si falta
+- [ ] `prisma migrate deploy` (`GEO_ADDRESS_RESOLVED` audit) si falta en prod
+- [ ] QA producción post-deploy: «Ubicar en el mapa» en eventos, gastro, rentals, excursiones
+
+### GEO / Maps — mejoras futuras
+
+- [ ] Evaluar migración a `AdvancedMarkerElement`
+- [ ] Evaluar cache persistente de Georef si hiciera falta
 
 ### Gastro descuentos / cortesías / QR — implementado, deploy/QA pendiente
 
