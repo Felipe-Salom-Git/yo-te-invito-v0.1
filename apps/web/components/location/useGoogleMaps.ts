@@ -83,7 +83,7 @@ function loadGoogleMapsScript(apiKey: string): Promise<void> {
     script.dataset.ytiGoogleMaps = '1';
     script.async = true;
     script.defer = true;
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&libraries=places&callback=${MAPS_CALLBACK}`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&libraries=places&loading=async&callback=${MAPS_CALLBACK}`;
     script.onerror = () => reject(new Error('Google Maps failed to load'));
     document.head.appendChild(script);
   });
