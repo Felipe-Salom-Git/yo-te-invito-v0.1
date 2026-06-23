@@ -24,11 +24,11 @@
 
 - [ ] Retirar Getnet de la checklist activa de implementación.
 - [ ] Mantener pago/ticketera real como bloque futuro hasta definir nueva pasarela.
-- [ ] En carga de eventos, dejar disponible solo el flujo de publicaciones publicitarias.
-- [ ] En el botón/opción de “cargar con ticketera”, mostrar cartel **“Próximamente”**.
-- [ ] Conservar formularios y estructura técnica existente de ticketera, pero impedir acceso del usuario de momento.
-- [ ] Revisar que el usuario no pueda publicar eventos con ticketera activa por accidente.
-- [ ] Confirmar que el flujo publicitario sigue funcionando sin tocar ticket types ni checkout.
+- [x] En carga de eventos, dejar disponible solo el flujo de publicaciones publicitarias.
+- [x] En el botón/opción de “cargar con ticketera”, mostrar cartel **“Próximamente”**.
+- [x] Conservar formularios y estructura técnica existente de ticketera, pero impedir acceso del usuario de momento.
+- [x] Revisar que el usuario no pueda publicar eventos con ticketera activa por accidente (guard UI + `TICKETING_CREATION_ENABLED`).
+- [x] Confirmar que el flujo publicitario sigue funcionando sin tocar ticket types ni checkout.
 
 **Notas para Cursor:**
 
@@ -131,14 +131,14 @@ Doc cierre: `docs/audits/GEO_MAPS_STAGE_CLOSING.md`
 
 **Estado:** legales ya publicados. Pendiente mejorar UX de confirmación.
 
-- [ ] Revisar mensaje luego de registrarse.
-- [ ] Agregar aviso claro: revisar email para confirmación / próximos pasos.
-- [ ] Agregar aviso: el correo puede llegar a spam o correo no deseado.
-- [ ] Revisar mensaje luego de solicitar QR/descuento.
-- [ ] Agregar aviso claro: el QR se enviará por email.
-- [ ] Agregar aviso: revisar spam si no aparece.
-- [ ] Aplicar copy consistente con tono Yo Te Invito.
-- [ ] Confirmar que el mensaje se muestre en mobile.
+- [x] Revisar mensaje luego de registrarse.
+- [x] Agregar aviso claro: revisar email para confirmación / próximos pasos.
+- [x] Agregar aviso: el correo puede llegar a spam o correo no deseado.
+- [x] Revisar mensaje luego de solicitar QR/descuento.
+- [x] Agregar aviso claro: el QR se enviará por email.
+- [x] Agregar aviso: revisar spam si no aparece.
+- [x] Aplicar copy consistente con tono Yo Te Invito.
+- [ ] Confirmar que el mensaje se muestre en mobile (QA manual).
 
 **Copy sugerido:**
 
@@ -186,7 +186,7 @@ Estos bloques quedan fuera de la checklist activa salvo que aparezca un bug nuev
 
 - [x] Legales publicados.
 - [x] No pasar como pendiente de publicación legal.
-- [ ] Solo queda mejorar mensajes post-registro / QR sobre email y spam.
+- [x] Mensajes post-registro / QR sobre email y spam (código 2026-06-23; QA manual pendiente).
 
 ---
 
@@ -258,6 +258,7 @@ Estos bloques quedan fuera de la checklist activa salvo que aparezca un bug nuev
 
 ### 3.3 QA Ticketera deshabilitada
 
+- [x] Código: selector Próximamente + guard URL `?mode=ticketed` (2026-06-23).
 - [ ] Crear evento publicitario.
 - [ ] Confirmar que no pide ticket types.
 - [ ] Intentar elegir “cargar con ticketera”.

@@ -128,7 +128,19 @@ Etapas base: `V3_1_STAGE_5_CLOSING.md`, `V3_1_STAGE_6_SCANNER_OFFLINE_CLOSING.md
 2. QA filtro ciudad Explore
 3. Deploy + QA gastro descuentos QR/cortesías
 4. Hard delete seguro (cuando corresponda)
-5. Getnet callbacks cuando soporte habilite / tras deploy fix
+5. Nueva pasarela de pagos — definir proveedor y reactivar ticketera
+
+### Etapa UX operativa — Ticketera Próximamente + mensajes email/spam (2026-06-23)
+
+- [x] Ticketera temporalmente deshabilitada para usuarios (`TICKETING_CREATION_ENABLED = false`).
+- [x] Opción “con ticketera” muestra Próximamente en selector de modo productora.
+- [x] Guard en `/producer/events/new?mode=ticketed` — panel informativo + CTA publicitaria.
+- [x] Publicación publicitaria queda operativa (flujo `PUBLICITY_ONLY` sin cambios).
+- [x] Mensaje post-registro avisa revisar email y spam (portal `?registered=1` + login `?registered=1`).
+- [x] Mensaje post-solicitud QR/descuento avisa revisar email y spam (`/descuentos/reclamo`, formulario solicitud).
+- [ ] QA manual ticketera Próximamente (mobile, productora, URL directa).
+- [ ] QA manual mensajes email/spam (registro + QR, mobile).
+- [ ] Nueva pasarela de pagos — definir proveedor y reactivar ticketera.
 
 ---
 

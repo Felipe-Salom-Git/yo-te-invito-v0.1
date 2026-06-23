@@ -48,10 +48,19 @@ Rama activa: `feat/v1-s03-api-foundation` (último push documental: ver `git log
 | **Footer público refresh** | Layout + assets marca + datos reales prod OK | `772a227`; `components/footer/*`, `footerPublicConfig.ts` |
 | **Branding web** | Favicon, intro, share OG alineados y QA share OK prod | `9c1f83b`–`3fafa18`; `lib/seo/brandAssets.ts`, `/brand/*` |
 | **Gastro descuentos QR / cortesías** | Código + push OK; deploy + QA pendiente | `601c7e4`–`58e3704`; `GASTRO_DISCOUNTS_QR_COURTESY_CLOSING.md` |
-| **Getnet webhook** | Fix payload en código; deploy VPS + re-prueba pago pendiente | `ed0cc3e` |
+| **Getnet webhook** | Fix payload en código; abandonado como implementación activa — nueva pasarela TBD | `ed0cc3e` |
+| **Ticketera Próximamente** | UI productora bloqueada; solo publicidad operativa | `TICKETING_CREATION_ENABLED` |
+| **Mensajes email/spam** | Post-registro + post-QR en web | `EmailInboxNotice` |
 | **Hard delete Admin** | Postergado | — |
 
-Detalle y pendientes priorizados: **`CONTEXT_PENDIENTES.md` § Jornada 2026-06-15**.
+Detalle y pendientes priorizados: **`CONTEXT_PENDIENTES.md` § Jornada 2026-06-15** y **§ Etapa UX operativa**.
+
+## Etapa UX operativa — Ticketera Próximamente + mensajes email/spam
+
+- Ticketera temporalmente deshabilitada en UI para usuarios/productoras (`apps/web/lib/producer/ticketing-config.ts`).
+- Opción con ticketera queda como Próximamente; URL directa `?mode=ticketed` muestra panel informativo.
+- Flujo publicitario continúa operativo.
+- Mensajes post-registro y post-QR ahora avisan revisar email y spam (`EmailInboxNotice`, `PostRegisterEmailNotice`).
 
 ---
 
