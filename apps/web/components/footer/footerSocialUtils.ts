@@ -5,7 +5,7 @@ import {
 } from '@/lib/navigation/footerPublicConfig';
 
 export type FooterSocialDisplayItem = FooterSocialLink & {
-  /** Resolved href for navigation; null = show as pending, not a link */
+  /** Resolved href for navigation; null = omit from footer */
   displayHref: string | null;
 };
 
@@ -18,37 +18,46 @@ function isSafeExternalUrl(href: string): boolean {
   }
 }
 
+function resolveInstagramHref(apiConfig?: PublicPlatformConfig): string | null {
+  const instagramFromApi = apiConfig?.instagramUrl?.trim();
+  const instagramHref =
+    instagramFromApi && isSafeExternalUrl(instagramFromApi)
+      ? instagramFromApi
+      : FOOTER_SOCIAL_LINKS.find((item) => item.id === 'instagram')?.href ?? null;
+
+  if (!instagramHref || !isSafeExternalUrl(instagramHref)) {
+    return null;
+  }
+
+  return instagramHref;
+}
+
+/** Resolved Instagram URL for footer highlight (API override + static fallback). */
+export function resolveFooterInstagramUrl(
+  apiConfig?: PublicPlatformConfig,
+): string | null {
+  return resolveInstagramHref(apiConfig);
+}
+
 /**
- * Merges static config with optional API fields (instagramUrl, websiteUrl).
+ * Merges static config with optional API field (instagramUrl).
  */
 export function resolveFooterSocialLinks(
   apiConfig?: PublicPlatformConfig,
 ): FooterSocialDisplayItem[] {
-  const byId = new Map(FOOTER_SOCIAL_LINKS.map((item) => [item.id, { ...item }]));
+  const instagramHref = resolveInstagramHref(apiConfig);
 
-  const instagramFromApi = apiConfig?.instagramUrl?.trim();
-  if (instagramFromApi && isSafeExternalUrl(instagramFromApi)) {
-    byId.set('instagram', {
+  if (!instagramHref) {
+    return [];
+  }
+
+  return [
+    {
       id: 'instagram',
       label: 'Instagram',
-      href: instagramFromApi,
+      href: instagramHref,
       placeholder: false,
-    });
-  }
-
-  const websiteFromApi = apiConfig?.websiteUrl?.trim();
-  if (websiteFromApi && isSafeExternalUrl(websiteFromApi)) {
-    byId.set('website', {
-      id: 'website',
-      label: 'Sitio web',
-      href: websiteFromApi,
-      placeholder: false,
-    });
-  }
-
-  return Array.from(byId.values()).map((item) => ({
-    ...item,
-    displayHref:
-      item.href && isSafeExternalUrl(item.href) ? item.href : null,
-  }));
+      displayHref: instagramHref,
+    },
+  ];
 }

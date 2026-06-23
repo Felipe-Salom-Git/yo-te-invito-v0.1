@@ -1,36 +1,47 @@
 import type { PublicPlatformConfig } from '@/repositories/interfaces';
 
-/** TODO(producto): reemplazar cuando existan datos reales en PlatformConfig / admin. */
-export const FOOTER_CONTACT_PLACEHOLDER = {
-  email: 'soporte@yoteinvito.test',
-  phone: '+54 9 294 000-0000',
+export const FOOTER_CONTACT_DEFAULT = {
+  email: 'soporte@yoteinvito.club',
+  phone: '+54 2944 923544',
 } as const;
 
 export type FooterContactDisplay = {
   email: string;
   phone: string;
+  phoneTel: string;
+  whatsappUrl: string;
   address: string;
-  isPlaceholder: boolean;
 };
 
+function digitsOnly(phone: string): string {
+  return phone.replace(/\D/g, '');
+}
+
+function toTelHref(phone: string): string {
+  const digits = digitsOnly(phone);
+  return digits ? `tel:+${digits}` : '';
+}
+
+function toWhatsAppHref(phone: string): string {
+  const digits = digitsOnly(phone);
+  return digits ? `https://wa.me/${digits}` : '';
+}
+
 /**
- * Resolves footer contact from public API config with graceful fallback.
+ * Resolves footer contact from public API config with real frontend fallbacks.
  */
 export function resolveFooterContact(
   config: PublicPlatformConfig | undefined,
 ): FooterContactDisplay {
-  const email = config?.supportEmail?.trim() ?? '';
-  const phone = config?.supportPhone?.trim() ?? '';
+  const email = config?.supportEmail?.trim() || FOOTER_CONTACT_DEFAULT.email;
+  const phone = config?.supportPhone?.trim() || FOOTER_CONTACT_DEFAULT.phone;
   const address = config?.address?.trim() ?? '';
 
-  if (email || phone || address) {
-    return { email, phone, address, isPlaceholder: false };
-  }
-
   return {
-    email: FOOTER_CONTACT_PLACEHOLDER.email,
-    phone: FOOTER_CONTACT_PLACEHOLDER.phone,
-    address: '',
-    isPlaceholder: true,
+    email,
+    phone,
+    phoneTel: toTelHref(phone),
+    whatsappUrl: toWhatsAppHref(phone),
+    address,
   };
 }

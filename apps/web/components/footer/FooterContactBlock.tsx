@@ -1,17 +1,17 @@
 import type { FooterContactDisplay } from '@/lib/navigation/footerPublicContact';
-import { footerLinkClass, footerSectionTitle } from './footerStyles';
-
-const SUPPORT_INTRO = 'Consultas sobre la plataforma, tus entradas o contenido publicado.';
+import {
+  footerSupportHeadingClass,
+  footerSupportLabelClass,
+  footerSupportValueClass,
+} from './footerStyles';
 
 type Props = {
   contact: FooterContactDisplay;
-  /** Minimal footer — sin intro larga */
+  /** Minimal footer — sin encabezado de sección */
   compact?: boolean;
 };
 
 export function FooterContactBlock({ contact, compact }: Props) {
-  const hasContact = contact.email || contact.phone || contact.address;
-
   return (
     <section
       id="footer-support"
@@ -19,35 +19,37 @@ export function FooterContactBlock({ contact, compact }: Props) {
       aria-labelledby={compact ? undefined : 'footer-support-heading'}
     >
       {!compact ? (
-        <>
-          <h2 id="footer-support-heading" className={footerSectionTitle}>
-            Soporte
-          </h2>
-          <p className="mt-3 text-sm leading-relaxed text-text-muted">{SUPPORT_INTRO}</p>
-        </>
+        <h2 id="footer-support-heading" className={footerSupportHeadingClass}>
+          Soporte
+        </h2>
       ) : null}
-      {hasContact ? (
-        <div className={`flex flex-col gap-2 text-sm ${compact ? '' : 'mt-3'}`}>
-          {contact.email ? (
-            <a href={`mailto:${contact.email}`} className={footerLinkClass}>
-              {contact.email}
-            </a>
-          ) : null}
-          {contact.phone ? (
-            <a href={`tel:${contact.phone.replace(/\s/g, '')}`} className={footerLinkClass}>
+      <div className={`flex flex-col gap-3 ${compact ? '' : 'mt-3'}`}>
+        {contact.phone ? (
+          <div className="min-w-0">
+            <span className={footerSupportLabelClass}>WhatsApp</span>
+            <a
+              href={contact.whatsappUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={footerSupportValueClass}
+              aria-label={`WhatsApp de soporte: ${contact.phone} (se abre en una nueva pestaña)`}
+            >
               {contact.phone}
             </a>
-          ) : null}
-          {contact.address ? (
-            <p className="text-sm text-text-muted">{contact.address}</p>
-          ) : null}
-        </div>
-      ) : null}
-      {contact.isPlaceholder ? (
-        <p className="mt-2 text-[0.65rem] text-text-muted/75">
-          Contacto de demostración — datos reales pendientes.
-        </p>
-      ) : null}
+          </div>
+        ) : null}
+        {contact.email ? (
+          <div className="min-w-0">
+            <span className={footerSupportLabelClass}>Email</span>
+            <a href={`mailto:${contact.email}`} className={footerSupportValueClass}>
+              {contact.email}
+            </a>
+          </div>
+        ) : null}
+        {contact.address ? (
+          <p className="text-sm text-text-muted">{contact.address}</p>
+        ) : null}
+      </div>
     </section>
   );
 }

@@ -1,17 +1,54 @@
+import { Fragment } from 'react';
 import Link from 'next/link';
 import {
   FOOTER_LEGAL_LINKS,
   FOOTER_LEGAL_LINKS_ESSENTIAL,
   type FooterLegalLink,
 } from '@/lib/navigation/footerLegalLinks';
-import { footerLinkClass, footerSectionTitle } from './footerStyles';
+import {
+  footerInlineLinkClass,
+  footerLegalRowClass,
+  footerLegalSeparatorClass,
+  footerLinkClass,
+  footerSectionTitle,
+} from './footerStyles';
 
 type Props = {
   links?: FooterLegalLink[];
+  /** Checkout / legal pages — lista compacta */
   compact?: boolean;
+  /** Footer full — links en fila horizontal con separadores */
+  inline?: boolean;
 };
 
-export function FooterLegalSection({ links = FOOTER_LEGAL_LINKS, compact }: Props) {
+export function FooterLegalSection({
+  links = FOOTER_LEGAL_LINKS,
+  compact,
+  inline,
+}: Props) {
+  if (inline) {
+    return (
+      <nav className="min-w-0" aria-label="Información legal">
+        <ul className={footerLegalRowClass}>
+          {links.map((link, index) => (
+            <Fragment key={link.href}>
+              {index > 0 ? (
+                <li className={footerLegalSeparatorClass} aria-hidden="true">
+                  •
+                </li>
+              ) : null}
+              <li className="min-w-0">
+                <Link href={link.href} className={footerInlineLinkClass}>
+                  {link.label}
+                </Link>
+              </li>
+            </Fragment>
+          ))}
+        </ul>
+      </nav>
+    );
+  }
+
   return (
     <nav className="min-w-0" aria-label="Información legal">
       <p className={footerSectionTitle}>Legales</p>
