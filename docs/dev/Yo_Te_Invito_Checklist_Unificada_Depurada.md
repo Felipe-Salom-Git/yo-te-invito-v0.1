@@ -10,8 +10,8 @@
 > - GEO / Maps se mantiene.
 > - Banners, Ciudad/Explore, Scanner y Multi-fecha quedan cerrados.
 > - Gastro descuentos QR / cortesías queda como QA manual + correcciones.
-> - Legales publicados; pendiente mejorar mensajes post-registro / QR.
-> - UX pendiente principal: footer.
+> - Legales publicados; mensajes post-registro / QR mejorados (2026-06-23).
+> - Footer público UX cerrado (`772a227` + QA prod).
 > - Agregar función Admin para eliminar publicaciones/locales y vaciar base de datos operativamente.
 
 ---
@@ -80,15 +80,19 @@ Doc cierre: `docs/audits/GEO_MAPS_STAGE_CLOSING.md`
 
 ---
 
-### 0.4 Footer — pendiente UX
+### 0.4 Footer — UX cerrado
 
-- [ ] Revisar footer actual en home, explore, categorías y fichas públicas.
-- [ ] Corregir problemas visuales o de contenido detectados.
-- [ ] Confirmar que no aparezca en portales privados.
-- [ ] Confirmar responsive mobile.
-- [ ] Confirmar links legales publicados.
-- [ ] Confirmar datos reales de contacto/redes si ya están definidos.
-- [ ] QA mobile en dispositivo real si corresponde.
+**Estado:** refresh layout `772a227` + datos reales prod + QA OK (2026-06-23).
+
+- [x] Revisar footer actual en home, explore, categorías y fichas públicas.
+- [x] Corregir problemas visuales o de contenido detectados.
+- [x] Confirmar que no aparezca en portales privados.
+- [x] Confirmar responsive mobile.
+- [x] Confirmar links legales publicados.
+- [x] Confirmar datos reales de contacto/redes si ya están definidos.
+- [x] QA mobile en dispositivo real si corresponde.
+
+Doc cierre: `docs/audits/PUBLIC_FOOTER_CLOSING_AUDIT.md`
 
 ---
 
@@ -268,15 +272,15 @@ Estos bloques quedan fuera de la checklist activa salvo que aparezca un bug nuev
 
 ### 3.4 QA Footer
 
-- [ ] Home.
-- [ ] Explore.
-- [ ] Categorías.
-- [ ] Ficha evento.
-- [ ] Ficha gastro.
-- [ ] Ficha rental.
-- [ ] Ficha excursión.
-- [ ] Legal.
-- [ ] Mobile.
+- [x] Home.
+- [x] Explore.
+- [x] Categorías.
+- [x] Ficha evento.
+- [x] Ficha gastro.
+- [x] Ficha rental.
+- [x] Ficha excursión.
+- [x] Legal.
+- [x] Mobile.
 
 ### 3.5 QA Admin Delete
 
@@ -293,10 +297,10 @@ Estos bloques quedan fuera de la checklist activa salvo que aparezca un bug nuev
 ## 4. Orden recomendado de ejecución
 
 1. **Gastro QR / cortesías — documentar bugs QA y corregir.**
-2. **Deshabilitar ticketera para usuarios + cartel “Próximamente”.**
+2. ~~**Deshabilitar ticketera para usuarios + cartel “Próximamente”.**~~ ✓ 2026-06-23
 3. **GEO / Maps — cerrar configuración y QA.**
-4. **Mensajes post-registro / QR con aviso de email y spam.**
-5. **Footer — corrección UX.**
+4. ~~**Mensajes post-registro / QR con aviso de email y spam.**~~ ✓ 2026-06-23
+5. ~~**Footer — corrección UX.**~~ ✓ cerrado (`772a227` + QA prod)
 6. **Admin delete seguro para limpieza de publicaciones/locales.**
 7. **Nueva pasarela de pagos — solo cuando esté definida.**
 8. **Facturación + emails de pago — después de nueva pasarela.**
@@ -317,8 +321,8 @@ Decisiones actuales:
 - Facturación y emails de pago quedan pendientes hasta la nueva pasarela.
 - GEO / Maps se mantiene.
 - Gastro descuentos QR / cortesías ya fue deployado, pero requiere QA manual + corrección de bugs detectados.
-- Banners, Ciudad/Explore, Scanner, Multi-fecha y Legales publicados quedan cerrados.
-- Pendientes activos: corregir footer, mejorar mensajes post-registro/QR avisando revisar email y spam, y agregar función Admin segura para eliminar publicaciones/locales y limpiar base de datos.
+- Banners, Ciudad/Explore, Scanner, Multi-fecha, Legales publicados y Footer UX quedan cerrados.
+- Pendientes activos: Gastro QR/cortesías (bugs QA), Admin delete seguro para eliminar publicaciones/locales, y nueva pasarela de pagos cuando esté definida.
 
 Trabajar por slices pequeños, sin mega refactors, respetando arquitectura existente:
 Frontend: UI → hooks → repositorios → ApiRepository.

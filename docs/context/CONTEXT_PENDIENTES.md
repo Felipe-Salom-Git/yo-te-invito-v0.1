@@ -8,7 +8,7 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 
 ## Jornada 2026-06-15 — cierre documental
 
-Rama: `feat/v1-s03-api-foundation` · últimos commits relevantes: `3fafa18` (favicon) … `772a227` (footer refresh) … `5353ae2` (GEO address hotfix).
+Rama: `feat/v1-s03-api-foundation` · últimos commits relevantes: `be4dbdd`–`16b1504` (ticketera Próximamente + mensajes email/spam) … `772a227` (footer refresh) … `5353ae2` (GEO address hotfix).
 
 ### Scanner — cerrado funcionalmente por ahora
 
@@ -71,12 +71,13 @@ Etapas base: `V3_1_STAGE_5_CLOSING.md`, `V3_1_STAGE_6_SCANNER_OFFLINE_CLOSING.md
 - [x] Hotfix GEO — address input en geocoding: calle/altura incluida en query `{address}, {city}, {province}, Argentina` (`5353ae2`)
 - [x] QA manual producción: Quime 695 / Mitre 250 en Bariloche
 
-### Footer público — refresh layout (2026-06-23)
+### Footer público — refresh layout (2026-06-23) — UX cerrado
 
 - [x] Rediseño pie público dark premium (`772a227`) — bloques marca, Instagram highlight, contacto, legales inline, crédito desarrollador
 - [x] Assets marca footer: `logo.png`, `logo_2.png` (intro); audio intro removido (`light_saber*.mp3`)
 - [x] Config simplificada: `footerPublicConfig.ts`, `footerPublicContact.ts`, `footerSocialUtils.ts`
 - [x] Datos reales Instagram/contacto/desarrollador en prod (post-bloque)
+- [x] QA mobile y rutas públicas (home, explore, categorías, fichas, legal) — cerrado
 
 ### Branding web — favicon, intro, share OG (2026-06-23)
 
