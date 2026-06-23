@@ -36,7 +36,7 @@ Detalle histórico demo: [guides/DEMO_REMOVAL.md](../guides/DEMO_REMOVAL.md). Po
 
 ## Jornada 2026-06-15 — resumen operativo
 
-Rama activa: `feat/v1-s03-api-foundation` (último push documental: ver `git log`).
+Rama activa: `feat/v1-s03-api-foundation` (último push documental: ver `git log`; recientes: `3fafa18` favicon … `772a227` footer … `5353ae2` GEO address).
 
 | Bloque | Estado | Referencia |
 |--------|--------|------------|
@@ -44,7 +44,9 @@ Rama activa: `feat/v1-s03-api-foundation` (último push documental: ver `git log
 | **Multi-fecha / ticket types** | Corregido — formulario envía `occurrenceId` | `ea9c2d7` |
 | **Banners editoriales** | Fix código pusheado; **QA manual prod pendiente** si persiste reemplazo | `d48741c`–`ae971ba`; `V3_1_STAGE_16_BANNERS_RENDERING_CLOSING.md` |
 | **Ciudad / Explore** | Selector sacado del navbar; filtro en `/explore` | `fda9bc6`; `V3_1_STAGE_16_EXPLORE_CITY_FILTER_CLOSING.md` |
-| **GEO dirección → pin** | Etapa Georef completa (código); **deploy VPS + keys** pendiente | `7957994`–`f098b8a`; `GEO_MAPS_STAGE_CLOSING.md` |
+| **GEO / Maps Georef** | Cerrado prod 2026-06-23 (keys, migrate, QA Bariloche + ubicar mapa) | `7957994`–`5353ae2`; `GEO_MAPS_STAGE_CLOSING.md` |
+| **Footer público refresh** | Layout + assets marca + datos reales prod OK | `772a227`; `components/footer/*`, `footerPublicConfig.ts` |
+| **Branding web** | Favicon, intro, share OG alineados y QA share OK prod | `9c1f83b`–`3fafa18`; `lib/seo/brandAssets.ts`, `/brand/*` |
 | **Gastro descuentos QR / cortesías** | Código + push OK; deploy + QA pendiente | `601c7e4`–`58e3704`; `GASTRO_DISCOUNTS_QR_COURTESY_CLOSING.md` |
 | **Getnet webhook** | Fix payload en código; deploy VPS + re-prueba pago pendiente | `ed0cc3e` |
 | **Hard delete Admin** | Postergado | — |
@@ -111,7 +113,11 @@ Controllers: HTTP + Zod only. Services: business logic. Prisma: persistence only
 
 **V3.1 Etapa 16 — Banners + ciudad (2026-06-15):** hotfix render banners editoriales sin reemplazar publicaciones (`V3_1_STAGE_16_BANNERS_RENDERING_CLOSING.md`); filtro ciudad movido a Explore (`V3_1_STAGE_16_EXPLORE_CITY_FILTER_CLOSING.md`). QA manual prod pendiente banners.
 
-**Etapa GEO / Maps — Georef + dirección compuesta (2026-06-23):** `GET /geo/provinces`, `GET /geo/localities`, `GeoRefService`, hooks `useGeoProvinces`/`useGeoLocalities`, provincia/ciudad dinámica + localidad manual, dirección calle/altura, geocoding compuesto sin contaminar `address`, fichas públicas sin duplicados. Doc: `docs/audits/GEO_MAPS_STAGE_CLOSING.md`. Pendiente ops: `GOOGLE_GEOCODING_API_KEY` VPS + QA prod.
+**Etapa GEO / Maps — Georef + hotfixes (2026-06-23):** `GET /geo/provinces`, `GET /geo/localities` (dedupe nombres), `GeoRefService`, hooks `useGeoProvinces`/`useGeoLocalities`, `AddressMapPicker` con `query` compuesta (calle+ciudad+provincia), pin `mapEpoch`+`panTo`, fichas públicas sin duplicados. Commits: `ea53f72`, `5353ae2`. Doc: `docs/audits/GEO_MAPS_STAGE_CLOSING.md`. **Cerrado prod 2026-06-23.**
+
+**Footer público refresh (2026-06-23):** commit `772a227` — layout 3 columnas (marca / Instagram / contacto), legales inline, crédito dev; assets `logo.png`, `logo_2.png`; audio intro removido. Componentes: `FooterFull`, `FooterInstagramHighlight`, `footerStyles.ts`.
+
+**Branding web (2026-06-23):** favicon `/brand/logo.png` (`3fafa18`); share OG `/brand/og-logo3-black-v2.png` + `/home` alineado (`ef6ef4b`); intro `logo_2.png` ~70% sin sonido (`88e7bb7`). Constantes: `lib/seo/brandAssets.ts`. **No mezclar** intro asset con favicon/OG.
 
 **Etapa GEO — dirección a Maps + pin editable (2026-06-15):** `POST /geo/resolve-address`, `AddressMapPicker`, formularios eventos/gastro/rentals/excursiones. Doc: `docs/audits/GEO_ADDRESS_MAP_PIN_CLOSING.md`.
 
@@ -147,7 +153,7 @@ Controllers: HTTP + Zod only. Services: business logic. Prisma: persistence only
 
 **Legal Admin / Legales V2 (cerrado 2026-05-24):** slices 1–8 + import Markdown — admin `/admin/legales`, público `/legal/[slug]`, aceptación `/me/legal/*`, integración registro/checkout/footer/portales; **layout portales** `max-w-screen-2xl` (`portalLayoutClasses.ts`, `PortalPageContext`). Doc: `docs/legal/LEGAL_ADMIN_MODULE.md`; QA: `docs/dev/LEGAL_ADMIN_QA_SMOKE.md`; smoke `pnpm --filter api run smoke:legal` (API + `DEV_AUTH_ENABLED` o JWT). **No** marcar checklist de redacción legal hasta publicar contenido real.
 
-**Footer público V2 (cerrado 2026-05-24):** `RouteAwareFooter` + variantes `full`/`minimal`/`hidden` (`footerVisibility.ts`); UI `components/footer/*`; contacto `GET /public/platform-config` + `usePublicPlatformConfig`; legales `footerLegalLinks.ts`. `/categorias`: solo `CategoryGatewayFooter` (global hidden). Checklist V2 § Footer público completo. Docs: `PUBLIC_FOOTER_AUDIT.md`, `PUBLIC_FOOTER_SMOKE.md`, `PUBLIC_FOOTER_CLOSING_AUDIT.md`.
+**Footer público V2 (cerrado 2026-05-24, refresh 2026-06-23):** `RouteAwareFooter` + variantes `full`/`minimal`/`hidden` (`footerVisibility.ts`); UI `components/footer/*` (refresh `772a227`: Instagram highlight, legales inline); contacto `GET /public/platform-config` + `usePublicPlatformConfig`. `/categorias`: solo `CategoryGatewayFooter` (global hidden). Docs: `PUBLIC_FOOTER_AUDIT.md`, `PUBLIC_FOOTER_SMOKE.md`, `PUBLIC_FOOTER_CLOSING_AUDIT.md`.
 
 **Registro y onboarding por tipo de usuario (cerrado 2026-05-24, slices 1–14 + 12.5–12.6):** wizard `/register` (`RegisterWizard` + pasos por perfil), `POST /auth/register` con `profileType` / `profileData`, legales SIGNUP transaccionales, perfiles comerciales ACTIVE al crear. Schemas: `packages/shared/src/schemas/profile-onboarding.ts`. Ubicación: catálogo `ARGENTINA_PROVINCES` en `@yo-te-invito/shared`; hotel y gastro con selects provincia/ciudad; email duplicado `EMAIL_ALREADY_EXISTS`. Rental sin signup (admin + CTA). Índice: `docs/onboarding/` — auditoría `docs/audits/REGISTER_ONBOARDING_AUDIT.md`, smoke `docs/onboarding/REGISTER_ONBOARDING_SMOKE.md`.
 

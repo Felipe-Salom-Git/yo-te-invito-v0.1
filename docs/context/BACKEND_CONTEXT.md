@@ -127,13 +127,14 @@ See previous full endpoint tables in git history; key groups:
 - **Scanner operativo jornada (2026-06-15 — cerrado funcionalmente):** hotfixes PWA `apps/scanner`: login + menú operativo (`0ad9564`); validación contra fecha seleccionada (`0317a17`); PDF export — fix import CJS `pdfkit` (`ea09816`, `12058e1`); targets vía `GET /scanner/scan-targets` (sin `GET /public/events/:id`); selector oculta eventos vencidos (corte 1 AM AR); modal resultado (`d7dc305`); listado entradas + hora escaneo (`b22b5ef`); escaneo manual por botón, no loop automático (`8bf56a3`); pantalla dividida setup vs escaneo, modal sin auto-cierre (`cbc4866`); gastro portal scanners — fallback `parentProfileId` (`84707cd`). QA extendida en puerta real/mobile opcional.
 - **Geocoding server-side (Etapa GEO — 2026-06-15 + Georef 2026-06-23):** módulo `apps/api/src/modules/geo/`:
   - `GET /geo/provinces` — público; `GeoRefService` → Georef Argentina; cache 24h
-  - `GET /geo/localities?province=...` — público; cache 12h por provincia
-  - `POST /geo/resolve-address` — JWT; Google Geocoding API; cache 15 min; rate limit 30/min/usuario; audit `GEO_ADDRESS_RESOLVED`
+  - `GET /geo/localities?province=...` — público; cache 12h; **dedupe por nombre normalizado** (`normalizeLocalityKey`)
+  - `POST /geo/resolve-address` — JWT; Google Geocoding API; body acepta campos separados + opcional `query` precompuesta; `composeFullAddress()`; log sanitizado; cache 15 min; rate limit 30/min/usuario; audit `GEO_ADDRESS_RESOLVED`
   - Env: `GOOGLE_GEOCODING_API_KEY` (fallback dev `GOOGLE_MAPS_API_KEY`)
-  - Schemas: `packages/shared/src/schemas/geo.ts` (+ `composeFullAddress`)
+  - Schemas: `packages/shared/src/schemas/geo.ts` (+ `composeFullAddress`, `query` opcional)
   - Contextos resolve: `EVENT`, `GASTRO`, `RENTAL_LOCATION`, `EXCURSION_OPERATOR`, `EXCURSION_MEETING_POINT`
+  - Hotfixes 2026-06-23: dedupe localidades (`ea53f72`); calle/altura en query geocoding (`5353ae2`)
   - Docs: `GEO_MAPS_STAGE_CLOSING.md`, `GEO_ADDRESS_MAP_PIN_CLOSING.md`
-  - **Pendiente ops:** key Geocoding IP-restricted en Google Cloud + VPS
+  - **Cerrado prod 2026-06-23:** key Geocoding IP-restricted en Google Cloud + VPS, migrate deploy, QA Bariloche + «Ubicar en el mapa»
 - **Gastro**: **content** (`GastroContent` — `GET/POST /gastro/events/:eventId/content`, `PATCH /gastro/content/:id`; estados draft/published/inactive; público en `GET /public/gastro-locations*` → `content[]`), discounts, validations.
 - **Gastro público (ficha restaurante):** `GET /public/gastro-locations`, `/:id`, `by-event/:eventId` (perfil ACTIVE + `content[]` publicado + `contactEmail`); `GET /:id/discounts` (ACTIVE/APPROVED). Gastro **no** aplica caducidad por fecha de evento en listados (`event-public-visibility.util.ts`).
 - **QR descuentos v1:** `buildGastroDiscountQrPayload` en `@yo-te-invito/shared` — `yti:gastro-discount:v1:<discountId>:<token>`; emisión en `POST /public/gastro-discounts/:id/claim` (token por `GastroDiscountClaim`) y al aprobar ticket (`GastroDiscount.qrToken`). Validación puerta: `POST /scanner/gastro-discounts/validate` (`ScannerGastroDiscountService`) — roles SCANNER/ADMIN/GASTRO_OWNER; idempotencia por `claimId`. Doc: `docs/gastro/GASTRO_DISCOUNT_QR.md`. Tests (Slice 9 QA OK): `test:gastro-discount-qr`, `test:gastro-discount-scan` (API + `DEV_AUTH_ENABLED` o dev).

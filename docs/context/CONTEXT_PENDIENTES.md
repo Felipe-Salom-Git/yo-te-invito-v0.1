@@ -8,7 +8,7 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 
 ## Jornada 2026-06-15 — cierre documental
 
-Rama: `feat/v1-s03-api-foundation` · últimos commits relevantes: `7d21279` (GEO docs) … `9602fe9` (Getnet docs).
+Rama: `feat/v1-s03-api-foundation` · últimos commits relevantes: `3fafa18` (favicon) … `772a227` (footer refresh) … `5353ae2` (GEO address hotfix).
 
 ### Scanner — cerrado funcionalmente por ahora
 
@@ -68,15 +68,31 @@ Etapas base: `V3_1_STAGE_5_CLOSING.md`, `V3_1_STAGE_6_SCANNER_OFFLINE_CLOSING.md
 - [x] Dedupe localidades por nombre normalizado (backend + frontend)
 - [x] Fallback local solo si Georef falla o devuelve vacío
 - [x] Mapa/pin se actualiza tras `resolve-address` (`mapEpoch` + `panTo`)
-- [x] Hotfix GEO — address input en geocoding: calle/altura incluida en query `{address}, {city}, {province}, Argentina`
-- [ ] QA manual producción: Quime 695 / Mitre 250 en Bariloche
+- [x] Hotfix GEO — address input en geocoding: calle/altura incluida en query `{address}, {city}, {province}, Argentina` (`5353ae2`)
+- [x] QA manual producción: Quime 695 / Mitre 250 en Bariloche
 
-### GEO / Maps — pendientes operativos
+### Footer público — refresh layout (2026-06-23)
 
-- [ ] Configurar `GOOGLE_GEOCODING_API_KEY` en VPS si falta
-- [ ] Confirmar restricciones IP en Google Cloud si falta
-- [ ] `prisma migrate deploy` (`GEO_ADDRESS_RESOLVED` audit) si falta en prod
-- [ ] QA producción post-deploy: «Ubicar en el mapa» en eventos, gastro, rentals, excursiones
+- [x] Rediseño pie público dark premium (`772a227`) — bloques marca, Instagram highlight, contacto, legales inline, crédito desarrollador
+- [x] Assets marca footer: `logo.png`, `logo_2.png` (intro); audio intro removido (`light_saber*.mp3`)
+- [x] Config simplificada: `footerPublicConfig.ts`, `footerPublicContact.ts`, `footerSocialUtils.ts`
+- [x] Datos reales Instagram/contacto/desarrollador en prod (post-bloque)
+
+### Branding web — favicon, intro, share OG (2026-06-23)
+
+- [x] Intro splash: logo ~70% tamaño; sin sonido; asset `logo_2.png` solo en animación (`88e7bb7`)
+- [x] Favicon/iconos: metadata + manifest → `/brand/logo.png` (`3fafa18`; sin rutas dinámicas `/icon`)
+- [x] Share OG/Twitter: asset versionado `/brand/og-logo3-black-v2.png` (logo 3, fondo negro, composición más compacta)
+- [x] `/home` alineado con misma OG image que raíz (`ef6ef4b`)
+- [x] Constantes: `lib/seo/brandAssets.ts`, `ogShareImage.tsx`, `scripts/generate-og-share.mjs`
+- [x] QA manual share WhatsApp post-deploy (Facebook Debugger / preview OK en prod)
+
+### GEO / Maps — pendientes operativos — cerrado prod 2026-06-23
+
+- [x] Configurar `GOOGLE_GEOCODING_API_KEY` en VPS
+- [x] Confirmar restricciones IP en Google Cloud
+- [x] `prisma migrate deploy` (`GEO_ADDRESS_RESOLVED` audit) en prod
+- [x] QA producción post-deploy: «Ubicar en el mapa» en eventos, gastro, rentals, excursiones
 
 ### GEO / Maps — mejoras futuras
 
@@ -108,12 +124,11 @@ Etapas base: `V3_1_STAGE_5_CLOSING.md`, `V3_1_STAGE_6_SCANNER_OFFLINE_CLOSING.md
 
 ### Prioridad próxima sesión
 
-1. Google Geocoding ops (IPs + env + restart + curl/journalctl + «Ubicar en el mapa»)
-2. QA banners editoriales en prod (o fix si persiste)
-3. QA filtro ciudad Explore
-4. Deploy + QA gastro descuentos QR/cortesías
-5. Hard delete seguro (cuando corresponda)
-6. Getnet callbacks cuando soporte habilite / tras deploy fix
+1. QA banners editoriales en prod (o fix si persiste)
+2. QA filtro ciudad Explore
+3. Deploy + QA gastro descuentos QR/cortesías
+4. Hard delete seguro (cuando corresponda)
+5. Getnet callbacks cuando soporte habilite / tras deploy fix
 
 ---
 
@@ -458,13 +473,14 @@ Etapas base: `V3_1_STAGE_5_CLOSING.md`, `V3_1_STAGE_6_SCANNER_OFFLINE_CLOSING.md
 
 ---
 
-## H0. Footer público completo (2026-05-24) — bloque cerrado
+## H0. Footer público completo (2026-05-24) — bloque cerrado + refresh 2026-06-23
 
 > Auditoría: `docs/audits/PUBLIC_FOOTER_AUDIT.md` · Smoke: `PUBLIC_FOOTER_SMOKE.md` · Cierre: `PUBLIC_FOOTER_CLOSING_AUDIT.md` · Checklist V2 § Footer público completo
 
 - [x] Slices 1–5: auditoría, visibilidad, API contacto pública, UI dark premium, responsive/a11y
 - [x] `GET /public/platform-config` + `usePublicPlatformConfig` (footer sin `/admin/config`)
-- [ ] Datos reales: Instagram, contacto institucional, web/red equipo desarrollador (post-bloque)
+- [x] **Refresh 2026-06-23** (`772a227`): layout 3 columnas (marca / Instagram / contacto), legales inline, crédito dev simplificado; `FooterInstagramHighlight`, estilos `footerStyles.ts`
+- [x] Datos reales: Instagram, contacto institucional, web/red equipo desarrollador (post-bloque)
 
 ---
 
@@ -699,5 +715,6 @@ _(Trending con `viewCount`: ver ítem Slice 2 arriba en § K.)_
 | `docs/audits/V3_1_STAGE_16_BANNERS_RENDERING_CLOSING.md` | Etapa 16 — banners editoriales sin reemplazar publicaciones |
 | `docs/audits/V3_1_STAGE_16_EXPLORE_CITY_FILTER_CLOSING.md` | Etapa 16 — filtro ciudad en Explore (navbar sin ciudad) |
 | `docs/audits/GEO_ADDRESS_MAP_PIN_CLOSING.md` | Etapa GEO — geocoding backend + AddressMapPicker |
+| `docs/audits/GEO_MAPS_STAGE_CLOSING.md` | Etapa GEO Georef + hotfixes address/dedupe/pin |
 | `docs/audits/GASTRO_DISCOUNTS_QR_COURTESY_CLOSING.md` | Gastro descuentos QR, cortesías, Mi cuenta |
 

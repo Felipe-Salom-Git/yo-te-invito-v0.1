@@ -33,7 +33,13 @@ Implementation-oriented technical context for AI-assisted development. Describes
 - **Background**: Black (`#0a0a0a`, muted `#171717`) — **dark only** (V3.1 Etapa 13: no light mode; `html.dark`, `color-scheme: dark only`; sin `ThemeToggle`)
 - **Accent**: Green (`#22c55e`, hover `#16a34a`)
 - **Text**: White + muted
-- **Logo**: `components/brand/Logo.tsx` (variants: icon, with-text, navbar, auth, splash)
+- **Logo UI**: `components/brand/Logo.tsx` (variants: icon, with-text, navbar, auth, splash) → `/brand/logo.png`
+- **Assets públicos** (`public/brand/`):
+  - `logo.png` — icono verde RGBA; **favicon**, PWA, JSON-LD (`BRAND_FAVICON_SRC`)
+  - `logo_2.png` — intro/splash únicamente (`SplashIntro`; sin audio)
+  - `logo_3.png` — wordmark negro; fuente art OG
+  - `og-logo3-black-v2.png` — share card 1200×630 (WhatsApp/Twitter/OG fallback)
+- **Metadata SEO**: `lib/seo/brandAssets.ts`, `lib/seo/ogShareImage.tsx`, `app/layout.tsx` (`icons`, `openGraph`, `twitter`); regenerar OG: `node apps/web/scripts/generate-og-share.mjs`
 - **Direction**: Dark premium platform; Netflix-inspired rails on home
 - **Responsive**: ~16px / 24px / 32px padding (mobile / tablet / desktop)
 
@@ -198,7 +204,8 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`). Shared UI tokens:
 | **RentalProductImagesForm** | galería con `SortableImageList`; orden → API `sortOrder` |
 | **PublicRelatedLinksCard** | `components/public/` — bloque links relacionados seguros (Etapa 12.5) |
 | **RelatedLinksFormFields** | `components/forms/` — editor links excursiones/gastro (máx. 5, URL https) |
-| **SiteOrganizationJsonLd** | `components/seo/` — schema.org Organization en layout (Etapa 12.6) |
+| **SiteOrganizationJsonLd** | `components/seo/` — schema.org Organization; logo → `/brand/logo.png` |
+| **SEO / share metadata** | `lib/seo/brandAssets.ts`, `metadata.ts`, `ogShareImage.tsx`; OG `/brand/og-logo3-black-v2.png`; rutas dinámicas `app/opengraph-image.tsx`, `twitter-image.tsx` |
 | **PUBLIC_SUMMARY_MAX_LENGTH** | import desde `@yo-te-invito/shared` — 500 chars resumen (Slice 4) |
 | **ExternalLinksFormFields** | `components/forms/` — carga URLs/redes validadas (Slice 6) |
 | **PublicExternalLinksCard** | `components/public/` — bloque «Reservas y redes» en fichas gastro/excursión (Slice 6) |
@@ -241,7 +248,7 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`). Shared UI tokens:
 | **Legales público** | `components/legal/` — `/legal/[slug]` (server fetch, ISR); preview Markdown |
 | **Registro V2** | `components/auth/RegisterWizard.tsx`, `components/auth/register/*` (pasos comprador/productora/gastro/hotel/referido), `lib/auth/register-error-messages.ts`, `lib/auth/register-validation.ts`, `lib/onboarding/*-portal-onboarding.ts`, `OnboardingChecklistCard`; ubicación: `ProvinceCitySelect` (Georef + fallback), `GastroProvinceCityFields`, hooks `useGeoProvinces`/`useGeoLocalities` |
 | **Aceptación legal (reutilizable)** | `LegalAcceptanceCheckboxList`, `LegalRequirementNotice`, `LegalDocumentsLinksList`, `LegalFlowAcceptanceBlock`, `PortalLegalPendingBanner`; hooks `lib/query/me-legal.ts`, `lib/query/public-legal-requirements.ts`; integración en `RegisterWizard`, `/me/cart`, checkout público, `PortalLayoutShell` |
-| **Footer público** | `components/footer/*` + `RouteAwareFooter` — variantes full/minimal/hidden; legales `footerLegalLinks.ts`; config `footerPublicConfig.ts`; contacto `usePublicPlatformConfig`; smoke `docs/audits/PUBLIC_FOOTER_SMOKE.md` |
+| **Footer público** | `components/footer/*` + `RouteAwareFooter` — variantes full/minimal/hidden; refresh 2026-06-23 (`772a227`): `FooterBrandBlock`, `FooterInstagramHighlight`, `FooterContactBlock`, `FooterLegalSection` inline, `FooterDeveloperCredit`; config `footerPublicConfig.ts`; contacto `usePublicPlatformConfig`; smoke `docs/audits/PUBLIC_FOOTER_SMOKE.md` |
 | **Portal legales** | `PortalLegalPendingBanner` en portales comerciales (`PORTAL_ACCESS`); `lib/navigation/portalLegalProfile.ts` |
 | **Markdown legal** | `LegalMarkdownPreview` — subset seguro, sin `dangerouslySetInnerHTML`; SSR público vía `fetchPublicLegalDocument` |
 | **QA / ops** | Smoke manual `docs/dev/LEGAL_ADMIN_QA_SMOKE.md`; módulo `docs/legal/LEGAL_ADMIN_MODULE.md` |
@@ -273,6 +280,7 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`). Shared UI tokens:
 ## 7b. Category gateway (post-splash)
 
 - **Rutas:** `/` (splash + gateway si `shouldShowIntro()` en `introStorage.ts`, 24h) y `/categorias` (reentrada desde logo navbar).
+- **Splash:** `SplashIntro` — asset `/brand/logo_2.png`, scan reveal, **sin audio**; logo ~70% canvas (`88e7bb7`); «Replay Intro» en `/home` → `/`.
 - **UI:** `CategoryGatewayScreen` — hero poster, grilla 2×2 (`CATEGORY_GATEWAY_OPTIONS`), footer a `/home` y `/explore`.
 - **Navegación categoría:** `getCategoryGatewayHref` → `/categoria/{event|gastro|rental|excursion}` (sin hotel en grilla).
 - **Config:** `lib/home/categoryGatewayConfig.ts` — copy, imágenes Unsplash, `CATEGORY_GATEWAY_PATH`.
@@ -339,15 +347,16 @@ Auditoría: `docs/audits/GASTRO_HOTELES_V2_AUDIT.md` · QA/scripts: `docs/guides
 
 **Rentals V2 (checklist § Rentals):** WhatsApp por local, cards discovery, subcategorías, anti-alojamiento, detalle mobile — ver `CONTEXT_PENDIENTES.md` § E.
 
-## 8f. Footer público V2 — cerrado (2026-05-24, Slices 1–5)
+## 8f. Footer público V2 — cerrado (2026-05-24, refresh 2026-06-23)
 
 | Capa | Implementado |
 |------|----------------|
 | Visibilidad | `footerVisibility.ts` → `full` \| `minimal` \| `hidden`; `RouteAwareFooter` en root layout |
-| UI | `components/footer/*` — institucional, verticales, accesos, legales, soporte, confianza, redes, dev |
+| UI | `components/footer/*` — marca, Instagram highlight (`FooterInstagramHighlight`), contacto, legales inline, crédito dev |
 | Contacto | `usePublicPlatformConfig` → `GET /public/platform-config`; fallback placeholder |
 | Gateway | `/categorias`: global `hidden` + `CategoryGatewayFooter` |
 | Legal | `/legal/*`: `minimal` + nota versión en `LegalDocumentPage` |
+| Refresh | Commit `772a227` — layout 3 columnas, estilos `footerStyles.ts`, config simplificada |
 
 **Docs:** `docs/audits/PUBLIC_FOOTER_AUDIT.md`, `PUBLIC_FOOTER_SMOKE.md`, `PUBLIC_FOOTER_CLOSING_AUDIT.md`.
 
@@ -393,7 +402,9 @@ Módulo técnico **cerrado**; contenido base en `docs/legal/` importable como bo
 
 Runbook: [`docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTION_RUNBOOK.md). Pendiente: smoke dominio real, legales bootstrap → contenido aprobado.
 
-**Google Maps (prod 2026-06-01 + GEO 2026-06-23):** `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` en VPS (mapa JS). **Geocoding server-side:** `GOOGLE_GEOCODING_API_KEY` en API. **Georef:** `useGeoProvinces` / `useGeoLocalities` → `ProvinceCitySelect` (localidad manual + fallback catálogo). **Mapa:** `AddressMapPicker` compone dirección para geocoding pero persiste solo calle/altura en `address`. Componentes: `EventLocationFields`, `RentalLocationFields`. Display público: `formatPublicLocationDisplay`. Docs: [`GEO_MAPS_STAGE_CLOSING.md`](../audits/GEO_MAPS_STAGE_CLOSING.md), [`GEO_ADDRESS_MAP_PIN_CLOSING.md`](../audits/GEO_ADDRESS_MAP_PIN_CLOSING.md).
+**Google Maps (prod 2026-06-01 + GEO 2026-06-23):** `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` en VPS (mapa JS). **Geocoding server-side:** `GOOGLE_GEOCODING_API_KEY` en API. **Georef:** `useGeoProvinces` / `useGeoLocalities` → `ProvinceCitySelect` (dedupe nombres, localidad manual + fallback catálogo). **Mapa:** `AddressMapPicker` — ref input + `composeFullAddress` + campo `query`; pin `mapEpoch` + `panTo`. Display público: `formatPublicLocationDisplay`. Hotfixes: `ea53f72`, `5353ae2`. Docs: [`GEO_MAPS_STAGE_CLOSING.md`](../audits/GEO_MAPS_STAGE_CLOSING.md).
+
+**Branding metadata (2026-06-23):** favicon `/brand/logo.png` (metadata `icons` + manifest); share `/brand/og-logo3-black-v2.png` en root + `/home`; intro solo `logo_2.png`. Ver §3 Branding. Share WhatsApp/OG verificado en prod (2026-06-23).
 
 **Storage imágenes (prod 2026-05-31):** GCS `yti-prod-public-assets`; `useGcsImageUpload` en rentals, admin eventos/excursiones, productora, gastro, hotel. [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §17–22. Ops pendiente: data-URL/orphans (no bloqueante).
 

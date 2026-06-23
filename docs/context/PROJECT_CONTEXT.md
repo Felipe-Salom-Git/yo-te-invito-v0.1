@@ -60,7 +60,7 @@ yo-te-invito-v0.1/
 - Home, explore, category detail pages, checkout (demo), tickets, referrers directory, referral redirect `/r/[code]`.
 - **Legales:** `/legal/[slug]` (documentos publicados); footer con enlaces; aceptación en registro/checkout/portales — ver §5d.
 - **Navbar V2 (2026-05):** navegación responsive modular (drawer mobile, carro con badge, menú usuario simplificado, portales con sidebar/mobile nav). **Sin selector de ciudad desde 2026-06-15** — filtro ciudad en `/explore` (`ExploreCityFilter`). Auditoría: `docs/audits/NAVBAR_RESPONSIVE_AUDIT.md`, `V3_1_STAGE_16_EXPLORE_CITY_FILTER_CLOSING.md`.
-- **Footer público V2 (2026-05-24):** pie modular dark premium; variantes por ruta; contacto vía `GET /public/platform-config`; oculto en portales. Auditoría: `docs/audits/PUBLIC_FOOTER_CLOSING_AUDIT.md`.
+- **Footer público V2 (2026-05-24 + refresh 2026-06-23):** pie modular dark premium; variantes por ruta; contacto vía `GET /public/platform-config`; oculto en portales. Refresh `772a227`: layout marca / Instagram / contacto, legales inline, crédito desarrollador. Auditoría: `docs/audits/PUBLIC_FOOTER_CLOSING_AUDIT.md`.
 
 ### Rentals (Equipos y Rentals) — V2 cerrado (checklist)
 
@@ -149,7 +149,7 @@ Detalle API/UI: `BACKEND_CONTEXT.md`, `FRONTEND_CONTEXT.md`, checklist V2 § Adm
 
 Checklist V2 § Gastro y Hoteles marcado. Auditoría: `docs/audits/GASTRO_HOTELES_V2_AUDIT.md`.
 
-## 5e. Footer público V2 — Estado cerrado (2026-05-24)
+## 5e. Footer público V2 — Estado cerrado (2026-05-24, refresh 2026-06-23)
 
 | Pieza | Estado |
 |-------|--------|
@@ -158,8 +158,20 @@ Checklist V2 § Gastro y Hoteles marcado. Auditoría: `docs/audits/GASTRO_HOTELE
 | Contacto público `GET /public/platform-config` | Cerrado |
 | Sin doble pie `/categorias`, `/legal/*` | Cerrado |
 | Legales + verticales + accesos + confianza | Cerrado |
+| **Refresh layout** (`772a227`): marca, Instagram highlight, contacto, legales inline, dev credit | Cerrado |
 
-Detalle: `docs/audits/PUBLIC_FOOTER_AUDIT.md`, cierre `PUBLIC_FOOTER_CLOSING_AUDIT.md`, smoke `PUBLIC_FOOTER_SMOKE.md`. Pendientes producto: datos reales Instagram/contacto/desarrollador, publicación legales.
+Detalle: `docs/audits/PUBLIC_FOOTER_AUDIT.md`, cierre `PUBLIC_FOOTER_CLOSING_AUDIT.md`, smoke `PUBLIC_FOOTER_SMOKE.md`. Datos reales Instagram/contacto/desarrollador en prod OK (2026-06-23). Pendiente producto: publicación legales.
+
+## 5f. Branding web — favicon, intro, share (2026-06-23)
+
+| Pieza | Estado |
+|-------|--------|
+| Favicon / PWA icon | Cerrado — `/brand/logo.png` en metadata + manifest (`3fafa18`) |
+| Intro splash | Cerrado — `logo_2.png`, sin audio, logo ~70% (`88e7bb7`) |
+| Share OG/Twitter | Cerrado — `/brand/og-logo3-black-v2.png` (logo 3, negro); `/home` alineado (`ef6ef4b`) |
+| Assets separados | Cerrado — intro ≠ favicon ≠ OG (`lib/seo/brandAssets.ts`) |
+
+Share WhatsApp/OG verificado en prod (2026-06-23). Regenerar OG: `node apps/web/scripts/generate-og-share.mjs`.
 
 ## 5d. Legal Admin — Estado cerrado (2026-05-24)
 
@@ -210,7 +222,9 @@ Script cleanup: `apps/api/prisma/scripts/cleanup-content.ts` (preserva `felipe.e
 
 Guías: `docs/guides/README.md`, `DEVELOPER_SCRIPTS_GUIDE.md`, `SMOKE_TESTS_GUIDE.md`, `DEMO_REMOVAL.md`. Histórico: `docs/legacy/guides/`.
 
-**GEO / Maps (etapa Georef 2026-06-23):** provincias/localidades desde Georef Argentina (`GET /geo/provinces`, `GET /geo/localities`); Google Geocoding solo para pin/coords (`POST /geo/resolve-address`); formularios con provincia/ciudad dinámica + localidad manual; dirección = calle/altura; geocoding compuesto internamente; fichas públicas sin duplicar ubicación. Doc: `docs/audits/GEO_MAPS_STAGE_CLOSING.md`. Ops pendiente: keys VPS + QA prod.
+**GEO / Maps (etapa Georef 2026-06-23 + hotfixes):** provincias/localidades desde Georef Argentina (`GET /geo/provinces`, `GET /geo/localities`); dedupe por nombre normalizado; Google Geocoding solo para pin/coords (`POST /geo/resolve-address` con `query` compuesta incluyendo calle/altura); formularios con provincia/ciudad dinámica + localidad manual; dirección = calle/altura; pin actualizable (`mapEpoch` + `panTo`); fichas públicas sin duplicar ubicación. Commits hotfix: `ea53f72`, `5353ae2`. Doc: `docs/audits/GEO_MAPS_STAGE_CLOSING.md`. **Cerrado prod 2026-06-23:** keys VPS, restricciones IP, migrate deploy, QA Bariloche + «Ubicar en el mapa».
+
+**Branding web (2026-06-23):** footer refresh `772a227`; favicon `/brand/logo.png`; share `/brand/og-logo3-black-v2.png`; intro `logo_2.png` sin sonido. Ver §5f.
 
 **Google Cloud / Storage / SEO / Maps (bloque cerrado prod 2026-06-01):** GCP + GCS privado/público + backups; upload GCS en portales admin/productora/gastro/hotel; SEO técnico base + GSC; Maps con key prod, persistencia `googlePlaceId`/`province`, Ver ubicación, JSON-LD local. Docs: `docs/deploy/GOOGLE_CLOUD_RUNBOOK.md`, `GCS_STORAGE_STRATEGY.md`, `SEARCH_CONSOLE_SEO_RUNBOOK.md`, `docs/audits/MAPS_LOCATION_AUDIT.md`, `SEO_TECHNICAL_AUDIT.md`. Build VPS: `pnpm build` desde raíz (`db:generate` + `shared` + apps).
 
@@ -220,7 +234,7 @@ Guías: `docs/guides/README.md`, `DEVELOPER_SCRIPTS_GUIDE.md`, `SMOKE_TESTS_GUID
 
 **Hotfix multi-fecha ticket types (2026-06-15):** el formulario productora envía `occurrenceId` al crear tandas en eventos multi-fecha (`ea9c2d7`); backend ya validaba correctamente.
 
-**Jornada 2026-06-15:** scanner operativo, GEO, gastro QR cortesía, banners/ciudad Etapa 16, Getnet webhook fix — ver `CONTEXT_PENDIENTES.md` § Jornada 2026-06-15 y `AI_ENTRYPOINT.md` § Jornada.
+**Jornada 2026-06-15 / 2026-06-23:** scanner operativo, GEO + hotfixes, footer refresh, branding metadata, gastro QR cortesía, banners/ciudad Etapa 16, Getnet webhook fix — ver `CONTEXT_PENDIENTES.md` § Jornada y `AI_ENTRYPOINT.md` § Jornada.
 
 ---
 

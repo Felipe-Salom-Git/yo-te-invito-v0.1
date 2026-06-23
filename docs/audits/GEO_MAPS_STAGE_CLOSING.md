@@ -2,7 +2,7 @@
 
 **Fecha:** 2026-06-23  
 **Rama:** `feat/v1-s03-api-foundation`  
-**Estado:** Completado (código + docs). Pendiente operativo: deploy VPS + keys Google + QA producción.
+**Estado:** Completado (código + docs + prod QA 2026-06-23).
 
 ---
 
@@ -93,12 +93,12 @@ pnpm --filter web run build      # OK (ECONNREFUSED en SSG por API offline — e
 
 ### Manual
 
-- [ ] Provincia dinámica en formularios (requiere API + Georef en runtime)
-- [ ] Localidad manual
-- [ ] Ubicar en mapa con dirección compuesta
-- [ ] Fichas públicas sin duplicación
-- [ ] Mobile
-- [ ] Producción post-deploy
+- [x] Provincia dinámica en formularios (requiere API + Georef en runtime)
+- [x] Localidad manual
+- [x] Ubicar en mapa con dirección compuesta
+- [x] Fichas públicas sin duplicación
+- [x] Mobile
+- [x] Producción post-deploy
 
 ---
 
@@ -122,13 +122,13 @@ pnpm --filter web run build
 
 ---
 
-## Pendientes operativos
+## Pendientes operativos — cerrado prod 2026-06-23
 
-- [ ] `GOOGLE_GEOCODING_API_KEY` en VPS (`/opt/yoteinvito/apps/api/.env`)
-- [ ] Restricción IP Google Cloud para key Geocoding
-- [ ] `prisma migrate deploy` si falta audit `GEO_ADDRESS_RESOLVED`
-- [ ] Redeploy API + Web
-- [ ] QA manual producción post-deploy
+- [x] `GOOGLE_GEOCODING_API_KEY` en VPS (`/opt/yoteinvito/apps/api/.env`)
+- [x] Restricción IP Google Cloud para key Geocoding
+- [x] `prisma migrate deploy` si falta audit `GEO_ADDRESS_RESOLVED`
+- [x] Redeploy API + Web
+- [x] QA manual producción post-deploy
 
 ---
 
@@ -165,7 +165,7 @@ pnpm --filter web run build
 
 - [x] Build shared + api + web
 - [x] Verificado Georef raw: 149 filas → 143 nombres únicos normalizados para Río Negro
-- [ ] QA manual producción post-deploy (Quime 695 / Mitre 250, Bariloche)
+- [x] QA manual producción post-deploy (Quime 695 / Mitre 250, Bariloche)
 
 ---
 
@@ -191,7 +191,7 @@ pnpm --filter web run build
 **QA:**
 
 - [x] Build shared + api + web
-- [ ] QA manual producción: Quime 695 / Mitre 250 en Bariloche; cambio de dirección re-ubica pin; dirección vacía muestra error sin llamar a Google
+- [x] QA manual producción: Quime 695 / Mitre 250 en Bariloche; cambio de dirección re-ubica pin; dirección vacía muestra error sin llamar a Google
 
 ---
 
