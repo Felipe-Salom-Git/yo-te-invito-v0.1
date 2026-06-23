@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { PageContainer, SectionTitle } from '@/components';
+import { EmailInboxNotice } from '@/components/ux/EmailInboxNotice';
 import { useGastroDiscountClaim } from '@/lib/query/useGastroPublishedDiscounts';
 import { isValidGastroDiscountQrPayload } from '@/lib/gastro/discount-qr';
 import { qrImageUrl } from '@/lib/qr-image';
@@ -50,8 +51,9 @@ function ClaimContent() {
     <PageContainer>
       <SectionTitle>{title}</SectionTitle>
       <p className="mt-1 text-text-muted">{claim.locationName}</p>
+      <EmailInboxNotice variant="qr" className="mt-4" />
       <p className="mt-2 text-sm text-text-muted">
-        Enviamos el QR a <span className="font-medium text-text">{claim.email}</span>
+        También enviamos el QR a <span className="font-medium text-text">{claim.email}</span>
         {claim.emailSentAt ? '' : ' (el servicio de email puede no estar configurado en desarrollo)'}.
       </p>
 

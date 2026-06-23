@@ -7,6 +7,7 @@ import Link from 'next/link';
 import type { Role } from '@yo-te-invito/shared';
 import { Button, Input, Card, CardHeader, CardContent } from '@/components';
 import { Logo } from '@/components/brand/Logo';
+import { EmailInboxNotice } from '@/components/ux/EmailInboxNotice';
 import { resolvePostLoginHref } from '@/lib/navigation/rolePortalHome';
 
 function LoginForm() {
@@ -63,9 +64,7 @@ function LoginForm() {
         </CardHeader>
         <CardContent>
           {registered && (
-            <p className="mb-4 rounded border border-accent-muted bg-accent-surface/70 px-3 py-2 text-sm text-accent-soft">
-              Cuenta creada. Revisá tu email para verificar tu cuenta e iniciar sesión.
-            </p>
+            <EmailInboxNotice variant="register" className="mb-4" />
           )}
           {verify && (
             <p className="mb-4 rounded border border-accent-muted bg-accent-surface/70 px-3 py-2 text-sm text-accent-soft">

@@ -7,6 +7,7 @@ import { MobilePortalNav } from './MobilePortalNav';
 import { MasterMobilePortalNav } from './MasterMobilePortalNav';
 import { MasterPortalSidebar } from './MasterPortalSidebar';
 import { PortalLegalPendingBanner } from '@/components/legal/PortalLegalPendingBanner';
+import { PostRegisterEmailNotice } from '@/components/auth/PostRegisterEmailNotice';
 import { portalHasLegalProfile } from '@/lib/navigation/portalLegalProfile';
 import { PortalPageProvider } from '@/lib/navigation/PortalPageContext';
 
@@ -32,7 +33,10 @@ export function PortalLayoutShell({
     return (
       <PortalPageProvider>
         <MasterMobilePortalNav showPublicHomeLink={showPublicHomeLink} />
-        <MasterPortalSidebar>{children}</MasterPortalSidebar>
+        <MasterPortalSidebar>
+          <PostRegisterEmailNotice />
+          {children}
+        </MasterPortalSidebar>
       </PortalPageProvider>
     );
   }
@@ -44,6 +48,7 @@ export function PortalLayoutShell({
     <PortalPageProvider>
       <MobilePortalNav portalKey={portalKey} showPublicHomeLink={showPublicHomeLink} />
       <PortalSidebar items={items}>
+        <PostRegisterEmailNotice />
         {showLegalBanner ? <PortalLegalPendingBanner portalKey={portalKey} /> : null}
         {children}
       </PortalSidebar>

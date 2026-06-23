@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import { useRepositories } from '@/repositories/context';
 import { useTenant } from '@/hooks/useTenant';
+import { POST_QR_EMAIL_NOTICE_BODY } from '@/lib/ux/email-inbox-notices';
 
 const TENANT_FALLBACK = 'tenant-demo';
 
@@ -72,8 +73,8 @@ export function GastroDiscountClaimForm({
       <h2 className="text-lg font-semibold text-text">Solicitar descuento</h2>
       <p className="mt-1 text-sm text-text-muted">
         {isLoggedIn
-          ? `Te enviamos el QR a ${sessionEmail}. También podés verlo desde Mi cuenta.`
-          : 'Es gratis. Te enviamos el QR por email para presentar en el local.'}
+          ? `Te enviamos el QR a ${sessionEmail}. También podés verlo en la siguiente pantalla y desde Mi cuenta.`
+          : POST_QR_EMAIL_NOTICE_BODY}
       </p>
 
       {!isLoggedIn && (

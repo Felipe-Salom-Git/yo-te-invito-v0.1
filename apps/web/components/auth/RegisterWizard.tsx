@@ -43,6 +43,7 @@ import { RegisterReferrerStep } from './register/RegisterReferrerStep';
 import { RegisterProfileStep } from './register/RegisterProfileStep';
 import { RegisterWizardErrorAlert } from './register/RegisterWizardErrorAlert';
 import { RegisterWizardShell } from './register/RegisterWizardShell';
+import { withRegisteredQuery } from '@/components/auth/PostRegisterEmailNotice';
 import {
   REGISTER_WIZARD_COPY,
   getStepMeta,
@@ -469,7 +470,7 @@ export function RegisterWizard() {
       );
       const ok = await registerWithLegal(payload);
       if (!ok) return;
-      router.push('/me');
+      router.push(withRegisteredQuery('/me'));
       router.refresh();
     } catch (err) {
       handleRegisterSubmitError(err);
@@ -492,7 +493,7 @@ export function RegisterWizard() {
       );
       const ok = await registerWithLegal(payload);
       if (!ok) return;
-      router.push('/gastro');
+      router.push(withRegisteredQuery('/gastro'));
       router.refresh();
     } catch (err) {
       handleRegisterSubmitError(err);
@@ -515,7 +516,7 @@ export function RegisterWizard() {
       );
       const ok = await registerWithLegal(payload);
       if (!ok) return;
-      router.push('/hotel');
+      router.push(withRegisteredQuery('/hotel'));
       router.refresh();
     } catch (err) {
       handleRegisterSubmitError(err);
@@ -538,7 +539,7 @@ export function RegisterWizard() {
       );
       const ok = await registerWithLegal(payload);
       if (!ok) return;
-      router.push('/producer');
+      router.push(withRegisteredQuery('/producer'));
       router.refresh();
     } catch (err) {
       handleRegisterSubmitError(err);
@@ -561,7 +562,7 @@ export function RegisterWizard() {
       );
       const ok = await registerWithLegal(payload);
       if (!ok) return;
-      router.push('/referrer');
+      router.push(withRegisteredQuery('/referrer'));
       router.refresh();
     } catch (err) {
       handleRegisterSubmitError(err);
