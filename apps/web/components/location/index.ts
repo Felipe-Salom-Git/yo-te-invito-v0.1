@@ -14,10 +14,10 @@ export { AddressMapPicker } from './AddressMapPicker';
 export type { AddressMapPickerProps } from './AddressMapPicker';
 export { EventLocationFields } from './EventLocationFields';
 export { RentalLocationFields } from './RentalLocationFields';
+export { cityLabelFromValue } from '@yo-te-invito/shared';
 export {
   parseGeoCoord,
   isValidGeoCoord,
-  cityLabelFromValue,
   resolveProvinceCityFromCityLabel,
   validateLocationValue,
   validatePresencialEventLocation,

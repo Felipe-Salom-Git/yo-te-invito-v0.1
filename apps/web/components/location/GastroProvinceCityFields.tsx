@@ -3,7 +3,6 @@
 import { useMemo } from 'react';
 import { Input } from '@/components';
 import { ProvinceCitySelect } from './ProvinceCitySelect';
-import { ARGENTINA_PROVINCES } from './argentina-locations';
 import { applyProvinceToLocationValue } from './location.utils';
 
 export type GastroLocationFieldValues = {
@@ -41,17 +40,10 @@ export function GastroProvinceCityFields({
   disabled = false,
   required = true,
 }: Props) {
-  const cityOptions = useMemo(() => {
-    const p = ARGENTINA_PROVINCES.find((x) => x.value === values.province);
-    return p?.cities ?? [];
-  }, [values.province]);
-
-  const cityHint =
-    values.province && cityOptions.length === 0
-      ? copy.cityNoOptionsHint
-      : !values.province
-        ? copy.cityProvinceFirstHint
-        : copy.citySelectHint;
+  const cityHint = useMemo(() => {
+    if (!values.province) return copy.cityProvinceFirstHint;
+    return copy.citySelectHint;
+  }, [copy.cityProvinceFirstHint, copy.citySelectHint, values.province]);
 
   const handleProvinceChange = (province: string) => {
     const next = applyProvinceToLocationValue(
@@ -77,11 +69,7 @@ export function GastroProvinceCityFields({
           cityLabel={copy.cityLabel}
           provincePlaceholder={copy.provincePlaceholder}
           cityPlaceholder={
-            values.province
-              ? cityOptions.length > 0
-                ? copy.citySelectPlaceholder
-                : copy.cityNoOptionsHint
-              : copy.cityProvinceFirstHint
+            values.province ? copy.citySelectPlaceholder : copy.cityProvinceFirstHint
           }
         />
         <p className="text-xs text-text-muted">{cityHint}</p>
@@ -93,6 +81,7 @@ export function GastroProvinceCityFields({
           name="address"
           value={values.address}
           onChange={(e) => onChange({ address: e.target.value })}
+          placeholder="Mitre 250"
           required={required}
           autoComplete="street-address"
           error={fieldErrors.address}

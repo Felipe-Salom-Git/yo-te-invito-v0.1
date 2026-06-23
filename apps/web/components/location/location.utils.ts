@@ -1,4 +1,5 @@
 import { ARGENTINA_PROVINCES } from './argentina-locations';
+import { cityLabelFromValue, provinceLabelFromValue } from '@yo-te-invito/shared';
 import type { LocationValue } from './location.types';
 
 /**
@@ -20,13 +21,16 @@ export function isValidGeoCoord(n: number | null | undefined): n is number {
   return n != null && Number.isFinite(n);
 }
 
-export function cityLabelFromValue(cityValue: string): string {
-  if (!cityValue) return '';
-  for (const p of ARGENTINA_PROVINCES) {
-    const c = p.cities.find((x) => x.value === cityValue);
-    if (c) return c.label;
-  }
-  return cityValue;
+function normalizeProvinceStored(value: string | null | undefined): string {
+  const v = (value ?? '').trim();
+  if (!v) return '';
+  return provinceLabelFromValue(v) || v;
+}
+
+function normalizeCityStored(value: string | null | undefined): string {
+  const v = (value ?? '').trim();
+  if (!v) return '';
+  return cityLabelFromValue(v) || v;
 }
 
 /** Match free-text city (from API) to normalized province/city values when possible. */
@@ -138,16 +142,15 @@ export function locationValueFromEventFields(input: {
   province?: string | null;
   googlePlaceId?: string | null;
 }): LocationValue {
-  const fromProvince = input.province?.trim()
-    ? {
-        province: input.province.trim(),
-        city: resolveProvinceCityFromCityLabel(input.city).city,
-      }
-    : resolveProvinceCityFromCityLabel(input.city);
+  const province = normalizeProvinceStored(input.province);
+  const cityNorm = normalizeCityStored(input.city);
+  const fromCity = province
+    ? { province, city: resolveProvinceCityFromCityLabel(cityNorm).city || cityNorm }
+    : resolveProvinceCityFromCityLabel(cityNorm);
   return {
     address: input.venueAddress ?? '',
-    province: fromProvince.province,
-    city: fromProvince.city || '',
+    province: fromCity.province || province,
+    city: fromCity.city || cityNorm,
     lat: input.geoLat ?? null,
     lng: input.geoLng ?? null,
     placeId: input.googlePlaceId ?? null,
@@ -162,13 +165,14 @@ export function eventFieldsFromLocationValue(value: LocationValue): {
   province: string | null;
   googlePlaceId: string | null;
 } {
-  const cityLabel = cityLabelFromValue(value.city) || value.city.trim();
+  const cityLabel = normalizeCityStored(value.city);
+  const provinceLabel = normalizeProvinceStored(value.province);
   return {
     city: cityLabel || null,
     venueAddress: value.address.trim() || null,
     geoLat: isValidGeoCoord(value.lat) ? value.lat : null,
     geoLng: isValidGeoCoord(value.lng) ? value.lng : null,
-    province: provinceFromLocationValue(value),
+    province: provinceLabel || null,
     googlePlaceId: googlePlaceIdFromLocationValue(value),
   };
 }
@@ -181,16 +185,15 @@ export function locationValueFromRentalLocation(input: {
   geoLat?: number | null;
   geoLng?: number | null;
 }): LocationValue {
-  const fromCity = input.province?.trim()
-    ? {
-        province: input.province.trim(),
-        city: resolveProvinceCityFromCityLabel(input.city).city || (input.city ?? '').trim(),
-      }
-    : resolveProvinceCityFromCityLabel(input.city);
+  const province = normalizeProvinceStored(input.province);
+  const cityNorm = normalizeCityStored(input.city);
+  const fromCity = province
+    ? { province, city: resolveProvinceCityFromCityLabel(cityNorm).city || cityNorm }
+    : resolveProvinceCityFromCityLabel(cityNorm);
   return {
     address: input.address ?? '',
-    province: fromCity.province,
-    city: fromCity.city || (input.city ?? '').trim(),
+    province: fromCity.province || province,
+    city: fromCity.city || cityNorm,
     lat: input.geoLat ?? null,
     lng: input.geoLng ?? null,
     placeId: input.googlePlaceId ?? null,
@@ -200,11 +203,12 @@ export function locationValueFromRentalLocation(input: {
 /** Single atomic update when province changes (avoids stale spread wiping province). */
 export function applyProvinceToLocationValue(value: LocationValue, province: string): LocationValue {
   if (!province) {
-    return { ...value, province: '', city: '' };
+    return { ...value, province: '', city: '', lat: null, lng: null, placeId: null };
   }
-  const p = ARGENTINA_PROVINCES.find((x) => x.value === province);
-  const keepCity = p?.cities.some((c) => c.value === value.city) ?? false;
-  return { ...value, province, city: keepCity ? value.city : '' };
+  if (province !== value.province) {
+    return { ...value, province, city: '', lat: null, lng: null, placeId: null };
+  }
+  return { ...value, province };
 }
 
 export function rentalLocationPayloadFromLocationValue(value: LocationValue): {
@@ -215,11 +219,12 @@ export function rentalLocationPayloadFromLocationValue(value: LocationValue): {
   geoLat: number | null;
   geoLng: number | null;
 } {
-  const cityLabel = cityLabelFromValue(value.city) || value.city.trim();
+  const cityLabel = normalizeCityStored(value.city);
+  const provinceLabel = normalizeProvinceStored(value.province);
   return {
     address: value.address.trim() || null,
     city: cityLabel || null,
-    province: provinceFromLocationValue(value),
+    province: provinceLabel || null,
     googlePlaceId: googlePlaceIdFromLocationValue(value),
     geoLat: isValidGeoCoord(value.lat) ? value.lat : null,
     geoLng: isValidGeoCoord(value.lng) ? value.lng : null,
@@ -234,16 +239,15 @@ export function locationValueFromExcursionOperator(input: {
   geoLat?: number | null;
   geoLng?: number | null;
 }): LocationValue {
-  const fromCity = input.province?.trim()
-    ? {
-        province: input.province.trim(),
-        city: resolveProvinceCityFromCityLabel(input.city).city || (input.city ?? '').trim(),
-      }
-    : resolveProvinceCityFromCityLabel(input.city);
+  const province = normalizeProvinceStored(input.province);
+  const cityNorm = normalizeCityStored(input.city);
+  const fromCity = province
+    ? { province, city: resolveProvinceCityFromCityLabel(cityNorm).city || cityNorm }
+    : resolveProvinceCityFromCityLabel(cityNorm);
   return {
     address: input.address ?? '',
-    province: fromCity.province,
-    city: fromCity.city || (input.city ?? '').trim(),
+    province: fromCity.province || province,
+    city: fromCity.city || cityNorm,
     lat: input.geoLat ?? null,
     lng: input.geoLng ?? null,
     placeId: input.googlePlaceId ?? null,
@@ -258,11 +262,12 @@ export function excursionOperatorPayloadFromLocationValue(value: LocationValue):
   geoLat: number | null;
   geoLng: number | null;
 } {
-  const cityLabel = cityLabelFromValue(value.city) || value.city.trim();
+  const cityLabel = normalizeCityStored(value.city);
+  const provinceLabel = normalizeProvinceStored(value.province);
   return {
     address: value.address.trim() || null,
     city: cityLabel || null,
-    province: provinceFromLocationValue(value),
+    province: provinceLabel || null,
     googlePlaceId: googlePlaceIdFromLocationValue(value),
     geoLat: isValidGeoCoord(value.lat) ? value.lat : null,
     geoLng: isValidGeoCoord(value.lng) ? value.lng : null,
@@ -278,8 +283,8 @@ export function gastroLocationPayloadFromLocationValue(value: LocationValue): {
   googlePlaceId: string | null;
 } {
   return {
-    province: value.province.trim(),
-    city: value.city.trim(),
+    province: normalizeProvinceStored(value.province),
+    city: normalizeCityStored(value.city),
     address: value.address.trim(),
     lat: isValidGeoCoord(value.lat) ? value.lat : null,
     lng: isValidGeoCoord(value.lng) ? value.lng : null,

@@ -51,3 +51,7 @@ export const EMPTY_LOCATION_VALUE: LocationValue = {
   lng: null,
   placeId: null,
 };
+
+/** Select sentinel — user enters city manually. */
+export const MANUAL_LOCALITY_VALUE = '__manual__';
+export const MANUAL_LOCALITY_LABEL = 'No encuentro mi localidad';
