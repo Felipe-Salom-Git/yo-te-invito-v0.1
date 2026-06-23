@@ -1,3 +1,5 @@
+import { BRAND_FAVICON_SRC } from '@/lib/seo/brandAssets';
+
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://yoteinvito.club';
 
 const organizationJsonLd = {
@@ -5,7 +7,7 @@ const organizationJsonLd = {
   '@type': 'Organization',
   name: 'Yo Te Invito',
   url: APP_URL,
-  logo: `${APP_URL.replace(/\/$/, '')}/brand/logo.png`,
+  logo: `${APP_URL.replace(/\/$/, '')}${BRAND_FAVICON_SRC}`,
   description:
     'Eventos, gastronomía, excursiones y rentals. Comprá entradas y descubrí experiencias en tu ciudad.',
 };

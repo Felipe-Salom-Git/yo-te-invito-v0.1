@@ -4,21 +4,15 @@
   "description": "Eventos, gastronomía, excursiones y rentals. Comprá entradas y descubrí experiencias.",
   "start_url": "/home",
   "display": "standalone",
-  "background_color": "#0a0a0a",
-  "theme_color": "#0a0a0a",
+  "background_color": "#000000",
+  "theme_color": "#000000",
   "lang": "es-AR",
   "icons": [
     {
       "src": "/brand/logo.png",
-      "sizes": "771x775",
+      "sizes": "464x465",
       "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/brand/logo_2.png",
-      "sizes": "1884x1550",
-      "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     }
   ]
 }

@@ -18,25 +18,11 @@ export const metadata: Metadata = {
     url: '/',
     title: 'Yo Te Invito',
     description: 'Eventos, gastronomía, excursiones y rentals. Comprá entradas y descubrí experiencias en tu ciudad.',
-    images: [
-      {
-        url: '/brand/logo_2.png',
-        width: 1884,
-        height: 1550,
-        alt: 'Yo Te Invito',
-      },
-    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Yo Te Invito',
     description: 'Eventos, gastronomía, excursiones y rentals. Comprá entradas y descubrí experiencias en tu ciudad.',
-    images: ['/brand/logo_2.png'],
-  },
-  icons: {
-    icon: [{ url: '/brand/logo.png', type: 'image/png' }],
-    apple: [{ url: '/brand/logo.png', type: 'image/png' }],
-    shortcut: '/brand/logo.png',
   },
   manifest: '/manifest.json',
 };

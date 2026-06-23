@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
 import { cache } from 'react';
 import { buildGastroJsonLd } from '@/lib/seo/jsonld';
+import { FALLBACK_OG_IMAGE } from '@/lib/seo/metadata';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001';
 const DEFAULT_TENANT = 'tenant-demo';
-const FALLBACK_OG_IMAGE = '/brand/logo_2.png';
 
 type Props = { params: Promise<{ id: string }> };
 
