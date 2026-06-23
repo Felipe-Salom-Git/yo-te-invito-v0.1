@@ -6,6 +6,7 @@ import { LatLngMapPreview } from '@/components/admin/LatLngMapPreview';
 import { getErrorMessage } from '@/lib/errors';
 import { useRepositories } from '@/repositories/context';
 import type { GeoContext } from '@yo-te-invito/shared';
+import { cityLabelFromValue, provinceLabelFromValue } from '@yo-te-invito/shared';
 import { getGoogleMapsApiKey, useGoogleMaps, type GoogleMap, type GoogleMarker } from './useGoogleMaps';
 import type { LocationValue } from './location.types';
 
@@ -131,15 +132,17 @@ export function AddressMapPicker({
     setResolveError(null);
     setStatusMessage(null);
     if (!value.address.trim() || !value.city.trim() || !value.province.trim()) {
-      setResolveError('Completá dirección, ciudad y provincia antes de ubicar en el mapa.');
+      setResolveError('Completá provincia, ciudad y dirección para ubicar el pin.');
       return;
     }
     setResolving(true);
     try {
+      const city = cityLabelFromValue(value.city) || value.city.trim();
+      const province = provinceLabelFromValue(value.province) || value.province.trim();
       const result = await repos.geo.resolveAddress({
         address: value.address.trim(),
-        city: value.city.trim(),
-        province: value.province.trim(),
+        city,
+        province,
         country: 'Argentina',
         context,
       });
@@ -147,14 +150,20 @@ export function AddressMapPicker({
         ...value,
         lat: result.lat,
         lng: result.lng,
-        address: result.formattedAddress || value.address,
         placeId: result.placeId ?? value.placeId ?? null,
       });
       setResolvedFingerprint(currentFingerprint);
       setManualAdjust(false);
       setStatusMessage('Ubicación encontrada. Revisá el pin antes de guardar.');
     } catch (err) {
-      setResolveError(getErrorMessage(err));
+      const message = getErrorMessage(err);
+      if (message.toLowerCase().includes('no configurado') || message.toLowerCase().includes('no disponible')) {
+        setResolveError('No pudimos consultar Google Maps en este momento. Podés ajustar el pin manualmente.');
+      } else if (message.toLowerCase().includes('encontrar') || message.toLowerCase().includes('ambigua')) {
+        setResolveError('No pudimos ubicar esa dirección. Revisá los datos o ajustá el pin manualmente.');
+      } else {
+        setResolveError(message);
+      }
     } finally {
       setResolving(false);
     }
@@ -179,7 +188,7 @@ export function AddressMapPicker({
         label="Dirección / punto de encuentro"
         value={value.address}
         onChange={(e) => onChange({ ...value, address: e.target.value })}
-        placeholder="Calle, número, referencia"
+        placeholder="Calle y altura"
         disabled={disabled}
         error={error}
       />
@@ -199,7 +208,7 @@ export function AddressMapPicker({
       ) : null}
       {isStale ? (
         <p className="text-sm text-amber-400">
-          La dirección cambió. Volvé a ubicar el pin para actualizar el mapa.
+          La ubicación cambió. Tocá «Ubicar en el mapa» para actualizar el pin.
         </p>
       ) : null}
       {mapsError ? (
