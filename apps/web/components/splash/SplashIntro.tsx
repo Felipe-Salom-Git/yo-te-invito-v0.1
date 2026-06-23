@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback } from 'react';
 import { motion, useAnimation } from 'framer-motion';
 
 const DURATION = {
@@ -10,8 +10,6 @@ const DURATION = {
   hold: 0.1,
   fade: 2,
 };
-const TOTAL_MS = (DURATION.scan + DURATION.glow + DURATION.hold + DURATION.fade) * 1000;
-const INTRO_SFX_SRC = '/brand/light_saber.mp3';
 const INTRO_LOGO_SRC = '/brand/logo_2.png';
 
 export interface SplashIntroProps {
@@ -27,35 +25,14 @@ export function SplashIntro({ onFinish, onFadeStart }: SplashIntroProps) {
   const fadeCtrl = useAnimation();
   const logoOutCtrl = useAnimation();
 
-  const introAudioRef = useRef<HTMLAudioElement | null>(null);
-
-  const stopIntroAudio = useCallback(() => {
-    const audio = introAudioRef.current;
-    if (!audio) return;
-    audio.pause();
-    audio.currentTime = 0;
-  }, []);
-
   const finish = useCallback(() => {
-    stopIntroAudio();
     onFinish();
-  }, [onFinish, stopIntroAudio]);
+  }, [onFinish]);
 
   useEffect(() => {
     let cancelled = false;
 
     const run = async () => {
-      try {
-        const audio = new Audio(INTRO_SFX_SRC);
-        introAudioRef.current = audio;
-        audio.preload = 'auto';
-        void audio.play().catch(() => {
-          // Autoplay might be blocked; intro should continue silently.
-        });
-      } catch {
-        // Ignore audio errors; intro should still run.
-      }
-
       // 1–2: Scan line (bottom → top, fade out) + mask reveal (parallel)
       await Promise.all([
         scanCtrl.start({
@@ -105,9 +82,8 @@ export function SplashIntro({ onFinish, onFadeStart }: SplashIntroProps) {
     run();
     return () => {
       cancelled = true;
-      stopIntroAudio();
     };
-  }, [scanCtrl, maskCtrl, glowCtrl, fadeCtrl, logoOutCtrl, finish, stopIntroAudio, onFadeStart]);
+  }, [scanCtrl, maskCtrl, glowCtrl, fadeCtrl, logoOutCtrl, finish, onFadeStart]);
 
   return (
     <motion.div
@@ -144,7 +120,7 @@ export function SplashIntro({ onFinish, onFadeStart }: SplashIntroProps) {
 
       {/* Logo container + scan line */}
       <div className="relative flex min-h-[560px] w-full max-w-4xl items-center justify-center px-4 md:min-h-[680px] md:max-w-6xl">
-        <div className="relative z-10 h-80 w-full max-w-[96%] md:h-[26rem] md:max-w-[92%]">
+        <div className="relative z-10 h-56 w-full max-w-[96%] md:h-[18.2rem] md:max-w-[92%]">
           {/* Logo with mask reveal */}
           <motion.div
             className="absolute inset-0"
@@ -162,7 +138,7 @@ export function SplashIntro({ onFinish, onFadeStart }: SplashIntroProps) {
                 src={INTRO_LOGO_SRC}
                 alt="Logo"
                 fill
-                sizes="(min-width: 768px) 1280px, 800px"
+                sizes="(min-width: 768px) 896px, 560px"
                 className="object-contain"
                 priority
               />
