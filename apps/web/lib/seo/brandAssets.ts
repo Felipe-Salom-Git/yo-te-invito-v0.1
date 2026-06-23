@@ -1,6 +1,8 @@
 /** Green smiley icon (RGBA) — favicon, PWA, JSON-LD icon. */
 export const BRAND_FAVICON_SRC = '/brand/logo.png';
 
+export const BRAND_FAVICON_SIZE = '464x465';
+
 /** Full wordmark on black — source art for OG composition (not intro splash). */
 export const BRAND_OG_SHARE_SRC = '/brand/logo_3.png';
 

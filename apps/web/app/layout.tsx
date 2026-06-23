@@ -4,7 +4,7 @@ import { Providers } from './providers';
 import { Navbar } from '@/components';
 import { RouteAwareFooter } from '@/components/RouteAwareFooter';
 import { SiteOrganizationJsonLd } from '@/components/seo/SiteOrganizationJsonLd';
-import { OG_SHARE_METADATA } from '@/lib/seo/brandAssets';
+import { BRAND_FAVICON_SIZE, BRAND_FAVICON_SRC, OG_SHARE_METADATA } from '@/lib/seo/brandAssets';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://yoteinvito.club';
 const SITE_DESCRIPTION =
@@ -28,6 +28,11 @@ export const metadata: Metadata = {
     title: 'Yo Te Invito',
     description: SITE_DESCRIPTION,
     images: [OG_SHARE_METADATA.url],
+  },
+  icons: {
+    icon: [{ url: BRAND_FAVICON_SRC, type: 'image/png', sizes: BRAND_FAVICON_SIZE }],
+    shortcut: BRAND_FAVICON_SRC,
+    apple: [{ url: BRAND_FAVICON_SRC, type: 'image/png', sizes: BRAND_FAVICON_SIZE }],
   },
   manifest: '/manifest.json',
 };
