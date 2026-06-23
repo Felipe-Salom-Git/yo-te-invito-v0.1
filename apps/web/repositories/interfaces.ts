@@ -2924,6 +2924,10 @@ export interface UploadsRepo {
 }
 
 export interface GeoRepo {
+  listProvinces(): Promise<import('@yo-te-invito/shared').GeoProvinceOption[]>;
+  listLocalities(
+    input: import('@yo-te-invito/shared').GeoLocalitiesQuery,
+  ): Promise<import('@yo-te-invito/shared').GeoLocalityOption[]>;
   resolveAddress(
     input: import('@yo-te-invito/shared').ResolveAddressBody,
   ): Promise<import('@yo-te-invito/shared').ResolveAddressResponse>;

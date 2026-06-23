@@ -2307,6 +2307,18 @@ export class ApiRepository implements Repositories {
   };
 
   geo: import('./interfaces').GeoRepo = {
+    listProvinces: async () => {
+      const raw = await this.client.get<unknown>('/geo/provinces');
+      const { geoProvincesResponseSchema } = await import('@yo-te-invito/shared');
+      return geoProvincesResponseSchema.parse(raw).provinces;
+    },
+    listLocalities: async (input) => {
+      const raw = await this.client.get<unknown>('/geo/localities', {
+        province: input.province,
+      });
+      const { geoLocalitiesResponseSchema } = await import('@yo-te-invito/shared');
+      return geoLocalitiesResponseSchema.parse(raw).localities;
+    },
     resolveAddress: async (input) => {
       const raw = await this.client.post<unknown>('/geo/resolve-address', input);
       const { resolveAddressResponseSchema } = await import('@yo-te-invito/shared');

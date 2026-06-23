@@ -445,3 +445,11 @@ export const publicPlatformConfigKeys = {
   all: ['publicPlatformConfig'] as const,
   byTenant: (tenantId: string) => [...publicPlatformConfigKeys.all, tenantId] as const,
 };
+
+// ─── Geo (Georef provinces / localities) ───────────────────────────────────
+
+export const geoKeys = {
+  all: ['geo'] as const,
+  provinces: () => [...geoKeys.all, 'provinces'] as const,
+  localities: (province: string) => [...geoKeys.all, 'localities', province] as const,
+};
