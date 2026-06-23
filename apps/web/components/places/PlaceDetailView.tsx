@@ -316,6 +316,7 @@ export function PlaceDetailView({ id, variant, tenantId = 'tenant-demo' }: Place
               venueName={locationVenueName}
               venueAddress={locationAddress}
               city={event.city}
+              province={event.province}
               geoLat={locationGeoLat}
               geoLng={locationGeoLng}
               fillHeight

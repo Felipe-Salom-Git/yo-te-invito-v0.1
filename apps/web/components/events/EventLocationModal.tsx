@@ -3,6 +3,7 @@
 import { useEffect, useCallback } from 'react';
 import {
   buildPublicGoogleMapsHref,
+  formatPublicLocationDisplay,
   hasPublicLocationForMapLink,
 } from '@/lib/maps';
 
@@ -12,6 +13,7 @@ export interface EventLocationModalProps {
   venueName?: string | null;
   venueAddress?: string | null;
   city?: string | null;
+  province?: string | null;
   geoLat?: number | null;
   geoLng?: number | null;
 }
@@ -22,6 +24,7 @@ export function EventLocationModal({
   venueName,
   venueAddress,
   city,
+  province,
   geoLat,
   geoLng,
 }: EventLocationModalProps) {
@@ -51,6 +54,7 @@ export function EventLocationModal({
     address: venueAddress,
     venueName,
     city,
+    province,
   });
   const hasLocation = hasPublicLocationForMapLink({
     geoLat,
@@ -58,6 +62,14 @@ export function EventLocationModal({
     address: venueAddress,
     venueName,
     city,
+  });
+  const { streetLine, regionLine } = formatPublicLocationDisplay({
+    address: venueAddress,
+    city,
+    province,
+    venueName,
+    geoLat,
+    geoLng,
   });
 
   return (
@@ -91,13 +103,14 @@ export function EventLocationModal({
         </div>
 
         <div className="mt-4 space-y-3">
-          {venueName && (
+          {venueName && streetLine !== venueName ? (
             <p className="font-medium text-white">{venueName}</p>
-          )}
-          {(venueAddress || city) && (
-            <p className="text-sm text-text-muted">
-              {[venueAddress, city].filter(Boolean).join(', ')}
-            </p>
+          ) : null}
+          {(streetLine || regionLine) && (
+            <div className="text-sm text-text-muted space-y-0.5">
+              {streetLine ? <p>{streetLine}</p> : null}
+              {regionLine ? <p>{regionLine}</p> : null}
+            </div>
           )}
           {!hasLocation && (
             <p className="text-sm text-text-muted">No hay dirección cargada.</p>

@@ -1,11 +1,13 @@
 'use client';
 
 import { buildEventGoogleMapsHref, buildGoogleMapsEmbedSrc } from '@/lib/events/maps';
+import { formatPublicLocationDisplay } from '@/lib/maps/public-location';
 
 export interface EventLocationSectionProps {
   venueName?: string | null;
   venueAddress?: string | null;
   city?: string | null;
+  province?: string | null;
   geoLat?: number | null;
   geoLng?: number | null;
   /** When true, section fills available height (e.g. when aligned with reviews) */
@@ -16,11 +18,20 @@ export function EventLocationSection({
   venueName,
   venueAddress,
   city,
+  province,
   geoLat,
   geoLng,
   fillHeight,
 }: EventLocationSectionProps) {
-  const hasAny = venueName || venueAddress || city || (geoLat != null && geoLng != null);
+  const { streetLine, regionLine } = formatPublicLocationDisplay({
+    address: venueAddress,
+    city,
+    province,
+    venueName,
+    geoLat,
+    geoLng,
+  });
+  const hasAny = streetLine || regionLine || (geoLat != null && geoLng != null);
   if (!hasAny) return null;
 
   const mapsHref = buildEventGoogleMapsHref({
@@ -43,13 +54,14 @@ export function EventLocationSection({
       <h2 className="text-lg font-semibold text-white mb-3">Ubicación</h2>
       <div className={`rounded-xl border border-border bg-bg-muted/50 overflow-hidden ${fillHeight ? 'flex-1 min-h-0 flex flex-col' : ''}`}>
         <div className="p-5">
-          {venueName && (
+          {venueName && streetLine !== venueName ? (
             <p className="font-medium text-white">{venueName}</p>
-          )}
-          {(venueAddress || city) && (
-            <p className="mt-1 text-sm text-text-muted">
-              {[venueAddress, city].filter(Boolean).join(', ')}
-            </p>
+          ) : null}
+          {(streetLine || regionLine) && (
+            <div className="mt-1 text-sm text-text-muted space-y-0.5">
+              {streetLine ? <p>{streetLine}</p> : null}
+              {regionLine ? <p>{regionLine}</p> : null}
+            </div>
           )}
           {embedSrc && (
             <div className={`mt-4 w-full overflow-hidden rounded-lg border border-border/80 ${fillHeight ? 'flex-1 min-h-[200px]' : 'aspect-video'}`}>

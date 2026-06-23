@@ -430,6 +430,7 @@ export default function EventDetailPage() {
               venueName={event.venueName}
               venueAddress={event.venueAddress}
               city={event.city}
+              province={event.province}
               geoLat={event.geoLat}
               geoLng={event.geoLng}
               fillHeight

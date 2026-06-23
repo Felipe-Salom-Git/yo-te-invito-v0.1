@@ -1,5 +1,6 @@
 'use client';
 
+import { formatPublicLocationText } from '@/lib/maps';
 import Link from 'next/link';
 import type { GastroLocal } from '@/repositories/interfaces';
 import { buildGastroGalleryImages } from '@/lib/gastro/gallery';
@@ -13,7 +14,12 @@ type GastroLocalPreviewProps = {
 
 export function GastroLocalPreview({ local, subcategoryName }: GastroLocalPreviewProps) {
   const galleryImages = buildGastroGalleryImages(local.bannerUrl, local.galleryUrls);
-  const locationLine = [local.address, local.city, local.province].filter(Boolean).join(' · ');
+  const locationLine =
+    formatPublicLocationText({
+      address: local.address,
+      city: local.city,
+      province: local.province,
+    })?.replace('\n', ' · ') ?? null;
   const description = local.detail?.trim() || local.description?.trim();
 
   return (

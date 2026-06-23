@@ -1,4 +1,4 @@
-import { hasPublicLocationForMapLink } from '@/lib/maps';
+import { hasPublicLocationForMapLink, formatPublicLocationDisplay } from '@/lib/maps';
 import type { EventDetail } from '@yo-te-invito/shared';
 
 type ExcursionOperatorLocation = {
@@ -82,10 +82,14 @@ export function resolveExcursionPublicLocation(
 }
 
 export function formatExcursionLocationLabel(
-  location: Pick<ResolvedExcursionPublicLocation, 'address' | 'city' | 'province'>,
+  location: Pick<ResolvedExcursionPublicLocation, 'address' | 'city' | 'province' | 'venueName'>,
 ): string | null {
-  const parts = [location.address?.trim(), location.city?.trim(), location.province?.trim()].filter(
-    Boolean,
-  );
+  const { streetLine, regionLine } = formatPublicLocationDisplay({
+    address: location.address,
+    city: location.city,
+    province: location.province,
+    venueName: location.venueName,
+  });
+  const parts = [streetLine, regionLine].filter(Boolean);
   return parts.length > 0 ? parts.join(', ') : null;
 }

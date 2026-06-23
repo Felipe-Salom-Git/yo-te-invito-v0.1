@@ -7,4 +7,6 @@ export {
   buildPublicGoogleMapsHref,
   buildPublicGoogleMapsEmbedSrc,
   formatProducerLocationText,
+  formatPublicLocationDisplay,
+  formatPublicLocationText,
 } from './public-location';

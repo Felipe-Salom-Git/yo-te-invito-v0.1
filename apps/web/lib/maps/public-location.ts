@@ -85,3 +85,53 @@ export function formatProducerLocationText(city?: string | null, country?: strin
   const parts = [city?.trim(), country?.trim()].filter(Boolean);
   return parts.length > 0 ? parts.join(', ') : null;
 }
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function stripPartFromAddress(address: string, part: string): string {
+  if (!part.trim()) return address;
+  const pattern = new RegExp(`(,\\s*)?${escapeRegExp(part.trim())}(\\s*,)?`, 'gi');
+  return address
+    .replace(pattern, ', ')
+    .replace(/,\s*,/g, ',')
+    .replace(/^,\s*|,\s*$/g, '')
+    .trim();
+}
+
+/** Avoid duplicating city/province/country already embedded in address text. */
+export function formatPublicLocationDisplay(fields: PublicLocationFields): {
+  streetLine: string | null;
+  regionLine: string | null;
+} {
+  const city = fields.city?.trim() || null;
+  const province = fields.province?.trim() || null;
+  const venue = fields.venueName?.trim() || null;
+  let street = fields.address?.trim() || venue || null;
+
+  if (street) {
+    for (const part of [city, province, 'Argentina', fields.country]) {
+      if (part?.trim()) {
+        street = stripPartFromAddress(street, part);
+      }
+    }
+    if (!street && venue) {
+      street = venue;
+    }
+  } else if (venue) {
+    street = venue;
+  }
+
+  const regionParts = [city, province].filter(Boolean);
+  return {
+    streetLine: street || null,
+    regionLine: regionParts.length > 0 ? regionParts.join(', ') : null,
+  };
+}
+
+export function formatPublicLocationText(fields: PublicLocationFields): string | null {
+  const { streetLine, regionLine } = formatPublicLocationDisplay(fields);
+  const parts = [streetLine, regionLine].filter(Boolean);
+  return parts.length > 0 ? parts.join('\n') : null;
+}
