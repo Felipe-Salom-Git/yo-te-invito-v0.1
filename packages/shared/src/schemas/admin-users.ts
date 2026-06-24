@@ -84,3 +84,35 @@ export const adminUpdateRoleBodySchema = z.object({
   role: adminRoleSchema,
 });
 export type AdminUpdateRoleBody = z.infer<typeof adminUpdateRoleBodySchema>;
+
+export const adminUserDeleteBlockerSchema = z.object({
+  type: z.string(),
+  count: z.number().int().min(0),
+  message: z.string(),
+  adminPath: z.string().optional(),
+});
+
+export type AdminUserDeleteBlocker = z.infer<typeof adminUserDeleteBlockerSchema>;
+
+export const adminUserDeleteWarningSchema = z.object({
+  type: z.string(),
+  count: z.number().int().min(0),
+  message: z.string(),
+});
+
+export type AdminUserDeleteWarning = z.infer<typeof adminUserDeleteWarningSchema>;
+
+export const adminUserDeletePreflightSchema = z.object({
+  canDelete: z.boolean(),
+  blockers: z.array(adminUserDeleteBlockerSchema),
+  warnings: z.array(adminUserDeleteWarningSchema),
+});
+
+export type AdminUserDeletePreflight = z.infer<typeof adminUserDeletePreflightSchema>;
+
+export const adminUserDeleteResponseSchema = z.object({
+  id: z.string(),
+  deleted: z.literal(true),
+});
+
+export type AdminUserDeleteResponse = z.infer<typeof adminUserDeleteResponseSchema>;

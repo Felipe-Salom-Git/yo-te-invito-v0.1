@@ -41,6 +41,7 @@ export const ErrorCode = {
   GASTRO_PROFILE_NOT_FOUND: 'GASTRO_PROFILE_NOT_FOUND',
   INVALID_PASSWORD: 'INVALID_PASSWORD',
   OCCURRENCE_REQUIRED: 'OCCURRENCE_REQUIRED',
+  USER_DELETE_BLOCKED: 'USER_DELETE_BLOCKED',
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
