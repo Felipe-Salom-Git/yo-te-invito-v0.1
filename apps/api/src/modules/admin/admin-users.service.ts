@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ConflictException,
   ForbiddenException,
+  Logger,
 } from '@nestjs/common';
 import * as crypto from 'crypto';
 import { AuditAction } from '@prisma/client';
@@ -18,13 +19,14 @@ import type {
   AdminUserDeletePreflight,
   AdminUserDeleteResponse,
 } from '@yo-te-invito/shared';
-import { ErrorCode, MASTER_USER_EMAIL } from '@yo-te-invito/shared';
+import { ErrorCode } from '@yo-te-invito/shared';
 import { Role } from '@yo-te-invito/shared';
 import type { Role as PrismaRole } from '@prisma/client';
 import { buildAdminUsersWhere } from './admin-users-list.util';
 import {
   buildAdminUserDeletePreflight,
   countUserDeleteDependencies,
+  isProtectedMasterEmail,
 } from './admin-user-delete.util';
 
 function hashPassword(password: string): string {
@@ -54,6 +56,8 @@ function mapProfile(
 
 @Injectable()
 export class AdminUsersService {
+  private readonly logger = new Logger(AdminUsersService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
@@ -145,7 +149,7 @@ export class AdminUsersService {
         message: 'User not found',
       });
     }
-    if (user.email.toLowerCase() === MASTER_USER_EMAIL.toLowerCase()) {
+    if (isProtectedMasterEmail(user.email)) {
       throw new ForbiddenException({
         code: ErrorCode.FORBIDDEN,
         message: 'Cannot change role of the master account',
@@ -229,7 +233,7 @@ export class AdminUsersService {
   ) {
     const blockers: AdminUserDeletePreflight['blockers'] = [];
 
-    if (targetUser.email.toLowerCase() === MASTER_USER_EMAIL.toLowerCase()) {
+    if (isProtectedMasterEmail(targetUser.email)) {
       blockers.push({
         type: 'PROTECTED_MASTER',
         count: 1,
@@ -237,7 +241,7 @@ export class AdminUsersService {
       });
     }
 
-    if (targetUser.id === actorUserId) {
+    if (actorUserId && targetUser.id === actorUserId) {
       blockers.push({
         type: 'SELF_DELETE',
         count: 1,
@@ -246,20 +250,27 @@ export class AdminUsersService {
     }
 
     if (targetUser.role === Role.ADMIN) {
-      const otherAdmins = await this.prisma.user.count({
-        where: {
-          tenantId,
-          role: Role.ADMIN,
-          deletedAt: null,
-          id: { not: targetUser.id },
-        },
-      });
-      if (otherAdmins === 0) {
-        blockers.push({
-          type: 'LAST_ADMIN',
-          count: 1,
-          message: 'No se puede eliminar el último administrador del tenant.',
+      try {
+        const otherAdmins = await this.prisma.user.count({
+          where: {
+            tenantId,
+            role: Role.ADMIN,
+            deletedAt: null,
+            id: { not: targetUser.id },
+          },
         });
+        if (otherAdmins === 0) {
+          blockers.push({
+            type: 'LAST_ADMIN',
+            count: 1,
+            message: 'No se puede eliminar el último administrador del tenant.',
+          });
+        }
+      } catch (error) {
+        this.logger.error(
+          `Admin user delete preflight last-admin check failed for userId=${targetUser.id}`,
+          error instanceof Error ? error.stack : String(error),
+        );
       }
     }
 
@@ -271,10 +282,25 @@ export class AdminUsersService {
     userId: string,
     actorUserId: string,
   ): Promise<AdminUserDeletePreflight> {
-    const user = await this.findActiveUser(tenantId, userId);
-    const policyBlockers = await this.buildPolicyBlockers(tenantId, user, actorUserId);
-    const counts = await countUserDeleteDependencies(this.prisma, tenantId, userId);
-    return buildAdminUserDeletePreflight(counts, userId, policyBlockers);
+    try {
+      const user = await this.findActiveUser(tenantId, userId);
+      const policyBlockers = await this.buildPolicyBlockers(
+        tenantId,
+        user,
+        actorUserId?.trim() ?? '',
+      );
+      const counts = await countUserDeleteDependencies(this.prisma, tenantId, userId);
+      return buildAdminUserDeletePreflight(counts, userId, policyBlockers);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(
+        `Admin user delete preflight failed for userId=${userId}`,
+        error instanceof Error ? error.stack : String(error),
+      );
+      throw error;
+    }
   }
 
   private async purgeOrphanCommercialProfiles(

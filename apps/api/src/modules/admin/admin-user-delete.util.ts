@@ -1,5 +1,9 @@
+import { Logger } from '@nestjs/common';
 import type { PrismaService } from '../../prisma/prisma.service';
 import type { AdminUserDeletePreflight } from '@yo-te-invito/shared';
+import { MASTER_USER_EMAIL } from '@yo-te-invito/shared';
+
+const logger = new Logger('AdminUserDeletePreflight');
 
 export type AdminUserDeleteBlocker = AdminUserDeletePreflight['blockers'][number];
 export type AdminUserDeleteWarning = AdminUserDeletePreflight['warnings'][number];
@@ -40,43 +44,96 @@ export type UserDeleteDependencyCounts = {
   primaryGastroProfileId: string | null;
 };
 
+async function safeCount(label: string, fn: () => Promise<number>): Promise<number> {
+  try {
+    return await fn();
+  } catch (error) {
+    logger.error(
+      `Admin user delete preflight count failed (${label})`,
+      error instanceof Error ? error.stack : String(error),
+    );
+    return 0;
+  }
+}
+
+async function safeFindProfileIds(
+  label: string,
+  fn: () => Promise<Array<{ profileId: string }>>,
+): Promise<string[]> {
+  try {
+    const rows = await fn();
+    return rows.map((r) => r.profileId).filter((id): id is string => Boolean(id));
+  } catch (error) {
+    logger.error(
+      `Admin user delete preflight membership query failed (${label})`,
+      error instanceof Error ? error.stack : String(error),
+    );
+    return [];
+  }
+}
+
+async function safeOrderIds(
+  prisma: PrismaService,
+  tenantId: string,
+  userId: string,
+): Promise<string[]> {
+  try {
+    const rows = await prisma.order.findMany({
+      where: { tenantId, buyerUserId: userId },
+      select: { id: true },
+    });
+    return rows.map((o) => o.id);
+  } catch (error) {
+    logger.error(
+      `Admin user delete preflight order lookup failed for userId=${userId}`,
+      error instanceof Error ? error.stack : String(error),
+    );
+    return [];
+  }
+}
+
 export async function countUserDeleteDependencies(
   prisma: PrismaService,
   tenantId: string,
   userId: string,
 ): Promise<UserDeleteDependencyCounts> {
   const [
-    producerMemberships,
-    gastroMemberships,
-    hotelMemberships,
-    referrerMemberships,
+    producerProfileIds,
+    gastroProfileIds,
+    hotelProfileIds,
+    referrerProfileIds,
+    orderIds,
   ] = await Promise.all([
-    prisma.userProducerMembership.findMany({
-      where: { tenantId, userId },
-      select: { profileId: true },
-    }),
-    prisma.userGastroMembership.findMany({
-      where: { tenantId, userId },
-      select: { profileId: true },
-    }),
-    prisma.userHotelMembership.findMany({
-      where: { tenantId, userId },
-      select: { profileId: true },
-    }),
-    prisma.userReferrerMembership.findMany({
-      where: { tenantId, userId },
-      select: { profileId: true },
-    }),
+    safeFindProfileIds('producerMemberships', () =>
+      prisma.userProducerMembership.findMany({
+        where: { tenantId, userId },
+        select: { profileId: true },
+      }),
+    ),
+    safeFindProfileIds('gastroMemberships', () =>
+      prisma.userGastroMembership.findMany({
+        where: { tenantId, userId },
+        select: { profileId: true },
+      }),
+    ),
+    safeFindProfileIds('hotelMemberships', () =>
+      prisma.userHotelMembership.findMany({
+        where: { tenantId, userId },
+        select: { profileId: true },
+      }),
+    ),
+    safeFindProfileIds('referrerMemberships', () =>
+      prisma.userReferrerMembership.findMany({
+        where: { tenantId, userId },
+        select: { profileId: true },
+      }),
+    ),
+    safeOrderIds(prisma, tenantId, userId),
   ]);
-
-  const producerProfileIds = producerMemberships.map((m) => m.profileId);
-  const gastroProfileIds = gastroMemberships.map((m) => m.profileId);
-  const hotelProfileIds = hotelMemberships.map((m) => m.profileId);
-  const referrerProfileIds = referrerMemberships.map((m) => m.profileId);
 
   const eventWhere = {
     tenantId,
-    deletedAt: null as Date | null,
+    deletedAt: null,
     OR: [
       { producerId: userId },
       ...(producerProfileIds.length > 0
@@ -85,12 +142,145 @@ export async function countUserDeleteDependencies(
     ],
   };
 
-  const orderIds = (
-    await prisma.order.findMany({
-      where: { tenantId, buyerUserId: userId },
-      select: { id: true },
-    })
-  ).map((o) => o.id);
+  const counts = await Promise.all([
+    safeCount('events', () => prisma.event.count({ where: eventWhere })),
+    gastroProfileIds.length > 0
+      ? safeCount('gastroDiscounts', () =>
+          prisma.gastroDiscount.count({
+            where: { tenantId, gastroProfileId: { in: gastroProfileIds } },
+          }),
+        )
+      : Promise.resolve(0),
+    gastroProfileIds.length > 0
+      ? safeCount('gastroContent', () =>
+          prisma.gastroContent.count({
+            where: { tenantId, gastroProfileId: { in: gastroProfileIds } },
+          }),
+        )
+      : Promise.resolve(0),
+    gastroProfileIds.length > 0
+      ? safeCount('gastroPublicEvents', () =>
+          prisma.gastroProfile.count({
+            where: {
+              tenantId,
+              id: { in: gastroProfileIds },
+              publicEventId: { not: null },
+            },
+          }),
+        )
+      : Promise.resolve(0),
+    hotelProfileIds.length > 0
+      ? safeCount('hotelPublicEvents', () =>
+          prisma.hotelProfile.count({
+            where: {
+              tenantId,
+              id: { in: hotelProfileIds },
+              publicEventId: { not: null },
+            },
+          }),
+        )
+      : Promise.resolve(0),
+    referrerProfileIds.length > 0
+      ? safeCount('referrerAgreements', () =>
+          prisma.referralCommercialAgreement.count({
+            where: { tenantId, referrerProfileId: { in: referrerProfileIds } },
+          }),
+        )
+      : Promise.resolve(0),
+    referrerProfileIds.length > 0
+      ? safeCount('referrerProposals', () =>
+          prisma.referralCommercialProposal.count({
+            where: { tenantId, referrerProfileId: { in: referrerProfileIds } },
+          }),
+        )
+      : Promise.resolve(0),
+    referrerProfileIds.length > 0
+      ? safeCount('referrerPaymentRequests', () =>
+          prisma.referralPaymentRequest.count({
+            where: { tenantId, referrerProfileId: { in: referrerProfileIds } },
+          }),
+        )
+      : Promise.resolve(0),
+    referrerProfileIds.length > 0
+      ? safeCount('referrerEventAssignments', () =>
+          prisma.eventReferrerAssignment.count({
+            where: { referrerProfileId: { in: referrerProfileIds } },
+          }),
+        )
+      : Promise.resolve(0),
+    safeCount('orders', () => prisma.order.count({ where: { tenantId, buyerUserId: userId } })),
+    safeCount('tickets', () => prisma.ticket.count({ where: { ownerUserId: userId } })),
+    orderIds.length > 0
+      ? safeCount('payments', () =>
+          prisma.payment.count({ where: { orderId: { in: orderIds } } }),
+        )
+      : Promise.resolve(0),
+    safeCount('reviews', () => prisma.review.count({ where: { tenantId, userId } })),
+    safeCount('reviewDisputes', () =>
+      prisma.reviewDisputeRequest.count({ where: { tenantId, requestedByUserId: userId } }),
+    ),
+    safeCount('commercialReviews', () =>
+      prisma.commercialRelationshipReview.count({
+        where: { tenantId, reviewerUserId: userId },
+      }),
+    ),
+    safeCount('referralCommissions', () =>
+      prisma.referralCommission.count({ where: { tenantId, referrerId: userId } }),
+    ),
+    safeCount('courtesyGrants', () =>
+      prisma.courtesyGrant.count({ where: { tenantId, createdById: userId } }),
+    ),
+    safeCount('gastroCourtesyCampaigns', () =>
+      prisma.gastroCourtesyCampaign.count({ where: { tenantId, createdByUserId: userId } }),
+    ),
+    safeCount('scannerAsScanner', () =>
+      prisma.scannerAccount.count({ where: { tenantId, scannerUserId: userId } }),
+    ),
+    safeCount('scannerAsParent', () =>
+      prisma.scannerAccount.count({ where: { tenantId, parentUserId: userId } }),
+    ),
+    safeCount('inboxItems', () =>
+      prisma.inboxItem.count({ where: { tenantId, createdByUserId: userId } }),
+    ),
+    safeCount('ticketDateChanges', () =>
+      prisma.ticketDateChangeRequest.count({ where: { tenantId, requestedByUserId: userId } }),
+    ),
+    safeCount('ticketTransferOffers', () =>
+      prisma.ticketTransferOffer.count({
+        where: {
+          tenantId,
+          OR: [{ sellerUserId: userId }, { buyerUserId: userId }],
+        },
+      }),
+    ),
+    safeCount('auditLogActor', () =>
+      prisma.auditLog.count({ where: { tenantId, actorId: userId } }),
+    ),
+    safeCount('favorites', () =>
+      prisma.userFavorite.count({ where: { tenantId, userId } }),
+    ),
+    safeCount('expectedEvents', () =>
+      prisma.userExpectedEvent.count({ where: { tenantId, userId } }),
+    ),
+    safeCount('cartItems', () =>
+      prisma.userCartItem.count({ where: { cart: { tenantId, userId } } }),
+    ),
+    safeCount('notifications', () =>
+      prisma.userNotification.count({ where: { tenantId, userId } }),
+    ),
+    safeCount('pushSubscriptions', () =>
+      prisma.userPushSubscription.count({ where: { tenantId, userId } }),
+    ),
+    safeCount('gastroDiscountClaims', () =>
+      prisma.gastroDiscountClaim.count({ where: { tenantId, userId } }),
+    ),
+    safeCount('producerFollows', () =>
+      prisma.userProducerFollow.count({ where: { tenantId, userId } }),
+    ),
+    safeCount('gastroFollows', () =>
+      prisma.userGastroFollow.count({ where: { tenantId, userId } }),
+    ),
+  ]);
 
   const [
     events,
@@ -125,87 +315,7 @@ export async function countUserDeleteDependencies(
     gastroDiscountClaims,
     producerFollows,
     gastroFollows,
-  ] = await Promise.all([
-    prisma.event.count({ where: eventWhere }),
-    gastroProfileIds.length > 0
-      ? prisma.gastroDiscount.count({
-          where: { tenantId, gastroProfileId: { in: gastroProfileIds } },
-        })
-      : Promise.resolve(0),
-    gastroProfileIds.length > 0
-      ? prisma.gastroContent.count({
-          where: { tenantId, gastroProfileId: { in: gastroProfileIds } },
-        })
-      : Promise.resolve(0),
-    gastroProfileIds.length > 0
-      ? prisma.gastroProfile.count({
-          where: {
-            tenantId,
-            id: { in: gastroProfileIds },
-            publicEventId: { not: null },
-          },
-        })
-      : Promise.resolve(0),
-    hotelProfileIds.length > 0
-      ? prisma.hotelProfile.count({
-          where: {
-            tenantId,
-            id: { in: hotelProfileIds },
-            publicEventId: { not: null },
-          },
-        })
-      : Promise.resolve(0),
-    referrerProfileIds.length > 0
-      ? prisma.referralCommercialAgreement.count({
-          where: { tenantId, referrerProfileId: { in: referrerProfileIds } },
-        })
-      : Promise.resolve(0),
-    referrerProfileIds.length > 0
-      ? prisma.referralCommercialProposal.count({
-          where: { tenantId, referrerProfileId: { in: referrerProfileIds } },
-        })
-      : Promise.resolve(0),
-    referrerProfileIds.length > 0
-      ? prisma.referralPaymentRequest.count({
-          where: { tenantId, referrerProfileId: { in: referrerProfileIds } },
-        })
-      : Promise.resolve(0),
-    referrerProfileIds.length > 0
-      ? prisma.eventReferrerAssignment.count({
-          where: { referrerProfileId: { in: referrerProfileIds } },
-        })
-      : Promise.resolve(0),
-    prisma.order.count({ where: { tenantId, buyerUserId: userId } }),
-    prisma.ticket.count({ where: { ownerUserId: userId } }),
-    orderIds.length > 0
-      ? prisma.payment.count({ where: { orderId: { in: orderIds } } })
-      : Promise.resolve(0),
-    prisma.review.count({ where: { tenantId, userId } }),
-    prisma.reviewDisputeRequest.count({ where: { tenantId, requestedByUserId: userId } }),
-    prisma.commercialRelationshipReview.count({ where: { tenantId, reviewerUserId: userId } }),
-    prisma.referralCommission.count({ where: { tenantId, referrerId: userId } }),
-    prisma.courtesyGrant.count({ where: { tenantId, createdById: userId } }),
-    prisma.gastroCourtesyCampaign.count({ where: { tenantId, createdByUserId: userId } }),
-    prisma.scannerAccount.count({ where: { tenantId, scannerUserId: userId } }),
-    prisma.scannerAccount.count({ where: { tenantId, parentUserId: userId } }),
-    prisma.inboxItem.count({ where: { tenantId, createdByUserId: userId } }),
-    prisma.ticketDateChangeRequest.count({ where: { tenantId, requestedByUserId: userId } }),
-    prisma.ticketTransferOffer.count({
-      where: {
-        tenantId,
-        OR: [{ sellerUserId: userId }, { buyerUserId: userId }],
-      },
-    }),
-    prisma.auditLog.count({ where: { tenantId, actorId: userId } }),
-    prisma.userFavorite.count({ where: { tenantId, userId } }),
-    prisma.userExpectedEvent.count({ where: { tenantId, userId } }),
-    prisma.userCartItem.count({ where: { cart: { tenantId, userId } } }),
-    prisma.userNotification.count({ where: { tenantId, userId } }),
-    prisma.userPushSubscription.count({ where: { tenantId, userId } }),
-    prisma.gastroDiscountClaim.count({ where: { tenantId, userId } }),
-    prisma.userProducerFollow.count({ where: { tenantId, userId } }),
-    prisma.userGastroFollow.count({ where: { tenantId, userId } }),
-  ]);
+  ] = counts;
 
   return {
     events,
@@ -409,4 +519,10 @@ export function buildAdminUserDeletePreflight(
     blockers,
     warnings,
   };
+}
+
+export function isProtectedMasterEmail(email: string): boolean {
+  const master = MASTER_USER_EMAIL?.trim().toLowerCase();
+  if (!master) return false;
+  return email.trim().toLowerCase() === master;
 }
