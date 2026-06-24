@@ -3,11 +3,11 @@
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
-import { PageContainer, SectionTitle } from '@/components';
+import { PageContainer } from '@/components';
+import { GastroDiscountQrCard } from '@/components/gastro/GastroDiscountQrCard';
 import { EmailInboxNotice } from '@/components/ux/EmailInboxNotice';
 import { useGastroDiscountClaim } from '@/lib/query/useGastroPublishedDiscounts';
-import { isValidGastroDiscountQrPayload } from '@/lib/gastro/discount-qr';
-import { qrImageUrl } from '@/lib/qr-image';
+import { resolveGastroDiscountDisplayStatus } from '@/lib/gastro/discount-status-ui';
 
 function ClaimContent() {
   const params = useParams();
@@ -37,44 +37,43 @@ function ClaimContent() {
     return (
       <PageContainer>
         <p className="text-text-muted">No encontramos este código.</p>
-        <Link href="/categoria/gastro?subcategory=descuentos" className="mt-4 inline-block text-accent hover:underline">
+        <Link
+          href="/categoria/gastro?subcategory=descuentos"
+          className="mt-4 inline-block text-accent hover:underline"
+        >
           ← Descuentos
         </Link>
       </PageContainer>
     );
   }
 
-  const title = claim.discountTitle?.trim() || 'Tu descuento';
-  const qrOk = isValidGastroDiscountQrPayload(claim.qrPayload);
+  const validTo = claim.validTo ?? claim.discountDate;
+  const status = resolveGastroDiscountDisplayStatus(
+    claim.status,
+    validTo,
+    claim.usedAt,
+  );
+  const title = claim.discountTitle?.trim() || claim.discountLabel?.trim() || 'Tu descuento';
 
   return (
     <PageContainer>
-      <SectionTitle>{title}</SectionTitle>
-      <p className="mt-1 text-text-muted">{claim.locationName}</p>
-      <EmailInboxNotice variant="qr" className="mt-4" />
-      <p className="mt-2 text-sm text-text-muted">
-        También enviamos el QR a <span className="font-medium text-text">{claim.email}</span>
-        {claim.emailSentAt ? '' : ' (el servicio de email puede no estar configurado en desarrollo)'}.
-      </p>
+      <div className="mx-auto flex max-w-lg flex-col items-center gap-6">
+        <EmailInboxNotice variant="qr" className="w-full" />
+        <p className="w-full text-center text-sm text-text-muted">
+          Enviamos el QR a <span className="font-medium text-text">{claim.email}</span>
+          {claim.emailSentAt ? '' : ' (el servicio de email puede no estar configurado en desarrollo)'}.
+        </p>
 
-      <div className="mt-8 flex flex-col items-center gap-6">
-        <div className="w-full max-w-sm rounded-xl border border-border bg-bg-muted p-6 text-center">
-          {qrOk ? (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img
-              src={qrImageUrl(claim.qrPayload, 280)}
-              alt="Código QR del descuento"
-              width={280}
-              height={280}
-              className="mx-auto rounded-lg border border-border"
-            />
-          ) : (
-            <p className="text-sm text-red-300">
-              No pudimos generar un QR válido. Contactá soporte o reclamá de nuevo el descuento.
-            </p>
-          )}
-          <p className="mt-4 text-sm text-text-muted">Presentá este código en el local</p>
-        </div>
+        <GastroDiscountQrCard
+          locationName={claim.locationName}
+          discountTitle={title}
+          discountDescription={claim.discountSummary}
+          discountLabel={claim.discountLabel}
+          qrPayload={claim.qrPayload}
+          status={status}
+          validTo={validTo}
+          type={claim.type}
+        />
 
         <Link
           href={`/gastronomicos/${claim.locationId}`}

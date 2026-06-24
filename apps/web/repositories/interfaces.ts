@@ -2508,9 +2508,14 @@ export interface PublicGastroDiscountClaimView {
   qrPayload: string;
   discountTitle: string | null;
   discountSummary: string | null;
+  discountLabel: string | null;
   locationName: string;
   locationId: string;
   discountDate: string | null;
+  validTo: string | null;
+  usedAt: string | null;
+  status: 'ACTIVE' | 'USED' | 'EXPIRED' | 'CANCELLED';
+  type: 'PUBLIC_REQUEST' | 'COURTESY';
   emailSentAt: string | null;
 }
 
