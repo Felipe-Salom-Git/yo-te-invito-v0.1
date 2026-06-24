@@ -170,6 +170,18 @@ Te enviamos el QR por email. Revisá tu bandeja de entrada y, si no aparece, ver
 
 ---
 
+### 0.8 Registro — confirmación de email obligatoria
+
+**Estado:** corregido en código 2026-06-23.
+
+- [x] Registro sin auto-login; redirect a login con aviso email/spam.
+- [x] Login bloquea `EMAIL_NOT_VERIFIED` con mensaje claro.
+- [x] Email `AUTH_VERIFY_EMAIL` con contenido válido y link a `/verify-email`.
+- [ ] QA manual: registro → confirmar email → login.
+- [ ] Pendiente futuro: reenvío de email de confirmación desde login.
+
+---
+
 ## 1. Cerrado / no pasar a Cursor como pendiente
 
 Estos bloques quedan fuera de la checklist activa salvo que aparezca un bug nuevo.

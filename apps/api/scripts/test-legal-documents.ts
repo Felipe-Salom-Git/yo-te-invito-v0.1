@@ -219,11 +219,12 @@ async function main() {
   }
   ok('GET /admin/legal-documents without auth → 401');
 
+  const registerEmail = `smoke-legal-rbac-${Date.now()}@smoke.yo-te-invito.test`;
   const registerRes = await fetch(`${API_BASE}/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      email: `smoke-legal-rbac-${Date.now()}@smoke.yo-te-invito.test`,
+      email: registerEmail,
       password: 'SmokeTest1!',
       firstName: 'Smoke',
       lastName: 'LegalRBAC',
@@ -232,11 +233,35 @@ async function main() {
     }),
   });
   if (!registerRes.ok) fail(`register for RBAC → ${registerRes.status}`);
-  const registered = await json<{ token?: string }>(registerRes);
-  if (!registered.token) fail('register missing token');
+  const registered = await json<{ user?: { id?: string; email?: string } }>(registerRes);
+  if (!registered.user?.id) fail('register missing user');
+
+  const { PrismaClient } = await import('@prisma/client');
+  const prisma = new PrismaClient();
+  try {
+    await prisma.user.update({
+      where: { id: registered.user.id },
+      data: { emailVerified: new Date() },
+    });
+  } finally {
+    await prisma.$disconnect();
+  }
+
+  const loginRes = await fetch(`${API_BASE}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      email: registered.user.email ?? registerEmail,
+      password: 'SmokeTest1!',
+      tenantId: TENANT_ID,
+    }),
+  });
+  if (!loginRes.ok) fail(`login after register for RBAC → ${loginRes.status}`);
+  const loggedIn = await json<{ token?: string }>(loginRes);
+  if (!loggedIn.token) fail('login after register missing token');
 
   const userAdminList = await fetch(`${API_BASE}/admin/legal-documents`, {
-    headers: { Authorization: `Bearer ${registered.token}` },
+    headers: { Authorization: `Bearer ${loggedIn.token}` },
   });
   if (userAdminList.status !== 403) {
     fail(`non-admin admin list expected 403, got ${userAdminList.status}`);

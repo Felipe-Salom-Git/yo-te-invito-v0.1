@@ -179,8 +179,11 @@ export const authRegisterRequestSchema = z
   });
 export type AuthRegisterRequest = z.infer<typeof authRegisterRequestSchema>;
 
-/** Response for POST /auth/register (same shape as login) */
-export const authRegisterResponseSchema = authLoginResponseSchema;
+/** Response for POST /auth/register — no JWT until email is verified. */
+export const authRegisterResponseSchema = z.object({
+  user: authLoginUserSchema,
+  emailVerificationRequired: z.literal(true),
+});
 export type AuthRegisterResponse = z.infer<typeof authRegisterResponseSchema>;
 
 /** Order summary for GET /me/orders (minimal for list) */

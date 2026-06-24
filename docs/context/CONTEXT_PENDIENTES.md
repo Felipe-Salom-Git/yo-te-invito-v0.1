@@ -151,6 +151,16 @@ Etapas base: `V3_1_STAGE_5_CLOSING.md`, `V3_1_STAGE_6_SCANNER_OFFLINE_CLOSING.md
 - [x] El aviso email/spam se mantiene visible en retry legal si queda aceptación pendiente.
 - [ ] QA manual registro productora/comprador sin 401 en DevTools.
 
+### Registro — confirmación de email obligatoria (2026-06-23)
+
+- [x] El registro ya no inicia sesión automáticamente — redirect a `/login?registered=1&verifyEmail=1`.
+- [x] `POST /auth/register` no devuelve JWT hasta verificar email (`emailVerificationRequired: true`).
+- [x] Login bloquea usuarios con `emailVerified` null (`EMAIL_NOT_VERIFIED`), excepto usuario maestro.
+- [x] Template `AUTH_VERIFY_EMAIL` con subject, preview, cuerpo y CTA válidos (`getAppUrl()` para link).
+- [x] Login muestra mensaje claro si el email no está verificado.
+- [ ] Pendiente futuro: reenvío manual de email de confirmación desde login.
+- [ ] QA manual: registro → email → verificar → login.
+
 ---
 
 > Checklist V2 § Google Cloud · § GSC/SEO · Runbooks: [`GOOGLE_CLOUD_RUNBOOK.md`](../deploy/GOOGLE_CLOUD_RUNBOOK.md) · [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) · [`SEARCH_CONSOLE_SEO_RUNBOOK.md`](../deploy/SEARCH_CONSOLE_SEO_RUNBOOK.md) · Auditorías: [`MAPS_LOCATION_AUDIT.md`](../audits/MAPS_LOCATION_AUDIT.md) · [`SEO_TECHNICAL_AUDIT.md`](../audits/SEO_TECHNICAL_AUDIT.md)

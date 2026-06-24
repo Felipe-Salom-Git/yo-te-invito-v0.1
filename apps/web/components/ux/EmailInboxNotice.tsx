@@ -1,11 +1,13 @@
 import {
   POST_REGISTER_EMAIL_NOTICE_BODY,
   POST_REGISTER_EMAIL_NOTICE_TITLE,
+  POST_REGISTER_VERIFY_BODY,
+  POST_REGISTER_VERIFY_TITLE,
   POST_QR_EMAIL_NOTICE_BODY,
   POST_QR_EMAIL_NOTICE_TITLE,
 } from '@/lib/ux/email-inbox-notices';
 
-type Variant = 'register' | 'qr';
+type Variant = 'register' | 'registerVerify' | 'qr';
 
 type Props = {
   variant: Variant;
@@ -16,6 +18,10 @@ const COPY: Record<Variant, { title: string; body: string }> = {
   register: {
     title: POST_REGISTER_EMAIL_NOTICE_TITLE,
     body: POST_REGISTER_EMAIL_NOTICE_BODY,
+  },
+  registerVerify: {
+    title: POST_REGISTER_VERIFY_TITLE,
+    body: POST_REGISTER_VERIFY_BODY,
   },
   qr: {
     title: POST_QR_EMAIL_NOTICE_TITLE,

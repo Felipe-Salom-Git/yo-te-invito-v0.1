@@ -13,6 +13,7 @@
  *   SMOKE_DEV_USER_ID — dev header user id (default user-admin)
  */
 
+import { PrismaClient } from '@prisma/client';
 import { trackSmokeUserId } from './smoke-cleanup';
 
 const BASE = process.env.API_BASE_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001';
@@ -20,6 +21,40 @@ const TENANT = process.env.SMOKE_TENANT_ID ?? 'tenant-demo';
 const DEV_USER_ID = process.env.SMOKE_DEV_USER_ID ?? 'user-admin';
 
 export const SMOKE_MASTER_EMAIL = 'felipe.e.salom@gmail.com';
+
+async function verifySmokeUserEmail(email: string): Promise<void> {
+  const prisma = new PrismaClient();
+  try {
+    const user = await prisma.user.findFirst({
+      where: { email: email.trim().toLowerCase(), deletedAt: null },
+    });
+    if (!user) return;
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: user.id },
+        data: { emailVerified: new Date() },
+      }),
+      prisma.emailVerificationToken.deleteMany({ where: { userId: user.id } }),
+    ]);
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+async function loginSmokeUser(
+  email: string,
+  password: string,
+): Promise<{ token: string; userId: string } | null> {
+  const res = await fetch(`${BASE}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password, tenantId: TENANT }),
+  });
+  if (!res.ok) return null;
+  const data = (await res.json()) as { token?: string; user?: { id?: string } };
+  if (!data.token || !data.user?.id) return null;
+  return { token: data.token, userId: data.user.id };
+}
 
 export type SmokeAuth = {
   token: string | null;
@@ -140,21 +175,41 @@ async function attemptRegisterSmokeUser(prefix: string): Promise<
       };
     }
 
-    const data = parsed as { token?: string; user?: { id?: string } };
-    if (!data.token || !data.user?.id) {
+    const data = parsed as {
+      token?: string;
+      user?: { id?: string };
+      emailVerificationRequired?: boolean;
+    };
+    if (!data.user?.id) {
       return {
         ok: false,
         endpoint,
         status: res.status,
         bodySummary: summarizeHttpBody(text, parsed),
-        probableCause: 'Respuesta 200 sin token/user.id — registro incompleto.',
+        probableCause: 'Respuesta 200 sin user.id — registro incompleto.',
       };
+    }
+
+    let token = data.token;
+    if (!token || data.emailVerificationRequired) {
+      await verifySmokeUserEmail(email);
+      const loggedIn = await loginSmokeUser(email, password);
+      if (!loggedIn) {
+        return {
+          ok: false,
+          endpoint: `${BASE}/auth/login`,
+          status: 401,
+          bodySummary: 'Login tras registro smoke falló (email no verificado o credenciales).',
+          probableCause: 'Verificar email smoke o credenciales de registro efímero.',
+        };
+      }
+      token = loggedIn.token;
     }
 
     trackSmokeUserId(data.user.id);
     return {
       ok: true,
-      user: { token: data.token, userId: data.user.id, email },
+      user: { token, userId: data.user.id, email },
     };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);

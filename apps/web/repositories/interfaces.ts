@@ -1803,18 +1803,9 @@ export interface ApplyReferrerBody {
 }
 
 export interface AuthRepo {
-  register(body: import('@yo-te-invito/shared').AuthRegisterRequest): Promise<{
-    token: string;
-    user: {
-      id: string;
-      tenantId: string;
-      email: string;
-      role: string;
-      status: string;
-      firstName: string;
-      lastName: string;
-    };
-  }>;
+  register(
+    body: import('@yo-te-invito/shared').AuthRegisterRequest,
+  ): Promise<import('@yo-te-invito/shared').AuthRegisterResponse>;
 }
 
 export interface ProfilesRepo {

@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { getSession, signIn } from 'next-auth/react';
 import { z } from 'zod';
 import { Button, Input } from '@/components';
 import { LegalFlowAcceptanceBlock } from '@/components/legal/LegalFlowAcceptanceBlock';
@@ -43,8 +42,6 @@ import { RegisterReferrerStep } from './register/RegisterReferrerStep';
 import { RegisterProfileStep } from './register/RegisterProfileStep';
 import { RegisterWizardErrorAlert } from './register/RegisterWizardErrorAlert';
 import { RegisterWizardShell } from './register/RegisterWizardShell';
-import { withRegisteredQuery } from '@/components/auth/PostRegisterEmailNotice';
-import { EmailInboxNotice } from '@/components/ux/EmailInboxNotice';
 import {
   REGISTER_WIZARD_COPY,
   getStepMeta,
@@ -82,43 +79,9 @@ const accountSchema = z
 
 type AccountData = z.infer<typeof accountSchema> & { city: string };
 
-type SubmitPhase = 'idle' | 'register' | 'signin' | 'retry';
+type SubmitPhase = 'idle' | 'register' | 'retry';
 
-async function ensureAuthenticatedSession(
-  email: string,
-  password: string,
-): Promise<boolean> {
-  let session = await getSession();
-  const hasToken = Boolean(
-    (session?.user as { accessToken?: string } | undefined)?.accessToken,
-  );
-  if (hasToken) return true;
-
-  const signInResult = await signIn('credentials', {
-    email,
-    password,
-    redirect: false,
-  });
-  if (signInResult?.error) return false;
-
-  session = await getSession();
-  return Boolean((session?.user as { accessToken?: string } | undefined)?.accessToken);
-}
-
-function redirectForProfile(type: RegistrationProfileType): string {
-  switch (type) {
-    case 'PRODUCER':
-      return '/producer';
-    case 'GASTRO':
-      return '/gastro';
-    case 'HOTEL':
-      return '/hotel';
-    case 'REFERRER':
-      return '/referrer';
-    default:
-      return '/me';
-  }
-}
+const REGISTER_SUCCESS_LOGIN_HREF = '/login?registered=1&verifyEmail=1';
 
 function buildRegisterPayload(
   account: AccountData,
@@ -404,31 +367,6 @@ export function RegisterWizard() {
     return false;
   };
 
-  const completeSessionAfterRegister = async (
-    registerPayload: AuthRegisterRequest,
-  ): Promise<boolean> => {
-    setSubmitPhase('signin');
-    const signInResult = await signIn('credentials', {
-      email: registerPayload.email,
-      password: registerPayload.password,
-      redirect: false,
-    });
-    setSubmitPhase('idle');
-
-    if (signInResult?.error) {
-      setError(REGISTER_ERROR_MESSAGES.signInAfterRegister);
-      scheduleFocusRegisterError(contentRef.current);
-      router.push('/login?registered=1');
-      return false;
-    }
-
-    // Legal acceptance is persisted in POST /auth/register (signupLegalAcceptance).
-    // Do not call /me/legal/requirements here — session may not be on the API client yet (401).
-    await getSession();
-
-    return true;
-  };
-
   const registerWithLegal = async (registerPayload: AuthRegisterRequest) => {
     if (!assertSignupLegalReady()) {
       throw new Error(LEGAL_ACCEPTANCE_REQUIRED_MSG);
@@ -438,38 +376,6 @@ export function RegisterWizard() {
       await repos.auth.register(registerPayload);
     } finally {
       setSubmitPhase((prev) => (prev === 'register' ? 'idle' : prev));
-    }
-    return completeSessionAfterRegister(registerPayload);
-  };
-
-  const retryLegalAcceptance = async () => {
-    if (!assertSignupLegalReady() || !account) return;
-    setSubmitPhase('retry');
-    setLegalError(null);
-    try {
-      const authenticated = await ensureAuthenticatedSession(account.email, account.password);
-      if (!authenticated) {
-        setLegalError(
-          'No pudimos verificar tu sesión. Iniciá sesión e intentá completar la aceptación legal.',
-        );
-        scheduleFocusRegisterError(contentRef.current);
-        router.push('/login?registered=1');
-        return;
-      }
-
-      await repos.legalDocuments.acceptMyLegalDocuments({
-        documentVersionIds: selectedLegalVersionIds,
-        context: 'SIGNUP',
-      });
-      router.push(withRegisteredQuery(redirectForProfile(profileType)));
-      router.refresh();
-    } catch (err) {
-      setLegalError(
-        mapRegisterApiError(err) || LEGAL_SIGNUP_USER_MESSAGES.acceptFailedPostRegister,
-      );
-      scheduleFocusRegisterError(contentRef.current);
-    } finally {
-      setSubmitPhase('idle');
     }
   };
 
@@ -485,10 +391,8 @@ export function RegisterWizard() {
         selectedLegalVersionIds,
         signupRequiredCount,
       );
-      const ok = await registerWithLegal(payload);
-      if (!ok) return;
-      router.push(withRegisteredQuery('/me'));
-      router.refresh();
+      await registerWithLegal(payload);
+      router.push(REGISTER_SUCCESS_LOGIN_HREF);
     } catch (err) {
       handleRegisterSubmitError(err);
     } finally {
@@ -508,10 +412,8 @@ export function RegisterWizard() {
         selectedLegalVersionIds,
         signupRequiredCount,
       );
-      const ok = await registerWithLegal(payload);
-      if (!ok) return;
-      router.push(withRegisteredQuery('/gastro'));
-      router.refresh();
+      await registerWithLegal(payload);
+      router.push(REGISTER_SUCCESS_LOGIN_HREF);
     } catch (err) {
       handleRegisterSubmitError(err);
     } finally {
@@ -531,10 +433,8 @@ export function RegisterWizard() {
         selectedLegalVersionIds,
         signupRequiredCount,
       );
-      const ok = await registerWithLegal(payload);
-      if (!ok) return;
-      router.push(withRegisteredQuery('/hotel'));
-      router.refresh();
+      await registerWithLegal(payload);
+      router.push(REGISTER_SUCCESS_LOGIN_HREF);
     } catch (err) {
       handleRegisterSubmitError(err);
     } finally {
@@ -554,10 +454,8 @@ export function RegisterWizard() {
         selectedLegalVersionIds,
         signupRequiredCount,
       );
-      const ok = await registerWithLegal(payload);
-      if (!ok) return;
-      router.push(withRegisteredQuery('/producer'));
-      router.refresh();
+      await registerWithLegal(payload);
+      router.push(REGISTER_SUCCESS_LOGIN_HREF);
     } catch (err) {
       handleRegisterSubmitError(err);
     } finally {
@@ -577,10 +475,8 @@ export function RegisterWizard() {
         selectedLegalVersionIds,
         signupRequiredCount,
       );
-      const ok = await registerWithLegal(payload);
-      if (!ok) return;
-      router.push(withRegisteredQuery('/referrer'));
-      router.refresh();
+      await registerWithLegal(payload);
+      router.push(REGISTER_SUCCESS_LOGIN_HREF);
     } catch (err) {
       handleRegisterSubmitError(err);
     } finally {
@@ -605,13 +501,11 @@ export function RegisterWizard() {
   };
 
   const submitLabel =
-    submitPhase === 'signin'
-      ? REGISTER_WIZARD_COPY.submitting.signIn
-      : submitPhase === 'register'
-        ? REGISTER_WIZARD_COPY.submitting.register
-        : submitPhase === 'retry'
-          ? REGISTER_WIZARD_COPY.submitting.retry
-          : REGISTER_WIZARD_COPY.cta.createAccount;
+    submitPhase === 'register'
+      ? REGISTER_WIZARD_COPY.submitting.register
+      : submitPhase === 'retry'
+        ? REGISTER_WIZARD_COPY.submitting.retry
+        : REGISTER_WIZARD_COPY.cta.createAccount;
 
   return (
     <RegisterWizardShell
@@ -854,20 +748,13 @@ export function RegisterWizard() {
               <p className="font-medium text-text">{REGISTER_WIZARD_COPY.legalRetry.alertTitle}</p>
               <p className="mt-1 text-text-muted">{REGISTER_WIZARD_COPY.legalRetry.alertBody}</p>
             </div>
-            <EmailInboxNotice variant="register" />
-            <LegalFlowAcceptanceBlock {...legalBlockProps} />
-            {legalError &&
-            legalError !== LEGAL_SIGNUP_USER_MESSAGES.acceptFailedPostRegister ? (
-              <RegisterWizardErrorAlert message={legalError} />
-            ) : null}
             <p className="text-xs text-text-muted">Cuenta: {account.email}</p>
             <Button
               type="button"
               className="w-full min-h-11"
-              disabled={submitting || legalSubmitBlocked}
-              onClick={() => void retryLegalAcceptance()}
+              onClick={() => router.push(REGISTER_SUCCESS_LOGIN_HREF)}
             >
-              {submitting ? submitLabel : REGISTER_WIZARD_COPY.cta.retryLegal}
+              Ir a confirmar mi email
             </Button>
           </div>
         )}

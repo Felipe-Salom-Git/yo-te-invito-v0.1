@@ -18,11 +18,15 @@ import type {
 } from '@yo-te-invito/shared';
 import {
   AUTH_REGISTER_ERROR_CODES,
+  AUTH_LOGIN_ERROR_CODES,
+  AUTH_LOGIN_USER_MESSAGES,
   LEGAL_SIGNUP_ERROR_CODES,
   LEGAL_SIGNUP_USER_MESSAGES,
+  MASTER_USER_EMAIL,
 } from '@yo-te-invito/shared';
 import { LegalSignupService } from '../modules/legal/legal-signup.service';
 import { ProfileRegistrationService } from './profile-registration.service';
+import { getAppUrl } from '../email/templates/email-template.util';
 
 export type RegisterRequestMeta = {
   ipAddress?: string | null;
@@ -47,8 +51,6 @@ function verifyPassword(password: string, storedHash: string): boolean {
 
 @Injectable()
 export class AuthService {
-  private readonly appUrl = process.env.APP_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
@@ -74,20 +76,29 @@ export class AuthService {
         firstName: true,
         lastName: true,
         passwordHash: true,
+        emailVerified: true,
       },
     });
 
     if (!user?.passwordHash) {
       throw new UnauthorizedException({
-        code: 'UNAUTHORIZED',
-        message: 'Invalid email or password',
+        code: AUTH_LOGIN_ERROR_CODES.UNAUTHORIZED,
+        message: AUTH_LOGIN_USER_MESSAGES.invalidCredentials,
       });
     }
 
     if (!verifyPassword(body.password, user.passwordHash)) {
       throw new UnauthorizedException({
-        code: 'UNAUTHORIZED',
-        message: 'Invalid email or password',
+        code: AUTH_LOGIN_ERROR_CODES.UNAUTHORIZED,
+        message: AUTH_LOGIN_USER_MESSAGES.invalidCredentials,
+      });
+    }
+
+    const isMasterUser = email === MASTER_USER_EMAIL.trim().toLowerCase();
+    if (!user.emailVerified && !isMasterUser) {
+      throw new UnauthorizedException({
+        code: AUTH_LOGIN_ERROR_CODES.EMAIL_NOT_VERIFIED,
+        message: AUTH_LOGIN_USER_MESSAGES.emailNotVerified,
       });
     }
 
@@ -212,12 +223,13 @@ export class AuthService {
       },
     });
 
-    const verifyUrl = `${this.appUrl}/verify-email?token=${verificationToken}`;
+    const appUrl = getAppUrl();
+    const verifyUrl = `${appUrl}/verify-email?token=${verificationToken}`;
     await this.emailQueue.enqueueTemplate({
       templateId: 'AUTH_VERIFY_EMAIL',
       to: user.email,
       variables: {
-        userName: user.firstName,
+        userName: user.firstName?.trim() || user.email.split('@')[0] || 'ahí',
         verifyUrl,
         expiresIn: '24 horas',
         supportEmail:
@@ -232,15 +244,12 @@ export class AuthService {
         profileType,
         user.firstName,
         body.profileData,
-        this.appUrl,
+        appUrl,
       ),
     });
 
-    const payload = { sub: user.id, tenantId: user.tenantId, role: user.role };
-    const token = this.jwtService.sign(payload);
-
     return {
-      token,
+      emailVerificationRequired: true as const,
       user: {
         id: user.id,
         tenantId: user.tenantId,

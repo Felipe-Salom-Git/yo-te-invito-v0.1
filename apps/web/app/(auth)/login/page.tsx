@@ -4,7 +4,9 @@ import { useState, Suspense } from 'react';
 import { signIn, getSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { AUTH_LOGIN_ERROR_CODES, AUTH_LOGIN_USER_MESSAGES } from '@yo-te-invito/shared';
 import type { Role } from '@yo-te-invito/shared';
+import { attemptCredentialsLogin } from '@/lib/auth/login-api';
 import { Button, Input, Card, CardHeader, CardContent } from '@/components';
 import { Logo } from '@/components/brand/Logo';
 import { EmailInboxNotice } from '@/components/ux/EmailInboxNotice';
@@ -15,6 +17,7 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
   const registered = searchParams?.get('registered') === '1';
+  const verifyEmail = searchParams?.get('verifyEmail') === '1';
   const verify = searchParams?.get('verify') === '1';
   const callbackUrl = searchParams?.get('callbackUrl');
 
@@ -35,6 +38,16 @@ function LoginForm() {
     const email = (formData.get('email') as string)?.trim()?.toLowerCase() ?? '';
     const password = (formData.get('password') as string) ?? '';
 
+    const preflight = await attemptCredentialsLogin(email, password);
+    if (!preflight.ok) {
+      if (preflight.code === AUTH_LOGIN_ERROR_CODES.EMAIL_NOT_VERIFIED) {
+        setError(preflight.message || AUTH_LOGIN_USER_MESSAGES.emailNotVerified);
+      } else {
+        setError(AUTH_LOGIN_USER_MESSAGES.invalidCredentials);
+      }
+      return;
+    }
+
     const res = await signIn('credentials', {
       email,
       password,
@@ -42,7 +55,7 @@ function LoginForm() {
     });
 
     if (res?.error) {
-      setError('Email o contraseña incorrectos.');
+      setError(AUTH_LOGIN_USER_MESSAGES.invalidCredentials);
       return;
     }
 
@@ -64,7 +77,10 @@ function LoginForm() {
         </CardHeader>
         <CardContent>
           {registered && (
-            <EmailInboxNotice variant="register" className="mb-4" />
+            <EmailInboxNotice
+              variant={verifyEmail ? 'registerVerify' : 'register'}
+              className="mb-4"
+            />
           )}
           {verify && (
             <p className="mb-4 rounded border border-accent-muted bg-accent-surface/70 px-3 py-2 text-sm text-accent-soft">
