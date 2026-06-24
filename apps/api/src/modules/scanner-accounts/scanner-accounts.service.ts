@@ -481,6 +481,7 @@ export class ScannerAccountsService {
           lastName: body.lastName.trim(),
           role: PrismaRole.SCANNER,
           status: UserStatus.ACTIVE,
+          emailVerified: new Date(),
           passwordHash: hashPassword(plainPassword),
         },
       });

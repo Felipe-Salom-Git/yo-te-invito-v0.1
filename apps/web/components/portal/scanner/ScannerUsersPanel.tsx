@@ -119,9 +119,12 @@ export function ScannerUsersPanel({ portal }: Props) {
       resetForm();
       if (result.temporaryPassword) {
         setTempPasswordModal(result.temporaryPassword);
-        addToast('Usuario scanner creado. Copiá la contraseña temporal.', 'success');
+        addToast(
+          'Usuario scanner creado. Ya puede iniciar sesión en la app scanner con estas credenciales.',
+          'success',
+        );
       } else {
-        addToast('Usuario scanner creado.', 'success');
+        addToast('Usuario scanner creado. Ya puede iniciar sesión en la app scanner.', 'success');
       }
     } catch (err) {
       addToast(getErrorMessage(err), 'error');
