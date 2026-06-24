@@ -334,6 +334,11 @@ export function validateAuthRegisterProfilePayload(
 
 /** JWT / session role assigned at signup from registration profile type. */
 export function roleForRegistrationProfileType(profileType: RegistrationProfileType): Role {
+  return mapSignupProfileTypeToRole(profileType);
+}
+
+/** Maps signup `profileType` to persisted `User.role` (Prisma Role enum). */
+export function mapSignupProfileTypeToRole(profileType: RegistrationProfileType): Role {
   switch (profileType) {
     case 'PRODUCER':
       return Role.PRODUCER_OWNER;
@@ -347,4 +352,16 @@ export function roleForRegistrationProfileType(profileType: RegistrationProfileT
     default:
       return Role.USER;
   }
+}
+
+/** Reject ambiguous signup payloads (profileData without commercial profileType). */
+export function resolveSignupProfileType(input: {
+  profileType?: RegistrationProfileType;
+  profileData?: unknown;
+}): RegistrationProfileType {
+  const profileType = input.profileType ?? 'USER';
+  if (input.profileData != null && profileType === 'USER') {
+    throw new Error('profileType is required when profileData is provided');
+  }
+  return profileType;
 }

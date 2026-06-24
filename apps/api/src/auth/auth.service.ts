@@ -25,7 +25,8 @@ import {
   LEGAL_SIGNUP_USER_MESSAGES,
   MASTER_USER_EMAIL,
   Role,
-  roleForRegistrationProfileType,
+  mapSignupProfileTypeToRole,
+  resolveSignupProfileType,
 } from '@yo-te-invito/shared';
 import { LegalSignupService } from '../modules/legal/legal-signup.service';
 import { ProfileRegistrationService } from './profile-registration.service';
@@ -196,7 +197,18 @@ export class AuthService {
       });
     }
     const passwordHash = hashPassword(body.password);
-    const profileType: RegistrationProfileType = body.profileType ?? 'USER';
+    let profileType: RegistrationProfileType;
+    try {
+      profileType = resolveSignupProfileType({
+        profileType: body.profileType,
+        profileData: body.profileData,
+      });
+    } catch {
+      throw new BadRequestException({
+        code: 'VALIDATION_FAILED',
+        message: 'profileType es requerido cuando se envía profileData',
+      });
+    }
     if (profileType !== 'USER' && body.profileData == null) {
       throw new BadRequestException({
         code: 'VALIDATION_FAILED',
@@ -229,7 +241,7 @@ export class AuthService {
     }
 
     const cityTrimmed = body.city?.trim() || null;
-    const signupRole = roleForRegistrationProfileType(profileType);
+    const signupRole = mapSignupProfileTypeToRole(profileType);
     const user = await this.prisma.$transaction(async (tx) => {
       const created = await tx.user.create({
         data: {

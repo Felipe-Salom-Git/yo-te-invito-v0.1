@@ -184,12 +184,15 @@ Te enviamos el QR por email. Revisá tu bandeja de entrada y, si no aparece, ver
 
 ### 0.9 Hotfix registro por perfil comercial
 
-**Estado:** corregido en código 2026-06-24.
+**Estado:** corregido en código 2026-06-24 (requiere deploy en VPS).
 
-- [x] `POST /auth/register` asigna rol según `profileType` (productora → `PRODUCER_OWNER`, no `USER`).
+- [x] `POST /auth/register` asigna rol según `profileType` (`mapSignupProfileTypeToRole`; productora → `PRODUCER_OWNER`, no `USER`).
+- [x] Rechaza `profileData` sin `profileType` comercial.
 - [x] Login resuelve rol efectivo para cuentas legacy con perfil comercial y `role=USER`.
 - [x] Redirect post-login respeta `rolePortalHome` (`PRODUCER_OWNER` → `/producer`).
+- [x] Smoke: `pnpm --filter api run smoke:auth-register-role`.
 - [ ] QA manual: productora → verify email → login → `/producer` (no `/me`).
+- [ ] Usuarios de prueba previos al deploy: `UPDATE "User" SET role='PRODUCER_OWNER' WHERE email='…';`
 
 ---
 

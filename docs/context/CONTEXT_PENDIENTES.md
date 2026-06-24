@@ -163,10 +163,13 @@ Etapas base: `V3_1_STAGE_5_CLOSING.md`, `V3_1_STAGE_6_SCANNER_OFFLINE_CLOSING.md
 
 ### Hotfix registro por perfil comercial (2026-06-24)
 
-- [x] `POST /auth/register` asigna rol según `profileType` (`PRODUCER` → `PRODUCER_OWNER`, etc.).
+- [x] `POST /auth/register` asigna rol según `profileType` (`mapSignupProfileTypeToRole`: `PRODUCER` → `PRODUCER_OWNER`).
+- [x] Rechaza `profileData` sin `profileType` comercial (no cae silenciosamente a `USER`).
 - [x] `POST /auth/login` resuelve rol efectivo si hay membresía comercial activa con `role=USER` (cuentas previas al fix).
 - [x] Redirect post-login usa `rolePortalHome` (`PRODUCER_OWNER` → `/producer`).
+- [x] Smoke: `pnpm --filter api run smoke:auth-register-role`.
 - [ ] QA manual: registro productora → verify email → login → `/producer`.
+- [ ] Corregir manualmente en DB cuentas de prueba creadas antes del deploy (`UPDATE "User" SET role='PRODUCER_OWNER' WHERE …`).
 
 ---
 
