@@ -4,6 +4,7 @@ import type { AdminUserListItem } from '@/repositories/interfaces';
 import { AdminUserRoleBadge } from './AdminUserRoleBadge';
 import { AdminUserProfileBadges } from './AdminUserProfileBadges';
 import { AdminUserRoleSelect } from './AdminUserRoleSelect';
+import { AdminUserDeleteButton } from './AdminUserDeleteButton';
 
 function formatDt(iso: string): string {
   return new Date(iso).toLocaleString('es-AR', {
@@ -14,14 +15,20 @@ function formatDt(iso: string): string {
 
 type AdminUsersTableProps = {
   users: AdminUserListItem[];
+  currentUserId?: string | null;
   roleChangeDisabled?: boolean;
+  deleteDisabled?: boolean;
   onRequestRoleChange: (user: AdminUserListItem, role: string) => void;
+  onRequestDelete: (user: AdminUserListItem) => void;
 };
 
 export function AdminUsersTable({
   users,
+  currentUserId,
   roleChangeDisabled,
+  deleteDisabled,
   onRequestRoleChange,
+  onRequestDelete,
 }: AdminUsersTableProps) {
   if (users.length === 0) return null;
 
@@ -37,6 +44,7 @@ export function AdminUsersTable({
             <th className="px-4 py-3 font-medium">Perfiles</th>
             <th className="px-4 py-3 font-medium">Alta</th>
             <th className="px-4 py-3 font-medium">Cambiar rol</th>
+            <th className="px-4 py-3 font-medium">Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -66,6 +74,14 @@ export function AdminUsersTable({
                   user={user}
                   disabled={roleChangeDisabled}
                   onRequestChange={(role) => onRequestRoleChange(user, role)}
+                />
+              </td>
+              <td className="px-4 py-3">
+                <AdminUserDeleteButton
+                  user={user}
+                  currentUserId={currentUserId}
+                  disabled={deleteDisabled}
+                  onClick={() => onRequestDelete(user)}
                 />
               </td>
             </tr>

@@ -1581,6 +1581,16 @@ export class ApiRepository implements Repositories {
         { role },
       );
     },
+    getDeletePreflight: async (userId) => {
+      return this.client.get<import('./interfaces').AdminUserDeletePreflight>(
+        `/admin/users/${encodeURIComponent(userId)}/delete-preflight`,
+      );
+    },
+    deleteUser: async (userId) => {
+      return this.client.delete<import('./interfaces').AdminUserDeleteResponse>(
+        `/admin/users/${encodeURIComponent(userId)}`,
+      );
+    },
   };
 
   adminPayments: import('./interfaces').AdminPaymentsRepo = {

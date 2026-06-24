@@ -15,3 +15,12 @@ export function useAdminUsersList(
     enabled,
   });
 }
+
+export function useAdminUserDeletePreflight(userId: string | null, enabled = false) {
+  const repos = useRepositories();
+  return useQuery({
+    queryKey: adminUsersKeys.deletePreflight(userId ?? ''),
+    queryFn: () => repos.adminUsers.getDeletePreflight(userId!),
+    enabled: enabled && Boolean(userId),
+  });
+}

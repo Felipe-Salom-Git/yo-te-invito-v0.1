@@ -21,13 +21,16 @@ import {
   filtersToAdminUsersQuery,
   type AdminUsersFiltersState,
 } from '@/lib/admin/admin-users-filters';
-import { useAdminUsersList } from '@/lib/query/admin-users';
+import { useAdminUsersList, useAdminUserDeletePreflight } from '@/lib/query/admin-users';
 import { adminUsersKeys } from '@/lib/query/keys';
 import { useRepositories } from '@/repositories/context';
 import type { AdminUserListItem } from '@/repositories/interfaces';
 import { AdminUsersFilters } from './AdminUsersFilters';
 import { AdminUsersTable } from './AdminUsersTable';
 import { AdminUsersMobileCard } from './AdminUsersMobileCard';
+import { AdminUserDeleteModal } from './AdminUserDeleteModal';
+import { ApiClientError } from '@/lib/api/client';
+import type { AdminUserDeletePreflight } from '@/repositories/interfaces';
 
 export function AdminUsersPageClient() {
   const { data: session, status } = useSession();
@@ -36,6 +39,11 @@ export function AdminUsersPageClient() {
   const { addToast } = useToast();
   const { filters, setFilters, clearFilters } = useAdminUsersUrlFilters();
   const [draft, setDraft] = useState<AdminUsersFiltersState>(filters);
+  const [deleteTarget, setDeleteTarget] = useState<AdminUserListItem | null>(null);
+  const [deleteModalPreflight, setDeleteModalPreflight] = useState<AdminUserDeletePreflight | null>(
+    null,
+  );
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     setDraft(filters);
@@ -50,12 +58,55 @@ export function AdminUsersPageClient() {
     status === 'authenticated',
   );
 
+  const preflightQuery = useAdminUserDeletePreflight(
+    deleteTarget?.id ?? null,
+    deleteTarget != null,
+  );
+
+  useEffect(() => {
+    if (preflightQuery.data) {
+      setDeleteModalPreflight(preflightQuery.data);
+    }
+  }, [preflightQuery.data]);
+
+  useEffect(() => {
+    if (deleteTarget && preflightQuery.isError) {
+      setDeleteError(getErrorMessage(preflightQuery.error));
+    }
+  }, [deleteTarget, preflightQuery.isError, preflightQuery.error]);
+
   const updateRoleMutation = useMutation({
     mutationFn: ({ userId, role }: { userId: string; role: string }) =>
       repos.adminUsers.updateRole(userId, role),
     onError: (err) => addToast(getErrorMessage(err), 'error'),
     onSuccess: () => {
       addToast('Rol actualizado', 'success');
+      queryClient.invalidateQueries({ queryKey: adminUsersKeys.all });
+    },
+  });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: (userId: string) => repos.adminUsers.deleteUser(userId),
+    onError: (err) => {
+      if (err instanceof ApiClientError && err.status === 409) {
+        const body = err.body as { blockers?: AdminUserDeletePreflight['blockers']; message?: string };
+        if (body.blockers) {
+          setDeleteModalPreflight({
+            canDelete: false,
+            blockers: body.blockers,
+            warnings: [],
+          });
+        }
+        setDeleteError(body.message ?? getErrorMessage(err));
+        return;
+      }
+      setDeleteError(getErrorMessage(err));
+    },
+    onSuccess: () => {
+      addToast('Usuario eliminado', 'success');
+      setDeleteTarget(null);
+      setDeleteModalPreflight(null);
+      setDeleteError(null);
       queryClient.invalidateQueries({ queryKey: adminUsersKeys.all });
     },
   });
@@ -72,6 +123,21 @@ export function AdminUsersPageClient() {
     if (!ok) return;
     updateRoleMutation.mutate({ userId: user.id, role });
   };
+
+  const handleRequestDelete = (user: AdminUserListItem) => {
+    setDeleteError(null);
+    setDeleteModalPreflight(null);
+    setDeleteTarget(user);
+  };
+
+  const handleCloseDeleteModal = () => {
+    if (deleteUserMutation.isPending) return;
+    setDeleteTarget(null);
+    setDeleteModalPreflight(null);
+    setDeleteError(null);
+  };
+
+  const currentUserId = session?.user?.id;
 
   if (status === 'loading') {
     return (
@@ -101,8 +167,8 @@ export function AdminUsersPageClient() {
       <header>
         <SectionTitle>Usuarios</SectionTitle>
         <p className="mt-1 max-w-2xl text-sm text-text-muted">
-          Buscá y filtrá cuentas reales del tenant. El cambio de rol requiere confirmación; la
-          cuenta maestro no se modifica desde aquí.
+          Buscá y filtrá cuentas reales del tenant. El cambio de rol y la eliminación requieren
+          confirmación; la cuenta maestro no se modifica desde aquí.
         </p>
       </header>
 
@@ -151,16 +217,22 @@ export function AdminUsersPageClient() {
             </p>
             <AdminUsersTable
               users={users}
+              currentUserId={currentUserId}
               roleChangeDisabled={updateRoleMutation.isPending}
+              deleteDisabled={deleteUserMutation.isPending || preflightQuery.isFetching}
               onRequestRoleChange={handleRoleChange}
+              onRequestDelete={handleRequestDelete}
             />
             <ul className="mt-4 space-y-3 md:hidden">
               {users.map((u) => (
                 <li key={u.id}>
                   <AdminUsersMobileCard
                     user={u}
+                    currentUserId={currentUserId}
                     roleChangeDisabled={updateRoleMutation.isPending}
+                    deleteDisabled={deleteUserMutation.isPending || preflightQuery.isFetching}
                     onRequestRoleChange={(role) => handleRoleChange(u, role)}
+                    onRequestDelete={() => handleRequestDelete(u)}
                   />
                 </li>
               ))}
@@ -191,6 +263,20 @@ export function AdminUsersPageClient() {
           </>
         )}
       </div>
+
+      <AdminUserDeleteModal
+        open={deleteTarget != null}
+        userEmail={deleteTarget?.email ?? ''}
+        preflight={deleteModalPreflight}
+        isPreflightLoading={preflightQuery.isLoading || preflightQuery.isFetching}
+        isDeleting={deleteUserMutation.isPending}
+        deleteError={deleteError}
+        onClose={handleCloseDeleteModal}
+        onConfirmDelete={() => {
+          if (!deleteTarget) return;
+          deleteUserMutation.mutate(deleteTarget.id);
+        }}
+      />
     </PageContainer>
   );
 }

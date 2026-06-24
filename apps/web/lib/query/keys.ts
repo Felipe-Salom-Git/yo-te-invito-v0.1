@@ -330,6 +330,8 @@ export const adminAuditKeys = {
 export const adminUsersKeys = {
   all: ['admin', 'users'] as const,
   list: (filtersKey: string) => [...adminUsersKeys.all, 'list', filtersKey] as const,
+  deletePreflight: (userId: string) =>
+    [...adminUsersKeys.all, 'delete-preflight', userId] as const,
 };
 
 export const adminPaymentsKeys = {

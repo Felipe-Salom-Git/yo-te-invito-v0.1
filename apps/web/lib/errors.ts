@@ -19,7 +19,10 @@ const ERROR_CODE_MESSAGES: Record<string, string> = {
   PRODUCER_PROFILE_NOT_FOUND: 'No tenés una productora activa asociada a tu cuenta.',
   GASTRO_PROFILE_NOT_FOUND: 'No tenés un local gastronómico activo asociado a tu cuenta.',
   FORBIDDEN: 'No tenés permiso para esta acción.',
+  INVALID_PASSWORD: 'INVALID_PASSWORD',
   OCCURRENCE_REQUIRED: 'Seleccioná para qué fecha es esta entrada.',
+  USER_DELETE_BLOCKED:
+    'No se puede eliminar este usuario porque tiene publicaciones o historial asociado.',
 };
 
 export function isApiNotFoundError(err: unknown): boolean {

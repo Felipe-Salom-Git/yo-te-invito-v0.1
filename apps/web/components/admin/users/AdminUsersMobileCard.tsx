@@ -4,6 +4,7 @@ import type { AdminUserListItem } from '@/repositories/interfaces';
 import { AdminUserRoleBadge } from './AdminUserRoleBadge';
 import { AdminUserProfileBadges } from './AdminUserProfileBadges';
 import { AdminUserRoleSelect } from './AdminUserRoleSelect';
+import { AdminUserDeleteButton } from './AdminUserDeleteButton';
 
 function formatDt(iso: string): string {
   return new Date(iso).toLocaleString('es-AR', {
@@ -14,14 +15,20 @@ function formatDt(iso: string): string {
 
 type AdminUsersMobileCardProps = {
   user: AdminUserListItem;
+  currentUserId?: string | null;
   roleChangeDisabled?: boolean;
+  deleteDisabled?: boolean;
   onRequestRoleChange: (role: string) => void;
+  onRequestDelete: () => void;
 };
 
 export function AdminUsersMobileCard({
   user,
+  currentUserId,
   roleChangeDisabled,
+  deleteDisabled,
   onRequestRoleChange,
+  onRequestDelete,
 }: AdminUsersMobileCardProps) {
   const fullName = `${user.firstName} ${user.lastName}`.trim();
 
@@ -54,11 +61,17 @@ export function AdminUsersMobileCard({
           </dd>
         </div>
       </dl>
-      <div className="mt-4">
+      <div className="mt-4 space-y-3">
         <AdminUserRoleSelect
           user={user}
           disabled={roleChangeDisabled}
           onRequestChange={onRequestRoleChange}
+        />
+        <AdminUserDeleteButton
+          user={user}
+          currentUserId={currentUserId}
+          disabled={deleteDisabled}
+          onClick={onRequestDelete}
         />
       </div>
     </article>

@@ -1484,10 +1484,14 @@ export interface AdminAuditRepo {
 export type AdminUsersListQuery = import('@yo-te-invito/shared').AdminUsersListQuery;
 export type AdminUserListItem = import('@yo-te-invito/shared').AdminUserListItem;
 export type AdminUsersListResponse = import('@yo-te-invito/shared').AdminUsersListResponse;
+export type AdminUserDeletePreflight = import('@yo-te-invito/shared').AdminUserDeletePreflight;
+export type AdminUserDeleteResponse = import('@yo-te-invito/shared').AdminUserDeleteResponse;
 
 export interface AdminUsersRepo {
   list(query: AdminUsersListQuery): Promise<AdminUsersListResponse>;
   updateRole(userId: string, role: string): Promise<User | null>;
+  getDeletePreflight(userId: string): Promise<AdminUserDeletePreflight>;
+  deleteUser(userId: string): Promise<AdminUserDeleteResponse>;
 }
 
 export type AdminPaymentsListQuery = import('@yo-te-invito/shared').AdminPaymentsListQuery;
