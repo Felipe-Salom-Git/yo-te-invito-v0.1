@@ -188,6 +188,18 @@ Etapas base: `V3_1_STAGE_5_CLOSING.md`, `V3_1_STAGE_6_SCANNER_OFFLINE_CLOSING.md
 - [ ] Publicar términos comerciales en `/admin/legales` (DRAFT → registro comercial bloqueado con `canProceed=false`).
 - [ ] QA manual: productora acepta 3 docs en wizard → crea cuenta → login → `/producer` sin retry/banner de términos comerciales.
 
+### Hotfix roles operativos (2026-06-23)
+
+**Commits:** `fix(gastro): hide establishment selector for gastro users`, `fix(scanner): mark created scanner users as verified`.
+
+- [x] **Gastro contenido:** `GASTRO_OWNER` ya no ve selector global de establecimientos en `/gastro/contenido`; trabaja sobre su `publicEventId` con etiqueta informativa. `ADMIN` conserva selector.
+- [x] Backend gastro content: ownership ya validado en `GastroContentService.resolveProfileForEvent` (sin cambios).
+- [x] **Scanner:** usuarios `SCANNER` creados desde panel autorizado nacen con `emailVerified` seteado; pueden iniciar sesión sin flujo público de verificación.
+- [x] Copy creación scanner: toast indica que ya puede iniciar sesión en la app scanner.
+- [ ] QA manual GASTRO: `/gastro/contenido` sin select ajeno; crear/editar contenido del propio local.
+- [ ] QA manual ADMIN: selector de establecimientos operativo en contenido editorial.
+- [ ] QA manual scanner: crear desde productora/gastro → login PWA sin `EMAIL_NOT_VERIFIED`.
+
 ### Registro V2 — pendiente operativo unificado (post-hotfixes)
 
 - [ ] Deploy en VPS de commits `e4f9f1f` + `b7be41d` (y `2847978` si no estaba).

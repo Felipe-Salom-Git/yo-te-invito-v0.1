@@ -69,7 +69,16 @@ Doc cierre: `docs/audits/GEO_MAPS_STAGE_CLOSING.md`
 
 **Bugs QA originales (2026-06):** vencimiento prematuro, email cortesía/CTA, UI QR básica — corregidos en V2.
 
+### 0.3.1 Hotfix roles operativos (2026-06-23)
+
+- [x] Gastro contenido: `GASTRO_OWNER` sin selector global de establecimientos; `ADMIN` conserva selector.
+- [x] Scanner: usuarios creados desde panel autorizado con `emailVerified` al crear.
+- [x] Copy creación scanner: puede iniciar sesión sin verificar email público.
+- [ ] QA manual GASTRO/ADMIN en `/gastro/contenido`.
+- [ ] QA manual crear scanner (productora/gastro) + login PWA.
+
 ---
+
 
 ### 0.4 Footer — UX cerrado
 
