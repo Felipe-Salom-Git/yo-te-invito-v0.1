@@ -83,7 +83,7 @@ ApiClient → HTTP (NEXT_PUBLIC_API_BASE_URL)
 | **adminDashboard** | ✓ | `GET /admin/dashboard` — KPIs + cola eventos pendientes |
 | **adminEvents** | ✓ | `GET /admin/events` — listado operativo con filtros |
 | **adminAudit** | ✓ | `GET /admin/audit-logs` — auditoría con filtros |
-| **adminUsers** | ✓ | `GET /admin/users`, `PATCH /admin/users/:id/role` — listado operativo con filtros |
+| **adminUsers** | ✓ | `GET /admin/users`, `PATCH /admin/users/:id/role`, `GET .../delete-preflight`, `DELETE /admin/users/:id` — listado + eliminación segura |
 | **adminPayments** | ✓ | `GET /admin/payments`, reconcile, mark-reviewed — ops Getnet |
 | **LegalDocumentsRepo** | ✓ | Admin CRUD + publish; público `/public/legal/*`; aceptación `/me/legal/*` |
 | ProfilesRepo, ApplicationsRepo, PlatformConfigRepo | ✓ | Admin `GET/PATCH /admin/config` |
@@ -236,7 +236,7 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`). Shared UI tokens:
 | Disputas admin | `components/admin/review-disputes/` — `AdminReviewDisputesPageClient`, filtros URL (`useAdminReviewDisputeUrlFilters`), tabla desktop + cards mobile, panel detalle con confirmaciones (aceptar/rechazar/marcar en revisión/ocultar/restaurar/réplica), enlace a `/admin/auditoria`; `adminReviewDisputesKeys` + `AdminReviewDisputesRepo` |
 | Alertas valoraciones | `ManagedPortalReviewAlerts` en dashboard productor y portal gastro; labels en `/me/notifications`; preferencias `notifyManagedReviews` / `notifyReviewEngagement` en `MePushAlertPreferences` |
 | Reputación admin | `/admin/reviews` — `AdminReviewsReportPageClient`, KPIs, tabla por vertical, señales problemáticas, top disputas, export CSV; hook `useAdminReviewsReport` |
-| Usuarios admin | `components/admin/users/` — `AdminUsersPageClient`, filtros URL, tabla + cards mobile, badges rol/perfiles; cambio de rol con confirmación; cuenta maestro sin selector; hook `lib/query/admin-users.ts` |
+| Usuarios admin | `components/admin/users/` — `AdminUsersPageClient`, filtros URL, tabla + cards mobile, badges rol/perfiles; cambio de rol con confirmación; **eliminar usuario** (`AdminUserDeleteModal`, preflight + confirmación fuerte); cuenta maestro / self-delete sin acción; hooks `lib/query/admin-users.ts` |
 | Subcategorías admin | `components/admin/subcategories/` — `AdminSubcategoriesPageClient`, tabs por vertical, CRUD vía `SubcategoriesRepo`, hotel `AdminHotelComingSoonPanel`; banners editoriales `AdminCategoryEditorialBannerPanel` + eventos `AdminCategoryBannerPanel`; hooks `useAdminSubcategories`, `useCategoryHeroBanner` |
 | Productora eventos | `ProducerEventCreateForm` / `ProducerEventEditForm` — wizard 3 pasos (`ProducerEventWizardProgress`, `wizardStep`); toggle simple/multi-fecha paso 2 + `EventOccurrencesEditor` (V3.1 Etapa 7); `ProducerEventPublicationLegalNotice` paso 3 (aceptación `EVENT_PUBLICATION` + bloqueo envío a revisión — Etapa 11); hooks `lib/query/producer-event-legal.ts`; ticket types post-create en `/producer/events/[id]` (tabs por fecha si multi-fecha) |
 | Ratings públicos 5/5 | `lib/reviews/ratingDisplay.ts` — visual 5 ↔ interno 10; formularios, filtros, admin UI, JSON-LD `bestRating: 5` (Etapa 3) |

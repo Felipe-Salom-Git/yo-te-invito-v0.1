@@ -62,6 +62,13 @@ Detalle y pendientes priorizados: **`CONTEXT_PENDIENTES.md` § Jornada 2026-06-1
 - Flujo publicitario continúa operativo.
 - Mensajes post-registro y post-QR ahora avisan revisar email y spam (`EmailInboxNotice`, `PostRegisterEmailNotice`).
 
+## Admin delete seguro de usuarios
+
+- Admin puede eliminar usuarios sin contenido/historial crítico desde `/admin/usuarios`.
+- Backend bloquea usuarios con publicaciones, tickets, órdenes, pagos o historial sensible (`GET /admin/users/:id/delete-preflight`, `DELETE /admin/users/:id`).
+- Regla de oro: primero borrar o archivar publicaciones.
+- Se registra audit log (`ADMIN_USER_DELETED`). Doc: `docs/audits/ADMIN_USER_DELETE_AUDIT.md`.
+
 ---
 
 ## 1. Project Overview

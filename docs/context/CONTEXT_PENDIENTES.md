@@ -483,6 +483,7 @@ Etapas base: `V3_1_STAGE_5_CLOSING.md`, `V3_1_STAGE_6_SCANNER_OFFLINE_CLOSING.md
 - [x] Cola de eventos pendientes visible en dashboard (`GET /admin/dashboard`, `AdminPendingEventsQueue` en `/admin`)
 - [x] Mejorar filtros de eventos admin (`/admin/eventos`, `GET /admin/events` extendido, filtros URL + tabs)
 - [x] Mejorar filtros de usuarios admin (`/admin/usuarios`, `GET /admin/users` extendido, filtros URL + paginación, perfiles en listado)
+- [x] Eliminar usuario seguro desde admin (`delete-preflight` + `DELETE /admin/users/:id`, UI modal, audit) — ver `docs/audits/ADMIN_USER_DELETE_AUDIT.md`
 - [x] Confirmar gestión completa de subcategorías (`/admin/categorias`, CRUD 4 verticales activas, hotel Próximamente, `seed:subcategories` intacto)
 - [x] Maps Etapa B — prod OK (migración, build, autocomplete, Ver ubicación, JSON-LD) — audit §23–25
 - [x] Auditoría con filtros útiles en UI (`/admin/auditoria`, `GET /admin/audit-logs` extendido)

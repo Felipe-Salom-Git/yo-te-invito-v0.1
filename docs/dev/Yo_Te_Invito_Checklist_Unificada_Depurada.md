@@ -325,7 +325,7 @@ Estos bloques quedan fuera de la checklist activa salvo que aparezca un bug nuev
 3. **GEO / Maps — cerrar configuración y QA.**
 4. ~~**Mensajes post-registro / QR con aviso de email y spam.**~~ ✓ 2026-06-23
 5. ~~**Footer — corrección UX.**~~ ✓ cerrado (`772a227` + QA prod)
-6. **Admin delete seguro para limpieza de publicaciones/locales.**
+6. ~~**Admin delete seguro para limpieza de publicaciones/locales.**~~ ✓ 2026-06-23 (`docs/audits/ADMIN_USER_DELETE_AUDIT.md`)
 7. **Nueva pasarela de pagos — solo cuando esté definida.**
 8. **Facturación + emails de pago — después de nueva pasarela.**
 
