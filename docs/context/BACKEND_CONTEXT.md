@@ -287,7 +287,7 @@ Opcional cron: `NOTIFICATIONS_CRON_ENABLED=false`, `NOTIFICATION_REMINDER_HOURS`
 | PATCH | `/admin/legal-documents/:key` | ADMIN | Metadata + flags requerido |
 | POST | `/admin/legal-documents/:key/draft` | ADMIN | Borrador (no edita PUBLISHED in-place) |
 | POST | `/admin/legal-documents/:key/publish` | ADMIN | Publica; archiva PUBLISHED anterior (una sola vigente) |
-| GET | `/public/legal/requirements` | Público | Requeridos por `context` + `profileType` + `documentVersionId` |
+| GET | `/public/legal/requirements` | Público | Requeridos por `context` + `profileType`. **SIGNUP:** USER → `terms_general` + `privacy_policy`; PRODUCER → + `producer_terms`; GASTRO → + `gastro_terms`; HOTEL → + `hotel_terms`; REFERRER → + `referrer_terms` (flags `isRequiredForSignup`; hotfix `b7be41d`, migración `20260624140000`) |
 | GET | `/public/legal/:slug` | Público | Solo PUBLIC + PUBLISHED; INTERNAL/DRAFT → 404 |
 | GET | `/me/legal/requirements` | Usuario | Pendientes por contexto |
 | POST | `/me/legal/accept` | Usuario | `{ documentVersionIds, context }` — idempotente |
@@ -299,11 +299,13 @@ Opcional cron: `NOTIFICATIONS_CRON_ENABLED=false`, `NOTIFICATION_REMINDER_HOURS`
 
 **AuditAction:** `LEGAL_DOCUMENT_CREATED`, `LEGAL_DOCUMENT_UPDATED`, `LEGAL_DOCUMENT_DRAFT_SAVED`, `LEGAL_DOCUMENT_PUBLISHED`, `LEGAL_DOCUMENT_ARCHIVED`.
 
-**Shared:** `packages/shared` — `constants/legal-documents.ts`, `schemas/legal-documents.ts`, `schemas/me-legal.ts`.
+**Shared:** `packages/shared` — `constants/legal-documents.ts` (seed flags SIGNUP por perfil), `constants/legal-signup.ts`, `schemas/legal-documents.ts`, `schemas/me-legal.ts`.
+
+**Registro + legales:** `LegalSignupService.assertSignupAcceptanceComplete` en `POST /auth/register` antes de crear usuario; persiste `UserLegalAcceptance` con `context=SIGNUP` en la misma transacción.
 
 **Seed:** `pnpm --filter api run seed:legal-documents` (catálogo idempotente) · `pnpm --filter api run seed:legal-content` (Markdown `docs/legal/` → DRAFT; `--dry-run`, `--force`, `--publish` opcional).
 
-**Smokes:** `pnpm --filter api run smoke:legal` | `test:legal-documents` | `test:me-legal-acceptance`. Requiere API + `DEV_AUTH_ENABLED=true` (o JWT) y usuario ADMIN para tests admin.
+**Smokes:** `pnpm --filter api run smoke:legal` | `test:legal-documents` (incl. SIGNUP PRODUCER) | `test:me-legal-acceptance` | `smoke:auth-register-role`.
 
 **Getnet portal callback:** webhook en `POST /public/payments/getnet/webhook` (Basic Auth). Alias Next.js `/api/getnet/callback` — [GETNET_PORTAL_URL_COMPATIBILITY.md](../payments/GETNET_PORTAL_URL_COMPATIBILITY.md).
 
@@ -311,7 +313,9 @@ Opcional cron: `NOTIFICATIONS_CRON_ENABLED=false`, `NOTIFICATION_REMINDER_HOURS`
 
 **Docs:** `docs/legal/LEGAL_ADMIN_MODULE.md`, `docs/dev/LEGAL_ADMIN_QA_SMOKE.md`, `docs/audits/LEGAL_ADMIN_AUDIT.md`. UI: `FRONTEND_CONTEXT.md` §8e.
 
-**Pendiente:** redacción legal; bloqueos duros portal; disclaimers hardcoded → documentos publicados.
+**Pendiente:** redacción legal; publicar términos comerciales en admin (bloquean registro si DRAFT); bloqueos duros en acciones sensibles; disclaimers hardcoded → documentos publicados.
+
+**Nota SIGNUP vs PORTAL_ACCESS (2026-06-24):** términos verticales comerciales ya no son `PORTAL_ACCESS` — se exigen en SIGNUP. `PortalLegalPendingBanner` queda para otros docs `PORTAL_ACCESS` (p. ej. `terms_general` si aplica, `ticket_transfer_terms` en `/me`).
 
 ---
 

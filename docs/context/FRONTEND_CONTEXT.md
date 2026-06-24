@@ -246,10 +246,10 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`). Shared UI tokens:
 | **Admin gastro → discovery** | Cards gastro → `/restaurants/[publicEventId]` (`getContentDetailHref`); admin canónico `/gastronomicos/[profileId]`; sin redirect Next `/restaurants`→`/gastronomicos` (`V3_1_HOTFIX_GASTRO_PUBLIC_LINKS.md`) |
 | **Legales admin** | `components/admin/legal/` — `/admin/legales` (tabla desktop `md+` con `overflow-x-auto` + `min-w-[900px]`; cards `md:hidden`), detalle, versiones; `LegalDocumentsRepo` + `lib/query/admin-legal-documents.ts` |
 | **Legales público** | `components/legal/` — `/legal/[slug]` (server fetch, ISR); preview Markdown |
-| **Registro V2** | `components/auth/RegisterWizard.tsx`, `components/auth/register/*` (pasos comprador/productora/gastro/hotel/referido), `lib/auth/register-error-messages.ts`, `lib/auth/register-validation.ts`, `lib/onboarding/*-portal-onboarding.ts`, `OnboardingChecklistCard`; ubicación: `ProvinceCitySelect` (Georef + fallback), `GastroProvinceCityFields`, hooks `useGeoProvinces`/`useGeoLocalities` |
-| **Aceptación legal (reutilizable)** | `LegalAcceptanceCheckboxList`, `LegalRequirementNotice`, `LegalDocumentsLinksList`, `LegalFlowAcceptanceBlock`, `PortalLegalPendingBanner`; hooks `lib/query/me-legal.ts`, `lib/query/public-legal-requirements.ts`; integración en `RegisterWizard`, `/me/cart`, checkout público, `PortalLayoutShell` |
+| **Registro V2** | `RegisterWizard`: cuenta → perfil → paso por tipo → legales SIGNUP (todos los docs de `/public/legal/requirements?profileType=`, incl. términos comerciales) → `POST /auth/register` → `/login?registered=1&verifyEmail=1`; `register-wizard-copy.ts` (copy legal por perfil); rol post-login vía `rolePortalHome` |
+| **Aceptación legal (reutilizable)** | `LegalFlowAcceptanceBlock`, `LegalAcceptanceCheckboxList`, `PortalLegalPendingBanner`; `public-legal-requirements.ts`, `me-legal.ts`; `RegisterWizard`, checkout, portales |
 | **Footer público** | `components/footer/*` + `RouteAwareFooter` — variantes full/minimal/hidden; refresh 2026-06-23 (`772a227`): `FooterBrandBlock`, `FooterInstagramHighlight`, `FooterContactBlock`, `FooterLegalSection` inline, `FooterDeveloperCredit`; config `footerPublicConfig.ts`; contacto `usePublicPlatformConfig`; smoke `docs/audits/PUBLIC_FOOTER_SMOKE.md` |
-| **Portal legales** | `PortalLegalPendingBanner` en portales comerciales (`PORTAL_ACCESS`); `lib/navigation/portalLegalProfile.ts` |
+| **Portal legales** | `PortalLegalPendingBanner` — `PORTAL_ACCESS` residual (términos comerciales ya en SIGNUP desde `b7be41d`); `portalLegalProfile.ts` |
 | **Markdown legal** | `LegalMarkdownPreview` — subset seguro, sin `dangerouslySetInnerHTML`; SSR público vía `fetchPublicLegalDocument` |
 | **QA / ops** | Smoke manual `docs/dev/LEGAL_ADMIN_QA_SMOKE.md`; módulo `docs/legal/LEGAL_ADMIN_MODULE.md` |
 | Portal usuario push | `components/me/MePushNotificationsPanel`, `MePushAlertPreferences`, `MeDashboardPushCta`, `InterestsDisclosure` |
@@ -368,7 +368,7 @@ Módulo técnico **cerrado**; contenido base en `docs/legal/` importable como bo
 |------|----------------|
 | Admin | `/admin/legales`, editor borrador, preview Markdown seguro, publicación con confirmación, historial versiones |
 | Público | `/legal/[slug]` — solo `PUBLIC` + `PUBLISHED`; `fetchPublicLegalDocument` (ISR 60s) |
-| Aceptación | `RegisterWizard` (`SIGNUP`), `/me/cart` + checkout (`CHECKOUT`), banner portales (`PORTAL_ACCESS`) |
+| Aceptación | `RegisterWizard` (`SIGNUP` — generales + términos del perfil antes de crear cuenta), `/me/cart` + checkout (`CHECKOUT`), banner portales (`PORTAL_ACCESS` residual) |
 | Footer | Enlaces estables a slugs públicos + contacto vía `GET /public/platform-config` (`usePublicPlatformConfig`, fallback placeholder documentado) |
 
 **Hooks/repos:** `LegalDocumentsRepo`, `admin-legal-documents.ts`, `me-legal.ts`, `public-legal-requirements.ts`.

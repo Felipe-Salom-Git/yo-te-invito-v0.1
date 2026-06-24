@@ -11,6 +11,7 @@
 > - Banners, Ciudad/Explore, Scanner y Multi-fecha quedan cerrados.
 > - Gastro descuentos QR / cortesías queda como QA manual + correcciones.
 > - Legales publicados; mensajes post-registro / QR mejorados (2026-06-23).
+> - **Registro V2 hotfixes (2026-06-24):** rol por `profileType` (`e4f9f1f`), legales comerciales en SIGNUP antes de crear usuario (`b7be41d`). Requiere deploy VPS + `prisma migrate deploy`.
 > - Footer público UX cerrado (`772a227` + QA prod).
 > - Agregar función Admin para eliminar publicaciones/locales y vaciar base de datos operativamente.
 
@@ -184,28 +185,31 @@ Te enviamos el QR por email. Revisá tu bandeja de entrada y, si no aparece, ver
 
 ### 0.9 Hotfix registro por perfil comercial
 
-**Estado:** corregido en código 2026-06-24 (requiere deploy en VPS).
+**Estado:** corregido en código 2026-06-24 — commits `2847978` + `e4f9f1f` (`fix(auth): assign role from signup profile type`).
 
 - [x] `POST /auth/register` asigna rol según `profileType` (`mapSignupProfileTypeToRole`; productora → `PRODUCER_OWNER`, no `USER`).
 - [x] Rechaza `profileData` sin `profileType` comercial.
 - [x] Login resuelve rol efectivo para cuentas legacy con perfil comercial y `role=USER`.
 - [x] Redirect post-login respeta `rolePortalHome` (`PRODUCER_OWNER` → `/producer`).
 - [x] Smoke: `pnpm --filter api run smoke:auth-register-role`.
-- [ ] QA manual: productora → verify email → login → `/producer` (no `/me`).
-- [ ] Usuarios de prueba previos al deploy: `UPDATE "User" SET role='PRODUCER_OWNER' WHERE email='…';`
+- [ ] **Deploy VPS** + QA manual: productora → verify email → login → `/producer` (no `/me`).
+- [ ] Cuentas de prueba previas al deploy: `UPDATE "User" SET role='PRODUCER_OWNER' WHERE email='…';`
 
 ---
 
 ### 0.10 Hotfix legal signup por perfil
 
-**Estado:** corregido en código 2026-06-24 (requiere deploy + migración + publicar docs comerciales).
+**Estado:** corregido en código 2026-06-24 — commit `b7be41d` (`fix(auth): require profile legal terms during signup`).
 
-- [x] Términos comerciales (`producer_terms`, `gastro_terms`, `hotel_terms`, `referrer_terms`) con `isRequiredForSignup=true`.
-- [x] Requirements SIGNUP devuelve generales + términos del perfil.
-- [x] RegisterWizard muestra y exige todos los documentos antes de `POST /auth/register`.
-- [x] Backend valida aceptación completa (`LEGAL_ACCEPTANCE_REQUIRED`).
-- [ ] Publicar documentos comerciales en admin (si DRAFT → registro bloqueado).
-- [ ] QA manual: productora → 3 docs → crear cuenta → login → `/producer` sin retry legal.
+- [x] Términos comerciales (`producer_terms`, `gastro_terms`, `hotel_terms`, `referrer_terms`) con `isRequiredForSignup=true` (`isRequiredForPortalAccess=false` — no doble prompt en portal).
+- [x] `GET /public/legal/requirements?context=SIGNUP&profileType=` devuelve generales + términos del perfil.
+- [x] `RegisterWizard` muestra y exige todos los documentos antes de `POST /auth/register` (copy por perfil).
+- [x] Backend `assertSignupAcceptanceComplete` — `400 LEGAL_ACCEPTANCE_REQUIRED` si faltan aceptaciones.
+- [x] Migración `20260624140000_commercial_profile_signup_legal`.
+- [x] Test API: `test-legal-documents` valida SIGNUP PRODUCER incluye `producer_terms`.
+- [ ] **Deploy VPS:** `git pull` + `prisma migrate deploy` + rebuild API/web.
+- [ ] **Ops:** publicar documentos comerciales en `/admin/legales` (si siguen DRAFT → `canProceed=false` bloquea registro comercial).
+- [ ] QA manual: productora → 3 docs en wizard → crear cuenta → verify email → login → `/producer` sin banner/retry de términos comerciales.
 
 ---
 

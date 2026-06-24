@@ -163,22 +163,36 @@ Etapas base: `V3_1_STAGE_5_CLOSING.md`, `V3_1_STAGE_6_SCANNER_OFFLINE_CLOSING.md
 
 ### Hotfix registro por perfil comercial (2026-06-24)
 
+**Commits:** `2847978`, `e4f9f1f` — rol en registro + redirect por portal.
+
 - [x] `POST /auth/register` asigna rol según `profileType` (`mapSignupProfileTypeToRole`: `PRODUCER` → `PRODUCER_OWNER`).
 - [x] Rechaza `profileData` sin `profileType` comercial (no cae silenciosamente a `USER`).
 - [x] `POST /auth/login` resuelve rol efectivo si hay membresía comercial activa con `role=USER` (cuentas previas al fix).
 - [x] Redirect post-login usa `rolePortalHome` (`PRODUCER_OWNER` → `/producer`).
 - [x] Smoke: `pnpm --filter api run smoke:auth-register-role`.
-- [ ] QA manual: registro productora → verify email → login → `/producer`.
+- [ ] Deploy VPS + QA manual: registro productora → verify email → login → `/producer`.
 - [ ] Corregir manualmente en DB cuentas de prueba creadas antes del deploy (`UPDATE "User" SET role='PRODUCER_OWNER' WHERE …`).
 
 ### Hotfix legal signup por perfil (2026-06-24)
 
-- [x] `GET /public/legal/requirements?context=SIGNUP&profileType=` incluye términos del perfil (`producer_terms`, etc.) vía `isRequiredForSignup`.
-- [x] `RegisterWizard` muestra todos los documentos requeridos antes de crear cuenta (copy por perfil).
-- [x] `POST /auth/register` valida server-side aceptación completa (`LEGAL_ACCEPTANCE_REQUIRED` si faltan).
-- [x] Migración `20260624140000_commercial_profile_signup_legal` actualiza flags en BD existente.
-- [ ] Publicar términos comerciales en `/admin/legales` (si siguen DRAFT, registro comercial queda bloqueado con `canProceed=false`).
-- [ ] QA manual: productora acepta 3 docs → crea cuenta → no pide condiciones en portal post-login.
+**Commit:** `b7be41d` — términos comerciales obligatorios en SIGNUP antes de crear usuario.
+
+- [x] Matriz legal: `producer_terms`, `gastro_terms`, `hotel_terms`, `referrer_terms` → `isRequiredForSignup=true`; ya no `PORTAL_ACCESS` (evita pedirlos post-registro).
+- [x] `GET /public/legal/requirements?context=SIGNUP&profileType=` incluye términos del perfil.
+- [x] `RegisterWizard` muestra todos los documentos requeridos + copy por perfil.
+- [x] `POST /auth/register` valida server-side (`assertSignupAcceptanceComplete`, `LEGAL_ACCEPTANCE_REQUIRED`).
+- [x] Migración `20260624140000_commercial_profile_signup_legal`.
+- [x] `test-legal-documents` valida SIGNUP PRODUCER (`terms_general`, `privacy_policy`, `producer_terms`).
+- [ ] Deploy VPS: `prisma migrate deploy` + rebuild.
+- [ ] Publicar términos comerciales en `/admin/legales` (DRAFT → registro comercial bloqueado con `canProceed=false`).
+- [ ] QA manual: productora acepta 3 docs en wizard → crea cuenta → login → `/producer` sin retry/banner de términos comerciales.
+
+### Registro V2 — pendiente operativo unificado (post-hotfixes)
+
+- [ ] Deploy en VPS de commits `e4f9f1f` + `b7be41d` (y `2847978` si no estaba).
+- [ ] Migración `20260624140000_commercial_profile_signup_legal`.
+- [ ] Publicar en admin: `producer_terms`, `gastro_terms`, `hotel_terms`, `referrer_terms` (además de generales ya publicados).
+- [ ] QA end-to-end por perfil: USER (2 docs), PRODUCER/GASTRO/HOTEL/REFERRER (3 docs) → rol correcto → portal correcto.
 
 ---
 
@@ -245,13 +259,14 @@ Etapas base: `V3_1_STAGE_5_CLOSING.md`, `V3_1_STAGE_6_SCANNER_OFFLINE_CLOSING.md
 - [ ] Revisión/aprobación cliente y **publicación** de versiones legales en `/admin/legales` — en prod hay **bootstrap temporal** (Mayo 2026); reemplazar antes de cerrar go-live
 - [ ] Confirmar publicación de aclaraciones legales productor ↔ referido (tras publish manual en admin)
 - [x] **V3.1 Etapa 11 (2026-06-10):** auditoría publicación legales + `EVENT_PUBLICATION` + bloqueo publicar evento — `docs/audits/V3_1_STAGE_11_LEGAL_CLOSING.md`; smoke `smoke:v31-event-publication-legal`
-- [ ] Publicar `producer_terms` (y resto docs) tras aprobación cliente — BD local: solo DRAFT v1
+- [ ] Publicar `producer_terms`, `gastro_terms`, `hotel_terms`, `referrer_terms` en `/admin/legales` (requeridos para registro comercial desde hotfix `b7be41d`; en BD local suelen estar DRAFT v1)
 - [ ] Bloqueos duros otras verticales (descuentos gastro, pago referido, etc.) si faltan términos
 - [ ] Migrar disclaimers hardcoded (transferencia, referidos) a documentos publicados
 
 ### Registro / legales (checklist V2 — integración)
 
 - [x] Aceptación obligatoria términos generales en registro (`SIGNUP`, docs publicados)
+- [x] Aceptación obligatoria términos **comerciales por perfil** en registro (`producer_terms`, `gastro_terms`, `hotel_terms`, `referrer_terms` — hotfix `b7be41d`, migración `20260624140000`)
 - [x] Links legales en registro, checkout, footer, portales
 - [x] Matriz campos signup vs onboarding por perfil — `docs/onboarding/PROFILE_FIELDS_MATRIX.md`
 - [x] Schemas register/apply alineados (Slice 3) — `docs/onboarding/REGISTER_SCHEMA_ALIGNMENT.md`
@@ -712,7 +727,7 @@ _(Trending con `viewCount`: ver ítem Slice 2 arriba en § K.)_
 - [ ] V3.1 Scanner PWA prod — JWT login (pendiente desde Etapa 5)
 - [ ] V3.1 — restante no bloqueante (maps prod §4.1, §5.2 links en descripciones, multi-subcategorías otras verticales, drag galería, migración DB ratings 1–5)
 - [x] V3.1 Etapa 11 — legales Caso A código (`EVENT_PUBLICATION`, bloqueo `PENDING`) — `V3_1_STAGE_11_LEGAL_CLOSING.md`
-- [ ] V3.1 Etapa 11 — QA manual browser legales + publicar `producer_terms` real (cliente)
+- [ ] V3.1 Etapa 11 — QA manual browser legales + publicar `producer_terms` (y verticales) en admin — **bloquean registro comercial** si DRAFT (`b7be41d`)
 - [x] V3.1 Etapa 0 — push rama `feat/v1-s03-api-foundation` (`892f611`, 2026-06-10) — `V3_1_STAGE_0_DEPLOY_CLOSING.md`
 - [ ] V3.1 Etapa 0 — deploy VPS manual (SSH `deploy@179.43.124.145:5230`) + `prisma migrate deploy` + restart
 - [ ] V3.1 Etapa 0 — QA manual servidor — `V3_1_STAGE_0_MANUAL_QA_SERVER_CHECKLIST.md`
