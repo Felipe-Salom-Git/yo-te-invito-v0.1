@@ -182,6 +182,17 @@ Te enviamos el QR por email. Revisá tu bandeja de entrada y, si no aparece, ver
 
 ---
 
+### 0.9 Hotfix registro por perfil comercial
+
+**Estado:** corregido en código 2026-06-24.
+
+- [x] `POST /auth/register` asigna rol según `profileType` (productora → `PRODUCER_OWNER`, no `USER`).
+- [x] Login resuelve rol efectivo para cuentas legacy con perfil comercial y `role=USER`.
+- [x] Redirect post-login respeta `rolePortalHome` (`PRODUCER_OWNER` → `/producer`).
+- [ ] QA manual: productora → verify email → login → `/producer` (no `/me`).
+
+---
+
 ## 1. Cerrado / no pasar a Cursor como pendiente
 
 Estos bloques quedan fuera de la checklist activa salvo que aparezca un bug nuevo.

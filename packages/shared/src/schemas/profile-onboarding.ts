@@ -1,6 +1,7 @@
 // Shared profile payloads for signup (POST /auth/register) and apply (POST /profiles/.../apply).
 // Slice 3 — single source of truth per profile type (RENTAL excluded from V2 signup).
 import { z } from 'zod';
+import { Role } from '../enums/role';
 import { PUBLIC_SUMMARY_MAX_LENGTH } from '../constants/content-limits';
 import { cityLabelFromValue, provinceLabelFromValue } from '../location/labels';
 
@@ -329,4 +330,21 @@ export function validateAuthRegisterProfilePayload(
     return { success: false, error: result.error };
   }
   return { success: true, data: result.data };
+}
+
+/** JWT / session role assigned at signup from registration profile type. */
+export function roleForRegistrationProfileType(profileType: RegistrationProfileType): Role {
+  switch (profileType) {
+    case 'PRODUCER':
+      return Role.PRODUCER_OWNER;
+    case 'GASTRO':
+      return Role.GASTRO_OWNER;
+    case 'HOTEL':
+      return Role.HOTEL_OWNER;
+    case 'REFERRER':
+      return Role.REFERRER;
+    case 'USER':
+    default:
+      return Role.USER;
+  }
 }

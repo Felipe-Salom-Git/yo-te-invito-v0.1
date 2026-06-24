@@ -15,6 +15,7 @@ import type {
   AuthApplyRoleRequest,
   AuthGoogleRequest,
   RegistrationProfileType,
+  Role as SharedRole,
 } from '@yo-te-invito/shared';
 import {
   AUTH_REGISTER_ERROR_CODES,
@@ -23,6 +24,8 @@ import {
   LEGAL_SIGNUP_ERROR_CODES,
   LEGAL_SIGNUP_USER_MESSAGES,
   MASTER_USER_EMAIL,
+  Role,
+  roleForRegistrationProfileType,
 } from '@yo-te-invito/shared';
 import { LegalSignupService } from '../modules/legal/legal-signup.service';
 import { ProfileRegistrationService } from './profile-registration.service';
@@ -102,7 +105,8 @@ export class AuthService {
       });
     }
 
-    const payload = { sub: user.id, tenantId: user.tenantId, role: user.role };
+    const sessionRole = await this.resolveSessionRole(user.tenantId, user.id, user.role);
+    const payload = { sub: user.id, tenantId: user.tenantId, role: sessionRole };
     const token = this.jwtService.sign(payload);
 
     return {
@@ -111,12 +115,69 @@ export class AuthService {
         id: user.id,
         tenantId: user.tenantId,
         email: user.email,
-        role: user.role,
+        role: sessionRole as SharedRole,
         status: user.status,
         firstName: user.firstName,
         lastName: user.lastName,
       },
     };
+  }
+
+  /**
+   * Users registered before role fix may have USER + active commercial membership.
+   * Resolve portal/JWT role from membership when stored role is still USER.
+   */
+  private async resolveSessionRole(
+    tenantId: string,
+    userId: string,
+    storedRole: string,
+  ): Promise<string> {
+    if (storedRole !== Role.USER) return storedRole;
+
+    const [producer, gastro, hotel, referrer] = await Promise.all([
+      this.prisma.userProducerMembership.findFirst({
+        where: {
+          tenantId,
+          userId,
+          status: 'ACTIVE',
+          profile: { status: 'ACTIVE' },
+        },
+        select: { id: true },
+      }),
+      this.prisma.userGastroMembership.findFirst({
+        where: {
+          tenantId,
+          userId,
+          status: 'ACTIVE',
+          profile: { status: 'ACTIVE' },
+        },
+        select: { id: true },
+      }),
+      this.prisma.userHotelMembership.findFirst({
+        where: {
+          tenantId,
+          userId,
+          status: 'ACTIVE',
+          profile: { status: 'ACTIVE' },
+        },
+        select: { id: true },
+      }),
+      this.prisma.userReferrerMembership.findFirst({
+        where: {
+          tenantId,
+          userId,
+          status: 'ACTIVE',
+          profile: { status: 'ACTIVE' },
+        },
+        select: { id: true },
+      }),
+    ]);
+
+    if (producer) return Role.PRODUCER_OWNER;
+    if (gastro) return Role.GASTRO_OWNER;
+    if (hotel) return Role.HOTEL_OWNER;
+    if (referrer) return Role.REFERRER;
+    return storedRole;
   }
 
   async register(
@@ -168,6 +229,7 @@ export class AuthService {
     }
 
     const cityTrimmed = body.city?.trim() || null;
+    const signupRole = roleForRegistrationProfileType(profileType);
     const user = await this.prisma.$transaction(async (tx) => {
       const created = await tx.user.create({
         data: {
@@ -176,7 +238,7 @@ export class AuthService {
           passwordHash,
           firstName: body.firstName.trim(),
           lastName: body.lastName.trim(),
-          role: 'USER',
+          role: signupRole,
           status: 'ACTIVE',
           ...(cityTrimmed
             ? {
@@ -356,7 +418,8 @@ export class AuthService {
         },
       });
     }
-    const payload = { sub: user.id, tenantId: user.tenantId, role: user.role };
+    const sessionRole = await this.resolveSessionRole(user.tenantId, user.id, user.role);
+    const payload = { sub: user.id, tenantId: user.tenantId, role: sessionRole };
     const token = this.jwtService.sign(payload);
     return {
       token,
@@ -364,7 +427,7 @@ export class AuthService {
         id: user.id,
         tenantId: user.tenantId,
         email: user.email,
-        role: user.role,
+        role: sessionRole as SharedRole,
         status: user.status,
         firstName: user.firstName,
         lastName: user.lastName,

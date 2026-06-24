@@ -161,6 +161,13 @@ Etapas base: `V3_1_STAGE_5_CLOSING.md`, `V3_1_STAGE_6_SCANNER_OFFLINE_CLOSING.md
 - [ ] Pendiente futuro: reenvío manual de email de confirmación desde login.
 - [ ] QA manual: registro → email → verificar → login.
 
+### Hotfix registro por perfil comercial (2026-06-24)
+
+- [x] `POST /auth/register` asigna rol según `profileType` (`PRODUCER` → `PRODUCER_OWNER`, etc.).
+- [x] `POST /auth/login` resuelve rol efectivo si hay membresía comercial activa con `role=USER` (cuentas previas al fix).
+- [x] Redirect post-login usa `rolePortalHome` (`PRODUCER_OWNER` → `/producer`).
+- [ ] QA manual: registro productora → verify email → login → `/producer`.
+
 ---
 
 > Checklist V2 § Google Cloud · § GSC/SEO · Runbooks: [`GOOGLE_CLOUD_RUNBOOK.md`](../deploy/GOOGLE_CLOUD_RUNBOOK.md) · [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) · [`SEARCH_CONSOLE_SEO_RUNBOOK.md`](../deploy/SEARCH_CONSOLE_SEO_RUNBOOK.md) · Auditorías: [`MAPS_LOCATION_AUDIT.md`](../audits/MAPS_LOCATION_AUDIT.md) · [`SEO_TECHNICAL_AUDIT.md`](../audits/SEO_TECHNICAL_AUDIT.md)

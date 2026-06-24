@@ -107,8 +107,8 @@ HTTP → Controller (thin) → ZodValidationPipe → Service → Prisma → Post
 
 | Method | Path | Notas |
 |--------|------|--------|
-| POST | `/auth/register` | `profileType` (`USER` \| `PRODUCER` \| `GASTRO` \| `HOTEL` \| `REFERRER`), `profileData` según `profile-onboarding.ts`; `signupLegalAcceptance` opcional; perfiles comerciales **ACTIVE** al crear; email duplicado → `409` `EMAIL_ALREADY_EXISTS`; respuesta `{ user, emailVerificationRequired: true }` **sin JWT**; envía `AUTH_VERIFY_EMAIL` |
-| POST | `/auth/login` | Rechaza credenciales válidas si `emailVerified` es null → `401` `EMAIL_NOT_VERIFIED` (excepto `MASTER_USER_EMAIL`) |
+| POST | `/auth/register` | `profileType` (`USER` \| `PRODUCER` \| `GASTRO` \| `HOTEL` \| `REFERRER`), `profileData` según `profile-onboarding.ts`; asigna `User.role` vía `roleForRegistrationProfileType` (`PRODUCER` → `PRODUCER_OWNER`, …); `signupLegalAcceptance` opcional; perfiles comerciales **ACTIVE** al crear; email duplicado → `409` `EMAIL_ALREADY_EXISTS`; respuesta `{ user, emailVerificationRequired: true }` **sin JWT**; envía `AUTH_VERIFY_EMAIL` |
+| POST | `/auth/login` | Rechaza credenciales válidas si `emailVerified` es null → `401` `EMAIL_NOT_VERIFIED` (excepto `MASTER_USER_EMAIL`); JWT/session role resuelve membresía comercial si `User.role=USER` (legacy) |
 | GET | `/auth/verify-email?token=` | Marca `emailVerified` y elimina token de verificación |
 | POST | `/profiles/*/apply` | Usuario logueado sin perfil (p. ej. gastro en `/cuenta/solicitar-gastro`) |
 
