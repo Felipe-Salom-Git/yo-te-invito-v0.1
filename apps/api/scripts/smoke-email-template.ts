@@ -335,9 +335,11 @@ function sampleVariables(templateId: EmailTemplateId): Record<string, unknown> {
         qrImageUrl:
           'https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=yti%3Agastro-discount%3Av1%3Ademo%3Aabc123',
         qrCode: 'abc123def456',
-        validTo: '30/06/2026, 23:59',
-        conditions: 'Presentá este QR en el local.',
+        validTo: '30/06/2026',
+        conditions: 'Presentá este QR en el local para aplicar el beneficio. Este cupón es de uso único.',
+        claimUrl: `${appUrl}/descuentos/reclamo/demo-claim?token=demo-access-token`,
         accountUrl: `${appUrl}/me/descuentos`,
+        hasAccount: true,
         supportEmail: 'soporte@yoteinvito.club',
       };
     case 'GASTRO_DISCOUNT_QR_COURTESY':
@@ -352,9 +354,11 @@ function sampleVariables(templateId: EmailTemplateId): Record<string, unknown> {
         qrImageUrl:
           'https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=yti%3Agastro-discount%3Av1%3Ademo%3Aabc123',
         qrCode: 'abc123def456',
-        validTo: '30/06/2026, 23:59',
-        conditions: 'Presentá este QR en el local.',
+        validTo: '30/06/2026',
+        conditions: 'Presentá este QR en el local para aplicar el beneficio. Este cupón es de uso único.',
+        claimUrl: `${appUrl}/descuentos/reclamo/demo-claim?token=demo-access-token`,
         accountUrl: `${appUrl}/me/descuentos`,
+        hasAccount: true,
         supportEmail: 'soporte@yoteinvito.club',
       };
     case 'ADMIN_NEW_EVENT_PENDING':

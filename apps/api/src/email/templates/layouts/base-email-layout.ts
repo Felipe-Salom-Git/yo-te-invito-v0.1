@@ -6,6 +6,8 @@ export type BaseEmailLayoutInput = {
   bodyHtml: string;
   ctaLabel?: string;
   ctaUrl?: string;
+  secondaryCtaLabel?: string;
+  secondaryCtaUrl?: string;
   supportEmail?: string;
   footerNote?: string;
 };
@@ -35,6 +37,18 @@ export function renderBaseEmailLayout(input: BaseEmailLayoutInput): string {
             <a href="${escapeHtml(input.ctaUrl)}" target="_blank" rel="noopener noreferrer"
               style="display:inline-block;background:${COLORS.accent};color:#0a0a0a;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;line-height:1.2;text-decoration:none;padding:14px 28px;border-radius:8px;">
               ${escapeHtml(input.ctaLabel)}
+            </a>
+          </td>
+        </tr>`
+      : '';
+
+  const secondaryCtaBlock =
+    input.secondaryCtaLabel && input.secondaryCtaUrl
+      ? `<tr>
+          <td align="center" style="padding:0 0 24px;">
+            <a href="${escapeHtml(input.secondaryCtaUrl)}" target="_blank" rel="noopener noreferrer"
+              style="font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:600;line-height:1.2;color:${COLORS.accent};text-decoration:underline;">
+              ${escapeHtml(input.secondaryCtaLabel)}
             </a>
           </td>
         </tr>`
@@ -80,6 +94,7 @@ export function renderBaseEmailLayout(input: BaseEmailLayoutInput): string {
                   </td>
                 </tr>
                 ${ctaBlock}
+                ${secondaryCtaBlock}
               </table>
             </td>
           </tr>

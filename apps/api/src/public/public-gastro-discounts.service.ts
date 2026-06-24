@@ -4,7 +4,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { randomBytes } from 'crypto';
-import { buildGastroDiscountQrPayload, ErrorCode } from '@yo-te-invito/shared';
+import {
+  buildGastroDiscountQrPayload,
+  ErrorCode,
+  isGastroDiscountExpired,
+  normalizeGastroDiscountExpiryDate,
+} from '@yo-te-invito/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../modules/audit/audit.service';
 import { GastroDiscountClaimEmailService } from '../modules/gastro/gastro-discount-claim-email.service';
@@ -69,7 +74,7 @@ function isClaimActive(claim: {
 }): boolean {
   if (claim.status === 'CANCELLED' || claim.status === 'USED' || claim.usedAt) return false;
   if (claim.status === 'EXPIRED') return false;
-  if (claim.expiresAt && claim.expiresAt < new Date()) return false;
+  if (isGastroDiscountExpired(claim.expiresAt)) return false;
   return claim.status === 'ACTIVE';
 }
 
@@ -203,7 +208,8 @@ export class PublicGastroDiscountsService {
 
     const title = discount.displayTitle?.trim() || 'Descuento';
     const locationName = discount.gastroProfile.displayName;
-    const expiresAt = discount.validTo ?? discount.discountDate ?? null;
+    const rawExpires = discount.validTo ?? discount.discountDate ?? null;
+    const expiresAt = rawExpires ? normalizeGastroDiscountExpiryDate(rawExpires) : null;
 
     const finish = async (claim: {
       id: string;
@@ -214,8 +220,10 @@ export class PublicGastroDiscountsService {
       const qrPayload = this.claimEmail.buildQrPayload(discount.id, claim.qrToken);
       const emailSent = await this.claimEmail.sendClaimEmail({
         claimId: claim.id,
+        accessToken: claim.accessToken,
         to: normalizedEmail,
         kind: 'REQUESTED',
+        recipientUserId: userId ?? null,
         gastroName: locationName,
         discountTitle: title,
         discountDescription: discount.summary ?? discount.detail,
@@ -282,8 +290,10 @@ export class PublicGastroDiscountsService {
         discount: {
           include: {
             gastroProfile: { select: { id: true, displayName: true } },
+            courtesyCampaign: { select: { title: true, discountLabel: true, validTo: true } },
           },
         },
+        validations: { select: { id: true }, take: 1 },
       },
     });
     const profile = claim?.discount.gastroProfile;
@@ -294,18 +304,38 @@ export class PublicGastroDiscountsService {
       });
     }
     const d = claim.discount;
+    const campaign = d.courtesyCampaign;
+    const expiresAt =
+      claim.expiresAt ?? d.validTo ?? campaign?.validTo ?? d.discountDate ?? null;
+    const usedAt = claim.usedAt ?? null;
+    let status = claim.status;
+    if (status === 'ACTIVE' && !usedAt && claim.validations.length > 0) {
+      status = 'USED';
+    }
+    if (
+      status === 'ACTIVE' &&
+      expiresAt &&
+      isGastroDiscountExpired(expiresAt)
+    ) {
+      status = 'EXPIRED';
+    }
+    if (usedAt) status = 'USED';
+
     return {
       claimId: claim.id,
       email: claim.email,
       qrPayload: this.claimEmail.buildQrPayload(d.id, claim.qrToken),
-      discountTitle: d.displayTitle,
+      discountTitle: campaign?.title ?? d.displayTitle,
       discountSummary: d.summary,
+      discountLabel: campaign?.discountLabel ?? null,
       locationName: profile.displayName,
       locationId: profile.id,
       discountDate: d.discountDate?.toISOString() ?? null,
-      emailSentAt: claim.emailSentAt?.toISOString() ?? null,
-      status: claim.status,
+      validTo: expiresAt?.toISOString() ?? null,
+      usedAt: usedAt?.toISOString() ?? null,
+      status,
       type: claim.type,
+      emailSentAt: claim.emailSentAt?.toISOString() ?? null,
     };
   }
 }

@@ -9,6 +9,9 @@ import {
   ErrorCode,
   type GastroCourtesyRecipientsPreviewQuery,
   type GastroCourtesySendBody,
+  isGastroDiscountExpired,
+  normalizeGastroDiscountExpiryDate,
+  normalizeGastroDiscountValidFromDate,
 } from '@yo-te-invito/shared';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ProfilesAuthorizationService } from '../../common/profiles-authorization.service';
@@ -218,15 +221,17 @@ export class GastroCourtesyDiscountsService {
       });
     }
 
-    const validTo = new Date(body.validTo);
-    if (Number.isNaN(validTo.getTime()) || validTo <= new Date()) {
+    const validTo = normalizeGastroDiscountExpiryDate(body.validTo);
+    if (Number.isNaN(validTo.getTime()) || isGastroDiscountExpired(validTo)) {
       throw new BadRequestException({
         code: ErrorCode.VALIDATION_FAILED,
         message: 'La fecha de vencimiento debe ser futura',
       });
     }
 
-    const validFrom = body.validFrom ? new Date(body.validFrom) : new Date();
+    const validFrom = body.validFrom
+      ? normalizeGastroDiscountValidFromDate(body.validFrom)
+      : new Date();
     if (body.validFrom && Number.isNaN(validFrom.getTime())) {
       throw new BadRequestException({
         code: ErrorCode.VALIDATION_FAILED,
@@ -338,8 +343,10 @@ export class GastroCourtesyDiscountsService {
       const qrPayload = this.claimEmail.buildQrPayload(discount.id, qrToken);
       const sent = await this.claimEmail.sendClaimEmail({
         claimId: claim.id,
+        accessToken: claim.accessToken,
         to: recipient.email,
         kind: 'COURTESY',
+        recipientUserId: recipient.userId,
         userName: recipient.displayName,
         gastroName: profile.displayName,
         discountTitle: body.title.trim(),

@@ -25,6 +25,18 @@ export function getString(
   return fallback;
 }
 
+export function getBoolean(
+  variables: Record<string, unknown>,
+  key: string,
+  fallback = false,
+): boolean {
+  const raw = variables[key];
+  if (typeof raw === 'boolean') return raw;
+  if (raw === 'true') return true;
+  if (raw === 'false') return false;
+  return fallback;
+}
+
 export function getAppUrl(): string {
   return (
     process.env.APP_URL?.trim() ||
