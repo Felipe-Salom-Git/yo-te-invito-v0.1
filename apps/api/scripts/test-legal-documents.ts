@@ -211,7 +211,27 @@ async function main() {
       fail('public requirements item missing documentVersionId');
     }
   }
-  ok(`GET /public/legal/requirements SIGNUP (${requirementsBody.required.length} docs)`);
+  ok(`GET /public/legal/requirements SIGNUP USER (${requirementsBody.required.length} docs)`);
+
+  const producerRequirementsRes = await fetch(
+    `${API_BASE}/public/legal/requirements?tenantId=${encodeURIComponent(TENANT_ID)}&context=SIGNUP&profileType=PRODUCER`,
+  );
+  if (!producerRequirementsRes.ok) {
+    fail(`GET public requirements PRODUCER → ${producerRequirementsRes.status}`);
+  }
+  const producerRequirementsBody = await json<{
+    required: Array<{ documentKey: string }>;
+    canProceed?: boolean;
+  }>(producerRequirementsRes);
+  const producerKeys = new Set(producerRequirementsBody.required.map((item) => item.documentKey));
+  for (const key of ['terms_general', 'privacy_policy', 'producer_terms'] as const) {
+    if (!producerKeys.has(key)) {
+      fail(`SIGNUP PRODUCER missing required document key: ${key}`);
+    }
+  }
+  ok(
+    `GET /public/legal/requirements SIGNUP PRODUCER (${producerRequirementsBody.required.length} docs incl. producer_terms)`,
+  );
 
   const noAuthAdmin = await fetch(`${API_BASE}/admin/legal-documents`);
   if (noAuthAdmin.status !== 401) {

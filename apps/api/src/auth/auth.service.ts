@@ -231,14 +231,7 @@ export class AuthService {
     }
 
     const versionIds = body.signupLegalAcceptance?.documentVersionIds ?? [];
-    if (signupRequirements.required.length > 0) {
-      if (versionIds.length === 0) {
-        throw new BadRequestException({
-          code: LEGAL_SIGNUP_ERROR_CODES.MISSING_LEGAL_ACCEPTANCE,
-          message: LEGAL_SIGNUP_USER_MESSAGES.missingAcceptanceIds,
-        });
-      }
-    }
+    this.legalSignup.assertSignupAcceptanceComplete(signupRequirements, versionIds);
 
     const cityTrimmed = body.city?.trim() || null;
     const signupRole = mapSignupProfileTypeToRole(profileType);

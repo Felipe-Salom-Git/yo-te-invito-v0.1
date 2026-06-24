@@ -95,7 +95,18 @@ export const REGISTER_WIZARD_COPY = {
   },
   legal: {
     heading: 'Documentos legales',
-    subtitle: 'Para crear tu cuenta necesitás aceptar los documentos obligatorios vigentes.',
+    subtitle:
+      'Para crear tu cuenta, aceptá los documentos legales vigentes. Incluimos las condiciones específicas del perfil que elegiste.',
+    producerSubtitle:
+      'Estás creando una cuenta de Productora. Además de los términos generales y la política de privacidad, tenés que aceptar las condiciones para productoras.',
+    gastroSubtitle:
+      'Estás creando una cuenta gastronómica. Además de los términos generales y la política de privacidad, tenés que aceptar las condiciones para gastronómicos.',
+    hotelSubtitle:
+      'Estás creando una cuenta de Hotel. Además de los términos generales y la política de privacidad, tenés que aceptar las condiciones para hoteles.',
+    referrerSubtitle:
+      'Estás creando una cuenta de Referido. Además de los términos generales y la política de privacidad, tenés que aceptar las condiciones para referidos.',
+    buyerSubtitle:
+      'Para crear tu cuenta de comprador, aceptá los términos generales y la política de privacidad vigentes.',
   },
   legalRetry: {
     heading: 'Completar aceptación legal',
@@ -233,6 +244,23 @@ export function profileSignupDataStep(
   }
 }
 
+export function getLegalStepSubtitle(profileType: RegistrationProfileType): string {
+  switch (profileType) {
+    case 'PRODUCER':
+      return REGISTER_WIZARD_COPY.legal.producerSubtitle;
+    case 'GASTRO':
+      return REGISTER_WIZARD_COPY.legal.gastroSubtitle;
+    case 'HOTEL':
+      return REGISTER_WIZARD_COPY.legal.hotelSubtitle;
+    case 'REFERRER':
+      return REGISTER_WIZARD_COPY.legal.referrerSubtitle;
+    case 'USER':
+      return REGISTER_WIZARD_COPY.legal.buyerSubtitle;
+    default:
+      return REGISTER_WIZARD_COPY.legal.subtitle;
+  }
+}
+
 export function getStepMeta(
   step: RegisterWizardStepKey,
   profileType: RegistrationProfileType,
@@ -265,7 +293,10 @@ export function getStepMeta(
         subtitle: REGISTER_WIZARD_COPY.referrer.subtitle,
       };
     case 'legal':
-      return REGISTER_WIZARD_COPY.legal;
+      return {
+        heading: REGISTER_WIZARD_COPY.legal.heading,
+        subtitle: getLegalStepSubtitle(profileType),
+      };
     case 'legal-retry':
       return {
         heading: REGISTER_WIZARD_COPY.legalRetry.heading,

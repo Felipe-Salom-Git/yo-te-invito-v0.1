@@ -171,6 +171,15 @@ Etapas base: `V3_1_STAGE_5_CLOSING.md`, `V3_1_STAGE_6_SCANNER_OFFLINE_CLOSING.md
 - [ ] QA manual: registro productora → verify email → login → `/producer`.
 - [ ] Corregir manualmente en DB cuentas de prueba creadas antes del deploy (`UPDATE "User" SET role='PRODUCER_OWNER' WHERE …`).
 
+### Hotfix legal signup por perfil (2026-06-24)
+
+- [x] `GET /public/legal/requirements?context=SIGNUP&profileType=` incluye términos del perfil (`producer_terms`, etc.) vía `isRequiredForSignup`.
+- [x] `RegisterWizard` muestra todos los documentos requeridos antes de crear cuenta (copy por perfil).
+- [x] `POST /auth/register` valida server-side aceptación completa (`LEGAL_ACCEPTANCE_REQUIRED` si faltan).
+- [x] Migración `20260624140000_commercial_profile_signup_legal` actualiza flags en BD existente.
+- [ ] Publicar términos comerciales en `/admin/legales` (si siguen DRAFT, registro comercial queda bloqueado con `canProceed=false`).
+- [ ] QA manual: productora acepta 3 docs → crea cuenta → no pide condiciones en portal post-login.
+
 ---
 
 > Checklist V2 § Google Cloud · § GSC/SEO · Runbooks: [`GOOGLE_CLOUD_RUNBOOK.md`](../deploy/GOOGLE_CLOUD_RUNBOOK.md) · [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) · [`SEARCH_CONSOLE_SEO_RUNBOOK.md`](../deploy/SEARCH_CONSOLE_SEO_RUNBOOK.md) · Auditorías: [`MAPS_LOCATION_AUDIT.md`](../audits/MAPS_LOCATION_AUDIT.md) · [`SEO_TECHNICAL_AUDIT.md`](../audits/SEO_TECHNICAL_AUDIT.md)

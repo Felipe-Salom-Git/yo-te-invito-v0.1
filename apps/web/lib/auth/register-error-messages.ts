@@ -108,7 +108,10 @@ export function mapRegisterApiError(err: unknown): string {
     if (code === LEGAL_SIGNUP_ERROR_CODES.CONFIG_UNAVAILABLE) {
       return LEGAL_SIGNUP_USER_MESSAGES.configUnavailable;
     }
-    if (code === LEGAL_SIGNUP_ERROR_CODES.MISSING_LEGAL_ACCEPTANCE) {
+    if (
+      code === LEGAL_SIGNUP_ERROR_CODES.MISSING_LEGAL_ACCEPTANCE ||
+      code === LEGAL_SIGNUP_ERROR_CODES.LEGAL_ACCEPTANCE_REQUIRED
+    ) {
       return LEGAL_SIGNUP_USER_MESSAGES.missingAcceptanceIds;
     }
     if (code === LEGAL_SIGNUP_ERROR_CODES.INVALID_LEGAL_VERSION) {

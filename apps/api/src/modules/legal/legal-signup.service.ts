@@ -3,6 +3,7 @@ import type { LegalAcceptanceContext, Prisma } from '@prisma/client';
 import {
   LEGAL_SIGNUP_ERROR_CODES,
   LEGAL_SIGNUP_USER_MESSAGES,
+  type PublicLegalRequirementsResponse,
   type RegistrationProfileType,
 } from '@yo-te-invito/shared';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -45,6 +46,45 @@ export class LegalSignupService {
   }
 
   /**
+   * Validates version IDs for SIGNUP. Throws if catalog requires published docs that are missing or IDs are invalid/incomplete.
+   */
+  assertSignupAcceptanceComplete(
+    snapshot: PublicLegalRequirementsResponse,
+    documentVersionIds: string[],
+  ): void {
+    if (!snapshot.canProceed) {
+      throw new BadRequestException({
+        code: LEGAL_SIGNUP_ERROR_CODES.CONFIG_UNAVAILABLE,
+        message: LEGAL_SIGNUP_USER_MESSAGES.configUnavailable,
+        details: { missingRequiredDocuments: snapshot.missingRequiredDocuments },
+      });
+    }
+
+    if (snapshot.required.length === 0) {
+      return;
+    }
+
+    const requiredIds = new Set(snapshot.required.map((r) => r.documentVersionId));
+
+    if (documentVersionIds.length !== requiredIds.size) {
+      throw new BadRequestException({
+        code: LEGAL_SIGNUP_ERROR_CODES.LEGAL_ACCEPTANCE_REQUIRED,
+        message: LEGAL_SIGNUP_USER_MESSAGES.missingAcceptanceIds,
+      });
+    }
+
+    for (const versionId of documentVersionIds) {
+      if (!requiredIds.has(versionId)) {
+        throw new BadRequestException({
+          code: LEGAL_SIGNUP_ERROR_CODES.INVALID_LEGAL_VERSION,
+          message: LEGAL_SIGNUP_USER_MESSAGES.invalidDocument,
+          details: { documentVersionId: versionId },
+        });
+      }
+    }
+  }
+
+  /**
    * Validates version IDs for SIGNUP and persists acceptances inside an existing transaction.
    * Throws if catalog requires published docs that are missing or IDs are invalid/incomplete.
    */
@@ -71,36 +111,10 @@ export class LegalSignupService {
     });
 
     const snapshot = buildPublicLegalRequirements(documents, 'SIGNUP', profileType);
-
-    if (!snapshot.canProceed) {
-      throw new BadRequestException({
-        code: LEGAL_SIGNUP_ERROR_CODES.CONFIG_UNAVAILABLE,
-        message: LEGAL_SIGNUP_USER_MESSAGES.configUnavailable,
-        details: { missingRequiredDocuments: snapshot.missingRequiredDocuments },
-      });
-    }
+    this.assertSignupAcceptanceComplete(snapshot, documentVersionIds);
 
     if (snapshot.required.length === 0) {
       return;
-    }
-
-    const requiredIds = new Set(snapshot.required.map((r) => r.documentVersionId));
-
-    if (documentVersionIds.length !== requiredIds.size) {
-      throw new BadRequestException({
-        code: LEGAL_SIGNUP_ERROR_CODES.MISSING_LEGAL_ACCEPTANCE,
-        message: LEGAL_SIGNUP_USER_MESSAGES.missingAcceptanceIds,
-      });
-    }
-
-    for (const versionId of documentVersionIds) {
-      if (!requiredIds.has(versionId)) {
-        throw new BadRequestException({
-          code: LEGAL_SIGNUP_ERROR_CODES.INVALID_LEGAL_VERSION,
-          message: LEGAL_SIGNUP_USER_MESSAGES.invalidDocument,
-          details: { documentVersionId: versionId },
-        });
-      }
     }
 
     for (const item of snapshot.required) {

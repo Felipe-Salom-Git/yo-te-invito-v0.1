@@ -196,6 +196,19 @@ Te enviamos el QR por email. Revisá tu bandeja de entrada y, si no aparece, ver
 
 ---
 
+### 0.10 Hotfix legal signup por perfil
+
+**Estado:** corregido en código 2026-06-24 (requiere deploy + migración + publicar docs comerciales).
+
+- [x] Términos comerciales (`producer_terms`, `gastro_terms`, `hotel_terms`, `referrer_terms`) con `isRequiredForSignup=true`.
+- [x] Requirements SIGNUP devuelve generales + términos del perfil.
+- [x] RegisterWizard muestra y exige todos los documentos antes de `POST /auth/register`.
+- [x] Backend valida aceptación completa (`LEGAL_ACCEPTANCE_REQUIRED`).
+- [ ] Publicar documentos comerciales en admin (si DRAFT → registro bloqueado).
+- [ ] QA manual: productora → 3 docs → crear cuenta → login → `/producer` sin retry legal.
+
+---
+
 ## 1. Cerrado / no pasar a Cursor como pendiente
 
 Estos bloques quedan fuera de la checklist activa salvo que aparezca un bug nuevo.

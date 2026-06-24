@@ -689,26 +689,6 @@ export function RegisterWizard() {
             profileType === 'HOTEL' ||
             profileType === 'REFERRER') && (
             <div className="min-w-0 space-y-4">
-              {profileType === 'PRODUCER' ? (
-                <p className="text-xs text-text-muted">
-                  {REGISTER_WIZARD_COPY.producer.afterRegister}
-                </p>
-              ) : null}
-              {profileType === 'GASTRO' ? (
-                <p className="text-xs text-text-muted">
-                  {REGISTER_WIZARD_COPY.gastro.afterRegister}
-                </p>
-              ) : null}
-              {profileType === 'HOTEL' ? (
-                <p className="text-xs text-text-muted">
-                  {REGISTER_WIZARD_COPY.hotel.afterRegister}
-                </p>
-              ) : null}
-              {profileType === 'REFERRER' ? (
-                <p className="text-xs text-text-muted">
-                  {REGISTER_WIZARD_COPY.referrer.afterRegister}
-                </p>
-              ) : null}
               <LegalFlowAcceptanceBlock {...legalBlockProps} />
               {error ? <RegisterWizardErrorAlert message={error} /> : null}
               <div className="flex flex-col gap-2 sm:flex-row">
