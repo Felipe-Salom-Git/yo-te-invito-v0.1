@@ -719,6 +719,29 @@ export class AdminController {
     return this.users.updateRole(user.tenantId, userId, body);
   }
 
+  @Get('users/:userId/delete-preflight')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async getUserDeletePreflight(
+    @CurrentUser() user: { tenantId: string; id: string },
+    @Param('userId') userId: string,
+  ) {
+    return this.users.getDeletePreflight(user.tenantId, userId, user.id);
+  }
+
+  @Delete('users/:userId')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async deleteUser(
+    @CurrentUser() user: { tenantId: string; id: string; role: string },
+    @Param('userId') userId: string,
+  ) {
+    return this.users.deleteUser(user.tenantId, userId, {
+      id: user.id,
+      role: user.role,
+    });
+  }
+
   @Get('config')
   @UseGuards(JwtOrDevAuthGuard, RolesGuard)
   @RequireRole(Role.ADMIN)

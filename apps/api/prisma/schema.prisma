@@ -2049,6 +2049,8 @@ enum AuditAction {
   TICKET_DATE_CHANGE_REJECTED
   TICKET_DATE_CHANGE_APPLIED
   GEO_ADDRESS_RESOLVED
+  ADMIN_USER_DELETED
+  ADMIN_USER_DELETE_BLOCKED
 }
 
 /// Scanner user bound to one parent commercial account (tenant-scoped).
