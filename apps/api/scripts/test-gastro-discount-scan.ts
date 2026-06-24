@@ -6,7 +6,10 @@
 
 import { PrismaClient } from '@prisma/client';
 import { randomBytes } from 'crypto';
-import { buildGastroDiscountQrPayload } from '@yo-te-invito/shared';
+import {
+  buildGastroDiscountQrPayload,
+  normalizeGastroDiscountExpiryDate,
+} from '@yo-te-invito/shared';
 
 const BASE_URL = process.env.API_URL ?? 'http://localhost:3001';
 
@@ -66,6 +69,21 @@ async function main() {
     },
   });
 
+  const patronUser = await prisma.user.upsert({
+    where: {
+      tenantId_email: { tenantId: tenant.id, email: 'patron@gastro-scan-test.local' },
+    },
+    update: { status: 'ACTIVE' },
+    create: {
+      tenantId: tenant.id,
+      email: 'patron@gastro-scan-test.local',
+      firstName: 'Patron',
+      lastName: 'Test',
+      role: 'USER',
+      status: 'ACTIVE',
+    },
+  });
+
   const event = await prisma.event.upsert({
     where: { id: 'gastro-scan-test-event' },
     update: { category: 'gastro', deletedAt: null },
@@ -95,12 +113,15 @@ async function main() {
     },
   });
 
+  const expiresToday = normalizeGastroDiscountExpiryDate(new Date());
+
   const claimToken = randomBytes(24).toString('hex');
   const discount = await prisma.gastroDiscount.upsert({
     where: { eventId_code: { eventId: event.id, code: 'SCAN-TEST-01' } },
     update: {
       status: 'ACTIVE',
-      discountDate: new Date(Date.now() + 86400000 * 7),
+      discountDate: expiresToday,
+      validTo: expiresToday,
       displayTitle: '2x1 Test',
     },
     create: {
@@ -112,7 +133,8 @@ async function main() {
       value: 20,
       status: 'ACTIVE',
       displayTitle: '2x1 Test',
-      discountDate: new Date(Date.now() + 86400000 * 7),
+      discountDate: expiresToday,
+      validTo: expiresToday,
       qrToken: randomBytes(24).toString('hex'),
     },
   });
@@ -124,13 +146,15 @@ async function main() {
         email: 'guest@gastro-scan.test',
       },
     },
-    update: { qrToken: claimToken },
+    update: { qrToken: claimToken, status: 'ACTIVE', usedAt: null, expiresAt: expiresToday },
     create: {
       tenantId: tenant.id,
       discountId: discount.id,
       email: 'guest@gastro-scan.test',
       qrToken: claimToken,
       accessToken: randomBytes(32).toString('hex'),
+      expiresAt: expiresToday,
+      status: 'ACTIVE',
     },
   });
 
@@ -143,7 +167,7 @@ async function main() {
   const malformed = 'yti:gastro-discount:v1:bad';
 
   const r1 = await postValidate(scannerUser.id, validPayload);
-  assert(r1.status === 'VALID', 'valid claim QR → VALID');
+  assert(r1.status === 'VALID', 'valid claim QR (expires today) → VALID');
 
   const r2 = await postValidate(scannerUser.id, validPayload);
   assert(r2.status === 'ALREADY_USED', 'second scan → ALREADY_USED');
@@ -154,12 +178,89 @@ async function main() {
   const r4 = await postValidate(scannerUser.id, malformed);
   assert(r4.status === 'INVALID', 'malformed → INVALID');
 
+  // Daily limit: patron redeems two coupons same day
+  const discount2 = await prisma.gastroDiscount.upsert({
+    where: { eventId_code: { eventId: event.id, code: 'SCAN-TEST-02' } },
+    update: {
+      status: 'ACTIVE',
+      discountDate: expiresToday,
+      validTo: expiresToday,
+    },
+    create: {
+      tenantId: tenant.id,
+      eventId: event.id,
+      gastroProfileId: profile.id,
+      code: 'SCAN-TEST-02',
+      type: 'PERCENT',
+      value: 15,
+      status: 'ACTIVE',
+      displayTitle: 'Daily limit B',
+      discountDate: expiresToday,
+      validTo: expiresToday,
+      qrToken: randomBytes(24).toString('hex'),
+    },
+  });
+
+  const tokenA = randomBytes(24).toString('hex');
+  const tokenB = randomBytes(24).toString('hex');
+  const claimA = await prisma.gastroDiscountClaim.upsert({
+    where: {
+      discountId_email: {
+        discountId: discount.id,
+        email: patronUser.email,
+      },
+    },
+    update: { qrToken: tokenA, status: 'ACTIVE', usedAt: null, userId: patronUser.id },
+    create: {
+      tenantId: tenant.id,
+      discountId: discount.id,
+      email: patronUser.email,
+      userId: patronUser.id,
+      qrToken: tokenA,
+      accessToken: randomBytes(32).toString('hex'),
+      expiresAt: expiresToday,
+      status: 'ACTIVE',
+    },
+  });
+  const claimB = await prisma.gastroDiscountClaim.upsert({
+    where: {
+      discountId_email: {
+        discountId: discount2.id,
+        email: patronUser.email,
+      },
+    },
+    update: { qrToken: tokenB, status: 'ACTIVE', usedAt: null, userId: patronUser.id },
+    create: {
+      tenantId: tenant.id,
+      discountId: discount2.id,
+      email: patronUser.email,
+      userId: patronUser.id,
+      qrToken: tokenB,
+      accessToken: randomBytes(32).toString('hex'),
+      expiresAt: expiresToday,
+      status: 'ACTIVE',
+    },
+  });
+
+  await prisma.gastroDiscountValidation.deleteMany({
+    where: { claimId: { in: [claimA.id, claimB.id] } },
+  });
+
+  const payloadA = buildGastroDiscountQrPayload(discount.id, claimA.qrToken);
+  const payloadB = buildGastroDiscountQrPayload(discount2.id, claimB.qrToken);
+
+  const rDaily1 = await postValidate(scannerUser.id, payloadA);
+  assert(rDaily1.status === 'VALID', 'first patron coupon today → VALID');
+
+  const rDaily2 = await postValidate(scannerUser.id, payloadB);
+  assert(rDaily2.status === 'LIMIT_REACHED', 'second patron coupon same day → LIMIT_REACHED');
+
   await prisma.gastroDiscount.update({
     where: { id: discount.id },
     data: { status: 'CANCELLED' },
   });
   const claim2Token = randomBytes(24).toString('hex');
-  const claim2 = await prisma.gastroDiscountClaim.upsert({
+  await prisma.gastroDiscountClaim.upsert({
     where: {
       discountId_email: {
         discountId: discount.id,
@@ -175,7 +276,7 @@ async function main() {
       accessToken: randomBytes(32).toString('hex'),
     },
   });
-  const inactivePayload = buildGastroDiscountQrPayload(discount.id, claim2.qrToken);
+  const inactivePayload = buildGastroDiscountQrPayload(discount.id, claim2Token);
   const r5 = await postValidate(scannerUser.id, inactivePayload);
   assert(r5.status === 'INACTIVE', 'cancelled discount → INACTIVE');
 

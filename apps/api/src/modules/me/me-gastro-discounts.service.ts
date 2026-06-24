@@ -3,6 +3,7 @@ import {
   buildGastroDiscountQrPayload,
   type MeGastroDiscountItem,
   type MeGastroDiscountsResponse,
+  isGastroDiscountExpired,
 } from '@yo-te-invito/shared';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -22,7 +23,7 @@ function effectiveStatus(
   if (status === 'CANCELLED') return 'CANCELLED';
   if (status === 'USED' || usedAt || hasValidation) return 'USED';
   if (status === 'EXPIRED') return 'EXPIRED';
-  if (expiresAt && expiresAt < new Date()) return 'EXPIRED';
+  if (isGastroDiscountExpired(expiresAt)) return 'EXPIRED';
   return 'ACTIVE';
 }
 

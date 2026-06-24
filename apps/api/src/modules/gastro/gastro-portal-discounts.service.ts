@@ -12,6 +12,8 @@ import {
   type GastroDiscountCreateInput,
   type GastroDiscountResponse,
   type GastroDiscountUpdateInput,
+  normalizeGastroDiscountExpiryDate,
+  normalizeGastroDiscountValidFromDate,
 } from '@yo-te-invito/shared';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ProfilesAuthorizationService } from '../../common/profiles-authorization.service';
@@ -172,13 +174,7 @@ export class GastroPortalDiscountsService {
   ) {
     await this.assertGastroUser(tenantId, userId, userRole);
     const profile = await this.getOwnedProfile(tenantId, userId);
-    const discountDate = new Date(body.discountDate);
-    if (Number.isNaN(discountDate.getTime())) {
-      throw new BadRequestException({
-        code: ErrorCode.VALIDATION_FAILED,
-        message: 'Invalid discount date',
-      });
-    }
+    const discountDate = normalizeGastroDiscountExpiryDate(body.discountDate);
 
     const created = await this.prisma.gastroDiscount.create({
       data: {
@@ -193,7 +189,7 @@ export class GastroPortalDiscountsService {
         detail: body.detail.trim(),
         displayDescription: body.summary.trim(),
         discountDate,
-        validFrom: discountDate,
+        validFrom: normalizeGastroDiscountValidFromDate(body.discountDate),
         validTo: discountDate,
         status: 'PENDING_REVIEW',
         commissionCoordinationAcceptedAt: new Date(),
@@ -224,8 +220,10 @@ export class GastroPortalDiscountsService {
     this.assertEditableStatus(existing.status);
 
     const discountDate =
-      body.discountDate !== undefined ? new Date(body.discountDate) : undefined;
-    if (discountDate && Number.isNaN(discountDate.getTime())) {
+      body.discountDate !== undefined
+        ? normalizeGastroDiscountExpiryDate(body.discountDate)
+        : undefined;
+    if (body.discountDate !== undefined && Number.isNaN(discountDate!.getTime())) {
       throw new BadRequestException({
         code: ErrorCode.VALIDATION_FAILED,
         message: 'Invalid discount date',
@@ -243,7 +241,7 @@ export class GastroPortalDiscountsService {
         ...(body.detail !== undefined && { detail: body.detail.trim() }),
         ...(discountDate !== undefined && {
           discountDate,
-          validFrom: discountDate,
+          validFrom: normalizeGastroDiscountValidFromDate(body.discountDate!),
           validTo: discountDate,
         }),
         ...(body.imageUrls !== undefined && {

@@ -6,6 +6,9 @@ import {
   type ValidateGastroDiscountResponse,
   type GastroDiscountScanStatus,
   ErrorCode,
+  isGastroDiscountExpired,
+  isGastroDiscountNotYetActive,
+  getGastroDiscountLocalDayBounds,
 } from '@yo-te-invito/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProfilesAuthorizationService } from '../common/profiles-authorization.service';
@@ -23,6 +26,18 @@ function discountTitle(row: {
   code: string;
 }): string {
   return row.displayTitle?.trim() || row.code;
+}
+
+function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
+
+function resolveExpiryDate(row: {
+  expiresAt?: Date | null;
+  validTo?: Date | null;
+  discountDate?: Date | null;
+}): Date | null {
+  return row.expiresAt ?? row.validTo ?? row.discountDate ?? null;
 }
 
 @Injectable()
@@ -43,29 +58,77 @@ export class ScannerGastroDiscountService {
     return { status, title, message, ...(discount ? { discount } : {}) };
   }
 
+  private isClaimUsed(claim: {
+    status: string;
+    usedAt: Date | null;
+  }): boolean {
+    return claim.status === 'USED' || !!claim.usedAt;
+  }
+
   private isClaimExpired(claim: {
     status: string;
     expiresAt: Date | null;
     usedAt: Date | null;
+    discount?: {
+      validTo: Date | null;
+      discountDate: Date | null;
+    } | null;
   }): boolean {
     if (claim.status === 'EXPIRED' || claim.status === 'CANCELLED') return true;
-    if (claim.status === 'USED' || claim.usedAt) return true;
-    if (claim.expiresAt && claim.expiresAt < new Date()) return true;
-    return false;
+    if (this.isClaimUsed(claim)) return false;
+    const expiresAt = resolveExpiryDate({
+      expiresAt: claim.expiresAt,
+      validTo: claim.discount?.validTo ?? null,
+      discountDate: claim.discount?.discountDate ?? null,
+    });
+    return isGastroDiscountExpired(expiresAt);
   }
 
-  private isExpired(d: {
+  private isDiscountExpired(d: {
     status: string;
     discountDate: Date | null;
     validFrom: Date | null;
     validTo: Date | null;
   }): boolean {
     if (d.status === 'EXPIRED') return true;
-    const now = new Date();
-    if (d.discountDate && d.discountDate < now) return true;
-    if (d.validTo && d.validTo < now) return true;
-    if (d.validFrom && d.validFrom > now) return true;
-    return false;
+    if (isGastroDiscountNotYetActive(d.validFrom)) return false;
+    const expiresAt = resolveExpiryDate({
+      validTo: d.validTo,
+      discountDate: d.discountDate,
+    });
+    return isGastroDiscountExpired(expiresAt);
+  }
+
+  private isDiscountNotYetActive(d: { validFrom: Date | null }): boolean {
+    return isGastroDiscountNotYetActive(d.validFrom);
+  }
+
+  private async hasDailyGastroRedemption(
+    tx: Prisma.TransactionClient,
+    tenantId: string,
+    excludeClaimId: string,
+    opts: { userId: string | null; email: string },
+    now: Date,
+  ): Promise<boolean> {
+    const { start, end } = getGastroDiscountLocalDayBounds(now);
+    const baseWhere: Prisma.GastroDiscountClaimWhereInput = {
+      tenantId,
+      id: { not: excludeClaimId },
+      status: 'USED',
+      usedAt: { gte: start, lte: end },
+    };
+
+    if (opts.userId) {
+      const count = await tx.gastroDiscountClaim.count({
+        where: { ...baseWhere, userId: opts.userId },
+      });
+      return count > 0;
+    }
+
+    const count = await tx.gastroDiscountClaim.count({
+      where: { ...baseWhere, email: normalizeEmail(opts.email) },
+    });
+    return count > 0;
   }
 
   private async assertCanScan(
@@ -103,7 +166,7 @@ export class ScannerGastroDiscountService {
       return this.response(
         'INVALID',
         'QR inválido',
-        'El código no corresponde a un descuento gastronómico válido.',
+        'No encontramos un cupón asociado a este código.',
       );
     }
 
@@ -121,7 +184,7 @@ export class ScannerGastroDiscountService {
       return this.response(
         'INVALID',
         'QR inválido',
-        'El descuento no pertenece a este tenant.',
+        'No encontramos un cupón asociado a este código.',
       );
     }
 
@@ -136,8 +199,8 @@ export class ScannerGastroDiscountService {
     if (!discount || discount.event.deletedAt) {
       return this.response(
         'INVALID',
-        'Descuento no encontrado',
-        'No existe un descuento activo con este código.',
+        'QR inválido',
+        'No encontramos un cupón asociado a este código.',
       );
     }
 
@@ -154,16 +217,25 @@ export class ScannerGastroDiscountService {
     if ((discount.event.category ?? '').toLowerCase() !== 'gastro') {
       return this.response(
         'INVALID',
-        'Descuento no válido',
-        'Este código no corresponde a un descuento gastronómico.',
+        'QR inválido',
+        'No encontramos un cupón asociado a este código.',
       );
     }
 
-    if (this.isExpired(discount)) {
+    if (this.isDiscountExpired(discount)) {
       return this.response(
         'EXPIRED',
-        'Descuento vencido',
-        'La fecha de vigencia del descuento ya pasó.',
+        'Cupón vencido',
+        'La fecha de validez de este descuento ya finalizó.',
+        discountInfo,
+      );
+    }
+
+    if (this.isDiscountNotYetActive(discount)) {
+      return this.response(
+        'INACTIVE',
+        'Descuento inactivo',
+        'El descuento aún no está habilitado para uso.',
         discountInfo,
       );
     }
@@ -180,61 +252,98 @@ export class ScannerGastroDiscountService {
 
     const claim = await this.prisma.gastroDiscountClaim.findFirst({
       where: { discountId, qrToken: token, tenantId },
+      include: {
+        discount: { select: { validTo: true, discountDate: true } },
+      },
     });
 
     if (claim) {
-      if (this.isClaimExpired(claim)) {
-        const msg =
-          claim.status === 'USED' || claim.usedAt
-            ? 'Este QR de descuento ya fue validado anteriormente.'
-            : 'El QR de descuento está vencido o cancelado.';
-        return this.response(
-          claim.status === 'USED' || claim.usedAt ? 'ALREADY_USED' : 'EXPIRED',
-          claim.status === 'USED' || claim.usedAt ? 'Ya utilizado' : 'Descuento vencido',
-          msg,
-          discountInfo,
-        );
-      }
-
-      const existing = await this.prisma.gastroDiscountValidation.findUnique({
-        where: { claimId: claim.id },
-      });
-      if (existing) {
+      if (this.isClaimUsed(claim)) {
         return this.response(
           'ALREADY_USED',
-          'Ya utilizado',
-          'Este QR de descuento ya fue validado anteriormente.',
+          'Cupón ya utilizado',
+          'Este QR ya fue escaneado anteriormente.',
           discountInfo,
         );
       }
 
-      try {
-        await this.prisma.$transaction([
-          this.prisma.gastroDiscountValidation.create({
+      if (this.isClaimExpired(claim)) {
+        return this.response(
+          'EXPIRED',
+          'Cupón vencido',
+          'La fecha de validez de este descuento ya finalizó.',
+          discountInfo,
+        );
+      }
+
+      const now = new Date();
+      const redeemResult = await this.prisma.$transaction(async (tx) => {
+        const fresh = await tx.gastroDiscountClaim.findFirst({
+          where: { id: claim.id, tenantId },
+        });
+        if (!fresh || fresh.status !== 'ACTIVE' || fresh.usedAt) {
+          return 'ALREADY_USED' as const;
+        }
+
+        const dailyHit = await this.hasDailyGastroRedemption(
+          tx,
+          tenantId,
+          claim.id,
+          { userId: fresh.userId, email: fresh.email },
+          now,
+        );
+        if (dailyHit) {
+          return 'LIMIT_REACHED' as const;
+        }
+
+        const updated = await tx.gastroDiscountClaim.updateMany({
+          where: { id: claim.id, status: 'ACTIVE', usedAt: null },
+          data: { status: 'USED', usedAt: now },
+        });
+        if (updated.count === 0) {
+          return 'ALREADY_USED' as const;
+        }
+
+        try {
+          await tx.gastroDiscountValidation.create({
             data: {
               discountId: discount.id,
               claimId: claim.id,
-              userId: claim.userId,
+              userId: fresh.userId,
             },
-          }),
-          this.prisma.gastroDiscountClaim.update({
-            where: { id: claim.id },
-            data: { status: 'USED', usedAt: new Date() },
-          }),
-        ]);
-      } catch (err) {
-        if (
-          err instanceof Prisma.PrismaClientKnownRequestError &&
-          err.code === 'P2002'
-        ) {
-          return this.response(
-            'ALREADY_USED',
-            'Ya utilizado',
-            'Este QR de descuento ya fue validado anteriormente.',
-            discountInfo,
-          );
+          });
+        } catch (err) {
+          if (
+            err instanceof Prisma.PrismaClientKnownRequestError &&
+            err.code === 'P2002'
+          ) {
+            return 'ALREADY_USED' as const;
+          }
+          throw err;
         }
-        throw err;
+
+        return 'VALID' as const;
+      });
+
+      if (redeemResult === 'ALREADY_USED') {
+        return this.response(
+          'ALREADY_USED',
+          'Cupón ya utilizado',
+          'Este QR ya fue escaneado anteriormente.',
+          discountInfo,
+        );
+      }
+
+      if (redeemResult === 'LIMIT_REACHED') {
+        const limitMsg = claim.userId
+          ? 'Esta cuenta ya utilizó un cupón gastronómico hoy.'
+          : 'Este email ya utilizó un cupón gastronómico hoy.';
+        return this.response(
+          'LIMIT_REACHED',
+          'Límite diario alcanzado',
+          limitMsg,
+          discountInfo,
+        );
       }
 
       await this.audit.logAction({
@@ -249,8 +358,8 @@ export class ScannerGastroDiscountService {
 
       return this.response(
         'VALID',
-        'Descuento válido',
-        `Descuento aplicado: ${valueLabel} en ${localName ?? 'local'}.`,
+        'Cupón válido',
+        'Beneficio aplicado correctamente.',
         discountInfo,
       );
     }
@@ -259,8 +368,8 @@ export class ScannerGastroDiscountService {
     if (!masterToken || masterToken !== token) {
       return this.response(
         'INVALID',
-        'Token inválido',
-        'El código QR no coincide con ningún descuento emitido.',
+        'QR inválido',
+        'No encontramos un cupón asociado a este código.',
       );
     }
 
@@ -273,8 +382,8 @@ export class ScannerGastroDiscountService {
 
     return this.response(
       'VALID',
-      'Descuento válido',
-      `Referencia de local validada: ${valueLabel}.`,
+      'Cupón válido',
+      'Beneficio aplicado correctamente.',
       discountInfo,
     );
   }
