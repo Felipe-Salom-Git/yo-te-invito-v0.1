@@ -47,7 +47,7 @@ Rama activa: `feat/v1-s03-api-foundation` (último push documental: ver `git log
 | **GEO / Maps Georef** | Cerrado prod 2026-06-23 (keys, migrate, QA Bariloche + ubicar mapa) | `7957994`–`5353ae2`; `GEO_MAPS_STAGE_CLOSING.md` |
 | **Footer público refresh** | Layout + assets marca + datos reales prod OK | `772a227`; `components/footer/*`, `footerPublicConfig.ts` |
 | **Branding web** | Favicon, intro, share OG alineados y QA share OK prod | `9c1f83b`–`3fafa18`; `lib/seo/brandAssets.ts`, `/brand/*` |
-| **Gastro descuentos QR / cortesías** | Código + push OK; deploy + QA pendiente | `601c7e4`–`58e3704`; `GASTRO_DISCOUNTS_QR_COURTESY_CLOSING.md` |
+| **Gastro descuentos QR / cortesías V2** | Código cerrado 2026-06-23; QA manual staging/prod pendiente | `GASTRO_QR_COURTESIES_AUDIT.md` |
 | **Getnet webhook** | Fix payload en código; abandonado como implementación activa — nueva pasarela TBD | `ed0cc3e` |
 | **Ticketera Próximamente** | UI productora bloqueada; solo publicidad operativa | `TICKETING_CREATION_ENABLED` |
 | **Mensajes email/spam** | Post-registro + post-QR en web | `EmailInboxNotice` |
@@ -117,7 +117,8 @@ Controllers: HTTP + Zod only. Services: business logic. Prisma: persistence only
 | **`docs/audits/GEO_MAPS_STAGE_CLOSING.md`** | Etapa GEO/Maps Georef — cierre completo (2026-06-23) |
 | **`docs/audits/GEO_MAPS_STAGE_AUDIT.md`** | Auditoría etapa GEO/Maps |
 | **`docs/audits/GEO_ADDRESS_MAP_PIN_CLOSING.md`** | Etapa GEO — geocoding + pin editable (previo) |
-| **`docs/audits/GASTRO_DISCOUNTS_QR_COURTESY_CLOSING.md`** | Gastro descuentos QR y cortesías |
+| **`docs/audits/GASTRO_DISCOUNTS_QR_COURTESY_CLOSING.md`** | Gastro descuentos QR y cortesías (v1) |
+| **`docs/audits/GASTRO_QR_COURTESIES_AUDIT.md`** | Gastro QR / Cortesías V2 — cierre reglas + QA |
 | **`docs/audits/V3_1_STAGE_16_BANNERS_RENDERING_CLOSING.md`** | Banners editoriales sin reemplazar publicaciones |
 | **`docs/audits/V3_1_STAGE_16_EXPLORE_CITY_FILTER_CLOSING.md`** | Filtro ciudad en Explore |
 | **`CONTEXT_PENDIENTES.md`** | Checkbox backlog — mark `[x]` when done |
@@ -137,7 +138,7 @@ Controllers: HTTP + Zod only. Services: business logic. Prisma: persistence only
 
 **Etapa GEO — dirección a Maps + pin editable (2026-06-15):** `POST /geo/resolve-address`, `AddressMapPicker`, formularios eventos/gastro/rentals/excursiones. Doc: `docs/audits/GEO_ADDRESS_MAP_PIN_CLOSING.md`.
 
-**Gastro descuentos QR cortesía (2026-06-15):** claims, emails QR, cortesías manuales/seguidores, `/me/descuentos`, scanner. Doc: `docs/audits/GASTRO_DISCOUNTS_QR_COURTESY_CLOSING.md`.
+**Gastro descuentos QR cortesía V2 (2026-06-23):** vencimiento inclusivo AR, uso único, límite diario, emails con CTA claim, UI `GastroDiscountQrCard`. Doc: `docs/audits/GASTRO_QR_COURTESIES_AUDIT.md`. QA manual pendiente.
 
 **Scanner operativo jornada (2026-06-15):** login, PDF fix (`pdfkit` CJS), targets sin `/public/events/:id`, eventos vencidos ocultos (corte 1 AM AR), escaneo manual por botón, modal sin auto-cierre, setup vs operación, listado entradas + hora escaneo. Cerrado funcionalmente; QA puerta real opcional.
 

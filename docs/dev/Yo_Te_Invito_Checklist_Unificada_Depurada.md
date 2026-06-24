@@ -9,7 +9,7 @@
 > - Facturación y emails de pago quedan pendientes para la nueva implementación de pagos.
 > - GEO / Maps se mantiene.
 > - Banners, Ciudad/Explore, Scanner y Multi-fecha quedan cerrados.
-> - Gastro descuentos QR / cortesías queda como QA manual + correcciones.
+> - Gastro descuentos QR / cortesías V2 **cerrado en código 2026-06-23**; QA manual staging/prod pendiente (`docs/audits/GASTRO_QR_COURTESIES_AUDIT.md`).
 > - Legales publicados; mensajes post-registro / QR mejorados (2026-06-23).
 > - **Registro V2 hotfixes (2026-06-24):** rol por `profileType` (`e4f9f1f`), legales comerciales en SIGNUP antes de crear usuario (`b7be41d`). Requiere deploy VPS + `prisma migrate deploy`.
 > - Footer público UX cerrado (`772a227` + QA prod).
@@ -54,30 +54,20 @@
 
 Doc cierre: `docs/audits/GEO_MAPS_STAGE_CLOSING.md`
 
-### 0.3 Gastro descuentos QR / cortesías — QA + correcciones
+### 0.3 Gastro descuentos QR / cortesías V2
 
-**Estado:** ya fue deployado, pero en QA manual surgieron errores a corregir.
+**Estado:** correcciones V2 implementadas en código 2026-06-23. Doc cierre: `docs/audits/GASTRO_QR_COURTESIES_AUDIT.md`.
 
-- [ ] Documentar errores detectados en QA manual.
-- [ ] Corregir errores del flujo de solicitud web de QR/descuento.
-- [ ] Corregir errores del flujo de cortesía por email si aplica.
-- [ ] Corregir errores de email QR si aplica.
-- [ ] Corregir errores en `/me/descuentos` si aplica.
-- [ ] Corregir errores de validación en scanner si aplica.
-- [ ] Repetir QA manual completa:
-  - solicitud web
-  - cortesía manual
-  - cortesía a seguidores
-  - recepción de email
-  - visualización en cuenta usuario
-  - validación con scanner
+- [x] Vencimiento inclusivo hasta fin de día Argentina (`gastro-discount-expiry.ts`).
+- [x] Uso único por claim + redención transaccional en scanner.
+- [x] Límite 1 cupón gastronómico por día (`userId` / email).
+- [x] Email QR: CTA principal claim público; secundario «Ver en mi cuenta» si hay cuenta.
+- [x] UI `GastroDiscountQrCard` en `/me/descuentos` y `/descuentos/reclamo/[claimId]`.
+- [x] Tests: `test:gastro-discount-expiry`, `test:gastro-discount-qr`; `test:gastro-discount-scan` extendido.
+- [ ] Deploy VPS + migración `20260615120000_gastro_courtesy_discount_claims` (si no aplicada).
+- [ ] QA manual completa (§3.1).
 
-**Notas para Cursor:**
-
-- Trabajar solo sobre bugs detectados en QA.
-- No rediseñar el sistema completo de descuentos.
-- No mezclar con pagos ni facturación.
-- Mantener el flujo como QR/cortesía/promoción, no como ticketera.
+**Bugs QA originales (2026-06):** vencimiento prematuro, email cortesía/CTA, UI QR básica — corregidos en V2.
 
 ---
 
@@ -294,16 +284,21 @@ Estos bloques quedan fuera de la checklist activa salvo que aparezca un bug nuev
 
 ## 3. QA manual recomendado antes de nuevos slices
 
-### 3.1 QA Gastro QR / cortesías
+### 3.1 QA Gastro QR / cortesías V2
 
-- [ ] Solicitar QR/descuento desde web.
-- [ ] Confirmar mensaje post-solicitud.
-- [ ] Confirmar recepción email.
-- [ ] Revisar spam/correo no deseado si no llega.
-- [ ] Ver QR en `/me/descuentos`.
-- [ ] Validar QR con scanner.
-- [ ] Probar cortesía manual por email.
-- [ ] Probar cortesía a seguidores.
+Doc: `docs/audits/GASTRO_QR_COURTESIES_AUDIT.md` § QA manual.
+
+- [ ] Descuento con vencimiento **hoy** — scanner válido; `/me/descuentos` muestra «Disponible».
+- [ ] Solicitar QR/descuento desde web (logueado e invitado).
+- [ ] Confirmar mensaje post-solicitud + aviso spam.
+- [ ] Confirmar email con CTA **Ver mi QR** → `/descuentos/reclamo/...`.
+- [ ] Usuario con cuenta: CTA secundario **Ver en mi cuenta**.
+- [ ] Ver cupón en `/me/descuentos` (card tipo ticket).
+- [ ] Escanear QR — éxito; re-escaneo → «Cupón ya utilizado».
+- [ ] Segundo cupón mismo día misma cuenta → límite diario.
+- [ ] Cortesía manual por email (con y sin cuenta).
+- [ ] Cortesía a seguidores.
+- [ ] Mobile: QR legible y scanner lee correctamente.
 
 ### 3.2 QA GEO / Maps
 
@@ -351,7 +346,7 @@ Estos bloques quedan fuera de la checklist activa salvo que aparezca un bug nuev
 
 ## 4. Orden recomendado de ejecución
 
-1. **Gastro QR / cortesías — documentar bugs QA y corregir.**
+1. ~~**Gastro QR / cortesías V2** — correcciones en código.~~ ✓ 2026-06-23 (`GASTRO_QR_COURTESIES_AUDIT.md`); QA manual §3.1 pendiente.
 2. ~~**Deshabilitar ticketera para usuarios + cartel “Próximamente”.**~~ ✓ 2026-06-23
 3. **GEO / Maps — cerrar configuración y QA.**
 4. ~~**Mensajes post-registro / QR con aviso de email y spam.**~~ ✓ 2026-06-23
@@ -375,9 +370,9 @@ Decisiones actuales:
 - No borrar formularios/modelos existentes de ticketera; conservar estructura para futura pasarela.
 - Facturación y emails de pago quedan pendientes hasta la nueva pasarela.
 - GEO / Maps se mantiene.
-- Gastro descuentos QR / cortesías ya fue deployado, pero requiere QA manual + corrección de bugs detectados.
+- Gastro descuentos QR / cortesías V2 cerrado en código 2026-06-23; QA manual staging/prod pendiente (`GASTRO_QR_COURTESIES_AUDIT.md`).
 - Banners, Ciudad/Explore, Scanner, Multi-fecha, Legales publicados y Footer UX quedan cerrados.
-- Pendientes activos: Gastro QR/cortesías (bugs QA), Admin delete seguro para eliminar publicaciones/locales, y nueva pasarela de pagos cuando esté definida.
+- Pendientes activos: QA gastro QR V2, Admin delete locales/publicaciones, nueva pasarela de pagos.
 
 Trabajar por slices pequeños, sin mega refactors, respetando arquitectura existente:
 Frontend: UI → hooks → repositorios → ApiRepository.

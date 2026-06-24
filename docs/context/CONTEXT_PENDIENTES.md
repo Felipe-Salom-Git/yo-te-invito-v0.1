@@ -100,16 +100,17 @@ Etapas base: `V3_1_STAGE_5_CLOSING.md`, `V3_1_STAGE_6_SCANNER_OFFLINE_CLOSING.md
 - [ ] Evaluar migración a `AdvancedMarkerElement`
 - [ ] Evaluar cache persistente de Georef si hiciera falta
 
-### Gastro descuentos / cortesías / QR — implementado, deploy/QA pendiente
+### Gastro descuentos / cortesías / QR V2 — código cerrado 2026-06-23
 
 - [x] Modelo `GastroCourtesyCampaign` + claims extendidos (`601c7e4`)
 - [x] Cortesías por email manual + seguidores (`35d7fa8`)
-- [x] Email QR solicitud web (`e8ecfbb`)
-- [x] `/me/descuentos` — listado QR usuario (`641a534`)
-- [x] Validación scanner claims (`58e3704`)
-- [x] Doc: `GASTRO_DISCOUNTS_QR_COURTESY_CLOSING.md`
-- [ ] Deploy VPS + migración `20260615120000_gastro_courtesy_discount_claims`
-- [ ] QA manual: solicitud web, cortesía, email, Mi cuenta, scanner
+- [x] Email QR solicitud web + cortesía (`e8ecfbb`, Slice 3 V2)
+- [x] `/me/descuentos` — `GastroDiscountQrCard` (Slice 4 V2)
+- [x] Validación scanner: vencimiento inclusivo, uso único, límite diario (Slice 2 V2)
+- [x] Util `gastro-discount-expiry.ts` (Slice 1 V2)
+- [x] Doc: `GASTRO_DISCOUNTS_QR_COURTESY_CLOSING.md`, **`GASTRO_QR_COURTESIES_AUDIT.md`**
+- [ ] Deploy VPS + migración `20260615120000_gastro_courtesy_discount_claims` (si no aplicada)
+- [ ] QA manual staging/prod — `Yo_Te_Invito_Checklist_Unificada_Depurada.md` §3.1
 
 ### Hard delete Admin — postergado
 
@@ -127,7 +128,7 @@ Etapas base: `V3_1_STAGE_5_CLOSING.md`, `V3_1_STAGE_6_SCANNER_OFFLINE_CLOSING.md
 
 1. QA banners editoriales en prod (o fix si persiste)
 2. QA filtro ciudad Explore
-3. Deploy + QA gastro descuentos QR/cortesías
+3. QA gastro QR V2 (§3.1 checklist) + deploy si falta migración
 4. Hard delete seguro (cuando corresponda)
 5. Nueva pasarela de pagos — definir proveedor y reactivar ticketera
 
@@ -782,5 +783,6 @@ _(Trending con `viewCount`: ver ítem Slice 2 arriba en § K.)_
 | `docs/audits/V3_1_STAGE_16_EXPLORE_CITY_FILTER_CLOSING.md` | Etapa 16 — filtro ciudad en Explore (navbar sin ciudad) |
 | `docs/audits/GEO_ADDRESS_MAP_PIN_CLOSING.md` | Etapa GEO — geocoding backend + AddressMapPicker |
 | `docs/audits/GEO_MAPS_STAGE_CLOSING.md` | Etapa GEO Georef + hotfixes address/dedupe/pin |
-| `docs/audits/GASTRO_DISCOUNTS_QR_COURTESY_CLOSING.md` | Gastro descuentos QR, cortesías, Mi cuenta |
+| `docs/audits/GASTRO_DISCOUNTS_QR_COURTESY_CLOSING.md` | Gastro descuentos QR, cortesías, Mi cuenta (v1) |
+| `docs/audits/GASTRO_QR_COURTESIES_AUDIT.md` | Gastro QR / Cortesías V2 — cierre + QA |
 
