@@ -11,6 +11,8 @@ import { LatLngMapPreview } from '@/components/admin/LatLngMapPreview';
 import { ImageUrlPreview } from '@/components/admin/ImageUrlPreview';
 import { gastroKeys } from '@/lib/query/keys';
 import { useGastroContentList, useGastroContentMutations } from '@/lib/query/gastro-content';
+import { useRole } from '@/hooks/useRole';
+import { Role } from '@yo-te-invito/shared';
 import {
   IMAGE_ACCEPT_GCS,
   type GcsImageUploadConfig,
@@ -30,6 +32,8 @@ const STATUS_LABEL: Record<GastroContentStatus, string> = {
 export default function GastroContenidoPage() {
   const repos = useRepositories();
   const { addToast } = useToast();
+  const { role, status: authStatus } = useRole();
+  const isAdmin = role === Role.ADMIN;
   const [selectedEventId, setSelectedEventId] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const [newTitle, setNewTitle] = useState('');
@@ -50,11 +54,14 @@ export default function GastroContenidoPage() {
   const { data: eventsData, isLoading: eventsLoading } = useQuery({
     queryKey: ['events', 'gastro', TENANT_ID],
     queryFn: () => repos.events.list({ tenantId: TENANT_ID, category: 'gastro', limit: 50 }),
+    enabled: isAdmin,
   });
 
   const events = eventsData?.data ?? [];
-  const defaultEventId = local?.publicEventId ?? events[0]?.id;
-  const currentEventId = selectedEventId || defaultEventId;
+  const ownEventId = local?.publicEventId;
+  const currentEventId: string | undefined = isAdmin
+    ? selectedEventId || ownEventId || events[0]?.id || undefined
+    : ownEventId ?? undefined;
 
   const {
     data: content = [],
@@ -75,8 +82,10 @@ export default function GastroContenidoPage() {
     useGcsImageUpload(uploadConfig);
 
   useEffect(() => {
-    if (!selectedEventId && defaultEventId) setSelectedEventId(defaultEventId);
-  }, [defaultEventId, selectedEventId]);
+    if (!isAdmin || selectedEventId) return;
+    const defaultId = ownEventId ?? events[0]?.id;
+    if (defaultId) setSelectedEventId(defaultId);
+  }, [isAdmin, ownEventId, events, selectedEventId]);
 
   const handleFileChange = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -165,7 +174,7 @@ export default function GastroContenidoPage() {
     );
   };
 
-  if (localLoading || eventsLoading) {
+  if (authStatus === 'loading' || localLoading || (isAdmin && eventsLoading)) {
     return (
       <PageContainer>
         <p className="text-text-muted">Cargando…</p>
@@ -173,7 +182,7 @@ export default function GastroContenidoPage() {
     );
   }
 
-  if (!local?.publicEventId && events.length === 0) {
+  if (!currentEventId) {
     return (
       <PageContainer>
         <Link href="/gastro" className="mb-4 inline-block text-sm text-text-muted hover:text-text">
@@ -206,19 +215,28 @@ export default function GastroContenidoPage() {
       </p>
 
       <div className="mt-6">
-        <label className="block text-sm font-medium text-text">Evento / Establecimiento</label>
-        <select
-          value={currentEventId ?? ''}
-          onChange={(e) => setSelectedEventId(e.target.value)}
-          className="mt-1 rounded border border-border bg-bg px-3 py-2 text-text"
-        >
-          {events.map((e) => (
-            <option key={e.id} value={e.id}>
-              {e.title}
-              {e.id === local?.publicEventId ? ' (tu local)' : ''}
-            </option>
-          ))}
-        </select>
+        {isAdmin ? (
+          <>
+            <label className="block text-sm font-medium text-text">Evento / Establecimiento</label>
+            <select
+              value={currentEventId ?? ''}
+              onChange={(e) => setSelectedEventId(e.target.value)}
+              className="mt-1 rounded border border-border bg-bg px-3 py-2 text-text"
+            >
+              {events.map((e) => (
+                <option key={e.id} value={e.id}>
+                  {e.title}
+                  {e.id === ownEventId ? ' (tu local)' : ''}
+                </option>
+              ))}
+            </select>
+          </>
+        ) : (
+          <p className="text-sm text-text-muted">
+            Establecimiento:{' '}
+            <span className="font-medium text-text">{local?.displayName ?? 'Mi local'}</span>
+          </p>
+        )}
       </div>
 
       <div className="mt-4">
