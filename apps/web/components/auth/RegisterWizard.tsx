@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { signIn } from 'next-auth/react';
+import { getSession, signIn } from 'next-auth/react';
 import { z } from 'zod';
 import { Button, Input } from '@/components';
 import { LegalFlowAcceptanceBlock } from '@/components/legal/LegalFlowAcceptanceBlock';
@@ -44,6 +44,7 @@ import { RegisterProfileStep } from './register/RegisterProfileStep';
 import { RegisterWizardErrorAlert } from './register/RegisterWizardErrorAlert';
 import { RegisterWizardShell } from './register/RegisterWizardShell';
 import { withRegisteredQuery } from '@/components/auth/PostRegisterEmailNotice';
+import { EmailInboxNotice } from '@/components/ux/EmailInboxNotice';
 import {
   REGISTER_WIZARD_COPY,
   getStepMeta,
@@ -82,6 +83,27 @@ const accountSchema = z
 type AccountData = z.infer<typeof accountSchema> & { city: string };
 
 type SubmitPhase = 'idle' | 'register' | 'signin' | 'retry';
+
+async function ensureAuthenticatedSession(
+  email: string,
+  password: string,
+): Promise<boolean> {
+  let session = await getSession();
+  const hasToken = Boolean(
+    (session?.user as { accessToken?: string } | undefined)?.accessToken,
+  );
+  if (hasToken) return true;
+
+  const signInResult = await signIn('credentials', {
+    email,
+    password,
+    redirect: false,
+  });
+  if (signInResult?.error) return false;
+
+  session = await getSession();
+  return Boolean((session?.user as { accessToken?: string } | undefined)?.accessToken);
+}
 
 function redirectForProfile(type: RegistrationProfileType): string {
   switch (type) {
@@ -384,7 +406,6 @@ export function RegisterWizard() {
 
   const completeSessionAfterRegister = async (
     registerPayload: AuthRegisterRequest,
-    targetProfile: RegistrationProfileType,
   ): Promise<boolean> => {
     setSubmitPhase('signin');
     const signInResult = await signIn('credentials', {
@@ -401,23 +422,9 @@ export function RegisterWizard() {
       return false;
     }
 
-    if (signupRequiredCount > 0) {
-      try {
-        const pending = await repos.legalDocuments.getMyLegalRequirements({
-          context: 'SIGNUP',
-          profileType: targetProfile,
-        });
-        if (!pending.allAccepted && pending.pending.length > 0) {
-          setStep('legal-retry');
-          setLegalError(LEGAL_SIGNUP_USER_MESSAGES.acceptFailedPostRegister);
-          return false;
-        }
-      } catch {
-        setStep('legal-retry');
-        setLegalError(LEGAL_SIGNUP_USER_MESSAGES.acceptFailedPostRegister);
-        return false;
-      }
-    }
+    // Legal acceptance is persisted in POST /auth/register (signupLegalAcceptance).
+    // Do not call /me/legal/requirements here — session may not be on the API client yet (401).
+    await getSession();
 
     return true;
   };
@@ -432,19 +439,29 @@ export function RegisterWizard() {
     } finally {
       setSubmitPhase((prev) => (prev === 'register' ? 'idle' : prev));
     }
-    return completeSessionAfterRegister(registerPayload, registerPayload.profileType ?? 'USER');
+    return completeSessionAfterRegister(registerPayload);
   };
 
   const retryLegalAcceptance = async () => {
-    if (!assertSignupLegalReady()) return;
+    if (!assertSignupLegalReady() || !account) return;
     setSubmitPhase('retry');
     setLegalError(null);
     try {
+      const authenticated = await ensureAuthenticatedSession(account.email, account.password);
+      if (!authenticated) {
+        setLegalError(
+          'No pudimos verificar tu sesión. Iniciá sesión e intentá completar la aceptación legal.',
+        );
+        scheduleFocusRegisterError(contentRef.current);
+        router.push('/login?registered=1');
+        return;
+      }
+
       await repos.legalDocuments.acceptMyLegalDocuments({
         documentVersionIds: selectedLegalVersionIds,
         context: 'SIGNUP',
       });
-      router.push(redirectForProfile(profileType));
+      router.push(withRegisteredQuery(redirectForProfile(profileType)));
       router.refresh();
     } catch (err) {
       setLegalError(
@@ -830,12 +847,19 @@ export function RegisterWizard() {
 
         {step === 'legal-retry' && account && (
           <div className="space-y-4">
-            <RegisterWizardErrorAlert
-              message={LEGAL_SIGNUP_USER_MESSAGES.acceptFailedPostRegister}
-              className="border-amber-500/40 bg-amber-500/10 text-amber-200"
-            />
+            <div
+              className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200"
+              role="alert"
+            >
+              <p className="font-medium text-text">{REGISTER_WIZARD_COPY.legalRetry.alertTitle}</p>
+              <p className="mt-1 text-text-muted">{REGISTER_WIZARD_COPY.legalRetry.alertBody}</p>
+            </div>
+            <EmailInboxNotice variant="register" />
             <LegalFlowAcceptanceBlock {...legalBlockProps} />
-            {legalError ? <RegisterWizardErrorAlert message={legalError} /> : null}
+            {legalError &&
+            legalError !== LEGAL_SIGNUP_USER_MESSAGES.acceptFailedPostRegister ? (
+              <RegisterWizardErrorAlert message={legalError} />
+            ) : null}
             <p className="text-xs text-text-muted">Cuenta: {account.email}</p>
             <Button
               type="button"

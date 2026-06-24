@@ -158,6 +158,18 @@ Te enviamos el QR por email. Revisá tu bandeja de entrada y, si no aparece, ver
 
 ---
 
+### 0.7 Hotfix registro legal SIGNUP
+
+**Estado:** corregido en código 2026-06-23.
+
+- [x] El wizard ya no llama a `/me/legal/requirements` durante registro (evita 401 sin sesión).
+- [x] Requirements SIGNUP vía `/public/legal/requirements` + `usePublicLegalRequirements`.
+- [x] Aceptación legal en `POST /auth/register` (`signupLegalAcceptance` transaccional).
+- [x] Retry legal con sesión explícita + aviso email/spam sin alertas duplicadas.
+- [ ] QA manual: registro productora y comprador sin 401 en DevTools.
+
+---
+
 ## 1. Cerrado / no pasar a Cursor como pendiente
 
 Estos bloques quedan fuera de la checklist activa salvo que aparezca un bug nuevo.

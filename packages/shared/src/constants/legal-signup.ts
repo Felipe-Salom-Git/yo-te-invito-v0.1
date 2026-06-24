@@ -6,7 +6,7 @@ export const LEGAL_SIGNUP_USER_MESSAGES = {
     'No pudimos cargar los documentos legales requeridos. Revisá tu conexión e intentá nuevamente.',
   acceptanceRequired: 'Para crear tu cuenta necesitás aceptar los documentos legales obligatorios.',
   acceptFailedPostRegister:
-    'Tu cuenta fue creada, pero no pudimos registrar la aceptación legal. Reintentá para completar el alta.',
+    'Tu cuenta fue creada, pero falta completar la aceptación legal. Aceptá los documentos vigentes y reintentá para terminar el alta.',
   invalidDocument:
     'Uno de los documentos legales seleccionados ya no está disponible o fue actualizado. Volvé a revisar los términos.',
   missingAcceptanceIds:

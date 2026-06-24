@@ -99,6 +99,8 @@ export const REGISTER_WIZARD_COPY = {
   },
   legalRetry: {
     heading: 'Completar aceptación legal',
+    alertTitle: 'Tu cuenta fue creada, pero falta completar la aceptación legal.',
+    alertBody: 'Aceptá los documentos vigentes y reintentá para terminar el alta.',
   },
   submitting: {
     register: 'Creando cuenta…',
@@ -267,7 +269,7 @@ export function getStepMeta(
     case 'legal-retry':
       return {
         heading: REGISTER_WIZARD_COPY.legalRetry.heading,
-        subtitle: REGISTER_WIZARD_COPY.legal.subtitle,
+        subtitle: REGISTER_WIZARD_COPY.legalRetry.alertBody,
       };
     default:
       return REGISTER_WIZARD_COPY.account;

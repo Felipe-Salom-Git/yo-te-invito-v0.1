@@ -143,6 +143,14 @@ Etapas base: `V3_1_STAGE_5_CLOSING.md`, `V3_1_STAGE_6_SCANNER_OFFLINE_CLOSING.md
 - [ ] QA manual mensajes email/spam (registro + QR, mobile).
 - [ ] Nueva pasarela de pagos — definir proveedor y reactivar ticketera.
 
+### Hotfix registro legal SIGNUP (2026-06-23)
+
+- [x] Se corrigió el uso incorrecto de `/me/legal/requirements` durante registro post-signIn.
+- [x] El wizard de registro usa `/public/legal/requirements` para listar documentos SIGNUP (sin auth).
+- [x] La aceptación legal se persiste en `POST /auth/register` (`signupLegalAcceptance`); sin verificación `/me` inmediata.
+- [x] El aviso email/spam se mantiene visible en retry legal si queda aceptación pendiente.
+- [ ] QA manual registro productora/comprador sin 401 en DevTools.
+
 ---
 
 > Checklist V2 § Google Cloud · § GSC/SEO · Runbooks: [`GOOGLE_CLOUD_RUNBOOK.md`](../deploy/GOOGLE_CLOUD_RUNBOOK.md) · [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) · [`SEARCH_CONSOLE_SEO_RUNBOOK.md`](../deploy/SEARCH_CONSOLE_SEO_RUNBOOK.md) · Auditorías: [`MAPS_LOCATION_AUDIT.md`](../audits/MAPS_LOCATION_AUDIT.md) · [`SEO_TECHNICAL_AUDIT.md`](../audits/SEO_TECHNICAL_AUDIT.md)
