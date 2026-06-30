@@ -178,6 +178,39 @@ async function main() {
   const r4 = await postValidate(scannerUser.id, malformed);
   assert(r4.status === 'INVALID', 'malformed → INVALID');
 
+  const approvedToken = randomBytes(24).toString('hex');
+  const approvedDiscount = await prisma.gastroDiscount.create({
+    data: {
+      tenantId: tenant.id,
+      eventId: event.id,
+      gastroProfileId: profile.id,
+      code: 'SCAN-APPROVED-01',
+      type: 'PERCENT',
+      value: 10,
+      status: 'APPROVED',
+      displayTitle: 'Approved status test',
+      discountDate: expiresToday,
+      validTo: expiresToday,
+      qrToken: randomBytes(24).toString('hex'),
+    },
+  });
+  await prisma.gastroDiscountClaim.create({
+    data: {
+      tenantId: tenant.id,
+      discountId: approvedDiscount.id,
+      email: 'approved@gastro-scan.test',
+      qrToken: approvedToken,
+      accessToken: randomBytes(32).toString('hex'),
+      expiresAt: expiresToday,
+      status: 'ACTIVE',
+    },
+  });
+  const rApproved = await postValidate(
+    scannerUser.id,
+    buildGastroDiscountQrPayload(approvedDiscount.id, approvedToken),
+  );
+  assert(rApproved.status === 'VALID', 'APPROVED parent + active claim → VALID');
+
   // Daily limit: patron redeems two coupons same day
   const discount2 = await prisma.gastroDiscount.upsert({
     where: { eventId_code: { eventId: event.id, code: 'SCAN-TEST-02' } },

@@ -28,6 +28,26 @@ function discountTitle(row: {
   return row.displayTitle?.trim() || row.code;
 }
 
+/** Parent discount statuses that allow claim-based redemption (aligned with public claim flow). */
+const REDEEMABLE_PARENT_STATUSES = new Set(['ACTIVE', 'APPROVED']);
+
+function isParentDiscountRedeemable(status: string): boolean {
+  return REDEEMABLE_PARENT_STATUSES.has(status);
+}
+
+function parentDiscountInactiveMessage(status: string): string {
+  if (status === 'CANCELLED' || status === 'REJECTED') {
+    return 'El descuento fue cancelado o rechazado.';
+  }
+  if (status === 'PENDING_REVIEW' || status === 'COMMISSION_NEGOTIATION') {
+    return 'El descuento aún no está habilitado para uso.';
+  }
+  if (status === 'EXPIRED') {
+    return 'La fecha de validez de este descuento ya finalizó.';
+  }
+  return 'El descuento no está activo.';
+}
+
 function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
 }
@@ -222,34 +242,6 @@ export class ScannerGastroDiscountService {
       );
     }
 
-    if (this.isDiscountExpired(discount)) {
-      return this.response(
-        'EXPIRED',
-        'Cupón vencido',
-        'La fecha de validez de este descuento ya finalizó.',
-        discountInfo,
-      );
-    }
-
-    if (this.isDiscountNotYetActive(discount)) {
-      return this.response(
-        'INACTIVE',
-        'Descuento inactivo',
-        'El descuento aún no está habilitado para uso.',
-        discountInfo,
-      );
-    }
-
-    if (discount.status !== 'ACTIVE') {
-      const inactiveMsg =
-        discount.status === 'CANCELLED' || discount.status === 'REJECTED'
-          ? 'El descuento fue cancelado o rechazado.'
-          : discount.status === 'PENDING_REVIEW' || discount.status === 'COMMISSION_NEGOTIATION'
-            ? 'El descuento aún no está habilitado para uso.'
-            : 'El descuento no está activo.';
-      return this.response('INACTIVE', 'Descuento inactivo', inactiveMsg, discountInfo);
-    }
-
     const claim = await this.prisma.gastroDiscountClaim.findFirst({
       where: { discountId, qrToken: token, tenantId },
       include: {
@@ -267,11 +259,48 @@ export class ScannerGastroDiscountService {
         );
       }
 
+      if (claim.status !== 'ACTIVE') {
+        const inactiveMsg =
+          claim.status === 'CANCELLED'
+            ? 'Este cupón fue cancelado.'
+            : claim.status === 'EXPIRED'
+              ? 'La fecha de validez de este cupón ya finalizó.'
+              : 'Este cupón no está disponible para uso.';
+        return this.response('INACTIVE', 'Cupón inactivo', inactiveMsg, discountInfo);
+      }
+
       if (this.isClaimExpired(claim)) {
         return this.response(
           'EXPIRED',
           'Cupón vencido',
           'La fecha de validez de este descuento ya finalizó.',
+          discountInfo,
+        );
+      }
+
+      if (this.isDiscountExpired(discount)) {
+        return this.response(
+          'EXPIRED',
+          'Cupón vencido',
+          'La fecha de validez de este descuento ya finalizó.',
+          discountInfo,
+        );
+      }
+
+      if (this.isDiscountNotYetActive(discount)) {
+        return this.response(
+          'INACTIVE',
+          'Descuento inactivo',
+          'El descuento aún no está habilitado para uso.',
+          discountInfo,
+        );
+      }
+
+      if (!isParentDiscountRedeemable(discount.status)) {
+        return this.response(
+          'INACTIVE',
+          'Descuento inactivo',
+          parentDiscountInactiveMessage(discount.status),
           discountInfo,
         );
       }
@@ -362,6 +391,29 @@ export class ScannerGastroDiscountService {
         'Beneficio aplicado correctamente.',
         discountInfo,
       );
+    }
+
+    if (this.isDiscountExpired(discount)) {
+      return this.response(
+        'EXPIRED',
+        'Cupón vencido',
+        'La fecha de validez de este descuento ya finalizó.',
+        discountInfo,
+      );
+    }
+
+    if (this.isDiscountNotYetActive(discount)) {
+      return this.response(
+        'INACTIVE',
+        'Descuento inactivo',
+        'El descuento aún no está habilitado para uso.',
+        discountInfo,
+      );
+    }
+
+    if (discount.status !== 'ACTIVE') {
+      const inactiveMsg = parentDiscountInactiveMessage(discount.status);
+      return this.response('INACTIVE', 'Descuento inactivo', inactiveMsg, discountInfo);
     }
 
     const masterToken = discount.qrToken?.trim();
