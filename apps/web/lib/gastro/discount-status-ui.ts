@@ -1,5 +1,6 @@
 import {
   isGastroDiscountExpired,
+  isGastroDiscountNotYetActive,
   type GastroDiscountClaimStatus,
 } from '@yo-te-invito/shared';
 
@@ -30,11 +31,13 @@ export function resolveGastroDiscountDisplayStatus(
   status: GastroDiscountClaimStatus,
   validTo: string | null | undefined,
   usedAt?: string | null,
+  validFrom?: string | null,
 ): GastroDiscountClaimStatus {
   if (status === 'CANCELLED') return 'CANCELLED';
   if (status === 'USED' || usedAt) return 'USED';
   if (status === 'EXPIRED') return 'EXPIRED';
   if (validTo && isGastroDiscountExpired(new Date(validTo))) return 'EXPIRED';
+  if (validFrom && isGastroDiscountNotYetActive(new Date(validFrom))) return 'ACTIVE';
   return 'ACTIVE';
 }
 
@@ -50,4 +53,24 @@ export function formatGastroDiscountValidTo(
     month: '2-digit',
     year: 'numeric',
   });
+}
+
+export function formatGastroDiscountValidFrom(
+  validFrom: string | null | undefined,
+): string | null {
+  return formatGastroDiscountValidTo(validFrom);
+}
+
+export function formatGastroDiscountValidityRangeLabel(
+  validFrom?: string | null,
+  validTo?: string | null,
+  discountDate?: string | null,
+): string | null {
+  const from =
+    formatGastroDiscountValidFrom(validFrom) ??
+    (discountDate && !validFrom ? formatGastroDiscountValidTo(discountDate) : null);
+  const to = formatGastroDiscountValidTo(validTo) ?? formatGastroDiscountValidTo(discountDate);
+  if (!from && !to) return null;
+  if (from && to && from !== to) return `Del ${from} al ${to}`;
+  return from ?? to;
 }

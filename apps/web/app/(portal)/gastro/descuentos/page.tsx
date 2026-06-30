@@ -6,6 +6,7 @@ import { GASTRO_WEEKDAY_LABELS_ES, type GastroWeekday } from '@yo-te-invito/shar
 import { useRepositories } from '@/repositories/context';
 import { PageContainer, SectionTitle } from '@/components';
 import { gastroKeys } from '@/lib/query/keys';
+import { formatGastroDiscountValidityRangeLabel } from '@/lib/gastro/discount-status-ui';
 import type { GastroDiscountStatus } from '@/repositories/interfaces';
 
 const STATUS_LABEL: Record<GastroDiscountStatus, string> = {
@@ -68,11 +69,18 @@ export default function GastroDescuentosPage() {
                   <p className="mt-1 text-xs text-text-muted">
                     Todos los {GASTRO_WEEKDAY_LABELS_ES[d.validWeekday as GastroWeekday]}
                   </p>
-                ) : d.discountDate ? (
-                  <p className="mt-1 text-xs text-text-muted">
-                    Fecha: {new Date(d.discountDate).toLocaleDateString('es-AR')}
-                  </p>
-                ) : null}
+                ) : (
+                  (() => {
+                    const range = formatGastroDiscountValidityRangeLabel(
+                      d.validFrom,
+                      d.validTo,
+                      d.discountDate,
+                    );
+                    return range ? (
+                      <p className="mt-1 text-xs text-text-muted">Vigencia: {range}</p>
+                    ) : null;
+                  })()
+                )}
               </div>
               <span className="rounded-full bg-bg-muted px-2 py-0.5 text-xs text-text">
                 {STATUS_LABEL[d.status]}

@@ -12,6 +12,7 @@ import {
   type GastroDiscountCreateInput,
   type GastroDiscountResponse,
   type GastroDiscountUpdateInput,
+  isGastroDiscountDateRangeOrderValid,
   normalizeGastroDiscountExpiryDate,
   normalizeGastroDiscountValidFromDate,
 } from '@yo-te-invito/shared';
@@ -103,6 +104,34 @@ export class GastroPortalDiscountsService {
 
   private urlsJson(urls: string[]): Prisma.InputJsonValue {
     return urls as Prisma.InputJsonValue;
+  }
+
+  private normalizeDateRangeFields(body: {
+    validFrom?: string;
+    validTo?: string;
+    discountDate?: string;
+  }): { validFrom: Date; validTo: Date; discountDate: Date } {
+    if (body.validFrom && body.validTo) {
+      if (!isGastroDiscountDateRangeOrderValid(body.validFrom, body.validTo)) {
+        throw new BadRequestException({
+          code: ErrorCode.VALIDATION_FAILED,
+          message: 'La fecha de cierre debe ser igual o posterior a la fecha de inicio.',
+        });
+      }
+      const validFrom = normalizeGastroDiscountValidFromDate(body.validFrom);
+      const validTo = normalizeGastroDiscountExpiryDate(body.validTo);
+      return { validFrom, validTo, discountDate: validTo };
+    }
+    if (body.discountDate) {
+      const validTo = normalizeGastroDiscountExpiryDate(body.discountDate);
+      const validFrom = normalizeGastroDiscountValidFromDate(body.discountDate);
+      return { validFrom, validTo, discountDate: validTo };
+    }
+    throw new BadRequestException({
+      code: ErrorCode.VALIDATION_FAILED,
+      message:
+        'Para descuentos por fecha/rango, indicá una fecha de inicio y una fecha de cierre válida.',
+    });
   }
 
   private async assertGastroUser(tenantId: string, userId: string, _userRole: string) {
@@ -233,11 +262,11 @@ export class GastroPortalDiscountsService {
               validFrom: null,
               validTo: null,
             }
-          : {
-              discountDate: normalizeGastroDiscountExpiryDate(body.discountDate!),
-              validFrom: normalizeGastroDiscountValidFromDate(body.discountDate!),
-              validTo: normalizeGastroDiscountExpiryDate(body.discountDate!),
-            }),
+          : this.normalizeDateRangeFields({
+              validFrom: body.validFrom,
+              validTo: body.validTo,
+              discountDate: body.discountDate,
+            })),
         status: 'PENDING_REVIEW',
         commissionCoordinationAcceptedAt: new Date(),
         submittedImageUrls: this.urlsJson(body.imageUrls),
@@ -266,20 +295,36 @@ export class GastroPortalDiscountsService {
     }
     this.assertEditableStatus(existing.status);
 
-    const discountDate =
-      body.discountDate !== undefined
-        ? normalizeGastroDiscountExpiryDate(body.discountDate)
-        : undefined;
-    if (body.discountDate !== undefined && Number.isNaN(discountDate!.getTime())) {
-      throw new BadRequestException({
-        code: ErrorCode.VALIDATION_FAILED,
-        message: 'Invalid discount date',
-      });
-    }
-
     const nextValidityMode = body.validityMode ?? existing.validityMode;
     const switchingToWeekly = nextValidityMode === 'WEEKLY_RECURRING';
     const switchingToDateRange = nextValidityMode === 'DATE_RANGE';
+    const shouldUpdateDateRange =
+      switchingToDateRange &&
+      (body.validFrom !== undefined ||
+        body.validTo !== undefined ||
+        body.discountDate !== undefined ||
+        body.validityMode === 'DATE_RANGE');
+
+    let dateRangePatch:
+      | { discountDate: Date; validFrom: Date; validTo: Date; validWeekday: null }
+      | undefined;
+    if (shouldUpdateDateRange) {
+      const fromSrc =
+        body.validFrom ??
+        body.discountDate ??
+        existing.validFrom?.toISOString() ??
+        existing.discountDate?.toISOString();
+      const toSrc =
+        body.validTo ??
+        body.discountDate ??
+        existing.validTo?.toISOString() ??
+        existing.discountDate?.toISOString();
+      const range = this.normalizeDateRangeFields({
+        validFrom: fromSrc,
+        validTo: toSrc,
+      });
+      dateRangePatch = { ...range, validWeekday: null };
+    }
 
     const updated = await this.prisma.gastroDiscount.update({
       where: { id },
@@ -297,20 +342,7 @@ export class GastroPortalDiscountsService {
           validFrom: null,
           validTo: null,
         }),
-        ...(switchingToDateRange &&
-          discountDate !== undefined && {
-            discountDate,
-            validFrom: normalizeGastroDiscountValidFromDate(body.discountDate!),
-            validTo: discountDate,
-            validWeekday: null,
-          }),
-        ...(nextValidityMode === 'DATE_RANGE' &&
-          body.validityMode === undefined &&
-          discountDate !== undefined && {
-            discountDate,
-            validFrom: normalizeGastroDiscountValidFromDate(body.discountDate!),
-            validTo: discountDate,
-          }),
+        ...(dateRangePatch ?? {}),
         ...(nextValidityMode === 'WEEKLY_RECURRING' &&
           body.validWeekday !== undefined && { validWeekday: body.validWeekday }),
         ...(body.imageUrls !== undefined && {

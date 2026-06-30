@@ -112,6 +112,7 @@ Etapas base: `V3_1_STAGE_5_CLOSING.md`, `V3_1_STAGE_6_SCANNER_OFFLINE_CLOSING.md
 - [x] **V2.1:** descuentos recurrentes semanales (`validityMode`, `validWeekday`, migración `20260625120000`)
 - [x] **V2.1:** scanner `NOT_VALID_TODAY`; admin KPI cupones escaneados; emails cortesía con diagnóstico + link fallback
 - [x] **V2.2:** sin límite diario; detalle por descuento (`GET .../summary`); activar/desactivar (`PATCH .../status`); edición desde panel gastro; métricas + estado email por claim en detalle
+- [x] **Hotfix Fecha/Rango (2026-06-23):** formulario `validFrom`/`validTo`; normalización AR; scanner/me/público alineados; legacy `discountDate` en lectura
 - [ ] Deploy VPS + migración `20260615120000_gastro_courtesy_discount_claims` (si no aplicada)
 - [ ] Deploy VPS + migración `20260625120000_gastro_discount_weekly_recurrence`
 - [ ] QA manual staging/prod — `Yo_Te_Invito_Checklist_Unificada_Depurada.md` §3.1

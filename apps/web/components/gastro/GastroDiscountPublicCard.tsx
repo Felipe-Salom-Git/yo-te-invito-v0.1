@@ -2,23 +2,19 @@
 
 import Link from 'next/link';
 import type { PublicGastroDiscountListItem } from '@/repositories/interfaces';
+import { formatGastroDiscountValidityRangeLabel } from '@/lib/gastro/discount-status-ui';
 
 function formatValue(d: PublicGastroDiscountListItem): string {
   return d.type === 'PERCENT' ? `${d.value}%` : `$${d.value}`;
 }
 
-function formatDate(iso: string | null): string | null {
-  if (!iso) return null;
-  return new Date(iso).toLocaleDateString('es-AR', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
-}
-
 export function GastroDiscountPublicCard({ discount }: { discount: PublicGastroDiscountListItem }) {
   const title = discount.title?.trim() || 'Descuento';
-  const dateLabel = formatDate(discount.discountDate);
+  const dateLabel = formatGastroDiscountValidityRangeLabel(
+    discount.validFrom,
+    discount.validTo,
+    discount.discountDate,
+  );
 
   return (
     <Link

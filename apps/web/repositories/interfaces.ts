@@ -2417,6 +2417,9 @@ export interface GastroDiscountCreatePayload {
   detail: string;
   imageUrls: string[];
   validityMode?: 'DATE_RANGE' | 'WEEKLY_RECURRING';
+  validFrom?: string;
+  validTo?: string;
+  /** @deprecated Legacy single-day; prefer validFrom + validTo */
   discountDate?: string;
   validWeekday?: import('@yo-te-invito/shared').GastroWeekday;
   commissionCoordinationAccepted: true;
@@ -2497,6 +2500,8 @@ export interface PublicGastroLocationDiscount {
   detail: string | null;
   headerImageUrl: string | null;
   discountDate: string | null;
+  validFrom?: string | null;
+  validTo?: string | null;
   validityMode?: 'DATE_RANGE' | 'WEEKLY_RECURRING';
   validWeekday?: import('@yo-te-invito/shared').GastroWeekday | null;
   type: 'PERCENT' | 'FIXED';
@@ -2665,6 +2670,8 @@ export interface AdminGastroDiscountListItem {
   summary: string | null;
   status: GastroDiscountStatus;
   discountDate: string | null;
+  validFrom?: string | null;
+  validTo?: string | null;
   validityMode?: 'DATE_RANGE' | 'WEEKLY_RECURRING';
   validWeekday?: import('@yo-te-invito/shared').GastroWeekday | null;
   validationCount: number;

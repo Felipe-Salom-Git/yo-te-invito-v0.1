@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { GASTRO_WEEKDAY_LABELS_ES, type GastroDiscountSummaryResponse, type GastroWeekday } from '@yo-te-invito/shared';
 import { Button } from '@/components';
 import { AdminGastroDiscountStatusBadge } from '@/components/admin/gastro/AdminGastroDiscountStatusBadge';
+import { formatGastroDiscountValidityRangeLabel } from '@/lib/gastro/discount-status-ui';
 
 type Props = {
   summary: GastroDiscountSummaryResponse;
@@ -42,11 +43,11 @@ export function GastroDiscountDetailContent({
   const validityLabel =
     discount.validityMode === 'WEEKLY_RECURRING' && discount.validWeekday
       ? `Todos los ${GASTRO_WEEKDAY_LABELS_ES[discount.validWeekday as GastroWeekday]}`
-      : discount.discountDate
-        ? `Hasta ${new Date(discount.discountDate).toLocaleDateString('es-AR')}`
-        : discount.validTo
-          ? `Hasta ${new Date(discount.validTo).toLocaleDateString('es-AR')}`
-          : '—';
+      : formatGastroDiscountValidityRangeLabel(
+          discount.validFrom,
+          discount.validTo,
+          discount.discountDate,
+        ) ?? '—';
 
   const metricCards = [
     { label: 'Emitidos', value: metrics.totalClaims },

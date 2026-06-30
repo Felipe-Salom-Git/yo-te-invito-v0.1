@@ -3,7 +3,25 @@
 Fecha cierre código: 2026-06-23  
 Doc: auditoría + reglas implementadas (Slices 1–5)  
 **V2.1** (2026-06-23): recurrente semanal, contador admin, fix emails cortesía.  
-**V2.2** (2026-06-23): sin límite diario; detalle/métricas/activar/editar descuentos.
+**V2.2** (2026-06-23): sin límite diario; detalle/métricas/activar/editar descuentos.  
+**Hotfix Fecha/Rango** (2026-06-23): `validFrom` + `validTo` explícitos; rango inclusivo AR.
+
+---
+
+## Gastro Discounts — Fecha/Rango (hotfix 2026-06-23)
+
+- La modalidad `DATE_RANGE` usa **fecha de inicio** y **fecha de cierre** (`validFrom` / `validTo`).
+- El rango es **inclusivo** por día calendario en `America/Argentina/Buenos_Aires` (00:00:00 inicio → 23:59:59.999 cierre).
+- Fecha de cierre igual a inicio es válida (un solo día completo).
+- Legacy: registros con solo `discountDate` se mapean como inicio = cierre = ese día.
+- `WEEKLY_RECURRING` no fue modificado.
+
+| Área | Cambio |
+|------|--------|
+| Formulario gastro | Dos inputs `type="date"`; payload `validFrom` + `validTo` |
+| `gastro-portal-discounts.service` | Normalización AR; `discountDate` = fin de `validTo` (compat) |
+| Scanner / me / público | `isGastroDiscountValidToday`; mensaje “Disponible desde …” |
+| Shared | `isGastroDiscountDateRangeOrderValid`, `formatGastroDiscountDateAr` |
 
 ---
 

@@ -4,8 +4,10 @@ import {
   type MeGastroDiscountItem,
   type MeGastroDiscountsResponse,
   isGastroDiscountExpired,
+  isGastroDiscountNotYetActive,
   isGastroDiscountValidToday,
   getGastroWeekdayLabelEs,
+  formatGastroDiscountDateAr,
   type GastroWeekday,
 } from '@yo-te-invito/shared';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -101,6 +103,14 @@ export class MeGastroDiscountsService {
           });
           if (todayCheck.reason === 'NOT_VALID_TODAY') {
             availabilityLabel = `Válido los ${getGastroWeekdayLabelEs(validWeekday)}`;
+          }
+        } else if (validityMode === 'DATE_RANGE' && status === 'ACTIVE') {
+          const effectiveFrom = d.validFrom ?? d.discountDate;
+          if (effectiveFrom && isGastroDiscountNotYetActive(effectiveFrom)) {
+            const fromLabel = formatGastroDiscountDateAr(effectiveFrom);
+            availabilityLabel = fromLabel
+              ? `Disponible desde ${fromLabel}`
+              : 'Aún no disponible';
           }
         }
 

@@ -136,6 +136,8 @@ export class AdminGastroService {
     summary: string | null;
     status: string;
     discountDate: Date | null;
+    validFrom?: Date | null;
+    validTo?: Date | null;
     validityMode?: string;
     validWeekday?: string | null;
     createdAt: Date;
@@ -147,6 +149,8 @@ export class AdminGastroService {
       summary: r.summary,
       status: r.status,
       discountDate: r.discountDate?.toISOString() ?? null,
+      validFrom: r.validFrom?.toISOString() ?? null,
+      validTo: r.validTo?.toISOString() ?? null,
       validityMode: (r.validityMode ?? 'DATE_RANGE') as 'DATE_RANGE' | 'WEEKLY_RECURRING',
       validWeekday: r.validWeekday ?? null,
       validationCount: r._count.validations,

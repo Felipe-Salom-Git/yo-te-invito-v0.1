@@ -1,5 +1,11 @@
 import { z } from 'zod';
+import { isGastroDiscountDateRangeOrderValid } from '../gastro-discount-expiry';
 import { gastroDiscountQrPayloadV1Schema } from '../gastro-discount-qr';
+
+export const gastroDiscountDateInputSchema = z.union([
+  z.string().datetime(),
+  z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+]);
 
 export const gastroDiscountValidityModeSchema = z.enum(['DATE_RANGE', 'WEEKLY_RECURRING']);
 export type GastroDiscountValidityMode = z.infer<typeof gastroDiscountValidityModeSchema>;
@@ -79,7 +85,10 @@ export const gastroDiscountCreateSchema = z
     detail: z.string().min(1).max(5000),
     imageUrls: z.array(z.string().min(1).max(2_000_000)).min(1).max(30),
     validityMode: gastroDiscountValidityModeSchema.default('DATE_RANGE'),
-    discountDate: z.string().datetime().optional(),
+    validFrom: gastroDiscountDateInputSchema.optional(),
+    validTo: gastroDiscountDateInputSchema.optional(),
+    /** @deprecated Legacy single-day input; use validFrom + validTo */
+    discountDate: gastroDiscountDateInputSchema.optional(),
     validWeekday: gastroWeekdaySchema.optional(),
     commissionCoordinationAccepted: z.literal(true, {
       errorMap: () => ({
@@ -90,11 +99,27 @@ export const gastroDiscountCreateSchema = z
   })
   .superRefine((data, ctx) => {
     if (data.validityMode === 'DATE_RANGE') {
-      if (!data.discountDate) {
+      const from = data.validFrom ?? data.discountDate;
+      const to = data.validTo ?? data.discountDate;
+      if (!from) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          path: ['discountDate'],
-          message: 'La fecha del descuento es obligatoria',
+          path: ['validFrom'],
+          message: 'La fecha de inicio es obligatoria',
+        });
+      }
+      if (!to) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['validTo'],
+          message: 'La fecha de cierre es obligatoria',
+        });
+      }
+      if (from && to && !isGastroDiscountDateRangeOrderValid(from, to)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['validTo'],
+          message: 'La fecha de cierre debe ser igual o posterior a la fecha de inicio.',
         });
       }
       return;
@@ -116,7 +141,10 @@ export const gastroDiscountUpdateSchema = z
     detail: z.string().min(1).max(5000).optional(),
     imageUrls: z.array(z.string().min(1).max(2_000_000)).max(30).optional(),
     validityMode: gastroDiscountValidityModeSchema.optional(),
-    discountDate: z.string().datetime().optional(),
+    validFrom: gastroDiscountDateInputSchema.optional(),
+    validTo: gastroDiscountDateInputSchema.optional(),
+    /** @deprecated Legacy single-day input; use validFrom + validTo */
+    discountDate: gastroDiscountDateInputSchema.optional(),
     validWeekday: gastroWeekdaySchema.optional(),
   })
   .superRefine((data, ctx) => {
@@ -127,11 +155,30 @@ export const gastroDiscountUpdateSchema = z
         message: 'Elegí el día de la semana',
       });
     }
-    if (data.validityMode === 'DATE_RANGE' && data.discountDate === undefined && data.validWeekday) {
+    if (data.validityMode !== 'DATE_RANGE') return;
+
+    const touched =
+      data.validFrom !== undefined ||
+      data.validTo !== undefined ||
+      data.discountDate !== undefined;
+    if (!touched) return;
+
+    const from = data.validFrom ?? data.discountDate;
+    const to = data.validTo ?? data.discountDate;
+    if (!from || !to) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        path: ['discountDate'],
-        message: 'La fecha del descuento es obligatoria',
+        path: ['validTo'],
+        message:
+          'Para descuentos por fecha/rango, indicá una fecha de inicio y una fecha de cierre válida.',
+      });
+      return;
+    }
+    if (!isGastroDiscountDateRangeOrderValid(from, to)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['validTo'],
+        message: 'La fecha de cierre debe ser igual o posterior a la fecha de inicio.',
       });
     }
   });
@@ -166,6 +213,8 @@ export const publicGastroLocationDiscountSchema = z.object({
   detail: z.string().nullable(),
   headerImageUrl: z.string().nullable().optional(),
   discountDate: z.string().datetime().nullable(),
+  validFrom: z.string().datetime().nullable().optional(),
+  validTo: z.string().datetime().nullable().optional(),
   validityMode: gastroDiscountValidityModeSchema.optional(),
   validWeekday: gastroWeekdaySchema.nullable().optional(),
   type: z.enum(['PERCENT', 'FIXED']),

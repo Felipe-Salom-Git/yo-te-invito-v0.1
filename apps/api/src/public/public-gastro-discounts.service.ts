@@ -10,6 +10,7 @@ import {
   isGastroDiscountExpired,
   isGastroDiscountValidToday,
   getGastroWeekdayLabelEs,
+  getGastroDiscountLocalDayBounds,
   normalizeGastroDiscountExpiryDate,
   type GastroWeekday,
 } from '@yo-te-invito/shared';
@@ -43,6 +44,8 @@ function mapListRow(
     detail: string | null;
     displayImageUrls: unknown;
     discountDate: Date | null;
+    validFrom?: Date | null;
+    validTo?: Date | null;
     validityMode?: string | null;
     validWeekday?: string | null;
     type: string;
@@ -63,6 +66,8 @@ function mapListRow(
     detail: d.detail,
     headerImageUrl: imgs[0] ?? null,
     discountDate: d.discountDate?.toISOString() ?? null,
+    validFrom: d.validFrom?.toISOString() ?? null,
+    validTo: d.validTo?.toISOString() ?? null,
     validityMode: (d.validityMode ?? 'DATE_RANGE') as 'DATE_RANGE' | 'WEEKLY_RECURRING',
     validWeekday: (d.validWeekday ?? null) as GastroWeekday | null,
     type: d.type as 'PERCENT' | 'FIXED',
@@ -94,7 +99,7 @@ export class PublicGastroDiscountsService {
   ) {}
 
   private discountsWhere(tenantId: string, subcategorySlug?: string) {
-    const now = new Date();
+    const { start: todayStart } = getGastroDiscountLocalDayBounds();
     return {
       tenantId,
       visibility: 'PUBLIC' as const,
@@ -105,8 +110,8 @@ export class PublicGastroDiscountsService {
       },
       OR: [
         { validityMode: 'WEEKLY_RECURRING' as const },
-        { discountDate: null },
-        { discountDate: { gte: now } },
+        { validTo: { gte: todayStart } },
+        { validTo: null, discountDate: { gte: todayStart } },
       ],
     };
   }
@@ -216,6 +221,33 @@ export class PublicGastroDiscountsService {
       throw new BadRequestException({
         code: ErrorCode.VALIDATION_FAILED,
         message: 'Este descuento aún no está disponible para reclamar',
+      });
+    }
+
+    const todayCheck = isGastroDiscountValidToday({
+      validityMode: (discount.validityMode ?? 'DATE_RANGE') as 'DATE_RANGE' | 'WEEKLY_RECURRING',
+      validWeekday: discount.validWeekday as GastroWeekday | null,
+      validFrom: discount.validFrom,
+      validTo: discount.validTo,
+      discountDate: discount.discountDate,
+      status: discount.status,
+    });
+    if (!todayCheck.valid) {
+      if (todayCheck.reason === 'EXPIRED') {
+        throw new BadRequestException({
+          code: ErrorCode.VALIDATION_FAILED,
+          message: 'La fecha de validez de este descuento ya finalizó.',
+        });
+      }
+      if (todayCheck.reason === 'NOT_VALID_TODAY' && discount.validWeekday) {
+        throw new BadRequestException({
+          code: ErrorCode.VALIDATION_FAILED,
+          message: `Este cupón solo es válido los ${getGastroWeekdayLabelEs(discount.validWeekday as GastroWeekday)}.`,
+        });
+      }
+      throw new BadRequestException({
+        code: ErrorCode.VALIDATION_FAILED,
+        message: 'Este descuento aún no está disponible para reclamar.',
       });
     }
 

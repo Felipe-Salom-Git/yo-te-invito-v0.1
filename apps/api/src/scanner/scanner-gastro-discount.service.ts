@@ -10,6 +10,7 @@ import {
   isGastroDiscountNotYetActive,
   isGastroDiscountValidToday,
   getGastroWeekdayLabelEs,
+  formatGastroDiscountDateAr,
   type GastroWeekday,
 } from '@yo-te-invito/shared';
 import { PrismaService } from '../prisma/prisma.service';
@@ -138,8 +139,8 @@ export class ScannerGastroDiscountService {
       discountDate: d.discountDate,
       status: 'ACTIVE',
     });
-    if (check.reason === 'INACTIVE' && d.validFrom) {
-      return isGastroDiscountNotYetActive(d.validFrom);
+    if (check.reason === 'INACTIVE' && (d.validFrom || d.discountDate)) {
+      return isGastroDiscountNotYetActive(d.validFrom ?? d.discountDate);
     }
     return false;
   }
@@ -191,11 +192,15 @@ export class ScannerGastroDiscountService {
       );
     }
     if (check.reason === 'INACTIVE') {
-      if (isGastroDiscountNotYetActive(discount.validFrom)) {
+      const effectiveFrom = discount.validFrom ?? discount.discountDate;
+      if (effectiveFrom && isGastroDiscountNotYetActive(effectiveFrom)) {
+        const fromLabel = formatGastroDiscountDateAr(effectiveFrom);
         return this.response(
           'INACTIVE',
-          'Descuento inactivo',
-          'El descuento aún no está habilitado para uso.',
+          'Aún no disponible',
+          fromLabel
+            ? `Este cupón estará disponible desde el ${fromLabel}.`
+            : 'El descuento aún no está habilitado para uso.',
           discountInfo,
         );
       }

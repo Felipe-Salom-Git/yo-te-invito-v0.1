@@ -109,6 +109,14 @@ Doc cierre: `docs/audits/GEO_MAPS_STAGE_CLOSING.md`
 - [x] Edición desde `/gastro/descuentos/[id]/editar` con advertencia si hay claims emitidos.
 - [ ] QA manual: dos cupones mismo día misma cuenta; desactivar/reactivar; editar con claims; emails cortesía en detalle.
 
+### 0.3.4.1 Gastro Discounts — Fecha/Rango (hotfix 2026-06-23)
+
+- [x] Formulario `DATE_RANGE`: fecha de inicio + fecha de cierre (`validFrom` / `validTo`).
+- [x] Backend normaliza inicio/fin de día Argentina (`normalizeGastroDiscountValidFromDate` / `normalizeGastroDiscountExpiryDate`).
+- [x] Scanner, `/me/descuentos` y público alineados con rango inclusivo; legacy `discountDate` soportado en lectura.
+- [x] Recurrente semanal (`WEEKLY_RECURRING`) sin cambios.
+- [ ] QA manual: rango hoy–hoy; rango futuro; vencido; cierre &lt; inicio bloqueado; recurrente semanal intacto.
+
 ### 0.3.5 Admin Deep Delete — eliminación profunda con preflight (2026-06-23)
 
 - [x] Auditoría `ADMIN_DEEP_DELETE_AUDIT.md`

@@ -22,11 +22,33 @@ const WEEKDAY_OPTIONS: Array<{ value: GastroWeekday; label: string }> = [
 
 type ValidityMode = 'DATE_RANGE' | 'WEEKLY_RECURRING';
 
+function toDateInputValue(iso?: string | null): string {
+  if (!iso) return '';
+  return iso.slice(0, 10);
+}
+
+function parseInitialDateRange(initial?: {
+  validFrom?: string | null;
+  validTo?: string | null;
+  discountDate?: string | null;
+}): { from: string; to: string } {
+  if (initial?.validFrom && initial?.validTo) {
+    return { from: toDateInputValue(initial.validFrom), to: toDateInputValue(initial.validTo) };
+  }
+  if (initial?.discountDate) {
+    const d = toDateInputValue(initial.discountDate);
+    return { from: d, to: d };
+  }
+  return { from: '', to: '' };
+}
+
 type Props = {
   initial?: {
     title: string;
     summary: string;
     detail: string;
+    validFrom?: string | null;
+    validTo?: string | null;
     discountDate?: string | null;
     validityMode?: ValidityMode;
     validWeekday?: GastroWeekday | null;
@@ -47,6 +69,7 @@ export function GastroDiscountForm({
   mode = 'create',
 }: Props) {
   const isEdit = mode === 'edit';
+  const initialRange = parseInitialDateRange(initial);
   const [title, setTitle] = useState(initial?.title ?? '');
   const [summary, setSummary] = useState(initial?.summary ?? '');
   const [detail, setDetail] = useState(initial?.detail ?? '');
@@ -57,9 +80,8 @@ export function GastroDiscountForm({
   const [validityMode, setValidityMode] = useState<ValidityMode>(
     initial?.validityMode ?? 'DATE_RANGE',
   );
-  const [discountDate, setDiscountDate] = useState(
-    initial?.discountDate ? initial.discountDate.slice(0, 10) : '',
-  );
+  const [validFrom, setValidFrom] = useState(initialRange.from);
+  const [validTo, setValidTo] = useState(initialRange.to);
   const [validWeekday, setValidWeekday] = useState<GastroWeekday>(
     initial?.validWeekday ?? 'WEDNESDAY',
   );
@@ -71,7 +93,13 @@ export function GastroDiscountForm({
     : undefined;
 
   const isWeekly = validityMode === 'WEEKLY_RECURRING';
-  const validityReady = isWeekly ? Boolean(validWeekday) : Boolean(discountDate);
+  const dateRangeError =
+    validFrom && validTo && validTo < validFrom
+      ? 'La fecha de cierre debe ser igual o posterior a la fecha de inicio.'
+      : null;
+  const validityReady = isWeekly
+    ? Boolean(validWeekday)
+    : Boolean(validFrom && validTo && !dateRangeError);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,7 +119,8 @@ export function GastroDiscountForm({
     if (isWeekly) {
       payload.validWeekday = validWeekday;
     } else {
-      payload.discountDate = new Date(`${discountDate}T12:00:00`).toISOString();
+      payload.validFrom = validFrom;
+      payload.validTo = validTo;
     }
 
     onSubmit(payload);
@@ -189,13 +218,32 @@ export function GastroDiscountForm({
           </p>
         </div>
       ) : (
-        <Input
-          label="Fecha del descuento"
-          type="date"
-          value={discountDate}
-          onChange={(e) => setDiscountDate(e.target.value)}
-          required
-        />
+        <div className="space-y-3">
+          <Input
+            label="Fecha de inicio"
+            type="date"
+            value={validFrom}
+            onChange={(e) => setValidFrom(e.target.value)}
+            required
+          />
+          <Input
+            label="Fecha de cierre"
+            type="date"
+            value={validTo}
+            onChange={(e) => setValidTo(e.target.value)}
+            required
+          />
+          {dateRangeError ? (
+            <p className="text-sm text-red-400" role="alert">
+              {dateRangeError}
+            </p>
+          ) : (
+            <p className="text-sm text-text-muted">
+              El descuento será válido desde la fecha de inicio hasta el final del día de la fecha
+              de cierre.
+            </p>
+          )}
+        </div>
       )}
 
       {!isEdit ? (

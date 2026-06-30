@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import {
   ErrorCode,
+  getGastroDiscountLocalDayBounds,
   parseRentalOpeningHours,
   type PublicGastroLocationsListQuery,
 } from '@yo-te-invito/shared';
@@ -170,14 +171,18 @@ export class PublicGastroLocationsService {
         message: 'Gastro location not found',
       });
     }
-    const now = new Date();
+    const { start: todayStart } = getGastroDiscountLocalDayBounds();
     const rows = await this.prisma.gastroDiscount.findMany({
       where: {
         tenantId,
         gastroProfileId: profile.id,
         visibility: 'PUBLIC',
         status: { in: ['APPROVED', 'ACTIVE'] },
-        OR: [{ discountDate: null }, { discountDate: { gte: now } }],
+        OR: [
+          { validityMode: 'WEEKLY_RECURRING' },
+          { validTo: { gte: todayStart } },
+          { validTo: null, discountDate: { gte: todayStart } },
+        ],
       },
       orderBy: { discountDate: 'asc' },
     });
@@ -194,6 +199,10 @@ export class PublicGastroLocationsService {
           detail: d.detail,
           headerImageUrl: imgs[0] ?? null,
           discountDate: d.discountDate?.toISOString() ?? null,
+          validFrom: d.validFrom?.toISOString() ?? null,
+          validTo: d.validTo?.toISOString() ?? null,
+          validityMode: (d.validityMode ?? 'DATE_RANGE') as 'DATE_RANGE' | 'WEEKLY_RECURRING',
+          validWeekday: d.validWeekday,
           type: d.type,
           value: d.value,
         };

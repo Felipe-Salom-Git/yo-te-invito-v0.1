@@ -136,6 +136,49 @@ export function isGastroDiscountExpired(
   return expiryKey < todayKey;
 }
 
+/** YYYY-MM-DD key from a date input (date-only string or instant). */
+export function getGastroDiscountDateOnlyKey(
+  input: string | Date,
+  timeZone: string = GASTRO_DISCOUNT_TIMEZONE,
+): string {
+  if (typeof input === 'string') {
+    const dateOnly = input.match(/^(\d{4}-\d{2}-\d{2})/);
+    if (dateOnly) return dateOnly[1];
+  }
+  const d = input instanceof Date ? input : new Date(input);
+  if (Number.isNaN(d.getTime())) {
+    throw new Error('Invalid gastro discount date');
+  }
+  return getGastroDiscountCalendarKey(d, timeZone);
+}
+
+/** True when end calendar day is on or after start calendar day (inclusive range). */
+export function isGastroDiscountDateRangeOrderValid(
+  validFrom: string | Date,
+  validTo: string | Date,
+  timeZone: string = GASTRO_DISCOUNT_TIMEZONE,
+): boolean {
+  const fromKey = getGastroDiscountDateOnlyKey(validFrom, timeZone);
+  const toKey = getGastroDiscountDateOnlyKey(validTo, timeZone);
+  return toKey >= fromKey;
+}
+
+/** dd/mm/yyyy label in Argentina local time. */
+export function formatGastroDiscountDateAr(
+  input: string | Date | null | undefined,
+  timeZone: string = GASTRO_DISCOUNT_TIMEZONE,
+): string | null {
+  if (!input) return null;
+  const d = input instanceof Date ? input : new Date(input);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleDateString('es-AR', {
+    timeZone,
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
+}
+
 /** True when valid-from calendar day is after today (local AR) */
 export function isGastroDiscountNotYetActive(
   validFrom: Date | null | undefined,
@@ -249,7 +292,8 @@ export function isGastroDiscountValidToday(
     return { valid: true };
   }
 
-  const validFrom = toDateOrNull(input.validFrom);
+  const validFrom =
+    toDateOrNull(input.validFrom) ?? toDateOrNull(input.discountDate);
   if (isGastroDiscountNotYetActive(validFrom, now, timeZone)) {
     return { valid: false, reason: 'INACTIVE' };
   }

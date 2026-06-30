@@ -9,6 +9,7 @@ import { adminGastroKeys } from '@/lib/query/keys';
 import type { AdminGastroDiscountListItem } from '@/repositories/interfaces';
 import { AdminGastroDiscountStatusBadge } from './AdminGastroDiscountStatusBadge';
 import { AdminGastroDiscountMetricsPanel } from './AdminGastroDiscountMetricsPanel';
+import { formatGastroDiscountValidityRangeLabel } from '@/lib/gastro/discount-status-ui';
 
 const PENDING_STATUSES = ['PENDING_REVIEW', 'COMMISSION_NEGOTIATION', 'APPROVED'] as const;
 
@@ -71,9 +72,11 @@ export function AdminGastroDiscountsTable({ profileId, discounts }: Props) {
                   <td className="px-4 py-3 text-text-muted">
                     {d.validityMode === 'WEEKLY_RECURRING' && d.validWeekday
                       ? `Todos los ${GASTRO_WEEKDAY_LABELS_ES[d.validWeekday as GastroWeekday]}`
-                      : d.discountDate
-                        ? new Date(d.discountDate).toLocaleDateString('es-AR')
-                        : '—'}
+                      : formatGastroDiscountValidityRangeLabel(
+                          d.validFrom,
+                          d.validTo,
+                          d.discountDate,
+                        ) ?? '—'}
                   </td>
                   <td className="px-4 py-3">
                     <AdminGastroDiscountStatusBadge status={d.status} />
