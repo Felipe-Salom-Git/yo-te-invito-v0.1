@@ -1,7 +1,22 @@
 # Gastro QR / Cortesías V2 — cierre
 
 Fecha cierre código: 2026-06-23  
-Doc: auditoría + reglas implementadas (Slices 1–5)
+Doc: auditoría + reglas implementadas (Slices 1–5)  
+**V2.1** (2026-06-23): recurrente semanal, contador admin, fix emails cortesía.
+
+---
+
+## Gastro Discounts V2.1 (2026-06-23)
+
+| Feature | Estado |
+|---------|--------|
+| `validityMode` DATE_RANGE / WEEKLY_RECURRING + `validWeekday` | ✅ Migración `20260625120000_gastro_discount_weekly_recurrence` |
+| Scanner `NOT_VALID_TODAY` (día AR) | ✅ `isGastroDiscountValidToday` |
+| Form gastro: fecha vs día semanal | ✅ `GastroDiscountForm` |
+| Admin KPI cupones escaneados | ✅ `gastroDiscountClaimsUsedCount` + métricas por descuento |
+| Emails cortesía con diagnóstico | ✅ `failedCount`, `failures[]`, `emailConfigured`; link fallback en template |
+
+Commits: `ee888af`, `a86be41`, `dd0e022`, `6043975`, `a69190e`.
 
 ---
 

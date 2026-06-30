@@ -86,6 +86,18 @@ Doc cierre: `docs/audits/GEO_MAPS_STAGE_CLOSING.md`
 - [x] Horarios gastro: sin error crudo `open must be before close`.
 - [ ] QA manual (audit `ADMIN_GASTRO_SCANNER_HOTFIX_AUDIT.md`).
 
+### 0.3.3 Gastro Discounts V2.1 — recurrente semanal + admin contador + emails cortesía (2026-06-23)
+
+- [x] Modelo `validityMode` (`DATE_RANGE` | `WEEKLY_RECURRING`) + `validWeekday` (`GastroWeekday`).
+- [x] Migración `20260625120000_gastro_discount_weekly_recurrence`.
+- [x] Scanner: estado `NOT_VALID_TODAY` + util `isGastroDiscountValidToday`.
+- [x] UI gastro: formulario con tipo de validez (fecha vs día semanal).
+- [x] Admin dashboard: KPI `gastroDiscountClaimsUsedCount`.
+- [x] Admin detalle descuento: `redeemedClaimsCount` / `totalClaimsCount`.
+- [x] Emails cortesía: diagnóstico API (`requestedCount`, `failedCount`, `failures[]`, `emailConfigured`); link fallback en template; errores visibles en panel.
+- [ ] QA manual: crear descuento recurrente día actual vs otro día; escanear; contador admin; enviar cortesía a email propio en staging/prod.
+- [ ] Deploy VPS + `npx prisma migrate deploy` (migración semanal).
+
 ---
 
 

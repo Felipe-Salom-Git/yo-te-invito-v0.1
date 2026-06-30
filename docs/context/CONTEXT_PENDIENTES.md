@@ -109,7 +109,10 @@ Etapas base: `V3_1_STAGE_5_CLOSING.md`, `V3_1_STAGE_6_SCANNER_OFFLINE_CLOSING.md
 - [x] Validación scanner: vencimiento inclusivo, uso único, límite diario (Slice 2 V2)
 - [x] Util `gastro-discount-expiry.ts` (Slice 1 V2)
 - [x] Doc: `GASTRO_DISCOUNTS_QR_COURTESY_CLOSING.md`, **`GASTRO_QR_COURTESIES_AUDIT.md`**
+- [x] **V2.1:** descuentos recurrentes semanales (`validityMode`, `validWeekday`, migración `20260625120000`)
+- [x] **V2.1:** scanner `NOT_VALID_TODAY`; admin KPI cupones escaneados; emails cortesía con diagnóstico + link fallback
 - [ ] Deploy VPS + migración `20260615120000_gastro_courtesy_discount_claims` (si no aplicada)
+- [ ] Deploy VPS + migración `20260625120000_gastro_discount_weekly_recurrence`
 - [ ] QA manual staging/prod — `Yo_Te_Invito_Checklist_Unificada_Depurada.md` §3.1
 
 ### Hard delete Admin — postergado
