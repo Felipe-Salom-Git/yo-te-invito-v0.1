@@ -237,7 +237,7 @@ export class PublicGastroDiscountsService {
       emailSentAt: Date | null;
     }) => {
       const qrPayload = this.claimEmail.buildQrPayload(discount.id, claim.qrToken);
-      const emailSent = await this.claimEmail.sendClaimEmail({
+      const sendResult = await this.claimEmail.sendClaimEmail({
         claimId: claim.id,
         accessToken: claim.accessToken,
         to: normalizedEmail,
@@ -255,7 +255,7 @@ export class PublicGastroDiscountsService {
         claimId: claim.id,
         accessToken: claim.accessToken,
         email: normalizedEmail,
-        emailSent,
+        emailSent: sendResult.sent,
         qrPayload,
         discountTitle: discount.displayTitle,
         locationName,

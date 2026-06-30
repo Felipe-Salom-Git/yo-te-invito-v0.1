@@ -11,4 +11,4 @@ export interface SendEmailOptions {
 
 export type SendEmailResult =
   | { ok: true; providerMessageId?: string }
-  | { ok: false; errorCode: string; retryable: boolean };
+  | { ok: false; errorCode: string; retryable: boolean; message?: string };

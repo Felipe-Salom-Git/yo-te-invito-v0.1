@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import {
   buildGastroDiscountQrPayload,
   GASTRO_DISCOUNT_TIMEZONE,
@@ -38,8 +38,15 @@ export type SendGastroDiscountClaimEmailInput = {
   webBaseUrl?: string;
 };
 
+export type SendGastroDiscountClaimEmailResult = {
+  sent: boolean;
+  error?: string;
+};
+
 @Injectable()
 export class GastroDiscountClaimEmailService {
+  private readonly logger = new Logger(GastroDiscountClaimEmailService.name);
+
   constructor(
     private readonly email: EmailService,
     private readonly prisma: PrismaService,
@@ -54,7 +61,9 @@ export class GastroDiscountClaimEmailService {
     return `${baseUrl}/descuentos/reclamo/${claimId}?${params.toString()}`;
   }
 
-  async sendClaimEmail(input: SendGastroDiscountClaimEmailInput): Promise<boolean> {
+  async sendClaimEmail(
+    input: SendGastroDiscountClaimEmailInput,
+  ): Promise<SendGastroDiscountClaimEmailResult> {
     const baseUrl = (input.webBaseUrl ?? process.env.WEB_BASE_URL ?? 'http://localhost:3000').replace(
       /\/$/,
       '',
@@ -72,8 +81,11 @@ export class GastroDiscountClaimEmailService {
 
     if (!this.email.isConfigured()) {
       emailSendError = 'Email service not configured';
+      this.logger.warn(
+        `Courtesy claim email skipped (not configured): claim=${input.claimId} to=${input.to}`,
+      );
     } else {
-      sent = await this.email.sendTemplate({
+      const result = await this.email.sendTemplateResult({
         templateId,
         to: input.to,
         variables: {
@@ -95,8 +107,15 @@ export class GastroDiscountClaimEmailService {
           courtesyMessage: input.courtesyMessage ?? '',
         },
       });
-      if (sent) emailSentAt = new Date();
-      else emailSendError = 'Failed to send email';
+      sent = result.ok;
+      if (sent) {
+        emailSentAt = new Date();
+      } else if (!result.ok) {
+        emailSendError = result.message ?? result.errorCode;
+        this.logger.warn(
+          `Claim email failed: claim=${input.claimId} to=${input.to} error=${emailSendError}`,
+        );
+      }
     }
 
     await this.prisma.gastroDiscountClaim.update({
@@ -104,6 +123,6 @@ export class GastroDiscountClaimEmailService {
       data: { emailSentAt, emailSendError },
     });
 
-    return sent;
+    return { sent, error: emailSendError ?? undefined };
   }
 }

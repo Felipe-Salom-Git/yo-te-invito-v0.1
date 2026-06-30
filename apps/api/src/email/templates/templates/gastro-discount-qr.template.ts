@@ -40,6 +40,7 @@ function renderGastroDiscountQrEmail(
     <p style="margin:0 0 12px;font-size:14px;color:#e5e7eb;">Presentá este QR en el local para aplicar el beneficio.</p>
     ${qrImageUrl ? `<p style="text-align:center;margin:20px 0;"><img src="${escapeHtml(qrImageUrl)}" alt="Código QR" width="280" height="280" style="border:1px solid #1f2937;border-radius:8px;" /></p>` : ''}
     ${qrCode ? `<p style="margin:0 0 12px;font-family:monospace;font-size:14px;word-break:break-all;color:#22c55e;">Código alternativo: ${escapeHtml(qrCode)}</p>` : ''}
+    ${claimUrl ? `<p style="margin:0 0 12px;font-size:13px;color:#9ca3af;">Si no ves el QR, abrí este enlace para verlo:<br /><a href="${escapeHtml(claimUrl)}" style="color:#22c55e;word-break:break-all;">${escapeHtml(claimUrl)}</a></p>` : ''}
     <p style="margin:0 0 12px;font-size:13px;color:#9ca3af;">${escapeHtml(conditions)}</p>
   `;
 
@@ -63,6 +64,7 @@ function renderGastroDiscountQrEmail(
     validTo ? `Válido hasta: ${validTo}` : '',
     'Presentá este QR en el local para aplicar el beneficio.',
     qrCode ? `Código: ${qrCode}` : '',
+    claimUrl ? `Si no ves el QR, abrí este enlace: ${claimUrl}` : '',
     conditions,
     '',
     claimUrl ? `Ver mi QR: ${claimUrl}` : '',

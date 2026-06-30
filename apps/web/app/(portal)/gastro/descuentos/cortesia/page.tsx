@@ -27,7 +27,7 @@ export default function GastroCourtesyDiscountsPage() {
   const [sendToFollowers, setSendToFollowers] = useState(false);
   const [message, setMessage] = useState('');
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [result, setResult] = useState<{ sentCount: number; skippedCount: number } | null>(null);
+  const [result, setResult] = useState<import('@yo-te-invito/shared').GastroCourtesySendResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const manualEmails = useMemo(() => parseEmails(manualEmailsRaw), [manualEmailsRaw]);
@@ -56,7 +56,7 @@ export default function GastroCourtesyDiscountsPage() {
         message: message.trim() || undefined,
       }),
     onSuccess: (data) => {
-      setResult({ sentCount: data.sentCount, skippedCount: data.skippedCount });
+      setResult(data);
       setConfirmOpen(false);
       setError(null);
     },
@@ -92,9 +92,40 @@ export default function GastroCourtesyDiscountsPage() {
       </p>
 
       {result && (
-        <div className="mb-6 rounded-lg border border-accent/40 bg-accent/10 px-4 py-3 text-sm text-text">
-          Cortesías enviadas correctamente ({result.sentCount} emails
-          {result.skippedCount > 0 ? `, ${result.skippedCount} omitidos` : ''}).
+        <div
+          className={`mb-6 rounded-lg border px-4 py-3 text-sm ${
+            result.failedCount > 0 || result.sentCount === 0
+              ? 'border-amber-500/40 bg-amber-500/10 text-text'
+              : 'border-accent/40 bg-accent/10 text-text'
+          }`}
+        >
+          {!result.emailConfigured ? (
+            <p className="font-medium text-amber-200">
+              El servicio de email no está configurado en el servidor. Las cortesías se crearon pero
+              no pudimos enviar los emails.
+            </p>
+          ) : result.sentCount > 0 ? (
+            <p>
+              Cortesías enviadas correctamente ({result.sentCount} de {result.createdCount} emails
+              {result.skippedCount > 0 ? `, ${result.skippedCount} omitidos` : ''}).
+            </p>
+          ) : (
+            <p className="font-medium text-amber-200">
+              Se crearon {result.createdCount} cortesías, pero no se pudo enviar ningún email.
+            </p>
+          )}
+          {result.failedCount > 0 ? (
+            <ul className="mt-2 list-inside list-disc text-xs text-text-muted">
+              {result.failures.slice(0, 5).map((f) => (
+                <li key={f.email}>
+                  {f.email}: {f.reason}
+                </li>
+              ))}
+              {result.failures.length > 5 ? (
+                <li>…y {result.failures.length - 5} más</li>
+              ) : null}
+            </ul>
+          ) : null}
         </div>
       )}
 

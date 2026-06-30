@@ -35,7 +35,12 @@ export class ResendMailProvider implements MailProvider {
       });
 
       if (error) {
-        return { ok: false, errorCode: 'RESEND_SEND_FAILED', retryable: true };
+        return {
+          ok: false,
+          errorCode: 'RESEND_SEND_FAILED',
+          retryable: true,
+          message: error.message,
+        };
       }
 
       return { ok: true, providerMessageId: data?.id };

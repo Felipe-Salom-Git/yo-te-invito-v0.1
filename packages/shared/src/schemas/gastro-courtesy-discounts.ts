@@ -98,8 +98,18 @@ export const gastroCourtesyRecipientsPreviewResponseSchema = z.object({
 export const gastroCourtesySendResponseSchema = z.object({
   campaignId: z.string(),
   discountId: z.string(),
+  requestedCount: z.number().int(),
+  createdCount: z.number().int(),
   sentCount: z.number().int(),
   skippedCount: z.number().int(),
+  failedCount: z.number().int(),
+  failures: z.array(
+    z.object({
+      email: z.string().email(),
+      reason: z.string(),
+    }),
+  ),
+  emailConfigured: z.boolean(),
 });
 
 export type GastroCourtesyRecipientsPreviewQuery = z.infer<

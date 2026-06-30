@@ -17,6 +17,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { ProfilesAuthorizationService } from '../../common/profiles-authorization.service';
 import { AuditService } from '../audit/audit.service';
 import { GastroDiscountClaimEmailService } from './gastro-discount-claim-email.service';
+import { EmailService } from '../../email/email.service';
 
 const MAX_RECIPIENTS = 200;
 
@@ -42,6 +43,7 @@ export class GastroCourtesyDiscountsService {
     private readonly profiles: ProfilesAuthorizationService,
     private readonly audit: AuditService,
     private readonly claimEmail: GastroDiscountClaimEmailService,
+    private readonly email: EmailService,
   ) {}
 
   private async assertCanManageProfile(
@@ -307,6 +309,11 @@ export class GastroCourtesyDiscountsService {
 
     let sentCount = 0;
     let skippedCount = 0;
+    let createdCount = 0;
+    let failedCount = 0;
+    const failures: Array<{ email: string; reason: string }> = [];
+    const emailConfigured = this.email.isConfigured();
+    const requestedCount = recipients.length;
 
     for (const recipient of recipients) {
       const existing = await this.prisma.gastroDiscountClaim.findUnique({
@@ -340,8 +347,9 @@ export class GastroCourtesyDiscountsService {
         },
       });
 
+      createdCount += 1;
       const qrPayload = this.claimEmail.buildQrPayload(discount.id, qrToken);
-      const sent = await this.claimEmail.sendClaimEmail({
+      const sendResult = await this.claimEmail.sendClaimEmail({
         claimId: claim.id,
         accessToken: claim.accessToken,
         to: recipient.email,
@@ -358,7 +366,15 @@ export class GastroCourtesyDiscountsService {
         courtesyMessage: body.message ?? null,
         webBaseUrl,
       });
-      if (sent) sentCount += 1;
+      if (sendResult.sent) {
+        sentCount += 1;
+      } else {
+        failedCount += 1;
+        failures.push({
+          email: recipient.email,
+          reason: sendResult.error ?? 'Failed to send email',
+        });
+      }
     }
 
     await this.audit.logAction({
@@ -368,14 +384,26 @@ export class GastroCourtesyDiscountsService {
       action: 'GASTRO_DISCOUNT_COURTESY_SENT',
       entityType: 'GastroCourtesyCampaign',
       entityId: campaign.id,
-      metadata: { sentCount, skippedCount, totalRecipients: recipients.length },
+      metadata: {
+        sentCount,
+        skippedCount,
+        failedCount,
+        createdCount,
+        totalRecipients: recipients.length,
+        emailConfigured,
+      },
     });
 
     return {
       campaignId: campaign.id,
       discountId: discount.id,
+      requestedCount,
+      createdCount,
       sentCount,
       skippedCount,
+      failedCount,
+      failures,
+      emailConfigured,
     };
   }
 }
