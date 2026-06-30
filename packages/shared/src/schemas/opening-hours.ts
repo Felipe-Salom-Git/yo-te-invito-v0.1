@@ -137,6 +137,71 @@ export function createEmptyRentalOpeningHours(): RentalOpeningHours {
   };
 }
 
+function sanitizeOpeningHoursBlock(block: OpeningHoursBlock): OpeningHoursBlock {
+  if (!block.isOpen) {
+    return { isOpen: false, ranges: [] };
+  }
+  const ranges = block.ranges.filter(
+    (r) =>
+      r.open?.trim() &&
+      r.close?.trim() &&
+      timeToMinutes(r.open.trim()) < timeToMinutes(r.close.trim()),
+  );
+  if (ranges.length === 0) {
+    return { isOpen: false, ranges: [] };
+  }
+  return { isOpen: true, ranges };
+}
+
+function sanitizeOpeningHoursException(ex: OpeningHoursException): OpeningHoursException {
+  if (!ex.isOpen) {
+    return { ...ex, ranges: [] };
+  }
+  const ranges = ex.ranges.filter(
+    (r) =>
+      r.open?.trim() &&
+      r.close?.trim() &&
+      timeToMinutes(r.open.trim()) < timeToMinutes(r.close.trim()),
+  );
+  return { ...ex, isOpen: ranges.length > 0, ranges };
+}
+
+/** Drop empty/invalid ranges before API validation (forms may send partial time inputs). */
+export function sanitizeRentalOpeningHours(schedule: RentalOpeningHours): RentalOpeningHours {
+  return {
+    weekday: sanitizeOpeningHoursBlock(schedule.weekday),
+    saturday: sanitizeOpeningHoursBlock(schedule.saturday),
+    sunday: sanitizeOpeningHoursBlock(schedule.sunday),
+    exceptions: schedule.exceptions.map(sanitizeOpeningHoursException),
+  };
+}
+
+/**
+ * Returns a user-facing error when open days have invalid intervals after sanitization,
+ * or null if the schedule is safe to submit.
+ */
+export function validateRentalOpeningHoursForSubmit(
+  schedule: RentalOpeningHours,
+): string | null {
+  const blocks: Array<[string, OpeningHoursBlock]> = [
+    ['Lunes a viernes', schedule.weekday],
+    ['Sábado', schedule.saturday],
+    ['Domingo', schedule.sunday],
+  ];
+  for (const [label, block] of blocks) {
+    if (!block.isOpen) continue;
+    for (const range of block.ranges) {
+      const open = range.open?.trim();
+      const close = range.close?.trim();
+      if (!open || !close) continue;
+      if (timeToMinutes(open) >= timeToMinutes(close)) {
+        return `El horario de apertura debe ser anterior al horario de cierre (${label}).`;
+      }
+    }
+  }
+  return null;
+}
+
 function formatBlock(block: OpeningHoursBlock): string {
   if (!block.isOpen || block.ranges.length === 0) return 'Cerrado';
   return block.ranges.map((r) => `${r.open} – ${r.close}`).join(', ');

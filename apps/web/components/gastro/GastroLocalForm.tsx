@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 import {
   createEmptyGastroWeeklyOpeningHours,
   createEmptyRentalOpeningHours,
+  sanitizeRentalOpeningHours,
+  validateRentalOpeningHoursForSubmit,
   type GastroOpeningHoursMode,
 } from '@yo-te-invito/shared';
 import { Button, Input, SectionTitle } from '@/components';
@@ -34,6 +36,11 @@ import {
   ContentTagSelector,
   tagIdsFromEvent,
 } from '@/components/content-tags/ContentTagSelector';
+import {
+  GastroSubcategoryMultiSelect,
+  gastroSubcategoryIdsFromLocal,
+  gastroSubcategoryIdsToPayload,
+} from '@/components/gastro/GastroSubcategoryMultiSelect';
 import type { GastroLocal, GastroLocalUpsertPayload } from '@/repositories/interfaces';
 
 export type GastroLocalFormMode = 'owner' | 'admin';
@@ -85,7 +92,9 @@ export function GastroLocalForm({
   const [displayName, setDisplayName] = useState(initial?.displayName ?? '');
   const [summary, setSummary] = useState(initial?.summary ?? '');
   const [detail, setDetail] = useState(initial?.detail ?? '');
-  const [subcategoryId, setSubcategoryId] = useState(initial?.subcategoryId ?? '');
+  const [subcategoryIds, setSubcategoryIds] = useState<string[]>(() =>
+    initial ? gastroSubcategoryIdsFromLocal(initial) : [],
+  );
   const [tagIds, setTagIds] = useState<string[]>(() =>
     initial ? tagIdsFromEvent(initial) : [],
   );
@@ -138,7 +147,7 @@ export function GastroLocalForm({
     setDisplayName(initial.displayName);
     setSummary(initial.summary ?? '');
     setDetail(initial.detail ?? '');
-    setSubcategoryId(initial.subcategoryId ?? '');
+    setSubcategoryIds(gastroSubcategoryIdsFromLocal(initial));
     setTagIds(tagIdsFromEvent(initial));
     setImages({
       headerImageUrl: initial.bannerUrl ?? '',
@@ -163,8 +172,8 @@ export function GastroLocalForm({
       setLocationError(locErr);
       return;
     }
-    if (mustPickSubcategory && !subcategoryId) {
-      setLocationError('Seleccioná una subcategoría gastronómica.');
+    if (mustPickSubcategory && subcategoryIds.length === 0) {
+      setLocationError('Seleccioná al menos una subcategoría gastronómica.');
       return;
     }
     const linksError = validateRelatedLinksDraft(relatedLinks);
@@ -174,16 +183,28 @@ export function GastroLocalForm({
     }
     setLocationError(null);
     const links = externalLinksToPayload(externalLinks);
+    const hoursError =
+      openingHoursMode === 'simple'
+        ? validateRentalOpeningHoursForSubmit(openingHours)
+        : null;
+    if (hoursError) {
+      setLocationError(hoursError);
+      return;
+    }
+    const normalizedHours =
+      openingHoursMode === 'simple' ? sanitizeRentalOpeningHours(openingHours) : openingHours;
+    const subPayload = gastroSubcategoryIdsToPayload(subcategoryIds);
     onSubmit({
       displayName: displayName.trim(),
       summary: summary.trim() || null,
       detail: detail.trim() || null,
-      subcategoryId: subcategoryId || null,
+      subcategoryId: subPayload.subcategoryId,
+      subcategoryIds: subPayload.subcategoryIds,
       tagIds,
       bannerUrl: images.headerImageUrl.trim() || null,
       galleryUrls: images.galleryImageUrls.filter(Boolean),
       location: gastroLocationPayloadFromLocationValue(location),
-      openingHours,
+      openingHours: normalizedHours,
       openingHoursMode,
       openingHoursWeekly: openingHoursMode === 'weekly' ? openingHoursWeekly : null,
       openingHoursNote: openingHoursNote.trim() || null,
@@ -224,22 +245,7 @@ export function GastroLocalForm({
         />
       </div>
       {subcategories.length > 0 ? (
-        <div>
-          <label className="mb-1 block text-sm text-text-muted">Subcategoría gastronómica</label>
-          <select
-            className="w-full rounded-lg border border-border bg-bg px-3 py-2 text-sm text-text placeholder:text-text-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
-            value={subcategoryId}
-            onChange={(e) => setSubcategoryId(e.target.value)}
-            required={mustPickSubcategory}
-          >
-            <option value="">Seleccionar…</option>
-            {subcategories.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        <GastroSubcategoryMultiSelect value={subcategoryIds} onChange={setSubcategoryIds} />
       ) : isAdmin ? (
         <p className="rounded-lg border border-dashed border-border px-3 py-2 text-sm text-text-muted">
           No hay subcategorías gastro activas. Configuralas en{' '}

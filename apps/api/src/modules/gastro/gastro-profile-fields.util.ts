@@ -5,6 +5,7 @@ import {
   normalizeGastroOpeningHoursMode,
   parseGastroWeeklyOpeningHours,
   rentalOpeningHoursSchema,
+  sanitizeRentalOpeningHours,
   trimToPublicSummary,
   type GastroLocalCreateInput,
   type GastroLocalResponse,
@@ -26,7 +27,8 @@ export function writeGastroOpeningHours(
 ): Prisma.InputJsonValue | typeof Prisma.JsonNull | undefined {
   if (value === undefined) return undefined;
   if (value == null) return Prisma.JsonNull;
-  return rentalOpeningHoursSchema.parse(value) as Prisma.InputJsonValue;
+  const sanitized = sanitizeRentalOpeningHours(value);
+  return rentalOpeningHoursSchema.parse(sanitized) as Prisma.InputJsonValue;
 }
 
 export function readGastroOpeningHoursMode(row: GastroProfile): GastroOpeningHoursMode {

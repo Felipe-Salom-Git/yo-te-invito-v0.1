@@ -13,6 +13,7 @@ import {
   ErrorCode,
   parseRentalOpeningHours,
   rentalOpeningHoursSchema,
+  sanitizeRentalOpeningHours,
   type AdminExcursionOperatorsListQuery,
   type CreateExcursionOperatorBody,
   type CreateExcursionProductBody,
@@ -77,7 +78,8 @@ export class ExcursionOperatorsService {
     value: RentalOpeningHours | null | undefined,
   ): Prisma.InputJsonValue | typeof Prisma.JsonNull {
     if (value == null) return Prisma.JsonNull;
-    return rentalOpeningHoursSchema.parse(value) as Prisma.InputJsonValue;
+    const sanitized = sanitizeRentalOpeningHours(value);
+    return rentalOpeningHoursSchema.parse(sanitized) as Prisma.InputJsonValue;
   }
 
   private toSummary(
