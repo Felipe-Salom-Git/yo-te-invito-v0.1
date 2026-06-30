@@ -54,7 +54,7 @@ Rama activa: `feat/v1-s03-api-foundation` (último push documental: ver `git log
 | **Getnet webhook** | Fix payload en código; abandonado como implementación activa — nueva pasarela TBD | `ed0cc3e` |
 | **Ticketera Próximamente** | UI productora bloqueada; solo publicidad operativa | `TICKETING_CREATION_ENABLED` |
 | **Mensajes email/spam** | Post-registro + post-QR en web | `EmailInboxNotice` |
-| **Hard delete Admin** | Postergado | — |
+| **Admin Deep Delete** | Preflight + modal + delete transaccional (2026-06-23) | `ADMIN_DEEP_DELETE_AUDIT.md` |
 
 Detalle y pendientes priorizados: **`CONTEXT_PENDIENTES.md` § Jornada 2026-06-15** y **§ Etapa UX operativa**.
 
@@ -69,8 +69,8 @@ Detalle y pendientes priorizados: **`CONTEXT_PENDIENTES.md` § Jornada 2026-06-1
 
 - Admin puede eliminar usuarios sin contenido/historial crítico desde `/admin/usuarios`.
 - Backend bloquea usuarios con publicaciones, tickets, órdenes, pagos o historial sensible (`GET /admin/users/:id/delete-preflight`, `DELETE /admin/users/:id`).
-- Regla de oro: primero borrar o archivar publicaciones.
-- Se registra audit log (`ADMIN_USER_DELETED`). Doc: `docs/audits/ADMIN_USER_DELETE_AUDIT.md`.
+- **Eliminación profunda** (`GET/DELETE /admin/deep-delete/USER/:id`): permite eliminar cuentas con actividad tras modal de impacto; conserva tickets/órdenes/pagos/auditoría.
+- Doc: `docs/audits/ADMIN_USER_DELETE_AUDIT.md`, `docs/audits/ADMIN_DEEP_DELETE_AUDIT.md`.
 
 ---
 

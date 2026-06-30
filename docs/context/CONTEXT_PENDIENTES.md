@@ -116,9 +116,18 @@ Etapas base: `V3_1_STAGE_5_CLOSING.md`, `V3_1_STAGE_6_SCANNER_OFFLINE_CLOSING.md
 - [ ] Deploy VPS + migración `20260625120000_gastro_discount_weekly_recurrence`
 - [ ] QA manual staging/prod — `Yo_Te_Invito_Checklist_Unificada_Depurada.md` §3.1
 
-### Hard delete Admin — postergado
+### Admin Deep Delete (2026-06-23)
 
-- [ ] Borrado completo desde Admin (no mezclar con banners/ciudad/geo/gastro)
+- [x] Auditoría `ADMIN_DEEP_DELETE_AUDIT.md`
+- [x] Preflight + delete transaccional (`GET/DELETE /admin/deep-delete/:entityType/:entityId`)
+- [x] Modal de impacto + integración en usuarios, gastro, eventos, rentals, excursiones, productoras
+- [ ] QA manual staging (usuario con eventos, local con descuentos, productora con tickets)
+- [ ] Deploy VPS + migración `20260623140000_admin_deep_delete_audit_actions`
+
+### Hard delete Admin — sustituido por Deep Delete (2026-06-23)
+
+- [x] Deep delete con preflight de impacto reemplaza hard-delete ciego en pantallas admin principales
+- [x] Delete seguro de usuarios (`/admin/users/:id/delete-preflight`) se mantiene para cuentas limpias
 
 ### Getnet — sin cerrar pagos productivos
 

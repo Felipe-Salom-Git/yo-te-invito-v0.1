@@ -109,6 +109,17 @@ Doc cierre: `docs/audits/GEO_MAPS_STAGE_CLOSING.md`
 - [x] Edición desde `/gastro/descuentos/[id]/editar` con advertencia si hay claims emitidos.
 - [ ] QA manual: dos cupones mismo día misma cuenta; desactivar/reactivar; editar con claims; emails cortesía en detalle.
 
+### 0.3.5 Admin Deep Delete — eliminación profunda con preflight (2026-06-23)
+
+- [x] Auditoría `ADMIN_DEEP_DELETE_AUDIT.md`
+- [x] Schemas shared `admin-deep-delete.ts`
+- [x] API `GET/DELETE /admin/deep-delete/:entityType/:entityId`
+- [x] Modal `AdminDeepDeleteModal` + `AdminDeepDeleteButton`
+- [x] Integrado: usuarios, gastro, eventos, rentals, excursiones, productoras
+- [x] Migración audit `ADMIN_DEEP_DELETE_EXECUTED` / `ADMIN_DEEP_DELETE_BLOCKED`
+- [ ] QA manual: usuario con eventos; local con descuentos/cupones; productora con historial
+- [ ] Deploy VPS + `npx prisma migrate deploy` (`20260623140000_admin_deep_delete_audit_actions`)
+
 ---
 
 
