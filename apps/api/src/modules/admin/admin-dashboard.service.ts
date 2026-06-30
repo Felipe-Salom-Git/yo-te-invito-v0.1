@@ -21,6 +21,7 @@ export class AdminDashboardService {
       activeProducers,
       pendingDisputes,
       gastroDiscountsPendingCount,
+      gastroDiscountClaimsUsedCount,
       ticketsSold,
       totalReviews,
       pendingRows,
@@ -57,6 +58,12 @@ export class AdminDashboardService {
         where: {
           tenantId,
           status: { in: ['PENDING_REVIEW', 'COMMISSION_NEGOTIATION'] },
+        },
+      }),
+      this.prisma.gastroDiscountClaim.count({
+        where: {
+          tenantId,
+          OR: [{ status: 'USED' }, { usedAt: { not: null } }],
         },
       }),
       this.prisma.ticket.count({
@@ -140,6 +147,7 @@ export class AdminDashboardService {
         activeProducers,
         pendingDisputes,
         gastroDiscountsPendingCount,
+        gastroDiscountClaimsUsedCount,
         ticketsSold,
         totalReviews,
       },

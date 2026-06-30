@@ -172,6 +172,9 @@ export type AdminGastroDiscountDetail = z.infer<typeof adminGastroDiscountDetail
 
 export const adminGastroDiscountMetricsSchema = z.object({
   validationCount: z.number().int().min(0),
+  redeemedClaimsCount: z.number().int().min(0).optional(),
+  totalClaimsCount: z.number().int().min(0).optional(),
+  availableClaimsCount: z.number().int().min(0).optional(),
   status: gastroDiscountStatusSchema,
   discountDate: z.string().datetime().nullable(),
   emailSentAt: z.string().datetime().nullable(),

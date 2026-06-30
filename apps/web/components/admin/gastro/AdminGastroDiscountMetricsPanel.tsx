@@ -27,6 +27,16 @@ export function AdminGastroDiscountMetricsPanel({ metrics, isLoading }: Props) {
           label="Validaciones QR"
           value={String(metrics.validationCount)}
         />
+        {metrics.redeemedClaimsCount !== undefined ? (
+          <Metric
+            label="Cupones escaneados"
+            value={
+              metrics.totalClaimsCount !== undefined
+                ? `${metrics.redeemedClaimsCount} / ${metrics.totalClaimsCount}`
+                : String(metrics.redeemedClaimsCount)
+            }
+          />
+        ) : null}
         <Metric
           label="Fecha del descuento"
           value={

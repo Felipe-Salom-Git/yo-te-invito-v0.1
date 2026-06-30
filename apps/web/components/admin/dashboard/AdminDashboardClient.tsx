@@ -135,6 +135,11 @@ export function AdminDashboardClient() {
             hint="Revisión o negociación"
           />
           <AdminDashboardKpiCard
+            label="Cupones escaneados"
+            value={kpiValue(metrics?.gastroDiscountClaimsUsedCount)}
+            hint="Descuentos gastronómicos canjeados"
+          />
+          <AdminDashboardKpiCard
             label="Tickets vendidos"
             value={
               metrics?.ticketsSold !== undefined

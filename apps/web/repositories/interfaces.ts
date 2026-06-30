@@ -2677,6 +2677,9 @@ export interface AdminGastroDiscountDetail {
 
 export interface AdminGastroDiscountMetrics {
   validationCount: number;
+  redeemedClaimsCount?: number;
+  totalClaimsCount?: number;
+  availableClaimsCount?: number;
   status: GastroDiscountStatus;
   discountDate: string | null;
   emailSentAt: string | null;

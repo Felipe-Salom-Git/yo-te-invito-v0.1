@@ -10,6 +10,7 @@ export const adminDashboardMetricsSchema = z.object({
   activeProducers: z.number().int().min(0),
   pendingDisputes: z.number().int().min(0),
   gastroDiscountsPendingCount: z.number().int().min(0).optional(),
+  gastroDiscountClaimsUsedCount: z.number().int().min(0).optional(),
   /** From platform metrics when available (real ticket sales). */
   ticketsSold: z.number().int().min(0).optional(),
   totalReviews: z.number().int().min(0).optional(),

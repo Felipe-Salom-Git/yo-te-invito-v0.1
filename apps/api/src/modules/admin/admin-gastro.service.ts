@@ -513,8 +513,16 @@ export class AdminGastroService {
     discountId: string,
   ): Promise<AdminGastroDiscountMetrics> {
     const row = await this.loadDiscount(tenantId, profileId, discountId);
-    const [validationCount, lastValidation] = await Promise.all([
+    const [validationCount, redeemedClaimsCount, totalClaimsCount, lastValidation] =
+      await Promise.all([
       this.prisma.gastroDiscountValidation.count({ where: { discountId } }),
+      this.prisma.gastroDiscountClaim.count({
+        where: {
+          discountId,
+          OR: [{ status: 'USED' }, { usedAt: { not: null } }],
+        },
+      }),
+      this.prisma.gastroDiscountClaim.count({ where: { discountId } }),
       this.prisma.gastroDiscountValidation.findFirst({
         where: { discountId },
         orderBy: { validatedAt: 'desc' },
@@ -523,6 +531,9 @@ export class AdminGastroService {
     ]);
     return {
       validationCount,
+      redeemedClaimsCount,
+      totalClaimsCount,
+      availableClaimsCount: Math.max(0, totalClaimsCount - redeemedClaimsCount),
       status: row.status,
       discountDate: row.discountDate?.toISOString() ?? null,
       emailSentAt: row.emailSentAt?.toISOString() ?? null,
