@@ -106,11 +106,12 @@ Etapas base: `V3_1_STAGE_5_CLOSING.md`, `V3_1_STAGE_6_SCANNER_OFFLINE_CLOSING.md
 - [x] Cortesías por email manual + seguidores (`35d7fa8`)
 - [x] Email QR solicitud web + cortesía (`e8ecfbb`, Slice 3 V2)
 - [x] `/me/descuentos` — `GastroDiscountQrCard` (Slice 4 V2)
-- [x] Validación scanner: vencimiento inclusivo, uso único, límite diario (Slice 2 V2)
+- [x] Validación scanner: vencimiento inclusivo, uso único (Slice 2 V2); **V2.2:** sin límite diario por cuenta/email
 - [x] Util `gastro-discount-expiry.ts` (Slice 1 V2)
 - [x] Doc: `GASTRO_DISCOUNTS_QR_COURTESY_CLOSING.md`, **`GASTRO_QR_COURTESIES_AUDIT.md`**
 - [x] **V2.1:** descuentos recurrentes semanales (`validityMode`, `validWeekday`, migración `20260625120000`)
 - [x] **V2.1:** scanner `NOT_VALID_TODAY`; admin KPI cupones escaneados; emails cortesía con diagnóstico + link fallback
+- [x] **V2.2:** sin límite diario; detalle por descuento (`GET .../summary`); activar/desactivar (`PATCH .../status`); edición desde panel gastro; métricas + estado email por claim en detalle
 - [ ] Deploy VPS + migración `20260615120000_gastro_courtesy_discount_claims` (si no aplicada)
 - [ ] Deploy VPS + migración `20260625120000_gastro_discount_weekly_recurrence`
 - [ ] QA manual staging/prod — `Yo_Te_Invito_Checklist_Unificada_Depurada.md` §3.1

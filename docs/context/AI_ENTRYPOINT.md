@@ -49,6 +49,7 @@ Rama activa: `feat/v1-s03-api-foundation` (último push documental: ver `git log
 | **Branding web** | Favicon, intro, share OG alineados y QA share OK prod | `9c1f83b`–`3fafa18`; `lib/seo/brandAssets.ts`, `/brand/*` |
 | **Gastro descuentos QR / cortesías V2** | Código cerrado 2026-06-23; QA manual staging/prod pendiente | `GASTRO_QR_COURTESIES_AUDIT.md` |
 | **Gastro Discounts V2.1** | Recurrente semanal + admin contador + fix emails cortesía (2026-06-23) | `GASTRO_QR_COURTESIES_AUDIT.md` § V2.1 |
+| **Gastro Discounts V2.2** | Sin límite diario; detalle/métricas/activar/editar descuentos (2026-06-23) | `GASTRO_QR_COURTESIES_AUDIT.md` § V2.2 |
 | **Admin/Gastro/Scanner hotfix operativo** | Código 2026-06-23; QA manual pendiente | `ADMIN_GASTRO_SCANNER_HOTFIX_AUDIT.md` |
 | **Getnet webhook** | Fix payload en código; abandonado como implementación activa — nueva pasarela TBD | `ed0cc3e` |
 | **Ticketera Próximamente** | UI productora bloqueada; solo publicidad operativa | `TICKETING_CREATION_ENABLED` |
@@ -140,7 +141,7 @@ Controllers: HTTP + Zod only. Services: business logic. Prisma: persistence only
 
 **Etapa GEO — dirección a Maps + pin editable (2026-06-15):** `POST /geo/resolve-address`, `AddressMapPicker`, formularios eventos/gastro/rentals/excursiones. Doc: `docs/audits/GEO_ADDRESS_MAP_PIN_CLOSING.md`.
 
-**Gastro descuentos QR cortesía V2 (2026-06-23):** vencimiento inclusivo AR, uso único, límite diario, emails con CTA claim, UI `GastroDiscountQrCard`. **V2.1:** descuentos recurrentes por día de semana (`validityMode`, `validWeekday`), scanner `NOT_VALID_TODAY`, admin KPI cupones escaneados, emails cortesía con diagnóstico + link fallback. Doc: `docs/audits/GASTRO_QR_COURTESIES_AUDIT.md`. QA manual pendiente.
+**Gastro descuentos QR cortesía V2 (2026-06-23):** vencimiento inclusivo AR, uso único por claim, emails con CTA claim, UI `GastroDiscountQrCard`. **V2.1:** descuentos recurrentes por día de semana (`validityMode`, `validWeekday`), scanner `NOT_VALID_TODAY`, admin KPI cupones escaneados, emails cortesía con diagnóstico + link fallback. **V2.2:** sin límite diario; detalle por descuento con métricas/claims; activar/desactivar/editar desde panel gastro y admin. Doc: `docs/audits/GASTRO_QR_COURTESIES_AUDIT.md`. QA manual pendiente.
 
 **Scanner operativo jornada (2026-06-15):** login, PDF fix (`pdfkit` CJS), targets sin `/public/events/:id`, eventos vencidos ocultos (corte 1 AM AR), escaneo manual por botón, modal sin auto-cierre, setup vs operación, listado entradas + hora escaneo. Cerrado funcionalmente; QA puerta real opcional.
 

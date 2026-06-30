@@ -2,7 +2,20 @@
 
 Fecha cierre código: 2026-06-23  
 Doc: auditoría + reglas implementadas (Slices 1–5)  
-**V2.1** (2026-06-23): recurrente semanal, contador admin, fix emails cortesía.
+**V2.1** (2026-06-23): recurrente semanal, contador admin, fix emails cortesía.  
+**V2.2** (2026-06-23): sin límite diario; detalle/métricas/activar/editar descuentos.
+
+---
+
+## Gastro Discounts V2.2 (2026-06-23)
+
+| Feature | Estado |
+|---------|--------|
+| Sin límite diario por cuenta/email | ✅ `ScannerGastroDiscountService` — solo uso único por claim |
+| Summary por descuento (métricas + claims) | ✅ `GastroDiscountMetricsService`; gastro + admin `GET .../summary` |
+| Activar / desactivar descuento | ✅ `PATCH .../status` (`ACTIVE` \| `CANCELLED`); audit `GASTRO_DISCOUNT_ACTIVATED` / `GASTRO_DISCOUNT_CANCELLED` |
+| Panel gastro detalle + edición | ✅ `/gastro/descuentos/[id]`, `/editar`; `GastroDiscountDetailContent` |
+| Estado envío email por claim en detalle | ✅ `emailSentCount`, `emailFailedCount`, `emailSendError` por claim |
 
 ---
 

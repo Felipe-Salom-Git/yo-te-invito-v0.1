@@ -60,7 +60,7 @@ Doc cierre: `docs/audits/GEO_MAPS_STAGE_CLOSING.md`
 
 - [x] Vencimiento inclusivo hasta fin de día Argentina (`gastro-discount-expiry.ts`).
 - [x] Uso único por claim + redención transaccional en scanner.
-- [x] Límite 1 cupón gastronómico por día (`userId` / email).
+- [x] ~~Límite 1 cupón gastronómico por día~~ — eliminado en **V2.2** (uso único por claim se mantiene).
 - [x] Email QR: CTA principal claim público; secundario «Ver en mi cuenta» si hay cuenta.
 - [x] UI `GastroDiscountQrCard` en `/me/descuentos` y `/descuentos/reclamo/[claimId]`.
 - [x] Tests: `test:gastro-discount-expiry`, `test:gastro-discount-qr`; `test:gastro-discount-scan` extendido.
@@ -97,6 +97,17 @@ Doc cierre: `docs/audits/GEO_MAPS_STAGE_CLOSING.md`
 - [x] Emails cortesía: diagnóstico API (`requestedCount`, `failedCount`, `failures[]`, `emailConfigured`); link fallback en template; errores visibles en panel.
 - [ ] QA manual: crear descuento recurrente día actual vs otro día; escanear; contador admin; enviar cortesía a email propio en staging/prod.
 - [ ] Deploy VPS + `npx prisma migrate deploy` (migración semanal).
+
+### 0.3.4 Gastro Discounts V2.2 — gestión descuentos + sin límite diario (2026-06-23)
+
+- [x] Eliminar límite diario por cuenta/email en scanner (`LIMIT_REACHED` legacy, no devuelto).
+- [x] Uso único por QR/claim (`USED`) sin cambios.
+- [x] API summary por descuento: `GET /gastro/discounts/:id/summary`, admin `GET /admin/gastro-discount-tickets/:discountId/summary`.
+- [x] Activar/desactivar: `PATCH .../status` (`ACTIVE` | `CANCELLED`).
+- [x] Panel gastro: detalle clickeable con métricas, tabla/cards de claims, editar, activar/desactivar.
+- [x] Admin detalle descuento: métricas finas + claims + estado email por cupón.
+- [x] Edición desde `/gastro/descuentos/[id]/editar` con advertencia si hay claims emitidos.
+- [ ] QA manual: dos cupones mismo día misma cuenta; desactivar/reactivar; editar con claims; emails cortesía en detalle.
 
 ---
 
