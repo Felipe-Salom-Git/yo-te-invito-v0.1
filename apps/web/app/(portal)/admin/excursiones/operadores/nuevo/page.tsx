@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useMutation } from '@tanstack/react-query';
-import { createEmptyRentalOpeningHours } from '@yo-te-invito/shared';
+import { createEmptyRentalOpeningHours, sanitizeRentalOpeningHours, validateRentalOpeningHoursForSubmit } from '@yo-te-invito/shared';
+import { getSession } from 'next-auth/react';
 import { useRepositories } from '@/repositories/context';
 import { PageContainer, SectionTitle, Button, Input, useToast } from '@/components';
 import { getErrorMessage } from '@/lib/errors';
@@ -40,14 +41,16 @@ export default function AdminExcursionOperadorNuevoPage() {
   const [locationError, setLocationError] = useState<string | null>(null);
 
   const createMutation = useMutation({
-    mutationFn: () => {
+    mutationFn: async () => {
+      await getSession();
       const geo = excursionOperatorPayloadFromLocationValue(location);
       const links = externalLinksToPayload(externalLinks);
+      const normalizedHours = sanitizeRentalOpeningHours(openingHours);
       return repos.excursionOperators.create({
         tenantId: TENANT_ID,
         name: name.trim(),
         contactPhone: contactPhone.trim() || null,
-        openingHours,
+        openingHours: normalizedHours,
         openingHoursNote: openingHoursNote.trim() || null,
         websiteUrl: links.websiteUrl,
         bookingUrl: links.bookingUrl,
@@ -68,6 +71,11 @@ export default function AdminExcursionOperadorNuevoPage() {
       return;
     }
     setLocationError(null);
+    const hoursError = validateRentalOpeningHoursForSubmit(openingHours);
+    if (hoursError) {
+      setLocationError(hoursError);
+      return;
+    }
     createMutation.mutate();
   };
 

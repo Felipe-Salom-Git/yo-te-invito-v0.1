@@ -7,7 +7,7 @@ import { ApiClientError } from './api/client';
 
 const STATUS_MESSAGES: Record<number, string> = {
   400: 'Solicitud incorrecta',
-  401: 'Debes iniciar sesión',
+  401: 'Tu sesión expiró. Volvé a iniciar sesión para continuar.',
   403: 'No tienes permiso para esta acción',
   404: 'No encontrado',
   422: 'Datos inválidos',
@@ -40,13 +40,24 @@ export function getErrorMessage(err: unknown): string {
           ? first.path.join('.')
           : null;
       const msg = first.message?.trim();
-      if (msg) return path ? `${path}: ${msg}` : msg;
+      if (msg) {
+        if (msg.includes('open must be before close')) {
+          return 'El horario de apertura debe ser anterior al horario de cierre.';
+        }
+        return path ? `${path}: ${msg}` : msg;
+      }
     }
     const fromBody =
       body && 'message' in body && typeof body.message === 'string' ? body.message : null;
     const code = body && 'code' in body && typeof body.code === 'string' ? body.code : null;
     if (code && ERROR_CODE_MESSAGES[code]) return ERROR_CODE_MESSAGES[code];
-    if (fromBody && fromBody.trim() && fromBody !== 'Validation failed') return fromBody;
+    if (fromBody?.trim()) {
+      const lower = fromBody.toLowerCase();
+      if (lower.includes('invalid or expired token')) {
+        return 'Tu sesión expiró. Volvé a iniciar sesión para continuar.';
+      }
+      if (fromBody !== 'Validation failed') return fromBody;
+    }
     return STATUS_MESSAGES[err.status] ?? err.message ?? `Error (${err.status})`;
   }
   if (err instanceof Error && err.message) return err.message;
