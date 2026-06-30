@@ -136,6 +136,8 @@ export class AdminGastroService {
     summary: string | null;
     status: string;
     discountDate: Date | null;
+    validityMode?: string;
+    validWeekday?: string | null;
     createdAt: Date;
     _count: { validations: number };
   }) {
@@ -145,6 +147,8 @@ export class AdminGastroService {
       summary: r.summary,
       status: r.status,
       discountDate: r.discountDate?.toISOString() ?? null,
+      validityMode: (r.validityMode ?? 'DATE_RANGE') as 'DATE_RANGE' | 'WEEKLY_RECURRING',
+      validWeekday: r.validWeekday ?? null,
       validationCount: r._count.validations,
       createdAt: r.createdAt.toISOString(),
     };
@@ -482,6 +486,8 @@ export class AdminGastroService {
       summary: row.summary,
       detail: row.detail,
       discountDate: row.discountDate?.toISOString() ?? null,
+      validityMode: row.validityMode ?? 'DATE_RANGE',
+      validWeekday: row.validWeekday ?? null,
       status: row.status,
       submittedImageUrls: submitted,
       displayImageUrls: display.length > 0 ? display : submitted,

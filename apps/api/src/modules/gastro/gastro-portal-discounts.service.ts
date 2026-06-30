@@ -43,6 +43,8 @@ export class GastroPortalDiscountsService {
     discountDate: Date | null;
     validFrom: Date | null;
     validTo: Date | null;
+    validityMode?: string;
+    validWeekday?: string | null;
     status: string;
     adminNotes: string | null;
     rejectionReason: string | null;
@@ -72,6 +74,8 @@ export class GastroPortalDiscountsService {
       summary: row.summary,
       detail: row.detail,
       discountDate: row.discountDate?.toISOString() ?? null,
+      validityMode: (row.validityMode ?? 'DATE_RANGE') as GastroDiscountResponse['validityMode'],
+      validWeekday: (row.validWeekday ?? null) as GastroDiscountResponse['validWeekday'],
       validFrom: row.validFrom?.toISOString() ?? null,
       validTo: row.validTo?.toISOString() ?? null,
       status: row.status as GastroDiscountResponse['status'],
@@ -174,7 +178,8 @@ export class GastroPortalDiscountsService {
   ) {
     await this.assertGastroUser(tenantId, userId, userRole);
     const profile = await this.getOwnedProfile(tenantId, userId);
-    const discountDate = normalizeGastroDiscountExpiryDate(body.discountDate);
+    const validityMode = body.validityMode ?? 'DATE_RANGE';
+    const isWeekly = validityMode === 'WEEKLY_RECURRING';
 
     const created = await this.prisma.gastroDiscount.create({
       data: {
@@ -188,9 +193,19 @@ export class GastroPortalDiscountsService {
         summary: body.summary.trim(),
         detail: body.detail.trim(),
         displayDescription: body.summary.trim(),
-        discountDate,
-        validFrom: normalizeGastroDiscountValidFromDate(body.discountDate),
-        validTo: discountDate,
+        validityMode,
+        ...(isWeekly
+          ? {
+              validWeekday: body.validWeekday!,
+              discountDate: null,
+              validFrom: null,
+              validTo: null,
+            }
+          : {
+              discountDate: normalizeGastroDiscountExpiryDate(body.discountDate!),
+              validFrom: normalizeGastroDiscountValidFromDate(body.discountDate!),
+              validTo: normalizeGastroDiscountExpiryDate(body.discountDate!),
+            }),
         status: 'PENDING_REVIEW',
         commissionCoordinationAcceptedAt: new Date(),
         submittedImageUrls: this.urlsJson(body.imageUrls),
@@ -230,6 +245,10 @@ export class GastroPortalDiscountsService {
       });
     }
 
+    const nextValidityMode = body.validityMode ?? existing.validityMode;
+    const switchingToWeekly = nextValidityMode === 'WEEKLY_RECURRING';
+    const switchingToDateRange = nextValidityMode === 'DATE_RANGE';
+
     const updated = await this.prisma.gastroDiscount.update({
       where: { id },
       data: {
@@ -239,11 +258,29 @@ export class GastroPortalDiscountsService {
           displayDescription: body.summary.trim(),
         }),
         ...(body.detail !== undefined && { detail: body.detail.trim() }),
-        ...(discountDate !== undefined && {
-          discountDate,
-          validFrom: normalizeGastroDiscountValidFromDate(body.discountDate!),
-          validTo: discountDate,
+        ...(body.validityMode !== undefined && { validityMode: body.validityMode }),
+        ...(switchingToWeekly && {
+          validWeekday: body.validWeekday ?? existing.validWeekday,
+          discountDate: null,
+          validFrom: null,
+          validTo: null,
         }),
+        ...(switchingToDateRange &&
+          discountDate !== undefined && {
+            discountDate,
+            validFrom: normalizeGastroDiscountValidFromDate(body.discountDate!),
+            validTo: discountDate,
+            validWeekday: null,
+          }),
+        ...(nextValidityMode === 'DATE_RANGE' &&
+          body.validityMode === undefined &&
+          discountDate !== undefined && {
+            discountDate,
+            validFrom: normalizeGastroDiscountValidFromDate(body.discountDate!),
+            validTo: discountDate,
+          }),
+        ...(nextValidityMode === 'WEEKLY_RECURRING' &&
+          body.validWeekday !== undefined && { validWeekday: body.validWeekday }),
         ...(body.imageUrls !== undefined && {
           submittedImageUrls: this.urlsJson(body.imageUrls),
         }),

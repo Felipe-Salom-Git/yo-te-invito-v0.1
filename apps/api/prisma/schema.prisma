@@ -101,6 +101,21 @@ enum GastroDiscountVisibility {
   COURTESY_ONLY
 }
 
+enum GastroDiscountValidityMode {
+  DATE_RANGE
+  WEEKLY_RECURRING
+}
+
+enum GastroWeekday {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
 enum GastroDiscountClaimType {
   PUBLIC_REQUEST
   COURTESY
@@ -2205,6 +2220,8 @@ model GastroDiscount {
   validFrom         DateTime?
   validTo           DateTime?
   discountDate      DateTime?
+  validityMode      GastroDiscountValidityMode @default(DATE_RANGE)
+  validWeekday      GastroWeekday?
   status            GastroDiscountStatus @default(PENDING_REVIEW)
   displayTitle      String?
   summary           String?

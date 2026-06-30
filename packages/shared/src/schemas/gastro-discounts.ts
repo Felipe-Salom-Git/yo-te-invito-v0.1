@@ -1,6 +1,30 @@
 import { z } from 'zod';
 import { gastroDiscountQrPayloadV1Schema } from '../gastro-discount-qr';
 
+export const gastroDiscountValidityModeSchema = z.enum(['DATE_RANGE', 'WEEKLY_RECURRING']);
+export type GastroDiscountValidityMode = z.infer<typeof gastroDiscountValidityModeSchema>;
+
+export const gastroWeekdaySchema = z.enum([
+  'MONDAY',
+  'TUESDAY',
+  'WEDNESDAY',
+  'THURSDAY',
+  'FRIDAY',
+  'SATURDAY',
+  'SUNDAY',
+]);
+export type GastroWeekday = z.infer<typeof gastroWeekdaySchema>;
+
+export const GASTRO_WEEKDAY_LABELS_ES: Record<GastroWeekday, string> = {
+  MONDAY: 'lunes',
+  TUESDAY: 'martes',
+  WEDNESDAY: 'miércoles',
+  THURSDAY: 'jueves',
+  FRIDAY: 'viernes',
+  SATURDAY: 'sábado',
+  SUNDAY: 'domingo',
+};
+
 export const gastroDiscountStatusSchema = z.enum([
   'PENDING_REVIEW',
   'COMMISSION_NEGOTIATION',
@@ -25,6 +49,8 @@ export const gastroDiscountResponseSchema = z.object({
   summary: z.string().nullable(),
   detail: z.string().nullable(),
   discountDate: z.string().datetime().nullable(),
+  validityMode: gastroDiscountValidityModeSchema.optional(),
+  validWeekday: gastroWeekdaySchema.nullable().optional(),
   validFrom: z.string().datetime().nullable(),
   validTo: z.string().datetime().nullable(),
   status: gastroDiscountStatusSchema,
@@ -46,28 +72,69 @@ export const gastroDiscountResponseSchema = z.object({
 });
 export type GastroDiscountResponse = z.infer<typeof gastroDiscountResponseSchema>;
 
-export const gastroDiscountCreateSchema = z.object({
-  title: z.string().min(1).max(200),
-  summary: z.string().min(1).max(500),
-  detail: z.string().min(1).max(5000),
-  imageUrls: z.array(z.string().min(1).max(2_000_000)).min(1).max(30),
-  discountDate: z.string().datetime(),
-  commissionCoordinationAccepted: z.literal(true, {
-    errorMap: () => ({
-      message:
-        'Debés confirmar que administración se comunicará con vos para coordinar la comisión.',
+export const gastroDiscountCreateSchema = z
+  .object({
+    title: z.string().min(1).max(200),
+    summary: z.string().min(1).max(500),
+    detail: z.string().min(1).max(5000),
+    imageUrls: z.array(z.string().min(1).max(2_000_000)).min(1).max(30),
+    validityMode: gastroDiscountValidityModeSchema.default('DATE_RANGE'),
+    discountDate: z.string().datetime().optional(),
+    validWeekday: gastroWeekdaySchema.optional(),
+    commissionCoordinationAccepted: z.literal(true, {
+      errorMap: () => ({
+        message:
+          'Debés confirmar que administración se comunicará con vos para coordinar la comisión.',
+      }),
     }),
-  }),
-});
+  })
+  .superRefine((data, ctx) => {
+    if (data.validityMode === 'DATE_RANGE') {
+      if (!data.discountDate) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['discountDate'],
+          message: 'La fecha del descuento es obligatoria',
+        });
+      }
+      return;
+    }
+    if (!data.validWeekday) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['validWeekday'],
+        message: 'Elegí el día de la semana',
+      });
+    }
+  });
 export type GastroDiscountCreateInput = z.infer<typeof gastroDiscountCreateSchema>;
 
-export const gastroDiscountUpdateSchema = z.object({
-  title: z.string().min(1).max(200).optional(),
-  summary: z.string().min(1).max(500).optional(),
-  detail: z.string().min(1).max(5000).optional(),
-  imageUrls: z.array(z.string().min(1).max(2_000_000)).max(30).optional(),
-  discountDate: z.string().datetime().optional(),
-});
+export const gastroDiscountUpdateSchema = z
+  .object({
+    title: z.string().min(1).max(200).optional(),
+    summary: z.string().min(1).max(500).optional(),
+    detail: z.string().min(1).max(5000).optional(),
+    imageUrls: z.array(z.string().min(1).max(2_000_000)).max(30).optional(),
+    validityMode: gastroDiscountValidityModeSchema.optional(),
+    discountDate: z.string().datetime().optional(),
+    validWeekday: gastroWeekdaySchema.optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.validityMode === 'WEEKLY_RECURRING' && data.validWeekday === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['validWeekday'],
+        message: 'Elegí el día de la semana',
+      });
+    }
+    if (data.validityMode === 'DATE_RANGE' && data.discountDate === undefined && data.validWeekday) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['discountDate'],
+        message: 'La fecha del descuento es obligatoria',
+      });
+    }
+  });
 export type GastroDiscountUpdateInput = z.infer<typeof gastroDiscountUpdateSchema>;
 
 export const adminGastroDiscountListQuerySchema = z.object({
@@ -99,6 +166,8 @@ export const publicGastroLocationDiscountSchema = z.object({
   detail: z.string().nullable(),
   headerImageUrl: z.string().nullable().optional(),
   discountDate: z.string().datetime().nullable(),
+  validityMode: gastroDiscountValidityModeSchema.optional(),
+  validWeekday: gastroWeekdaySchema.nullable().optional(),
   type: z.enum(['PERCENT', 'FIXED']),
   value: z.number(),
 });

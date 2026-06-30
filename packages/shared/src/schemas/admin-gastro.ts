@@ -1,5 +1,9 @@
 import { z } from 'zod';
-import { gastroDiscountStatusSchema } from './gastro-discounts';
+import {
+  gastroDiscountStatusSchema,
+  gastroDiscountValidityModeSchema,
+  gastroWeekdaySchema,
+} from './gastro-discounts';
 import { gastroDiscountQrPayloadV1Schema } from '../gastro-discount-qr';
 import {
   gastroLocalCreateSchema,
@@ -104,6 +108,8 @@ export const adminGastroDiscountListItemSchema = z.object({
   summary: z.string().nullable(),
   status: gastroDiscountStatusSchema,
   discountDate: z.string().datetime().nullable(),
+  validityMode: gastroDiscountValidityModeSchema.optional(),
+  validWeekday: gastroWeekdaySchema.nullable().optional(),
   validationCount: z.number().int().min(0),
   createdAt: z.string().datetime(),
 });
@@ -145,6 +151,8 @@ export const adminGastroDiscountDetailSchema = z.object({
   summary: z.string().nullable(),
   detail: z.string().nullable(),
   discountDate: z.string().datetime().nullable(),
+  validityMode: gastroDiscountValidityModeSchema.optional(),
+  validWeekday: gastroWeekdaySchema.nullable().optional(),
   status: gastroDiscountStatusSchema,
   submittedImageUrls: z.array(z.string()),
   displayImageUrls: z.array(z.string()),
