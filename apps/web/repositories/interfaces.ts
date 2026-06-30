@@ -2362,6 +2362,8 @@ export interface GastroPortalDiscount {
   ownerEmail?: string | null;
   ownerPhone?: string | null;
   headerImageUrl?: string | null;
+  imageUrls?: string[];
+  submittedImageUrls?: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -2592,6 +2594,11 @@ export interface GastroRepo {
   getMyDiscount(id: string): Promise<GastroPortalDiscount>;
   createMyDiscount(payload: GastroDiscountCreatePayload): Promise<GastroPortalDiscount>;
   updateMyDiscount(id: string, payload: Partial<Omit<GastroDiscountCreatePayload, 'commissionCoordinationAccepted'>>): Promise<GastroPortalDiscount>;
+  getMyDiscountSummary(id: string): Promise<import('@yo-te-invito/shared').GastroDiscountSummaryResponse>;
+  updateMyDiscountStatus(
+    id: string,
+    body: import('@yo-te-invito/shared').GastroDiscountStatusUpdate,
+  ): Promise<GastroPortalDiscount>;
   previewCourtesyRecipients(
     params: import('@yo-te-invito/shared').GastroCourtesyRecipientsPreviewQuery,
   ): Promise<import('@yo-te-invito/shared').GastroCourtesyRecipientsPreviewResponse>;
@@ -2707,6 +2714,15 @@ export interface AdminGastroRepo {
   listLocationDiscounts(profileId: string): Promise<{ data: AdminGastroDiscountListItem[] }>;
   getDiscount(profileId: string, discountId: string): Promise<AdminGastroDiscountDetail>;
   getDiscountMetrics(profileId: string, discountId: string): Promise<AdminGastroDiscountMetrics>;
+  getDiscountSummary(
+    profileId: string,
+    discountId: string,
+  ): Promise<import('@yo-te-invito/shared').GastroDiscountSummaryResponse>;
+  updateDiscountStatus(
+    profileId: string,
+    discountId: string,
+    body: import('@yo-te-invito/shared').GastroDiscountStatusUpdate,
+  ): Promise<AdminGastroDiscountDetail>;
   updatePublication(
     profileId: string,
     discountId: string,

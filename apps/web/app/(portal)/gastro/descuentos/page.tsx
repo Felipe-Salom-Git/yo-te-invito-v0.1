@@ -55,7 +55,11 @@ export default function GastroDescuentosPage() {
       )}
       <ul className="space-y-3">
         {discounts.map((d) => (
-          <li key={d.id} className="rounded-lg border border-border p-4">
+          <li key={d.id}>
+            <Link
+              href={`/gastro/descuentos/${d.id}`}
+              className="block rounded-lg border border-border p-4 transition hover:border-accent/50 hover:bg-bg-muted/30"
+            >
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div>
                 <p className="font-medium">{d.title ?? d.code}</p>
@@ -74,6 +78,7 @@ export default function GastroDescuentosPage() {
                 {STATUS_LABEL[d.status]}
               </span>
             </div>
+            </Link>
           </li>
         ))}
       </ul>

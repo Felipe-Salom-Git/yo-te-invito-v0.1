@@ -11,6 +11,7 @@ import { getErrorMessage } from '@/lib/errors';
 import { AdminGastroDiscountStatusBadge } from '@/components/admin/gastro/AdminGastroDiscountStatusBadge';
 import { AdminGastroDiscountPublicationEditor } from '@/components/admin/gastro/AdminGastroDiscountPublicationEditor';
 import { AdminGastroDiscountQrPanel } from '@/components/admin/gastro/AdminGastroDiscountQrPanel';
+import { GastroDiscountDetailContent } from '@/components/gastro/GastroDiscountDetailContent';
 
 export default function AdminGastroDiscountDetailPage() {
   const params = useParams();
@@ -27,6 +28,25 @@ export default function AdminGastroDiscountDetailPage() {
     queryKey: adminGastroKeys.discount(profileId, discountId),
     queryFn: () => repos.adminGastro.getDiscount(profileId, discountId),
     enabled: !!profileId && !!discountId,
+  });
+
+  const summaryQuery = useQuery({
+    queryKey: adminGastroKeys.discountSummary(profileId, discountId),
+    queryFn: () => repos.adminGastro.getDiscountSummary(profileId, discountId),
+    enabled: !!profileId && !!discountId,
+  });
+
+  const statusMutation = useMutation({
+    mutationFn: (status: 'ACTIVE' | 'CANCELLED') =>
+      repos.adminGastro.updateDiscountStatus(profileId, discountId, { status }),
+    onError: (e) => addToast(getErrorMessage(e), 'error'),
+    onSuccess: (_, status) => {
+      addToast(status === 'ACTIVE' ? 'Descuento activado' : 'Descuento desactivado', 'success');
+      invalidate();
+      queryClient.invalidateQueries({
+        queryKey: adminGastroKeys.discountSummary(profileId, discountId),
+      });
+    },
   });
 
   useEffect(() => {
@@ -177,6 +197,19 @@ export default function AdminGastroDiscountDetailPage() {
       )}
 
       <AdminGastroDiscountQrPanel qrPayload={item.qrPayload} status={item.status} />
+
+      {summaryQuery.data ? (
+        <div className="mt-8">
+          <GastroDiscountDetailContent
+            summary={summaryQuery.data}
+            statusLoading={statusMutation.isPending}
+            onActivate={() => statusMutation.mutate('ACTIVE')}
+            onDeactivate={() => statusMutation.mutate('CANCELLED')}
+          />
+        </div>
+      ) : summaryQuery.isLoading ? (
+        <p className="mt-8 text-sm text-text-muted">Cargando métricas de cupones…</p>
+      ) : null}
 
       <div className="mt-8">
         <AdminGastroDiscountPublicationEditor

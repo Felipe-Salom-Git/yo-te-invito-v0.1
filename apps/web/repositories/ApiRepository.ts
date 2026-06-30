@@ -2016,6 +2016,15 @@ export class ApiRepository implements Repositories {
         `/gastro/discounts/${encodeURIComponent(id)}`,
         payload,
       ),
+    getMyDiscountSummary: async (id) =>
+      this.client.get<import('@yo-te-invito/shared').GastroDiscountSummaryResponse>(
+        `/gastro/discounts/${encodeURIComponent(id)}/summary`,
+      ),
+    updateMyDiscountStatus: async (id, body) =>
+      this.client.patch<GastroPortalDiscount>(
+        `/gastro/discounts/${encodeURIComponent(id)}/status`,
+        body,
+      ),
     previewCourtesyRecipients: async (params) =>
       this.client.get<import('@yo-te-invito/shared').GastroCourtesyRecipientsPreviewResponse>(
         '/gastro/discounts/courtesy/recipients-preview',
@@ -2140,6 +2149,17 @@ export class ApiRepository implements Repositories {
     getDiscountMetrics: async (profileId, discountId) =>
       this.client.get<AdminGastroDiscountMetrics>(
         `/admin/gastro-discount-tickets/${encodeURIComponent(discountId)}/metrics`,
+        { profileId },
+      ),
+    getDiscountSummary: async (profileId, discountId) =>
+      this.client.get<import('@yo-te-invito/shared').GastroDiscountSummaryResponse>(
+        `/admin/gastro-discount-tickets/${encodeURIComponent(discountId)}/summary`,
+        { profileId },
+      ),
+    updateDiscountStatus: async (profileId, discountId, body) =>
+      this.client.patch<AdminGastroDiscountDetail>(
+        `/admin/gastro-discount-tickets/${encodeURIComponent(discountId)}/status`,
+        body,
         { profileId },
       ),
     updatePublication: async (profileId, discountId, body) =>
