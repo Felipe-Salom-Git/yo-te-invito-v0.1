@@ -16,6 +16,7 @@ import { GastroDashboardService } from './gastro-dashboard.service';
 import { GastroPublicEventSyncService } from './gastro-public-event-sync.service';
 import { GastroCourtesyDiscountsService } from './gastro-courtesy-discounts.service';
 import { GastroDiscountClaimEmailService } from './gastro-discount-claim-email.service';
+import { GastroDiscountMetricsService } from './gastro-discount-metrics.service';
 
 @Module({
   imports: [AuthModule, EmailModule, SubcategoriesModule, ReviewDisputesModule, ReviewsModule],
@@ -31,12 +32,14 @@ import { GastroDiscountClaimEmailService } from './gastro-discount-claim-email.s
     GastroPublicEventSyncService,
     GastroCourtesyDiscountsService,
     GastroDiscountClaimEmailService,
+    GastroDiscountMetricsService,
   ],
   exports: [
     GastroPortalDiscountsService,
     GastroContentService,
     GastroPublicEventSyncService,
     GastroDiscountClaimEmailService,
+    GastroDiscountMetricsService,
   ],
 })
 export class GastroModule {}

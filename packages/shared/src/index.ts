@@ -83,6 +83,7 @@ export * from './schemas/gastro-content';
 export * from './gastro-discount-qr';
 export * from './gastro-discount-expiry';
 export * from './schemas/gastro-discounts';
+export * from './schemas/gastro-discount-summary';
 export * from './schemas/gastro-courtesy-discounts';
 export * from './schemas/geo';
 export * from './schemas/gastro-dashboard';

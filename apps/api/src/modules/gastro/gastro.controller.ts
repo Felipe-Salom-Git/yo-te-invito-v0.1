@@ -8,6 +8,7 @@ import {
   gastroLocalUpdateSchema,
   gastroCourtesyRecipientsPreviewQuerySchema,
   gastroCourtesySendBodySchema,
+  gastroDiscountStatusUpdateSchema,
   Role,
   type GastroContentCreateInput,
   type GastroContentUpdateInput,
@@ -19,6 +20,7 @@ import {
   type GastroValidationListQuery,
   type GastroCourtesyRecipientsPreviewQuery,
   type GastroCourtesySendBody,
+  type GastroDiscountStatusUpdate,
 } from '@yo-te-invito/shared';
 import { JwtOrDevAuthGuard } from '../../auth/jwt-or-dev-auth.guard';
 import { GastroRolesGuard } from '../../common/guards/gastro-roles.guard';
@@ -101,6 +103,29 @@ export class GastroController {
       user.role,
       body,
       process.env.WEB_BASE_URL,
+    );
+  }
+
+  @Get('discounts/:id/summary')
+  async getMyDiscountSummary(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param('id') id: string,
+  ) {
+    return this.portalDiscounts.getDiscountSummary(user.tenantId, user.id, user.role, id);
+  }
+
+  @Patch('discounts/:id/status')
+  async updateMyDiscountStatus(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(gastroDiscountStatusUpdateSchema)) body: GastroDiscountStatusUpdate,
+  ) {
+    return this.portalDiscounts.updateDiscountStatus(
+      user.tenantId,
+      user.id,
+      user.role,
+      id,
+      body,
     );
   }
 

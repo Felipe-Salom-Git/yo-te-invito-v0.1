@@ -82,9 +82,12 @@ import {
   adminHotelProfileIdParamsSchema,
   type AdminHotelProfilesListQuery,
   type AdminHotelProfileIdParams,
+  gastroDiscountStatusUpdateSchema,
+  type GastroDiscountStatusUpdate,
 } from '@yo-te-invito/shared';
 import { AdminGastroService } from './admin-gastro.service';
 import { AdminGastroLocationsService } from './admin-gastro-locations.service';
+import { GastroDiscountMetricsService } from '../gastro/gastro-discount-metrics.service';
 import { AdminProducersService } from './admin-producers.service';
 import { AdminGeneralPublicationsService } from './admin-general-publications.service';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
@@ -130,6 +133,7 @@ export class AdminController {
     private readonly generalPublications: AdminGeneralPublicationsService,
     private readonly adminGastro: AdminGastroService,
     private readonly adminGastroLocations: AdminGastroLocationsService,
+    private readonly gastroDiscountMetrics: GastroDiscountMetricsService,
     private readonly adminHotelProfiles: AdminHotelProfilesService,
   ) {}
 
@@ -898,6 +902,32 @@ export class AdminController {
     );
   }
 
+  @Get('gastro-discount-tickets/:discountId/summary')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async getGastroDiscountTicketSummary(
+    @CurrentUser() user: { tenantId: string },
+    @Param('discountId') discountId: string,
+  ) {
+    return this.gastroDiscountMetrics.buildSummaryForDiscount(user.tenantId, discountId, true);
+  }
+
+  @Patch('gastro-discount-tickets/:discountId/status')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async updateGastroDiscountTicketStatus(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param('discountId') discountId: string,
+    @Body(new ZodValidationPipe(gastroDiscountStatusUpdateSchema)) body: GastroDiscountStatusUpdate,
+  ) {
+    return this.gastroDiscountMetrics.updateDiscountStatus(
+      user.tenantId,
+      discountId,
+      body,
+      { id: user.id, role: user.role },
+    );
+  }
+
   @Patch('gastro-discount-tickets/:discountId/publication')
   @UseGuards(JwtOrDevAuthGuard, RolesGuard)
   @RequireRole(Role.ADMIN)
@@ -1167,6 +1197,37 @@ export class AdminController {
       user.tenantId,
       params.profileId,
       params.discountId,
+    );
+  }
+
+  @Get('gastronomicos/:profileId/discuentos/:discountId/summary')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async getGastroLocationDiscountSummary(
+    @CurrentUser() user: { tenantId: string },
+    @Param(new ZodValidationPipe(adminGastroDiscountIdParamsSchema)) params: AdminGastroDiscountIdParams,
+  ) {
+    return this.gastroDiscountMetrics.buildSummaryForDiscount(
+      user.tenantId,
+      params.discountId,
+      true,
+    );
+  }
+
+  @Patch('gastronomicos/:profileId/discuentos/:discountId/status')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async updateGastroLocationDiscountStatus(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param(new ZodValidationPipe(adminGastroDiscountIdParamsSchema)) params: AdminGastroDiscountIdParams,
+    @Body(new ZodValidationPipe(gastroDiscountStatusUpdateSchema)) body: GastroDiscountStatusUpdate,
+  ) {
+    return this.gastroDiscountMetrics.updateDiscountStatus(
+      user.tenantId,
+      params.discountId,
+      body,
+      { id: user.id, role: user.role },
+      { profileId: params.profileId },
     );
   }
 

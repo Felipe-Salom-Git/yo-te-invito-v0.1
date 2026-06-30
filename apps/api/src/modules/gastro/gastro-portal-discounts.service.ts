@@ -17,6 +17,8 @@ import {
 } from '@yo-te-invito/shared';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ProfilesAuthorizationService } from '../../common/profiles-authorization.service';
+import { GastroDiscountMetricsService } from './gastro-discount-metrics.service';
+import type { GastroDiscountStatusUpdate, GastroDiscountSummaryResponse } from '@yo-te-invito/shared';
 
 function pendingCode(): string {
   return `PND-${randomBytes(4).toString('hex').toUpperCase()}`;
@@ -27,6 +29,7 @@ export class GastroPortalDiscountsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly profiles: ProfilesAuthorizationService,
+    private readonly discountMetrics: GastroDiscountMetricsService,
   ) {}
 
   mapDiscount(row: {
@@ -133,12 +136,41 @@ export class GastroPortalDiscountsService {
   }
 
   private assertEditableStatus(status: string) {
-    if (!['PENDING_REVIEW', 'COMMISSION_NEGOTIATION'].includes(status)) {
+    if (
+      !['PENDING_REVIEW', 'COMMISSION_NEGOTIATION', 'ACTIVE', 'APPROVED', 'CANCELLED'].includes(
+        status,
+      )
+    ) {
       throw new BadRequestException({
         code: ErrorCode.VALIDATION_FAILED,
-        message: 'Este ticket ya no puede editarse',
+        message: 'Este ticket no puede editarse en su estado actual',
       });
     }
+  }
+
+  private async assertOwnDiscount(tenantId: string, userId: string, userRole: string, id: string) {
+    await this.assertGastroUser(tenantId, userId, userRole);
+    const profile = await this.getOwnedProfile(tenantId, userId);
+    const row = await this.prisma.gastroDiscount.findFirst({
+      where: { id, tenantId, gastroProfileId: profile.id },
+    });
+    if (!row) {
+      const foreign = await this.prisma.gastroDiscount.findFirst({
+        where: { id, tenantId },
+        select: { id: true },
+      });
+      if (foreign) {
+        throw new ForbiddenException({
+          code: ErrorCode.FORBIDDEN,
+          message: 'No tenés permiso para gestionar este descuento',
+        });
+      }
+      throw new NotFoundException({
+        code: ErrorCode.NOT_FOUND,
+        message: 'Discount not found',
+      });
+    }
+    return { row, profile };
   }
 
   async listMyDiscounts(tenantId: string, userId: string, userRole: string) {
@@ -287,5 +319,29 @@ export class GastroPortalDiscountsService {
       },
     });
     return this.mapDiscount(updated);
+  }
+
+  async getDiscountSummary(
+    tenantId: string,
+    userId: string,
+    userRole: string,
+    id: string,
+  ): Promise<GastroDiscountSummaryResponse> {
+    await this.assertOwnDiscount(tenantId, userId, userRole, id);
+    return this.discountMetrics.buildSummaryForDiscount(tenantId, id, false);
+  }
+
+  async updateDiscountStatus(
+    tenantId: string,
+    userId: string,
+    userRole: string,
+    id: string,
+    body: GastroDiscountStatusUpdate,
+  ): Promise<GastroDiscountSummaryResponse> {
+    const { profile } = await this.assertOwnDiscount(tenantId, userId, userRole, id);
+    return this.discountMetrics.updateDiscountStatus(tenantId, id, body, {
+      id: userId,
+      role: userRole,
+    }, { profileId: profile.id });
   }
 }
