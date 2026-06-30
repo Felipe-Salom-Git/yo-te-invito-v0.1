@@ -1411,6 +1411,8 @@ export interface PlatformMetrics {
 
 export type AdminDashboardMetrics = import('@yo-te-invito/shared').AdminDashboardMetrics;
 export type AdminDashboardPendingEvent = import('@yo-te-invito/shared').AdminDashboardPendingEvent;
+export type AdminDashboardPendingGastroDiscount =
+  import('@yo-te-invito/shared').AdminDashboardPendingGastroDiscount;
 export type AdminDashboardResponse = import('@yo-te-invito/shared').AdminDashboardResponse;
 
 export interface AdminDashboardRepo {
@@ -2325,6 +2327,7 @@ export interface GastroLocal {
   socialLinks: import('@yo-te-invito/shared').EntitySocialLinks | null;
   relatedLinks?: import('@yo-te-invito/shared').RelatedLinkItem[] | null;
   subcategoryId: string | null;
+  subcategories?: Array<{ id: string; name: string; isPrimary?: boolean }>;
   publicEventId: string | null;
   tags?: ContentTagPublic[];
   status: string;
@@ -2366,6 +2369,8 @@ export interface GastroLocalUpsertPayload {
   summary?: string | null;
   detail?: string | null;
   subcategoryId?: string | null;
+  subcategoryIds?: string[];
+  subcategories?: Array<{ id: string; name: string; isPrimary?: boolean }>;
   bannerUrl?: string | null;
   galleryUrls?: string[];
   location: {

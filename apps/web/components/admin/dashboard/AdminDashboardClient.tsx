@@ -16,6 +16,7 @@ import { payoutsKeys } from '@/lib/query/keys';
 import { getErrorMessage } from '@/lib/errors';
 import { AdminDashboardKpiCard } from './AdminDashboardKpiCard';
 import { AdminPendingEventsQueue } from './AdminPendingEventsQueue';
+import { AdminOperationalPendingSection } from './AdminOperationalPendingSection';
 import { AdminOperationalLinks } from './AdminOperationalLinks';
 import { AdminVerticalStatusCard } from './AdminVerticalStatusCard';
 
@@ -58,6 +59,8 @@ export function AdminDashboardClient() {
 
   const metrics = dashboardQuery.data?.metrics;
   const pendingEvents = dashboardQuery.data?.pendingEvents ?? [];
+  const draftEvents = dashboardQuery.data?.draftEvents ?? [];
+  const pendingGastroDiscounts = dashboardQuery.data?.pendingGastroDiscounts ?? [];
   const pendingPayouts = (payoutsQuery.data ?? []).filter(
     (p) => p.status === 'PENDING' || p.status === 'REQUESTED',
   );
@@ -104,6 +107,11 @@ export function AdminDashboardClient() {
             hint="Eventos en estado pendiente"
           />
           <AdminDashboardKpiCard
+            label="Eventos en borrador"
+            value={kpiValue(metrics?.eventsDraftCount)}
+            hint="Aún no enviados a revisión"
+          />
+          <AdminDashboardKpiCard
             label="Eventos activos"
             value={kpiValue(metrics?.activeEvents)}
             hint="Aprobados con fecha futura"
@@ -120,6 +128,11 @@ export function AdminDashboardClient() {
             label="Disputas abiertas"
             value={kpiValue(metrics?.pendingDisputes)}
             hint="Reseñas en cola admin"
+          />
+          <AdminDashboardKpiCard
+            label="Descuentos gastro pendientes"
+            value={kpiValue(metrics?.gastroDiscountsPendingCount)}
+            hint="Revisión o negociación"
           />
           <AdminDashboardKpiCard
             label="Tickets vendidos"
@@ -174,6 +187,20 @@ export function AdminDashboardClient() {
         </div>
         <AdminPendingEventsQueue
           events={pendingEvents}
+          isLoading={dashboardQuery.isLoading}
+        />
+      </section>
+
+      <section id="pendientes-operativos" className="mt-10 scroll-mt-24">
+        <div>
+          <h2 className="text-lg font-semibold text-text">Pendientes operativos</h2>
+          <p className="mt-1 text-sm text-text-muted">
+            Borradores de eventos y descuentos gastronómicos que requieren seguimiento.
+          </p>
+        </div>
+        <AdminOperationalPendingSection
+          draftEvents={draftEvents}
+          pendingGastroDiscounts={pendingGastroDiscounts}
           isLoading={dashboardQuery.isLoading}
         />
       </section>
