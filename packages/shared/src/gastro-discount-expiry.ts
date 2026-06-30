@@ -3,6 +3,9 @@
  * Expiry on 2026-06-24 is valid through 2026-06-24 23:59:59 America/Argentina/Buenos_Aires.
  */
 
+import type { GastroWeekday } from './schemas/gastro-discounts';
+import { GASTRO_WEEKDAY_LABELS_ES } from './schemas/gastro-discounts';
+
 export const GASTRO_DISCOUNT_TIMEZONE = 'America/Argentina/Buenos_Aires';
 
 type ZonedParts = { year: number; month: number; day: number };
@@ -154,4 +157,106 @@ export function getGastroDiscountLocalDayBounds(
   const start = gastroDiscountStartOfDay(year, month, day, timeZone);
   const end = gastroDiscountEndOfDay(year, month, day, timeZone);
   return { start, end };
+}
+
+const INTL_WEEKDAY_TO_GASTRO: Record<string, GastroWeekday> = {
+  Monday: 'MONDAY',
+  Tuesday: 'TUESDAY',
+  Wednesday: 'WEDNESDAY',
+  Thursday: 'THURSDAY',
+  Friday: 'FRIDAY',
+  Saturday: 'SATURDAY',
+  Sunday: 'SUNDAY',
+};
+
+/** Weekday for an instant in the gastro discount timezone (AR). */
+export function getGastroWeekdayFromDate(
+  date: Date = new Date(),
+  timeZone: string = GASTRO_DISCOUNT_TIMEZONE,
+): GastroWeekday {
+  const label = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    weekday: 'long',
+  }).format(date);
+  return INTL_WEEKDAY_TO_GASTRO[label] ?? 'MONDAY';
+}
+
+export function getGastroWeekdayLabelEs(weekday: GastroWeekday): string {
+  return GASTRO_WEEKDAY_LABELS_ES[weekday];
+}
+
+export type GastroDiscountValidityReason = 'EXPIRED' | 'NOT_VALID_TODAY' | 'INACTIVE';
+
+export type GastroDiscountValidTodayInput = {
+  validityMode?: 'DATE_RANGE' | 'WEEKLY_RECURRING' | null;
+  validWeekday?: GastroWeekday | null;
+  validFrom?: Date | string | null;
+  validTo?: Date | string | null;
+  discountDate?: Date | string | null;
+  status?: string | null;
+  now?: Date;
+  timeZone?: string;
+};
+
+function toDateOrNull(value: Date | string | null | undefined): Date | null {
+  if (!value) return null;
+  const d = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+const INACTIVE_DISCOUNT_STATUSES = new Set([
+  'REJECTED',
+  'CANCELLED',
+  'EXPIRED',
+  'PENDING_REVIEW',
+  'COMMISSION_NEGOTIATION',
+]);
+
+/**
+ * Whether a gastro discount parent row is redeemable today (AR local time).
+ * Weekly recurring discounts ignore calendar expiry unless optional validTo is set.
+ */
+export function isGastroDiscountValidToday(
+  input: GastroDiscountValidTodayInput,
+): { valid: boolean; reason?: GastroDiscountValidityReason } {
+  const now = input.now ?? new Date();
+  const timeZone = input.timeZone ?? GASTRO_DISCOUNT_TIMEZONE;
+  const status = input.status ?? 'ACTIVE';
+
+  if (INACTIVE_DISCOUNT_STATUSES.has(status)) {
+    return { valid: false, reason: 'INACTIVE' };
+  }
+
+  const validityMode = input.validityMode ?? 'DATE_RANGE';
+
+  if (validityMode === 'WEEKLY_RECURRING') {
+    if (!input.validWeekday) {
+      return { valid: false, reason: 'INACTIVE' };
+    }
+    const todayWeekday = getGastroWeekdayFromDate(now, timeZone);
+    if (todayWeekday !== input.validWeekday) {
+      return { valid: false, reason: 'NOT_VALID_TODAY' };
+    }
+    const validFrom = toDateOrNull(input.validFrom);
+    if (isGastroDiscountNotYetActive(validFrom, now, timeZone)) {
+      return { valid: false, reason: 'INACTIVE' };
+    }
+    const expiresAt =
+      toDateOrNull(input.validTo) ?? toDateOrNull(input.discountDate);
+    if (isGastroDiscountExpired(expiresAt, now, timeZone)) {
+      return { valid: false, reason: 'EXPIRED' };
+    }
+    return { valid: true };
+  }
+
+  const validFrom = toDateOrNull(input.validFrom);
+  if (isGastroDiscountNotYetActive(validFrom, now, timeZone)) {
+    return { valid: false, reason: 'INACTIVE' };
+  }
+  const expiresAt =
+    toDateOrNull(input.validTo) ?? toDateOrNull(input.discountDate);
+  if (isGastroDiscountExpired(expiresAt, now, timeZone)) {
+    return { valid: false, reason: 'EXPIRED' };
+  }
+  return { valid: true };
 }

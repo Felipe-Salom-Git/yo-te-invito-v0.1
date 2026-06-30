@@ -8,7 +8,10 @@ import {
   ErrorCode,
   isGastroDiscountExpired,
   isGastroDiscountNotYetActive,
+  isGastroDiscountValidToday,
+  getGastroWeekdayLabelEs,
   getGastroDiscountLocalDayBounds,
+  type GastroWeekday,
 } from '@yo-te-invito/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProfilesAuthorizationService } from '../common/profiles-authorization.service';
@@ -106,21 +109,103 @@ export class ScannerGastroDiscountService {
 
   private isDiscountExpired(d: {
     status: string;
+    validityMode?: string | null;
+    validWeekday?: string | null;
     discountDate: Date | null;
     validFrom: Date | null;
     validTo: Date | null;
   }): boolean {
     if (d.status === 'EXPIRED') return true;
-    if (isGastroDiscountNotYetActive(d.validFrom)) return false;
-    const expiresAt = resolveExpiryDate({
+    const check = isGastroDiscountValidToday({
+      validityMode: (d.validityMode ?? 'DATE_RANGE') as 'DATE_RANGE' | 'WEEKLY_RECURRING',
+      validWeekday: d.validWeekday as GastroWeekday | null,
+      validFrom: d.validFrom,
       validTo: d.validTo,
       discountDate: d.discountDate,
+      status: d.status === 'EXPIRED' ? 'EXPIRED' : 'ACTIVE',
     });
-    return isGastroDiscountExpired(expiresAt);
+    return check.reason === 'EXPIRED';
   }
 
-  private isDiscountNotYetActive(d: { validFrom: Date | null }): boolean {
-    return isGastroDiscountNotYetActive(d.validFrom);
+  private isDiscountNotYetActive(d: {
+    validityMode?: string | null;
+    validWeekday?: string | null;
+    validFrom: Date | null;
+    validTo: Date | null;
+    discountDate: Date | null;
+    status: string;
+  }): boolean {
+    const check = isGastroDiscountValidToday({
+      validityMode: (d.validityMode ?? 'DATE_RANGE') as 'DATE_RANGE' | 'WEEKLY_RECURRING',
+      validWeekday: d.validWeekday as GastroWeekday | null,
+      validFrom: d.validFrom,
+      validTo: d.validTo,
+      discountDate: d.discountDate,
+      status: 'ACTIVE',
+    });
+    if (check.reason === 'INACTIVE' && d.validFrom) {
+      return isGastroDiscountNotYetActive(d.validFrom);
+    }
+    return false;
+  }
+
+  private discountNotValidTodayResponse(
+    validWeekday: string | null | undefined,
+    discountInfo: ValidateGastroDiscountResponse['discount'],
+  ): ValidateGastroDiscountResponse {
+    const label = validWeekday
+      ? getGastroWeekdayLabelEs(validWeekday as GastroWeekday)
+      : 'ese día';
+    return this.response(
+      'NOT_VALID_TODAY',
+      'No válido hoy',
+      `Este cupón solo es válido los ${label}.`,
+      discountInfo,
+    );
+  }
+
+  private assertDiscountValidToday(
+    discount: {
+      validityMode?: string | null;
+      validWeekday?: string | null;
+      validFrom: Date | null;
+      validTo: Date | null;
+      discountDate: Date | null;
+      status: string;
+    },
+    discountInfo: ValidateGastroDiscountResponse['discount'],
+  ): ValidateGastroDiscountResponse | null {
+    const check = isGastroDiscountValidToday({
+      validityMode: (discount.validityMode ?? 'DATE_RANGE') as 'DATE_RANGE' | 'WEEKLY_RECURRING',
+      validWeekday: discount.validWeekday as GastroWeekday | null,
+      validFrom: discount.validFrom,
+      validTo: discount.validTo,
+      discountDate: discount.discountDate,
+      status: discount.status,
+    });
+    if (check.valid) return null;
+    if (check.reason === 'NOT_VALID_TODAY') {
+      return this.discountNotValidTodayResponse(discount.validWeekday, discountInfo);
+    }
+    if (check.reason === 'EXPIRED') {
+      return this.response(
+        'EXPIRED',
+        'Cupón vencido',
+        'La fecha de validez de este descuento ya finalizó.',
+        discountInfo,
+      );
+    }
+    if (check.reason === 'INACTIVE') {
+      if (isGastroDiscountNotYetActive(discount.validFrom)) {
+        return this.response(
+          'INACTIVE',
+          'Descuento inactivo',
+          'El descuento aún no está habilitado para uso.',
+          discountInfo,
+        );
+      }
+    }
+    return null;
   }
 
   private async hasDailyGastroRedemption(
@@ -278,23 +363,8 @@ export class ScannerGastroDiscountService {
         );
       }
 
-      if (this.isDiscountExpired(discount)) {
-        return this.response(
-          'EXPIRED',
-          'Cupón vencido',
-          'La fecha de validez de este descuento ya finalizó.',
-          discountInfo,
-        );
-      }
-
-      if (this.isDiscountNotYetActive(discount)) {
-        return this.response(
-          'INACTIVE',
-          'Descuento inactivo',
-          'El descuento aún no está habilitado para uso.',
-          discountInfo,
-        );
-      }
+      const validityBlock = this.assertDiscountValidToday(discount, discountInfo);
+      if (validityBlock) return validityBlock;
 
       if (!isParentDiscountRedeemable(discount.status)) {
         return this.response(
@@ -393,25 +463,10 @@ export class ScannerGastroDiscountService {
       );
     }
 
-    if (this.isDiscountExpired(discount)) {
-      return this.response(
-        'EXPIRED',
-        'Cupón vencido',
-        'La fecha de validez de este descuento ya finalizó.',
-        discountInfo,
-      );
-    }
+    const validityBlock = this.assertDiscountValidToday(discount, discountInfo);
+    if (validityBlock) return validityBlock;
 
-    if (this.isDiscountNotYetActive(discount)) {
-      return this.response(
-        'INACTIVE',
-        'Descuento inactivo',
-        'El descuento aún no está habilitado para uso.',
-        discountInfo,
-      );
-    }
-
-    if (discount.status !== 'ACTIVE') {
+    if (!isParentDiscountRedeemable(discount.status)) {
       const inactiveMsg = parentDiscountInactiveMessage(discount.status);
       return this.response('INACTIVE', 'Descuento inactivo', inactiveMsg, discountInfo);
     }

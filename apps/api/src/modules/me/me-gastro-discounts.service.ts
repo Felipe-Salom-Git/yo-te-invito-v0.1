@@ -4,6 +4,9 @@ import {
   type MeGastroDiscountItem,
   type MeGastroDiscountsResponse,
   isGastroDiscountExpired,
+  isGastroDiscountValidToday,
+  getGastroWeekdayLabelEs,
+  type GastroWeekday,
 } from '@yo-te-invito/shared';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -80,6 +83,26 @@ export class MeGastroDiscountsService {
           usedAt,
           claim.validations.length > 0,
         );
+        const validityMode = (d.validityMode ?? 'DATE_RANGE') as 'DATE_RANGE' | 'WEEKLY_RECURRING';
+        const validWeekday = (d.validWeekday ?? null) as GastroWeekday | null;
+        let availabilityLabel: string | null = null;
+        if (
+          validityMode === 'WEEKLY_RECURRING' &&
+          validWeekday &&
+          status === 'ACTIVE'
+        ) {
+          const todayCheck = isGastroDiscountValidToday({
+            validityMode,
+            validWeekday,
+            validFrom: d.validFrom,
+            validTo: d.validTo,
+            discountDate: d.discountDate,
+            status: d.status,
+          });
+          if (todayCheck.reason === 'NOT_VALID_TODAY') {
+            availabilityLabel = `Válido los ${getGastroWeekdayLabelEs(validWeekday)}`;
+          }
+        }
 
         return {
           claimId: claim.id,
@@ -97,6 +120,9 @@ export class MeGastroDiscountsService {
           locationName: profile.displayName,
           locationSlug: profile.publicEventId,
           validTo: expiresAt?.toISOString() ?? null,
+          validityMode,
+          validWeekday,
+          availabilityLabel,
           usedAt: usedAt?.toISOString() ?? null,
           createdAt: claim.createdAt.toISOString(),
           emailSentAt: claim.emailSentAt?.toISOString() ?? null,

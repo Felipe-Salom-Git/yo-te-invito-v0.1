@@ -8,7 +8,10 @@ import {
   buildGastroDiscountQrPayload,
   ErrorCode,
   isGastroDiscountExpired,
+  isGastroDiscountValidToday,
+  getGastroWeekdayLabelEs,
   normalizeGastroDiscountExpiryDate,
+  type GastroWeekday,
 } from '@yo-te-invito/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../modules/audit/audit.service';
@@ -40,6 +43,8 @@ function mapListRow(
     detail: string | null;
     displayImageUrls: unknown;
     discountDate: Date | null;
+    validityMode?: string | null;
+    validWeekday?: string | null;
     type: string;
     value: number;
     gastroProfile: {
@@ -58,6 +63,8 @@ function mapListRow(
     detail: d.detail,
     headerImageUrl: imgs[0] ?? null,
     discountDate: d.discountDate?.toISOString() ?? null,
+    validityMode: (d.validityMode ?? 'DATE_RANGE') as 'DATE_RANGE' | 'WEEKLY_RECURRING',
+    validWeekday: (d.validWeekday ?? null) as GastroWeekday | null,
     type: d.type as 'PERCENT' | 'FIXED',
     value: d.value,
     locationId: d.gastroProfile!.id,
@@ -96,7 +103,11 @@ export class PublicGastroDiscountsService {
         status: 'ACTIVE' as const,
         ...(subcategorySlug ? { subcategory: { slug: subcategorySlug } } : {}),
       },
-      OR: [{ discountDate: null }, { discountDate: { gte: now } }],
+      OR: [
+        { validityMode: 'WEEKLY_RECURRING' as const },
+        { discountDate: null },
+        { discountDate: { gte: now } },
+      ],
     };
   }
 
@@ -155,7 +166,15 @@ export class PublicGastroDiscountsService {
       eventId: row.eventId,
       claimable:
         !!row.qrToken &&
-        PUBLIC_STATUSES.includes(row.status as (typeof PUBLIC_STATUSES)[number]),
+        PUBLIC_STATUSES.includes(row.status as (typeof PUBLIC_STATUSES)[number]) &&
+        isGastroDiscountValidToday({
+          validityMode: (row.validityMode ?? 'DATE_RANGE') as 'DATE_RANGE' | 'WEEKLY_RECURRING',
+          validWeekday: row.validWeekday as GastroWeekday | null,
+          validFrom: row.validFrom,
+          validTo: row.validTo,
+          discountDate: row.discountDate,
+          status: row.status,
+        }).valid,
     };
   }
 

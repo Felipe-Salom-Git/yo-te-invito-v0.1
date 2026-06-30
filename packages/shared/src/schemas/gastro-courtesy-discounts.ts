@@ -31,6 +31,12 @@ export const meGastroDiscountItemSchema = z.object({
   locationName: z.string(),
   locationSlug: z.string().nullable(),
   validTo: z.string().datetime().nullable(),
+  validityMode: z.enum(['DATE_RANGE', 'WEEKLY_RECURRING']).optional(),
+  validWeekday: z
+    .enum(['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'])
+    .nullable()
+    .optional(),
+  availabilityLabel: z.string().nullable().optional(),
   usedAt: z.string().datetime().nullable(),
   createdAt: z.string().datetime(),
   emailSentAt: z.string().datetime().nullable(),

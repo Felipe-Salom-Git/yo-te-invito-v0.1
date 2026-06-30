@@ -61,7 +61,7 @@ const SCAN_COOLDOWN_MS = 2500;
 
 function gastroStatusClass(status: ValidateGastroDiscountResponse['status']): string {
   if (status === 'VALID') return 'bg-emerald-700 text-white';
-  if (status === 'ALREADY_USED' || status === 'LIMIT_REACHED') return 'bg-amber-700 text-white';
+  if (status === 'ALREADY_USED' || status === 'LIMIT_REACHED' || status === 'NOT_VALID_TODAY') return 'bg-amber-700 text-white';
   return 'bg-red-700 text-white';
 }
 

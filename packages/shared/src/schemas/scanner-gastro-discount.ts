@@ -5,6 +5,7 @@ export const gastroDiscountScanStatusSchema = z.enum([
   'INVALID',
   'EXPIRED',
   'INACTIVE',
+  'NOT_VALID_TODAY',
   'ALREADY_USED',
   'LIMIT_REACHED',
 ]);
