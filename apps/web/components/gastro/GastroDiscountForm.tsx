@@ -36,9 +36,17 @@ type Props = {
   submitting?: boolean;
   /** GastroProfile.id — required for GCS uploads. */
   gastroProfileId?: string;
+  mode?: 'create' | 'edit';
 };
 
-export function GastroDiscountForm({ initial, onSubmit, submitting, gastroProfileId }: Props) {
+export function GastroDiscountForm({
+  initial,
+  onSubmit,
+  submitting,
+  gastroProfileId,
+  mode = 'create',
+}: Props) {
+  const isEdit = mode === 'edit';
   const [title, setTitle] = useState(initial?.title ?? '');
   const [summary, setSummary] = useState(initial?.summary ?? '');
   const [detail, setDetail] = useState(initial?.detail ?? '');
@@ -55,7 +63,7 @@ export function GastroDiscountForm({ initial, onSubmit, submitting, gastroProfil
   const [validWeekday, setValidWeekday] = useState<GastroWeekday>(
     initial?.validWeekday ?? 'WEDNESDAY',
   );
-  const [accepted, setAccepted] = useState(false);
+  const [accepted, setAccepted] = useState(isEdit);
   const [isUploadingImages, setIsUploadingImages] = useState(false);
 
   const uploadConfig: GcsImageUploadConfig | undefined = gastroProfileId
@@ -190,31 +198,33 @@ export function GastroDiscountForm({ initial, onSubmit, submitting, gastroProfil
         />
       )}
 
-      <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm">
-        <p className="font-semibold text-amber-200">Importante</p>
-        <p className="mt-2 text-text-muted">
-          Este servicio requiere coordinación con administración. Una vez enviado el ticket de
-          descuento, nuestro equipo se comunicará con vos para coordinar el costo de comisión antes
-          de aprobarlo y activarlo.
-        </p>
-        <label className="mt-3 flex cursor-pointer items-start gap-2">
-          <input
-            type="checkbox"
-            checked={accepted}
-            onChange={(e) => setAccepted(e.target.checked)}
-            className="mt-1"
-          />
-          <span>
-            Entiendo que administración se comunicará conmigo para coordinar la comisión antes de
-            activar el ticket de descuento.
-          </span>
-        </label>
-      </div>
+      {!isEdit ? (
+        <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm">
+          <p className="font-semibold text-amber-200">Importante</p>
+          <p className="mt-2 text-text-muted">
+            Este servicio requiere coordinación con administración. Una vez enviado el ticket de
+            descuento, nuestro equipo se comunicará con vos para coordinar el costo de comisión antes
+            de aprobarlo y activarlo.
+          </p>
+          <label className="mt-3 flex cursor-pointer items-start gap-2">
+            <input
+              type="checkbox"
+              checked={accepted}
+              onChange={(e) => setAccepted(e.target.checked)}
+              className="mt-1"
+            />
+            <span>
+              Entiendo que administración se comunicará conmigo para coordinar la comisión antes de
+              activar el ticket de descuento.
+            </span>
+          </label>
+        </div>
+      ) : null}
       <Button
         type="submit"
         disabled={!accepted || submitting || isUploadingImages || imageUrls.length === 0 || !validityReady}
       >
-        Enviar ticket de descuento a revisión
+        {isEdit ? 'Guardar cambios' : 'Enviar ticket de descuento a revisión'}
       </Button>
     </form>
   );
