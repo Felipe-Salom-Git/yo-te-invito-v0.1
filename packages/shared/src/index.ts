@@ -73,6 +73,7 @@ export * from './schemas/admin-reviews-report';
 export * from './schemas/admin-events-list';
 export * from './schemas/admin-content-lifecycle';
 export * from './schemas/admin-users';
+export * from './schemas/admin-deep-delete';
 export * from './schemas/admin-payments';
 export * from './schemas/general-publications';
 export * from './schemas/gastro-locations';
