@@ -119,7 +119,11 @@ export function GastroDiscountDetailContent({
           {metricCards.map((card) => (
             <div
               key={card.label}
-              className="rounded-lg border border-border bg-bg-muted/30 px-4 py-3"
+              className={`rounded-lg border border-border bg-bg-muted/30 px-4 py-3 ${
+                card.label === 'Emails fallidos' && card.value > 0
+                  ? 'border-rose-500/40 bg-rose-500/5'
+                  : ''
+              }`}
             >
               <p className="text-xs text-text-muted">{card.label}</p>
               <p className="mt-1 text-2xl font-semibold text-text">{card.value}</p>
