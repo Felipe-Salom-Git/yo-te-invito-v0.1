@@ -371,6 +371,14 @@ export class AdminUsersService {
     }
   }
 
+  async cleanupAuxiliaryUserDataForDeepDelete(
+    tx: Parameters<Parameters<PrismaService['$transaction']>[0]>[0],
+    tenantId: string,
+    userId: string,
+  ) {
+    await this.cleanupAuxiliaryUserData(tx, tenantId, userId);
+  }
+
   private async cleanupAuxiliaryUserData(
     tx: Parameters<Parameters<PrismaService['$transaction']>[0]>[0],
     tenantId: string,

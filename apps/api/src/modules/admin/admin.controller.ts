@@ -84,6 +84,10 @@ import {
   type AdminHotelProfileIdParams,
   gastroDiscountStatusUpdateSchema,
   type GastroDiscountStatusUpdate,
+  adminDeepDeleteEntityTypeSchema,
+  adminDeepDeleteBodySchema,
+  type AdminDeepDeleteEntityType,
+  type AdminDeepDeleteBody,
 } from '@yo-te-invito/shared';
 import { AdminGastroService } from './admin-gastro.service';
 import { AdminGastroLocationsService } from './admin-gastro-locations.service';
@@ -111,6 +115,7 @@ import { InboxService } from '../inbox/inbox.service';
 import { AdminContentLifecycleService } from './admin-content-lifecycle.service';
 import { AdminContentPurgeService } from './admin-content-purge.service';
 import { AdminHotelProfilesService } from './admin-hotel-profiles.service';
+import { AdminDeepDeleteService } from './admin-deep-delete.service';
 
 @Controller('admin')
 export class AdminController {
@@ -135,6 +140,7 @@ export class AdminController {
     private readonly adminGastroLocations: AdminGastroLocationsService,
     private readonly gastroDiscountMetrics: GastroDiscountMetricsService,
     private readonly adminHotelProfiles: AdminHotelProfilesService,
+    private readonly deepDelete: AdminDeepDeleteService,
   ) {}
 
   @Get('general-publications')
@@ -744,6 +750,35 @@ export class AdminController {
       id: user.id,
       role: user.role,
     });
+  }
+
+  @Get('deep-delete/:entityType/:entityId/preflight')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async getDeepDeletePreflight(
+    @CurrentUser() user: { tenantId: string; id: string },
+    @Param('entityType') entityTypeRaw: string,
+    @Param('entityId') entityId: string,
+  ) {
+    const entityType = adminDeepDeleteEntityTypeSchema.parse(
+      entityTypeRaw.toUpperCase(),
+    ) as AdminDeepDeleteEntityType;
+    return this.deepDelete.getPreflight(user.tenantId, entityType, entityId, user.id);
+  }
+
+  @Delete('deep-delete/:entityType/:entityId')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async executeDeepDelete(
+    @CurrentUser() user: { tenantId: string; id: string; role: string },
+    @Param('entityType') entityTypeRaw: string,
+    @Param('entityId') entityId: string,
+    @Body(new ZodValidationPipe(adminDeepDeleteBodySchema)) body: AdminDeepDeleteBody,
+  ) {
+    const entityType = adminDeepDeleteEntityTypeSchema.parse(
+      entityTypeRaw.toUpperCase(),
+    ) as AdminDeepDeleteEntityType;
+    return this.deepDelete.execute(user.tenantId, { id: user.id, role: user.role }, entityType, entityId, body);
   }
 
   @Get('config')

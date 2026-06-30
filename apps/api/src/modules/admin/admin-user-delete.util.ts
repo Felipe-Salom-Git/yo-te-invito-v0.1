@@ -44,7 +44,7 @@ export type UserDeleteDependencyCounts = {
   primaryGastroProfileId: string | null;
 };
 
-async function safeCount(label: string, fn: () => Promise<number>): Promise<number> {
+export async function safeCount(label: string, fn: () => Promise<number>): Promise<number> {
   try {
     return await fn();
   } catch (error) {

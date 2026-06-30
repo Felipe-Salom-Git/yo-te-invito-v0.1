@@ -33,6 +33,7 @@ import { AdminGastroLocationsService } from './admin-gastro-locations.service';
 import { AdminContentLifecycleService } from './admin-content-lifecycle.service';
 import { AdminContentPurgeService } from './admin-content-purge.service';
 import { AdminHotelProfilesService } from './admin-hotel-profiles.service';
+import { AdminDeepDeleteService } from './admin-deep-delete.service';
 
 @Module({
   imports: [
@@ -71,6 +72,7 @@ import { AdminHotelProfilesService } from './admin-hotel-profiles.service';
     AdminContentLifecycleService,
     AdminContentPurgeService,
     AdminHotelProfilesService,
+    AdminDeepDeleteService,
   ],
   exports: [AdminContentLifecycleService],
 })

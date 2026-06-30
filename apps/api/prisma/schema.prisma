@@ -2066,6 +2066,8 @@ enum AuditAction {
   GEO_ADDRESS_RESOLVED
   ADMIN_USER_DELETED
   ADMIN_USER_DELETE_BLOCKED
+  ADMIN_DEEP_DELETE_EXECUTED
+  ADMIN_DEEP_DELETE_BLOCKED
 }
 
 /// Scanner user bound to one parent commercial account (tenant-scoped).

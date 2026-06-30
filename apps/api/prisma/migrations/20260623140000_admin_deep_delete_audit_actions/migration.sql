@@ -1,0 +1,3 @@
+-- Admin Deep Delete audit actions
+ALTER TYPE "AuditAction" ADD VALUE 'ADMIN_DEEP_DELETE_EXECUTED';
+ALTER TYPE "AuditAction" ADD VALUE 'ADMIN_DEEP_DELETE_BLOCKED';
