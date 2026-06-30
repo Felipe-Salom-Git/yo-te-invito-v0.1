@@ -3,6 +3,7 @@
 import { Fragment, useState } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
+import { GASTRO_WEEKDAY_LABELS_ES, type GastroWeekday } from '@yo-te-invito/shared';
 import { useRepositories } from '@/repositories/context';
 import { adminGastroKeys } from '@/lib/query/keys';
 import type { AdminGastroDiscountListItem } from '@/repositories/interfaces';
@@ -68,9 +69,11 @@ export function AdminGastroDiscountsTable({ profileId, discounts }: Props) {
                     )}
                   </td>
                   <td className="px-4 py-3 text-text-muted">
-                    {d.discountDate
-                      ? new Date(d.discountDate).toLocaleDateString('es-AR')
-                      : '—'}
+                    {d.validityMode === 'WEEKLY_RECURRING' && d.validWeekday
+                      ? `Todos los ${GASTRO_WEEKDAY_LABELS_ES[d.validWeekday as GastroWeekday]}`
+                      : d.discountDate
+                        ? new Date(d.discountDate).toLocaleDateString('es-AR')
+                        : '—'}
                   </td>
                   <td className="px-4 py-3">
                     <AdminGastroDiscountStatusBadge status={d.status} />

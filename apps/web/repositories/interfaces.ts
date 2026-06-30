@@ -2348,6 +2348,8 @@ export interface GastroPortalDiscount {
   summary: string | null;
   detail: string | null;
   discountDate: string | null;
+  validityMode?: 'DATE_RANGE' | 'WEEKLY_RECURRING';
+  validWeekday?: import('@yo-te-invito/shared').GastroWeekday | null;
   validFrom: string | null;
   validTo: string | null;
   status: GastroDiscountStatus;
@@ -2400,7 +2402,9 @@ export interface GastroDiscountCreatePayload {
   summary: string;
   detail: string;
   imageUrls: string[];
-  discountDate: string;
+  validityMode?: 'DATE_RANGE' | 'WEEKLY_RECURRING';
+  discountDate?: string;
+  validWeekday?: import('@yo-te-invito/shared').GastroWeekday;
   commissionCoordinationAccepted: true;
 }
 
@@ -2479,6 +2483,8 @@ export interface PublicGastroLocationDiscount {
   detail: string | null;
   headerImageUrl: string | null;
   discountDate: string | null;
+  validityMode?: 'DATE_RANGE' | 'WEEKLY_RECURRING';
+  validWeekday?: import('@yo-te-invito/shared').GastroWeekday | null;
   type: 'PERCENT' | 'FIXED';
   value: number;
 }
@@ -2640,6 +2646,8 @@ export interface AdminGastroDiscountListItem {
   summary: string | null;
   status: GastroDiscountStatus;
   discountDate: string | null;
+  validityMode?: 'DATE_RANGE' | 'WEEKLY_RECURRING';
+  validWeekday?: import('@yo-te-invito/shared').GastroWeekday | null;
   validationCount: number;
   createdAt: string;
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { GASTRO_WEEKDAY_LABELS_ES, type GastroWeekday } from '@yo-te-invito/shared';
 import type { PublicGastroLocationDiscount } from '@/repositories/interfaces';
 
 function formatValue(d: PublicGastroLocationDiscount): string {
@@ -58,6 +59,10 @@ export function GastroDiscountsSection({
         {discounts.map((d) => {
           const title = d.title?.trim() || 'Descuento';
           const dateLabel = formatDate(d.discountDate);
+          const weeklyLabel =
+            d.validityMode === 'WEEKLY_RECURRING' && d.validWeekday
+              ? `Todos los ${GASTRO_WEEKDAY_LABELS_ES[d.validWeekday as GastroWeekday]}`
+              : null;
           return (
             <li
               key={d.id}
@@ -80,9 +85,11 @@ export function GastroDiscountsSection({
                   )}
                   <p className="mt-2 text-sm">
                     <span className="font-medium text-accent">{formatValue(d)}</span>
-                    {dateLabel && (
+                    {weeklyLabel ? (
+                      <span className="text-text-muted"> · {weeklyLabel}</span>
+                    ) : dateLabel ? (
                       <span className="text-text-muted"> · Válido desde {dateLabel}</span>
-                    )}
+                    ) : null}
                   </p>
                   <Link
                     href={`/descuentos/${d.id}`}

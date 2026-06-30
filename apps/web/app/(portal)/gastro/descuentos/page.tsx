@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
+import { GASTRO_WEEKDAY_LABELS_ES, type GastroWeekday } from '@yo-te-invito/shared';
 import { useRepositories } from '@/repositories/context';
 import { PageContainer, SectionTitle } from '@/components';
 import { gastroKeys } from '@/lib/query/keys';
@@ -59,11 +60,15 @@ export default function GastroDescuentosPage() {
               <div>
                 <p className="font-medium">{d.title ?? d.code}</p>
                 <p className="text-sm text-text-muted">{d.summary}</p>
-                {d.discountDate && (
+                {d.validityMode === 'WEEKLY_RECURRING' && d.validWeekday ? (
+                  <p className="mt-1 text-xs text-text-muted">
+                    Todos los {GASTRO_WEEKDAY_LABELS_ES[d.validWeekday as GastroWeekday]}
+                  </p>
+                ) : d.discountDate ? (
                   <p className="mt-1 text-xs text-text-muted">
                     Fecha: {new Date(d.discountDate).toLocaleDateString('es-AR')}
                   </p>
-                )}
+                ) : null}
               </div>
               <span className="rounded-full bg-bg-muted px-2 py-0.5 text-xs text-text">
                 {STATUS_LABEL[d.status]}
