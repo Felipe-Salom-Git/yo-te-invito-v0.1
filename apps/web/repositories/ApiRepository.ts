@@ -1593,6 +1593,19 @@ export class ApiRepository implements Repositories {
     },
   };
 
+  adminDeepDelete: import('./interfaces').AdminDeepDeleteRepo = {
+    getPreflight: async (entityType, entityId) =>
+      this.client.get<import('@yo-te-invito/shared').AdminDeepDeletePreflight>(
+        `/admin/deep-delete/${encodeURIComponent(entityType)}/${encodeURIComponent(entityId)}/preflight`,
+      ),
+    execute: async (entityType, entityId, body) =>
+      this.client.delete<import('@yo-te-invito/shared').AdminDeepDeleteResponse>(
+        `/admin/deep-delete/${encodeURIComponent(entityType)}/${encodeURIComponent(entityId)}`,
+        undefined,
+        body,
+      ),
+  };
+
   adminPayments: import('./interfaces').AdminPaymentsRepo = {
     list: async (query) => {
       return this.client.get<import('./interfaces').AdminPaymentsListResponse>(

@@ -1496,6 +1496,18 @@ export interface AdminUsersRepo {
   deleteUser(userId: string): Promise<AdminUserDeleteResponse>;
 }
 
+export interface AdminDeepDeleteRepo {
+  getPreflight(
+    entityType: import('@yo-te-invito/shared').AdminDeepDeleteEntityType,
+    entityId: string,
+  ): Promise<import('@yo-te-invito/shared').AdminDeepDeletePreflight>;
+  execute(
+    entityType: import('@yo-te-invito/shared').AdminDeepDeleteEntityType,
+    entityId: string,
+    body: import('@yo-te-invito/shared').AdminDeepDeleteBody,
+  ): Promise<import('@yo-te-invito/shared').AdminDeepDeleteResponse>;
+}
+
 export type AdminPaymentsListQuery = import('@yo-te-invito/shared').AdminPaymentsListQuery;
 export type AdminPaymentsListResponse =
   import('@yo-te-invito/shared').AdminPaymentsListResponse;
@@ -3002,6 +3014,7 @@ export interface Repositories {
   adminHotelProfiles: AdminHotelProfilesRepo;
   adminAudit: AdminAuditRepo;
   adminUsers: AdminUsersRepo;
+  adminDeepDelete: AdminDeepDeleteRepo;
   adminPayments: AdminPaymentsRepo;
   legalDocuments: LegalDocumentsRepo;
   producerDashboard: ProducerDashboardRepo;

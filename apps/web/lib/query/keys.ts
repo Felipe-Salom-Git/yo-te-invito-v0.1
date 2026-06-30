@@ -334,6 +334,12 @@ export const adminUsersKeys = {
     [...adminUsersKeys.all, 'delete-preflight', userId] as const,
 };
 
+export const adminDeepDeleteKeys = {
+  all: ['admin', 'deep-delete'] as const,
+  preflight: (entityType: string, entityId: string) =>
+    [...adminDeepDeleteKeys.all, 'preflight', entityType, entityId] as const,
+};
+
 export const adminPaymentsKeys = {
   all: ['admin', 'payments'] as const,
   list: (filtersKey: string) => [...adminPaymentsKeys.all, 'list', filtersKey] as const,
