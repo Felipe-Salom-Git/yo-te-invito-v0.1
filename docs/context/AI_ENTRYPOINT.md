@@ -48,6 +48,7 @@ Rama activa: `feat/v1-s03-api-foundation` (último push documental: ver `git log
 | **Footer público refresh** | Layout + assets marca + datos reales prod OK | `772a227`; `components/footer/*`, `footerPublicConfig.ts` |
 | **Branding web** | Favicon, intro, share OG alineados y QA share OK prod | `9c1f83b`–`3fafa18`; `lib/seo/brandAssets.ts`, `/brand/*` |
 | **Gastro descuentos QR / cortesías V2** | Código cerrado 2026-06-23; QA manual staging/prod pendiente | `GASTRO_QR_COURTESIES_AUDIT.md` |
+| **Admin/Gastro/Scanner hotfix operativo** | Código 2026-06-23; QA manual pendiente | `ADMIN_GASTRO_SCANNER_HOTFIX_AUDIT.md` |
 | **Getnet webhook** | Fix payload en código; abandonado como implementación activa — nueva pasarela TBD | `ed0cc3e` |
 | **Ticketera Próximamente** | UI productora bloqueada; solo publicidad operativa | `TICKETING_CREATION_ENABLED` |
 | **Mensajes email/spam** | Post-registro + post-QR en web | `EmailInboxNotice` |

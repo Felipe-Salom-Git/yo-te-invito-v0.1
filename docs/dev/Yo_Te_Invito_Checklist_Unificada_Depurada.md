@@ -77,6 +77,15 @@ Doc cierre: `docs/audits/GEO_MAPS_STAGE_CLOSING.md`
 - [ ] QA manual GASTRO/ADMIN en `/gastro/contenido`.
 - [ ] QA manual crear scanner (productora/gastro) + login PWA.
 
+### 0.3.2 Hotfix Admin/Gastro/Scanner operativo (2026-06-23)
+
+- [x] Scanner: validación claim-first; parent `APPROVED`/`ACTIVE`.
+- [x] Dashboard admin: draft events + pending gastro discounts.
+- [x] Gastro: multi subcategorías + tags en alta/edición admin.
+- [x] Excursiones: auth token UX + horarios sanitizados.
+- [x] Horarios gastro: sin error crudo `open must be before close`.
+- [ ] QA manual (audit `ADMIN_GASTRO_SCANNER_HOTFIX_AUDIT.md`).
+
 ---
 
 

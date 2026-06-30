@@ -200,6 +200,17 @@ Etapas base: `V3_1_STAGE_5_CLOSING.md`, `V3_1_STAGE_6_SCANNER_OFFLINE_CLOSING.md
 - [ ] QA manual ADMIN: selector de establecimientos operativo en contenido editorial.
 - [ ] QA manual scanner: crear desde productora/gastro → login PWA sin `EMAIL_NOT_VERIFIED`.
 
+### Hotfix Admin/Gastro/Scanner operativo (2026-06-23)
+
+**Doc:** `docs/audits/ADMIN_GASTRO_SCANNER_HOTFIX_AUDIT.md`
+
+- [x] Scanner descuentos: claims válidos con parent `APPROVED`/`ACTIVE` (no más falso `INACTIVE`).
+- [x] Dashboard admin: borradores eventos + descuentos gastro pendientes.
+- [x] Gastro admin: múltiples subcategorías (`EventSubcategory`) + tags existentes.
+- [x] Excursiones admin: mensaje claro si JWT expiró; sanitización horarios al crear operador.
+- [x] Horarios gastro: sanitización `sanitizeRentalOpeningHours` evita payload inválido.
+- [ ] QA manual staging/prod (ver audit §QA).
+
 ### Registro V2 — pendiente operativo unificado (post-hotfixes)
 
 - [ ] Deploy en VPS de commits `e4f9f1f` + `b7be41d` (y `2847978` si no estaba).
