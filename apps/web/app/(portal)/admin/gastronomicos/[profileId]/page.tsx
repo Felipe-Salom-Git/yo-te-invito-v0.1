@@ -78,7 +78,10 @@ export default function AdminGastroLocationDetailPage() {
                   Ver ficha pública
                 </Link>
               ) : null}
-              <AdminGastroHardDeleteActions profileId={profileId} />
+              <AdminGastroHardDeleteActions
+                profileId={profileId}
+                displayName={location.displayName}
+              />
             </div>
           </div>
 

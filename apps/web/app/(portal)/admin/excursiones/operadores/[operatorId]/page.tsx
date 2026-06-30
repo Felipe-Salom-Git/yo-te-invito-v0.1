@@ -78,6 +78,7 @@ export default function AdminExcursionOperadorDetailPage() {
             </Link>
             <AdminExcursionOperatorLifecycleActions
               operatorId={operatorId}
+              operatorName={operator.name}
               isActive={operator.isActive}
               onHardDeleted={() => router.push('/admin/excursiones')}
             />

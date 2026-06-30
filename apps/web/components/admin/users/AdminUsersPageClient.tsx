@@ -75,6 +75,11 @@ export function AdminUsersPageClient() {
     }
   }, [deleteTarget, preflightQuery.isError, preflightQuery.error]);
 
+  const handleUserDeepDeleted = () => {
+    addToast('Usuario eliminado (eliminación profunda)', 'success');
+    queryClient.invalidateQueries({ queryKey: adminUsersKeys.all });
+  };
+
   const updateRoleMutation = useMutation({
     mutationFn: ({ userId, role }: { userId: string; role: string }) =>
       repos.adminUsers.updateRole(userId, role),
@@ -222,6 +227,7 @@ export function AdminUsersPageClient() {
               deleteDisabled={deleteUserMutation.isPending || preflightQuery.isFetching}
               onRequestRoleChange={handleRoleChange}
               onRequestDelete={handleRequestDelete}
+              onUserDeepDeleted={handleUserDeepDeleted}
             />
             <ul className="mt-4 space-y-3 md:hidden">
               {users.map((u) => (
@@ -233,6 +239,7 @@ export function AdminUsersPageClient() {
                     deleteDisabled={deleteUserMutation.isPending || preflightQuery.isFetching}
                     onRequestRoleChange={(role) => handleRoleChange(u, role)}
                     onRequestDelete={() => handleRequestDelete(u)}
+                    onUserDeepDeleted={handleUserDeepDeleted}
                   />
                 </li>
               ))}

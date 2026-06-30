@@ -3,29 +3,29 @@
 import { useState } from 'react';
 import { Button, useToast } from '@/components';
 import { getErrorMessage } from '@/lib/errors';
-import { useRentalLocationLifecycleMutation, useHardDeleteRentalLocationMutation } from '@/lib/query/admin-content-lifecycle';
+import { useRentalLocationLifecycleMutation } from '@/lib/query/admin-content-lifecycle';
 import { AdminArchiveConfirmModal } from './AdminArchiveConfirmModal';
-import { AdminHardDeleteConfirmModal } from './AdminHardDeleteConfirmModal';
+import { AdminDeepDeleteButton } from './AdminDeepDeleteButton';
 
 const DEACTIVATE_DESCRIPTION =
   'No borra productos ni historial. El local y sus productos dejarán de aparecer en descubrimiento público.';
 
 type AdminRentalLocationLifecycleActionsProps = {
   locationId: string;
+  locationName: string;
   isActive: boolean;
   onHardDeleted?: () => void;
 };
 
 export function AdminRentalLocationLifecycleActions({
   locationId,
+  locationName,
   isActive,
   onHardDeleted,
 }: AdminRentalLocationLifecycleActionsProps) {
   const { addToast } = useToast();
   const mutation = useRentalLocationLifecycleMutation();
-  const hardDeleteMutation = useHardDeleteRentalLocationMutation();
-  const [modal, setModal] = useState<'deactivate' | 'activate' | 'hard-delete' | null>(null);
-  const [hardDeleteError, setHardDeleteError] = useState<string | null>(null);
+  const [modal, setModal] = useState<'deactivate' | 'activate' | null>(null);
 
   const run = (action: 'deactivate' | 'activate', reason?: string) => {
     mutation.mutate(
@@ -63,19 +63,17 @@ export function AdminRentalLocationLifecycleActions({
           Reactivar local
         </Button>
       )}
-      <Button
-        type="button"
-        size="sm"
-        variant="outline"
-        className="border-red-800/60 text-red-400"
-        onClick={() => {
-          setHardDeleteError(null);
-          setModal('hard-delete');
+      <AdminDeepDeleteButton
+        entityType="RENTAL_LOCATION"
+        entityId={locationId}
+        entityLabel={locationName}
+        buttonLabel="Eliminación profunda"
+        compact
+        onSuccess={() => {
+          addToast('Local eliminado', 'success');
+          onHardDeleted?.();
         }}
-        disabled={mutation.isPending || hardDeleteMutation.isPending}
-      >
-        Eliminar definitivamente
-      </Button>
+      />
       <AdminArchiveConfirmModal
         open={modal === 'deactivate'}
         title="Dar de baja local rental"
@@ -93,31 +91,6 @@ export function AdminRentalLocationLifecycleActions({
         onClose={() => setModal(null)}
         onConfirm={(reason) => run('activate', reason)}
         isPending={mutation.isPending}
-      />
-      <AdminHardDeleteConfirmModal
-        open={modal === 'hard-delete'}
-        title="Eliminar local rental definitivamente"
-        description="Borra el local y sus productos sin historial transaccional. Irreversible."
-        onClose={() => {
-          setModal(null);
-          setHardDeleteError(null);
-        }}
-        onConfirm={(reason) => {
-          setHardDeleteError(null);
-          hardDeleteMutation.mutate(
-            { locationId, reason },
-            {
-              onSuccess: () => {
-                addToast('Local eliminado definitivamente', 'success');
-                setModal(null);
-                onHardDeleted?.();
-              },
-              onError: (err) => setHardDeleteError(getErrorMessage(err)),
-            },
-          );
-        }}
-        isPending={hardDeleteMutation.isPending}
-        errorMessage={hardDeleteError}
       />
     </div>
   );

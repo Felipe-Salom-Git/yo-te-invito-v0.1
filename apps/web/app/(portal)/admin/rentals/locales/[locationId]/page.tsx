@@ -88,6 +88,7 @@ export default function AdminRentalLocalDetailPage() {
             </Link>
             <AdminRentalLocationLifecycleActions
               locationId={locationId}
+              locationName={location.name}
               isActive={location.isActive}
               onHardDeleted={() => router.push('/admin/rentals')}
             />

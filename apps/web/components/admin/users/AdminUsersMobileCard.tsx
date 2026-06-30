@@ -5,6 +5,8 @@ import { AdminUserRoleBadge } from './AdminUserRoleBadge';
 import { AdminUserProfileBadges } from './AdminUserProfileBadges';
 import { AdminUserRoleSelect } from './AdminUserRoleSelect';
 import { AdminUserDeleteButton } from './AdminUserDeleteButton';
+import { AdminDeepDeleteButton } from '@/components/admin/AdminDeepDeleteButton';
+import { canAdminDeleteUser } from '@/lib/admin/admin-user-delete';
 
 function formatDt(iso: string): string {
   return new Date(iso).toLocaleString('es-AR', {
@@ -20,6 +22,7 @@ type AdminUsersMobileCardProps = {
   deleteDisabled?: boolean;
   onRequestRoleChange: (role: string) => void;
   onRequestDelete: () => void;
+  onUserDeepDeleted?: () => void;
 };
 
 export function AdminUsersMobileCard({
@@ -29,6 +32,7 @@ export function AdminUsersMobileCard({
   deleteDisabled,
   onRequestRoleChange,
   onRequestDelete,
+  onUserDeepDeleted,
 }: AdminUsersMobileCardProps) {
   const fullName = `${user.firstName} ${user.lastName}`.trim();
 
@@ -73,6 +77,15 @@ export function AdminUsersMobileCard({
           disabled={deleteDisabled}
           onClick={onRequestDelete}
         />
+        {canAdminDeleteUser(user, currentUserId) ? (
+          <AdminDeepDeleteButton
+            entityType="USER"
+            entityId={user.id}
+            entityLabel={user.email}
+            buttonLabel="Eliminación profunda"
+            onSuccess={onUserDeepDeleted}
+          />
+        ) : null}
       </div>
     </article>
   );

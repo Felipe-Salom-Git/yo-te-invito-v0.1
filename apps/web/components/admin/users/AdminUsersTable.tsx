@@ -5,6 +5,8 @@ import { AdminUserRoleBadge } from './AdminUserRoleBadge';
 import { AdminUserProfileBadges } from './AdminUserProfileBadges';
 import { AdminUserRoleSelect } from './AdminUserRoleSelect';
 import { AdminUserDeleteButton } from './AdminUserDeleteButton';
+import { AdminDeepDeleteButton } from '@/components/admin/AdminDeepDeleteButton';
+import { canAdminDeleteUser } from '@/lib/admin/admin-user-delete';
 
 function formatDt(iso: string): string {
   return new Date(iso).toLocaleString('es-AR', {
@@ -20,6 +22,7 @@ type AdminUsersTableProps = {
   deleteDisabled?: boolean;
   onRequestRoleChange: (user: AdminUserListItem, role: string) => void;
   onRequestDelete: (user: AdminUserListItem) => void;
+  onUserDeepDeleted?: () => void;
 };
 
 export function AdminUsersTable({
@@ -29,6 +32,7 @@ export function AdminUsersTable({
   deleteDisabled,
   onRequestRoleChange,
   onRequestDelete,
+  onUserDeepDeleted,
 }: AdminUsersTableProps) {
   if (users.length === 0) return null;
 
@@ -77,12 +81,24 @@ export function AdminUsersTable({
                 />
               </td>
               <td className="px-4 py-3">
-                <AdminUserDeleteButton
-                  user={user}
-                  currentUserId={currentUserId}
-                  disabled={deleteDisabled}
-                  onClick={() => onRequestDelete(user)}
-                />
+                <div className="flex flex-col gap-2">
+                  <AdminUserDeleteButton
+                    user={user}
+                    currentUserId={currentUserId}
+                    disabled={deleteDisabled}
+                    onClick={() => onRequestDelete(user)}
+                  />
+                  {canAdminDeleteUser(user, currentUserId) ? (
+                    <AdminDeepDeleteButton
+                      entityType="USER"
+                      entityId={user.id}
+                      entityLabel={user.email}
+                      buttonLabel="Eliminación profunda"
+                      compact
+                      onSuccess={onUserDeepDeleted}
+                    />
+                  ) : null}
+                </div>
               </td>
             </tr>
           ))}

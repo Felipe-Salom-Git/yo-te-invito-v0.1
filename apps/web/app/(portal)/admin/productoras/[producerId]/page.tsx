@@ -8,11 +8,16 @@ import { adminProducersKeys } from '@/lib/query/keys';
 import { PageContainer, SectionTitle } from '@/components';
 import { AdminProducerStatusBadge } from '@/components/admin/producers/AdminProducerStatusBadge';
 import { AdminProducerEventsTable } from '@/components/admin/producers/AdminProducerEventsTable';
+import { AdminDeepDeleteButton } from '@/components/admin/AdminDeepDeleteButton';
+import { useToast } from '@/components';
+import { useRouter } from 'next/navigation';
 
 export default function AdminProductoraDetailPage() {
   const params = useParams();
   const producerId = (params?.producerId as string) ?? '';
   const repos = useRepositories();
+  const router = useRouter();
+  const { addToast } = useToast();
 
   const { data: producer, isLoading: loadingProducer } = useQuery({
     queryKey: adminProducersKeys.detail(producerId),
@@ -51,7 +56,20 @@ export default function AdminProductoraDetailPage() {
                 {producer.owner.name ? ` · ${producer.owner.name}` : ''}
               </p>
             </div>
-            <AdminProducerStatusBadge status={producer.status} />
+            <div className="flex flex-wrap items-center gap-2">
+              <AdminProducerStatusBadge status={producer.status} />
+              <AdminDeepDeleteButton
+                entityType="PRODUCER"
+                entityId={producerId}
+                entityLabel={producer.displayName}
+                buttonLabel="Eliminación profunda"
+                compact
+                onSuccess={() => {
+                  addToast('Productora eliminada', 'success');
+                  router.push('/admin/productoras');
+                }}
+              />
+            </div>
           </div>
 
           <div className="mt-6 grid gap-4 rounded-lg border border-border bg-bg-muted p-4 sm:grid-cols-2 lg:grid-cols-3">
