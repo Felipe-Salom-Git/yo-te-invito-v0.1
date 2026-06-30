@@ -10,7 +10,6 @@ import {
   isGastroDiscountNotYetActive,
   isGastroDiscountValidToday,
   getGastroWeekdayLabelEs,
-  getGastroDiscountLocalDayBounds,
   type GastroWeekday,
 } from '@yo-te-invito/shared';
 import { PrismaService } from '../prisma/prisma.service';
@@ -49,10 +48,6 @@ function parentDiscountInactiveMessage(status: string): string {
     return 'La fecha de validez de este descuento ya finalizó.';
   }
   return 'El descuento no está activo.';
-}
-
-function normalizeEmail(email: string): string {
-  return email.trim().toLowerCase();
 }
 
 function resolveExpiryDate(row: {
@@ -208,34 +203,6 @@ export class ScannerGastroDiscountService {
     return null;
   }
 
-  private async hasDailyGastroRedemption(
-    tx: Prisma.TransactionClient,
-    tenantId: string,
-    excludeClaimId: string,
-    opts: { userId: string | null; email: string },
-    now: Date,
-  ): Promise<boolean> {
-    const { start, end } = getGastroDiscountLocalDayBounds(now);
-    const baseWhere: Prisma.GastroDiscountClaimWhereInput = {
-      tenantId,
-      id: { not: excludeClaimId },
-      status: 'USED',
-      usedAt: { gte: start, lte: end },
-    };
-
-    if (opts.userId) {
-      const count = await tx.gastroDiscountClaim.count({
-        where: { ...baseWhere, userId: opts.userId },
-      });
-      return count > 0;
-    }
-
-    const count = await tx.gastroDiscountClaim.count({
-      where: { ...baseWhere, email: normalizeEmail(opts.email) },
-    });
-    return count > 0;
-  }
-
   private async assertCanScan(
     tenantId: string,
     userId: string,
@@ -384,17 +351,6 @@ export class ScannerGastroDiscountService {
           return 'ALREADY_USED' as const;
         }
 
-        const dailyHit = await this.hasDailyGastroRedemption(
-          tx,
-          tenantId,
-          claim.id,
-          { userId: fresh.userId, email: fresh.email },
-          now,
-        );
-        if (dailyHit) {
-          return 'LIMIT_REACHED' as const;
-        }
-
         const updated = await tx.gastroDiscountClaim.updateMany({
           where: { id: claim.id, status: 'ACTIVE', usedAt: null },
           data: { status: 'USED', usedAt: now },
@@ -429,18 +385,6 @@ export class ScannerGastroDiscountService {
           'ALREADY_USED',
           'Cupón ya utilizado',
           'Este QR ya fue escaneado anteriormente.',
-          discountInfo,
-        );
-      }
-
-      if (redeemResult === 'LIMIT_REACHED') {
-        const limitMsg = claim.userId
-          ? 'Esta cuenta ya utilizó un cupón gastronómico hoy.'
-          : 'Este email ya utilizó un cupón gastronómico hoy.';
-        return this.response(
-          'LIMIT_REACHED',
-          'Límite diario alcanzado',
-          limitMsg,
           discountInfo,
         );
       }

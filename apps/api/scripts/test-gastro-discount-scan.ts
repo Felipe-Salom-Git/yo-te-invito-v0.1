@@ -286,7 +286,7 @@ async function main() {
   assert(rDaily1.status === 'VALID', 'first patron coupon today → VALID');
 
   const rDaily2 = await postValidate(scannerUser.id, payloadB);
-  assert(rDaily2.status === 'LIMIT_REACHED', 'second patron coupon same day → LIMIT_REACHED');
+  assert(rDaily2.status === 'VALID', 'second patron coupon same day → VALID');
 
   await prisma.gastroDiscount.update({
     where: { id: discount.id },
