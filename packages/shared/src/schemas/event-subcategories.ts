@@ -14,6 +14,9 @@ export const excursionSubcategoryIdsInputSchema = z
   .optional()
   .nullable();
 
+/** Gastro multi-select input — same rules as excursions. */
+export const gastroSubcategoryIdsInputSchema = excursionSubcategoryIdsInputSchema;
+
 export function dedupeSubcategoryIds(ids: string[] | null | undefined): string[] {
   if (!ids?.length) return [];
   const seen = new Set<string>();
@@ -61,3 +64,5 @@ export function resolveExcursionSubcategorySelection(input: {
   const ordered = [primaryId, ...allIds.filter((id) => id !== primaryId)];
   return { primaryId, allIds: ordered };
 }
+
+export const resolveGastroSubcategorySelection = resolveExcursionSubcategorySelection;

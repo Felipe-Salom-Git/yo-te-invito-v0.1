@@ -8,6 +8,10 @@ import { relatedLinksInputSchema, relatedLinksPublicSchema } from './related-lin
 import { contentTagPublicSchema, eventTagIdsSchema } from './content-tags';
 import { rentalOpeningHoursSchema } from './opening-hours';
 import {
+  excursionSubcategoryIdsInputSchema,
+  eventSubcategoryPublicSchema,
+} from './event-subcategories';
+import {
   gastroOpeningHoursModeSchema,
   gastroWeeklyOpeningHoursSchema,
 } from './gastro-weekly-opening-hours';
@@ -72,6 +76,7 @@ export const gastroLocalResponseSchema = z.object({
   socialLinks: entitySocialLinksInputSchema.nullable(),
   relatedLinks: relatedLinksPublicSchema.nullable().optional(),
   subcategoryId: z.string().nullable(),
+  subcategories: z.array(eventSubcategoryPublicSchema).optional(),
   publicEventId: z.string().nullable(),
   tags: z.array(contentTagPublicSchema).optional(),
   status: gastroProfileStatusSchema,
@@ -89,6 +94,7 @@ export const gastroLocalCreateSchema = z.object({
     .transform((v) => (v === '' ? null : v))
     .nullable()
     .optional(),
+  subcategoryIds: excursionSubcategoryIdsInputSchema,
   bannerUrl: gastroImageRefSchema.nullable().optional(),
   galleryUrls: galleryUrlsSchema,
   location: gastroLocalLocationSchema,

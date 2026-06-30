@@ -3,6 +3,7 @@ import type { Prisma } from '@prisma/client';
 import {
   ErrorCode,
   resolveExcursionSubcategorySelection,
+  resolveGastroSubcategorySelection,
   type EventSubcategoryPublic,
 } from '@yo-te-invito/shared';
 
@@ -28,6 +29,12 @@ type PrismaLike = {
       select: { id: true };
     }): Promise<Array<{ id: string }>>;
   };
+  event: {
+    update(args: {
+      where: { id: string };
+      data: { subcategoryId: string | null };
+    }): Promise<unknown>;
+  };
 };
 
 export async function validateExcursionSubcategoryIds(
@@ -35,12 +42,29 @@ export async function validateExcursionSubcategoryIds(
   tenantId: string,
   ids: string[],
 ): Promise<string[]> {
+  return validateCategorySubcategoryIds(prisma, tenantId, 'excursion', ids);
+}
+
+export async function validateGastroSubcategoryIds(
+  prisma: PrismaLike,
+  tenantId: string,
+  ids: string[],
+): Promise<string[]> {
+  return validateCategorySubcategoryIds(prisma, tenantId, 'gastro', ids);
+}
+
+async function validateCategorySubcategoryIds(
+  prisma: PrismaLike,
+  tenantId: string,
+  category: string,
+  ids: string[],
+): Promise<string[]> {
   if (ids.length === 0) return [];
   const rows = await prisma.contentSubcategory.findMany({
     where: {
       id: { in: ids },
       tenantId,
-      category: 'excursion',
+      category,
       isActive: true,
     },
     select: { id: true },
@@ -48,7 +72,10 @@ export async function validateExcursionSubcategoryIds(
   if (rows.length !== ids.length) {
     throw new BadRequestException({
       code: ErrorCode.VALIDATION_FAILED,
-      message: 'One or more subcategories are invalid, inactive, or not for excursions',
+      message:
+        category === 'gastro'
+          ? 'One or more subcategories are invalid, inactive, or not for gastro'
+          : 'One or more subcategories are invalid, inactive, or not for excursions',
     });
   }
   return ids;
@@ -65,6 +92,24 @@ export async function resolveValidatedExcursionSubcategories(
   const resolved = resolveExcursionSubcategorySelection(input);
   if (!resolved) return null;
   const allIds = await validateExcursionSubcategoryIds(prisma, tenantId, resolved.allIds);
+  const primaryId =
+    resolved.primaryId && allIds.includes(resolved.primaryId)
+      ? resolved.primaryId
+      : (allIds[0] ?? null);
+  return { primaryId, allIds };
+}
+
+export async function resolveValidatedGastroSubcategories(
+  prisma: PrismaLike,
+  tenantId: string,
+  input: {
+    subcategoryId?: string | null;
+    subcategoryIds?: string[] | null;
+  },
+): Promise<{ primaryId: string | null; allIds: string[] } | null> {
+  const resolved = resolveGastroSubcategorySelection(input);
+  if (!resolved) return null;
+  const allIds = await validateGastroSubcategoryIds(prisma, tenantId, resolved.allIds);
   const primaryId =
     resolved.primaryId && allIds.includes(resolved.primaryId)
       ? resolved.primaryId
@@ -107,6 +152,40 @@ export function mapEventSubcategoriesPublic(
     name: row.subcategory.name,
     isPrimary: row.isPrimary || undefined,
   }));
+}
+
+export async function loadEventSubcategoriesPublic(
+  prisma: {
+    eventSubcategory: {
+      findMany(args: {
+        where: { eventId: string };
+        include: { subcategory: { select: { id: true; name: true } } };
+      }): Promise<EventSubcategoryRow[]>;
+    };
+  },
+  eventId: string | null | undefined,
+): Promise<EventSubcategoryPublic[]> {
+  if (!eventId) return [];
+  const rows = await prisma.eventSubcategory.findMany({
+    where: { eventId },
+    include: { subcategory: { select: { id: true, name: true } } },
+  });
+  return mapEventSubcategoriesPublic(rows);
+}
+
+/** Sync subcategories on gastro public discovery event after profile save. */
+export async function syncGastroPublicEventSubcategories(
+  prisma: PrismaLike,
+  publicEventId: string | null | undefined,
+  primaryId: string | null,
+  allIds: string[] | null | undefined,
+): Promise<void> {
+  if (allIds === undefined || !publicEventId) return;
+  await syncEventSubcategories(prisma, publicEventId, primaryId, allIds ?? []);
+  await prisma.event.update({
+    where: { id: publicEventId },
+    data: { subcategoryId: primaryId },
+  });
 }
 
 /** Public list/detail filter: match legacy FK or junction assignment. */

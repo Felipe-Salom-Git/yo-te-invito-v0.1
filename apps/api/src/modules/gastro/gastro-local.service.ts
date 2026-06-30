@@ -35,6 +35,11 @@ import {
   loadEventTagsPublic,
   syncGastroPublicEventTags,
 } from '../../common/event-tags.util';
+import {
+  loadEventSubcategoriesPublic,
+  resolveValidatedGastroSubcategories,
+  syncGastroPublicEventSubcategories,
+} from '../../common/event-subcategories.util';
 
 @Injectable()
 export class GastroLocalService {
@@ -85,9 +90,14 @@ export class GastroLocalService {
     };
   }
 
-  private async withTags(response: GastroLocalResponse): Promise<GastroLocalResponse> {
-    const tags = await loadEventTagsPublic(this.prisma, response.publicEventId);
-    return { ...response, tags };
+  private async withTagsAndSubcategories(
+    response: GastroLocalResponse,
+  ): Promise<GastroLocalResponse> {
+    const [tags, subcategories] = await Promise.all([
+      loadEventTagsPublic(this.prisma, response.publicEventId),
+      loadEventSubcategoriesPublic(this.prisma, response.publicEventId),
+    ]);
+    return { ...response, tags, subcategories };
   }
 
   private async assertGastroUser(tenantId: string, userId: string, _userRole: string) {
@@ -128,7 +138,7 @@ export class GastroLocalService {
     await this.assertGastroUser(tenantId, userId, userRole);
     try {
       const profile = await this.getOwnedProfile(tenantId, userId);
-      return this.withTags(this.toResponse(profile));
+      return this.withTagsAndSubcategories(this.toResponse(profile));
     } catch (e) {
       if (e instanceof NotFoundException) return null;
       throw e;
@@ -159,11 +169,18 @@ export class GastroLocalService {
       });
     }
 
-    const subcategoryId = await this.subcategories.resolveSubcategoryForEvent(
-      tenantId,
-      'gastro',
-      body.subcategoryId ?? null,
-    );
+    const subcats = await resolveValidatedGastroSubcategories(this.prisma, tenantId, {
+      subcategoryId: body.subcategoryId,
+      subcategoryIds: body.subcategoryIds,
+    });
+    const subcategoryId =
+      subcats?.primaryId ??
+      (await this.subcategories.resolveSubcategoryForEvent(
+        tenantId,
+        'gastro',
+        body.subcategoryId ?? null,
+      ));
+    const subcategoryAllIds = subcats?.allIds ?? (subcategoryId ? [subcategoryId] : []);
 
     const gallery = body.galleryUrls?.filter(Boolean) ?? null;
     const profile = await this.prisma.gastroProfile.update({
@@ -198,10 +215,16 @@ export class GastroLocalService {
 
     const eventId = await this.publicEventSync.syncPublicEvent(profile, userId, gallery);
     await syncGastroPublicEventTags(this.prisma, tenantId, eventId, body.tagIds);
+    await syncGastroPublicEventSubcategories(
+      this.prisma,
+      eventId,
+      subcategoryId,
+      subcategoryAllIds,
+    );
     const refreshed = await this.prisma.gastroProfile.findUniqueOrThrow({
       where: { id: profile.id },
     });
-    return this.withTags(this.toResponse(refreshed));
+    return this.withTagsAndSubcategories(this.toResponse(refreshed));
   }
 
   async updateMyLocal(
@@ -214,12 +237,21 @@ export class GastroLocalService {
     const profile = await this.getOwnedProfile(tenantId, userId);
 
     let subcategoryId: string | null | undefined = undefined;
-    if (body.subcategoryId !== undefined) {
-      subcategoryId = await this.subcategories.resolveSubcategoryForEvent(
-        tenantId,
-        'gastro',
-        body.subcategoryId,
-      );
+    let subcategorySync: { primaryId: string | null; allIds: string[] } | null = null;
+    if (body.subcategoryId !== undefined || body.subcategoryIds !== undefined) {
+      subcategorySync = await resolveValidatedGastroSubcategories(this.prisma, tenantId, {
+        subcategoryId: body.subcategoryId,
+        subcategoryIds: body.subcategoryIds,
+      });
+      if (subcategorySync) {
+        subcategoryId = subcategorySync.primaryId;
+      } else if (body.subcategoryId !== undefined) {
+        subcategoryId = await this.subcategories.resolveSubcategoryForEvent(
+          tenantId,
+          'gastro',
+          body.subcategoryId,
+        );
+      }
     }
 
     const gallery =
@@ -290,10 +322,18 @@ export class GastroLocalService {
     if (body.tagIds !== undefined) {
       await syncGastroPublicEventTags(this.prisma, tenantId, publicEventId, body.tagIds);
     }
+    if (subcategorySync !== null) {
+      await syncGastroPublicEventSubcategories(
+        this.prisma,
+        publicEventId,
+        subcategorySync.primaryId,
+        subcategorySync.allIds,
+      );
+    }
 
     const refreshed = await this.prisma.gastroProfile.findUniqueOrThrow({
       where: { id: updated.id },
     });
-    return this.withTags(this.toResponse(refreshed));
+    return this.withTagsAndSubcategories(this.toResponse(refreshed));
   }
 }

@@ -24,6 +24,11 @@ import { GastroPublicEventSyncService } from '../gastro/gastro-public-event-sync
 import { writeEntitySocialLinks } from '../../common/entity-social-links.util';
 import { normalizeRelatedLinksForWrite } from '../../common/related-links.util';
 import { syncGastroPublicEventTags } from '../../common/event-tags.util';
+import {
+  loadEventSubcategoriesPublic,
+  resolveValidatedGastroSubcategories,
+  syncGastroPublicEventSubcategories,
+} from '../../common/event-subcategories.util';
 
 @Injectable()
 export class AdminGastroLocationsService {
@@ -86,6 +91,20 @@ export class AdminGastroLocationsService {
     });
   }
 
+  private async resolveGastroSubcategoriesForWrite(
+    tenantId: string,
+    input: { subcategoryId?: string | null; subcategoryIds?: string[] | null },
+  ): Promise<{ primaryId: string | null; allIds: string[] }> {
+    const resolved = await resolveValidatedGastroSubcategories(this.prisma, tenantId, input);
+    if (resolved) return resolved;
+    const primaryId = await this.subcategories.resolveSubcategoryForEvent(
+      tenantId,
+      'gastro',
+      input.subcategoryId ?? null,
+    );
+    return { primaryId, allIds: primaryId ? [primaryId] : [] };
+  }
+
   async create(
     tenantId: string,
     adminUserId: string,
@@ -100,11 +119,10 @@ export class AdminGastroLocationsService {
     }
 
     const status = this.resolveProfileStatus(body.status);
-    const subcategoryId = await this.subcategories.resolveSubcategoryForEvent(
-      effectiveTenantId,
-      'gastro',
-      body.subcategoryId ?? null,
-    );
+    const subcats = await this.resolveGastroSubcategoriesForWrite(effectiveTenantId, {
+      subcategoryId: body.subcategoryId,
+      subcategoryIds: body.subcategoryIds,
+    });
     const gallery = body.galleryUrls?.filter(Boolean) ?? null;
 
     const profile = await this.prisma.gastroProfile.create({
@@ -114,7 +132,7 @@ export class AdminGastroLocationsService {
         legalName: body.legalName?.trim() || null,
         summary: normalizeGastroSummary(body.summary),
         detail: body.detail?.trim() || null,
-        subcategoryId,
+        subcategoryId: subcats.primaryId,
         bannerUrl: body.bannerUrl ?? null,
         galleryUrls: gallery?.length ? gallery : Prisma.JsonNull,
         province: body.location.province.trim(),
@@ -155,6 +173,12 @@ export class AdminGastroLocationsService {
         effectiveTenantId,
         eventId,
         body.tagIds,
+      );
+      await syncGastroPublicEventSubcategories(
+        this.prisma,
+        eventId,
+        subcats.primaryId,
+        subcats.allIds,
       );
     } else if (status !== 'ACTIVE') {
       await this.publicEventSync.syncVisibilityForProfile(profile);
@@ -202,12 +226,13 @@ export class AdminGastroLocationsService {
     }
 
     let subcategoryId: string | null | undefined = undefined;
-    if (body.subcategoryId !== undefined) {
-      subcategoryId = await this.subcategories.resolveSubcategoryForEvent(
-        tenantId,
-        'gastro',
-        body.subcategoryId,
-      );
+    let subcategorySync: { primaryId: string | null; allIds: string[] } | null = null;
+    if (body.subcategoryId !== undefined || body.subcategoryIds !== undefined) {
+      subcategorySync = await this.resolveGastroSubcategoriesForWrite(tenantId, {
+        subcategoryId: body.subcategoryId,
+        subcategoryIds: body.subcategoryIds,
+      });
+      subcategoryId = subcategorySync.primaryId;
     }
 
     const gallery =
@@ -303,6 +328,18 @@ export class AdminGastroLocationsService {
         tenantId,
         refreshed.publicEventId,
         body.tagIds,
+      );
+    }
+
+    if (subcategorySync !== null) {
+      const refreshed = await this.prisma.gastroProfile.findUniqueOrThrow({
+        where: { id: profileId },
+      });
+      await syncGastroPublicEventSubcategories(
+        this.prisma,
+        refreshed.publicEventId,
+        subcategorySync.primaryId,
+        subcategorySync.allIds,
       );
     }
 
