@@ -341,6 +341,7 @@ Checklist: `docs/dev/Yo_Te_Invito_Checklist_V3_2_Mejoras_Visuales.md` · QA: `do
 | Admin pendientes | `AdminPendingReviewSection` (tabs; sin borrar `pendingEvents`) |
 | Banner gastro | Hasta 3 descuentos `isGastroDiscountValidToday` en playlist |
 | Event/Gastro | **Próximamente** público; ADMIN preview (`category-availability.ts`); sitemap sin `/categoria/event\|gastro` |
+| **Caché HTML público** | Hotfix: `(public)` `force-dynamic` + `revalidate=0` + headers no-store en discovery (`V3_2_HOTFIX_PUBLIC_CACHE_CLOSING.md`) — evita `s-maxage=31536000` post-deploy |
 
 Reactivar Event/Gastro: `CATEGORY_PUBLIC_AVAILABILITY` → `'public'` + sitemap + nav.
 

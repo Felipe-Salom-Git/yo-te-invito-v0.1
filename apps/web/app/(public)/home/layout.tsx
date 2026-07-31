@@ -1,6 +1,13 @@
 import type { Metadata } from 'next';
 import { OG_SHARE_METADATA } from '@/lib/seo/brandAssets';
 
+/**
+ * Server segment config for `/home`.
+ * Page body stays client (`page.tsx`); config cannot live in `'use client'` files.
+ */
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 const HOME_DESCRIPTION =
   'Descubrí eventos, experiencias, propuestas gastronómicas, hoteles y servicios para vivir tu ciudad.';
 
