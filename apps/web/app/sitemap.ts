@@ -76,8 +76,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${baseUrl}/home`, lastModified: now, changeFrequency: 'daily', priority: 1.0 },
     { url: `${baseUrl}/explore`, lastModified: now, changeFrequency: 'daily', priority: 0.8 },
     { url: `${baseUrl}/categorias`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
-    { url: `${baseUrl}/categoria/event`, lastModified: now, changeFrequency: 'weekly', priority: 0.7 },
-    { url: `${baseUrl}/categoria/gastro`, lastModified: now, changeFrequency: 'weekly', priority: 0.7 },
+    // event/gastro omitted while comingSoon (V3.2 Slice 10) — re-add when public
     { url: `${baseUrl}/categoria/rental`, lastModified: now, changeFrequency: 'weekly', priority: 0.7 },
     { url: `${baseUrl}/categoria/excursion`, lastModified: now, changeFrequency: 'weekly', priority: 0.7 },
     { url: `${baseUrl}/producers`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 },

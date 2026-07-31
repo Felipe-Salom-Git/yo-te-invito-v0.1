@@ -6,6 +6,11 @@ import {
   type CategoryGatewayId,
 } from '@/lib/home/categoryGatewayConfig';
 import {
+  canAccessComingSoonCategory,
+  isCategoryComingSoon,
+} from '@/lib/categories/categoryAvailability';
+import { useRole } from '@/hooks/useRole';
+import {
   gatewayGridVariants,
   gatewayScreenTransition,
 } from './categoryGatewayMotion';
@@ -29,6 +34,8 @@ export function CategoryGatewayScreen({
 }: CategoryGatewayScreenProps) {
   const isOverlay = variant === 'overlay';
   const logoVisible = showLogo ?? isOverlay;
+  const { role } = useRole();
+  const allowPreview = canAccessComingSoonCategory(role);
 
   return (
     <motion.div
@@ -63,6 +70,8 @@ export function CategoryGatewayScreen({
               key={option.id}
               option={option}
               onSelect={onSelectCategory}
+              comingSoon={isCategoryComingSoon(option.id)}
+              allowPreview={allowPreview}
             />
           ))}
         </motion.div>

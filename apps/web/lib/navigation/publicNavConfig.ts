@@ -77,13 +77,23 @@ export const PUBLIC_NAV_ITEMS: PublicNavItem[] = [
     desktop: false,
     mobileMenu: true,
   },
-  ...CATEGORY_NAV.map(({ id, category, label }) => ({
-    id,
-    label,
-    href: getCategoryGatewayHref(category),
-    desktop: false,
-    mobileMenu: true,
-  })),
+  ...CATEGORY_NAV.map(({ id, category, label }) => {
+    const comingSoon = category === 'event' || category === 'gastro';
+    return {
+      id,
+      label,
+      href: getCategoryGatewayHref(category),
+      desktop: false,
+      mobileMenu: true,
+      ...(comingSoon
+        ? {
+            comingSoon: true,
+            disabled: true,
+            ariaLabel: `${label} — próximamente`,
+          }
+        : {}),
+    };
+  }),
   {
     id: 'hotels',
     label: 'Hoteles',
