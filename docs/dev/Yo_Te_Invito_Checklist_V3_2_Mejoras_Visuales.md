@@ -908,17 +908,17 @@ pnpm --filter api run test:gastro-discount-qr
 
 Al completar cada slice:
 
-- [ ] Actualizar esta checklist con `[x]`.
-- [ ] Crear auditoría o cierre en `docs/audits/`.
-- [ ] Actualizar `AI_ENTRYPOINT.md`.
-- [ ] Actualizar `FRONTEND_CONTEXT.md`.
-- [ ] Actualizar `BACKEND_CONTEXT.md` si hubo cambios API/modelo.
-- [ ] Actualizar `PROJECT_CONTEXT.md` si cambia disponibilidad pública de categorías.
-- [ ] Actualizar `CONTEXT_PENDIENTES.md`.
-- [ ] Documentar comandos ejecutados.
-- [ ] Registrar migraciones, si existieran.
-- [ ] Registrar smoke y QA manual pendiente.
-- [ ] Preparar commit pequeño y descriptivo por slice.
+- [x] Actualizar esta checklist con `[x]`.
+- [x] Crear auditoría o cierre en `docs/audits/`.
+- [x] Actualizar `AI_ENTRYPOINT.md`.
+- [x] Actualizar `FRONTEND_CONTEXT.md`.
+- [x] Actualizar `BACKEND_CONTEXT.md` si hubo cambios API/modelo.
+- [x] Actualizar `PROJECT_CONTEXT.md` si cambia disponibilidad pública de categorías.
+- [x] Actualizar `CONTEXT_PENDIENTES.md`.
+- [x] Documentar comandos ejecutados.
+- [x] Registrar migraciones, si existieran. *(ninguna en V3.2)*
+- [x] Registrar smoke y QA manual pendiente.
+- [x] Preparar commit pequeño y descriptivo por slice.
 
 ---
 

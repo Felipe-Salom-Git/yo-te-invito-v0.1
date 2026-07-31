@@ -325,6 +325,25 @@ Doc: `docs/tickets/TICKET_CANVAS_STUDIO.md`, `docs/tickets/TICKET_TEMPLATE_QR_ZO
 
 Bloque checklist V2 cerrado (Slices 1–8). Resumen: gateway → categorías/home/explore; sin hotel en discovery principal; rentals sin copy de alojamiento; visibilidad eventos vencida en API. Audit: `docs/audits/PUBLIC_DISCOVERY_AUDIT.md`.
 
+## 8c2. Mejoras visuales V3.2 — cerrado código (2026-07-31)
+
+Checklist: `docs/dev/Yo_Te_Invito_Checklist_V3_2_Mejoras_Visuales.md` · QA: `docs/audits/V3_2_QA_CLOSING.md`.
+
+| Pieza | Notas |
+|-------|--------|
+| Category hero | Más alto + autoplay 3500 ms (`CategoryHeroBanner`); Home sin timer |
+| Cards | `contentCardPresentation` — compacta título/resumen/tags/★-carita; hover/modal por vertical |
+| Gastro cards | Sin badge `Gratis`; beneficio tipado; vigencia weekly; sin mini-preview `gastroPromo*` |
+| Ciudad | `SearchableCombobox` en `ProvinceCitySelect` / preferencias / Explore |
+| Suggest | `PublicSearchBar` → `GET /public/events/suggestions` (debounce 300 ms) |
+| Reviews | Caritas 1–5 visual; Ver más / Valorar colapsados; DB 1–10 |
+| Mapa | Embed lazy en `EventLocationModal` (no carruseles) |
+| Admin pendientes | `AdminPendingReviewSection` (tabs; sin borrar `pendingEvents`) |
+| Banner gastro | Hasta 3 descuentos `isGastroDiscountValidToday` en playlist |
+| Event/Gastro | **Próximamente** público; ADMIN preview (`category-availability.ts`); sitemap sin `/categoria/event\|gastro` |
+
+Reactivar Event/Gastro: `CATEGORY_PUBLIC_AVAILABILITY` → `'public'` + sitemap + nav.
+
 ## 8d. Gastro y Hoteles V2 — cerrado (2026-05-22)
 
 **Gastro V2 (operativo):** discovery (`/categoria/gastro`, explore), ficha `/restaurants/[id]` (`GastroPublicDetailContent`), portal `/gastro` (dashboard, `/gastro/contenido` Prisma, descuentos, validaciones, **`/gastro/scanners`** usuarios scanner — Etapa 5.2, valoraciones), follows + `FOLLOWED_GASTRO_NEW_DISCOUNT`, QR/scanner (`test:gastro-discount-qr`, `test:gastro-discount-scan`, `test:gastro-discount-expiry`). **Cupones usuario:** `/me/descuentos` + claim público `/descuentos/reclamo/[claimId]` con **`GastroDiscountQrCard`** (estilo ticket, Slice V2 2026-06-23). Helpers: `lib/gastro/discount-status-ui.ts`. Sin LocalDB ni `fetch` en UI.

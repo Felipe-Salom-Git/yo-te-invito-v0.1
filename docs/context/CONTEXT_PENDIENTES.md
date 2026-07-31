@@ -742,6 +742,25 @@ _(Trending con `viewCount`: ver ítem Slice 2 arriba en § K.)_
 - [x] Slice 13 — ratings 5/5 visual + `ContentCard` editorial fase 1 (`V3_1_SLICE_13_PUBLIC_CARDS_RATINGS_SMOKE.md`)
 - [x] Slice 14 — QA pre-deploy (`V3_1_PRE_DEPLOY_QA_CLOSING.md`): migraciones 5/5 OK, builds OK, smokes DB 4/4 OK
 - [x] V3.1 — validación DB local (Slice 14): `pnpm db:up` + `migrate deploy` + smokes `v31-*` OK
+
+## P. Mejoras visuales V3.2 (2026-07-31)
+
+> Checklist: **`docs/dev/Yo_Te_Invito_Checklist_V3_2_Mejoras_Visuales.md`** · Cierre: **`docs/audits/V3_2_QA_CLOSING.md`**
+
+- [x] Slice 0 — auditoría (`V3_2_VISUAL_DISCOVERY_AUDIT.md`)
+- [x] Slice 1 — banners categoría / subcat / footer accent
+- [x] Slice 8 — Admin pendientes consolidados (sin borrar cola aprobación)
+- [x] Slice 2 — cards públicas por vertical
+- [x] Slice 3 — gastro discount cards + sin mini-preview
+- [x] Slice 4 — combobox ciudad buscable
+- [x] Slice 5 — sugerencias Explore (`/public/events/suggestions`)
+- [x] Slice 6 — valoraciones caritas + Ver más / Valorar
+- [x] Slice 7 — mini mapa lazy en modal ubicación
+- [x] Slice 9 — descuentos en hero gastro
+- [x] Slice 10 — Event/Gastro Próximamente + ADMIN (`category-availability.ts`)
+- [x] Slice 11 — docs/context + cierres
+- [ ] V3.2 — QA manual browser (smokes checklist)
+
 - [x] Hotfix admin gastro discovery — sync `publicEventId` al activar/editar (`smoke:v31-admin-gastro-discovery`, `V3_1_HOTFIX_ADMIN_GASTRO_DISCOVERY_SMOKE.md`)
 - [ ] V3.1 — QA manual browser pre/post-deploy (checklist en `V3_1_PRE_DEPLOY_QA_CLOSING.md` §6)
 - [x] Hotfix gastro public links — `/restaurants/[publicEventId]` sin redirect erróneo (`V3_1_HOTFIX_GASTRO_PUBLIC_LINKS.md`)

@@ -116,6 +116,16 @@ Bloque **Descubrimiento público** cerrado en checklist V2. Detalle: `docs/audit
 
 **Fuera de este bloque:** pagos reales, storage imágenes, drift TS global (`registerPush`, etc.). Rentals V2 (WhatsApp, cards, subcategorías, anti-alojamiento, detalle mobile) cerrado en checklist § Rentals.
 
+## 5z. Mejoras visuales V3.2 — código cerrado (2026-07-31)
+
+| Pieza | Estado |
+|-------|--------|
+| Checklist + auditorías por slice | Cerrado código — `Yo_Te_Invito_Checklist_V3_2_Mejoras_Visuales.md`, `docs/audits/V3_2_*` |
+| Suggest search | `GET /public/events/suggestions` |
+| Event/Gastro discovery | **Próximamente** para público; ADMIN preview; reactivar en `category-availability.ts` |
+| Reviews UI | Caritas 1–5; persistencia 1–10 sin migración |
+| QA browser V3.2 | Pendiente smoke manual |
+
 ## 5a. Registro y onboarding por tipo de usuario — Estado cerrado (2026-05-24)
 
 | Pieza | Estado |
@@ -144,7 +154,7 @@ Detalle API/UI: `BACKEND_CONTEXT.md`, `FRONTEND_CONTEXT.md`, checklist V2 § Adm
 
 | Vertical | Discovery | Portal | Público | QA |
 |----------|-----------|--------|---------|-----|
-| Gastro | Activo (`gastro` en gateway/home/explore) | `/gastro/*` operativo | `/restaurants/[id]` | `test:gastro-discount-qr`, `test:gastro-discount-scan` |
+| Gastro | **Próximamente** en discovery (V3.2); portal `/gastro/*` operativo | `/gastro/*` operativo | `/restaurants/[id]`, `/gastronomicos/[id]` (ADMIN preview) | `test:gastro-discount-qr`, `test:gastro-discount-scan` |
 | Hoteles | Próximamente (sin tile gateway) | `/hotel`, `/hotel/editar` | `/hoteles/[id]` informativa | `pnpm e2e:hotel` (`E2E_HOTEL_*`, skip sin env) |
 
 Checklist V2 § Gastro y Hoteles marcado. Auditoría: `docs/audits/GASTRO_HOTELES_V2_AUDIT.md`.

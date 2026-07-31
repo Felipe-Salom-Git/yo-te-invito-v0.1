@@ -84,12 +84,15 @@ HTTP → Controller (thin) → ZodValidationPipe → Service → Prisma → Post
 
 | Path | Purpose |
 |------|---------|
-| `GET /public/events` | List (tenantId, category, city, dates, `sort=recommended\|top_rated`, `minValidReviews`) |
+| `GET /public/events` | List (tenantId, category, city, dates, `sort=recommended\|top_rated`, `minValidReviews`); Optional JWT — ADMIN ve coming-soon |
 | `GET /public/events/recommended` | Carrusel ranking (recommended / top_rated) |
-| `GET /public/events/search`, `/:id` | |
+| `GET /public/events/search`, `/:id` | Search multi-campo (`title`/`summary`/`tags`/productora/…); detail |
+| `GET /public/events/suggestions` | Suggest liviano (`q` mín. 2, `limit`≤12) — V3.2 Slice 5 |
 | `GET /public/events/trending` | Públicos visibles (`mergePublicEventVisibility`); orden: `viewCount` ↓, `rankingScore` ↓, `startAt` ↑, `createdAt` ↓ — ver `event-trending.util.ts`. Sin filtro mínimo de reviews (distinto de `/recommended`). |
 
-**Visibilidad eventos vencidos (discovery):** `PublicEventsService.publicWhere()` aplica `event-public-visibility.util.ts` en **list, search, trending, recommended, detail, calendar month**. Eventos `event`/null: ocultos después de **01:00 del día siguiente** al `startAt` (TZ `America/Argentina/Buenos_Aires`). Gastro/rental/excursion/hotel no caducan por fecha en listados. Tests: `pnpm --filter api run test:event-visibility`.
+**Visibilidad eventos vencidos (discovery):** `PublicEventsService.publicWhere()` aplica `event-public-visibility.util.ts` en **list, search, suggestions, trending, recommended, detail, calendar month**. Eventos `event`/null: ocultos después de **01:00 del día siguiente** al `startAt` (TZ `America/Argentina/Buenos_Aires`). Gastro/rental/excursion/hotel no caducan por fecha en listados. Tests: `pnpm --filter api run test:event-visibility`.
+
+**V3.2 categoría Próximamente:** `packages/shared/src/category-availability.ts` — `event`/`gastro` = `comingSoon` excluidos de `publicWhere` salvo `allowComingSoon` (rol `ADMIN` vía `OptionalJwtOrDevAuthGuard`). Portales comerciales no se bloquean.
 | `GET /public/reviews/summary`, `GET /public/reviews` | Resumen + listado V2 por entidad; query: `sort` (`newest`/`highest`/`lowest`), `replyFilter`, `overallRating` (1–10) |
 | `GET /public/users/:userId/review-profile`, `…/reviews` | Perfil comentarista; listado con mismos filtros públicos |
 | `GET /public/events/:id/discounts` | Active gastro discounts |
