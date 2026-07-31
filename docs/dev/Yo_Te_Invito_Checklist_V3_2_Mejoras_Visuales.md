@@ -462,6 +462,9 @@ Evaluar coincidencias por:
 
 # 7. Slice 6 — Valoraciones resumidas y caritas
 
+> **Estado:** COMPLETADO — 2026-07-31  
+> **Cierre:** [`docs/audits/V3_2_SLICE_6_REVIEWS_FACES_CLOSING.md`](../audits/V3_2_SLICE_6_REVIEWS_FACES_CLOSING.md)
+
 ## 7.1 Vista pública resumida
 
 - [ ] Mostrar por defecto solo promedio general.
@@ -527,6 +530,9 @@ Evaluar coincidencias por:
 ---
 
 # 8. Slice 7 — Mini mapa en publicaciones
+
+> **Estado:** COMPLETADO — 2026-07-31  
+> **Cierre:** [`docs/audits/V3_2_SLICE_7_MINI_MAP_CLOSING.md`](../audits/V3_2_SLICE_7_MINI_MAP_CLOSING.md)
 
 ## Objetivo
 
@@ -629,6 +635,9 @@ Resolver la percepción de duplicación sin borrar información operativa (aprob
 
 # 10. Slice 9 — Banner gastronómico con descuentos
 
+> **Estado:** COMPLETADO — 2026-07-31  
+> **Cierre:** [`docs/audits/V3_2_SLICE_9_GASTRO_BANNER_DISCOUNTS_CLOSING.md`](../audits/V3_2_SLICE_9_GASTRO_BANNER_DISCOUNTS_CLOSING.md)
+
 ## Objetivo
 
 Permitir que el banner/hero de Gastronomía incluya descuentos además de publicaciones de locales.
@@ -670,6 +679,9 @@ Permitir que el banner/hero de Gastronomía incluya descuentos además de public
 ---
 
 # 11. Slice 10 — Eventos y Gastronomía como Próximamente
+
+> **Estado:** COMPLETADO — 2026-07-31  
+> **Cierre:** [`docs/audits/V3_2_SLICE_10_COMING_SOON_CLOSING.md`](../audits/V3_2_SLICE_10_COMING_SOON_CLOSING.md)
 
 ## Objetivo
 
