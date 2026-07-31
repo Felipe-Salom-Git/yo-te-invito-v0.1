@@ -2,6 +2,7 @@
 
 import { useEffect, useCallback } from 'react';
 import {
+  buildPublicGoogleMapsEmbedSrc,
   buildPublicGoogleMapsHref,
   formatPublicLocationDisplay,
   hasPublicLocationForMapLink,
@@ -48,29 +49,18 @@ export function EventLocationModal({
 
   if (!isOpen) return null;
 
-  const mapsHref = buildPublicGoogleMapsHref({
+  const locationFields = {
     geoLat,
     geoLng,
     address: venueAddress,
     venueName,
     city,
     province,
-  });
-  const hasLocation = hasPublicLocationForMapLink({
-    geoLat,
-    geoLng,
-    address: venueAddress,
-    venueName,
-    city,
-  });
-  const { streetLine, regionLine } = formatPublicLocationDisplay({
-    address: venueAddress,
-    city,
-    province,
-    venueName,
-    geoLat,
-    geoLng,
-  });
+  };
+  const mapsHref = buildPublicGoogleMapsHref(locationFields);
+  const embedSrc = buildPublicGoogleMapsEmbedSrc(locationFields);
+  const hasLocation = hasPublicLocationForMapLink(locationFields);
+  const { streetLine, regionLine } = formatPublicLocationDisplay(locationFields);
 
   return (
     <div
@@ -85,7 +75,7 @@ export function EventLocationModal({
         aria-hidden="true"
       />
       <div
-        className="relative z-10 w-full max-w-md rounded-2xl border border-border bg-bg-muted p-6 shadow-2xl"
+        className="relative z-10 w-full max-w-lg rounded-2xl border border-border bg-bg-muted p-6 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4">
@@ -107,7 +97,7 @@ export function EventLocationModal({
             <p className="font-medium text-white">{venueName}</p>
           ) : null}
           {(streetLine || regionLine) && (
-            <div className="text-sm text-text-muted space-y-0.5">
+            <div className="space-y-0.5 text-sm text-text-muted">
               {streetLine ? <p>{streetLine}</p> : null}
               {regionLine ? <p>{regionLine}</p> : null}
             </div>
@@ -116,6 +106,19 @@ export function EventLocationModal({
             <p className="text-sm text-text-muted">No hay dirección cargada.</p>
           )}
         </div>
+
+        {embedSrc ? (
+          <div className="mt-4 overflow-hidden rounded-xl border border-border">
+            <iframe
+              title="Mapa de la ubicación"
+              src={embedSrc}
+              className="h-48 w-full border-0 bg-black/30"
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              allowFullScreen
+            />
+          </div>
+        ) : null}
 
         <div className="mt-6">
           <a
