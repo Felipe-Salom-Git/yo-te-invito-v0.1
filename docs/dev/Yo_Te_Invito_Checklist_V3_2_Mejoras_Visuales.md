@@ -334,52 +334,55 @@ Cambios:
 
 # 5. Slice 4 — Selector de ciudad con búsqueda
 
+> **Estado:** COMPLETADO — 2026-07-31
+> **Cierre:** [`docs/audits/V3_2_SLICE_4_CITY_COMBOBOX_CLOSING.md`](../audits/V3_2_SLICE_4_CITY_COMBOBOX_CLOSING.md)
+
 ## Objetivo
 
 Permitir escribir para filtrar ciudades, pero persistir únicamente una opción válida del catálogo.
 
 ## Requisitos UX
 
-- [ ] Convertir el select en combobox buscable.
-- [ ] Permitir escribir texto para filtrar opciones.
-- [ ] No guardar el texto escrito si no coincide con una opción seleccionada.
-- [ ] Mostrar claramente el estado sin resultados.
-- [ ] Permitir limpiar selección.
-- [ ] Mantener dependencia provincia → ciudad.
-- [ ] Resetear ciudad cuando cambia la provincia si deja de ser válida.
-- [ ] Mantener navegación por teclado.
-- [ ] Mantener labels legibles y sin duplicados.
-- [ ] No introducir diferencias por mayúsculas, tildes o espacios.
+- [x] Convertir el select en combobox buscable.
+- [x] Permitir escribir texto para filtrar opciones.
+- [x] No guardar el texto escrito si no coincide con una opción seleccionada.
+- [x] Mostrar claramente el estado sin resultados.
+- [x] Permitir limpiar selección.
+- [x] Mantener dependencia provincia → ciudad.
+- [x] Resetear ciudad cuando cambia la provincia si deja de ser válida.
+- [x] Mantener navegación por teclado.
+- [x] Mantener labels legibles y sin duplicados.
+- [x] No introducir diferencias por mayúsculas, tildes o espacios.
 
 ## Formularios a revisar
 
-- [ ] Registro comprador.
-- [ ] Registro productora.
-- [ ] Registro gastronómico.
-- [ ] Registro hotel.
-- [ ] Admin Eventos.
-- [ ] Portal Productora.
-- [ ] Admin Gastro.
-- [ ] Portal Gastro.
-- [ ] Admin Rentals.
-- [ ] Admin Excursiones.
-- [ ] Perfil/cuenta donde exista ciudad.
+- [x] Registro comprador.
+- [x] Registro productora. *(N/A — sin campo ciudad)*
+- [x] Registro gastronómico.
+- [x] Registro hotel.
+- [x] Admin Eventos.
+- [x] Portal Productora.
+- [x] Admin Gastro.
+- [x] Portal Gastro.
+- [x] Admin Rentals.
+- [x] Admin Excursiones.
+- [x] Perfil/cuenta donde exista ciudad.
 
 ## Arquitectura
 
-- [ ] Reutilizar `useGeoProvinces` y `useGeoLocalities`.
-- [ ] Crear un componente reutilizable si todavía no existe.
-- [ ] No duplicar catálogos dentro de componentes.
-- [ ] Mantener fallback manual únicamente en los flujos donde ya esté permitido.
-- [ ] Validar payload con schemas compartidos.
+- [x] Reutilizar `useGeoProvinces` y `useGeoLocalities`.
+- [x] Crear un componente reutilizable si todavía no existe.
+- [x] No duplicar catálogos dentro de componentes.
+- [x] Mantener fallback manual únicamente en los flujos donde ya esté permitido.
+- [x] Validar payload con schemas compartidos. *(sin cambio de schemas; labels existentes)*
 
 ## Criterios de aceptación
 
-- [ ] Se puede buscar `Bariloche` escribiendo parte del nombre.
-- [ ] Solo se persiste una localidad seleccionada.
-- [ ] No se puede guardar una ciudad inventada.
-- [ ] No aparecen duplicados normalizados.
-- [ ] Funciona con teclado y mobile.
+- [x] Se puede buscar `Bariloche` escribiendo parte del nombre.
+- [x] Solo se persiste una localidad seleccionada.
+- [x] No se puede guardar una ciudad inventada.
+- [x] No aparecen duplicados normalizados.
+- [x] Funciona con teclado y mobile.
 
 ## Smoke manual
 

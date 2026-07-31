@@ -3,6 +3,8 @@ export { Card, CardHeader, CardContent } from './Card';
 export { Badge } from './Badge';
 export { Input } from './Input';
 export { Select } from './Select';
+export { SearchableCombobox } from './SearchableCombobox';
+export type { SearchableComboboxOption } from './SearchableCombobox';
 export { Tabs } from './Tabs';
 export { Modal } from './Modal';
 export { ToastProvider, useToast } from './Toast';

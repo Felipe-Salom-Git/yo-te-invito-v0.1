@@ -1,6 +1,6 @@
 'use client';
 
-import { Select } from '@/components';
+import { SearchableCombobox } from '@/components/ui/SearchableCombobox';
 import { preferredCityOptions } from '@/lib/me/preferred-cities';
 
 type Props = {
@@ -21,12 +21,13 @@ export function PreferredCitySelect({
   density = 'default',
 }: Props) {
   return (
-    <Select
+    <SearchableCombobox
       label={label}
       value={value}
-      onChange={(e) => onChange(e.target.value)}
+      onChange={onChange}
       options={preferredCityOptions(value)}
-      placeholder="Elegí tu ciudad"
+      placeholder="Buscar tu ciudad…"
+      emptyMessage="Sin ciudades que coincidan"
       error={error}
       className={className}
       density={density}

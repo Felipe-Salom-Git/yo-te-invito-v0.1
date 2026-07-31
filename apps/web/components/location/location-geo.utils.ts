@@ -1,12 +1,6 @@
-/** Normalize locality label for dedupe (frontend defense). */
-export function normalizeLocalityKey(value: string): string {
-  return value
-    .trim()
-    .toLocaleLowerCase('es-AR')
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .replace(/\s+/g, ' ');
-}
+import { normalizeLocalityKey } from '@/lib/geo/locality-normalize';
+
+export { normalizeLocalityKey, localityMatchesQuery, filterOptionsByQuery } from '@/lib/geo/locality-normalize';
 
 export function dedupeSelectOptions(
   options: { value: string; label: string }[],

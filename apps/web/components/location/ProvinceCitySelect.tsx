@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Input } from '@/components';
 import { Select } from '@/components/ui/Select';
+import { SearchableCombobox } from '@/components/ui/SearchableCombobox';
 import { useGeoLocalities, useGeoProvinces } from '@/lib/query/geo';
 import { ARGENTINA_PROVINCES } from './argentina-locations';
 import { dedupeSelectOptions } from './location-geo.utils';
@@ -25,6 +26,7 @@ export function ProvinceCitySelect({
   cityLabel,
   provincePlaceholder,
   cityPlaceholder,
+  allowManualLocality = true,
 }: ProvinceCitySelectProps) {
   const provincesQuery = useGeoProvinces();
   const localitiesQuery = useGeoLocalities(province);
@@ -44,32 +46,33 @@ export function ProvinceCitySelect({
     return [];
   }, [provincesQuery.data, provincesQuery.isError]);
 
-  const localityOptions = useMemo(() => {
-    const manualOption = { value: MANUAL_LOCALITY_VALUE, label: MANUAL_LOCALITY_LABEL };
+  const catalogLocalityOptions = useMemo(() => {
     const georefRows = localitiesQuery.data ?? [];
     const useGeoref = localitiesQuery.isSuccess && georefRows.length > 0;
 
     if (useGeoref) {
-      return [
-        ...dedupeSelectOptions(georefRows.map((loc) => ({ value: loc.name, label: loc.name }))),
-        manualOption,
-      ];
+      return dedupeSelectOptions(georefRows.map((loc) => ({ value: loc.name, label: loc.name })));
     }
 
     if (localitiesQuery.isError && province) {
       const p = ARGENTINA_PROVINCES.find(
         (x) => x.label === province || x.value === province,
       );
-      return [
-        ...dedupeSelectOptions(
-          (p?.cities ?? []).map((c) => ({ value: c.label, label: c.label })),
-        ),
-        manualOption,
-      ];
+      return dedupeSelectOptions(
+        (p?.cities ?? []).map((c) => ({ value: c.label, label: c.label })),
+      );
     }
 
-    return [manualOption];
+    return [];
   }, [localitiesQuery.data, localitiesQuery.isError, localitiesQuery.isSuccess, province]);
+
+  const cityComboboxOptions = useMemo(() => {
+    if (!allowManualLocality) return catalogLocalityOptions;
+    return [
+      ...catalogLocalityOptions,
+      { value: MANUAL_LOCALITY_VALUE, label: MANUAL_LOCALITY_LABEL },
+    ];
+  }, [allowManualLocality, catalogLocalityOptions]);
 
   useEffect(() => {
     setManualLocality(false);
@@ -80,13 +83,13 @@ export function ProvinceCitySelect({
       setManualLocality(false);
       return;
     }
-    const inList = localityOptions.some(
-      (o) => o.value === city && o.value !== MANUAL_LOCALITY_VALUE,
-    );
-    if (!inList) {
+    const inList = catalogLocalityOptions.some((o) => o.value === city);
+    if (!inList && allowManualLocality) {
       setManualLocality(true);
+    } else if (inList) {
+      setManualLocality(false);
     }
-  }, [city, province, localityOptions]);
+  }, [allowManualLocality, catalogLocalityOptions, city, province]);
 
   const handleProvinceChange = (next: string) => {
     setManualLocality(false);
@@ -103,10 +106,18 @@ export function ProvinceCitySelect({
     onCityChange(next);
   };
 
-  const citySelectValue = manualLocality ? MANUAL_LOCALITY_VALUE : city;
+  const cityComboboxValue = manualLocality ? MANUAL_LOCALITY_VALUE : city;
   const provincesLoading = provincesQuery.isLoading && provinceOptions.length === 0;
   const localitiesLoading =
     Boolean(province) && localitiesQuery.isFetching && !localitiesQuery.isError;
+
+  const resolvedCityLabel = cityLabel
+    ? required
+      ? `${cityLabel} *`
+      : cityLabel
+    : required
+      ? 'Ciudad / localidad *'
+      : 'Ciudad / localidad';
 
   return (
     <div className="space-y-4">
@@ -136,37 +147,32 @@ export function ProvinceCitySelect({
           />
         </div>
         <div className="space-y-1">
-          <Select
-            label={
-              cityLabel
-                ? required
-                  ? `${cityLabel} *`
-                  : cityLabel
-                : required
-                  ? 'Ciudad / localidad *'
-                  : 'Ciudad / localidad'
-            }
-            value={citySelectValue}
-            onChange={(e) => handleCitySelect(e.target.value)}
-            options={localityOptions}
+          <SearchableCombobox
+            label={resolvedCityLabel}
+            value={cityComboboxValue}
+            onChange={handleCitySelect}
+            options={cityComboboxOptions}
             placeholder={
               localitiesLoading
                 ? 'Cargando localidades…'
                 : (cityPlaceholder ??
-                  (province ? 'Seleccionar ciudad' : 'Elegí una provincia primero'))
+                  (province ? 'Buscar ciudad…' : 'Elegí una provincia primero'))
             }
             disabled={disabled || !province || localitiesLoading}
             required={required}
+            emptyMessage="Sin ciudades que coincidan"
             error={
               cityError ??
               (localitiesQuery.isError && province
-                ? 'No pudimos cargar localidades. Usá la opción manual.'
+                ? allowManualLocality
+                  ? 'No pudimos cargar localidades. Usá la opción manual.'
+                  : 'No pudimos cargar localidades.'
                 : undefined)
             }
           />
         </div>
       </div>
-      {manualLocality ? (
+      {allowManualLocality && manualLocality ? (
         <Input
           label={required ? 'Otra localidad *' : 'Otra localidad'}
           value={city}

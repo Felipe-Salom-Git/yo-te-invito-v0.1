@@ -41,6 +41,8 @@ export type ProvinceCitySelectProps = {
   cityLabel?: string;
   provincePlaceholder?: string;
   cityPlaceholder?: string;
+  /** Keep “No encuentro mi localidad” + free-text input (default true). */
+  allowManualLocality?: boolean;
 };
 
 export const EMPTY_LOCATION_VALUE: LocationValue = {
