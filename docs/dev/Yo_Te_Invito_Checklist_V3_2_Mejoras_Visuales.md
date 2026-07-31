@@ -18,17 +18,19 @@
 
 # 0. Reglas generales de implementación
 
-- [ ] Trabajar sobre la rama activa indicada por `AI_ENTRYPOINT.md`.
-- [ ] No tocar `main` salvo instrucción explícita.
-- [ ] No modificar pagos, checkout, ticketera ni scanner salvo dependencia real de este bloque.
-- [ ] Mantener `TICKETING_CREATION_ENABLED` y la estrategia actual de ticketera.
-- [ ] No eliminar Eventos ni Gastronomía del modelo o la base de datos.
-- [ ] No bloquear el acceso del usuario ADMIN a las categorías restringidas.
-- [ ] Preservar tenant isolation.
-- [ ] Priorizar mobile first.
-- [ ] Mantener accesibilidad: teclado, foco, `aria-*`, Escape y cierre al tocar fuera.
-- [ ] Evitar componentes demasiado grandes; crear variantes o componentes específicos cuando corresponda.
-- [ ] Actualizar contextos, auditorías y checklist al cerrar cada slice.
+> Cumplidas durante V3.2 (rama `feat/v1-s03-api-foundation`).
+
+- [x] Trabajar sobre la rama activa indicada por `AI_ENTRYPOINT.md`.
+- [x] No tocar `main` salvo instrucción explícita.
+- [x] No modificar pagos, checkout, ticketera ni scanner salvo dependencia real de este bloque.
+- [x] Mantener `TICKETING_CREATION_ENABLED` y la estrategia actual de ticketera.
+- [x] No eliminar Eventos ni Gastronomía del modelo o la base de datos.
+- [x] No bloquear el acceso del usuario ADMIN a las categorías restringidas.
+- [x] Preservar tenant isolation.
+- [x] Priorizar mobile first.
+- [x] Mantener accesibilidad: teclado, foco, `aria-*`, Escape y cierre al tocar fuera.
+- [x] Evitar componentes demasiado grandes; crear variantes o componentes específicos cuando corresponda.
+- [x] Actualizar contextos, auditorías y checklist al cerrar cada slice.
 
 ---
 
@@ -467,55 +469,55 @@ Evaluar coincidencias por:
 
 ## 7.1 Vista pública resumida
 
-- [ ] Mostrar por defecto solo promedio general.
-- [ ] Mostrar cantidad total de valoraciones.
-- [ ] Mostrar una carita representativa del promedio.
-- [ ] Agregar acción `Ver más`.
-- [ ] Expandir distribución, comentarios y contenido secundario al pulsar.
-- [ ] Evitar cargar visualmente toda la sección de entrada.
+- [x] Mostrar por defecto solo promedio general.
+- [x] Mostrar cantidad total de valoraciones.
+- [x] Mostrar una carita representativa del promedio.
+- [x] Agregar acción `Ver más`.
+- [x] Expandir distribución, comentarios y contenido secundario al pulsar.
+- [x] Evitar cargar visualmente toda la sección de entrada.
 
 ## 7.2 Formulario de valoración
 
-- [ ] Mostrar acción `Valorar`.
-- [ ] Expandir formulario al pulsar.
-- [ ] Mantener formulario colapsado por defecto.
-- [ ] Mantener validaciones, autenticación y permisos existentes.
-- [ ] Confirmar envío y estado de éxito/error.
+- [x] Mostrar acción `Valorar`.
+- [x] Expandir formulario al pulsar.
+- [x] Mantener formulario colapsado por defecto.
+- [x] Mantener validaciones, autenticación y permisos existentes.
+- [x] Confirmar envío y estado de éxito/error.
 
 ## 7.3 Escala visual con caritas
 
-- [ ] Nivel 1: carita muy insatisfecha, roja.
-- [ ] Nivel 2: carita insatisfecha.
-- [ ] Nivel 3: carita neutral.
-- [ ] Nivel 4: carita conforme.
-- [ ] Nivel 5: carita sonriente, verde de marca.
-- [ ] Agregar labels accesibles, no depender solo del color.
-- [ ] Mantener foco visible y selección por teclado.
-- [ ] Mostrar estado seleccionado claramente.
+- [x] Nivel 1: carita muy insatisfecha, roja.
+- [x] Nivel 2: carita insatisfecha.
+- [x] Nivel 3: carita neutral.
+- [x] Nivel 4: carita conforme.
+- [x] Nivel 5: carita sonriente, verde de marca.
+- [x] Agregar labels accesibles, no depender solo del color.
+- [x] Mantener foco visible y selección por teclado.
+- [x] Mostrar estado seleccionado claramente.
 
 ## 7.4 Compatibilidad de escala
 
 ### Si backend ya usa 1–5
 
-- [ ] Reemplazar presentación de estrellas por caritas.
-- [ ] Mantener contratos y persistencia.
+- [x] Reemplazar presentación de estrellas por caritas. *(N/A — backend 1–10)*
+- [x] Mantener contratos y persistencia.
 
 ### Si backend todavía usa 1–10
 
-- [ ] Documentar conversión visual 1–10 → 1–5.
-- [ ] Mantener conversión centralizada.
-- [ ] No redondear de manera diferente entre cards, resumen y formulario.
-- [ ] Decidir si formulario envía valores equivalentes 2/4/6/8/10 o si se migra el contrato.
-- [ ] No migrar base de datos sin aprobación explícita.
+- [x] Documentar conversión visual 1–10 → 1–5.
+- [x] Mantener conversión centralizada.
+- [x] No redondear de manera diferente entre cards, resumen y formulario.
+- [x] Decidir si formulario envía valores equivalentes 2/4/6/8/10 o si se migra el contrato. *(2/4/6/8/10)*
+- [x] No migrar base de datos sin aprobación explícita.
 
 ## Criterios de aceptación
 
-- [ ] La sección ocupa poco espacio por defecto.
-- [ ] `Ver más` expande correctamente.
-- [ ] `Valorar` expande el formulario.
-- [ ] No quedan estrellas visibles en el flujo público acordado.
-- [ ] La escala es consistente en card, resumen, modal y formulario.
-- [ ] Los datos históricos mantienen significado.
+- [x] La sección ocupa poco espacio por defecto.
+- [x] `Ver más` expande correctamente.
+- [x] `Valorar` expande el formulario.
+- [x] No quedan estrellas visibles en el flujo público acordado.
+- [x] La escala es consistente en card, resumen, modal y formulario.
+- [x] Los datos históricos mantienen significado.
 
 ## Smoke manual
 
@@ -540,44 +542,44 @@ Agregar una previsualización geográfica compacta sin cargar mapas interactivos
 
 ## Alcance recomendado
 
-- [ ] Mostrar mini mapa en ficha pública o modal de preview.
-- [ ] No crear una instancia interactiva de Google Maps por cada card en carrusel.
-- [ ] Cargar mapa interactivo solo al abrir o al entrar en viewport, si corresponde.
-- [ ] Mostrar fallback textual si faltan coordenadas.
-- [ ] Ocultar bloque si no existe información geográfica suficiente.
+- [x] Mostrar mini mapa en ficha pública o modal de preview.
+- [x] No crear una instancia interactiva de Google Maps por cada card en carrusel.
+- [x] Cargar mapa interactivo solo al abrir o al entrar en viewport, si corresponde.
+- [x] Mostrar fallback textual si faltan coordenadas.
+- [x] Ocultar bloque si no existe información geográfica suficiente.
 
 ## Verticales
 
-- [ ] Eventos.
-- [ ] Gastronomía.
-- [ ] Rentals.
-- [ ] Excursiones.
-- [ ] Hoteles, solo si la ficha actual lo permite.
+- [x] Eventos.
+- [x] Gastronomía.
+- [x] Rentals.
+- [x] Excursiones.
+- [x] Hoteles, solo si la ficha actual lo permite. *(vía `EventLocationModal`)*
 
 ## Contenido
 
-- [ ] Preview visual del mapa.
-- [ ] Dirección resumida.
-- [ ] Ciudad/provincia si aporta contexto.
-- [ ] Acción `Ver ubicación`.
-- [ ] Modal o enlace hacia mapa interactivo existente.
+- [x] Preview visual del mapa.
+- [x] Dirección resumida.
+- [x] Ciudad/provincia si aporta contexto.
+- [x] Acción `Ver ubicación`.
+- [x] Modal o enlace hacia mapa interactivo existente.
 
 ## Rendimiento y seguridad
 
-- [ ] Evitar multiplicar consumo de API de Maps.
-- [ ] Reutilizar loader actual.
-- [ ] No exponer API keys no autorizadas.
-- [ ] Evitar layout shift.
-- [ ] Definir placeholder de carga.
-- [ ] Confirmar funcionamiento con restricciones de Google Cloud.
+- [x] Evitar multiplicar consumo de API de Maps.
+- [x] Reutilizar loader actual. *(embed lazy; sin Maps JS en discovery)*
+- [x] No exponer API keys no autorizadas.
+- [x] Evitar layout shift.
+- [x] Definir placeholder de carga. *(iframe `loading="lazy"`)*
+- [ ] Confirmar funcionamiento con restricciones de Google Cloud. *(QA / entorno)*
 
 ## Criterios de aceptación
 
-- [ ] Una publicación con coordenadas muestra preview.
-- [ ] Una publicación sin coordenadas no muestra un mapa roto.
-- [ ] No se cargan decenas de mapas interactivos en Home/Explore.
-- [ ] La acción abre la ubicación correcta.
-- [ ] Mobile mantiene buena altura y lectura.
+- [x] Una publicación con coordenadas muestra preview.
+- [x] Una publicación sin coordenadas no muestra un mapa roto.
+- [x] No se cargan decenas de mapas interactivos en Home/Explore.
+- [x] La acción abre la ubicación correcta.
+- [x] Mobile mantiene buena altura y lectura.
 
 ## Smoke manual
 
@@ -644,28 +646,28 @@ Permitir que el banner/hero de Gastronomía incluya descuentos además de public
 
 ## Reglas de contenido
 
-- [ ] Mantener banners editoriales administrados.
-- [ ] Incorporar descuentos gastronómicos vigentes como candidatos de contenido.
-- [ ] No mostrar descuentos inactivos, cancelados, vencidos o no válidos hoy cuando aplique.
-- [ ] Diferenciar visualmente local gastronómico y descuento.
-- [ ] No reemplazar todos los locales por descuentos.
-- [ ] Mantener una playlist equilibrada.
-- [ ] Evitar duplicados del mismo descuento/local.
+- [x] Mantener banners editoriales administrados.
+- [x] Incorporar descuentos gastronómicos vigentes como candidatos de contenido.
+- [x] No mostrar descuentos inactivos, cancelados, vencidos o no válidos hoy cuando aplique.
+- [x] Diferenciar visualmente local gastronómico y descuento. *(`categoryLabel: Descuento`)*
+- [x] No reemplazar todos los locales por descuentos.
+- [x] Mantener una playlist equilibrada. *(máx. 3 descuentos)*
+- [x] Evitar duplicados del mismo descuento/local.
 
 ## Datos y contratos
 
-- [ ] Confirmar endpoint público de descuentos disponible.
-- [ ] Reutilizar contratos existentes si alcanzan.
-- [ ] Si se necesita un view model nuevo, definirlo en shared/repository.
-- [ ] Mantener reglas de recurrencia semanal y rango de fechas.
+- [x] Confirmar endpoint público de descuentos disponible.
+- [x] Reutilizar contratos existentes si alcanzan.
+- [x] Si se necesita un view model nuevo, definirlo en shared/repository. *(`mapGastroDiscountToHeroModel`)*
+- [x] Mantener reglas de recurrencia semanal y rango de fechas.
 
 ## Criterios de aceptación
 
-- [ ] El banner gastronómico puede mostrar un descuento vigente.
-- [ ] También continúa mostrando locales y banners editoriales.
-- [ ] No aparecen descuentos vencidos o cancelados.
-- [ ] El CTA lleva al descuento o local correcto.
-- [ ] No desaparecen las publicaciones reales.
+- [x] El banner gastronómico puede mostrar un descuento vigente.
+- [x] También continúa mostrando locales y banners editoriales.
+- [x] No aparecen descuentos vencidos o cancelados.
+- [x] El CTA lleva al descuento o local correcto.
+- [x] No desaparecen las publicaciones reales.
 
 ## Smoke manual
 
@@ -689,82 +691,82 @@ Mostrar Eventos y Gastronomía como `Próximamente` para público general, permi
 
 ## 11.1 Gateway y menú de categorías
 
-- [ ] Superponer leyenda `Próximamente` sobre Eventos.
-- [ ] Superponer leyenda `Próximamente` sobre Gastronomía.
-- [ ] Mantener imagen visible con overlay legible.
-- [ ] Mantener Rentals y Excursiones accesibles.
-- [ ] Para público/no admin, la card no debe navegar a la categoría.
-- [ ] Para ADMIN, la card mantiene navegación normal.
-- [ ] Agregar semántica accesible de contenido no disponible.
+- [x] Superponer leyenda `Próximamente` sobre Eventos.
+- [x] Superponer leyenda `Próximamente` sobre Gastronomía.
+- [x] Mantener imagen visible con overlay legible.
+- [x] Mantener Rentals y Excursiones accesibles.
+- [x] Para público/no admin, la card no debe navegar a la categoría.
+- [x] Para ADMIN, la card mantiene navegación normal.
+- [x] Agregar semántica accesible de contenido no disponible.
 
 ## 11.2 Protección de rutas frontend
 
 Bloquear para público/no admin:
 
-- [ ] `/categoria/event`.
-- [ ] `/categoria/gastro`.
-- [ ] rutas equivalentes/aliases identificados en auditoría.
-- [ ] accesos desde Home.
-- [ ] accesos desde Explore.
-- [ ] links cruzados.
-- [ ] cards y banners.
+- [x] `/categoria/event`.
+- [x] `/categoria/gastro`.
+- [x] rutas equivalentes/aliases identificados en auditoría. *(landing categoría + nav comingSoon)*
+- [x] accesos desde Home. *(API excluye categorías coming-soon en listados)*
+- [x] accesos desde Explore. *(search/suggestions filtrados)*
+- [x] links cruzados. *(nav + gateway + categoría)*
+- [x] cards y banners. *(payload público sin Event/Gastro para no-ADMIN)*
 
 Comportamiento sugerido:
 
-- [ ] Mostrar pantalla informativa `Próximamente`.
-- [ ] No mostrar error 404 genérico.
-- [ ] Mantener CTA hacia categorías habilitadas o Home.
+- [x] Mostrar pantalla informativa `Próximamente`.
+- [x] No mostrar error 404 genérico.
+- [x] Mantener CTA hacia categorías habilitadas o Home.
 
 ## 11.3 Protección API/backend
 
-- [ ] No confiar únicamente en ocultar botones.
-- [ ] Evitar que endpoints públicos entreguen Eventos/Gastro a usuarios no autorizados cuando la restricción esté activa.
-- [ ] Permitir acceso ADMIN mediante autenticación explícita.
-- [ ] Definir feature flags centralizadas por categoría.
-- [ ] Aplicar la regla en:
-  - [ ] listados públicos;
-  - [ ] búsqueda;
-  - [ ] trending;
-  - [ ] recommended;
-  - [ ] detalle;
-  - [ ] banners;
-  - [ ] sugerencias predictivas;
-  - [ ] carruseles cruzados.
-- [ ] Mantener portales internos Admin/Gastro/Productora sin bloqueo accidental.
+- [x] No confiar únicamente en ocultar botones.
+- [x] Evitar que endpoints públicos entreguen Eventos/Gastro a usuarios no autorizados cuando la restricción esté activa.
+- [x] Permitir acceso ADMIN mediante autenticación explícita.
+- [x] Definir feature flags centralizadas por categoría. *(`category-availability.ts`)*
+- [x] Aplicar la regla en:
+  - [x] listados públicos;
+  - [x] búsqueda;
+  - [x] trending;
+  - [x] recommended;
+  - [x] detalle;
+  - [x] banners; *(vía listados/hero que consumen public events)*
+  - [x] sugerencias predictivas;
+  - [x] carruseles cruzados. *(mismos listados públicos)*
+- [x] Mantener portales internos Admin/Gastro/Productora sin bloqueo accidental.
 
 ## 11.4 Configuración recomendada
 
-- [ ] Crear configuración central de disponibilidad por categoría.
-- [ ] Evitar condicionales dispersos por páginas.
-- [ ] Documentar cómo reactivar Eventos y Gastro cuando el cliente lo decida.
-- [ ] Mantener datos y publicaciones intactos.
+- [x] Crear configuración central de disponibilidad por categoría.
+- [x] Evitar condicionales dispersos por páginas.
+- [x] Documentar cómo reactivar Eventos y Gastro cuando el cliente lo decida.
+- [x] Mantener datos y publicaciones intactos.
 
 ## Criterios de aceptación
 
 ### Público/no autenticado
 
-- [ ] Ve leyenda `Próximamente`.
-- [ ] No puede ingresar por click.
-- [ ] No puede ingresar por URL directa.
-- [ ] No recibe resultados de Eventos/Gastro en Explore o sugerencias.
+- [x] Ve leyenda `Próximamente`.
+- [x] No puede ingresar por click.
+- [x] No puede ingresar por URL directa.
+- [x] No recibe resultados de Eventos/Gastro en Explore o sugerencias.
 
 ### Usuario autenticado no ADMIN
 
-- [ ] Mismo comportamiento que público.
+- [x] Mismo comportamiento que público.
 
 ### ADMIN
 
-- [ ] Puede ingresar a Eventos.
-- [ ] Puede ingresar a Gastronomía.
-- [ ] Puede ver cards, banners, fichas y descuentos.
-- [ ] Puede usar estas pantallas para demostración.
+- [x] Puede ingresar a Eventos.
+- [x] Puede ingresar a Gastronomía.
+- [x] Puede ver cards, banners, fichas y descuentos.
+- [x] Puede usar estas pantallas para demostración.
 
 ### Regresión
 
-- [ ] Rentals sigue disponible.
-- [ ] Excursiones sigue disponible.
-- [ ] Portales privados no quedan bloqueados.
-- [ ] No se eliminan datos.
+- [x] Rentals sigue disponible.
+- [x] Excursiones sigue disponible.
+- [x] Portales privados no quedan bloqueados.
+- [x] No se eliminan datos.
 
 ## Smoke manual de roles
 
@@ -784,8 +786,10 @@ Comportamiento sugerido:
 
 # 12. QA integral V3.2
 
-> **Estado:** Docs cerrados — 2026-07-31 · smoke browser pendiente  
+> **Estado:** Docs cerrados — 2026-07-31 · **smoke browser pendiente** (todos los `[ ]` de esta sección)  
 > **Cierre:** [`docs/audits/V3_2_QA_CLOSING.md`](../audits/V3_2_QA_CLOSING.md)
+>
+> Los ítems de abajo son **verificación manual**, no implementación pendiente.
 
 ## Visual
 
@@ -845,6 +849,8 @@ Comportamiento sugerido:
 
 # 13. Smokes técnicos sugeridos
 
+> Builds V3.2 ya ejecutados en cierres por slice. Ítems `[ ]` = scripts smoke **opcionales aún no creados** / a correr en CI.
+
 ## Build
 
 ```bash
@@ -853,6 +859,7 @@ pnpm --filter api run build
 pnpm --filter web run build
 ```
 
+> Ejecutado OK al cerrar slices (shared + api + web).
 ## Tests existentes relevantes
 
 ```bash
@@ -887,6 +894,8 @@ pnpm --filter api run test:gastro-discount-qr
 ---
 
 # 14. Riesgos principales
+
+> **No son tareas pendientes.** Anti-patrones a evitar (mitigados en la implementación V3.2). Dejar sin `[x]` a propósito.
 
 - [ ] Cambiar `ContentCard` globalmente y romper una vertical.
 - [ ] Ocultar Eventos/Gastro solo en frontend.
