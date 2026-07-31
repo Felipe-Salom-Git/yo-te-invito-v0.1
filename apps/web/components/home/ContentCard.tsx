@@ -6,24 +6,15 @@ import { motion } from 'framer-motion';
 import type { EventSummary } from '@/repositories/interfaces';
 import { getContentDetailHref } from '@/lib/home/contentRoutes';
 import {
-  getContentCardDateLabel,
-  getContentCardPrimaryBadge,
-  getContentCardSecondaryBadge,
-  getContentCardSubtitleLine,
+  getContentCardPresentation,
   getContentCardPlaceholderEmoji,
-  getContentCardMetaLine,
-  getEventCardDateParts,
-  isEventContent,
   isExcursionContent,
   isGastroContent,
   isRentalContent,
   shouldEmphasizeCardRating,
-  shouldShowContentCardPrice,
 } from '@/lib/home/contentCardPresentation';
 import { formatPublicRatingLabel, publicRatingAriaLabel } from '@/lib/reviews/ratingDisplay';
 import { ExpandedContentCardOverlay, type ContentCardMetadata } from './ExpandedContentCardOverlay';
-import { PriceBadge } from './PriceBadge';
-import { ProducerMeta } from './ProducerMeta';
 import {
   CONTENT_CARD_MAX_VISIBLE_TAGS,
   ContentTagChips,
@@ -59,18 +50,18 @@ export function ContentCard({ item, onClick, tenantId }: ContentCardProps) {
   const handleFocus = useCallback(() => setIsFocused(true), []);
 
   const isRental = isRentalContent(item);
-  const isEvent = isEventContent(item);
   const isExcursion = isExcursionContent(item);
   const isGastro = isGastroContent(item);
 
-  const dateLabel = getContentCardDateLabel(item);
-  const eventDateParts = isEvent ? getEventCardDateParts(item.startAt) : null;
-  const subtitleLine = getContentCardSubtitleLine(item);
-  const metaLine = getContentCardMetaLine(item);
-  const primaryBadge = getContentCardPrimaryBadge(item);
-  const secondaryBadge = getContentCardSecondaryBadge(item);
+  const presentation = getContentCardPresentation(item);
+  const {
+    primaryBadge,
+    secondaryBadge,
+    compactSummary,
+    showRatingInCompact,
+    showTagsInCompact,
+  } = presentation;
   const ratingLabel = formatPublicRatingLabel(item.ratingAvg);
-  const showPrice = shouldShowContentCardPrice(item);
   const emphasizeRating = shouldEmphasizeCardRating(item);
 
   const detailHref = getContentDetailHref(item, tenantId);
@@ -79,7 +70,7 @@ export function ContentCard({ item, onClick, tenantId }: ContentCardProps) {
     description: item.description,
     ratingAvg: item.ratingAvg,
     ratingCount: item.ratingCount,
-    fromPrice: showPrice ? item.fromPrice : null,
+    fromPrice: presentation.showPriceInHover ? item.fromPrice : null,
     producerName: item.producerName,
     venueName: item.venueName,
     city: item.city,
@@ -91,6 +82,7 @@ export function ContentCard({ item, onClick, tenantId }: ContentCardProps) {
     departureTime: item.departureTime,
     availableDaysText: item.availableDaysText,
     scheduleNotes: item.scheduleNotes,
+    startAt: item.startAt,
   };
 
   const commonProps = {
@@ -127,9 +119,9 @@ export function ContentCard({ item, onClick, tenantId }: ContentCardProps) {
         scale: expanded ? 1.04 : 1,
         zIndex: expanded ? 20 : 0,
         boxShadow: expanded
-          ? '0 24px 48px -12px rgba(0,0,0,0.9), 0 0 32px -6px rgba(34,197,94,0.18)'
+          ? '0 24px 48px -12px rgba(0,0,0,0.9), 0 0 32px -6px rgba(22,163,74,0.18)'
           : '0 8px 24px -8px rgba(0,0,0,0.85)',
-        borderColor: expanded ? 'rgba(34,197,94,0.4)' : undefined,
+        borderColor: expanded ? 'rgba(22,163,74,0.4)' : undefined,
       }}
       transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
     >
@@ -147,7 +139,13 @@ export function ContentCard({ item, onClick, tenantId }: ContentCardProps) {
         ) : (
           <div
             className={`flex h-full w-full items-center justify-center bg-gradient-to-br to-black ${
-              isRental ? 'from-slate-800/90' : isGastro ? 'from-amber-950/80' : isExcursion ? 'from-sky-950/70' : 'from-emerald-900/80'
+              isRental
+                ? 'from-slate-800/90'
+                : isGastro
+                  ? 'from-amber-950/80'
+                  : isExcursion
+                    ? 'from-sky-950/70'
+                    : 'from-emerald-900/80'
             }`}
           >
             <span className="text-5xl opacity-70" aria-hidden>
@@ -164,31 +162,7 @@ export function ContentCard({ item, onClick, tenantId }: ContentCardProps) {
         aria-hidden
       />
 
-      {eventDateParts ? (
-        <div className="absolute left-3 top-3 z-10 flex min-w-[3rem] flex-col items-center rounded-lg border border-accent/35 bg-black/75 px-2.5 py-1.5 text-center shadow-lg backdrop-blur-sm">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-accent">
-            {eventDateParts.monthLabel}
-          </span>
-          <span className="text-xl font-bold leading-none text-white tabular-nums sm:text-2xl">
-            {eventDateParts.dayLabel}
-          </span>
-          {eventDateParts.weekdayShort ? (
-            <span className="mt-0.5 text-[9px] font-medium uppercase tracking-wide text-white/55">
-              {eventDateParts.weekdayShort}
-            </span>
-          ) : null}
-        </div>
-      ) : dateLabel ? (
-        <div className="absolute left-3 top-3 z-10 flex flex-col items-center rounded-md border border-white/20 bg-black/70 px-2.5 py-1.5 text-center shadow-lg backdrop-blur-sm">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-accent">
-            {new Date(item.startAt!).toLocaleDateString('es-AR', { month: 'short' })}
-          </span>
-          <span className="text-lg font-bold leading-none text-white tabular-nums">
-            {new Date(item.startAt!).getDate()}
-          </span>
-        </div>
-      ) : null}
-
+      {/* Gastro mini-preview — reserved for Slice 3 removal; keep render for now */}
       {item.gastroPromoImageUrl ? (
         <div className="absolute right-3 top-3 z-10 h-14 w-14 overflow-hidden rounded-lg border border-white/25 shadow-md">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -218,49 +192,25 @@ export function ContentCard({ item, onClick, tenantId }: ContentCardProps) {
             </span>
           ) : null}
         </div>
-        <h3
-          className={`gateway-poster-title line-clamp-2 font-bold leading-snug text-white ${
-            isEvent ? 'text-base sm:text-[1.05rem]' : 'text-[0.95rem] sm:text-base'
-          }`}
-        >
+        <h3 className="gateway-poster-title line-clamp-2 text-[0.95rem] font-bold leading-snug text-white sm:text-base">
           {item.title}
         </h3>
-        <p
-          className={`mt-1.5 truncate text-xs font-medium ${
-            isGastro
-              ? 'normal-case tracking-normal text-white/80'
-              : 'uppercase tracking-wide text-white/75'
-          }`}
-        >
-          {subtitleLine}
-        </p>
-        {metaLine && !isEvent ? (
-          <p
-            className={`mt-1 truncate text-[11px] font-medium ${
-              isRental || isExcursion
-                ? 'text-accent/90'
-                : isGastro
-                  ? 'uppercase tracking-wide text-white/55'
-                  : 'text-white/65'
-            }`}
-          >
-            {metaLine}
+        {compactSummary ? (
+          <p className="mt-1.5 line-clamp-2 text-xs font-medium normal-case tracking-normal text-white/80">
+            {compactSummary}
           </p>
-        ) : isEvent && item.producerName ? (
-          <ProducerMeta producerName={item.producerName} className="mt-1" />
         ) : null}
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          {showPrice ? <PriceBadge fromPrice={item.fromPrice} /> : null}
-          {ratingLabel && item.ratingAvg != null && item.ratingAvg > 0 ? (
+        {showRatingInCompact && ratingLabel && item.ratingAvg != null && item.ratingAvg > 0 ? (
+          <div className="mt-2 flex flex-wrap items-center gap-2">
             <span
               className={`text-xs font-medium ${emphasizeRating ? 'text-amber-300' : 'text-accent'}`}
               aria-label={publicRatingAriaLabel(item.ratingAvg)}
             >
               ★ {ratingLabel}
             </span>
-          ) : null}
-        </div>
-        {item.tags && item.tags.length > 0 ? (
+          </div>
+        ) : null}
+        {showTagsInCompact && item.tags && item.tags.length > 0 ? (
           <ContentTagChips
             tags={item.tags}
             maxVisible={CONTENT_CARD_MAX_VISIBLE_TAGS}
@@ -272,7 +222,11 @@ export function ContentCard({ item, onClick, tenantId }: ContentCardProps) {
       </div>
 
       <div className="absolute inset-0 hidden md:block">
-        <ExpandedContentCardOverlay metadata={metadata} isVisible={expanded} />
+        <ExpandedContentCardOverlay
+          metadata={metadata}
+          presentation={presentation}
+          isVisible={expanded}
+        />
       </div>
     </motion.article>
   );

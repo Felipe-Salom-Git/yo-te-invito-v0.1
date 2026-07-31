@@ -125,7 +125,101 @@ export function getGastroCardCityMetaLine(item: {
 }
 
 /**
+ * Compact discovery summary — title companion only.
+ * Never falls back to city/venue (those belong on hover/modal).
+ */
+export function getContentCardCompactSummary(item: {
+  summary?: string | null;
+  description?: string | null;
+}): string | null {
+  const summary = item.summary?.trim();
+  if (summary) return truncateCardLine(summary);
+  const description = item.description?.trim();
+  if (description) return truncateCardLine(description);
+  return null;
+}
+
+export type ContentCardVertical =
+  | 'event'
+  | 'gastro'
+  | 'rental'
+  | 'excursion'
+  | 'hotel'
+  | 'unknown';
+
+export function resolveContentCardVertical(item: {
+  category?: string | null;
+}): ContentCardVertical {
+  const c = item.category;
+  if (!c || c === 'event') return 'event';
+  if (c === 'gastro') return 'gastro';
+  if (c === 'rental') return 'rental';
+  if (c === 'excursion') return 'excursion';
+  if (c === 'hotel') return 'hotel';
+  return 'unknown';
+}
+
+export type ContentCardPresentation = {
+  vertical: ContentCardVertical;
+  primaryBadge: string | null;
+  secondaryBadge: string | null;
+  compactSummary: string | null;
+  /** Compact surface flags (V3.2 Slice 2) */
+  showDateInCompact: boolean;
+  showLocationInCompact: boolean;
+  showMetaInCompact: boolean;
+  showPriceInCompact: boolean;
+  showRatingInCompact: boolean;
+  showTagsInCompact: boolean;
+  /** Hover overlay */
+  showDateInHover: boolean;
+  showLocationInHover: boolean;
+  showScheduleInHover: boolean;
+  showProducerInHover: boolean;
+  showPriceInHover: boolean;
+  ctaLabel: string;
+};
+
+/**
+ * Explicit per-vertical presentation matrix for discovery cards.
+ * Compact = title + summary + tags + rating; location/date/schedule → hover/modal.
+ */
+export function getContentCardPresentation(item: {
+  category?: string | null;
+  subcategoryName?: string | null;
+  summary?: string | null;
+  description?: string | null;
+  fromPrice?: number | null;
+}): ContentCardPresentation {
+  const vertical = resolveContentCardVertical(item);
+  const primaryBadge = getContentCardPrimaryBadge(item);
+  const secondaryBadge = getContentCardSecondaryBadge(item);
+  const compactSummary = getContentCardCompactSummary(item);
+  const showPrice = shouldShowContentCardPrice(item);
+
+  return {
+    vertical,
+    primaryBadge,
+    secondaryBadge,
+    compactSummary,
+    showDateInCompact: false,
+    showLocationInCompact: false,
+    showMetaInCompact: false,
+    showPriceInCompact: false,
+    showRatingInCompact: true,
+    showTagsInCompact: true,
+    showDateInHover: vertical === 'event',
+    showLocationInHover: true,
+    showScheduleInHover: vertical === 'excursion',
+    showProducerInHover: vertical === 'event',
+    showPriceInHover: showPrice,
+    ctaLabel: getContentCardExpandedCta(item.category),
+  };
+}
+
+/**
  * Primary subtitle below card title — gastro uses propuesta/tipo; other verticals use location.
+ * Prefer `getContentCardCompactSummary` for compact cards (no location).
  */
 export function getContentCardSubtitleLine(item: {
   category?: string | null;

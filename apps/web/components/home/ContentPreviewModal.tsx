@@ -147,9 +147,7 @@ function ContentPreviewContent({
       })
     : null;
   const previewBodyText =
-    item.description?.trim() ||
-    (isGastro ? item.summary?.trim() : null) ||
-    null;
+    item.description?.trim() || item.summary?.trim() || null;
 
   const fromPrice =
     !isRental && item.fromPrice != null && Number(item.fromPrice) > 0

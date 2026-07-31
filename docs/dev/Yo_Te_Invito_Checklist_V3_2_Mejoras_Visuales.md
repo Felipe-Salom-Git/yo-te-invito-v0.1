@@ -187,6 +187,11 @@ pnpm --filter web run build
 
 # 3. Slice 2 — Cards públicas generales
 
+> **Estado:** COMPLETADO — 2026-07-31
+> **Cierre:** [`docs/audits/V3_2_SLICE_2_CONTENT_CARDS_CLOSING.md`](../audits/V3_2_SLICE_2_CONTENT_CARDS_CLOSING.md)
+>
+> Mini-preview gastro (`gastroPromo*`) **no** eliminada — diferida a Slice 3.
+
 ## Objetivo
 
 Simplificar la card compacta y separar correctamente la información de miniatura, hover y modal.
@@ -195,54 +200,54 @@ Simplificar la card compacta y separar correctamente la información de miniatur
 
 Mostrar solamente:
 
-- [ ] Nombre o título.
-- [ ] Resumen público.
-- [ ] Etiquetas relevantes.
-- [ ] Promedio general de valoración.
+- [x] Nombre o título.
+- [x] Resumen público.
+- [x] Etiquetas relevantes.
+- [x] Promedio general de valoración.
 
 Eliminar de la vista compacta general:
 
-- [ ] Localidad o ciudad.
-- [ ] Datos repetidos.
-- [ ] Descripción extensa.
-- [ ] Metadatos que ya aparecen en hover/modal.
-- [ ] Fechas cuando la vertical no las necesite para comprender la oferta.
+- [x] Localidad o ciudad.
+- [x] Datos repetidos.
+- [x] Descripción extensa.
+- [x] Metadatos que ya aparecen en hover/modal.
+- [x] Fechas cuando la vertical no las necesite para comprender la oferta.
 
 ## 3.2 Hover
 
-- [ ] Mostrar un fragmento breve de descripción.
-- [ ] Mantener límite de líneas.
-- [ ] Evitar scroll interno.
-- [ ] Mostrar solo metadatos secundarios relevantes para la vertical.
-- [ ] Mantener interacción fluida sin cambios bruscos de altura.
-- [ ] En dispositivos touch, no depender exclusivamente de hover.
+- [x] Mostrar un fragmento breve de descripción.
+- [x] Mantener límite de líneas.
+- [x] Evitar scroll interno.
+- [x] Mostrar solo metadatos secundarios relevantes para la vertical.
+- [x] Mantener interacción fluida sin cambios bruscos de altura.
+- [x] En dispositivos touch, no depender exclusivamente de hover.
 
 ## 3.3 Modal de preview
 
-- [ ] Mostrar descripción ampliada, pero no necesariamente completa.
-- [ ] Mostrar fechas para Eventos.
-- [ ] Mostrar fechas, rango o recurrencia para descuentos.
-- [ ] Mantener CTA hacia la ficha completa.
-- [ ] Cerrar con Escape.
-- [ ] Cerrar al tocar fuera.
-- [ ] Gestionar correctamente el foco.
-- [ ] Evitar duplicar la ficha completa dentro del modal.
+- [x] Mostrar descripción ampliada, pero no necesariamente completa.
+- [x] Mostrar fechas para Eventos.
+- [ ] Mostrar fechas, rango o recurrencia para descuentos. *(card propia — Slice 3)*
+- [x] Mantener CTA hacia la ficha completa.
+- [x] Cerrar con Escape.
+- [x] Cerrar al tocar fuera.
+- [x] Gestionar correctamente el foco.
+- [x] Evitar duplicar la ficha completa dentro del modal.
 
 ## 3.4 Arquitectura recomendada
 
-- [ ] Crear una matriz de metadatos por categoría.
-- [ ] Usar variantes específicas en lugar de condicionales desordenados.
-- [ ] Mantener helpers puros para construir badges y metadata.
-- [ ] No alterar globalmente cards de Rentals o Excursiones si necesitan reglas propias.
+- [x] Crear una matriz de metadatos por categoría.
+- [x] Usar variantes específicas en lugar de condicionales desordenados.
+- [x] Mantener helpers puros para construir badges y metadata.
+- [x] No alterar globalmente cards de Rentals o Excursiones si necesitan reglas propias.
 
 ## Criterios de aceptación
 
-- [ ] La localidad ya no aparece en la miniatura.
-- [ ] La miniatura no repite datos.
-- [ ] Hover y modal agregan información progresivamente.
-- [ ] Las cards mantienen altura y alineación coherentes.
-- [ ] Mobile sigue siendo usable sin hover.
-- [ ] Los enlaces llevan a la ruta correcta por vertical.
+- [x] La localidad ya no aparece en la miniatura.
+- [x] La miniatura no repite datos.
+- [x] Hover y modal agregan información progresivamente.
+- [x] Las cards mantienen altura y alineación coherentes.
+- [x] Mobile sigue siendo usable sin hover.
+- [x] Los enlaces llevan a la ruta correcta por vertical.
 
 ## Smoke manual
 
