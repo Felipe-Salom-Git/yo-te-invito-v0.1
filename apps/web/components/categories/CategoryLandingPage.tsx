@@ -63,6 +63,7 @@ export function CategoryLandingPage({ category, subcategorySlug }: CategoryLandi
         category={category}
         editorialItems={heroBanner.editorialItems}
         eventItems={heroBanner.eventItems}
+        discountItems={heroBanner.discountItems}
         isLoading={heroBanner.isLoading}
       />
 

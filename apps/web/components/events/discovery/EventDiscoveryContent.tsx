@@ -73,6 +73,7 @@ export function EventDiscoveryContent({
         category={category}
         editorialItems={heroBanner.editorialItems}
         eventItems={heroBanner.eventItems}
+        discountItems={heroBanner.discountItems}
         isLoading={heroBanner.isLoading}
       />
 

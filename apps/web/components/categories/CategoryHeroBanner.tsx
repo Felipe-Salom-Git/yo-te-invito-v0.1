@@ -24,12 +24,15 @@ const CATEGORY_HERO_AUTOPLAY_MS = 3500;
 
 const MAX_EDITORIAL_SLIDES = 5;
 const MAX_PUBLICATION_SLIDES = 5;
+const MAX_DISCOUNT_SLIDES = 3;
 
 export interface CategoryHeroBannerProps {
   category: CategoryGatewayId;
   editorialItems?: CategoryEditorialBannerPublicItem[];
   /** Real publication banners — same carousel playlist as editorials. */
   eventItems?: CategoryBannerResolvedItem[];
+  /** Gastro discounts interleaved into the hero (Slice 9). */
+  discountItems?: HeroViewModel[];
   isLoading?: boolean;
 }
 
@@ -204,11 +207,12 @@ function CategoryHeroBannerSlider({
   );
 }
 
-/** Editorials first (admin order), then real publications — one shared playlist. */
+/** Editorials first, then publications, then up to N discounts (gastro) — one playlist. */
 export function buildCategoryHeroPlaylist(
   category: CategoryGatewayId,
   editorialItems: CategoryEditorialBannerPublicItem[],
   eventItems: CategoryBannerResolvedItem[],
+  discountModels: HeroViewModel[] = [],
 ): HeroViewModel[] {
   const editorialModels = editorialItems
     .slice(0, MAX_EDITORIAL_SLIDES)
@@ -224,19 +228,28 @@ export function buildCategoryHeroPlaylist(
       return true;
     });
 
-  return [...editorialModels, ...publicationModels];
+  const discountSlides = discountModels
+    .slice(0, MAX_DISCOUNT_SLIDES)
+    .filter((model) => {
+      if (seen.has(model.id)) return false;
+      seen.add(model.id);
+      return true;
+    });
+
+  return [...editorialModels, ...publicationModels, ...discountSlides];
 }
 
 export function CategoryHeroBanner({
   category,
   editorialItems = [],
   eventItems = [],
+  discountItems = [],
   isLoading,
 }: CategoryHeroBannerProps) {
   const meta = CATEGORY_LANDING_META[category];
   const models = useMemo(
-    () => buildCategoryHeroPlaylist(category, editorialItems, eventItems),
-    [category, editorialItems, eventItems],
+    () => buildCategoryHeroPlaylist(category, editorialItems, eventItems, discountItems),
+    [category, editorialItems, eventItems, discountItems],
   );
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -245,7 +258,7 @@ export function CategoryHeroBanner({
 
   useEffect(() => {
     setIndex(0);
-  }, [category, editorialItems, eventItems]);
+  }, [category, editorialItems, eventItems, discountItems]);
 
   useEffect(() => {
     if (models.length <= 1 || paused) return;
