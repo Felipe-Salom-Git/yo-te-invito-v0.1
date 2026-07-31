@@ -784,6 +784,9 @@ Comportamiento sugerido:
 
 # 12. QA integral V3.2
 
+> **Estado:** Docs cerrados — 2026-07-31 · smoke browser pendiente  
+> **Cierre:** [`docs/audits/V3_2_QA_CLOSING.md`](../audits/V3_2_QA_CLOSING.md)
+
 ## Visual
 
 - [ ] Home desktop/mobile.
@@ -900,6 +903,8 @@ pnpm --filter api run test:gastro-discount-qr
 ---
 
 # 15. Cierre documental
+
+> Ver [`docs/audits/V3_2_QA_CLOSING.md`](../audits/V3_2_QA_CLOSING.md) y cierres por slice en `docs/audits/V3_2_SLICE_*`.
 
 Al completar cada slice:
 
