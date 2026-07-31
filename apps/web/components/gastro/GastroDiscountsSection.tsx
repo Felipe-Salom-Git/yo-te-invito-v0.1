@@ -1,13 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { GASTRO_WEEKDAY_LABELS_ES, type GastroWeekday } from '@yo-te-invito/shared';
 import type { PublicGastroLocationDiscount } from '@/repositories/interfaces';
-import { formatGastroDiscountValidityRangeLabel } from '@/lib/gastro/discount-status-ui';
-
-function formatValue(d: PublicGastroLocationDiscount): string {
-  return d.type === 'PERCENT' ? `${d.value}%` : `$${d.value}`;
-}
+import {
+  formatGastroDiscountBenefit,
+  formatGastroDiscountValidityLabel,
+} from '@/lib/gastro/discount-status-ui';
 
 type GastroDiscountsSectionProps = {
   discounts: PublicGastroLocationDiscount[];
@@ -50,15 +48,7 @@ export function GastroDiscountsSection({
       <ul className="mt-4 space-y-4">
         {discounts.map((d) => {
           const title = d.title?.trim() || 'Descuento';
-          const dateLabel = formatGastroDiscountValidityRangeLabel(
-            d.validFrom,
-            d.validTo,
-            d.discountDate,
-          );
-          const weeklyLabel =
-            d.validityMode === 'WEEKLY_RECURRING' && d.validWeekday
-              ? `Todos los ${GASTRO_WEEKDAY_LABELS_ES[d.validWeekday as GastroWeekday]}`
-              : null;
+          const dateLabel = formatGastroDiscountValidityLabel(d);
           return (
             <li
               key={d.id}
@@ -80,10 +70,8 @@ export function GastroDiscountsSection({
                     <p className="mt-2 text-sm text-text-muted">{d.detail.trim()}</p>
                   )}
                   <p className="mt-2 text-sm">
-                    <span className="font-medium text-accent">{formatValue(d)}</span>
-                    {weeklyLabel ? (
-                      <span className="text-text-muted"> · {weeklyLabel}</span>
-                    ) : dateLabel ? (
+                    <span className="font-medium text-accent">{formatGastroDiscountBenefit(d)}</span>
+                    {dateLabel ? (
                       <span className="text-text-muted"> · Vigencia: {dateLabel}</span>
                     ) : null}
                   </p>

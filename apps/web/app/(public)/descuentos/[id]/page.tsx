@@ -4,11 +4,11 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { PageContainer, SectionTitle } from '@/components';
 import { GastroDiscountClaimForm } from '@/components/gastro/GastroDiscountClaimForm';
+import {
+  formatGastroDiscountBenefit,
+  formatGastroDiscountValidityLabel,
+} from '@/lib/gastro/discount-status-ui';
 import { useGastroPublishedDiscount } from '@/lib/query/useGastroPublishedDiscounts';
-
-function formatValue(type: 'PERCENT' | 'FIXED', value: number): string {
-  return type === 'PERCENT' ? `${value}%` : `$${value}`;
-}
 
 export default function PublicGastroDiscountPage() {
   const params = useParams();
@@ -35,6 +35,9 @@ export default function PublicGastroDiscountPage() {
   }
 
   const title = discount.title?.trim() || 'Descuento';
+  const benefit = formatGastroDiscountBenefit(discount);
+  const validityLabel = formatGastroDiscountValidityLabel(discount);
+  const isWeekly = discount.validityMode === 'WEEKLY_RECURRING';
 
   return (
     <PageContainer>
@@ -54,6 +57,7 @@ export default function PublicGastroDiscountPage() {
       <div className="mt-6 grid gap-8 lg:grid-cols-2">
         <div>
           {discount.headerImageUrl || discount.imageUrls[0] ? (
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={discount.headerImageUrl ?? discount.imageUrls[0] ?? ''}
               alt=""
@@ -66,20 +70,13 @@ export default function PublicGastroDiscountPage() {
           {discount.detail?.trim() && (
             <p className="mt-2 text-sm text-text-muted">{discount.detail.trim()}</p>
           )}
-          <p className="mt-4 text-sm font-medium text-accent">
-            {formatValue(discount.type, discount.value)}
-            {discount.discountDate && (
-              <span className="text-text-muted">
-                {' '}
-                · Válido desde{' '}
-                {new Date(discount.discountDate).toLocaleDateString('es-AR', {
-                  day: 'numeric',
-                  month: 'short',
-                  year: 'numeric',
-                })}
-              </span>
-            )}
-          </p>
+          <p className="mt-4 text-sm font-medium text-accent">{benefit}</p>
+          {validityLabel ? (
+            <p className="mt-1 text-sm text-text-muted">
+              {isWeekly ? 'Recurrencia: ' : 'Vigencia: '}
+              {validityLabel}
+            </p>
+          ) : null}
           <Link
             href={`/gastronomicos/${discount.locationId}`}
             className="mt-4 inline-block text-sm text-accent hover:underline"

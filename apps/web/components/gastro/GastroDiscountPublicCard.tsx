@@ -2,19 +2,18 @@
 
 import Link from 'next/link';
 import type { PublicGastroDiscountListItem } from '@/repositories/interfaces';
-import { formatGastroDiscountValidityRangeLabel } from '@/lib/gastro/discount-status-ui';
-
-function formatValue(d: PublicGastroDiscountListItem): string {
-  return d.type === 'PERCENT' ? `${d.value}%` : `$${d.value}`;
-}
+import {
+  formatGastroDiscountBenefit,
+  formatGastroDiscountValidityLabel,
+} from '@/lib/gastro/discount-status-ui';
 
 export function GastroDiscountPublicCard({ discount }: { discount: PublicGastroDiscountListItem }) {
   const title = discount.title?.trim() || 'Descuento';
-  const dateLabel = formatGastroDiscountValidityRangeLabel(
-    discount.validFrom,
-    discount.validTo,
-    discount.discountDate,
-  );
+  const benefit = formatGastroDiscountBenefit(discount);
+  const dateLabel = formatGastroDiscountValidityLabel(discount);
+  const summary = discount.summary?.trim() || null;
+  const detail = discount.detail?.trim() || null;
+  const hoverSnippet = detail && detail !== summary ? detail : null;
 
   return (
     <Link
@@ -23,6 +22,7 @@ export function GastroDiscountPublicCard({ discount }: { discount: PublicGastroD
     >
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-black/40">
         {discount.headerImageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={discount.headerImageUrl}
             alt=""
@@ -31,20 +31,20 @@ export function GastroDiscountPublicCard({ discount }: { discount: PublicGastroD
         ) : (
           <div className="flex h-full items-center justify-center text-4xl text-white/20">%</div>
         )}
-        <span className="absolute left-2 top-2 rounded bg-accent px-2 py-0.5 text-xs font-bold text-bg">
-          Gratis
-        </span>
       </div>
       <div className="p-3">
         <p className="line-clamp-1 text-sm font-semibold text-white">{title}</p>
         <p className="mt-0.5 line-clamp-1 text-xs text-white/60">{discount.locationName}</p>
-        {discount.summary?.trim() && (
-          <p className="mt-1 line-clamp-2 text-xs text-white/50">{discount.summary.trim()}</p>
-        )}
-        <p className="mt-2 text-xs font-medium text-accent">
-          {formatValue(discount)}
-          {dateLabel ? ` · ${dateLabel}` : ''}
-        </p>
+        <p className="mt-2 text-xs font-medium text-accent">{benefit}</p>
+        {dateLabel ? <p className="mt-0.5 text-[11px] text-white/55">{dateLabel}</p> : null}
+        {summary ? (
+          <p className="mt-1.5 line-clamp-2 text-xs text-white/50">{summary}</p>
+        ) : null}
+        {hoverSnippet ? (
+          <p className="mt-1 hidden line-clamp-2 text-xs text-white/45 group-hover:block">
+            {hoverSnippet}
+          </p>
+        ) : null}
       </div>
     </Link>
   );

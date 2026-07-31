@@ -1,8 +1,29 @@
 import {
+  GASTRO_WEEKDAY_LABELS_ES,
   isGastroDiscountExpired,
   isGastroDiscountNotYetActive,
   type GastroDiscountClaimStatus,
+  type GastroWeekday,
 } from '@yo-te-invito/shared';
+
+export type GastroDiscountBenefitInput = {
+  type: 'PERCENT' | 'FIXED';
+  value: number;
+};
+
+export type GastroDiscountValidityInput = {
+  validityMode?: 'DATE_RANGE' | 'WEEKLY_RECURRING' | null;
+  validWeekday?: GastroWeekday | null;
+  validFrom?: string | null;
+  validTo?: string | null;
+  discountDate?: string | null;
+};
+
+/** Benefit label: `%` only for PERCENT; FIXED as `$value` (never auto-`%`). */
+export function formatGastroDiscountBenefit(d: GastroDiscountBenefitInput): string {
+  if (d.type === 'PERCENT') return `${d.value}%`;
+  return `$${d.value}`;
+}
 
 export const GASTRO_DISCOUNT_STATUS_LABELS: Record<GastroDiscountClaimStatus, string> = {
   ACTIVE: 'Disponible',
@@ -73,4 +94,18 @@ export function formatGastroDiscountValidityRangeLabel(
   if (!from && !to) return null;
   if (from && to && from !== to) return `Del ${from} al ${to}`;
   return from ?? to;
+}
+
+/** Weekly → “Todos los …”; else date range / legacy single day. */
+export function formatGastroDiscountValidityLabel(
+  input: GastroDiscountValidityInput,
+): string | null {
+  if (input.validityMode === 'WEEKLY_RECURRING' && input.validWeekday) {
+    return `Todos los ${GASTRO_WEEKDAY_LABELS_ES[input.validWeekday]}`;
+  }
+  return formatGastroDiscountValidityRangeLabel(
+    input.validFrom,
+    input.validTo,
+    input.discountDate,
+  );
 }

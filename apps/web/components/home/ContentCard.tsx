@@ -162,24 +162,11 @@ export function ContentCard({ item, onClick, tenantId }: ContentCardProps) {
         aria-hidden
       />
 
-      {/* Gastro mini-preview — reserved for Slice 3 removal; keep render for now */}
-      {item.gastroPromoImageUrl ? (
-        <div className="absolute right-3 top-3 z-10 h-14 w-14 overflow-hidden rounded-lg border border-white/25 shadow-md">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={item.gastroPromoImageUrl} alt="" className="h-full w-full object-cover" />
-        </div>
-      ) : null}
-
       <div
         className={`absolute inset-0 flex flex-col justify-end p-4 transition-opacity duration-200 md:duration-150 ${
           expanded ? 'opacity-0 md:pointer-events-none' : 'opacity-100'
         }`}
       >
-        {item.gastroPromoLabel ? (
-          <span className="mb-2 w-fit max-w-[90%] rounded border border-amber-400/35 bg-amber-500/15 px-2 py-0.5 text-[10px] font-medium leading-tight text-amber-50 line-clamp-1">
-            Cupón · {item.gastroPromoLabel}
-          </span>
-        ) : null}
         <div className="mb-2 flex max-w-full flex-wrap gap-1.5">
           {primaryBadge ? (
             <span className="w-fit max-w-[90%] truncate rounded border border-white/20 bg-black/45 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white/90">

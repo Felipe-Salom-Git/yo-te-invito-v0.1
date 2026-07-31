@@ -190,7 +190,7 @@ pnpm --filter web run build
 > **Estado:** COMPLETADO — 2026-07-31
 > **Cierre:** [`docs/audits/V3_2_SLICE_2_CONTENT_CARDS_CLOSING.md`](../audits/V3_2_SLICE_2_CONTENT_CARDS_CLOSING.md)
 >
-> Mini-preview gastro (`gastroPromo*`) **no** eliminada — diferida a Slice 3.
+> Mini-preview gastro (`gastroPromo*`) eliminada en Slice 3 (solo render).
 
 ## Objetivo
 
@@ -226,7 +226,7 @@ Eliminar de la vista compacta general:
 
 - [x] Mostrar descripción ampliada, pero no necesariamente completa.
 - [x] Mostrar fechas para Eventos.
-- [ ] Mostrar fechas, rango o recurrencia para descuentos. *(card propia — Slice 3)*
+- [x] Mostrar fechas, rango o recurrencia para descuentos. *(ficha `/descuentos/[id]` — Slice 3)*
 - [x] Mantener CTA hacia la ficha completa.
 - [x] Cerrar con Escape.
 - [x] Cerrar al tocar fuera.
@@ -264,57 +264,60 @@ Eliminar de la vista compacta general:
 
 # 4. Slice 3 — Cards específicas de Gastronomía
 
+> **Estado:** COMPLETADO — 2026-07-31
+> **Cierre:** [`docs/audits/V3_2_SLICE_3_GASTRO_CARDS_CLOSING.md`](../audits/V3_2_SLICE_3_GASTRO_CARDS_CLOSING.md)
+
 ## 4.1 Cards de descuentos gastronómicos
 
 ### Vista compacta
 
 Mostrar:
 
-- [ ] Título del descuento.
-- [ ] Nombre del local.
-- [ ] Fecha, rango o día semanal.
-- [ ] Texto o valor del descuento/beneficio.
+- [x] Título del descuento.
+- [x] Nombre del local.
+- [x] Fecha, rango o día semanal.
+- [x] Texto o valor del descuento/beneficio.
 
 Cambios:
 
-- [ ] No agregar `%` automáticamente.
-- [ ] Soportar beneficios no porcentuales.
-- [ ] Eliminar el badge verde `Gratis`.
-- [ ] No mostrar metadata heredada de eventos.
-- [ ] Mantener estado activo/vigente solo cuando aporte valor.
+- [x] No agregar `%` automáticamente.
+- [x] Soportar beneficios no porcentuales.
+- [x] Eliminar el badge verde `Gratis`.
+- [x] No mostrar metadata heredada de eventos.
+- [x] Mantener estado activo/vigente solo cuando aporte valor.
 
 ### Hover
 
-- [ ] Mostrar fragmento breve del detalle.
-- [ ] Mostrar condiciones esenciales si existen.
-- [ ] Evitar texto excesivo.
+- [x] Mostrar fragmento breve del detalle.
+- [x] Mostrar condiciones esenciales si existen.
+- [x] Evitar texto excesivo.
 
 ### Modal
 
-- [ ] Mostrar descripción ampliada.
-- [ ] Mostrar vigencia completa.
-- [ ] Diferenciar:
-  - [ ] rango de fechas;
-  - [ ] fecha única legacy;
-  - [ ] recurrencia semanal.
-- [ ] Mostrar local asociado.
-- [ ] Mantener CTA correspondiente.
+- [x] Mostrar descripción ampliada.
+- [x] Mostrar vigencia completa.
+- [x] Diferenciar:
+  - [x] rango de fechas;
+  - [x] fecha única legacy;
+  - [x] recurrencia semanal.
+- [x] Mostrar local asociado.
+- [x] Mantener CTA correspondiente.
 
 ## 4.2 Cards de locales gastronómicos
 
-- [ ] Eliminar la mini-preview de descuentos de la esquina superior derecha.
-- [ ] Mantener identidad del local como foco principal.
-- [ ] Mostrar nombre, resumen, etiquetas y valoración.
-- [ ] No mostrar contadores o promos superpuestas salvo requerimiento explícito.
-- [ ] Confirmar que la eliminación sea solo visual y no borre datos de descuentos.
+- [x] Eliminar la mini-preview de descuentos de la esquina superior derecha.
+- [x] Mantener identidad del local como foco principal.
+- [x] Mostrar nombre, resumen, etiquetas y valoración.
+- [x] No mostrar contadores o promos superpuestas salvo requerimiento explícito.
+- [x] Confirmar que la eliminación sea solo visual y no borre datos de descuentos.
 
 ## Criterios de aceptación
 
-- [ ] Un descuento fijo o textual no aparece con `%` incorrecto.
-- [ ] El badge `Gratis` no aparece.
-- [ ] La card del local no muestra miniaturas de descuentos.
-- [ ] Se distinguen correctamente fecha/rango y recurrencia semanal.
-- [ ] No se altera la emisión, claim o validación QR.
+- [x] Un descuento fijo o textual no aparece con `%` incorrecto.
+- [x] El badge `Gratis` no aparece.
+- [x] La card del local no muestra miniaturas de descuentos.
+- [x] Se distinguen correctamente fecha/rango y recurrencia semanal.
+- [x] No se altera la emisión, claim o validación QR.
 
 ## Smoke manual
 
