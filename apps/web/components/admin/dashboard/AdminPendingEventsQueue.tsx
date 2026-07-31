@@ -10,6 +10,8 @@ import { adminEventReviewHref } from '@/components/admin/events/AdminEventReview
 type AdminPendingEventsQueueProps = {
   events: AdminDashboardPendingEvent[];
   isLoading?: boolean;
+  emptyTitle?: string;
+  emptyDescription?: string;
 };
 
 function formatDate(iso: string): string {
@@ -19,7 +21,12 @@ function formatDate(iso: string): string {
   });
 }
 
-export function AdminPendingEventsQueue({ events, isLoading }: AdminPendingEventsQueueProps) {
+export function AdminPendingEventsQueue({
+  events,
+  isLoading,
+  emptyTitle = 'Sin eventos pendientes',
+  emptyDescription = 'Cuando una productora envíe un evento a revisión, va a aparecer acá.',
+}: AdminPendingEventsQueueProps) {
   if (isLoading) {
     return (
       <div className="mt-4 space-y-3" aria-busy="true">
@@ -36,10 +43,7 @@ export function AdminPendingEventsQueue({ events, isLoading }: AdminPendingEvent
   if (events.length === 0) {
     return (
       <div className="mt-4">
-        <EmptyState
-          title="Sin eventos pendientes"
-          description="Cuando una productora envíe un evento a revisión, va a aparecer acá."
-        />
+        <EmptyState title={emptyTitle} description={emptyDescription} />
       </div>
     );
   }

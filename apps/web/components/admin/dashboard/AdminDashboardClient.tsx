@@ -15,8 +15,7 @@ import { useAdminDashboard } from '@/lib/query/admin-dashboard';
 import { payoutsKeys } from '@/lib/query/keys';
 import { getErrorMessage } from '@/lib/errors';
 import { AdminDashboardKpiCard } from './AdminDashboardKpiCard';
-import { AdminPendingEventsQueue } from './AdminPendingEventsQueue';
-import { AdminOperationalPendingSection } from './AdminOperationalPendingSection';
+import { AdminPendingReviewSection } from './AdminPendingReviewSection';
 import { AdminOperationalLinks } from './AdminOperationalLinks';
 import { AdminVerticalStatusCard } from './AdminVerticalStatusCard';
 
@@ -84,8 +83,8 @@ export function AdminDashboardClient() {
                 : 'Gestionar eventos'}
             </Button>
           </Link>
-          <Link href="#cola-pendientes">
-            <Button variant="outline">Cola en dashboard</Button>
+          <Link href="#pendientes-revision">
+            <Button variant="outline">Pendientes en dashboard</Button>
           </Link>
         </div>
       </header>
@@ -174,41 +173,12 @@ export function AdminDashboardClient() {
         ) : null}
       </section>
 
-      <section id="cola-pendientes" className="mt-10 scroll-mt-24">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold text-text">Cola de eventos pendientes</h2>
-            <p className="mt-1 text-sm text-text-muted">
-              Aprobá o rechazá desde la ficha de la productora (flujo existente). Slice 2: acciones
-              rápidas en esta cola si hace falta.
-            </p>
-          </div>
-          <Link
-            href="/admin/eventos?view=pending"
-            className="text-sm font-medium text-accent hover:underline"
-          >
-            Ver todos los pendientes →
-          </Link>
-        </div>
-        <AdminPendingEventsQueue
-          events={pendingEvents}
-          isLoading={dashboardQuery.isLoading}
-        />
-      </section>
-
-      <section id="pendientes-operativos" className="mt-10 scroll-mt-24">
-        <div>
-          <h2 className="text-lg font-semibold text-text">Pendientes operativos</h2>
-          <p className="mt-1 text-sm text-text-muted">
-            Borradores de eventos y descuentos gastronómicos que requieren seguimiento.
-          </p>
-        </div>
-        <AdminOperationalPendingSection
-          draftEvents={draftEvents}
-          pendingGastroDiscounts={pendingGastroDiscounts}
-          isLoading={dashboardQuery.isLoading}
-        />
-      </section>
+      <AdminPendingReviewSection
+        pendingEvents={pendingEvents}
+        draftEvents={draftEvents}
+        pendingGastroDiscounts={pendingGastroDiscounts}
+        isLoading={dashboardQuery.isLoading}
+      />
 
       <section className="mt-10">
         <h2 className="text-lg font-semibold text-text">Verticales</h2>

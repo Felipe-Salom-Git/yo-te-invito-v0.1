@@ -571,32 +571,37 @@ Agregar una previsualización geográfica compacta sin cargar mapas interactivos
 
 # 9. Slice 8 — Dashboard Admin sin módulo duplicado
 
+> **Estado:** COMPLETADO — 2026-07-31
+> **Cierre:** [`docs/audits/V3_2_SLICE_8_ADMIN_PENDING_CLOSING.md`](../audits/V3_2_SLICE_8_ADMIN_PENDING_CLOSING.md)
+>
+> **Nota:** La auditoría Slice 0 demostró que los módulos no eran duplicados. Se consolidó UX en un único bloque con tabs; no se eliminó `pendingEvents`.
+
 ## Objetivo
 
-Eliminar el primer módulo `Cola de Pendientes` si duplica el contenido de `Operaciones Pendientes`.
+Resolver la percepción de duplicación sin borrar información operativa (aprobación PENDING, borradores DRAFT, descuentos gastro).
 
 ## Auditoría previa
 
-- [ ] Comparar fuentes de datos de ambos módulos.
-- [ ] Comparar tipos de pendientes incluidos.
-- [ ] Confirmar si existen acciones únicas en el primer módulo.
-- [ ] Confirmar si existen contadores únicos.
-- [ ] Confirmar que `Operaciones Pendientes` cubra eventos y descuentos pendientes.
+- [x] Comparar fuentes de datos de ambos módulos.
+- [x] Comparar tipos de pendientes incluidos.
+- [x] Confirmar si existen acciones únicas en el primer módulo.
+- [x] Confirmar si existen contadores únicos.
+- [x] Confirmar que `Operaciones Pendientes` cubra eventos y descuentos pendientes.
 
 ## Implementación
 
-- [ ] Eliminar el módulo duplicado de la composición del dashboard.
-- [ ] No eliminar endpoint ni lógica backend si todavía son usados en otro lugar.
-- [ ] Reordenar KPIs y módulos restantes.
-- [ ] Evitar espacio vacío al inicio.
-- [ ] Mantener CTA de revisión operativa.
+- [x] Unificar composición del dashboard en un solo módulo con tabs.
+- [x] No eliminar endpoint ni lógica backend (`GET /admin/dashboard` intacto).
+- [x] Preservar CTAs diferenciados por tipo.
+- [x] Priorizar visualmente eventos pendientes de aprobación (tab default).
+- [x] Mantener CTA de revisión operativa.
 
 ## Criterios de aceptación
 
-- [ ] Solo queda un bloque principal de pendientes.
-- [ ] No se pierde ningún tipo de operación.
-- [ ] Todos los enlaces de revisión siguen funcionando.
-- [ ] El dashboard se ve equilibrado en desktop y mobile.
+- [x] Solo queda un bloque principal de pendientes.
+- [x] No se pierde ningún tipo de operación.
+- [x] Todos los enlaces de revisión siguen funcionando.
+- [x] El dashboard se ve equilibrado en desktop y mobile.
 
 ## Smoke manual
 
