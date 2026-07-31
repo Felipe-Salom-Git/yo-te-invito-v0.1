@@ -414,6 +414,31 @@ export const eventsSearchQuerySchema = z
   );
 export type EventsSearchQuery = z.infer<typeof eventsSearchQuerySchema>;
 
+/** Query for GET /public/events/suggestions (predictive search). */
+export const eventsSuggestionsQuerySchema = z.object({
+  tenantId: z.string().min(1, 'tenantId is required'),
+  q: z.string().trim().min(2).max(80),
+  limit: z.coerce.number().int().min(1).max(12).default(8),
+});
+export type EventsSuggestionsQuery = z.infer<typeof eventsSuggestionsQuerySchema>;
+
+export const eventsSuggestionItemSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  category: z.string().nullable().optional(),
+  coverImageUrl: z.string().nullable().optional(),
+  subcategoryName: z.string().nullable().optional(),
+  producerName: z.string().nullable().optional(),
+  gastroProfileId: z.string().nullable().optional(),
+  city: z.string().nullable().optional(),
+});
+export type EventsSuggestionItem = z.infer<typeof eventsSuggestionItemSchema>;
+
+export const eventsSuggestionsResponseSchema = z.object({
+  data: z.array(eventsSuggestionItemSchema),
+});
+export type EventsSuggestionsResponse = z.infer<typeof eventsSuggestionsResponseSchema>;
+
 /** Query for GET /public/events/trending */
 export const eventsTrendingQuerySchema = z.object({
   tenantId: z.string().min(1, 'tenantId is required'),

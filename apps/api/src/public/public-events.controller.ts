@@ -2,6 +2,7 @@ import { Controller, Get, Post, Query, Param, UseGuards } from '@nestjs/common';
 import {
   eventsListQuerySchema,
   eventsSearchQuerySchema,
+  eventsSuggestionsQuerySchema,
   eventsTrendingQuerySchema,
   eventsRecommendedQuerySchema,
   type EventsRecommendedQuery,
@@ -11,6 +12,7 @@ import {
   type PublicEventViewQuery,
   type EventsListQuery,
   type EventsSearchQuery,
+  type EventsSuggestionsQuery,
   type EventsTrendingQuery,
   type EventsCalendarMonthQuery,
   type EventDetailQuery,
@@ -40,6 +42,13 @@ export class PublicEventsController {
     @Query(new ZodValidationPipe(eventsSearchQuerySchema)) query: EventsSearchQuery,
   ) {
     return this.service.search(query);
+  }
+
+  @Get('suggestions')
+  async suggestions(
+    @Query(new ZodValidationPipe(eventsSuggestionsQuerySchema)) query: EventsSuggestionsQuery,
+  ) {
+    return this.service.suggestions(query);
   }
 
   @Get('recommended')

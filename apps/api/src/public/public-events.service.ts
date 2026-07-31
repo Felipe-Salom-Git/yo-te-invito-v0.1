@@ -7,6 +7,8 @@ import type {
   EventSummary,
   EventDetail,
   EventsSearchQuery,
+  EventsSuggestionsQuery,
+  EventsSuggestionsResponse,
   EventsTrendingQuery,
   EventsCalendarMonthQuery,
   PublicGastroDiscountsResponse,
@@ -42,6 +44,43 @@ export class PublicEventsService {
 
   private publicWhere(base: Prisma.EventWhereInput): Prisma.EventWhereInput {
     return mergePublicParentEntitiesActive(mergePublicEventVisibility(base));
+  }
+
+  /** Multi-field text match for search + suggestions (title, local, producer, tags, subcategory, category). */
+  private publicSearchTextWhere(rawQ: string): Prisma.EventWhereInput {
+    const q = rawQ.trim();
+    if (!q) return {};
+    const contains = { contains: q, mode: 'insensitive' as const };
+    return {
+      OR: [
+        { title: contains },
+        { summary: contains },
+        { description: contains },
+        { venueName: contains },
+        { city: contains },
+        { category: contains },
+        {
+          producerProfile: {
+            is: { status: 'ACTIVE', displayName: contains },
+          },
+        },
+        {
+          subcategory: {
+            is: { name: contains },
+          },
+        },
+        {
+          eventTags: {
+            some: {
+              tag: {
+                isActive: true,
+                OR: [{ name: contains }, { slug: contains }],
+              },
+            },
+          },
+        },
+      ],
+    };
   }
 
   private listOrderBy(
@@ -471,7 +510,7 @@ export class PublicEventsService {
     };
 
     if (query.q?.trim()) {
-      base.title = { contains: query.q.trim(), mode: 'insensitive' };
+      Object.assign(base, this.publicSearchTextWhere(query.q));
     }
 
     if (query.city?.trim()) {
@@ -525,6 +564,48 @@ export class PublicEventsService {
         total,
         totalPages: Math.ceil(total / query.limit) || 1,
       },
+    };
+  }
+
+  async suggestions(query: EventsSuggestionsQuery): Promise<EventsSuggestionsResponse> {
+    const q = query.q.trim();
+    const where = this.publicWhere({
+      tenantId: query.tenantId,
+      status: 'APPROVED',
+      deletedAt: null,
+      ...this.publicSearchTextWhere(q),
+    });
+
+    const rows = await this.prisma.event.findMany({
+      where,
+      select: {
+        id: true,
+        title: true,
+        category: true,
+        coverImageUrl: true,
+        city: true,
+        subcategory: { select: { name: true } },
+        producerProfile: {
+          where: { status: 'ACTIVE' },
+          select: { displayName: true },
+        },
+        gastroProfilePublic: { select: { id: true } },
+      },
+      orderBy: [{ rankingScore: 'desc' }, { ratingCount: 'desc' }, { startAt: 'asc' }],
+      take: query.limit,
+    });
+
+    return {
+      data: rows.map((e) => ({
+        id: e.id,
+        title: e.title,
+        category: e.category ?? null,
+        coverImageUrl: e.coverImageUrl,
+        subcategoryName: e.subcategory?.name ?? null,
+        producerName: resolvePublicProducerName(e.producerProfile),
+        gastroProfileId: e.gastroProfilePublic?.id ?? null,
+        city: e.city ? cityDisplayLabel(e.city) : e.city,
+      })),
     };
   }
 

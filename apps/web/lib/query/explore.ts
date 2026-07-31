@@ -59,3 +59,29 @@ export function useExploreEvents(
     enabled: !!t,
   });
 }
+
+const SUGGESTIONS_MIN_CHARS = 2;
+const SUGGESTIONS_LIMIT = 8;
+
+export function useExploreSuggestions(rawQuery: string, enabled = true) {
+  const repos = useRepositories();
+  const { tenantId } = useTenant();
+  const t = tenantId || TENANT_ID;
+  const q = rawQuery.trim();
+  const canFetch = enabled && !!t && q.length >= SUGGESTIONS_MIN_CHARS;
+
+  return useQuery({
+    queryKey: exploreKeys.suggestions(t, q, SUGGESTIONS_LIMIT),
+    queryFn: () =>
+      repos.events.suggestions({
+        tenantId: t,
+        q,
+        limit: SUGGESTIONS_LIMIT,
+      }),
+    enabled: canFetch,
+    staleTime: 30_000,
+    placeholderData: (prev) => prev,
+  });
+}
+
+export { SUGGESTIONS_MIN_CHARS };

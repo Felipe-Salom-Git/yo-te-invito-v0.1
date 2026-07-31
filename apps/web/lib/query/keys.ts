@@ -184,6 +184,8 @@ export const ordersKeys = {
 export const exploreKeys = {
   all: ['explore'] as const,
   search: (query: EventsSearchQuery) => [...exploreKeys.all, query] as const,
+  suggestions: (tenantId: string, q: string, limit: number) =>
+    [...exploreKeys.all, 'suggestions', tenantId, q, limit] as const,
 };
 
 // ─── Navbar city selector ────────────────────────────────────────────────────

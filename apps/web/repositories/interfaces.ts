@@ -1649,6 +1649,23 @@ export interface EventsCalendarMonthQuery {
 export interface EventsRepo {
   list(query: EventsListQuery): Promise<EventsPaginatedResponse>;
   search(query: EventsSearchQuery): Promise<EventsPaginatedResponse>;
+  /** GET /public/events/suggestions — predictive lightweight results. */
+  suggestions(query: {
+    tenantId: string;
+    q: string;
+    limit?: number;
+  }): Promise<{
+    data: Array<{
+      id: string;
+      title: string;
+      category?: string | null;
+      coverImageUrl?: string | null;
+      subcategoryName?: string | null;
+      producerName?: string | null;
+      gastroProfileId?: string | null;
+      city?: string | null;
+    }>;
+  }>;
   listCalendarMonth(query: EventsCalendarMonthQuery): Promise<{ data: EventSummary[] }>;
   trending(tenantId: string, limit?: number): Promise<EventSummary[]>;
   recommended(query: {

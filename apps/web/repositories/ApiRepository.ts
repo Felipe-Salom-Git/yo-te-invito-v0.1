@@ -310,11 +310,20 @@ export class ApiRepository implements Repositories {
         category: query.category,
         subcategoryId: query.subcategoryId,
         subcategorySlug: query.subcategorySlug,
+        tag: query.tag,
         page: query.page,
         limit: query.limit,
         dateFrom: query.dateFrom,
         dateTo: query.dateTo,
         minRating: query.minRating,
+      });
+    },
+    suggestions: async (query) => {
+      const t = query.tenantId ?? this.defaultTenantId;
+      return this.client.get('/public/events/suggestions', {
+        tenantId: t,
+        q: query.q,
+        limit: query.limit ?? 8,
       });
     },
     trending: async (tenantId: string, limit = 10) => {

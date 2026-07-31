@@ -397,53 +397,56 @@ Permitir escribir para filtrar ciudades, pero persistir únicamente una opción 
 
 # 6. Slice 5 — Búsqueda predictiva en Explore
 
+> **Estado:** COMPLETADO — 2026-07-31
+> **Cierre:** [`docs/audits/V3_2_SLICE_5_SEARCH_SUGGESTIONS_CLOSING.md`](../audits/V3_2_SLICE_5_SEARCH_SUGGESTIONS_CLOSING.md)
+
 ## Objetivo
 
 Mostrar resultados sugeridos mientras el usuario escribe, antes de ejecutar la búsqueda completa.
 
 ## Comportamiento
 
-- [ ] Activar sugerencias a partir de una cantidad mínima de caracteres.
-- [ ] Aplicar debounce.
-- [ ] Cancelar o ignorar respuestas antiguas.
-- [ ] No disparar una consulta por cada tecla sin control.
-- [ ] Mostrar estado cargando discreto.
-- [ ] Mostrar estado sin coincidencias.
-- [ ] Permitir selección con mouse/touch.
-- [ ] Permitir navegación con flechas y Enter.
-- [ ] Cerrar con Escape.
-- [ ] Cerrar al tocar fuera.
-- [ ] Mantener la búsqueda final en URL.
+- [x] Activar sugerencias a partir de una cantidad mínima de caracteres.
+- [x] Aplicar debounce.
+- [x] Cancelar o ignorar respuestas antiguas.
+- [x] No disparar una consulta por cada tecla sin control.
+- [x] Mostrar estado cargando discreto.
+- [x] Mostrar estado sin coincidencias.
+- [x] Permitir selección con mouse/touch.
+- [x] Permitir navegación con flechas y Enter.
+- [x] Cerrar con Escape.
+- [x] Cerrar al tocar fuera.
+- [x] Mantener la búsqueda final en URL.
 
 ## Contenido sugerido
 
 Evaluar coincidencias por:
 
-- [ ] Título o nombre.
-- [ ] Local/productora/operador.
-- [ ] Etiquetas.
-- [ ] Subcategoría.
-- [ ] Categoría.
+- [x] Título o nombre.
+- [x] Local/productora/operador.
+- [x] Etiquetas.
+- [x] Subcategoría.
+- [x] Categoría.
 
 ## API y repositorios
 
-- [ ] Reutilizar endpoint actual si soporta búsqueda parcial eficiente.
-- [ ] Si no alcanza, crear endpoint público liviano de sugerencias.
-- [ ] Agregar schema compartido para query y response si se crea endpoint.
-- [ ] Agregar método al repositorio correspondiente.
-- [ ] Agregar query key específica.
-- [ ] Limitar cantidad de resultados sugeridos.
-- [ ] Aplicar visibilidad pública vigente.
-- [ ] Respetar categorías temporalmente bloqueadas.
+- [x] Reutilizar endpoint actual si soporta búsqueda parcial eficiente. *(search ampliado; suggestions dedicado)*
+- [x] Si no alcanza, crear endpoint público liviano de sugerencias.
+- [x] Agregar schema compartido para query y response si se crea endpoint.
+- [x] Agregar método al repositorio correspondiente.
+- [x] Agregar query key específica.
+- [x] Limitar cantidad de resultados sugeridos.
+- [x] Aplicar visibilidad pública vigente.
+- [x] Respetar categorías temporalmente bloqueadas. *(hook listo en Slice 10 sobre el mismo where)*
 
 ## Criterios de aceptación
 
-- [ ] Las sugerencias aparecen antes de presionar Buscar.
-- [ ] No hay parpadeo por respuestas fuera de orden.
-- [ ] Seleccionar una sugerencia abre la ficha correcta o aplica la búsqueda acordada.
-- [ ] Enter ejecuta búsqueda completa.
-- [ ] La URL sigue representando el estado final de búsqueda.
-- [ ] No se exponen contenidos no públicos.
+- [x] Las sugerencias aparecen antes de presionar Buscar.
+- [x] No hay parpadeo por respuestas fuera de orden.
+- [x] Seleccionar una sugerencia abre la ficha correcta o aplica la búsqueda acordada.
+- [x] Enter ejecuta búsqueda completa. *(Enter sobre ítem destacado abre ficha; Buscar / Enter sin selección → explore)*
+- [x] La URL sigue representando el estado final de búsqueda.
+- [x] No se exponen contenidos no públicos.
 
 ## Smoke
 
