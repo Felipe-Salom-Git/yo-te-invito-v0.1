@@ -2,6 +2,7 @@
 
 import {
   formatPublicRatingLabel,
+  publicFaceFromTen,
   publicRatingAriaLabel,
 } from '@/lib/reviews/ratingDisplay';
 
@@ -19,6 +20,7 @@ export function RatingBadge({ ratingAvg, ratingCount, className = '' }: RatingBa
 
   const label = formatPublicRatingLabel(ratingAvg);
   if (!label) return null;
+  const face = publicFaceFromTen(ratingAvg);
 
   const display =
     ratingCount != null && ratingCount > 0 ? `${label} (${ratingCount})` : label;
@@ -28,9 +30,11 @@ export function RatingBadge({ ratingAvg, ratingCount, className = '' }: RatingBa
       className={`inline-flex items-center gap-1 rounded-md bg-black/60 px-2 py-0.5 text-xs font-medium text-white backdrop-blur-sm ${className}`}
       aria-label={publicRatingAriaLabel(ratingAvg)}
     >
-      <span className="text-accent" aria-hidden>
-        ★
-      </span>
+      {face ? (
+        <span className={face.className} aria-hidden>
+          {face.glyph}
+        </span>
+      ) : null}
       {display}
     </span>
   );

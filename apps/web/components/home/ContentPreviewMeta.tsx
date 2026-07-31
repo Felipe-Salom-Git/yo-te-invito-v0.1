@@ -1,6 +1,6 @@
 'use client';
 
-import { formatPublicRatingLabel, publicRatingAriaLabel } from '@/lib/reviews/ratingDisplay';
+import { formatPublicRatingLabel, publicFaceFromTen, publicRatingAriaLabel } from '@/lib/reviews/ratingDisplay';
 
 /** Scannable metadata row for content preview modal — date, location, rating, price */
 
@@ -32,6 +32,7 @@ export function ContentPreviewMeta({
     );
   }
   const ratingLabel = formatPublicRatingLabel(ratingAvg);
+  const ratingFace = publicFaceFromTen(ratingAvg);
   if (ratingLabel && ratingAvg != null && ratingAvg > 0) {
     parts.push(
       <span
@@ -39,7 +40,8 @@ export function ContentPreviewMeta({
         className="text-accent font-medium"
         aria-label={publicRatingAriaLabel(ratingAvg)}
       >
-        ★ {ratingLabel}
+        {ratingFace ? <span aria-hidden>{ratingFace.glyph} </span> : null}
+        {ratingLabel}
         {ratingCount != null && ratingCount > 0 && (
           <span className="text-text-muted font-normal"> ({ratingCount})</span>
         )}

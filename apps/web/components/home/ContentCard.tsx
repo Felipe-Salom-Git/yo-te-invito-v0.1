@@ -13,7 +13,7 @@ import {
   isRentalContent,
   shouldEmphasizeCardRating,
 } from '@/lib/home/contentCardPresentation';
-import { formatPublicRatingLabel, publicRatingAriaLabel } from '@/lib/reviews/ratingDisplay';
+import { formatPublicRatingLabel, publicFaceFromTen, publicRatingAriaLabel } from '@/lib/reviews/ratingDisplay';
 import { ExpandedContentCardOverlay, type ContentCardMetadata } from './ExpandedContentCardOverlay';
 import {
   CONTENT_CARD_MAX_VISIBLE_TAGS,
@@ -62,6 +62,7 @@ export function ContentCard({ item, onClick, tenantId }: ContentCardProps) {
     showTagsInCompact,
   } = presentation;
   const ratingLabel = formatPublicRatingLabel(item.ratingAvg);
+  const ratingFace = publicFaceFromTen(item.ratingAvg);
   const emphasizeRating = shouldEmphasizeCardRating(item);
 
   const detailHref = getContentDetailHref(item, tenantId);
@@ -193,7 +194,7 @@ export function ContentCard({ item, onClick, tenantId }: ContentCardProps) {
               className={`text-xs font-medium ${emphasizeRating ? 'text-amber-300' : 'text-accent'}`}
               aria-label={publicRatingAriaLabel(item.ratingAvg)}
             >
-              ★ {ratingLabel}
+              {ratingFace ? <span aria-hidden>{ratingFace.glyph}</span> : null} {ratingLabel}
             </span>
           </div>
         ) : null}

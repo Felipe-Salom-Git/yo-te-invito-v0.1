@@ -3,6 +3,7 @@
 import type { PublicReviewCategory } from '@yo-te-invito/shared';
 import {
   formatPublicRatingLabel,
+  publicFaceFromTen,
   publicRatingAriaLabel,
 } from '@/lib/reviews/ratingDisplay';
 import { ReviewAspectBreakdown } from './ReviewAspectBreakdown';
@@ -14,6 +15,9 @@ export interface ReviewSummaryProps {
   category?: PublicReviewCategory;
   /** Section heading — defaults to Valoraciones */
   title?: string;
+  /** When false, hide aspect breakdown (collapsed default). */
+  showDetails?: boolean;
+  onToggleDetails?: () => void;
 }
 
 export function ReviewSummary({
@@ -22,6 +26,8 @@ export function ReviewSummary({
   aspectAverages,
   category,
   title = 'Valoraciones',
+  showDetails = false,
+  onToggleDetails,
 }: ReviewSummaryProps) {
   const hasAverage = averageRating != null && averageRating > 0;
   const hasReviews = validReviewCount > 0;
@@ -29,6 +35,7 @@ export function ReviewSummary({
     category &&
     aspectAverages &&
     Object.keys(aspectAverages).length > 0;
+  const face = hasAverage ? publicFaceFromTen(averageRating) : null;
 
   return (
     <header className="rounded-xl border border-border/80 bg-bg-muted/30 p-5 sm:p-6">
@@ -43,18 +50,36 @@ export function ReviewSummary({
         </div>
         {hasAverage ? (
           <div
-            className="flex shrink-0 items-baseline gap-1 self-start sm:self-auto"
+            className="flex shrink-0 items-center gap-3 self-start sm:self-auto"
             aria-label={publicRatingAriaLabel(averageRating!)}
           >
-            <span className="text-4xl font-bold tabular-nums text-white sm:text-5xl">
-              {formatPublicRatingLabel(averageRating, { suffix: false })}
-            </span>
-            <span className="pb-1 text-base text-text-muted sm:text-lg">/5</span>
+            {face ? (
+              <span className={`text-4xl sm:text-5xl ${face.className}`} title={face.label} aria-hidden>
+                {face.glyph}
+              </span>
+            ) : null}
+            <div className="flex items-baseline gap-1">
+              <span className="text-4xl font-bold tabular-nums text-white sm:text-5xl">
+                {formatPublicRatingLabel(averageRating, { suffix: false })}
+              </span>
+              <span className="pb-1 text-base text-text-muted sm:text-lg">/5</span>
+            </div>
           </div>
         ) : null}
       </div>
 
-      {hasAspects ? (
+      {onToggleDetails ? (
+        <button
+          type="button"
+          onClick={onToggleDetails}
+          className="mt-4 text-sm font-medium text-accent hover:underline focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-bg-muted"
+          aria-expanded={showDetails}
+        >
+          {showDetails ? 'Ver menos' : 'Ver más'}
+        </button>
+      ) : null}
+
+      {showDetails && hasAspects ? (
         <div className="mt-5 border-t border-border/60 pt-5">
           <ReviewAspectBreakdown
             category={category!}

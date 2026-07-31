@@ -9,7 +9,7 @@ import {
 } from '@/lib/home/categoryGatewayConfig';
 import type { HeroViewModel } from '@/lib/home/heroModel';
 import { mapFeaturedItemToHeroModel } from '@/lib/home/heroModel';
-import { formatPublicRatingLabel } from '@/lib/reviews/ratingDisplay';
+import { formatPublicRatingLabel, publicFaceFromTen } from '@/lib/reviews/ratingDisplay';
 
 type FeaturedItem = {
   id: string;
@@ -90,7 +90,7 @@ function HeroContent({ model }: { model: HeroViewModel }) {
       <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-white/80">
         {model.ratingAvg != null && model.ratingAvg > 0 && (
           <span className="text-accent">
-            ★ {formatPublicRatingLabel(model.ratingAvg)}
+            {publicFaceFromTen(model.ratingAvg)?.glyph} {formatPublicRatingLabel(model.ratingAvg)}
           </span>
         )}
         {model.producerName && <span>{model.producerName}</span>}

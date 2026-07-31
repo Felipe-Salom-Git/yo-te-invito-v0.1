@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import type {
   PublicReviewCategory,
   PublicReviewItemV2,
@@ -74,6 +75,8 @@ export function EventReviewsSection({
   hideForm = false,
   canSubmitReview = true,
 }: EventReviewsSectionProps) {
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
   const filtersActive = hasActivePublicReviewFilters(filters);
   const showFilters = (summary.validReviewCount > 0 || total > 0) && !isError;
   const emptyVariant = resolveEmptyVariant(
@@ -90,67 +93,83 @@ export function EventReviewsSection({
         validReviewCount={summary.validReviewCount}
         aspectAverages={summary.aspectAverages}
         category={category}
+        showDetails={detailsOpen}
+        onToggleDetails={() => setDetailsOpen((v) => !v)}
       />
 
-      {showFilters ? (
-        <PublicReviewsFiltersBar
-          className="mt-6"
-          filters={filters}
-          onChange={onFiltersChange}
-        />
-      ) : null}
+      {detailsOpen ? (
+        <>
+          {showFilters ? (
+            <PublicReviewsFiltersBar
+              className="mt-6"
+              filters={filters}
+              onChange={onFiltersChange}
+            />
+          ) : null}
 
-      {isError ? (
-        <div className="mt-6">
-          <QueryError
-            message="No pudimos cargar las valoraciones."
-            onRetry={onRetry}
-          />
-        </div>
-      ) : isLoading ? (
-        <ReviewListSkeleton />
-      ) : reviews.length === 0 ? (
-        <div className="mt-6">
-          <ReviewEmptyState
-            variant={emptyVariant}
-            message={
-              filtersActive
-                ? 'Ninguna valoración coincide con estos filtros'
-                : undefined
-            }
-            submessage={
-              filtersActive
-                ? 'Probá cambiar el orden, el puntaje o el filtro de respuesta oficial'
-                : undefined
-            }
-          />
-        </div>
-      ) : (
-        <div className="mt-6 space-y-4">
-          {reviews.map((r) => (
-            <ReviewCard key={r.id} review={r} />
-          ))}
-        </div>
-      )}
+          {isError ? (
+            <div className="mt-6">
+              <QueryError
+                message="No pudimos cargar las valoraciones."
+                onRetry={onRetry}
+              />
+            </div>
+          ) : isLoading ? (
+            <ReviewListSkeleton />
+          ) : reviews.length === 0 ? (
+            <div className="mt-6">
+              <ReviewEmptyState
+                variant={emptyVariant}
+                message={
+                  filtersActive
+                    ? 'Ninguna valoración coincide con estos filtros'
+                    : undefined
+                }
+                submessage={
+                  filtersActive
+                    ? 'Probá cambiar el orden, el puntaje o el filtro de respuesta oficial'
+                    : undefined
+                }
+              />
+            </div>
+          ) : (
+            <div className="mt-6 space-y-4">
+              {reviews.map((r) => (
+                <ReviewCard key={r.id} review={r} />
+              ))}
+            </div>
+          )}
 
-      {!isError && !isLoading && total > 0 ? (
-        <ReviewPagination
-          page={page}
-          total={total}
-          pageSize={publicReviewsPageSize}
-          onPageChange={onPageChange}
-        />
+          {!isError && !isLoading && total > 0 ? (
+            <ReviewPagination
+              page={page}
+              total={total}
+              pageSize={publicReviewsPageSize}
+              onPageChange={onPageChange}
+            />
+          ) : null}
+        </>
       ) : null}
 
       {!hideForm && !isError ? (
         <div className="mt-8 border-t border-border/60 pt-8">
-          <ReviewForm
-            entityType={entityType}
-            entityId={eventId}
-            onSubmit={onSubmitReview}
-            isSubmitting={isSubmittingReview}
-            canSubmit={canSubmitReview}
-          />
+          {formOpen ? (
+            <ReviewForm
+              entityType={entityType}
+              entityId={eventId}
+              onSubmit={onSubmitReview}
+              isSubmitting={isSubmittingReview}
+              canSubmit={canSubmitReview}
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={() => setFormOpen(true)}
+              className="rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-bg transition hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-bg"
+            >
+              Valorar
+            </button>
+          )}
         </div>
       ) : null}
     </section>
