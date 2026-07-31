@@ -13,10 +13,14 @@ import { mapCategoryBannerToHeroModel } from '@/lib/categories/categoryBannerMod
 import { mapCategoryEditorialBannerToHeroModel } from '@/lib/categories/categoryEditorialBannerModel';
 import type { HeroViewModel } from '@/lib/home/heroModel';
 
+/** Category hero — closer to Home prominence without matching 72vh. */
 const HERO_HEIGHT =
-  'relative h-[34vh] min-h-[220px] max-h-[320px] overflow-hidden bg-black sm:min-h-[240px] sm:max-h-[340px] md:max-h-[360px]';
+  'relative h-[46vh] min-h-[320px] max-h-[440px] overflow-hidden bg-black sm:min-h-[360px] sm:max-h-[480px] md:h-[50vh] md:min-h-[380px] md:max-h-[520px]';
 
-const HERO_CONTENT_PAD = 'px-4 pb-10 sm:px-6 sm:pb-12 md:px-10 md:pb-14 lg:px-16';
+const HERO_CONTENT_PAD = 'px-4 pb-12 sm:px-6 sm:pb-14 md:px-10 md:pb-16 lg:px-16';
+
+/** Autoplay interval (ms). Home hero has no timer — do not copy this there. */
+const CATEGORY_HERO_AUTOPLAY_MS = 3500;
 
 const MAX_EDITORIAL_SLIDES = 5;
 const MAX_PUBLICATION_SLIDES = 5;
@@ -66,11 +70,11 @@ function HeroContent({ model }: { model: HeroViewModel }) {
       <span className="text-xs font-medium uppercase tracking-wider text-accent">
         {model.categoryLabel}
       </span>
-      <h1 className="mt-0.5 text-2xl font-bold leading-tight text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] sm:text-3xl md:text-4xl">
+      <h1 className="mt-0.5 text-3xl font-bold leading-tight text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] sm:text-4xl md:text-5xl">
         {model.title}
       </h1>
       {(model.description || locationLabel || dateLabel) && (
-        <p className="mt-2 max-w-lg text-sm text-white/90 line-clamp-1 sm:text-base">
+        <p className="mt-2 max-w-lg text-sm text-white/90 line-clamp-2 sm:text-base md:text-lg">
           {model.description ??
             [locationLabel, dateLabel].filter(Boolean).join(' · ')}
         </p>
@@ -148,7 +152,7 @@ function CategoryHeroEmpty({ category }: { category: CategoryGatewayId }) {
         <span className="text-xs font-medium uppercase tracking-wider text-accent">
           {meta.title}
         </span>
-        <h1 className="gateway-poster-title mt-1 text-2xl text-white sm:text-3xl">
+        <h1 className="gateway-poster-title mt-1 text-3xl text-white sm:text-4xl">
           {meta.title}
         </h1>
         <p className="mt-2 max-w-xl text-sm text-white/70 line-clamp-2">{meta.subtitle}</p>
@@ -247,7 +251,7 @@ export function CategoryHeroBanner({
     if (models.length <= 1 || paused) return;
     const timer = window.setInterval(() => {
       setIndex((i) => (i + 1) % models.length);
-    }, 7000);
+    }, CATEGORY_HERO_AUTOPLAY_MS);
     return () => window.clearInterval(timer);
   }, [models.length, paused]);
 

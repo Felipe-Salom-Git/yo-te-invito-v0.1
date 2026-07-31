@@ -129,46 +129,49 @@ pnpm --filter web run build
 
 # 2. Slice 1 — Banners, subcategorías y color del footer
 
+> **Estado:** COMPLETADO — 2026-07-31
+> **Cierre:** [`docs/audits/V3_2_SLICE_1_BANNERS_FOOTER_CLOSING.md`](../audits/V3_2_SLICE_1_BANNERS_FOOTER_CLOSING.md)
+
 ## 2.1 Banners de categoría
 
-- [ ] Aumentar el tamaño visual de los banners de categoría.
-- [ ] Tomar como referencia las proporciones y protagonismo del banner de Home.
-- [ ] Mantener responsive mobile, tablet y desktop.
-- [ ] Evitar recortes incorrectos de imagen.
-- [ ] Mantener overlays y legibilidad del texto.
-- [ ] No reemplazar publicaciones reales con banners editoriales.
-- [ ] Mantener banners como contenido complementario.
+- [x] Aumentar el tamaño visual de los banners de categoría.
+- [x] Tomar como referencia las proporciones y protagonismo del banner de Home.
+- [x] Mantener responsive mobile, tablet y desktop.
+- [x] Evitar recortes incorrectos de imagen.
+- [x] Mantener overlays y legibilidad del texto.
+- [x] No reemplazar publicaciones reales con banners editoriales.
+- [x] Mantener banners como contenido complementario.
 
 ## 2.2 Velocidad del autoplay
 
-- [ ] Identificar el intervalo actual.
-- [ ] Reducirlo aproximadamente a la mitad.
-- [ ] Centralizar el valor en una constante o configuración reutilizable.
-- [ ] No duplicar timers por componente.
-- [ ] Pausar o controlar autoplay durante interacción manual si el componente actual lo soporta.
-- [ ] Evitar cambios bruscos o saltos de layout.
+- [x] Identificar el intervalo actual.
+- [x] Reducirlo aproximadamente a la mitad.
+- [x] Centralizar el valor en una constante o configuración reutilizable.
+- [x] No duplicar timers por componente.
+- [x] Pausar o controlar autoplay durante interacción manual si el componente actual lo soporta.
+- [x] Evitar cambios bruscos o saltos de layout.
 
 ## 2.3 Encabezado de subcategorías
 
-- [ ] Eliminar el título visible `Subcategorías` en páginas de categoría.
-- [ ] Mantener chips/carrusel y su semántica accesible.
-- [ ] Mantener espaciado correcto tras quitar el título.
-- [ ] Confirmar que no desaparezca ningún filtro funcional.
+- [x] Eliminar el título visible `Subcategorías` en páginas de categoría.
+- [x] Mantener chips/carrusel y su semántica accesible.
+- [x] Mantener espaciado correcto tras quitar el título.
+- [x] Confirmar que no desaparezca ningún filtro funcional.
 
 ## 2.4 Verde del footer
 
-- [ ] Reemplazar el verde claro del footer por el token de verde principal de la web.
-- [ ] Evitar colores hex duplicados si existe un token central.
-- [ ] Revisar bordes, íconos, links, hover y focus del footer.
-- [ ] Confirmar contraste sobre fondo negro.
+- [x] Reemplazar el verde claro del footer por el token de verde principal de la web.
+- [x] Evitar colores hex duplicados si existe un token central.
+- [x] Revisar bordes, íconos, links, hover y focus del footer.
+- [x] Confirmar contraste sobre fondo negro.
 
 ## Criterios de aceptación
 
-- [ ] Los banners de categoría tienen protagonismo equivalente a Home.
-- [ ] El autoplay se percibe aproximadamente dos veces más rápido.
-- [ ] No aparece el título `Subcategorías`.
-- [ ] El footer utiliza el mismo verde que botones, chips y acentos principales.
-- [ ] No se pierden publicaciones al existir banners editoriales.
+- [x] Los banners de categoría tienen protagonismo equivalente a Home.
+- [x] El autoplay se percibe aproximadamente dos veces más rápido.
+- [x] No aparece el título `Subcategorías`.
+- [x] El footer utiliza el mismo verde que botones, chips y acentos principales.
+- [x] No se pierden publicaciones al existir banners editoriales.
 
 ## Smoke manual
 

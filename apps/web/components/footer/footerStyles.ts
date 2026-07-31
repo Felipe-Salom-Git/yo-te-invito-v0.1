@@ -8,7 +8,7 @@ export const footerSupportHeadingClass =
 
 export const footerSupportLabelClass = 'block text-sm text-text-muted/65';
 
-export const footerSupportValueClass = `block w-fit max-w-full break-all text-sm text-text/90 transition-colors hover:text-accent-soft ${navFocusRing}`;
+export const footerSupportValueClass = `block w-fit max-w-full break-all text-sm text-text/90 transition-colors hover:text-accent ${navFocusRing}`;
 
 /** Touch-friendly on mobile; compact from md+. */
 export const footerLinkClass = `block max-w-full break-words rounded px-0.5 py-2.5 text-sm text-text-muted transition-colors hover:text-accent md:min-h-0 md:py-1 ${navFocusRing} min-h-11 md:min-h-0`;
@@ -29,7 +29,7 @@ export const footerTopColumnInstagramClass =
 
 export const footerTopColumnSupportClass = 'min-w-0 lg:pl-10';
 
-export const footerInlineLinkClass = `rounded px-0.5 py-0.5 text-sm text-text/80 transition-colors hover:text-accent-soft ${navFocusRing}`;
+export const footerInlineLinkClass = `rounded px-0.5 py-0.5 text-sm text-text/80 transition-colors hover:text-accent ${navFocusRing}`;
 
 export const footerLegalRowClass =
   'flex min-w-0 flex-wrap items-center justify-center gap-x-2 gap-y-2 text-sm';
@@ -39,7 +39,7 @@ export const footerLegalSeparatorClass = 'text-accent/50 select-none';
 export const footerBottomRowClass =
   'flex min-w-0 flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center text-xs leading-relaxed text-text/75';
 
-export const footerBottomLinkClass = `rounded px-0.5 transition-colors hover:text-accent-soft ${navFocusRing}`;
+export const footerBottomLinkClass = `rounded px-0.5 transition-colors hover:text-accent ${navFocusRing}`;
 
 export const footerBottomSeparatorClass = 'text-text/35 select-none';
 

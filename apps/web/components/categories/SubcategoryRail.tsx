@@ -5,7 +5,6 @@ import { useRef, useState, useEffect } from 'react';
 import type { CategoryGatewayId } from '@/lib/home/categoryGatewayConfig';
 import { SUBCATEGORY_QUERY_PARAM } from '@/lib/home/categoryGatewayConfig';
 import type { PublicSubcategorySummary } from '@/repositories/interfaces';
-import { CategorySectionHeading } from './CategorySectionHeading';
 import { SubcategoryCard } from './SubcategoryCard';
 import { SubcategoryFilterChip } from './SubcategoryFilterChip';
 
@@ -52,11 +51,7 @@ export function SubcategoryRail({
   const allActive = !activeSlug?.trim();
 
   return (
-    <section className="mt-3 sm:mt-4">
-      <div className="mb-2 px-4 sm:px-6">
-        <CategorySectionHeading title="Subcategorías" />
-      </div>
-
+    <section className="mt-3 sm:mt-4" aria-label="Subcategorías">
       {isLoading ? (
         <div className="flex gap-2 overflow-hidden px-4 sm:px-6">
           {Array.from({ length: 4 }).map((_, i) => (
