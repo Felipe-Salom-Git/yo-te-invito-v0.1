@@ -308,6 +308,7 @@ Crear `ProvinceCityCombobox` reutilizable sobre Georef: filtrar por escritura, *
 | Campos | **Solo `title`** |
 | No busca | summary, description, local, productora, tags, subcategorías (tags/subcat son filtros aparte, no `q`) |
 | Ciudad | Filtro separado `cityWhereInput` |
+| Tag | Schema/API lo aceptan; Explore arma `tag` en query, pero `ApiRepository.events.search` **no reenvía** `tag` al GET (gap FE) |
 | Paginación | page/limit |
 
 ### Capacidad predictiva
@@ -385,19 +386,22 @@ Helpers: `hasPublicLocationForMapLink`, embed `buildPublicGoogleMapsEmbedSrc`.
 ### Componentes existentes
 
 - Formulario: `AddressMapPicker`, `LocationPickerMap` (+ Google/fallback), `useGoogleMaps`
-- Público: `EventLocationModal` (iframe embed on demand), secciones “Ver ubicación” en event/gastro/rental/excursion
-- **No** hay mini-mapa en cards/carruseles hoy
+- Público: `EventLocationModal` — texto de dirección + CTA “Abrir en Google Maps” (link externo; **sin** iframe embebido hoy). Helper `buildPublicGoogleMapsEmbedSrc` existe pero no se usa en ese modal.
+- Secciones “Ver ubicación” en event/gastro/rental/excursion abren el mismo patrón de modal/link.
+- Script Maps JS (`useGoogleMaps`) solo en pickers de portal (`AddressMapPicker` / `LocationPickerMap`), no en discovery público.
+- **No** hay mini-mapa en cards/carruseles hoy.
+- Listados/search: `EventSummary` **no** incluye `geoLat`/`geoLng` (solo ficha/DTOs de detalle).
 
 ### Estrategia preview recomendada
 
 1. **No** instanciar Maps en carruseles/Home.
-2. En ficha o `ContentPreviewModal`: botón “Ver ubicación” → modal existente / embed lazy.
+2. En ficha o `ContentPreviewModal`: reutilizar botón → modal existente; si se quiere preview visual, embed lazy o Static Maps **solo** ahí (hoy el modal es link-out).
 3. Opcional: snapshot estático (Static Maps API) solo en detalle — evaluar cuota.
 4. Fallback textual si faltan coords.
 
 ### Riesgos
 
-Cuota Google, CLS, hydration, múltiples iframes, API key restrictions, items sin geo.
+Cuota Google, CLS, hydration, múltiples iframes si se agrega embed, API key restrictions, items sin geo, payloads de listado sin coordenadas.
 
 ---
 
