@@ -8,7 +8,7 @@ export interface CategoryGatewayTileProps {
   option: CategoryGatewayOption;
   onSelect: (id: CategoryGatewayOption['id']) => void;
   comingSoon?: boolean;
-  /** When coming soon, ADMIN may still open the category. */
+  /** When coming soon, authorized preview roles may open without overlay lock. */
   allowPreview?: boolean;
 }
 
@@ -19,6 +19,7 @@ export function CategoryGatewayTile({
   allowPreview = false,
 }: CategoryGatewayTileProps) {
   const locked = comingSoon && !allowPreview;
+  const showComingSoonOverlay = locked;
 
   return (
     <motion.button
@@ -29,7 +30,7 @@ export function CategoryGatewayTile({
         onSelect(option.id);
       }}
       aria-label={
-        comingSoon
+        showComingSoonOverlay
           ? `${option.title}: Próximamente`
           : `${option.title}: ${option.description}`
       }
@@ -59,7 +60,7 @@ export function CategoryGatewayTile({
         aria-hidden
       />
 
-      {comingSoon ? (
+      {showComingSoonOverlay ? (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/45">
           <span className="rounded border border-white/25 bg-black/55 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-white">
             Próximamente
@@ -76,7 +77,7 @@ export function CategoryGatewayTile({
           aria-hidden
         />
         <p className="mt-1 line-clamp-3 text-[0.58rem] font-semibold uppercase leading-tight tracking-wide text-white/90 sm:line-clamp-2 sm:text-[0.62rem] md:text-[0.68rem]">
-          {comingSoon ? 'Disponible pronto.' : option.description}
+          {showComingSoonOverlay ? 'Disponible pronto.' : option.description}
         </p>
       </div>
     </motion.button>

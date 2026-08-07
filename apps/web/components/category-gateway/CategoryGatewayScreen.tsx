@@ -6,7 +6,7 @@ import {
   type CategoryGatewayId,
 } from '@/lib/home/categoryGatewayConfig';
 import {
-  canAccessComingSoonCategory,
+  canAccessPublicCategory,
   isCategoryComingSoon,
 } from '@/lib/categories/categoryAvailability';
 import { useRole } from '@/hooks/useRole';
@@ -35,7 +35,6 @@ export function CategoryGatewayScreen({
   const isOverlay = variant === 'overlay';
   const logoVisible = showLogo ?? isOverlay;
   const { role } = useRole();
-  const allowPreview = canAccessComingSoonCategory(role);
 
   return (
     <motion.div
@@ -65,15 +64,19 @@ export function CategoryGatewayScreen({
           initial="hidden"
           animate="visible"
         >
-          {CATEGORY_GATEWAY_OPTIONS.map((option) => (
-            <CategoryGatewayTile
-              key={option.id}
-              option={option}
-              onSelect={onSelectCategory}
-              comingSoon={isCategoryComingSoon(option.id)}
-              allowPreview={allowPreview}
-            />
-          ))}
+          {CATEGORY_GATEWAY_OPTIONS.map((option) => {
+            const comingSoon = isCategoryComingSoon(option.id);
+            const allowPreview = canAccessPublicCategory(option.id, role);
+            return (
+              <CategoryGatewayTile
+                key={option.id}
+                option={option}
+                onSelect={onSelectCategory}
+                comingSoon={comingSoon}
+                allowPreview={allowPreview}
+              />
+            );
+          })}
         </motion.div>
 
         <CategoryGatewayFooter />

@@ -29,7 +29,9 @@ pnpm --filter web run build
 
 ## QA manual pendiente
 
-Smoke de checklist V3.2 (browser): banners, cards, descuentos, combobox, sugerencias, reviews, mapa modal, banner gastro, coming-soon público vs ADMIN.
+Smoke de checklist V3.2 (browser): banners, cards, descuentos, combobox, sugerencias, reviews, mapa modal, banner gastro, coming-soon público vs preview por rol (ADMIN / Productora / Gastro).
+
+Hotfix preview owners: ver `V3_2_SLICE_10_COMING_SOON_CLOSING.md`.
 
 ## Reactivar Event/Gastro
 

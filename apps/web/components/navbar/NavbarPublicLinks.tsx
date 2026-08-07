@@ -6,13 +6,15 @@ import {
   type PublicNavItem,
 } from '@/lib/navigation/publicNavConfig';
 import { navFocusRing } from '@/lib/navigation/navA11yClasses';
+import { useRole } from '@/hooks/useRole';
 
 const baseLink = `shrink-0 whitespace-nowrap rounded px-1 text-sm transition-colors ${navFocusRing}`;
 const defaultLink = `${baseLink} text-text-muted hover:text-accent`;
 const emphasizedLink = `${baseLink} font-medium text-text hover:text-accent`;
 
 export function NavbarPublicLinks() {
-  const items = getDesktopPublicNavItems();
+  const { role } = useRole();
+  const items = getDesktopPublicNavItems(role);
 
   return (
     <div className="hidden min-w-0 items-center gap-4 md:flex" aria-label="Secciones públicas">

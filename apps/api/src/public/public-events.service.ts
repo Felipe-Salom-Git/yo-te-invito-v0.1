@@ -18,7 +18,7 @@ import {
   RECOMMENDED_LIST_MIN_VALID_REVIEWS,
   parseRentalOpeningHours,
   cityDisplayLabel,
-  COMING_SOON_PUBLIC_CATEGORIES,
+  getDeniedComingSoonCategories,
   type EventsRecommendedQuery,
 } from '@yo-te-invito/shared';
 import { readEntitySocialLinks } from '../common/entity-social-links.util';
@@ -45,10 +45,11 @@ export class PublicEventsService {
 
   private publicWhere(
     base: Prisma.EventWhereInput,
-    opts?: { allowComingSoon?: boolean },
+    opts?: { role?: string | null },
   ): Prisma.EventWhereInput {
     const visibility = mergePublicParentEntitiesActive(mergePublicEventVisibility(base));
-    if (opts?.allowComingSoon || COMING_SOON_PUBLIC_CATEGORIES.length === 0) {
+    const denied = getDeniedComingSoonCategories(opts?.role);
+    if (denied.length === 0) {
       return visibility;
     }
     return {
@@ -57,7 +58,7 @@ export class PublicEventsService {
         {
           NOT: {
             OR: [
-              { category: { in: [...COMING_SOON_PUBLIC_CATEGORIES] } },
+              { category: { in: [...denied] } },
               { category: null },
             ],
           },
@@ -340,7 +341,7 @@ export class PublicEventsService {
 
   async list(
     query: EventsListQuery,
-    access?: { allowComingSoon?: boolean },
+    access?: { role?: string | null },
   ): Promise<EventsPaginatedResponse> {
     const base: Prisma.EventWhereInput = {
       tenantId: query.tenantId,
@@ -527,7 +528,7 @@ export class PublicEventsService {
 
   async search(
     query: EventsSearchQuery,
-    access?: { allowComingSoon?: boolean },
+    access?: { role?: string | null },
   ): Promise<EventsPaginatedResponse> {
     const base: Prisma.EventWhereInput = {
       tenantId: query.tenantId,
@@ -595,7 +596,7 @@ export class PublicEventsService {
 
   async suggestions(
     query: EventsSuggestionsQuery,
-    access?: { allowComingSoon?: boolean },
+    access?: { role?: string | null },
   ): Promise<EventsSuggestionsResponse> {
     const q = query.q.trim();
     const where = this.publicWhere(
@@ -643,7 +644,7 @@ export class PublicEventsService {
 
   async recommended(
     query: EventsRecommendedQuery,
-    access?: { allowComingSoon?: boolean },
+    access?: { role?: string | null },
   ): Promise<EventSummary[]> {
     const sort = query.mode === 'top_rated' ? 'top_rated' : 'recommended';
     const result = await this.list(
@@ -663,7 +664,7 @@ export class PublicEventsService {
 
   async trending(
     query: EventsTrendingQuery,
-    access?: { allowComingSoon?: boolean },
+    access?: { role?: string | null },
   ): Promise<EventSummary[]> {
     const summarySelect = {
       ...this.listSummarySelect(),
@@ -765,7 +766,7 @@ export class PublicEventsService {
   async detail(
     id: string,
     tenantId: string,
-    access?: { allowComingSoon?: boolean },
+    access?: { role?: string | null },
   ): Promise<EventDetail> {
     const event = await this.prisma.event.findFirst({
       where: this.publicWhere(

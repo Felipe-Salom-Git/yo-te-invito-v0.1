@@ -26,6 +26,8 @@
     "test:public-event-summary": "tsx scripts/test-public-event-summary.util.ts",
     "test:event-trending": "tsx scripts/test-event-trending.util.ts",
     "test:event-visibility": "tsx scripts/test-event-public-visibility.util.ts",
+    "test:category-availability": "tsx scripts/test-category-availability.ts",
+    "smoke:v32-category-availability": "tsx scripts/test-category-availability.ts",
     "test:referral-proposals": "tsx scripts/test-referral-proposals.util.ts",
     "test:referral-commission": "tsx scripts/test-referral-commission.util.ts",
     "test:referral-payment-requests": "tsx scripts/test-referral-payment-requests.util.ts",

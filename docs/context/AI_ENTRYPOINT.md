@@ -14,7 +14,7 @@ Read this file **before generating or modifying code**.
 | **Usuario maestro** | `felipe.e.salom@gmail.com` — preservado por `db:cleanup-content`; no borrar en scripts |
 | **No commitear secretos** | `.env` local; usar `.env.example` |
 | **Rama Getnet activa** | `feat/v1-s03-api-foundation` — **no** `development` (eliminada); **no** tocar `main` salvo instrucción explícita |
-| **V3.2 discovery** | Checklist `docs/dev/Yo_Te_Invito_Checklist_V3_2_Mejoras_Visuales.md` — cierre [`V3_2_QA_CLOSING.md`](../audits/V3_2_QA_CLOSING.md). Event/Gastro `comingSoon` (ADMIN preview); reactivar en `category-availability.ts`. |
+| **V3.2 discovery** | Checklist `docs/dev/Yo_Te_Invito_Checklist_V3_2_Mejoras_Visuales.md` — cierre [`V3_2_QA_CLOSING.md`](../audits/V3_2_QA_CLOSING.md). Event/Gastro `comingSoon` con preview por rol (ADMIN + owners); reactivar en `category-availability.ts`. |
 
 Detalle histórico demo: [guides/DEMO_REMOVAL.md](../guides/DEMO_REMOVAL.md). Portal: [user/USER_PORTAL.md](../user/USER_PORTAL.md).
 

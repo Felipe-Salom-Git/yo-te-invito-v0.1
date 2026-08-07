@@ -122,7 +122,7 @@ Bloque **Descubrimiento público** cerrado en checklist V2. Detalle: `docs/audit
 |-------|--------|
 | Checklist + auditorías por slice | Cerrado código — `Yo_Te_Invito_Checklist_V3_2_Mejoras_Visuales.md`, `docs/audits/V3_2_*` |
 | Suggest search | `GET /public/events/suggestions` |
-| Event/Gastro discovery | **Próximamente** para público; ADMIN preview; reactivar en `category-availability.ts` |
+| Event/Gastro discovery | **Próximamente** para público; preview ADMIN + Productora (event) + Gastro owner (gastro) — `category-availability.ts` |
 | Reviews UI | Caritas 1–5; persistencia 1–10 sin migración |
 | Caché HTML discovery | Hotfix `force-dynamic` + no-store headers — `docs/audits/V3_2_HOTFIX_PUBLIC_CACHE_CLOSING.md` |
 | QA browser V3.2 | Pendiente smoke manual |

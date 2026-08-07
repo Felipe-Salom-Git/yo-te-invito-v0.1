@@ -24,8 +24,8 @@ export function MobilePublicNavDrawer({ isOpen, onClose }: MobilePublicNavDrawer
   const panelRef = useRef<HTMLDivElement>(null);
   useReturnFocus(isOpen);
   useFocusTrap(panelRef, isOpen);
-  const { session, status, isAuthenticated } = useRole();
-  const publicItems = getMobilePublicNavDrawerItems();
+  const { session, status, isAuthenticated, role } = useRole();
+  const publicItems = getMobilePublicNavDrawerItems(role);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -48,7 +48,6 @@ export function MobilePublicNavDrawer({ isOpen, onClose }: MobilePublicNavDrawer
   if (!isOpen) return null;
 
   const email = session?.user?.email ?? '';
-  const role = session?.user?.role;
   const accountMenuItems = getUserMenuLoggedInItems(email, role);
   const portalHomeLabel = getPortalHomeMenuLabel(email, role);
 

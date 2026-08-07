@@ -92,7 +92,7 @@ HTTP → Controller (thin) → ZodValidationPipe → Service → Prisma → Post
 
 **Visibilidad eventos vencidos (discovery):** `PublicEventsService.publicWhere()` aplica `event-public-visibility.util.ts` en **list, search, suggestions, trending, recommended, detail, calendar month**. Eventos `event`/null: ocultos después de **01:00 del día siguiente** al `startAt` (TZ `America/Argentina/Buenos_Aires`). Gastro/rental/excursion/hotel no caducan por fecha en listados. Tests: `pnpm --filter api run test:event-visibility`.
 
-**V3.2 categoría Próximamente:** `packages/shared/src/category-availability.ts` — `event`/`gastro` = `comingSoon` excluidos de `publicWhere` salvo `allowComingSoon` (rol `ADMIN` vía `OptionalJwtOrDevAuthGuard`). Portales comerciales no se bloquean.
+**V3.2 categoría Próximamente:** `packages/shared/src/category-availability.ts` — `event`/`gastro` = `comingSoon`; `publicWhere` excluye categorías denegadas según JWT (`getDeniedComingSoonCategories`). Preview: ADMIN (ambas); `PRODUCER_OWNER`/`PRODUCER_STAFF` → event; `GASTRO_OWNER` → gastro. Portales comerciales no se bloquean.
 | `GET /public/reviews/summary`, `GET /public/reviews` | Resumen + listado V2 por entidad; query: `sort` (`newest`/`highest`/`lowest`), `replyFilter`, `overallRating` (1–10) |
 | `GET /public/users/:userId/review-profile`, `…/reviews` | Perfil comentarista; listado con mismos filtros públicos |
 | `GET /public/events/:id/discounts` | Active gastro discounts |

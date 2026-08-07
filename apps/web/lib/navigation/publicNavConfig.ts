@@ -9,6 +9,10 @@ import {
   getCategoryGatewayHref,
   type CategoryGatewayId,
 } from '@/lib/home/categoryGatewayConfig';
+import {
+  canAccessPublicCategory,
+  isCategoryComingSoon,
+} from '@/lib/categories/categoryAvailability';
 
 export type PublicNavItemId =
   | 'home-entry'
@@ -59,59 +63,70 @@ const CATEGORY_NAV: { id: PublicNavItemId; category: CategoryGatewayId; label: s
   { id: 'category-excursion', category: 'excursion', label: 'Excursiones' },
 ];
 
-export const PUBLIC_NAV_ITEMS: PublicNavItem[] = [
-  {
-    id: 'explore',
-    label: 'Explorar',
-    href: '/explore',
-    ariaLabel: 'Explorar eventos y experiencias',
-    emphasized: true,
-    desktop: true,
-    mobileMenu: true,
-  },
-  {
-    id: 'categories-gateway',
-    label: 'Inicio / Categorías',
-    href: CATEGORY_GATEWAY_PATH,
-    ariaLabel: 'Elegir categoría',
-    desktop: false,
-    mobileMenu: true,
-  },
-  ...CATEGORY_NAV.map(({ id, category, label }) => {
-    const comingSoon = category === 'event' || category === 'gastro';
+function buildCategoryNavItems(role?: string | null): PublicNavItem[] {
+  return CATEGORY_NAV.map(({ id, category, label }) => {
+    const locked = isCategoryComingSoon(category) && !canAccessPublicCategory(category, role);
     return {
       id,
       label,
       href: getCategoryGatewayHref(category),
       desktop: false,
       mobileMenu: true,
-      ...(comingSoon
+      ...(locked
         ? {
             comingSoon: true,
             disabled: true,
             ariaLabel: `${label} — próximamente`,
           }
-        : {}),
+        : {
+            ariaLabel: label,
+          }),
     };
-  }),
-  {
-    id: 'hotels',
-    label: 'Hoteles',
-    href: '/hoteles',
-    ariaLabel: 'Hoteles — próximamente',
-    comingSoon: true,
-    disabled: true,
-    desktop: false,
-    mobileMenu: true,
-  },
-  {
-    id: 'referrers',
-    label: 'Referidores',
-    href: '/referrers',
-    desktop: false,
-    mobileMenu: false,
-  },
-];
+  });
+}
+
+function buildPublicNavItems(role?: string | null): PublicNavItem[] {
+  return [
+    {
+      id: 'explore',
+      label: 'Explorar',
+      href: '/explore',
+      ariaLabel: 'Explorar eventos y experiencias',
+      emphasized: true,
+      desktop: true,
+      mobileMenu: true,
+    },
+    {
+      id: 'categories-gateway',
+      label: 'Inicio / Categorías',
+      href: CATEGORY_GATEWAY_PATH,
+      ariaLabel: 'Elegir categoría',
+      desktop: false,
+      mobileMenu: true,
+    },
+    ...buildCategoryNavItems(role),
+    {
+      id: 'hotels',
+      label: 'Hoteles',
+      href: '/hoteles',
+      ariaLabel: 'Hoteles — próximamente',
+      comingSoon: true,
+      disabled: true,
+      desktop: false,
+      mobileMenu: true,
+    },
+    {
+      id: 'referrers',
+      label: 'Referidores',
+      href: '/referrers',
+      desktop: false,
+      mobileMenu: false,
+    },
+  ];
+}
+
+/** Anonymous / default catalog (locked coming-soon categories). Prefer role-aware getters. */
+export const PUBLIC_NAV_ITEMS: PublicNavItem[] = buildPublicNavItems(null);
 
 /** Display order for the mobile public drawer (Slice 6). */
 const MOBILE_DRAWER_PUBLIC_ORDER: PublicNavItemId[] = [
@@ -124,16 +139,16 @@ const MOBILE_DRAWER_PUBLIC_ORDER: PublicNavItemId[] = [
   'hotels',
 ];
 
-export function getDesktopPublicNavItems(): PublicNavItem[] {
-  return PUBLIC_NAV_ITEMS.filter((item) => item.desktop && !item.disabled);
+export function getDesktopPublicNavItems(role?: string | null): PublicNavItem[] {
+  return buildPublicNavItems(role).filter((item) => item.desktop && !item.disabled);
 }
 
-export function getMobileMenuPublicNavItems(): PublicNavItem[] {
-  return getMobilePublicNavDrawerItems();
+export function getMobileMenuPublicNavItems(role?: string | null): PublicNavItem[] {
+  return getMobilePublicNavDrawerItems(role);
 }
 
-export function getMobilePublicNavDrawerItems(): PublicNavItem[] {
-  const byId = new Map(PUBLIC_NAV_ITEMS.map((item) => [item.id, item]));
+export function getMobilePublicNavDrawerItems(role?: string | null): PublicNavItem[] {
+  const byId = new Map(buildPublicNavItems(role).map((item) => [item.id, item]));
   return MOBILE_DRAWER_PUBLIC_ORDER.map((id) => byId.get(id)).filter(
     (item): item is PublicNavItem => !!item,
   );

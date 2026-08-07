@@ -757,7 +757,7 @@ _(Trending con `viewCount`: ver ítem Slice 2 arriba en § K.)_
 - [x] Slice 6 — valoraciones caritas + Ver más / Valorar
 - [x] Slice 7 — mini mapa lazy en modal ubicación
 - [x] Slice 9 — descuentos en hero gastro
-- [x] Slice 10 — Event/Gastro Próximamente + ADMIN (`category-availability.ts`)
+- [x] Slice 10 — Event/Gastro Próximamente + preview por rol (`category-availability.ts`; hotfix owners 2026-08-07)
 - [x] Slice 11 — docs/context + cierres
 - [ ] V3.2 — QA manual browser (smokes checklist)
 

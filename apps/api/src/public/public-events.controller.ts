@@ -16,7 +16,6 @@ import {
   type EventsTrendingQuery,
   type EventsCalendarMonthQuery,
   type EventDetailQuery,
-  canAccessComingSoonCategory,
 } from '@yo-te-invito/shared';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { OptionalJwtOrDevAuthGuard } from '../auth/optional-jwt-or-dev-auth.guard';
@@ -26,8 +25,9 @@ import { PublicEngagementService } from './public-engagement.service';
 
 type AuthedUser = { id: string; tenantId: string; role: string };
 
-function comingSoonAccess(user?: AuthedUser) {
-  return { allowComingSoon: canAccessComingSoonCategory(user?.role) };
+/** Pass JWT role so coming-soon preview is evaluated per category. */
+function publicCategoryAccess(user?: AuthedUser) {
+  return { role: user?.role ?? null };
 }
 
 @Controller('public/events')
@@ -43,7 +43,7 @@ export class PublicEventsController {
     @Query(new ZodValidationPipe(eventsListQuerySchema)) query: EventsListQuery,
     @CurrentUser() user?: AuthedUser,
   ) {
-    return this.service.list(query, comingSoonAccess(user));
+    return this.service.list(query, publicCategoryAccess(user));
   }
 
   @Get('search')
@@ -52,7 +52,7 @@ export class PublicEventsController {
     @Query(new ZodValidationPipe(eventsSearchQuerySchema)) query: EventsSearchQuery,
     @CurrentUser() user?: AuthedUser,
   ) {
-    return this.service.search(query, comingSoonAccess(user));
+    return this.service.search(query, publicCategoryAccess(user));
   }
 
   @Get('suggestions')
@@ -61,7 +61,7 @@ export class PublicEventsController {
     @Query(new ZodValidationPipe(eventsSuggestionsQuerySchema)) query: EventsSuggestionsQuery,
     @CurrentUser() user?: AuthedUser,
   ) {
-    return this.service.suggestions(query, comingSoonAccess(user));
+    return this.service.suggestions(query, publicCategoryAccess(user));
   }
 
   @Get('recommended')
@@ -70,7 +70,7 @@ export class PublicEventsController {
     @Query(new ZodValidationPipe(eventsRecommendedQuerySchema)) query: EventsRecommendedQuery,
     @CurrentUser() user?: AuthedUser,
   ) {
-    return this.service.recommended(query, comingSoonAccess(user));
+    return this.service.recommended(query, publicCategoryAccess(user));
   }
 
   @Get('trending')
@@ -79,7 +79,7 @@ export class PublicEventsController {
     @Query(new ZodValidationPipe(eventsTrendingQuerySchema)) query: EventsTrendingQuery,
     @CurrentUser() user?: AuthedUser,
   ) {
-    return this.service.trending(query, comingSoonAccess(user));
+    return this.service.trending(query, publicCategoryAccess(user));
   }
 
   @Get('calendar')
@@ -105,7 +105,7 @@ export class PublicEventsController {
     @Query(new ZodValidationPipe(eventDetailQuerySchema)) query: EventDetailQuery,
     @CurrentUser() user?: AuthedUser,
   ) {
-    return this.service.detail(id, query.tenantId, comingSoonAccess(user));
+    return this.service.detail(id, query.tenantId, publicCategoryAccess(user));
   }
 
   /** Increment public view counter (V2: no per-user dedup). */

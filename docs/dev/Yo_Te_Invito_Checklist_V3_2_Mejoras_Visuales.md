@@ -687,7 +687,12 @@ Permitir que el banner/hero de Gastronomía incluya descuentos además de public
 
 ## Objetivo
 
-Mostrar Eventos y Gastronomía como `Próximamente` para público general, permitiendo acceso únicamente al usuario ADMIN para demostraciones comerciales.
+Mostrar Eventos y Gastronomía como `Próximamente` para público general. Preview autorizado:
+
+- **Eventos:** ADMIN + Productora (`PRODUCER_OWNER`, `PRODUCER_STAFF`)
+- **Gastronomía:** ADMIN + Gastronómico (`GASTRO_OWNER`)
+
+Hotfix 2026-08-07 — ver cierre [`V3_2_SLICE_10_COMING_SOON_CLOSING.md`](../audits/V3_2_SLICE_10_COMING_SOON_CLOSING.md).
 
 ## 11.1 Gateway y menú de categorías
 
@@ -696,8 +701,9 @@ Mostrar Eventos y Gastronomía como `Próximamente` para público general, permi
 - [x] Mantener imagen visible con overlay legible.
 - [x] Mantener Rentals y Excursiones accesibles.
 - [x] Para público/no admin, la card no debe navegar a la categoría.
-- [x] Para ADMIN, la card mantiene navegación normal.
+- [x] Para ADMIN / roles de preview, la card mantiene navegación normal.
 - [x] Agregar semántica accesible de contenido no disponible.
+- [x] Hotfix: Productora preview Eventos; Gastronómico preview Gastronomía.
 
 ## 11.2 Protección de rutas frontend
 
@@ -721,7 +727,7 @@ Comportamiento sugerido:
 
 - [x] No confiar únicamente en ocultar botones.
 - [x] Evitar que endpoints públicos entreguen Eventos/Gastro a usuarios no autorizados cuando la restricción esté activa.
-- [x] Permitir acceso ADMIN mediante autenticación explícita.
+- [x] Permitir acceso ADMIN / owners de preview mediante autenticación explícita.
 - [x] Definir feature flags centralizadas por categoría. *(`category-availability.ts`)*
 - [x] Aplicar la regla en:
   - [x] listados públicos;
@@ -750,16 +756,16 @@ Comportamiento sugerido:
 - [x] No puede ingresar por URL directa.
 - [x] No recibe resultados de Eventos/Gastro en Explore o sugerencias.
 
-### Usuario autenticado no ADMIN
+### Usuario autenticado sin preview
 
-- [x] Mismo comportamiento que público.
+- [x] Mismo comportamiento que público (USER, roles sin preview de esa categoría).
 
-### ADMIN
+### Preview Productora / Gastro / ADMIN
 
-- [x] Puede ingresar a Eventos.
-- [x] Puede ingresar a Gastronomía.
-- [x] Puede ver cards, banners, fichas y descuentos.
-- [x] Puede usar estas pantallas para demostración.
+- [x] ADMIN: Eventos + Gastronomía.
+- [x] PRODUCER_OWNER / PRODUCER_STAFF: Eventos sí, Gastronomía no.
+- [x] GASTRO_OWNER: Gastronomía sí, Eventos no.
+- [x] Pueden ver cards, banners, fichas y descuentos de su vertical autorizada.
 
 ### Regresión
 
@@ -870,7 +876,7 @@ pnpm --filter api run test:gastro-discount-qr
 
 ## Nuevos smokes sugeridos
 
-- [ ] `smoke:v32-category-availability`
+- [x] `smoke:v32-category-availability` *(script matriz de roles — `test:category-availability`; QA manual UI sigue abierta abajo)*
   - público no recibe Event/Gastro;
   - ADMIN sí puede acceder;
   - Rental/Excursion permanecen públicas.
