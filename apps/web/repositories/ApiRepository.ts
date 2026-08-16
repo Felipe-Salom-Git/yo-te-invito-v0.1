@@ -714,6 +714,8 @@ export class ApiRepository implements Repositories {
 
   auth: AuthRepo = {
     register: async (body) => this.client.post('/auth/register', body),
+    resendVerificationEmail: async (body) =>
+      this.client.post('/auth/resend-verification-email', body),
   };
 
   applications: ApplicationsRepo = {

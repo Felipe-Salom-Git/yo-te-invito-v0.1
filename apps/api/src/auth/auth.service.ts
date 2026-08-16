@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, BadRequestException, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailQueueService } from '../email/email-queue.service';
@@ -16,11 +16,16 @@ import type {
   AuthGoogleRequest,
   RegistrationProfileType,
   Role as SharedRole,
+  AuthResendVerificationEmailRequest,
+  AuthResendVerificationEmailResponse,
 } from '@yo-te-invito/shared';
 import {
   AUTH_REGISTER_ERROR_CODES,
   AUTH_LOGIN_ERROR_CODES,
   AUTH_LOGIN_USER_MESSAGES,
+  AUTH_VERIFY_EMAIL_ERROR_CODES,
+  AUTH_VERIFY_EMAIL_USER_MESSAGES,
+  AUTH_RESEND_VERIFICATION_USER_MESSAGES,
   LEGAL_SIGNUP_ERROR_CODES,
   LEGAL_SIGNUP_USER_MESSAGES,
   MASTER_USER_EMAIL,
@@ -31,6 +36,18 @@ import {
 import { LegalSignupService } from '../modules/legal/legal-signup.service';
 import { ProfileRegistrationService } from './profile-registration.service';
 import { getAppUrl } from '../email/templates/email-template.util';
+import {
+  EMAIL_VERIFICATION_TTL_LABEL,
+  RESEND_EMAIL_MAX,
+  RESEND_EMAIL_WINDOW_MS,
+  RESEND_IP_MAX,
+  RESEND_IP_WINDOW_MS,
+  SlidingWindowRateLimiter,
+  createEmailVerificationToken,
+  emailVerificationExpiresAt,
+  genericResendAcceptedMessage,
+  shouldIssueVerificationEmail,
+} from './auth-verify-email.util';
 
 export type RegisterRequestMeta = {
   ipAddress?: string | null;
@@ -55,6 +72,16 @@ function verifyPassword(password: string, storedHash: string): boolean {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+  private readonly resendEmailLimiter = new SlidingWindowRateLimiter(
+    RESEND_EMAIL_MAX,
+    RESEND_EMAIL_WINDOW_MS,
+  );
+  private readonly resendIpLimiter = new SlidingWindowRateLimiter(
+    RESEND_IP_MAX,
+    RESEND_IP_WINDOW_MS,
+  );
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
@@ -281,29 +308,9 @@ export class AuthService {
       return created;
     });
 
-    const verificationToken = crypto.randomBytes(32).toString('hex');
-    await this.prisma.emailVerificationToken.create({
-      data: {
-        userId: user.id,
-        token: verificationToken,
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-      },
-    });
+    await this.issueAndSendVerificationEmail(user);
 
     const appUrl = getAppUrl();
-    const verifyUrl = `${appUrl}/verify-email?token=${verificationToken}`;
-    await this.emailQueue.enqueueTemplate({
-      templateId: 'AUTH_VERIFY_EMAIL',
-      to: user.email,
-      variables: {
-        userName: user.firstName?.trim() || user.email.split('@')[0] || 'ahí',
-        verifyUrl,
-        expiresIn: '24 horas',
-        supportEmail:
-          process.env.MAIL_REPLY_TO?.trim() || 'soporte@yoteinvito.club',
-      },
-    });
-
     await this.emailQueue.enqueueTemplate({
       templateId: welcomeTemplateIdForProfile(profileType),
       to: user.email,
@@ -329,16 +336,98 @@ export class AuthService {
     };
   }
 
+  /**
+   * Public resend: always the same message. Issues AUTH_VERIFY_EMAIL only if
+   * the account exists and emailVerified is still null.
+   */
+  async resendVerificationEmail(
+    body: AuthResendVerificationEmailRequest,
+    meta: RegisterRequestMeta = {},
+  ): Promise<AuthResendVerificationEmailResponse> {
+    const email = body.email.trim().toLowerCase();
+    const ipKey = (meta.ipAddress ?? 'unknown').trim() || 'unknown';
+
+    const ipLimit = this.resendIpLimiter.consume(`ip:${ipKey}`);
+    const emailLimit = this.resendEmailLimiter.consume(`email:${email}`);
+    if (!ipLimit.ok || !emailLimit.ok) {
+      throw new HttpException(
+        {
+          code: AUTH_VERIFY_EMAIL_ERROR_CODES.TOO_MANY_REQUESTS,
+          message: AUTH_RESEND_VERIFICATION_USER_MESSAGES.tooManyRequests,
+        },
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+
+    const where = body.tenantId
+      ? { tenantId: body.tenantId, email, deletedAt: null }
+      : { email, deletedAt: null };
+
+    const user = await this.prisma.user.findFirst({
+      where,
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        emailVerified: true,
+      },
+    });
+
+    if (shouldIssueVerificationEmail(user)) {
+      await this.issueAndSendVerificationEmail(user!);
+      this.logger.log(`Verification email queued for unverified user ${user!.id}`);
+    }
+
+    return { message: genericResendAcceptedMessage() };
+  }
+
+  /** Replaces any prior token, then enqueues AUTH_VERIFY_EMAIL. Token is not logged. */
+  private async issueAndSendVerificationEmail(user: {
+    id: string;
+    email: string;
+    firstName: string | null;
+  }): Promise<void> {
+    const token = createEmailVerificationToken();
+    await this.prisma.emailVerificationToken.deleteMany({ where: { userId: user.id } });
+    await this.prisma.emailVerificationToken.create({
+      data: {
+        userId: user.id,
+        token,
+        expiresAt: emailVerificationExpiresAt(),
+      },
+    });
+
+    const appUrl = getAppUrl();
+    const verifyUrl = `${appUrl}/verify-email?token=${token}`;
+    await this.emailQueue.enqueueTemplate({
+      templateId: 'AUTH_VERIFY_EMAIL',
+      to: user.email,
+      variables: {
+        userName: user.firstName?.trim() || user.email.split('@')[0] || 'ahí',
+        verifyUrl,
+        expiresIn: EMAIL_VERIFICATION_TTL_LABEL,
+        supportEmail:
+          process.env.MAIL_REPLY_TO?.trim() || 'soporte@yoteinvito.club',
+      },
+    });
+  }
+
   async verifyEmail(token: string): Promise<{ verified: boolean; message: string }> {
     const record = await this.prisma.emailVerificationToken.findUnique({
       where: { token },
     });
     if (!record) {
-      throw new BadRequestException({ code: 'INVALID_TOKEN', message: 'Token inválido o expirado' });
+      throw new BadRequestException({
+        code: AUTH_VERIFY_EMAIL_ERROR_CODES.INVALID_TOKEN,
+        message: AUTH_VERIFY_EMAIL_USER_MESSAGES.invalidOrExpired,
+      });
     }
     if (record.expiresAt < new Date()) {
       await this.prisma.emailVerificationToken.delete({ where: { token } });
-      throw new BadRequestException({ code: 'EXPIRED_TOKEN', message: 'El enlace expiró' });
+      throw new BadRequestException({
+        code: AUTH_VERIFY_EMAIL_ERROR_CODES.EXPIRED_TOKEN,
+        message: AUTH_VERIFY_EMAIL_USER_MESSAGES.invalidOrExpired,
+      });
     }
     await this.prisma.$transaction([
       this.prisma.user.update({

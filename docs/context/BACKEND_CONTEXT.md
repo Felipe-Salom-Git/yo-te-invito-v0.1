@@ -113,7 +113,8 @@ HTTP → Controller (thin) → ZodValidationPipe → Service → Prisma → Post
 | POST | `/auth/register` | `profileType` (`USER` \| `PRODUCER` \| `GASTRO` \| `HOTEL` \| `REFERRER`), `profileData` según `profile-onboarding.ts`; asigna `User.role` vía `mapSignupProfileTypeToRole`; valida `signupLegalAcceptance` server-side (`assertSignupAcceptanceComplete`: generales + términos del perfil antes de crear usuario; `400 LEGAL_ACCEPTANCE_REQUIRED` si faltan); perfiles comerciales **ACTIVE** al crear; email duplicado → `409`; respuesta sin JWT; envía `AUTH_VERIFY_EMAIL` |
 | GET | `/public/legal/requirements` | SIGNUP + `profileType`: USER → `terms_general` + `privacy_policy`; comerciales → + `producer_terms` / `gastro_terms` / `hotel_terms` / `referrer_terms` (flags `isRequiredForSignup`) |
 | POST | `/auth/login` | Rechaza credenciales válidas si `emailVerified` es null → `401` `EMAIL_NOT_VERIFIED` (excepto `MASTER_USER_EMAIL`); JWT/session role resuelve membresía comercial si `User.role=USER` (legacy) |
-| GET | `/auth/verify-email?token=` | Marca `emailVerified` y elimina token de verificación |
+| POST | `/auth/resend-verification-email` | Público; email normalizado; respuesta genérica (anti-enumeración); emite `AUTH_VERIFY_EMAIL` solo si existe y no está verificado; invalida token anterior; TTL 24h; rate limit in-memory 3/15min por email y 10/15min por IP (`AUTH_EMAIL_VERIFICATION_RESEND_CLOSING.md`) |
+| GET | `/auth/verify-email?token=` | Marca `emailVerified` y elimina token; token ausente/vencido/usado → `INVALID_TOKEN`/`EXPIRED_TOKEN` con copy unificado |
 | POST | `/profiles/*/apply` | Usuario logueado sin perfil (p. ej. gastro en `/cuenta/solicitar-gastro`) |
 
 Schemas signup/apply: `packages/shared/src/schemas/profile-onboarding.ts` (`gastroProfileToPersistInput`, `hotelProfileToPersistInput`, …). Catálogo provincias/ciudades (labels en persist): `packages/shared/src/location/argentina-locations.ts`.

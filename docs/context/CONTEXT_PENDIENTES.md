@@ -173,7 +173,7 @@ Etapas base: `V3_1_STAGE_5_CLOSING.md`, `V3_1_STAGE_6_SCANNER_OFFLINE_CLOSING.md
 - [x] Login bloquea usuarios con `emailVerified` null (`EMAIL_NOT_VERIFIED`), excepto usuario maestro.
 - [x] Template `AUTH_VERIFY_EMAIL` con subject, preview, cuerpo y CTA válidos (`getAppUrl()` para link).
 - [x] Login muestra mensaje claro si el email no está verificado.
-- [ ] Pendiente futuro: reenvío manual de email de confirmación desde login.
+- [x] Reenvío manual de email de confirmación desde login (`POST /auth/resend-verification-email`, `AUTH_EMAIL_VERIFICATION_RESEND_CLOSING.md`).
 - [ ] QA manual: registro → email → verificar → login.
 
 ### Hotfix registro por perfil comercial (2026-06-24)

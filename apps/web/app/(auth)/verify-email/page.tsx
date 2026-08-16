@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardHeader, CardContent, Button } from '@/components';
 import { Logo } from '@/components/brand/Logo';
+import { AUTH_VERIFY_EMAIL_USER_MESSAGES } from '@yo-te-invito/shared';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001';
 
@@ -17,7 +18,7 @@ function VerifyEmailContent() {
   useEffect(() => {
     if (!token) {
       setStatus('error');
-      setMessage('Falta el token de verificación');
+      setMessage(AUTH_VERIFY_EMAIL_USER_MESSAGES.invalidOrExpired);
       return;
     }
     fetch(`${API_BASE}/auth/verify-email?token=${encodeURIComponent(token)}`)
@@ -28,12 +29,12 @@ function VerifyEmailContent() {
           setMessage(data.message ?? 'Email verificado correctamente');
         } else {
           setStatus('error');
-          setMessage(data.message ?? 'Token inválido o expirado');
+          setMessage(AUTH_VERIFY_EMAIL_USER_MESSAGES.invalidOrExpired);
         }
       })
-      .catch((err) => {
+      .catch(() => {
         setStatus('error');
-        setMessage(err?.message ?? 'Error al verificar');
+        setMessage(AUTH_VERIFY_EMAIL_USER_MESSAGES.invalidOrExpired);
       });
   }, [token]);
 
@@ -59,8 +60,10 @@ function VerifyEmailContent() {
           {status === 'error' && (
             <>
               <p className="text-red-400">{message}</p>
-              <Link href="/register" className="mt-4 block">
-                <Button variant="outline" className="w-full">Crear cuenta</Button>
+              <Link href="/login" className="mt-4 block">
+                <Button className="w-full">
+                  Ir al inicio de sesión para solicitar uno nuevo
+                </Button>
               </Link>
             </>
           )}

@@ -55,7 +55,7 @@ Lista por familia:
 
 | ID | Caller |
 |----|--------|
-| `AUTH_VERIFY_EMAIL` | `AuthService.register` → `enqueueTemplate` |
+| `AUTH_VERIFY_EMAIL` | `AuthService.register` / `resendVerificationEmail` → `enqueueTemplate` |
 | `AUTH_WELCOME_*` (5) | `AuthService.register` → `enqueueTemplate` |
 | `PRODUCER_EVENT_APPROVED` / `REJECTED` | `ProducerEventStatusNotificationsService` → `deliver()` |
 | `TICKET_TRANSFER_*` (4) | `TicketTransferOfferService` → `deliver()` |

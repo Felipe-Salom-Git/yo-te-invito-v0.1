@@ -109,7 +109,7 @@ apps/api/src/modules/notifications/review-email-template.util.ts
 | `AUTH_WELCOME_GASTRO` | Bienvenida gastronómico | `docs/emails/Base y bienvenida/AUTH_WELCOME_GASTRO.md` |
 | `AUTH_WELCOME_HOTEL` | Bienvenida hotel | `docs/emails/Base y bienvenida/AUTH_WELCOME_HOTEL.md` |
 | `AUTH_WELCOME_REFERRER` | Bienvenida referido | `docs/emails/Base y bienvenida/AUTH_WELCOME_REFERRER.md` |
-| `AUTH_VERIFY_EMAIL` | Verificación de email (registro) | `AuthService.register` → `enqueueTemplate` |
+| `AUTH_VERIFY_EMAIL` | Verificación de email (registro / reenvío) | `AuthService.register` / `resendVerificationEmail` → `enqueueTemplate` |
 | `PRODUCER_EVENT_APPROVED` | Evento aprobado (productora) | `docs/emails/Productoras y eventos/PRODUCER_EVENT_APPROVED.md` |
 | `PRODUCER_EVENT_REJECTED` | Evento rechazado (productora) | `docs/emails/Productoras y eventos/PRODUCER_EVENT_REJECTED.md` |
 | `ADMIN_CRITICAL_ALERT` | Alerta operativa interna | Genérico; destino default `MAIL_OPERATIONS_TO` |

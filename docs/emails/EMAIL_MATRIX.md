@@ -12,7 +12,7 @@
 
 | ID | Caller real | Idempotencia / notas |
 |----|-------------|----------------------|
-| `AUTH_VERIFY_EMAIL` | `AuthService.register` → `enqueueTemplate` | Mismo token/link/expiración; no loguear token |
+| `AUTH_VERIFY_EMAIL` | `AuthService.register` / `resendVerificationEmail` → `enqueueTemplate` | Mismo token/link/expiración; no loguear token; reenvío público genérico |
 | `AUTH_WELCOME_BUYER` | `register` si `profileType === 'USER'` | 1 verify + 1 welcome por registro |
 | `AUTH_WELCOME_PRODUCER` | `register` si `PRODUCER` | Variables desde `profileData.displayName` |
 | `AUTH_WELCOME_GASTRO` | `register` si `GASTRO` | idem |

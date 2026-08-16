@@ -14,6 +14,7 @@ export * from './constants/legal-documents';
 export * from './constants/legal-signup';
 export * from './constants/auth-register';
 export * from './constants/auth-login';
+export * from './constants/auth-verify';
 export * from './location/argentina-locations';
 export * from './location/labels';
 export * from './location/city-normalization';

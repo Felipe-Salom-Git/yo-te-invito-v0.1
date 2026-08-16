@@ -186,6 +186,23 @@ export const authRegisterResponseSchema = z.object({
 });
 export type AuthRegisterResponse = z.infer<typeof authRegisterResponseSchema>;
 
+/** Request body for POST /auth/resend-verification-email */
+export const authResendVerificationEmailRequestSchema = z.object({
+  email: z.string().email(),
+  tenantId: z.string().optional(),
+});
+export type AuthResendVerificationEmailRequest = z.infer<
+  typeof authResendVerificationEmailRequestSchema
+>;
+
+/** Generic public response — never discloses whether the account exists. */
+export const authResendVerificationEmailResponseSchema = z.object({
+  message: z.string(),
+});
+export type AuthResendVerificationEmailResponse = z.infer<
+  typeof authResendVerificationEmailResponseSchema
+>;
+
 /** Order summary for GET /me/orders (minimal for list) */
 export const meOrderItemSchema = z.object({
   id: z.string(),

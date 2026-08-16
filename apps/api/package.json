@@ -23,6 +23,7 @@
     "smoke:legal": "tsx scripts/smoke-legal.ts",
     "smoke:api": "tsx scripts/smoke-api.ts",
     "smoke:auth-register-role": "tsx scripts/smoke-auth-register-role.ts",
+    "test:auth-resend-verification": "tsx scripts/test-auth-resend-verification.ts",
     "test:public-event-summary": "tsx scripts/test-public-event-summary.util.ts",
     "test:event-trending": "tsx scripts/test-event-trending.util.ts",
     "test:event-visibility": "tsx scripts/test-event-public-visibility.util.ts",

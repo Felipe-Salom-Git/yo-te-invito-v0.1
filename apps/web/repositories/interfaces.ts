@@ -1841,6 +1841,9 @@ export interface AuthRepo {
   register(
     body: import('@yo-te-invito/shared').AuthRegisterRequest,
   ): Promise<import('@yo-te-invito/shared').AuthRegisterResponse>;
+  resendVerificationEmail(
+    body: import('@yo-te-invito/shared').AuthResendVerificationEmailRequest,
+  ): Promise<import('@yo-te-invito/shared').AuthResendVerificationEmailResponse>;
 }
 
 export interface ProfilesRepo {

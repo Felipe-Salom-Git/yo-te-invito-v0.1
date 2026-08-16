@@ -4,10 +4,12 @@ import {
   authRegisterRequestSchema,
   authApplyRoleRequestSchema,
   authGoogleRequestSchema,
+  authResendVerificationEmailRequestSchema,
   type AuthLoginRequest,
   type AuthRegisterRequest,
   type AuthApplyRoleRequest,
   type AuthGoogleRequest,
+  type AuthResendVerificationEmailRequest,
 } from '@yo-te-invito/shared';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { AuthService } from './auth.service';
@@ -29,6 +31,18 @@ export class AuthController {
     @Req() req: { headers: Record<string, string | string[] | undefined>; ip?: string },
   ) {
     return this.authService.register(body, {
+      ipAddress: req.ip ?? null,
+      userAgent: (req.headers['user-agent'] as string) ?? null,
+    });
+  }
+
+  @Post('resend-verification-email')
+  async resendVerificationEmail(
+    @Body(new ZodValidationPipe(authResendVerificationEmailRequestSchema))
+    body: AuthResendVerificationEmailRequest,
+    @Req() req: { headers: Record<string, string | string[] | undefined>; ip?: string },
+  ) {
+    return this.authService.resendVerificationEmail(body, {
       ipAddress: req.ip ?? null,
       userAgent: (req.headers['user-agent'] as string) ?? null,
     });

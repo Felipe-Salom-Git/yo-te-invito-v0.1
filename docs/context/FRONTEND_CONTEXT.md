@@ -436,7 +436,7 @@ Runbook: [`docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTIO
 - **Contenido legal (Markdown):** `pnpm --filter api run seed:legal-content` — ver `docs/legal/README.md`.
 - **Cleanup contenido:** `pnpm db:cleanup-content` (preserva `felipe.e.salom@gmail.com`).
 - **Dev UI:** `/dev/scanner-sim` (simulación escaneo QR).
-- **Login:** NextAuth → `POST /auth/login`; sin hints `@demo.local` en formulario; post-login redirect vía `resolvePostLoginHref` + `rolePortalHome.ts` según `session.user.role` (p. ej. `PRODUCER_OWNER` → `/producer`).
+- **Login:** NextAuth → `POST /auth/login`; `EMAIL_NOT_VERIFIED` muestra reenvío vía `useResendVerificationEmail` → `auth.resendVerificationEmail` (`POST /auth/resend-verification-email`); `/verify-email` copia unificada de enlace vencido + CTA a login; sin hints `@demo.local`; post-login redirect vía `resolvePostLoginHref` + `rolePortalHome.ts` según `session.user.role` (p. ej. `PRODUCER_OWNER` → `/producer`).
 
 ### E2E Playwright (`e2e/`)
 

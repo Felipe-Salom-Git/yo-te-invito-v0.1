@@ -4,22 +4,33 @@ import { useState, Suspense } from 'react';
 import { signIn, getSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { AUTH_LOGIN_ERROR_CODES, AUTH_LOGIN_USER_MESSAGES } from '@yo-te-invito/shared';
+import {
+  AUTH_LOGIN_ERROR_CODES,
+  AUTH_LOGIN_USER_MESSAGES,
+} from '@yo-te-invito/shared';
 import type { Role } from '@yo-te-invito/shared';
 import { attemptCredentialsLogin } from '@/lib/auth/login-api';
 import { Button, Input, Card, CardHeader, CardContent } from '@/components';
 import { Logo } from '@/components/brand/Logo';
 import { EmailInboxNotice } from '@/components/ux/EmailInboxNotice';
 import { resolvePostLoginHref } from '@/lib/navigation/rolePortalHome';
+import { useResendVerificationEmail } from '@/hooks/useResendVerificationEmail';
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
   const registered = searchParams?.get('registered') === '1';
   const verifyEmail = searchParams?.get('verifyEmail') === '1';
   const verify = searchParams?.get('verify') === '1';
   const callbackUrl = searchParams?.get('callbackUrl');
+  const {
+    resend,
+    status: resendStatus,
+    message: resendMessage,
+    isLoading: resendLoading,
+  } = useResendVerificationEmail();
 
   async function navigateAfterLogin() {
     const session = await getSession();
@@ -33,6 +44,7 @@ function LoginForm() {
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
+    setUnverifiedEmail(null);
     const form = e.currentTarget;
     const formData = new FormData(form);
     const email = (formData.get('email') as string)?.trim()?.toLowerCase() ?? '';
@@ -41,6 +53,7 @@ function LoginForm() {
     const preflight = await attemptCredentialsLogin(email, password);
     if (!preflight.ok) {
       if (preflight.code === AUTH_LOGIN_ERROR_CODES.EMAIL_NOT_VERIFIED) {
+        setUnverifiedEmail(email);
         setError(preflight.message || AUTH_LOGIN_USER_MESSAGES.emailNotVerified);
       } else {
         setError(AUTH_LOGIN_USER_MESSAGES.invalidCredentials);
@@ -108,7 +121,32 @@ function LoginForm() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input label="Email" name="email" type="email" required placeholder="you@example.com" />
             <Input label="Password" name="password" type="password" required />
-            {error && <p className="text-sm text-red-400">{error}</p>}
+            {error && (
+              <p className="text-sm text-red-400" role="alert">
+                {error}
+              </p>
+            )}
+            {unverifiedEmail ? (
+              <div className="space-y-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  disabled={resendLoading}
+                  onClick={() => void resend(unverifiedEmail)}
+                >
+                  {resendLoading ? 'Enviando…' : 'Reenviar email de validación'}
+                </Button>
+                {resendMessage && resendStatus !== 'idle' ? (
+                  <p
+                    className={`text-sm ${resendStatus === 'error' ? 'text-red-400' : 'text-accent-soft'}`}
+                    role="status"
+                  >
+                    {resendMessage}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
             <Button type="submit" className="w-full">
               Iniciar sesión
             </Button>
