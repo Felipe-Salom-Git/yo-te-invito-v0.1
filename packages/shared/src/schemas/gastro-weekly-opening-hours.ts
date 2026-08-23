@@ -1,10 +1,16 @@
 import { z } from 'zod';
 import {
   OPENING_HOURS_DAY_KEYS,
+  OPENING_HOURS_EQUAL_RANGE_MESSAGE,
+  OPENING_HOURS_OVERLAP_MESSAGE,
+  hasOverlappingOpeningHourRanges,
+  isOvernightInterval,
   openingHoursTimeSchema,
   timeToMinutes,
   type OpeningHoursDayKey,
 } from './opening-hours';
+
+export { isOvernightInterval };
 
 export const GASTRO_OPENING_HOURS_MODES = ['simple', 'weekly'] as const;
 export type GastroOpeningHoursMode = (typeof GASTRO_OPENING_HOURS_MODES)[number];
@@ -14,10 +20,20 @@ export const gastroOpeningHoursModeSchema = z.enum(GASTRO_OPENING_HOURS_MODES);
 /** Max intervals per calendar day (lunch + dinner + extras). */
 export const GASTRO_WEEKLY_MAX_INTERVALS_PER_DAY = 4;
 
-const gastroWeeklyIntervalSchema = z.object({
-  open: openingHoursTimeSchema,
-  close: openingHoursTimeSchema,
-});
+const gastroWeeklyIntervalSchema = z
+  .object({
+    open: openingHoursTimeSchema,
+    close: openingHoursTimeSchema,
+  })
+  .superRefine((interval, ctx) => {
+    if (timeToMinutes(interval.open) === timeToMinutes(interval.close)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: OPENING_HOURS_EQUAL_RANGE_MESSAGE,
+        path: ['close'],
+      });
+    }
+  });
 
 export type GastroWeeklyInterval = z.infer<typeof gastroWeeklyIntervalSchema>;
 
@@ -35,11 +51,10 @@ export const gastroWeeklyOpeningHoursSchema = z
     for (const day of OPENING_HOURS_DAY_KEYS) {
       const intervals = schedule[day];
       if (intervals.length < 2) continue;
-      const ranges = intervals.flatMap((interval) => intervalToMinuteRanges(interval));
-      if (hasOverlappingRanges(ranges)) {
+      if (hasOverlappingOpeningHourRanges(intervals)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: `Los horarios de ${day} se solapan`,
+          message: OPENING_HOURS_OVERLAP_MESSAGE,
           path: [day],
         });
       }
@@ -58,33 +73,6 @@ export function createEmptyGastroWeeklyOpeningHours(): GastroWeeklyOpeningHours 
     saturday: [],
     sunday: [],
   };
-}
-
-/** True when close is on the next calendar day (e.g. 20:00–02:00). */
-export function isOvernightInterval(interval: GastroWeeklyInterval): boolean {
-  return timeToMinutes(interval.close) <= timeToMinutes(interval.open);
-}
-
-type MinuteRange = { start: number; end: number };
-
-function intervalToMinuteRanges(interval: GastroWeeklyInterval): MinuteRange[] {
-  const open = timeToMinutes(interval.open);
-  const close = timeToMinutes(interval.close);
-  if (!isOvernightInterval(interval)) {
-    return [{ start: open, end: close }];
-  }
-  return [
-    { start: open, end: 24 * 60 },
-    { start: 0, end: close },
-  ];
-}
-
-function hasOverlappingRanges(ranges: MinuteRange[]): boolean {
-  const sorted = [...ranges].sort((a, b) => a.start - b.start);
-  for (let i = 1; i < sorted.length; i++) {
-    if (sorted[i].start < sorted[i - 1].end) return true;
-  }
-  return false;
 }
 
 export function hasGastroWeeklyOpeningHoursContent(
@@ -116,6 +104,25 @@ const DAY_LABELS_ES: Record<OpeningHoursDayKey, string> = {
   saturday: 'Sábado',
   sunday: 'Domingo',
 };
+
+/** Client-side weekly hours validation with Spanish copy (mirrors Zod rules). */
+export function validateGastroWeeklyOpeningHoursForSubmit(
+  schedule: GastroWeeklyOpeningHours,
+): string | null {
+  for (const day of OPENING_HOURS_DAY_KEYS) {
+    const intervals = schedule[day];
+    for (let i = 0; i < intervals.length; i++) {
+      const interval = intervals[i]!;
+      if (timeToMinutes(interval.open) === timeToMinutes(interval.close)) {
+        return `${OPENING_HOURS_EQUAL_RANGE_MESSAGE} (${DAY_LABELS_ES[day]})`;
+      }
+    }
+    if (intervals.length >= 2 && hasOverlappingOpeningHourRanges(intervals)) {
+      return `${OPENING_HOURS_OVERLAP_MESSAGE} (${DAY_LABELS_ES[day]})`;
+    }
+  }
+  return null;
+}
 
 export function formatGastroWeeklyInterval(interval: GastroWeeklyInterval): string {
   return `${interval.open} – ${interval.close}`;

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 const HH_MM_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
+const MINUTES_PER_DAY = 24 * 60;
 
 export const openingHoursTimeSchema = z
   .string()
@@ -8,17 +9,103 @@ export const openingHoursTimeSchema = z
 
 export type OpeningHoursTime = z.infer<typeof openingHoursTimeSchema>;
 
+export function timeToMinutes(time: string): number {
+  const [h, m] = time.split(':').map(Number);
+  return h * 60 + m;
+}
+
+/** True when close is strictly earlier than open (e.g. 20:00→02:00 or 20:00→00:00). */
+export function isOvernightInterval(interval: { open: string; close: string }): boolean {
+  return timeToMinutes(interval.close) < timeToMinutes(interval.open);
+}
+
+export type NormalizedTimeRange = {
+  startMinutes: number;
+  /** Exclusive end; may be > 24*60 when the range crosses midnight. */
+  endMinutes: number;
+};
+
+/**
+ * Normalize a range for comparison. Same-day: end > start.
+ * Overnight (end < start): end += 24h. Equal open/close → null (invalid; 24h not supported).
+ */
+export function normalizeTimeRange(
+  open: string,
+  close: string,
+): NormalizedTimeRange | null {
+  const startMinutes = timeToMinutes(open);
+  let endMinutes = timeToMinutes(close);
+  if (endMinutes === startMinutes) return null;
+  if (endMinutes < startMinutes) {
+    endMinutes += MINUTES_PER_DAY;
+  }
+  return { startMinutes, endMinutes };
+}
+
+export function isValidOpeningHoursRange(open: string, close: string): boolean {
+  return normalizeTimeRange(open, close) != null;
+}
+
+/** Half-open intervals [start, end); contiguous ranges do not overlap. */
+export function openingHourRangesOverlap(
+  a: NormalizedTimeRange,
+  b: NormalizedTimeRange,
+): boolean {
+  return a.startMinutes < b.endMinutes && b.startMinutes < a.endMinutes;
+}
+
+export function hasOverlappingOpeningHourRanges(
+  ranges: Array<{ open: string; close: string }>,
+): boolean {
+  const normalized: NormalizedTimeRange[] = [];
+  for (const range of ranges) {
+    const n = normalizeTimeRange(range.open, range.close);
+    if (!n) continue;
+    normalized.push(n);
+  }
+  const sorted = [...normalized].sort((x, y) => x.startMinutes - y.startMinutes);
+  for (let i = 1; i < sorted.length; i++) {
+    if (openingHourRangesOverlap(sorted[i - 1]!, sorted[i]!)) return true;
+  }
+  return false;
+}
+
+export const OPENING_HOURS_EQUAL_RANGE_MESSAGE =
+  'La hora de cierre debe ser diferente de la hora de apertura.';
+export const OPENING_HOURS_OVERLAP_MESSAGE =
+  'Este rango horario se superpone con otro del mismo día.';
+
 export const openingHoursRangeSchema = z
   .object({
     open: openingHoursTimeSchema,
     close: openingHoursTimeSchema,
   })
-  .refine(
-    (r) => timeToMinutes(r.open) < timeToMinutes(r.close),
-    { message: 'open must be before close', path: ['close'] },
-  );
+  .superRefine((r, ctx) => {
+    if (timeToMinutes(r.open) === timeToMinutes(r.close)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: OPENING_HOURS_EQUAL_RANGE_MESSAGE,
+        path: ['close'],
+      });
+    }
+  });
 
 export type OpeningHoursRange = z.infer<typeof openingHoursRangeSchema>;
+
+function refineBlockRangesNoOverlap(
+  ranges: OpeningHoursRange[],
+  ctx: z.RefinementCtx,
+  pathPrefix: (string | number)[] = ['ranges'],
+) {
+  if (ranges.length < 2) return;
+  if (hasOverlappingOpeningHourRanges(ranges)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: OPENING_HOURS_OVERLAP_MESSAGE,
+      path: pathPrefix,
+    });
+  }
+}
 
 export const openingHoursBlockSchema = z
   .object({
@@ -42,7 +129,9 @@ export const openingHoursBlockSchema = z
         message: 'at least one range is required when open',
         path: ['ranges'],
       });
+      return;
     }
+    refineBlockRangesNoOverlap(block.ranges, ctx);
   });
 
 export type OpeningHoursBlock = z.infer<typeof openingHoursBlockSchema>;
@@ -73,7 +162,9 @@ export const openingHoursExceptionSchema = z
         message: 'at least one range is required when exception is open',
         path: ['ranges'],
       });
+      return;
     }
+    refineBlockRangesNoOverlap(ex.ranges, ctx);
   });
 
 export type OpeningHoursException = z.infer<typeof openingHoursExceptionSchema>;
@@ -114,11 +205,6 @@ const legacyDayFields = Object.fromEntries(
 
 const legacyWeeklyOpeningHoursSchema = z.object(legacyDayFields);
 
-export function timeToMinutes(time: string): number {
-  const [h, m] = time.split(':').map(Number);
-  return h * 60 + m;
-}
-
 const closedBlock = (): OpeningHoursBlock => ({ isOpen: false, ranges: [] });
 
 function cloneBlock(block: OpeningHoursBlock): OpeningHoursBlock {
@@ -145,7 +231,7 @@ function sanitizeOpeningHoursBlock(block: OpeningHoursBlock): OpeningHoursBlock 
     (r) =>
       r.open?.trim() &&
       r.close?.trim() &&
-      timeToMinutes(r.open.trim()) < timeToMinutes(r.close.trim()),
+      isValidOpeningHoursRange(r.open.trim(), r.close.trim()),
   );
   if (ranges.length === 0) {
     return { isOpen: false, ranges: [] };
@@ -161,7 +247,7 @@ function sanitizeOpeningHoursException(ex: OpeningHoursException): OpeningHoursE
     (r) =>
       r.open?.trim() &&
       r.close?.trim() &&
-      timeToMinutes(r.open.trim()) < timeToMinutes(r.close.trim()),
+      isValidOpeningHoursRange(r.open.trim(), r.close.trim()),
   );
   return { ...ex, isOpen: ranges.length > 0, ranges };
 }
@@ -194,9 +280,13 @@ export function validateRentalOpeningHoursForSubmit(
       const open = range.open?.trim();
       const close = range.close?.trim();
       if (!open || !close) continue;
-      if (timeToMinutes(open) >= timeToMinutes(close)) {
-        return `El horario de apertura debe ser anterior al horario de cierre (${label}).`;
+      if (timeToMinutes(open) === timeToMinutes(close)) {
+        return `${OPENING_HOURS_EQUAL_RANGE_MESSAGE} (${label})`;
       }
+    }
+    const complete = block.ranges.filter((r) => r.open?.trim() && r.close?.trim());
+    if (complete.length >= 2 && hasOverlappingOpeningHourRanges(complete)) {
+      return `${OPENING_HOURS_OVERLAP_MESSAGE} (${label})`;
     }
   }
   return null;

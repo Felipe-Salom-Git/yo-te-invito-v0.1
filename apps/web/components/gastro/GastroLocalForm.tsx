@@ -5,6 +5,7 @@ import {
   createEmptyGastroWeeklyOpeningHours,
   createEmptyRentalOpeningHours,
   sanitizeRentalOpeningHours,
+  validateGastroWeeklyOpeningHoursForSubmit,
   validateRentalOpeningHoursForSubmit,
   type GastroOpeningHoursMode,
 } from '@yo-te-invito/shared';
@@ -133,6 +134,7 @@ export function GastroLocalForm({
     initial?.relatedLinks ?? [],
   );
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [hoursError, setHoursError] = useState<string | null>(null);
   const [isUploadingImages, setIsUploadingImages] = useState(false);
   const hydratedFromId = useRef<string | null>(null);
 
@@ -169,28 +171,32 @@ export function GastroLocalForm({
     if (!displayName.trim() || !contactEmail.trim()) return;
     const locErr = validateGastroLocationValue(location);
     if (locErr) {
+      setHoursError(null);
       setLocationError(locErr);
       return;
     }
     if (mustPickSubcategory && subcategoryIds.length === 0) {
+      setHoursError(null);
       setLocationError('Seleccioná al menos una subcategoría gastronómica.');
       return;
     }
     const linksError = validateRelatedLinksDraft(relatedLinks);
     if (linksError) {
+      setHoursError(null);
       setLocationError(linksError);
       return;
     }
     setLocationError(null);
-    const links = externalLinksToPayload(externalLinks);
-    const hoursError =
+    const hoursValidationError =
       openingHoursMode === 'simple'
         ? validateRentalOpeningHoursForSubmit(openingHours)
-        : null;
-    if (hoursError) {
-      setLocationError(hoursError);
+        : validateGastroWeeklyOpeningHoursForSubmit(openingHoursWeekly);
+    if (hoursValidationError) {
+      setHoursError(hoursValidationError);
       return;
     }
+    setHoursError(null);
+    const links = externalLinksToPayload(externalLinks);
     const normalizedHours =
       openingHoursMode === 'simple' ? sanitizeRentalOpeningHours(openingHours) : openingHours;
     const subPayload = gastroSubcategoryIdsToPayload(subcategoryIds);
@@ -271,7 +277,9 @@ export function GastroLocalForm({
         onChange={setLocation}
         required
         geoContext="GASTRO"
-        provinceError={locationError ?? undefined}
+        provinceError={
+          locationError && !hoursError ? locationError : undefined
+        }
       />
       {isAdmin ? <p className="text-sm font-medium text-text">Horarios y contacto</p> : null}
       <fieldset className="space-y-3">
@@ -299,10 +307,27 @@ export function GastroLocalForm({
           </label>
         </div>
         {openingHoursMode === 'simple' ? (
-          <OpeningHoursEditor value={openingHours} onChange={setOpeningHours} />
+          <OpeningHoursEditor
+            value={openingHours}
+            onChange={(next) => {
+              setHoursError(null);
+              setOpeningHours(next);
+            }}
+          />
         ) : (
-          <WeeklyOpeningHoursEditor value={openingHoursWeekly} onChange={setOpeningHoursWeekly} />
+          <WeeklyOpeningHoursEditor
+            value={openingHoursWeekly}
+            onChange={(next) => {
+              setHoursError(null);
+              setOpeningHoursWeekly(next);
+            }}
+          />
         )}
+        {hoursError ? (
+          <p className="text-sm text-red-500" role="alert">
+            {hoursError}
+          </p>
+        ) : null}
       </fieldset>
       <Input
         label="Nota horarios (opcional)"
