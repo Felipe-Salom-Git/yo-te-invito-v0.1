@@ -116,16 +116,24 @@ Bloque **Descubrimiento público** cerrado en checklist V2. Detalle: `docs/audit
 
 **Fuera de este bloque:** pagos reales, storage imágenes, drift TS global (`registerPush`, etc.). Rentals V2 (WhatsApp, cards, subcategorías, anti-alojamiento, detalle mobile) cerrado en checklist § Rentals.
 
-## 5z. Mejoras visuales V3.2 — código cerrado (2026-07-31)
+## 5z. Mejoras visuales V3.2 — código cerrado (2026-07-31, hotfixes 2026-08-30)
 
 | Pieza | Estado |
 |-------|--------|
 | Checklist + auditorías por slice | Cerrado código — `Yo_Te_Invito_Checklist_V3_2_Mejoras_Visuales.md`, `docs/audits/V3_2_*` |
+| Banners / transición / footer verde / cards / Gastro descuentos | Cerrado código |
 | Suggest search | `GET /public/events/suggestions` |
-| Event/Gastro discovery | **Próximamente** para público; preview ADMIN + Productora (event) + Gastro owner (gastro) — `category-availability.ts` |
+| Ciudad buscable | `SearchableCombobox` en forms + Explore |
 | Reviews UI | Caritas 1–5; persistencia 1–10 sin migración |
-| Caché HTML discovery | Hotfix `force-dynamic` + no-store headers — `docs/audits/V3_2_HOTFIX_PUBLIC_CACHE_CLOSING.md` |
-| QA browser V3.2 | Pendiente smoke manual |
+| Mapas lazy | Embed en `EventLocationModal` |
+| Admin pendientes | `AdminPendingReviewSection` |
+| Hero gastro descuentos | Hasta 3 descuentos vigentes en playlist |
+| Event/Gastro discovery | **Próximamente** público; preview por rol — `category-availability.ts` |
+| Hotfix cache HTML | `force-dynamic` + no-store — `V3_2_HOTFIX_PUBLIC_CACHE_CLOSING.md` |
+| Hotfix roles owners | `b8dc571` — productora/gastro ven su vertical |
+| Hotfix auth resend | `ff6f8e0` — `POST /auth/resend-verification-email` |
+| Hotfix horarios overnight | `920c5d7` — `20:00→00:00` válido; error bajo horarios |
+| QA browser V3.2 + hotfixes prod | Pendiente smoke manual |
 
 ## 5a. Registro y onboarding por tipo de usuario — Estado cerrado (2026-05-24)
 
@@ -155,7 +163,7 @@ Detalle API/UI: `BACKEND_CONTEXT.md`, `FRONTEND_CONTEXT.md`, checklist V2 § Adm
 
 | Vertical | Discovery | Portal | Público | QA |
 |----------|-----------|--------|---------|-----|
-| Gastro | **Próximamente** en discovery (V3.2); portal `/gastro/*` operativo | `/gastro/*` operativo | `/restaurants/[id]`, `/gastronomicos/[id]` (ADMIN preview) | `test:gastro-discount-qr`, `test:gastro-discount-scan` |
+| Gastro | **Próximamente** en discovery (V3.2); preview `GASTRO_OWNER` + `ADMIN`; portal `/gastro/*` operativo | `/gastro/*` operativo | `/restaurants/[id]`, `/gastronomicos/[id]` (owners preview) | `test:gastro-discount-qr`, `test:gastro-discount-scan` |
 | Hoteles | Próximamente (sin tile gateway) | `/hotel`, `/hotel/editar` | `/hoteles/[id]` informativa | `pnpm e2e:hotel` (`E2E_HOTEL_*`, skip sin env) |
 
 Checklist V2 § Gastro y Hoteles marcado. Auditoría: `docs/audits/GASTRO_HOTELES_V2_AUDIT.md`.
@@ -261,6 +269,7 @@ Guías: `docs/guides/README.md`, `DEVELOPER_SCRIPTS_GUIDE.md`, `SMOKE_TESTS_GUID
 ## References
 
 - `docs/context/AI_ENTRYPOINT.md`
+- `docs/context/NEXT_CHAT_HANDOFF.md`
 - `docs/context/BACKEND_CONTEXT.md`
 - `docs/context/FRONTEND_CONTEXT.md`
 - `docs/dev/Yo_Te_Invito_Checklist_V2_Produccion.md`

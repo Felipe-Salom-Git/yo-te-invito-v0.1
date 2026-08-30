@@ -60,6 +60,8 @@ HTTP → Controller (thin) → ZodValidationPipe → Service → Prisma → Post
 
 **V3.1 Etapa 10 — Horarios gastro avanzados (cerrada 2026-06-10):** `GastroProfile.openingHoursMode` (`simple`|`weekly`) + `openingHoursWeekly` JSONB; convive con `openingHours` (rental) + `openingHoursNote`. Schemas: `gastro-weekly-opening-hours.ts`; helpers `gastro-profile-fields.util.ts`; público `PublicGastroLocationsService`. Smoke: `smoke:v31-gastro-weekly-hours`. Doc cierre: `docs/audits/V3_1_STAGE_10_GASTRO_HOURS_CLOSING.md`; checklist §27.1–27.2.
 
+**Hotfix horarios overnight (2026-08-30, `920c5d7`):** rangos `close < open` cruzan medianoche (`20:00→00:00`, `20:00→02:00`); solapamiento normalizado; `GastroLocalForm` muestra errores de horarios bajo fieldset horarios (no Provincia). Test: `pnpm --filter api run test:opening-hours`. Doc: `docs/audits/V3_2_HOTFIX_GASTRO_OVERNIGHT_HOURS_CLOSING.md`.
+
 **V3.1 Etapa 11 — Legales pendientes (cerrada con observaciones 2026-06-10):** `LegalAcceptanceContext.EVENT_PUBLICATION` + `UserLegalAcceptance.eventId`; `EventPublicationLegalService`; `GET/POST /producer/events/:eventId/legal/*`; bloqueo `producer-events-crud` al pasar `DRAFT → PENDING` (`LEGAL_ACCEPTANCE_REQUIRED` / `LEGAL_DOCUMENT_NOT_PUBLISHED`). Migración `20260610130000_event_publication_legal_acceptance`. Smokes: `smoke:v31-event-publication-legal`, `smoke:legal`. Doc: `docs/audits/V3_1_STAGE_11_LEGAL_CLOSING.md`. **Pendiente cliente:** publicar `producer_terms` y resto docs en `/admin/legales`.
 
 **Admin endpoints** (`AdminRentalLocationsController`, role `ADMIN`):

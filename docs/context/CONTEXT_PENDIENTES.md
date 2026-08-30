@@ -4,6 +4,41 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 
 **Convención:** `- [ ]` pendiente · `- [x]` hecho
 
+**Rama activa:** `feat/v1-s03-api-foundation` · HEAD: `920c5d7` (2026-08-30)
+
+**Handoff nuevo chat:** [`NEXT_CHAT_HANDOFF.md`](./NEXT_CHAT_HANDOFF.md)
+
+---
+
+## Resumen operativo — Hotfixes V3.2 (2026-08)
+
+### COMPLETADO (código en rama, pusheado)
+
+- [x] **Caché HTML pública** — `15f2776`; `force-dynamic` + headers no-store; doc `V3_2_HOTFIX_PUBLIC_CACHE_CLOSING.md`
+- [x] **Category availability por rol** — `b8dc571`; Event: `ADMIN` + `PRODUCER_OWNER`/`PRODUCER_STAFF`; Gastro: `ADMIN` + `GASTRO_OWNER`; doc `V3_2_SLICE_10_COMING_SOON_CLOSING.md`
+- [x] **Auth resend verificación** — `ff6f8e0`; `POST /auth/resend-verification-email`; UX Login; doc `AUTH_EMAIL_VERIFICATION_RESEND_CLOSING.md`
+- [x] **Horarios gastro overnight** — `920c5d7`; `20:00→00:00` válido; error bajo horarios; test `test:opening-hours`; doc `V3_2_HOTFIX_GASTRO_OVERNIGHT_HOURS_CLOSING.md`
+- [x] **Docs/context refresh** — handoff + contextos alineados con hotfixes
+
+### PENDIENTE (QA / Deploy)
+
+- [ ] Deploy VPS commits `15f2776`…`920c5d7` si no están en prod
+- [ ] QA prod cache: `curl -I` `/home`, `/explore`, `/categoria/rental` — sin `s-maxage=31536000`
+- [ ] QA prod roles: `USER` ve Próximamente Event/Gastro; `PRODUCER_OWNER` preview event; `GASTRO_OWNER` preview gastro
+- [ ] QA prod auth: registro → token vence → login → reenvío → verify → login
+- [ ] QA prod gastro horarios: guardar `12:00–16:00` + `20:00–00:00`; error no en Provincia
+- [ ] V3.2 QA manual browser (checklist + `V3_2_QA_CLOSING.md`)
+
+### BLOQUEADO
+
+- [ ] Ticketera real — nueva pasarela TBD (Getnet abandonado como implementación activa)
+- [ ] Registro comercial completo — publicar `producer_terms`, `gastro_terms`, etc. en `/admin/legales` (DRAFT bloquea)
+
+### DEUDA TÉCNICA
+
+- [ ] Rate limit auth resend in-memory (reset al restart API) — suficiente por ahora
+- [ ] Budget alerts GCP, CDN fase 2, migración data-URL legacy
+
 ---
 
 ## Jornada 2026-06-15 — cierre documental
@@ -173,8 +208,9 @@ Etapas base: `V3_1_STAGE_5_CLOSING.md`, `V3_1_STAGE_6_SCANNER_OFFLINE_CLOSING.md
 - [x] Login bloquea usuarios con `emailVerified` null (`EMAIL_NOT_VERIFIED`), excepto usuario maestro.
 - [x] Template `AUTH_VERIFY_EMAIL` con subject, preview, cuerpo y CTA válidos (`getAppUrl()` para link).
 - [x] Login muestra mensaje claro si el email no está verificado.
-- [x] Reenvío manual de email de confirmación desde login (`POST /auth/resend-verification-email`, `AUTH_EMAIL_VERIFICATION_RESEND_CLOSING.md`).
-- [ ] QA manual: registro → email → verificar → login.
+- [x] Reenvío manual de email de confirmación desde login (`POST /auth/resend-verification-email`, `AUTH_EMAIL_VERIFICATION_RESEND_CLOSING.md`, commit `ff6f8e0`)
+- [ ] QA manual: registro → email → verificar → login
+- [ ] QA manual: token vencido → login `EMAIL_NOT_VERIFIED` → reenvío → verify → login
 
 ### Hotfix registro por perfil comercial (2026-06-24)
 
@@ -757,9 +793,13 @@ _(Trending con `viewCount`: ver ítem Slice 2 arriba en § K.)_
 - [x] Slice 6 — valoraciones caritas + Ver más / Valorar
 - [x] Slice 7 — mini mapa lazy en modal ubicación
 - [x] Slice 9 — descuentos en hero gastro
-- [x] Slice 10 — Event/Gastro Próximamente + preview por rol (`category-availability.ts`; hotfix owners 2026-08-07)
+- [x] Slice 10 — Event/Gastro Próximamente + preview por rol (`category-availability.ts`; hotfix owners `b8dc571` 2026-08-07)
 - [x] Slice 11 — docs/context + cierres
+- [x] Hotfix cache HTML pública — `15f2776` (`V3_2_HOTFIX_PUBLIC_CACHE_CLOSING.md`)
+- [x] Hotfix auth resend verificación — `ff6f8e0` (`AUTH_EMAIL_VERIFICATION_RESEND_CLOSING.md`)
+- [x] Hotfix horarios gastro overnight — `920c5d7` (`V3_2_HOTFIX_GASTRO_OVERNIGHT_HOURS_CLOSING.md`)
 - [ ] V3.2 — QA manual browser (smokes checklist)
+- [ ] V3.2 hotfixes — QA/deploy producción (ver § Resumen operativo Hotfixes V3.2)
 
 - [x] Hotfix admin gastro discovery — sync `publicEventId` al activar/editar (`smoke:v31-admin-gastro-discovery`, `V3_1_HOTFIX_ADMIN_GASTRO_DISCOVERY_SMOKE.md`)
 - [ ] V3.1 — QA manual browser pre/post-deploy (checklist en `V3_1_PRE_DEPLOY_QA_CLOSING.md` §6)
@@ -840,5 +880,9 @@ _(Trending con `viewCount`: ver ítem Slice 2 arriba en § K.)_
 | `docs/audits/GEO_ADDRESS_MAP_PIN_CLOSING.md` | Etapa GEO — geocoding backend + AddressMapPicker |
 | `docs/audits/GEO_MAPS_STAGE_CLOSING.md` | Etapa GEO Georef + hotfixes address/dedupe/pin |
 | `docs/audits/GASTRO_DISCOUNTS_QR_COURTESY_CLOSING.md` | Gastro descuentos QR, cortesías, Mi cuenta (v1) |
+| `docs/audits/V3_2_HOTFIX_PUBLIC_CACHE_CLOSING.md` | Hotfix caché HTML discovery |
+| `docs/audits/V3_2_HOTFIX_GASTRO_OVERNIGHT_HOURS_CLOSING.md` | Hotfix horarios gastro overnight |
+| `docs/audits/AUTH_EMAIL_VERIFICATION_RESEND_CLOSING.md` | Hotfix reenvío email verificación |
+| `docs/context/NEXT_CHAT_HANDOFF.md` | Handoff operativo — iniciar nuevo chat |
 | `docs/audits/GASTRO_QR_COURTESIES_AUDIT.md` | Gastro QR / Cortesías V2 — cierre + QA |
 

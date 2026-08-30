@@ -14,7 +14,8 @@ Read this file **before generating or modifying code**.
 | **Usuario maestro** | `felipe.e.salom@gmail.com` — preservado por `db:cleanup-content`; no borrar en scripts |
 | **No commitear secretos** | `.env` local; usar `.env.example` |
 | **Rama Getnet activa** | `feat/v1-s03-api-foundation` — **no** `development` (eliminada); **no** tocar `main` salvo instrucción explícita |
-| **V3.2 discovery** | Checklist `docs/dev/Yo_Te_Invito_Checklist_V3_2_Mejoras_Visuales.md` — cierre [`V3_2_QA_CLOSING.md`](../audits/V3_2_QA_CLOSING.md). Event/Gastro `comingSoon` con preview por rol (ADMIN + owners); reactivar en `category-availability.ts`. |
+| **V3.2 discovery** | Código cerrado (slices 0–11); QA manual pendiente — [`V3_2_QA_CLOSING.md`](../audits/V3_2_QA_CLOSING.md). Event/Gastro `comingSoon`; preview por rol en `category-availability.ts`. Hotfixes 2026-08: cache HTML, roles owners, auth resend, horarios overnight — ver § Hotfixes V3.2. |
+| **Handoff nuevo chat** | [`NEXT_CHAT_HANDOFF.md`](./NEXT_CHAT_HANDOFF.md) — punto de entrada operativo (stack, prod, hotfixes, pendientes). |
 
 Detalle histórico demo: [guides/DEMO_REMOVAL.md](../guides/DEMO_REMOVAL.md). Portal: [user/USER_PORTAL.md](../user/USER_PORTAL.md).
 
@@ -22,7 +23,7 @@ Detalle histórico demo: [guides/DEMO_REMOVAL.md](../guides/DEMO_REMOVAL.md). Po
 
 ## Getnet Web Checkout Redirect — estado actual
 
-- **Rama activa:** `feat/v1-s03-api-foundation` (desplegada en VPS; último fix código: `ed0cc3e`; docs contexto: `9602fe9`).
+- **Rama activa:** `feat/v1-s03-api-foundation` (desplegada en VPS; último código: `920c5d7`; hotfixes V3.2 ago-2026 pusheados).
 - **`main`:** sin cambios.
 - **`development`:** descartada y eliminada — no mergear spikes ni commits.
 - **V1:** Redirect (`redirect_url`); iFrame/Lightbox fuera de V1.
@@ -57,7 +58,26 @@ Rama activa: `feat/v1-s03-api-foundation` (último push documental: ver `git log
 | **Mensajes email/spam** | Post-registro + post-QR en web | `EmailInboxNotice` |
 | **Admin Deep Delete** | Preflight + modal + delete transaccional (2026-06-23) | `ADMIN_DEEP_DELETE_AUDIT.md` |
 
-Detalle y pendientes priorizados: **`CONTEXT_PENDIENTES.md` § Jornada 2026-06-15** y **§ Etapa UX operativa**.
+Detalle y pendientes priorizados: **`CONTEXT_PENDIENTES.md` § Jornada 2026-06-15**, **§ Hotfixes V3.2 (2026-08)** y **§ Etapa UX operativa**.
+
+## Hotfixes V3.2 — agosto 2026 (rama `feat/v1-s03-api-foundation`)
+
+| Hotfix | Commit | Doc |
+|--------|--------|-----|
+| Caché HTML pública Next.js | `15f2776` | [`V3_2_HOTFIX_PUBLIC_CACHE_CLOSING.md`](../audits/V3_2_HOTFIX_PUBLIC_CACHE_CLOSING.md) |
+| Category availability por rol | `b8dc571` | [`V3_2_SLICE_10_COMING_SOON_CLOSING.md`](../audits/V3_2_SLICE_10_COMING_SOON_CLOSING.md) |
+| Reenvío email verificación | `ff6f8e0` | [`AUTH_EMAIL_VERIFICATION_RESEND_CLOSING.md`](../audits/AUTH_EMAIL_VERIFICATION_RESEND_CLOSING.md) |
+| Horarios gastro overnight | `920c5d7` | [`V3_2_HOTFIX_GASTRO_OVERNIGHT_HOURS_CLOSING.md`](../audits/V3_2_HOTFIX_GASTRO_OVERNIGHT_HOURS_CLOSING.md) |
+
+**Caché:** `/`, `/home`, `/explore`, `/categoria/*` → `force-dynamic` + headers `no-store`; no cachear HTML dinámico; `/_next/static/*` sin cambios.
+
+**Roles discovery:** Eventos preview → `ADMIN`, `PRODUCER_OWNER`, `PRODUCER_STAFF`. Gastronomía preview → `ADMIN`, `GASTRO_OWNER`. Rentals/excursiones públicas.
+
+**Auth resend:** `POST /auth/resend-verification-email`; respuesta genérica; rate limit 3/email/15min, 10/IP/15min; UX en Login con `EMAIL_NOT_VERIFIED`.
+
+**Horarios:** `20:00→00:00` = cierre día siguiente; error de horarios bajo fieldset horarios (no Provincia).
+
+**Pendiente operativo:** deploy VPS + QA prod de los cuatro hotfixes. Handoff: [`NEXT_CHAT_HANDOFF.md`](./NEXT_CHAT_HANDOFF.md).
 
 ## Etapa UX operativa — Ticketera Próximamente + mensajes email/spam
 
@@ -126,6 +146,7 @@ Controllers: HTTP + Zod only. Services: business logic. Prisma: persistence only
 | **`docs/audits/V3_1_STAGE_16_BANNERS_RENDERING_CLOSING.md`** | Banners editoriales sin reemplazar publicaciones |
 | **`docs/audits/V3_1_STAGE_16_EXPLORE_CITY_FILTER_CLOSING.md`** | Filtro ciudad en Explore |
 | **`CONTEXT_PENDIENTES.md`** | Checkbox backlog — mark `[x]` when done |
+| **`NEXT_CHAT_HANDOFF.md`** | Handoff operativo — iniciar chat sin reconstruir historial |
 | **`NEXT_CHAT_GETNET_WEBCHECKOUT_HANDOFF.md`** | Handoff Getnet Web Checkout Redirect |
 | **`docs/payments/GETNET_WEBCHECKOUT_REDIRECT_CLOSING.md`** | Cierre slice Redirect |
 | **`docs/legal/LEGAL_ADMIN_MODULE.md`** | Legal Admin — modelos, endpoints, flujos, staging (módulo cerrado 2026-05-24) |
