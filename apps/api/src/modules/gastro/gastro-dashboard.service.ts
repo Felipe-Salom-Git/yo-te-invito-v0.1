@@ -10,6 +10,7 @@ import {
 } from '@yo-te-invito/shared';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ProfilesAuthorizationService } from '../../common/profiles-authorization.service';
+import { GastroOwnershipService } from './gastro-ownership.service';
 import { ReviewDisputesService } from '../review-disputes/review-disputes.service';
 
 @Injectable()
@@ -17,6 +18,7 @@ export class GastroDashboardService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly profiles: ProfilesAuthorizationService,
+    private readonly ownership: GastroOwnershipService,
     private readonly reviewDisputes: ReviewDisputesService,
   ) {}
 
@@ -31,25 +33,29 @@ export class GastroDashboardService {
     }
   }
 
-  private async resolveProfile(tenantId: string, userId: string, userRole: string) {
+  private async resolveProfile(
+    tenantId: string,
+    userId: string,
+    userRole: string,
+    profileId?: string,
+  ) {
     if (userRole === 'ADMIN') {
+      if (profileId) {
+        return this.prisma.gastroProfile.findFirst({
+          where: { id: profileId, tenantId },
+        });
+      }
       const profile = await this.prisma.gastroProfile.findFirst({
         where: { tenantId, status: 'ACTIVE' },
         orderBy: { updatedAt: 'desc' },
       });
       return profile ?? null;
     }
-    const membership = await this.prisma.userGastroMembership.findFirst({
-      where: {
-        tenantId,
-        userId,
-        status: 'ACTIVE',
-        profile: { status: 'ACTIVE' },
-      },
-      include: { profile: true },
-      orderBy: { profile: { updatedAt: 'desc' } },
-    });
-    return membership?.profile ?? null;
+    try {
+      return await this.ownership.getOperationalProfileById(tenantId, userId, profileId);
+    } catch {
+      return null;
+    }
   }
 
   private discountWhereForProfile(
@@ -117,9 +123,10 @@ export class GastroDashboardService {
     tenantId: string,
     userId: string,
     userRole: string,
+    profileId?: string,
   ): Promise<GastroDashboardResponse> {
     await this.assertGastroUser(tenantId, userId, userRole);
-    const profile = await this.resolveProfile(tenantId, userId, userRole);
+    const profile = await this.resolveProfile(tenantId, userId, userRole, profileId);
     const discountWhere = this.discountWhereForProfile(tenantId, profile, userRole);
     const now = new Date();
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -225,7 +232,7 @@ export class GastroDashboardService {
     query: GastroValidationListQuery,
   ): Promise<GastroValidationListResponse> {
     await this.assertGastroUser(tenantId, userId, userRole);
-    const profile = await this.resolveProfile(tenantId, userId, userRole);
+    const profile = await this.resolveProfile(tenantId, userId, userRole, query.profileId);
 
     if (query.discountId) {
       const d = await this.prisma.gastroDiscount.findFirst({

@@ -12,6 +12,7 @@ import {
 } from '@/components';
 import { ProducerKpiCard } from '@/components/producer/dashboard/ProducerKpiCard';
 import { GastroOnboardingChecklist } from '@/components/onboarding/GastroOnboardingChecklist';
+import { GastroLocationSelector } from '@/components/gastro/GastroLocationSelector';
 import { ManagedPortalReviewAlerts } from '@/components/reviews/ManagedPortalReviewAlerts';
 import { useGastroDashboard } from '@/lib/query/gastro-dashboard';
 import { getErrorMessage } from '@/lib/errors';
@@ -123,6 +124,9 @@ export function GastroDashboardClient() {
       <header className="border-b border-border/60 pb-6">
         <p className="text-sm font-medium uppercase tracking-wide text-text-muted">Portal gastro</p>
         <h1 className="mt-1 text-2xl font-bold text-text md:text-3xl">{greeting}</h1>
+        <div className="mt-4 max-w-md">
+          <GastroLocationSelector />
+        </div>
         <p className="mt-2 text-sm text-text-muted">
           {profile.status
             ? `Perfil ${profile.status.toLowerCase()}`

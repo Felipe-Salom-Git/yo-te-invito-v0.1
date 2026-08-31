@@ -41,6 +41,7 @@ export const gastroDashboardResponseSchema = z.object({
 export type GastroDashboardResponse = z.infer<typeof gastroDashboardResponseSchema>;
 
 export const gastroValidationListQuerySchema = z.object({
+  profileId: z.string().min(1).optional(),
   discountId: z.string().min(1).optional(),
   from: z.string().datetime().optional(),
   to: z.string().datetime().optional(),

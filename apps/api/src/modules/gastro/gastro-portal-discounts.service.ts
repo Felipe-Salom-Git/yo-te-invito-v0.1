@@ -18,6 +18,7 @@ import {
 } from '@yo-te-invito/shared';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ProfilesAuthorizationService } from '../../common/profiles-authorization.service';
+import { GastroOwnershipService } from './gastro-ownership.service';
 import { GastroDiscountMetricsService } from './gastro-discount-metrics.service';
 import type { GastroDiscountStatusUpdate, GastroDiscountSummaryResponse } from '@yo-te-invito/shared';
 
@@ -30,6 +31,7 @@ export class GastroPortalDiscountsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly profiles: ProfilesAuthorizationService,
+    private readonly ownership: GastroOwnershipService,
     private readonly discountMetrics: GastroDiscountMetricsService,
   ) {}
 
@@ -144,42 +146,34 @@ export class GastroPortalDiscountsService {
     }
   }
 
-  private async getOwnedProfile(tenantId: string, userId: string) {
-    const membership = await this.prisma.userGastroMembership.findFirst({
-      where: {
-        tenantId,
-        userId,
-        status: 'ACTIVE',
-        profile: { status: 'ACTIVE' },
-      },
-      include: { profile: true },
-      orderBy: { profile: { updatedAt: 'desc' } },
-    });
-    if (!membership?.profile.publicEventId) {
+  private async getOwnedProfile(
+    tenantId: string,
+    userId: string,
+    profileId?: string,
+  ) {
+    const profile = await this.ownership.getOperationalProfileById(
+      tenantId,
+      userId,
+      profileId,
+    );
+    if (!profile.publicEventId) {
       throw new BadRequestException({
         code: ErrorCode.VALIDATION_FAILED,
         message: 'Configurá tu local gastronómico antes de crear tickets de descuento',
       });
     }
-    return membership.profile;
+    return profile;
   }
 
-  private assertEditableStatus(status: string) {
-    if (
-      !['PENDING_REVIEW', 'COMMISSION_NEGOTIATION', 'ACTIVE', 'APPROVED', 'CANCELLED'].includes(
-        status,
-      )
-    ) {
-      throw new BadRequestException({
-        code: ErrorCode.VALIDATION_FAILED,
-        message: 'Este ticket no puede editarse en su estado actual',
-      });
-    }
-  }
-
-  private async assertOwnDiscount(tenantId: string, userId: string, userRole: string, id: string) {
+  private async assertOwnDiscount(
+    tenantId: string,
+    userId: string,
+    userRole: string,
+    id: string,
+    profileId?: string,
+  ) {
     await this.assertGastroUser(tenantId, userId, userRole);
-    const profile = await this.getOwnedProfile(tenantId, userId);
+    const profile = await this.getOwnedProfile(tenantId, userId, profileId);
     const row = await this.prisma.gastroDiscount.findFirst({
       where: { id, tenantId, gastroProfileId: profile.id },
     });
@@ -202,9 +196,27 @@ export class GastroPortalDiscountsService {
     return { row, profile };
   }
 
-  async listMyDiscounts(tenantId: string, userId: string, userRole: string) {
+  private assertEditableStatus(status: string) {
+    if (
+      !['PENDING_REVIEW', 'COMMISSION_NEGOTIATION', 'ACTIVE', 'APPROVED', 'CANCELLED'].includes(
+        status,
+      )
+    ) {
+      throw new BadRequestException({
+        code: ErrorCode.VALIDATION_FAILED,
+        message: 'Este ticket no puede editarse en su estado actual',
+      });
+    }
+  }
+
+  async listMyDiscounts(
+    tenantId: string,
+    userId: string,
+    userRole: string,
+    profileId?: string,
+  ) {
     await this.assertGastroUser(tenantId, userId, userRole);
-    const profile = await this.getOwnedProfile(tenantId, userId);
+    const profile = await this.getOwnedProfile(tenantId, userId, profileId);
     const or: Prisma.GastroDiscountWhereInput[] = [{ gastroProfileId: profile.id }];
     if (profile.publicEventId) {
       or.push({ eventId: profile.publicEventId });
@@ -216,9 +228,15 @@ export class GastroPortalDiscountsService {
     return { data: rows.map((r) => this.mapDiscount(r)) };
   }
 
-  async getMyDiscount(tenantId: string, userId: string, userRole: string, id: string) {
+  async getMyDiscount(
+    tenantId: string,
+    userId: string,
+    userRole: string,
+    id: string,
+    profileId?: string,
+  ) {
     await this.assertGastroUser(tenantId, userId, userRole);
-    const profile = await this.getOwnedProfile(tenantId, userId);
+    const profile = await this.getOwnedProfile(tenantId, userId, profileId);
     const row = await this.prisma.gastroDiscount.findFirst({
       where: { id, tenantId, gastroProfileId: profile.id },
     });
@@ -236,9 +254,10 @@ export class GastroPortalDiscountsService {
     userId: string,
     userRole: string,
     body: GastroDiscountCreateInput,
+    profileId?: string,
   ) {
     await this.assertGastroUser(tenantId, userId, userRole);
-    const profile = await this.getOwnedProfile(tenantId, userId);
+    const profile = await this.getOwnedProfile(tenantId, userId, profileId);
     const validityMode = body.validityMode ?? 'DATE_RANGE';
     const isWeekly = validityMode === 'WEEKLY_RECURRING';
 
@@ -281,9 +300,10 @@ export class GastroPortalDiscountsService {
     userRole: string,
     id: string,
     body: GastroDiscountUpdateInput,
+    profileId?: string,
   ) {
     await this.assertGastroUser(tenantId, userId, userRole);
-    const profile = await this.getOwnedProfile(tenantId, userId);
+    const profile = await this.getOwnedProfile(tenantId, userId, profileId);
     const existing = await this.prisma.gastroDiscount.findFirst({
       where: { id, tenantId, gastroProfileId: profile.id },
     });
@@ -358,8 +378,9 @@ export class GastroPortalDiscountsService {
     userId: string,
     userRole: string,
     id: string,
+    profileId?: string,
   ): Promise<GastroDiscountSummaryResponse> {
-    await this.assertOwnDiscount(tenantId, userId, userRole, id);
+    await this.assertOwnDiscount(tenantId, userId, userRole, id, profileId);
     return this.discountMetrics.buildSummaryForDiscount(tenantId, id, false);
   }
 
@@ -369,8 +390,15 @@ export class GastroPortalDiscountsService {
     userRole: string,
     id: string,
     body: GastroDiscountStatusUpdate,
+    profileId?: string,
   ): Promise<GastroDiscountSummaryResponse> {
-    const { profile } = await this.assertOwnDiscount(tenantId, userId, userRole, id);
+    const { profile } = await this.assertOwnDiscount(
+      tenantId,
+      userId,
+      userRole,
+      id,
+      profileId,
+    );
     return this.discountMetrics.updateDiscountStatus(tenantId, id, body, {
       id: userId,
       role: userRole,

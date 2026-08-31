@@ -5,6 +5,8 @@ import { useQuery } from '@tanstack/react-query';
 import { GASTRO_WEEKDAY_LABELS_ES, type GastroWeekday } from '@yo-te-invito/shared';
 import { useRepositories } from '@/repositories/context';
 import { PageContainer, SectionTitle } from '@/components';
+import { GastroLocationSelector } from '@/components/gastro/GastroLocationSelector';
+import { useGastroActiveLocation } from '@/lib/gastro/GastroActiveLocationContext';
 import { gastroKeys } from '@/lib/query/keys';
 import { formatGastroDiscountValidityRangeLabel } from '@/lib/gastro/discount-status-ui';
 import type { GastroDiscountStatus } from '@/repositories/interfaces';
@@ -21,15 +23,19 @@ const STATUS_LABEL: Record<GastroDiscountStatus, string> = {
 
 export default function GastroDescuentosPage() {
   const repos = useRepositories();
+  const { profileId } = useGastroActiveLocation();
   const { data, isLoading } = useQuery({
-    queryKey: gastroKeys.discounts(),
-    queryFn: () => repos.gastro.listMyDiscounts(),
+    queryKey: gastroKeys.discounts(profileId),
+    queryFn: () => repos.gastro.listMyDiscounts(profileId),
   });
 
   const discounts = data?.data ?? [];
 
   return (
     <PageContainer>
+      <div className="mb-4">
+        <GastroLocationSelector />
+      </div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <SectionTitle>Tickets de descuento</SectionTitle>
         <div className="flex flex-wrap gap-2">

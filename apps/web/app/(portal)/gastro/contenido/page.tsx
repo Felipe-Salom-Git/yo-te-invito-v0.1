@@ -10,6 +10,8 @@ import type { GastroContent, GastroContentStatus } from '@/repositories/interfac
 import { LatLngMapPreview } from '@/components/admin/LatLngMapPreview';
 import { ImageUrlPreview } from '@/components/admin/ImageUrlPreview';
 import { gastroKeys } from '@/lib/query/keys';
+import { useGastroActiveLocation } from '@/lib/gastro/GastroActiveLocationContext';
+import { GastroLocationSelector } from '@/components/gastro/GastroLocationSelector';
 import { useGastroContentList, useGastroContentMutations } from '@/lib/query/gastro-content';
 import { useRole } from '@/hooks/useRole';
 import { Role } from '@yo-te-invito/shared';
@@ -46,9 +48,11 @@ export default function GastroContenidoPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editPatch, setEditPatch] = useState<Partial<GastroContent>>({});
 
+  const { profileId } = useGastroActiveLocation();
+
   const { data: local, isLoading: localLoading } = useQuery({
-    queryKey: gastroKeys.local(),
-    queryFn: () => repos.gastro.getMyLocal(),
+    queryKey: gastroKeys.local(profileId),
+    queryFn: () => repos.gastro.getMyLocal(profileId),
   });
 
   const { data: eventsData, isLoading: eventsLoading } = useQuery({
@@ -206,6 +210,9 @@ export default function GastroContenidoPage() {
         ← Dashboard
       </Link>
       <SectionTitle>Contenido editorial</SectionTitle>
+      <div className="mt-4 max-w-md">
+        <GastroLocationSelector />
+      </div>
       <p className="mt-2 text-text-muted">
         Bloques de texto e imágenes para la ficha pública. Solo el estado{' '}
         <span className="text-text">Publicado</span> aparece en el sitio.

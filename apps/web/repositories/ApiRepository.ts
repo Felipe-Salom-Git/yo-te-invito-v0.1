@@ -2006,10 +2006,15 @@ export class ApiRepository implements Repositories {
     updateDiscount: async (id: string, patch) => {
       return this.client.patch<GastroDiscount | null>(`/gastro/discounts/${encodeURIComponent(id)}`, patch);
     },
-    getDashboard: async () => this.client.get<GastroDashboardResponse>('/gastro/dashboard'),
+    getDashboard: async (profileId) =>
+      this.client.get<GastroDashboardResponse>(
+        '/gastro/dashboard',
+        profileId ? { profileId } : undefined,
+      ),
     listValidations: async (params) => {
       const query = params
         ? {
+            profileId: params.profileId,
             discountId: params.discountId,
             from: params.from,
             to: params.to,
@@ -2041,8 +2046,11 @@ export class ApiRepository implements Repositories {
         payload,
         profileId ? { profileId } : undefined,
       ),
-    listMyDiscounts: async () =>
-      this.client.get<{ data: GastroPortalDiscount[] }>('/gastro/discounts'),
+    listMyDiscounts: async (profileId) =>
+      this.client.get<{ data: GastroPortalDiscount[] }>(
+        '/gastro/discounts',
+        profileId ? { profileId } : undefined,
+      ),
     getMyDiscount: async (id) =>
       this.client.get<GastroPortalDiscount>(`/gastro/discounts/${encodeURIComponent(id)}`),
     createMyDiscount: async (payload) =>

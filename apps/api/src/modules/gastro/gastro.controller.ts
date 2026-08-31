@@ -50,8 +50,11 @@ export class GastroController {
   ) {}
 
   @Get('dashboard')
-  async getDashboard(@CurrentUser() user: { id: string; tenantId: string; role: string }) {
-    return this.dashboard.getDashboard(user.tenantId, user.id, user.role);
+  async getDashboard(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Query(new ZodValidationPipe(gastroProfileIdQuerySchema)) query: GastroProfileIdQuery,
+  ) {
+    return this.dashboard.getDashboard(user.tenantId, user.id, user.role, query.profileId);
   }
 
   @Get('locations')
@@ -99,8 +102,16 @@ export class GastroController {
   }
 
   @Get('discounts')
-  async listMyDiscounts(@CurrentUser() user: { id: string; tenantId: string; role: string }) {
-    return this.portalDiscounts.listMyDiscounts(user.tenantId, user.id, user.role);
+  async listMyDiscounts(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Query(new ZodValidationPipe(gastroProfileIdQuerySchema)) query: GastroProfileIdQuery,
+  ) {
+    return this.portalDiscounts.listMyDiscounts(
+      user.tenantId,
+      user.id,
+      user.role,
+      query.profileId,
+    );
   }
 
   @Get('discounts/courtesy/recipients-preview')
@@ -135,14 +146,22 @@ export class GastroController {
   async getMyDiscountSummary(
     @CurrentUser() user: { id: string; tenantId: string; role: string },
     @Param('id') id: string,
+    @Query(new ZodValidationPipe(gastroProfileIdQuerySchema)) query: GastroProfileIdQuery,
   ) {
-    return this.portalDiscounts.getDiscountSummary(user.tenantId, user.id, user.role, id);
+    return this.portalDiscounts.getDiscountSummary(
+      user.tenantId,
+      user.id,
+      user.role,
+      id,
+      query.profileId,
+    );
   }
 
   @Patch('discounts/:id/status')
   async updateMyDiscountStatus(
     @CurrentUser() user: { id: string; tenantId: string; role: string },
     @Param('id') id: string,
+    @Query(new ZodValidationPipe(gastroProfileIdQuerySchema)) query: GastroProfileIdQuery,
     @Body(new ZodValidationPipe(gastroDiscountStatusUpdateSchema)) body: GastroDiscountStatusUpdate,
   ) {
     return this.portalDiscounts.updateDiscountStatus(
@@ -151,6 +170,7 @@ export class GastroController {
       user.role,
       id,
       body,
+      query.profileId,
     );
   }
 
@@ -158,25 +178,47 @@ export class GastroController {
   async getMyDiscount(
     @CurrentUser() user: { id: string; tenantId: string; role: string },
     @Param('id') id: string,
+    @Query(new ZodValidationPipe(gastroProfileIdQuerySchema)) query: GastroProfileIdQuery,
   ) {
-    return this.portalDiscounts.getMyDiscount(user.tenantId, user.id, user.role, id);
+    return this.portalDiscounts.getMyDiscount(
+      user.tenantId,
+      user.id,
+      user.role,
+      id,
+      query.profileId,
+    );
   }
 
   @Post('discounts')
   async createMyDiscount(
     @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Query(new ZodValidationPipe(gastroProfileIdQuerySchema)) query: GastroProfileIdQuery,
     @Body(new ZodValidationPipe(gastroDiscountCreateSchema)) body: GastroDiscountCreateInput,
   ) {
-    return this.portalDiscounts.createMyDiscount(user.tenantId, user.id, user.role, body);
+    return this.portalDiscounts.createMyDiscount(
+      user.tenantId,
+      user.id,
+      user.role,
+      body,
+      query.profileId,
+    );
   }
 
   @Patch('discounts/:id')
   async updateMyDiscount(
     @CurrentUser() user: { id: string; tenantId: string; role: string },
     @Param('id') id: string,
+    @Query(new ZodValidationPipe(gastroProfileIdQuerySchema)) query: GastroProfileIdQuery,
     @Body(new ZodValidationPipe(gastroDiscountUpdateSchema)) body: GastroDiscountUpdateInput,
   ) {
-    return this.portalDiscounts.updateMyDiscount(user.tenantId, user.id, user.role, id, body);
+    return this.portalDiscounts.updateMyDiscount(
+      user.tenantId,
+      user.id,
+      user.role,
+      id,
+      body,
+      query.profileId,
+    );
   }
 
   @Get('events/:eventId/content')

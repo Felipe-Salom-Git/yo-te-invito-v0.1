@@ -2463,6 +2463,7 @@ export interface GastroValidationListItem {
 }
 
 export interface GastroValidationListParams {
+  profileId?: string;
   discountId?: string;
   from?: string;
   to?: string;
@@ -2622,7 +2623,7 @@ export interface GastroRepo {
   listDiscounts(eventId: string): Promise<GastroDiscount[]>;
   createDiscount(eventId: string, input: { code: string; type: string; value: number; validFrom?: string; validTo?: string }): Promise<GastroDiscount>;
   updateDiscount(id: string, patch: Partial<GastroDiscount>): Promise<GastroDiscount | null>;
-  getDashboard(): Promise<GastroDashboardResponse>;
+  getDashboard(profileId?: string): Promise<GastroDashboardResponse>;
   listValidations(params?: GastroValidationListParams): Promise<GastroValidationListResponse>;
   recordValidation(discountId: string, userId?: string, orderId?: string): Promise<GastroDiscountValidation>;
   getMyLocal(profileId?: string): Promise<GastroLocal | null>;
@@ -2633,7 +2634,7 @@ export interface GastroRepo {
     payload: Partial<GastroLocalUpsertPayload>,
     profileId?: string,
   ): Promise<GastroLocal>;
-  listMyDiscounts(): Promise<{ data: GastroPortalDiscount[] }>;
+  listMyDiscounts(profileId?: string): Promise<{ data: GastroPortalDiscount[] }>;
   getMyDiscount(id: string): Promise<GastroPortalDiscount>;
   createMyDiscount(payload: GastroDiscountCreatePayload): Promise<GastroPortalDiscount>;
   updateMyDiscount(id: string, payload: Partial<Omit<GastroDiscountCreatePayload, 'commissionCoordinationAccepted'>>): Promise<GastroPortalDiscount>;
