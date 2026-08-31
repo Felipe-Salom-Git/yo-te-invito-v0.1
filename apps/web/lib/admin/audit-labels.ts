@@ -27,6 +27,15 @@ export const AUDIT_ACTION_LABELS: Record<AuditActionValue | string, string> = {
   GASTRO_DISCOUNT_CANCELLED: 'Descuento gastro cancelado',
   GASTRO_DISCOUNT_ACTIVATED: 'Descuento gastro activado',
   GASTRO_DISCOUNT_QR_EMAIL_SENT: 'QR descuento enviado',
+  ACTIVITY_COUPON_CREATED: 'Cupón de Actividades creado',
+  ACTIVITY_COUPON_UPDATED: 'Cupón de Actividades actualizado',
+  ACTIVITY_COUPON_APPROVED: 'Cupón de Actividades aprobado',
+  ACTIVITY_COUPON_REJECTED: 'Cupón de Actividades rechazado',
+  ACTIVITY_COUPON_CANCELLED: 'Cupón de Actividades cancelado',
+  ACTIVITY_COUPON_ARCHIVED: 'Cupón de Actividades archivado',
+  ACTIVITY_COUPON_UNARCHIVED: 'Cupón de Actividades restaurado',
+  ACTIVITY_COUPON_REDEEMED: 'Cupón de Actividades validado',
+  ACTIVITY_COUPON_CLAIMED: 'Cupón de Actividades reclamado',
   REVIEW_DISPUTE_IN_REVIEW: 'Disputa en revisión',
   REVIEW_DISPUTE_ACCEPTED: 'Disputa aceptada',
   REVIEW_DISPUTE_REJECTED: 'Disputa rechazada',
@@ -55,6 +64,8 @@ export const AUDIT_ENTITY_TYPE_OPTIONS = [
   { value: 'Ticket', label: 'Ticket' },
   { value: 'Order', label: 'Orden' },
   { value: 'GastroDiscount', label: 'Descuento gastro' },
+  { value: 'ActivityCoupon', label: 'Cupón de Actividades' },
+  { value: 'ActivityCouponClaim', label: 'Reclamo cupón de Actividades' },
 ];
 
 export function getAuditActionLabel(action: string): string {
