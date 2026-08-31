@@ -9,6 +9,12 @@ type OperationalLink = {
 
 const LINKS: OperationalLink[] = [
   {
+    href: '/admin/liquidaciones/acuerdos',
+    label: 'Liquidaciones',
+    description: 'Acuerdos comerciales por uso validado (Gastro / Activity).',
+    highlight: true,
+  },
+  {
     href: '/admin/campanas',
     label: 'Campañas',
     description: 'Promos por email a usuarios con opt-in. WhatsApp pendiente de proveedor.',

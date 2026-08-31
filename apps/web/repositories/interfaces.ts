@@ -3269,6 +3269,39 @@ export interface AdminCampaignsRepo {
   }): Promise<{ data: Array<{ id: string; title: string; benefit: string | null }>; whatsappConfigured: boolean }>;
 }
 
+export interface AdminBenefitAgreementsRepo {
+  list(query?: {
+    vertical?: string;
+    vigency?: string;
+    gastroProfileId?: string;
+    excursionOperatorId?: string;
+    page?: number;
+    pageSize?: number;
+  }): Promise<import('@yo-te-invito/shared').BenefitCommercialAgreementsListResponse>;
+  get(id: string): Promise<import('@yo-te-invito/shared').BenefitCommercialAgreementDto>;
+  partnerHistory(
+    query: import('@yo-te-invito/shared').BenefitCommercialAgreementPartnerHistoryQuery,
+  ): Promise<import('@yo-te-invito/shared').BenefitCommercialAgreementPartnerHistoryResponse>;
+  create(
+    body: import('@yo-te-invito/shared').CreateBenefitCommercialAgreementBody,
+  ): Promise<import('@yo-te-invito/shared').BenefitCommercialAgreementDto>;
+  close(
+    id: string,
+    body: import('@yo-te-invito/shared').CloseBenefitCommercialAgreementBody,
+  ): Promise<import('@yo-te-invito/shared').BenefitCommercialAgreementDto>;
+  replace(
+    id: string,
+    body: import('@yo-te-invito/shared').ReplaceBenefitCommercialAgreementBody,
+  ): Promise<{
+    closed: import('@yo-te-invito/shared').BenefitCommercialAgreementDto;
+    created: import('@yo-te-invito/shared').BenefitCommercialAgreementDto;
+  }>;
+  updateNotes(
+    id: string,
+    body: import('@yo-te-invito/shared').UpdateBenefitCommercialAgreementNotesBody,
+  ): Promise<import('@yo-te-invito/shared').BenefitCommercialAgreementDto>;
+}
+
 export interface Repositories {
   auth: AuthRepo;
   uploads: UploadsRepo;
@@ -3310,6 +3343,7 @@ export interface Repositories {
   adminDeepDelete: AdminDeepDeleteRepo;
   adminPayments: AdminPaymentsRepo;
   adminCampaigns: AdminCampaignsRepo;
+  adminBenefitAgreements: AdminBenefitAgreementsRepo;
   legalDocuments: LegalDocumentsRepo;
   producerDashboard: ProducerDashboardRepo;
   producers: ProducersRepo;

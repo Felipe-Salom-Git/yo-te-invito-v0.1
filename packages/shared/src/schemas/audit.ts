@@ -70,6 +70,10 @@ export const auditActionSchema = z.enum([
   'TICKET_DATE_CHANGE_REJECTED',
   'TICKET_DATE_CHANGE_APPLIED',
   'GEO_ADDRESS_RESOLVED',
+  'BENEFIT_AGREEMENT_CREATED',
+  'BENEFIT_AGREEMENT_CLOSED',
+  'BENEFIT_AGREEMENT_REPLACED',
+  'BENEFIT_AGREEMENT_NOTES_UPDATED',
 ]);
 export type AuditActionValue = z.infer<typeof auditActionSchema>;
 

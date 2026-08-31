@@ -1665,6 +1665,27 @@ export class ApiRepository implements Repositories {
       this.client.get('/admin/campaigns/content-picker', query),
   };
 
+  adminBenefitAgreements: import('./interfaces').AdminBenefitAgreementsRepo = {
+    list: async (query) =>
+      this.client.get(
+        '/admin/benefit-agreements',
+        query as Record<string, string | number | boolean | undefined>,
+      ),
+    get: async (id) => this.client.get(`/admin/benefit-agreements/${encodeURIComponent(id)}`),
+    partnerHistory: async (query) =>
+      this.client.get(
+        '/admin/benefit-agreements/partner-history',
+        query as Record<string, string | number | boolean | undefined>,
+      ),
+    create: async (body) => this.client.post('/admin/benefit-agreements', body),
+    close: async (id, body) =>
+      this.client.post(`/admin/benefit-agreements/${encodeURIComponent(id)}/close`, body),
+    replace: async (id, body) =>
+      this.client.post(`/admin/benefit-agreements/${encodeURIComponent(id)}/replace`, body),
+    updateNotes: async (id, body) =>
+      this.client.patch(`/admin/benefit-agreements/${encodeURIComponent(id)}`, body),
+  };
+
   adminUsers: import('./interfaces').AdminUsersRepo = {
     list: async (query) => {
       return this.client.get<import('./interfaces').AdminUsersListResponse>(

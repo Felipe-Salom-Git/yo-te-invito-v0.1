@@ -272,6 +272,7 @@ model Tenant {
   adminCampaigns                AdminCampaign[]
   adminCampaignDeliveries       AdminCampaignDelivery[]
   adminOperationalDigestLogs    AdminOperationalDigestLog[]
+  benefitCommercialAgreements   BenefitCommercialAgreement[]
 }
 
 model RentalLocation {
@@ -328,6 +329,7 @@ model ExcursionOperator {
   tenant     Tenant  @relation(fields: [tenantId], references: [id])
   excursions Event[]
   activityCoupons ActivityCoupon[]
+  benefitCommercialAgreements BenefitCommercialAgreement[]
 
   @@index([tenantId])
   @@index([tenantId, isActive])
@@ -422,6 +424,7 @@ model GastroProfile {
   followers       UserGastroFollow[]
   contentItems    GastroContent[]
   courtesyCampaigns GastroCourtesyCampaign[]
+  benefitCommercialAgreements BenefitCommercialAgreement[]
 
   @@index([tenantId])
   @@index([tenantId, status])
@@ -822,6 +825,7 @@ model User {
   ticketDateChangeReviews       TicketDateChangeRequest[] @relation("TicketDateChangeReviewer")
   marketingPreference           UserMarketingPreference?
   adminCampaignsCreated         AdminCampaign[]         @relation("AdminCampaignCreator")
+  benefitCommercialAgreementsCreated BenefitCommercialAgreement[] @relation("BenefitAgreementCreator")
   adminCampaignDeliveries       AdminCampaignDelivery[] @relation("AdminCampaignDeliveryRecipient")
   adminOperationalDigestLogs    AdminOperationalDigestLog[] @relation("AdminOperationalDigestRecipient")
 
@@ -850,6 +854,38 @@ model UserMarketingPreference {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([tenantId, emailOptIn])
+}
+
+enum BenefitVertical {
+  GASTRO
+  ACTIVITY
+}
+
+/// Commercial fee per validated benefit usage (Gastro / Activity). Immutable economic terms after create.
+model BenefitCommercialAgreement {
+  id                  String          @id @default(cuid())
+  tenantId            String
+  vertical            BenefitVertical
+  gastroProfileId     String?
+  excursionOperatorId String?
+  unitPriceCents      BigInt
+  barterMultiplier    Decimal         @db.Decimal(8, 4)
+  currency            String          @default("ARS")
+  validFrom           DateTime
+  validTo             DateTime?
+  notes               String?
+  createdByUserId     String?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  tenant            Tenant             @relation(fields: [tenantId], references: [id])
+  gastroProfile     GastroProfile?     @relation(fields: [gastroProfileId], references: [id], onDelete: Restrict)
+  excursionOperator ExcursionOperator? @relation(fields: [excursionOperatorId], references: [id], onDelete: Restrict)
+  createdBy         User?              @relation("BenefitAgreementCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, vertical, gastroProfileId])
+  @@index([tenantId, vertical, excursionOperatorId])
+  @@index([tenantId, validFrom, validTo])
 }
 
 enum AdminCampaignStatus {
@@ -2289,6 +2325,10 @@ enum AuditAction {
   CAMPAIGN_CANCELLED
   CAMPAIGN_COMPLETED
   CAMPAIGN_ARCHIVED
+  BENEFIT_AGREEMENT_CREATED
+  BENEFIT_AGREEMENT_CLOSED
+  BENEFIT_AGREEMENT_REPLACED
+  BENEFIT_AGREEMENT_NOTES_UPDATED
 }
 
 /// Scanner user bound to one parent commercial account (tenant-scoped).

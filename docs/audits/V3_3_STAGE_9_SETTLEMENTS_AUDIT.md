@@ -503,3 +503,61 @@ Separar en migraciones lógicas (no una sola gigante):
 ---
 
 **STOP slice 9.0** — siguiente paso: slice 9.1 agreements (no iniciar en este commit).
+
+---
+
+## 23. Slice 9.1 implementation decisions
+
+**Fecha:** 2026-08-31  
+**Commit:** `feat(v3.3): add benefit commercial agreements`
+
+### Money representation (final)
+
+| Layer | Tipo |
+|-------|------|
+| Prisma (nuevo dominio) | `unitPriceCents BigInt` |
+| API / JSON | `string` (`moneyCentsStringSchema`) |
+| Zod input | string dígitos positivos (`benefitUnitPriceCentsInputSchema`) |
+| `barterMultiplier` | Prisma `Decimal(8,4)`; API string |
+| Crédito futuro | `roundBarterCreditCents(unitPriceCents: bigint, multiplier: string)` en `packages/shared/src/money/benefit-money.ts` |
+
+**No** migrar `Payment` / `Payout` / `ReferralCommission` (siguen `Int`).  
+**No** floats JS como fuente de verdad.  
+Test explícito: valores `> 2_147_483_647` cents (ej. `3000000000`).
+
+### Partner FK strategy (final)
+
+FKs reales (no `partnerId` polimórfico):
+
+```
+vertical = GASTRO     → gastroProfileId (required), excursionOperatorId = null
+vertical = ACTIVITY   → excursionOperatorId (required), gastroProfileId = null
+```
+
+- `onDelete: Restrict` en partners (no cascade económico).
+- `createdByUserId` → `SetNull`.
+- Validación XOR en Zod + service.
+
+### Agreement dates
+
+- `validFrom` / `validTo`: **inclusive-inclusive** en calendario AR (`BENEFIT_AGREEMENT_DATE_BOUNDARY`).
+- Storage: `gastroDiscountStartOfDay` / `gastroDiscountEndOfDay` (America/Argentina/Buenos_Aires).
+- Overlap rechazado en service para mismo tenant+vertical+partner.
+- Términos económicos **inmutables** tras create; solo `notes` editable; cambio tarifa vía `close` o `replace`.
+
+### Eligibility nuevos acuerdos
+
+- Gastro: `GastroProfile.status = ACTIVE`, mismo tenant.
+- Activity: `ExcursionOperator.isActive = true`, `deletedAt = null`, mismo tenant.
+
+### API Admin
+
+`GET/POST /admin/benefit-agreements`, `GET partner-history`, `POST :id/close`, `POST :id/replace`, `PATCH :id` (notes).
+
+### UI Admin
+
+`/admin/liquidaciones/acuerdos`, `/admin/liquidaciones/acuerdos/nuevo`.
+
+---
+
+**STOP slice 9.1** — siguiente paso: slice 9.2 settlement domain.

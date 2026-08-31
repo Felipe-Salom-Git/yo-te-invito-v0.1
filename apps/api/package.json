@@ -44,6 +44,7 @@
     "test:admin-campaign-domain": "tsx scripts/test-admin-campaign-domain.util.ts",
     "test:admin-campaign-delivery": "tsx scripts/test-admin-campaign-delivery.util.ts",
     "test:admin-expired-benefits-digest": "tsx scripts/test-admin-expired-benefits-digest.util.ts",
+    "test:benefit-commercial-agreements": "tsx scripts/test-benefit-commercial-agreements.util.ts",
     "test:scanner-manual-short-code": "tsx scripts/test-scanner-manual-short-code.util.ts",
     "test:scanner-username-auth": "tsx scripts/test-scanner-username-auth.util.ts",
     "test:gastro-multi-local": "tsx scripts/test-gastro-multi-local.util.ts",

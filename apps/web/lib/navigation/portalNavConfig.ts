@@ -46,6 +46,7 @@ export const PORTAL_NAV_BY_KEY: Record<PortalNavKey, PortalNavDefinition> = {
     items: [
       { href: '/admin', label: 'Dashboard' },
       { href: '/admin/campanas', label: 'Campañas' },
+      { href: '/admin/liquidaciones/acuerdos', label: 'Liquidaciones' },
       { href: '/admin/eventos', label: 'Eventos' },
       { href: '/admin/auditoria', label: 'Auditoría' },
       { href: '/admin/pagos', label: 'Pagos' },

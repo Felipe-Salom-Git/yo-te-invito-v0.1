@@ -32,6 +32,7 @@ import { GeoModule } from './modules/geo/geo.module';
 import { ActivityCouponsModule } from './modules/activity-coupons/activity-coupons.module';
 import { MarketingPreferencesModule } from './modules/marketing-preferences/marketing-preferences.module';
 import { AdminCampaignsModule } from './modules/admin-campaigns/admin-campaigns.module';
+import { BenefitAgreementsModule } from './modules/benefit-agreements/benefit-agreements.module';
 
 @Module({
   imports: [
@@ -68,6 +69,7 @@ import { AdminCampaignsModule } from './modules/admin-campaigns/admin-campaigns.
     ActivityCouponsModule,
     MarketingPreferencesModule,
     AdminCampaignsModule,
+    BenefitAgreementsModule,
   ],
 })
 export class AppModule {}
