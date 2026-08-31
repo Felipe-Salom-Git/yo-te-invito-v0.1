@@ -645,6 +645,21 @@ export class ApiRepository implements Repositories {
         `/admin/excursion-operators/${encodeURIComponent(operatorId)}/activity-coupons/${encodeURIComponent(couponId)}/reject`,
         { reason },
       ),
+    listPublicByEvent: async (tenantId, eventId) =>
+      this.client.get('/public/activity-coupons/by-event', { tenantId, eventId }),
+    getPublic: async (tenantId, id) =>
+      this.client.get(`/public/activity-coupons/${encodeURIComponent(id)}`, { tenantId }),
+    claimPublic: async (tenantId, id, email) =>
+      this.client.post(`/public/activity-coupons/${encodeURIComponent(id)}/claim`, {
+        tenantId,
+        email,
+      }),
+    getPublicClaim: async (tenantId, claimId, accessToken) =>
+      this.client.get(`/public/activity-coupons/claims/${encodeURIComponent(claimId)}`, {
+        tenantId,
+        ...(accessToken ? { accessToken } : {}),
+      }),
+    listMine: async () => this.client.get('/me/activity-coupons'),
   };
 
   categoryBanners: CategoryBannersRepo = {

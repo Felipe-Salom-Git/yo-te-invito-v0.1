@@ -15,11 +15,13 @@ import { MeExpectedEventsController } from './me-expected-events.controller';
 import { MeTicketTransferController } from './me-ticket-transfer.controller';
 import { MeTicketDateChangeController } from './me-ticket-date-change.controller';
 import { TicketsModule } from '../tickets/tickets.module';
+import { ActivityCouponsModule } from '../activity-coupons/activity-coupons.module';
 import { MeNotificationsController } from './me-notifications.controller';
 import { MeProducerFollowsController } from './me-producer-follows.controller';
 import { MeGastroFollowsController } from './me-gastro-follows.controller';
 import { MePushSubscriptionsController } from './me-push-subscriptions.controller';
 import { MeGastroDiscountsController } from './me-gastro-discounts.controller';
+import { MeActivityCouponsController } from './me-activity-coupons.controller';
 import { MeRecommendationsController } from './me-recommendations.controller';
 import { MeLegalController } from './me-legal.controller';
 import { MeService } from './me.service';
@@ -46,6 +48,7 @@ import { MeRecommendationsService } from './me-recommendations.service';
     NotificationsModule,
     LegalModule,
     TicketsModule,
+    ActivityCouponsModule,
   ],
   controllers: [
     MeController,
@@ -60,6 +63,7 @@ import { MeRecommendationsService } from './me-recommendations.service';
     MeProducerFollowsController,
     MeGastroFollowsController,
     MeGastroDiscountsController,
+    MeActivityCouponsController,
     MePushSubscriptionsController,
     MeRecommendationsController,
   ],

@@ -258,3 +258,46 @@ export const activityCouponListResponseSchema = z.object({
   data: z.array(activityCouponResponseSchema),
 });
 export type ActivityCouponListResponse = z.infer<typeof activityCouponListResponseSchema>;
+
+export const activityCouponPublicClaimBodySchema = z
+  .object({
+    tenantId: z.string().min(1),
+    email: z.string().email().max(320),
+  })
+  .strict();
+export type ActivityCouponPublicClaimBody = z.infer<typeof activityCouponPublicClaimBodySchema>;
+
+export const activityCouponClaimViewQuerySchema = z
+  .object({
+    tenantId: z.string().min(1),
+    accessToken: z.string().min(1).optional(),
+  })
+  .strict();
+
+export const activityCouponClaimViewSchema = z.object({
+  claimId: z.string(),
+  accessToken: z.string(),
+  email: z.string().email(),
+  emailSent: z.boolean().optional(),
+  qrPayload: z.string(),
+  shortCode: z.string(),
+  shortCodeDisplay: z.string(),
+  status: activityCouponClaimStatusSchema,
+  coupon: activityCouponResponseSchema,
+  eventTitle: z.string().nullable(),
+  operatorName: z.string().nullable(),
+  validTo: z.string().datetime().nullable(),
+});
+export type ActivityCouponClaimView = z.infer<typeof activityCouponClaimViewSchema>;
+
+export const meActivityCouponItemSchema = activityCouponClaimViewSchema;
+export type MeActivityCouponItem = ActivityCouponClaimView;
+
+export const meActivityCouponListResponseSchema = z.object({
+  data: z.array(meActivityCouponItemSchema),
+});
+export type MeActivityCouponListResponse = z.infer<typeof meActivityCouponListResponseSchema>;
+
+export function isActivityCouponClaimActive(status: string): boolean {
+  return status === 'ACTIVE';
+}

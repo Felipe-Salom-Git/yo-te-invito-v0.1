@@ -10,18 +10,26 @@ import {
   canUnarchiveActivityCoupon,
   ErrorCode,
   formatCouponVisualBenefit,
+  formatManualShortCodeDisplay,
+  getGastroWeekdayLabelEs,
   initialStatusForActivityCouponOrigin,
   activityCouponBelongsToOperator,
+  buildActivityCouponQrPayload,
+  isActivityCouponClaimActive,
   isEventCategoryEligibleForActivityCoupon,
   isGastroDiscountDateRangeOrderValid,
+  isGastroDiscountValidToday,
   normalizeGastroDiscountExpiryDate,
   normalizeGastroDiscountValidFromDate,
+  type ActivityCouponClaimView,
   type ActivityCouponCreateInput,
   type ActivityCouponResponse,
   type ActivityCouponUpdateInput,
+  type GastroWeekday as SharedWeekday,
 } from '@yo-te-invito/shared';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
+import { allocateActivityCouponClaimShortCode } from '../../common/activity-claim-short-code.util';
 
 const couponInclude = {
   event: { select: { id: true, title: true, category: true, deletedAt: true } },
@@ -509,5 +517,191 @@ export class ActivityCouponsService {
       });
     }
     return row;
+  }
+
+  private toClaimView(claim: {
+    id: string;
+    accessToken: string;
+    email: string;
+    qrToken: string;
+    shortCode: string;
+    status: string;
+    expiresAt: Date | null;
+    coupon: CouponRow;
+  }): ActivityCouponClaimView {
+    const coupon = this.toResponse(claim.coupon);
+    return {
+      claimId: claim.id,
+      accessToken: claim.accessToken,
+      email: claim.email,
+      qrPayload: buildActivityCouponQrPayload(claim.coupon.id, claim.qrToken),
+      shortCode: claim.shortCode,
+      shortCodeDisplay: formatManualShortCodeDisplay(claim.shortCode),
+      status: claim.status as ActivityCouponClaimView['status'],
+      coupon,
+      eventTitle: coupon.eventTitle ?? null,
+      operatorName: coupon.operatorName ?? null,
+      validTo: claim.expiresAt?.toISOString() ?? coupon.validTo,
+    };
+  }
+
+  async claimPublic(
+    tenantId: string,
+    couponId: string,
+    email: string,
+    userId?: string | null,
+    actorRole = 'GUEST',
+    actorId?: string,
+  ): Promise<ActivityCouponClaimView & { emailSent: boolean; message: string }> {
+    let normalizedEmail = email.trim().toLowerCase();
+    if (userId) {
+      const user = await this.prisma.user.findFirst({
+        where: { id: userId, tenantId, deletedAt: null },
+        select: { email: true },
+      });
+      if (user?.email) normalizedEmail = user.email.trim().toLowerCase();
+    }
+    if (!normalizedEmail) {
+      throw new BadRequestException({
+        code: ErrorCode.VALIDATION_FAILED,
+        message: 'Necesitamos un email para emitir el cupón',
+      });
+    }
+
+    const coupon = await this.prisma.activityCoupon.findFirst({
+      where: {
+        id: couponId,
+        tenantId,
+        archivedAt: null,
+        status: { in: ['ACTIVE', 'APPROVED'] },
+      },
+      include: couponInclude,
+    });
+    if (!coupon || !isEventCategoryEligibleForActivityCoupon(coupon.event.category)) {
+      throw new NotFoundException({
+        code: ErrorCode.NOT_FOUND,
+        message: 'Cupón no encontrado',
+      });
+    }
+
+    const todayCheck = isGastroDiscountValidToday({
+      validityMode: coupon.validityMode,
+      validWeekday: coupon.validWeekday as SharedWeekday | null,
+      validFrom: coupon.validFrom,
+      validTo: coupon.validTo,
+      discountDate: coupon.couponDate,
+      status: coupon.status,
+    });
+    if (!todayCheck.valid) {
+      if (todayCheck.reason === 'EXPIRED') {
+        throw new BadRequestException({
+          code: ErrorCode.VALIDATION_FAILED,
+          message: 'La vigencia de este cupón ya finalizó.',
+        });
+      }
+      if (todayCheck.reason === 'NOT_VALID_TODAY' && coupon.validWeekday) {
+        throw new BadRequestException({
+          code: ErrorCode.VALIDATION_FAILED,
+          message: `Este cupón solo es válido los ${getGastroWeekdayLabelEs(coupon.validWeekday as SharedWeekday)}.`,
+        });
+      }
+      throw new BadRequestException({
+        code: ErrorCode.VALIDATION_FAILED,
+        message: 'Este cupón aún no está disponible para reclamar.',
+      });
+    }
+
+    const existing = await this.prisma.activityCouponClaim.findUnique({
+      where: { couponId_email: { couponId, email: normalizedEmail } },
+    });
+    const rawExpires = coupon.validTo ?? coupon.couponDate ?? null;
+    const expiresAt = rawExpires ? normalizeGastroDiscountExpiryDate(rawExpires) : null;
+
+    if (existing && isActivityCouponClaimActive(existing.status)) {
+      return {
+        ...this.toClaimView({ ...existing, coupon }),
+        emailSent: false,
+        message: 'Ya tenés este cupón. Podés verlo en Mi cuenta.',
+      };
+    }
+    if (existing) {
+      throw new BadRequestException({
+        code: ErrorCode.VALIDATION_FAILED,
+        message: 'Ya tenés un QR para este cupón que no está activo',
+      });
+    }
+
+    const claim = await this.prisma.activityCouponClaim.create({
+      data: {
+        tenantId,
+        couponId,
+        email: normalizedEmail,
+        userId: userId ?? null,
+        qrToken: randomBytes(24).toString('hex'),
+        accessToken: randomBytes(32).toString('hex'),
+        shortCode: await allocateActivityCouponClaimShortCode(this.prisma),
+        status: 'ACTIVE',
+        expiresAt,
+      },
+    });
+    await this.audit.logAction({
+      tenantId,
+      actorId: actorId ?? userId ?? 'anonymous',
+      actorRole,
+      action: 'ACTIVITY_COUPON_CREATED',
+      entityType: 'ActivityCouponClaim',
+      entityId: claim.id,
+      metadata: { couponId, email: normalizedEmail },
+    });
+    return {
+      ...this.toClaimView({ ...claim, coupon }),
+      emailSent: false,
+      message: 'Cupón reclamado. Guardalo en Mi cuenta y presentá el QR o el código corto.',
+    };
+  }
+
+  async getPublicClaim(
+    tenantId: string,
+    claimId: string,
+    accessToken?: string,
+  ): Promise<ActivityCouponClaimView> {
+    const claim = await this.prisma.activityCouponClaim.findFirst({
+      where: { id: claimId, tenantId },
+      include: { coupon: { include: couponInclude } },
+    });
+    if (!claim || (accessToken && claim.accessToken !== accessToken)) {
+      throw new NotFoundException({
+        code: ErrorCode.NOT_FOUND,
+        message: 'Reclamo no encontrado',
+      });
+    }
+    if (!isEventCategoryEligibleForActivityCoupon(claim.coupon.event.category)) {
+      throw new NotFoundException({
+        code: ErrorCode.NOT_FOUND,
+        message: 'Reclamo no encontrado',
+      });
+    }
+    return this.toClaimView(claim);
+  }
+
+  async listMine(tenantId: string, userId: string): Promise<{ data: ActivityCouponClaimView[] }> {
+    const user = await this.prisma.user.findFirst({
+      where: { id: userId, tenantId, deletedAt: null },
+      select: { email: true },
+    });
+    if (!user) return { data: [] };
+    const normalizedEmail = user.email?.trim().toLowerCase();
+    const claimOr: Array<{ userId: string } | { email: string }> = [{ userId }];
+    if (normalizedEmail) claimOr.push({ email: normalizedEmail });
+    const claims = await this.prisma.activityCouponClaim.findMany({
+      where: { tenantId, OR: claimOr },
+      include: { coupon: { include: couponInclude } },
+      orderBy: { createdAt: 'desc' },
+    });
+    return {
+      data: claims
+        .filter((c) => isEventCategoryEligibleForActivityCoupon(c.coupon.event.category))
+        .map((c) => this.toClaimView(c)),
+    };
   }
 }

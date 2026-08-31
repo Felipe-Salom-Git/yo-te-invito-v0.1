@@ -368,6 +368,25 @@ export interface ActivityCouponsRepo {
     couponId: string,
     reason: string,
   ): Promise<import('@yo-te-invito/shared').ActivityCouponResponse>;
+  listPublicByEvent(
+    tenantId: string,
+    eventId: string,
+  ): Promise<import('@yo-te-invito/shared').ActivityCouponListResponse>;
+  getPublic(
+    tenantId: string,
+    id: string,
+  ): Promise<import('@yo-te-invito/shared').ActivityCouponResponse>;
+  claimPublic(
+    tenantId: string,
+    id: string,
+    email: string,
+  ): Promise<import('@yo-te-invito/shared').ActivityCouponClaimView>;
+  getPublicClaim(
+    tenantId: string,
+    claimId: string,
+    accessToken?: string,
+  ): Promise<import('@yo-te-invito/shared').ActivityCouponClaimView>;
+  listMine(): Promise<import('@yo-te-invito/shared').MeActivityCouponListResponse>;
 }
 
 export interface CategoryBannerResolvedItem {
