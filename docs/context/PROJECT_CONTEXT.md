@@ -145,6 +145,7 @@ Bloque **Descubrimiento público** cerrado en checklist V2. Detalle: `docs/audit
 | Etapa 3 — Scanner V3 | Código implementado (`b05bdff`…`198fc38`); migración DB smoke + QA manual pendientes |
 | Etapa 4 — Gastro Multi-local + Approval | Código implementado (`612fd2d`…`ea79aa6`); QA manual + DB smoke pendientes |
 | Etapa 5 — Descuentos Gastro V3 | Código implementado (`a757c76`…`c91c205`); QA manual + DB smoke pendientes |
+| Etapa 6 — QR Studio | Código implementado (`4f3b07f`…`de4e07d`); QA manual + DB smoke pendientes |
 | Checklist V3.3 | `docs/dev/Yo_Te_Invito_Checklist_V3_3_Funcional_Operativa.md` |
 | Cierre técnico Etapa 1 | `docs/audits/V3_3_STAGE_1_PUBLIC_MOBILE_CLOSING.md` |
 | Cierre técnico Etapa 2 | `docs/audits/V3_3_STAGE_2_USER_AVATAR_CLOSING.md` |
@@ -153,6 +154,8 @@ Bloque **Descubrimiento público** cerrado en checklist V2. Detalle: `docs/audit
 | Arquitectura Etapa 4 | `docs/audits/V3_3_STAGE_4_GASTRO_MULTI_LOCAL_ARCHITECTURE.md` |
 | Auditoría Etapa 5 | `docs/audits/V3_3_STAGE_5_GASTRO_DISCOUNTS_AUDIT.md` |
 | Cierre técnico Etapa 5 | `docs/audits/V3_3_STAGE_5_GASTRO_DISCOUNTS_CLOSING.md` |
+| Auditoría Etapa 6 | `docs/audits/V3_3_STAGE_6_QR_STUDIO_AUDIT.md` |
+| Cierre técnico Etapa 6 | `docs/audits/V3_3_STAGE_6_QR_STUDIO_CLOSING.md` |
 | Auth Scanner username | `docs/audits/V3_3_SCANNER_USERNAME_AUTH.md` |
 
 **Decisiones Etapa 1:** rails subcategoría **≥5** (sin autoplay); cards descuento → ficha gastro; `/descuentos/[id]` conservada; OG descuentos; nav mobile Home+Explore; modales centrados; copy público **Actividades** con clave técnica **`excursion`** (`Event.category`, rutas `/excursiones`, API sin cambios).
@@ -165,7 +168,9 @@ Bloque **Descubrimiento público** cerrado en checklist V2. Detalle: `docs/audit
 
 **Etapa 5 — Descuentos Gastro V3:** descuento publicado `ACTIVE`/`APPROVED` + `pendingUpdate` opcional (sin versionado extra); edición material (incl. `type`/`value`) requiere re-aprobación sin bajar el publicado; soft archive `archivedAt`; expiry scheduler (`GastroDiscountExpiryService`, cron ON salvo flag `false`); admin create on-behalf (`POST /admin/gastronomicos/:profileId/descuentos`, `createdByOrigin=ADMIN`, status `ACTIVE`); notificaciones lifecycle descuento + perfil; ownership multi-local de Etapa 4 intacta. Migración `20260831140000_gastro_discount_v3_lifecycle` — smoke DB pendiente. Digest admin de vencidos → **Etapa 8**.
 
-**Próxima:** Etapa 6 — QR Studio.
+**Etapa 6 — QR Studio:** diseño visual del cupón QR separado de tickets. `GastroDiscount` → 0..1 `GastroDiscountTemplate` (Prisma propio; no `TicketTemplate`). Renderer `DiscountTemplateRenderer` + fallback `GastroDiscountQrCard`. Bindings canónicos obligatorios y visibles: QR + `discountValue` + `discountTitle` + `shortCode`. Presets JSON (Clásico/Minimal/Premium/Promoción). Studio `/gastro/descuentos/[id]/qr-studio`. Editar el diseño **no** toca `pendingUpdate`. Migración `20260831150000_gastro_discount_visual_template` — smoke DB pendiente.
+
+**Próxima:** Etapa 7 — Actividades + Cupones.
 
 ## 5a. Registro y onboarding por tipo de usuario — Estado cerrado (2026-05-24)
 

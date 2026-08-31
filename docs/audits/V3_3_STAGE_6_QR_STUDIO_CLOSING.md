@@ -2,10 +2,10 @@
 
 **Fecha:** 2026-08-31  
 **Branch:** `feat/v1-s03-api-foundation`  
-**HEAD al cierre de código:** `feb6d1b` (`feat(v3.3): add qr studio presets and admin preview`)  
+**HEAD al cierre de código:** `de4e07d` (`fix(v3.3): harden gastro qr studio canonical content`)  
 **Auditoría:** [`V3_3_STAGE_6_QR_STUDIO_AUDIT.md`](./V3_3_STAGE_6_QR_STUDIO_AUDIT.md)
 
-Contextos globales (`AI_ENTRYPOINT.md`, `NEXT_CHAT_HANDOFF.md`, `PROJECT_CONTEXT.md`, `BACKEND_CONTEXT.md`, `FRONTEND_CONTEXT.md`, `CONTEXT_PENDIENTES.md`) y checklist V3.3 **no** se actualizan en este cierre. Pendiente revisión humana.
+Contextos globales y checklist V3.3 se actualizan en el commit documental `docs(v3.3): close gastro qr studio context`.
 
 ---
 
@@ -56,7 +56,7 @@ Renderer de cupón: `DiscountTemplateRenderer` (helpers de ticket: `ticketTextSh
 | 6.5 | Integración claim `/me/descuentos` + reclamo público | ✅ | `47a9357` |
 | 6.6 | Presets en UI (ya en 6.1) + preview Admin | ✅ | `feb6d1b` |
 | 6.7 | Hardening / cierre técnico | ✅ | `b3a0905` |
-| 6.7b | Hardening campos canónicos visibles | ✅ | (commit `fix(v3.3): harden gastro qr studio canonical content`) |
+| 6.7b | Hardening campos canónicos visibles | ✅ | `de4e07d` |
 
 Copy desde otro descuento del mismo perfil: **diferido**.
 
@@ -362,17 +362,18 @@ c228827 refactor(v3.3): extract reusable visual template primitives
 47a9357 feat(v3.3): use discount templates in qr claims
 feb6d1b feat(v3.3): add qr studio presets and admin preview
 b3a0905 docs(v3.3): close gastro qr studio stage
+de4e07d fix(v3.3): harden gastro qr studio canonical content
 ```
 
-(más el commit de hardening canónico de este pre-cierre)
+Contextos globales y checklist V3.3 se actualizan en el commit documental: `docs(v3.3): close gastro qr studio context`.
 
 ---
 
-## 21. Git al cierre documental
+## 21. Git al cierre de código (pre-contexto)
 
 ```
 branch = feat/v1-s03-api-foundation
-NO PUSH
+HEAD código = de4e07d
 ```
 
-Working tree esperado: clean tras el commit de este archivo.
+Push del cierre documental: `git push origin feat/v1-s03-api-foundation`.

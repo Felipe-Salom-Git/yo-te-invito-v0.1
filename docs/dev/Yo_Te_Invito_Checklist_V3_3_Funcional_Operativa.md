@@ -266,8 +266,17 @@
 ## D — Editor visual QR descuentos
 
 - [x] Base existente — Ticket Canvas Studio (`TicketTemplate`, QR zone JSON)
-- [ ] Mejora V3.3 — Editor plantilla visual para descuentos QR
-- [ ] Mejora V3.3 — Modelo/config persistencia plantilla descuento
+- [x] Mejora V3.3 — Editor plantilla visual para descuentos QR
+- [x] Mejora V3.3 — Modelo/config persistencia plantilla descuento
+- [x] Mejora V3.3 — QR dinámico seguro (payload/token inmutables; zona QR min 0.18)
+- [x] Mejora V3.3 — Short code dinámico (`GastroDiscountClaim.shortCode`; Studio placeholder)
+- [x] Mejora V3.3 — Benefit/title canónicos (`discountValue` / `discountTitle` obligatorios y visibles)
+- [x] Mejora V3.3 — Presets (Clásico / Minimal / Premium / Promoción)
+- [x] Mejora V3.3 — Fallback `GastroDiscountQrCard`
+- [x] Mejora V3.3 — Integración `/me/descuentos` + reclamo público
+- [x] Mejora V3.3 — Admin preview
+- [ ] QA manual global V3.3
+- [ ] DB smoke / migración `20260831150000_gastro_discount_visual_template`
 
 ---
 
@@ -358,3 +367,37 @@ Acumulado cierre global. Incluir:
 - [ ] Nullable email
 - [ ] Mobile
 - [ ] Desktop
+
+---
+
+## QA manual global V3.3 — Etapa 6 (pendiente, no ejecutar ahora)
+
+Acumulado cierre global. Incluir:
+
+- [ ] Crear diseño
+- [ ] Guardar
+- [ ] Reload
+- [ ] Editar
+- [ ] Reset
+- [ ] Preset Clásico
+- [ ] Preset Minimal
+- [ ] Preset Premium
+- [ ] Preset Promoción
+- [ ] Background
+- [ ] Logo
+- [ ] Texto libre
+- [ ] discountTitle
+- [ ] discountValue
+- [ ] Vigencia
+- [ ] shortCode
+- [ ] QR
+- [ ] Claim viejo
+- [ ] Claim nuevo
+- [ ] Fallback
+- [ ] Template inválido
+- [ ] Print browser
+- [ ] Scanner físico
+- [ ] Mobile preview
+- [ ] Multi-local
+- [ ] Cross-profile
+- [ ] Admin preview

@@ -15,7 +15,7 @@ Read this file **before generating or modifying code**.
 | **No commitear secretos** | `.env` local; usar `.env.example` |
 | **Rama Getnet activa** | `feat/v1-s03-api-foundation` — **no** `development` (eliminada); **no** tocar `main` salvo instrucción explícita |
 | **V3.2 discovery** | Código cerrado (slices 0–11); QA manual pendiente — [`V3_2_QA_CLOSING.md`](../audits/V3_2_QA_CLOSING.md). Event/Gastro `comingSoon`; preview por rol en `category-availability.ts`. Hotfixes 2026-08: cache HTML, roles owners, auth resend, horarios overnight — ver § Hotfixes V3.2. |
-| **V3.3 funcional/operativa** | **Activa** — Etapa 0 auditoría cerrada; **Etapas 1–5** implementadas (UX pública/mobile, Avatar, Scanner V3, Gastro Multi-local + Approval, Descuentos Gastro V3); QA manual/integración acumulado pendiente — [`V3_3_STAGE_1_PUBLIC_MOBILE_CLOSING.md`](../audits/V3_3_STAGE_1_PUBLIC_MOBILE_CLOSING.md), [`V3_3_STAGE_2_USER_AVATAR_CLOSING.md`](../audits/V3_3_STAGE_2_USER_AVATAR_CLOSING.md), [`V3_3_STAGE_3_SCANNER_V3_CLOSING.md`](../audits/V3_3_STAGE_3_SCANNER_V3_CLOSING.md), [`V3_3_STAGE_4_GASTRO_MULTI_LOCAL_CLOSING.md`](../audits/V3_3_STAGE_4_GASTRO_MULTI_LOCAL_CLOSING.md), [`V3_3_STAGE_5_GASTRO_DISCOUNTS_CLOSING.md`](../audits/V3_3_STAGE_5_GASTRO_DISCOUNTS_CLOSING.md), checklist [`Yo_Te_Invito_Checklist_V3_3_Funcional_Operativa.md`](../dev/Yo_Te_Invito_Checklist_V3_3_Funcional_Operativa.md). |
+| **V3.3 funcional/operativa** | **Activa** — Etapa 0 auditoría cerrada; **Etapas 1–6** implementadas (UX pública/mobile, Avatar, Scanner V3, Gastro Multi-local + Approval, Descuentos Gastro V3, QR Studio); QA manual/integración acumulado pendiente — [`V3_3_STAGE_1_PUBLIC_MOBILE_CLOSING.md`](../audits/V3_3_STAGE_1_PUBLIC_MOBILE_CLOSING.md), [`V3_3_STAGE_2_USER_AVATAR_CLOSING.md`](../audits/V3_3_STAGE_2_USER_AVATAR_CLOSING.md), [`V3_3_STAGE_3_SCANNER_V3_CLOSING.md`](../audits/V3_3_STAGE_3_SCANNER_V3_CLOSING.md), [`V3_3_STAGE_4_GASTRO_MULTI_LOCAL_CLOSING.md`](../audits/V3_3_STAGE_4_GASTRO_MULTI_LOCAL_CLOSING.md), [`V3_3_STAGE_5_GASTRO_DISCOUNTS_CLOSING.md`](../audits/V3_3_STAGE_5_GASTRO_DISCOUNTS_CLOSING.md), [`V3_3_STAGE_6_QR_STUDIO_CLOSING.md`](../audits/V3_3_STAGE_6_QR_STUDIO_CLOSING.md), checklist [`Yo_Te_Invito_Checklist_V3_3_Funcional_Operativa.md`](../dev/Yo_Te_Invito_Checklist_V3_3_Funcional_Operativa.md). |
 | **Handoff nuevo chat** | [`NEXT_CHAT_HANDOFF.md`](./NEXT_CHAT_HANDOFF.md) — punto de entrada operativo (stack, prod, hotfixes, pendientes). |
 
 Detalle histórico demo: [guides/DEMO_REMOVAL.md](../guides/DEMO_REMOVAL.md). Portal: [user/USER_PORTAL.md](../user/USER_PORTAL.md).
@@ -47,6 +47,7 @@ Detalle histórico demo: [guides/DEMO_REMOVAL.md](../guides/DEMO_REMOVAL.md). Po
 | **3 — Scanner V3** | Código implementado + auth hardening; migración DB smoke pendiente | [`V3_3_STAGE_3_SCANNER_V3_CLOSING.md`](../audits/V3_3_STAGE_3_SCANNER_V3_CLOSING.md), [`V3_3_SCANNER_USERNAME_AUTH.md`](../audits/V3_3_SCANNER_USERNAME_AUTH.md) |
 | **4 — Gastro Multi-local + Approval** | Código implementado + pre-cierre hardening; QA manual acumulado pendiente | [`V3_3_STAGE_4_GASTRO_MULTI_LOCAL_ARCHITECTURE.md`](../audits/V3_3_STAGE_4_GASTRO_MULTI_LOCAL_ARCHITECTURE.md), [`V3_3_STAGE_4_GASTRO_MULTI_LOCAL_CLOSING.md`](../audits/V3_3_STAGE_4_GASTRO_MULTI_LOCAL_CLOSING.md) |
 | **5 — Descuentos Gastro V3** | Código implementado + hardening `type`/`value`; QA manual + DB smoke pendientes | [`V3_3_STAGE_5_GASTRO_DISCOUNTS_AUDIT.md`](../audits/V3_3_STAGE_5_GASTRO_DISCOUNTS_AUDIT.md), [`V3_3_STAGE_5_GASTRO_DISCOUNTS_CLOSING.md`](../audits/V3_3_STAGE_5_GASTRO_DISCOUNTS_CLOSING.md) |
+| **6 — QR Studio** | Código implementado + hardening canónico; QA manual + DB smoke pendientes | [`V3_3_STAGE_6_QR_STUDIO_AUDIT.md`](../audits/V3_3_STAGE_6_QR_STUDIO_AUDIT.md), [`V3_3_STAGE_6_QR_STUDIO_CLOSING.md`](../audits/V3_3_STAGE_6_QR_STUDIO_CLOSING.md) |
 
 **Etapa 1 — resumen:** cards descuento discovery → ficha gastro; Home/Explore en nav mobile; modales convencionales centrados; scroll táctil galerías; rails subcategoría solo con **≥5** publicaciones (**sin autoplay**); jerarquía CTA gastro; OG dinámico `/descuentos/[id]`; copy público **Actividades** (`excursionPublicCopy.ts`) con clave técnica **`excursion`** sin cambios.
 
@@ -58,7 +59,9 @@ Detalle histórico demo: [guides/DEMO_REMOVAL.md](../guides/DEMO_REMOVAL.md). Po
 
 **Etapa 5 — resumen:** descuento publicado `ACTIVE`/`APPROVED` + `pendingUpdate` opcional (sin `GastroDiscountVersion`); edición material (incl. `type`/`value`) no baja el publicado; soft archive `archivedAt`; expiry scheduler (`GastroDiscountExpiryService`); admin create on-behalf (`origin ADMIN` → `ACTIVE`); notificaciones lifecycle + A9 de Etapa 4; hardening `c91c205`. Migración `20260831140000_gastro_discount_v3_lifecycle` — **smoke DB pendiente**.
 
-**Próxima etapa V3.3:** Etapa 6 — QR Studio (ver checklist). No iniciar sin instrucción explícita.
+**Etapa 6 — resumen:** editor visual de cupón QR (sin Canva.com); modelo `GastroDiscountTemplate` 1:0..1 por `GastroDiscount` (no se reutilizó Prisma `TicketTemplate`); `DiscountTemplateRenderer` + fallback `GastroDiscountQrCard`; bindings canónicos obligatorios y visibles (`discountValue`, `discountTitle`, `shortCode` + zona QR); presets Clásico/Minimal/Premium/Promoción; Studio `/gastro/descuentos/[id]/qr-studio`; preview Admin; `TicketStudioClient` no tocado. Migración `20260831150000_gastro_discount_visual_template` — **smoke DB pendiente**. Hardening `de4e07d`.
+
+**Próxima etapa V3.3:** Etapa 7 — Actividades + Cupones (ver checklist). No iniciar sin instrucción explícita.
 
 ---
 
@@ -181,6 +184,8 @@ Controllers: HTTP + Zod only. Services: business logic. Prisma: persistence only
 | **`docs/audits/V3_3_STAGE_4_GASTRO_MULTI_LOCAL_CLOSING.md`** | Cierre Etapa 4 V3.3 — Gastro multi-local + approval |
 | **`docs/audits/V3_3_STAGE_5_GASTRO_DISCOUNTS_AUDIT.md`** | Auditoría Etapa 5 — Descuentos Gastro V3 |
 | **`docs/audits/V3_3_STAGE_5_GASTRO_DISCOUNTS_CLOSING.md`** | Cierre Etapa 5 V3.3 — Descuentos Gastro V3 |
+| **`docs/audits/V3_3_STAGE_6_QR_STUDIO_AUDIT.md`** | Auditoría Etapa 6 — QR Studio |
+| **`docs/audits/V3_3_STAGE_6_QR_STUDIO_CLOSING.md`** | Cierre Etapa 6 V3.3 — QR Studio |
 | **`NEXT_CHAT_HANDOFF.md`** | Handoff operativo — iniciar chat sin reconstruir historial |
 | **`NEXT_CHAT_GETNET_WEBCHECKOUT_HANDOFF.md`** | Handoff Getnet Web Checkout Redirect |
 | **`docs/payments/GETNET_WEBCHECKOUT_REDIRECT_CLOSING.md`** | Cierre slice Redirect |

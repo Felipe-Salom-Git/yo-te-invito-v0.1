@@ -364,6 +364,7 @@ Doc cierre: `docs/audits/V3_3_STAGE_4_GASTRO_MULTI_LOCAL_CLOSING.md`. Arquitectu
 | Editar local | `/gastro/local`, `/gastro/local/editar` — scoped por `profileId` |
 | Descuentos list/create | `/gastro/descuentos`, `/gastro/descuentos/nuevo` — `profileId` navegación; selector si N ACTIVE |
 | Descuento detalle/editar | `/gastro/descuentos/[id]`, `.../editar` — ownership backend por `discountId`; links preservan `profileId` para volver al listado correcto |
+| QR Studio | `/gastro/descuentos/[id]/qr-studio` — CTA **Diseñar QR**; canvas + inspector + presets; `TicketStudioClient` **no** se reutilizó tal cual |
 | Scanners | `/gastro/scanners` — picker de local si N perfiles |
 
 **Reglas UX:**
@@ -399,6 +400,31 @@ Doc cierre: `docs/audits/V3_3_STAGE_5_GASTRO_DISCOUNTS_CLOSING.md`. Auditoría: 
 - `?profileId=` sigue siendo navegación (Etapa 4); autorización por `discountId`.
 
 ---
+
+## 7g. V3.3 Etapa 6 — QR Studio (2026-08, código implementado)
+
+Doc cierre: `docs/audits/V3_3_STAGE_6_QR_STUDIO_CLOSING.md`. Auditoría: `docs/audits/V3_3_STAGE_6_QR_STUDIO_AUDIT.md`.
+
+**Regla UX central:** el diseño es presentación. QR payload, `qrToken`, valor de `shortCode` y lifecycle del descuento **no** se editan en Studio.
+
+| Pieza | Ubicación |
+|-------|-----------|
+| Studio Gastro | `/gastro/descuentos/[id]/qr-studio` — `GastroQrStudioClient` + `GastroQrStudioCanvas` |
+| Renderer | `DiscountTemplateRenderer` — template + gastro + discount + claim |
+| Fallback | `GastroDiscountVisualCoupon` → `GastroDiscountQrCard` si no hay template / inválido / error React (`VisualRenderErrorBoundary`) |
+| Claims | `/me/descuentos` y `/descuentos/reclamo/[claimId]` usan el renderer custom si el mapping es válido |
+| Presets | Clásico / Minimal / Premium / Promoción (JSON constantes; copy al aplicar) |
+| Admin preview | `AdminGastroDiscountVisualPreview` en detalle admin (sin editor Admin completo) |
+| Ticket Studio | `TicketStudioClient` **no modificado** |
+
+**Reglas UX:**
+
+- Guardar explícito (sin autosave). Restablecer = DELETE template → fallback.
+- Mobile: preview + preset + guardar; copy de que el drag es más cómodo en desktop.
+- Bindings canónicos no se pueden quitar (beneficio, título, código corto).
+- Print: `window.print()` (sin PNG/PDF server).
+
+Arquitectura: UI → TanStack Query → `GastroRepo` / `AdminGastroRepo` → `ApiRepository`. Sin fetch directo.
 
 **Etapa 12 extras:** `/admin/hoteles` archivar/restaurar; cards excursión con `getExcursionCardScheduleLine`; doc `docs/audits/V3_1_STAGE_12_*`.
 
@@ -471,7 +497,7 @@ Doc cierre: `docs/audits/V3_3_STAGE_5_GASTRO_DISCOUNTS_CLOSING.md`. Auditoría: 
 
 | Área | Ruta / código | Rol |
 |------|----------------|-----|
-| **Studio productor** | `/producer/events/.../ticket-studio`, `TicketStudioClient` | Diseño plantilla (`TicketTemplate` JSON + zona QR) |
+| **Studio productor** | `/producer/events/.../ticket-studio`, `TicketStudioClient` | Diseño plantilla (`TicketTemplate` JSON + zona QR). **Etapa 6 no lo modificó.** |
 | **Vista comprador** | `/me/tickets/[ticketId]` | Render plantilla o fallback; imprimir; estado de ingreso |
 
 Doc: `docs/tickets/TICKET_CANVAS_STUDIO.md`, `docs/tickets/TICKET_TEMPLATE_QR_ZONE.md`.
@@ -531,7 +557,7 @@ Reactivar Event/Gastro: `CATEGORY_PUBLIC_AVAILABILITY` → `'public'` + sitemap 
 
 ## 8d. Gastro y Hoteles V2 — cerrado (2026-05-22)
 
-**Gastro V2 (operativo):** discovery (`/categoria/gastro`, explore), ficha `/restaurants/[id]` (`GastroPublicDetailContent`), portal `/gastro` (dashboard, `/gastro/contenido` Prisma, descuentos, validaciones, **`/gastro/scanners`** usuarios scanner — Etapa 5.2, valoraciones), follows + `FOLLOWED_GASTRO_NEW_DISCOUNT`, QR/scanner (`test:gastro-discount-qr`, `test:gastro-discount-scan`, `test:gastro-discount-expiry`). **Cupones usuario:** `/me/descuentos` + claim público `/descuentos/reclamo/[claimId]` con **`GastroDiscountQrCard`** (estilo ticket, Slice V2 2026-06-23). Helpers: `lib/gastro/discount-status-ui.ts`. Sin LocalDB ni `fetch` en UI.
+**Gastro V2 (operativo):** discovery (`/categoria/gastro`, explore), ficha `/restaurants/[id]` (`GastroPublicDetailContent`), portal `/gastro` (dashboard, `/gastro/contenido` Prisma, descuentos, validaciones, **`/gastro/scanners`** usuarios scanner — Etapa 5.2, valoraciones), follows + `FOLLOWED_GASTRO_NEW_DISCOUNT`, QR/scanner (`test:gastro-discount-qr`, `test:gastro-discount-scan`, `test:gastro-discount-expiry`). **Cupones usuario:** `/me/descuentos` + claim público `/descuentos/reclamo/[claimId]` con **`GastroDiscountVisualCoupon`** (template custom si existe y es válido; fallback **`GastroDiscountQrCard`**). Helpers: `lib/gastro/discount-status-ui.ts`. Sin LocalDB ni `fetch` en UI.
 
 **Scanner (V3.1 Etapa 5 — cerrada):** portales web — `ScannerUsersPanel` (`/producer/scanners`, `/gastro/scanners`), `ScannerPwaCta` (dashboard productora/gastro + panel scanners); repo `scannerAccounts` + `lib/query/scanner-accounts.ts`; nav `portalNavConfig`. PWA `apps/scanner`: `/door` (`DoorScannerClient`), `QrCameraScanner` (`html5-qrcode`), `public/manifest.json`, pestaña Manual, picker desde `GET /scanner/scan-targets`, persistencia `scanner:lastEventId` / `scanner:lastDiscountId`. Auth dev: `X-Dev-User-Id`. Producción: `NEXT_PUBLIC_SCANNER_APP_URL` → `https://scanner.yoteinvito.club/door`. Doc: `docs/audits/V3_1_STAGE_5_CLOSING.md`.
 

@@ -17,7 +17,8 @@ Cierre Etapa 1: [`V3_3_STAGE_1_PUBLIC_MOBILE_CLOSING.md`](../audits/V3_3_STAGE_1
 Cierre Etapa 2: [`V3_3_STAGE_2_USER_AVATAR_CLOSING.md`](../audits/V3_3_STAGE_2_USER_AVATAR_CLOSING.md)  
 Cierre Etapa 3: [`V3_3_STAGE_3_SCANNER_V3_CLOSING.md`](../audits/V3_3_STAGE_3_SCANNER_V3_CLOSING.md)  
 Cierre Etapa 4: [`V3_3_STAGE_4_GASTRO_MULTI_LOCAL_CLOSING.md`](../audits/V3_3_STAGE_4_GASTRO_MULTI_LOCAL_CLOSING.md)  
-Cierre Etapa 5: [`V3_3_STAGE_5_GASTRO_DISCOUNTS_CLOSING.md`](../audits/V3_3_STAGE_5_GASTRO_DISCOUNTS_CLOSING.md)
+Cierre Etapa 5: [`V3_3_STAGE_5_GASTRO_DISCOUNTS_CLOSING.md`](../audits/V3_3_STAGE_5_GASTRO_DISCOUNTS_CLOSING.md)  
+Cierre Etapa 6: [`V3_3_STAGE_6_QR_STUDIO_CLOSING.md`](../audits/V3_3_STAGE_6_QR_STUDIO_CLOSING.md)
 
 ### Etapa 0 — Auditoría
 
@@ -144,6 +145,35 @@ Cierre Etapa 5: [`V3_3_STAGE_5_GASTRO_DISCOUNTS_CLOSING.md`](../audits/V3_3_STAG
 - [ ] Scanner integration — `test:gastro-discount-scan` **NO EJECUTADO**
 - [ ] QA manual global V3.3 — create discount, material edit, non-material/lifecycle, pending visible, admin compare current/proposed, approve/reject edit, claims/QR/shortCode previos, scanner, expiry, archive/unarchive, admin create on-behalf, multi-local target, notifications, nullable email, mobile, desktop
 - [ ] Admin expired discounts digest — **diferido Etapa 8** (no bug de Etapa 5)
+
+### Etapa 6 — QR Studio
+
+**Implementación (código):**
+
+- [x] Auditoría Ticket Canvas / diseño QR (`4f3b07f`, `V3_3_STAGE_6_QR_STUDIO_AUDIT.md`)
+- [x] Primitivos visuales shared (sin romper `TicketTemplate`) (`c228827`)
+- [x] Persistencia `GastroDiscountTemplate` 1:0..1 + API GET/PUT/DELETE (`19bc163`)
+- [x] `DiscountTemplateRenderer` + fallback `GastroDiscountQrCard` (`214e4d9`)
+- [x] QR Studio UI `/gastro/descuentos/[id]/qr-studio` + CTA Diseñar QR (`409da5e`)
+- [x] Integración `/me/descuentos` + reclamo público (`47a9357`)
+- [x] Presets Clásico/Minimal/Premium/Promoción + preview Admin (`feb6d1b`)
+- [x] Canonical hardening — QR + `discountValue` + `discountTitle` + `shortCode` visibles (`de4e07d`)
+- [x] Builds shared/api/web/scanner PASS; `prisma validate` PASS; `test:ticket-template-schema` PASS
+- [x] Doc cierre técnico (`b3a0905` + hardening `de4e07d`)
+
+**Pendiente integración / QA (conservar):**
+
+- [ ] DB smoke — PostgreSQL/Docker no disponible; migración `20260831150000_gastro_discount_visual_template`
+- [ ] Scanner integration — `test:gastro-discount-scan` **NO EJECUTADO**
+- [ ] QA manual global V3.3 — crear diseño, guardar, reload, editar, reset, presets, background, logo, texto libre, discountTitle/value/vigencia, shortCode, QR, claim viejo/nuevo, fallback, template inválido, print browser, scanner físico, mobile preview, multi-local, cross-profile, admin preview
+
+**Deuda no bloqueante (no bugs):**
+
+- [ ] Copy template desde otro descuento del mismo perfil
+- [ ] PNG/PDF server-side export (print browser sí)
+- [ ] Admin full editor UI (preview + API PUT/DELETE sí)
+- [ ] Emails de claim sin template visual
+- [ ] Autosave / template version history
 
 ---
 
@@ -277,7 +307,7 @@ Etapas base: `V3_1_STAGE_5_CLOSING.md`, `V3_1_STAGE_6_SCANNER_OFFLINE_CLOSING.md
 - [x] Modelo `GastroCourtesyCampaign` + claims extendidos (`601c7e4`)
 - [x] Cortesías por email manual + seguidores (`35d7fa8`)
 - [x] Email QR solicitud web + cortesía (`e8ecfbb`, Slice 3 V2)
-- [x] `/me/descuentos` — `GastroDiscountQrCard` (Slice 4 V2)
+- [x] `/me/descuentos` — `GastroDiscountQrCard` (Slice 4 V2); **Etapa 6:** `GastroDiscountVisualCoupon` + fallback al card estándar
 - [x] Validación scanner: vencimiento inclusivo, uso único (Slice 2 V2); **V2.2:** sin límite diario por cuenta/email
 - [x] Util `gastro-discount-expiry.ts` (Slice 1 V2)
 - [x] Doc: `GASTRO_DISCOUNTS_QR_COURTESY_CLOSING.md`, **`GASTRO_QR_COURTESIES_AUDIT.md`**

@@ -21,10 +21,12 @@ Punto de entrada operativo para **V3.3**. Detalle completo: `AI_ENTRYPOINT.md`, 
 | **Etapa 4 — QA manual / DB smoke** | ⏳ Pendiente — acumulado cierre global V3.3 |
 | **Etapa 5 — Descuentos Gastro V3** | ✅ Código implementado (7 slices + hardening `c91c205`) |
 | **Etapa 5 — QA manual / DB smoke** | ⏳ Pendiente — acumulado cierre global V3.3 |
+| **Etapa 6 — QR Studio** | ✅ Código implementado (slices 6.0–6.7 + hardening `de4e07d`) |
+| **Etapa 6 — QA manual / DB smoke** | ⏳ Pendiente — acumulado cierre global V3.3 |
 
 **Checklist V3.3:** `docs/dev/Yo_Te_Invito_Checklist_V3_3_Funcional_Operativa.md`
 
-**Próxima etapa V3.3:** **Etapa 6 — QR Studio**. No iniciar sin instrucción explícita.
+**Próxima etapa V3.3:** **Etapa 7 — Actividades + Cupones**. No iniciar sin instrucción explícita.
 
 ---
 
@@ -61,16 +63,55 @@ User → Next.js → ApiRepository → NestJS Controller → Service → Prisma 
 | Procesos | systemd: `yti-web` (:3000), `yti-api` (:3001), `yti-scanner` (:3002) |
 | Dominios | `yoteinvito.club`, `api.yoteinvito.club`, `scanner.yoteinvito.club` |
 
-**Migraciones prod:** solo `npx prisma migrate deploy`. Incluye Etapa 3 + Etapa 5:
+**Migraciones prod:** solo `npx prisma migrate deploy`. Incluye Etapa 3 + Etapa 5 + Etapa 6:
 - `20260831120000_gastro_claim_short_code` (pgcrypto idempotente)
 - `20260831130000_user_scanner_username`
 - `20260831140000_gastro_discount_v3_lifecycle` (**no aplicada localmente** — PostgreSQL/Docker no disponible)
+- `20260831150000_gastro_discount_visual_template` (**no aplicada localmente** — PostgreSQL/Docker no disponible)
 
 Runbook: `docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`.
 
 ---
 
-## 5. V3.3 Etapa 5 — commits principales
+## 5. V3.3 Etapa 6 — commits principales
+
+```txt
+4f3b07f docs(v3.3): audit gastro qr studio architecture
+c228827 refactor(v3.3): extract reusable visual template primitives
+19bc163 feat(v3.3): add gastro discount visual templates
+214e4d9 feat(v3.3): render gastro discount qr templates
+409da5e feat(v3.3): add gastro discount qr studio
+47a9357 feat(v3.3): use discount templates in qr claims
+feb6d1b feat(v3.3): add qr studio presets and admin preview
+b3a0905 docs(v3.3): close gastro qr studio stage
+de4e07d fix(v3.3): harden gastro qr studio canonical content
+```
+
+(+ commit documental de contextos: `docs(v3.3): close gastro qr studio context`)
+
+---
+
+## 6. Decisiones importantes (V3.3 Etapa 6 — QR Studio)
+
+| Tema | Regla |
+|------|--------|
+| **Modelo** | `GastroDiscount` → 0..1 `GastroDiscountTemplate`. **No** se reutilizó Prisma `TicketTemplate` (tickets/productora + data URLs). |
+| **Primitives** | Rects 0–1, capas, QR zone, drag/inspector, `TicketQrImage`, print browser — extraídos a shared; `TicketStudioClient` **no tocado**. |
+| **Presentación ≠ seguridad** | Template no controla payload, `qrToken`, `discountId`, `claimId`, valor de `shortCode`, `tenantId`, `gastroProfileId`, `status`, `pendingUpdate`. |
+| **Canónicos visibles** | Custom template exige QR zone + `discountValue` + `shortCode` + `discountTitle` DYNAMIC visibles (min w/h/font/opacity; sin rotation; no tapados). |
+| **discountValue** | Solo `formatDiscountVisualBenefit(GastroDiscount.type, value)`. Compile borra `content` de DYNAMIC. |
+| **shortCode** | Studio placeholder `ABC-123`; claim real = `GastroDiscountClaim.shortCode`. |
+| **Fallback** | Sin template / inválido / mapping fail / React error → `GastroDiscountQrCard`. |
+| **Presets** | Clásico, Minimal, Premium, Promoción — JSON constantes; aplicar = snapshot editable. |
+| **Ownership** | `discountId` → `gastroProfileId` → `assertCanOperateProfile`. `?profileId=` no autoriza. |
+| **GCS** | `POST /uploads/public-image` scope `gastro`, `entityId` = `GastroProfile.id`, purposes `gallery`/`logo`, HTTPS. |
+| **Admin** | Preview en UI; PUT/DELETE admin por API. Editor Admin completo **no** implementado (deuda, no crítica). |
+
+Doc: `V3_3_STAGE_6_QR_STUDIO_AUDIT.md`, `V3_3_STAGE_6_QR_STUDIO_CLOSING.md`.
+
+---
+
+## 7. V3.3 Etapa 5 — commits principales
 
 ```txt
 a757c76 docs(v3.3): audit gastro discounts v3 lifecycle
@@ -88,7 +129,7 @@ c91c205 fix(v3.3): harden gastro discount reapproval lifecycle
 
 ---
 
-## 6. Decisiones importantes (V3.3 Etapa 5 — Descuentos Gastro V3)
+## 8. Decisiones importantes (V3.3 Etapa 5 — Descuentos Gastro V3)
 
 | Tema | Regla |
 |------|--------|
@@ -110,7 +151,7 @@ Doc: `V3_3_STAGE_5_GASTRO_DISCOUNTS_AUDIT.md`, `V3_3_STAGE_5_GASTRO_DISCOUNTS_CL
 
 ---
 
-## 7. V3.3 Etapa 4 — commits principales
+## 9. V3.3 Etapa 4 — commits principales
 
 ```txt
 612fd2d docs(v3.3): design gastro multi-local architecture
@@ -126,7 +167,7 @@ ea79aa6 fix(v3.3): harden gastro multi-location ownership
 
 ---
 
-## 8. Decisiones importantes (V3.3 Etapa 4 — Gastro Multi-local)
+## 10. Decisiones importantes (V3.3 Etapa 4 — Gastro Multi-local)
 
 | Tema | Regla |
 |------|-------|
@@ -148,7 +189,7 @@ Doc: `V3_3_STAGE_4_GASTRO_MULTI_LOCAL_ARCHITECTURE.md`, `V3_3_STAGE_4_GASTRO_MUL
 
 ---
 
-## 9. V3.3 Etapa 3 — Scanner (referencia)
+## 11. V3.3 Etapa 3 — Scanner (referencia)
 
 | Tema | Regla |
 |------|-------|
@@ -159,19 +200,19 @@ Doc: `V3_3_STAGE_3_SCANNER_V3_CLOSING.md`.
 
 ---
 
-## 10. V3.3 Etapa 2 — Avatar (referencia)
+## 12. V3.3 Etapa 2 — Avatar (referencia)
 
 Doc: `V3_3_STAGE_2_USER_AVATAR_CLOSING.md`.
 
 ---
 
-## 11. V3.3 Etapa 1 — UX pública (referencia)
+## 13. V3.3 Etapa 1 — UX pública (referencia)
 
 Doc: `V3_3_STAGE_1_PUBLIC_MOBILE_CLOSING.md`.
 
 ---
 
-## 12. V3.2 — estado previo (sin cerrar QA)
+## 14. V3.2 — estado previo (sin cerrar QA)
 
 Código slices 0–11 cerrado. Hotfixes 2026-08: `15f2776`, `b8dc571`, `ff6f8e0`, `920c5d7`.
 
@@ -179,10 +220,10 @@ Código slices 0–11 cerrado. Hotfixes 2026-08: `15f2776`, `b8dc571`, `ff6f8e0`
 
 ---
 
-## 13. Pendientes priorizados
+## 15. Pendientes priorizados
 
-1. **QA manual / integración global V3.3** — Etapas 1–5 acumuladas (incl. create/edit material, pending, admin compare, expiry, archive, on-behalf).
-2. **Migración deploy + smoke DB** — `prisma migrate deploy` (acumula Etapa 3 + `20260831140000_gastro_discount_v3_lifecycle`).
+1. **QA manual / integración global V3.3** — Etapas 1–6 acumuladas (incl. QR Studio: crear/guardar/reload/reset, presets, bindings canónicos, claim viejo/nuevo, fallback, print, scanner físico, mobile, admin preview).
+2. **Migración deploy + smoke DB** — `prisma migrate deploy` (acumula Etapa 3 + `20260831140000_gastro_discount_v3_lifecycle` + `20260831150000_gastro_discount_visual_template`).
 3. **Scanner integration** — `test:gastro-discount-scan` **NO EJECUTADO** (PostgreSQL no disponible).
 4. **Admin expired discounts digest** — diferido **Etapa 8**.
 5. **QA prod V3.2** — cache, roles, auth resend, horarios.
@@ -192,7 +233,7 @@ Detalle: `CONTEXT_PENDIENTES.md`.
 
 ---
 
-## 14. Comandos de validación
+## 16. Comandos de validación
 
 ```bash
 pnpm --filter shared run build
@@ -208,13 +249,18 @@ pnpm --filter api run test:gastro-discount-archive
 pnpm --filter api run test:gastro-discount-origin
 pnpm --filter api run test:gastro-lifecycle-notifications
 pnpm --filter api run test:gastro-multi-local
+pnpm --filter api run test:ticket-template-schema
+pnpm --filter api run test:discount-visual-template
+pnpm --filter api run test:gastro-discount-visual-persist
+pnpm --filter api run test:discount-visual-render
+pnpm --filter api run test:scanner-manual-short-code
 ```
 
 `test:gastro-discount-scan` — **NO EJECUTADO** (PostgreSQL no disponible). No marcar PASS.
 
 ---
 
-## 15. Próximo paso recomendado
+## 17. Próximo paso recomendado
 
-1. Iniciar **V3.3 Etapa 6 — QR Studio** cuando se indique. **No iniciar ahora.**
+1. Iniciar **V3.3 Etapa 7 — Actividades + Cupones** cuando se indique. **No iniciar ahora.**
 2. QA manual + migración DB al cerrar V3.3 globalmente.
