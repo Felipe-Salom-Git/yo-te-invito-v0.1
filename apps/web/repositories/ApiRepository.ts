@@ -1709,6 +1709,26 @@ export class ApiRepository implements Repositories {
         `/admin/benefit-settlements/${encodeURIComponent(id)}/transfers/${encodeURIComponent(transferId)}/reverse`,
         body,
       ),
+    getAudit: async (id) =>
+      this.client.get(`/admin/benefit-settlements/${encodeURIComponent(id)}/audit`),
+  };
+
+  adminBenefitReporting: import('./interfaces').AdminBenefitReportingRepo = {
+    monthly: async (query) =>
+      this.client.get(
+        '/admin/benefit-reporting/monthly',
+        query as Record<string, string | number | boolean | undefined>,
+      ),
+    partners: async (query) =>
+      this.client.get(
+        '/admin/benefit-reporting/partners',
+        query as Record<string, string | number | boolean | undefined>,
+      ),
+    integrity: async (query) =>
+      this.client.get(
+        '/admin/benefit-reporting/integrity',
+        query as Record<string, string | number | boolean | undefined>,
+      ),
   };
 
   adminCourtesyCreditLedger: import('./interfaces').AdminCourtesyCreditLedgerRepo = {

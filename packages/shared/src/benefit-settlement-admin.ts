@@ -109,3 +109,12 @@ export function formatSignedBenefitMoneyCents(cents: string, currency = 'ARS'): 
 export function isBenefitSettlementClosedBadge(status: BenefitSettlementStatus): boolean {
   return status === 'CLOSED';
 }
+
+export const BENEFIT_INTEGRITY_STATUS_LABEL: Record<
+  import('./benefit-settlement-reporting').BenefitIntegrityStatus,
+  string
+> = {
+  OK: 'Integridad OK',
+  WARNING: 'Requiere revisión',
+  ERROR: 'Inconsistencia detectada',
+};

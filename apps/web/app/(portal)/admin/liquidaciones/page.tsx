@@ -16,11 +16,16 @@ import {
   useAdminBenefitSettlementsList,
   useGenerateAdminBenefitSettlement,
 } from '@/lib/query/benefit-settlements';
+import {
+  useAdminBenefitReportingMonthly,
+  useAdminBenefitReportingPartners,
+} from '@/lib/query/benefit-reporting';
 import { useAdminGastroLocationsList } from '@/lib/query/admin-gastro';
 import { useRepositories } from '@/repositories/context';
 import { BENEFIT_VERTICAL_LABEL } from '@/lib/admin/benefit-agreement-labels';
 import {
   BENEFIT_CASH_COLLECTION_STATUS_LABEL,
+  BENEFIT_INTEGRITY_STATUS_LABEL,
   BENEFIT_SETTLEMENT_STATUS_LABEL,
   formatBenefitMoneyCents,
   formatBenefitSettlementPeriodLabel,
@@ -67,6 +72,24 @@ export default function AdminLiquidacionesPage() {
 
   const { data, isLoading, isError } = useAdminBenefitSettlementsList(listQuery);
   const generateMutation = useGenerateAdminBenefitSettlement();
+
+  const reportingQuery = useMemo(() => {
+    const base: import('@yo-te-invito/shared').BenefitReportingPeriodQuery = {
+      periodKey,
+    };
+    if (vertical === 'GASTRO' || vertical === 'ACTIVITY') {
+      base.vertical = vertical;
+    }
+    if (vertical === 'GASTRO' && partnerId) base.gastroProfileId = partnerId;
+    if (vertical === 'ACTIVITY' && partnerId) base.excursionOperatorId = partnerId;
+    return base;
+  }, [periodKey, vertical, partnerId]);
+  const { data: monthlyReport } = useAdminBenefitReportingMonthly(reportingQuery);
+  const { data: partnersReport } = useAdminBenefitReportingPartners({
+    ...reportingQuery,
+    page: 1,
+    pageSize: 50,
+  });
 
   const gastroQuery = useAdminGastroLocationsList(
     { status: 'ACTIVE', page: 1, limit: 100 },
@@ -151,6 +174,99 @@ export default function AdminLiquidacionesPage() {
         </div>
         <Button onClick={() => setShowGenerate(true)}>Generar liquidación</Button>
       </div>
+
+      {monthlyReport ? (
+        <div className="mt-6">
+          <h3 className="text-sm font-medium text-text">
+            Resumen del período — {formatBenefitSettlementPeriodLabel(periodKey)}
+          </h3>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+            <div className="rounded-lg border border-border bg-bg-muted p-3 text-sm">
+              <p className="text-text-muted">Usos</p>
+              <p className="text-lg font-semibold">{monthlyReport.kpis.usageCount}</p>
+            </div>
+            <div className="rounded-lg border border-border bg-bg-muted p-3 text-sm">
+              <p className="text-text-muted">Cash recibido</p>
+              <p className="text-lg font-semibold">
+                {formatBenefitMoneyCents(monthlyReport.kpis.cashReceivedCents)}
+              </p>
+            </div>
+            <div className="rounded-lg border border-border bg-bg-muted p-3 text-sm">
+              <p className="text-text-muted">Cash pendiente</p>
+              <p className="text-lg font-semibold">
+                {formatBenefitMoneyCents(monthlyReport.kpis.cashOutstandingCents)}
+              </p>
+            </div>
+            <div className="rounded-lg border border-border bg-bg-muted p-3 text-sm">
+              <p className="text-text-muted">Crédito generado</p>
+              <p className="text-lg font-semibold">
+                {formatBenefitMoneyCents(monthlyReport.kpis.barterCreditMaterializedCents)}
+              </p>
+            </div>
+            <div className="rounded-lg border border-border bg-bg-muted p-3 text-sm">
+              <p className="text-text-muted">Crédito consumido</p>
+              <p className="text-lg font-semibold">
+                {formatBenefitMoneyCents(monthlyReport.kpis.courtesyCreditConsumedCents)}
+              </p>
+            </div>
+            <div className="rounded-lg border border-border bg-bg-muted p-3 text-sm">
+              <p className="text-text-muted">Crédito disponible</p>
+              <p className="text-lg font-semibold">
+                {formatBenefitMoneyCents(monthlyReport.kpis.courtesyCreditAvailableCents)}
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {partnersReport && partnersReport.data.length > 0 ? (
+        <div className="mt-8 overflow-x-auto">
+          <h3 className="text-sm font-medium text-text">Por partner</h3>
+          <table className="mt-3 min-w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-border text-text-muted">
+                <th className="px-2 py-2">Partner</th>
+                <th className="px-2 py-2">Usos</th>
+                <th className="px-2 py-2">Base</th>
+                <th className="px-2 py-2">Cash recibido</th>
+                <th className="px-2 py-2">Cash pendiente</th>
+                <th className="px-2 py-2">Crédito gen.</th>
+                <th className="px-2 py-2">Disponible</th>
+                <th className="px-2 py-2">Integridad</th>
+              </tr>
+            </thead>
+            <tbody>
+              {partnersReport.data.map((row) => (
+                <tr key={row.settlementId} className="border-b border-border/60">
+                  <td className="px-2 py-2">
+                    <div className="font-medium">{row.partnerDisplayName ?? '—'}</div>
+                    <Badge className="mt-1">{BENEFIT_VERTICAL_LABEL[row.vertical]}</Badge>
+                  </td>
+                  <td className="px-2 py-2">{row.kpis.usageCount}</td>
+                  <td className="px-2 py-2">
+                    {formatBenefitMoneyCents(row.kpis.baseGeneratedCents)}
+                  </td>
+                  <td className="px-2 py-2">
+                    {formatBenefitMoneyCents(row.kpis.cashReceivedCents)}
+                  </td>
+                  <td className="px-2 py-2">
+                    {formatBenefitMoneyCents(row.kpis.cashOutstandingCents)}
+                  </td>
+                  <td className="px-2 py-2">
+                    {formatBenefitMoneyCents(row.kpis.barterCreditMaterializedCents)}
+                  </td>
+                  <td className="px-2 py-2">
+                    {formatBenefitMoneyCents(row.kpis.courtesyCreditAvailableCents)}
+                  </td>
+                  <td className="px-2 py-2">
+                    <Badge>{BENEFIT_INTEGRITY_STATUS_LABEL[row.integrityStatus]}</Badge>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : null}
 
       {rows.length > 0 && (
         <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

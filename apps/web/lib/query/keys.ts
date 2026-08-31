@@ -393,6 +393,16 @@ export const adminBenefitSettlementsKeys = {
   list: (filtersKey: string) => [...adminBenefitSettlementsKeys.all, 'list', filtersKey] as const,
   detail: (id: string) => [...adminBenefitSettlementsKeys.all, 'detail', id] as const,
   transfers: (id: string) => [...adminBenefitSettlementsKeys.all, 'transfers', id] as const,
+  audit: (id: string) => [...adminBenefitSettlementsKeys.all, 'audit', id] as const,
+};
+
+export const adminBenefitReportingKeys = {
+  all: ['admin', 'benefit-reporting'] as const,
+  monthly: (filtersKey: string) => [...adminBenefitReportingKeys.all, 'monthly', filtersKey] as const,
+  partners: (filtersKey: string) =>
+    [...adminBenefitReportingKeys.all, 'partners', filtersKey] as const,
+  integrity: (filtersKey: string) =>
+    [...adminBenefitReportingKeys.all, 'integrity', filtersKey] as const,
 };
 
 export const adminCourtesyCreditLedgerKeys = {

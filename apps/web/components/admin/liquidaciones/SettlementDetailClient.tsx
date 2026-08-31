@@ -10,6 +10,7 @@ import {
   SectionTitle,
 } from '@/components';
 import { LiquidacionesSubnav } from '@/components/admin/liquidaciones/LiquidacionesSubnav';
+import { SettlementAuditPanel } from '@/components/admin/liquidaciones/SettlementAuditPanel';
 import { BENEFIT_VERTICAL_LABEL } from '@/lib/admin/benefit-agreement-labels';
 import {
   useAdminBenefitSettlement,
@@ -576,6 +577,8 @@ export function SettlementDetailClient({ id }: { id: string }) {
           Ver créditos del partner →
         </Link>
       </section>
+
+      <SettlementAuditPanel settlementId={id} />
     </PageContainer>
   );
 }

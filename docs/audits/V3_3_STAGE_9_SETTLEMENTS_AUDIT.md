@@ -869,3 +869,71 @@ Ninguna (solo UI).
 ---
 
 **STOP slice 9.6** — Etapa 9 UI operativa Admin. Sin slice 9.7 en este entregable.
+
+---
+
+## 29. Slice 9.7 implementation decisions
+
+**Fecha:** 2026-08-31  
+**Commit:** `feat(v3.3): add benefit settlement audit reporting`
+
+### Reporting architecture
+
+Read-only services correlating existing sources — **no** `EconomicAuditLedger` / snapshots persistentes.
+
+| Componente | Rol |
+|------------|-----|
+| `BenefitSettlementReportingService` | Monthly, partners, settlement audit, integrity batch |
+| `BenefitSettlementIntegrityService` | Drift + overpayment + negative balance per settlement |
+| `GET /admin/benefit-reporting/monthly` | Resumen tenant + periodKey |
+| `GET /admin/benefit-reporting/partners` | Tabla paginada por partner |
+| `GET /admin/benefit-reporting/integrity` | Batch integrity scan |
+| `GET /admin/benefit-settlements/:id/audit` | Trazabilidad completa |
+
+### KPI sources
+
+| KPI | Fuente |
+|-----|--------|
+| usageCount / baseGeneratedCents | `BenefitSettlement.summary` (eligible) |
+| cashAllocated/Received/Outstanding | CASH allocations + active transfers |
+| barterBase / credit expected | BARTER allocations snapshot |
+| barterCreditMaterialized | `CREDIT_FROM_SETTLEMENT` ledger |
+| courtesyCreditConsumed | `computeCreditConsumedCents` (DEBIT + REVERSAL net) |
+| courtesyCreditAvailable | `SUM(ledger.amountCents)` partner |
+
+**Nunca** KPI `total` que sume cash + credit.
+
+### Integrity
+
+Reutiliza `detectBarterCreditDrift()` via `runBarterCreditDriftCheck()`. Severidad: `OK` / `WARNING` / `ERROR`.
+
+**NO error:** cash outstanding, pending allocations en OPEN.
+
+**ERROR:** missing credit, duplicate credit, amount mismatch, orphan credit, overpayment, negative balance, CLOSED con pendientes.
+
+Script READ-ONLY: `pnpm --filter api run benefit-settlements:audit-integrity`.
+
+### Timeline
+
+Eventos reales desde agreements, settlement, allocations, transfers, ledger, audit logs. Orden estable: `sortBenefitTimelineEvents()`.
+
+### Privacy
+
+Sin qrToken, claim tokens, emails de usuarios. Validation: id + fecha + título beneficio.
+
+### Admin UI
+
+- Listado `/admin/liquidaciones`: resumen período + tabla partners + integridad badge.
+- Detalle: panel `Auditoría` con timeline, issues, allocations, ledger.
+
+### CSV
+
+**DIFERIDO** — sin utilidad CSV reutilizable con bajo costo.
+
+### Migration
+
+Ninguna.
+
+---
+
+**STOP slice 9.7** — reporting y auditoría operativa Admin.
