@@ -35,6 +35,9 @@ export function formatDiscountVisualBenefit(type: 'PERCENT' | 'FIXED', value: nu
   return `$${value}`;
 }
 
+/** Alias vertical-agnostic — misma regla PERCENT / FIXED. Gastro sigue usando `formatDiscountVisualBenefit`. */
+export const formatCouponVisualBenefit = formatDiscountVisualBenefit;
+
 export function formatDiscountVisualValidity(ctx: DiscountVisualRenderContext): string {
   if (ctx.validityMode === 'WEEKLY_RECURRING' && ctx.validWeekday) {
     const day = GASTRO_WEEKDAY_LABELS_ES[ctx.validWeekday] ?? ctx.validWeekday;
@@ -69,7 +72,7 @@ export function resolveDiscountVisualField(
   }
 }
 
-const FORBIDDEN_PAYLOAD = /yti:(gastro-discount|v1):/i;
+const FORBIDDEN_PAYLOAD = /yti:(gastro-discount|activity-coupon|v1):/i;
 
 export function discountVisualTextLooksLikePayload(text: string | undefined): boolean {
   if (!text) return false;

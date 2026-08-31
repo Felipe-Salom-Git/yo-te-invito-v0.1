@@ -34,6 +34,7 @@
     "test:referral-commission": "tsx scripts/test-referral-commission.util.ts",
     "test:referral-payment-requests": "tsx scripts/test-referral-payment-requests.util.ts",
     "test:gastro-discount-qr": "tsx scripts/test-gastro-discount-qr.util.ts",
+    "test:activity-coupon-qr": "tsx scripts/test-activity-coupon-qr.util.ts",
     "test:scanner-manual-short-code": "tsx scripts/test-scanner-manual-short-code.util.ts",
     "test:scanner-username-auth": "tsx scripts/test-scanner-username-auth.util.ts",
     "test:gastro-multi-local": "tsx scripts/test-gastro-multi-local.util.ts",

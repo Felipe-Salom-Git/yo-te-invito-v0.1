@@ -27,6 +27,10 @@ assert(
   !isManualShortCodeInput('yti:gastro-discount:v1:cltest:aaaa'),
   'reject gastro QR',
 );
+assert(
+  !isManualShortCodeInput('yti:activity-coupon:v1:cltestcoupon000001:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'),
+  'reject activity coupon QR',
+);
 
 const ticketId = 'clticket00000000abcd1234';
 const code = shortTicketCode(ticketId);

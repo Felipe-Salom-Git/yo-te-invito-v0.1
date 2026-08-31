@@ -38,5 +38,10 @@ assert(!isValidGastroDiscountQrPayload('yti:v1:ticket'), 'reject ticket prefix')
 
 assert(classifyQrScanPayload(v1) === 'gastro-discount', 'classify gastro');
 assert(classifyQrScanPayload('yti:v1:' + 'a'.repeat(48)) === 'ticket', 'classify ticket');
+assert(
+  classifyQrScanPayload(`yti:activity-coupon:v1:${discountId}:${token}`) === 'activity-coupon',
+  'classify activity coupon is not gastro',
+);
+assert(!isValidGastroDiscountQrPayload(`yti:activity-coupon:v1:${discountId}:${token}`), 'reject activity prefix as gastro');
 
 console.log('\nAll gastro discount QR checks passed.');

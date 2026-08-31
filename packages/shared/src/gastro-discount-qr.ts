@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { parseActivityCouponQrPayload } from './activity-coupon-qr';
 
 /** Prefix estable para escaneo en Slice 5 (scanner/PWA). */
 export const GASTRO_DISCOUNT_QR_PREFIX = 'yti:gastro-discount:v1';
@@ -61,12 +62,13 @@ export function isTicketQrPayload(raw: string): boolean {
   return t.startsWith('yti:v1:') && !t.startsWith(GASTRO_DISCOUNT_QR_PREFIX);
 }
 
-export type QrScanFamily = 'ticket' | 'gastro-discount' | 'unknown';
+export type QrScanFamily = 'ticket' | 'gastro-discount' | 'activity-coupon' | 'unknown';
 
 export function classifyQrScanPayload(raw: string): QrScanFamily {
   const trimmed = raw.trim();
   if (!trimmed) return 'unknown';
   if (parseGastroDiscountQrPayload(trimmed)) return 'gastro-discount';
+  if (parseActivityCouponQrPayload(trimmed)) return 'activity-coupon';
   if (isTicketQrPayload(trimmed)) return 'ticket';
   return 'unknown';
 }
