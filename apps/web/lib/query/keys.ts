@@ -146,6 +146,7 @@ export const mePortalKeys = {
   pendingOrders: () => [...mePortalKeys.all, 'pendingOrders'] as const,
   activity: () => [...mePortalKeys.all, 'activity'] as const,
   account: () => [...mePortalKeys.all, 'account'] as const,
+  marketingPreferences: () => [...mePortalKeys.all, 'marketingPreferences'] as const,
   ticketDetail: (ticketId: string) => [...mePortalKeys.all, 'ticket', ticketId] as const,
   ticketDateChangeOptions: (ticketId: string) =>
     [...mePortalKeys.all, 'ticketDateChangeOptions', ticketId] as const,

@@ -14,6 +14,7 @@ import {
 import { PreferredCitySelect } from '@/components/me/PreferredCitySelect';
 import { MeAccountProfiles } from '@/components/me/MeAccountProfiles';
 import { MeAccountAvatarSection } from '@/components/me/MeAccountAvatarSection';
+import { MeAccountCommunicationsSection } from '@/components/me/MeAccountCommunicationsSection';
 import { useMeAccount, usePatchMeAccount, useChangePassword } from '@/lib/query/me-portal';
 import { useRepositories } from '@/repositories/context';
 import { getErrorMessage } from '@/lib/errors';
@@ -148,6 +149,8 @@ export default function MeAccountPage() {
           {changePassword.isPending ? 'Guardando…' : 'Actualizar contraseña'}
         </Button>
       </form>
+
+      <MeAccountCommunicationsSection />
 
       <MeAccountProfiles profiles={meUser?.availableProfiles} />
     </PageContainer>

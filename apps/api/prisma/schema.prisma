@@ -268,6 +268,7 @@ model Tenant {
   ticketDateChangeRequests      TicketDateChangeRequest[]
   activityCoupons               ActivityCoupon[]
   activityCouponClaims          ActivityCouponClaim[]
+  userMarketingPreferences      UserMarketingPreference[]
 }
 
 model RentalLocation {
@@ -816,10 +817,33 @@ model User {
   scannerAccountsManaged        ScannerAccount[] @relation("ScannerAccountParent")
   ticketDateChangeRequests      TicketDateChangeRequest[] @relation("TicketDateChangeRequester")
   ticketDateChangeReviews       TicketDateChangeRequest[] @relation("TicketDateChangeReviewer")
+  marketingPreference           UserMarketingPreference?
 
   @@unique([tenantId, email])
   @@index([tenantId])
   @@index([tenantId, role])
+}
+
+/// V3.3 Etapa 8: consentimiento comercial por canal. Ausencia de fila = no opt-in.
+model UserMarketingPreference {
+  id                     String    @id @default(cuid())
+  tenantId               String
+  userId                 String    @unique
+  emailOptIn             Boolean   @default(false)
+  emailOptInAt           DateTime?
+  emailOptOutAt          DateTime?
+  emailUnsubscribeToken  String?   @unique
+  whatsappOptIn          Boolean   @default(false)
+  whatsappOptInAt        DateTime?
+  whatsappOptOutAt       DateTime?
+  source                 String    @default("ACCOUNT")
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, emailOptIn])
 }
 
 enum EventStatus {

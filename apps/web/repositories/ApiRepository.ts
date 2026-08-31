@@ -2398,6 +2398,9 @@ export class ApiRepository implements Repositories {
     checkout: async (body) => this.client.post('/me/cart/checkout', body),
     getActivity: async () => this.client.get('/me/activity'),
     getAccount: async () => this.client.get('/me/account'),
+    getMarketingPreferences: async () => this.client.get('/me/marketing-preferences'),
+    patchMarketingPreferences: async (body) =>
+      this.client.patch('/me/marketing-preferences', body),
     patchAccount: async (body) => this.client.patch('/me/account', body),
     changePassword: async (body) => this.client.post('/me/account/change-password', body),
     getTicketDetail: async (ticketId) =>

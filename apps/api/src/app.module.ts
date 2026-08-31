@@ -30,6 +30,7 @@ import { UploadsModule } from './modules/uploads/uploads.module';
 import { ScannerAccountsModule } from './modules/scanner-accounts/scanner-accounts.module';
 import { GeoModule } from './modules/geo/geo.module';
 import { ActivityCouponsModule } from './modules/activity-coupons/activity-coupons.module';
+import { MarketingPreferencesModule } from './modules/marketing-preferences/marketing-preferences.module';
 
 @Module({
   imports: [
@@ -64,6 +65,7 @@ import { ActivityCouponsModule } from './modules/activity-coupons/activity-coupo
     ScannerAccountsModule,
     GeoModule,
     ActivityCouponsModule,
+    MarketingPreferencesModule,
   ],
 })
 export class AppModule {}

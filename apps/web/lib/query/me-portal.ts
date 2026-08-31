@@ -16,6 +16,7 @@ import type {
   MeCartCheckoutBody,
   MeTicketTransferOffersQuery,
   PatchMeAccountBody,
+  PatchMeMarketingPreferencesBody,
   PatchTicketReminderBody,
   PatchUserCartItemBody,
   PatchUserExpectedEventNotifications,
@@ -212,6 +213,27 @@ export function useChangePassword() {
   const repos = useRepositories();
   return useMutation({
     mutationFn: (body: ChangePasswordBody) => repos.mePortal.changePassword(body),
+  });
+}
+
+export function useMeMarketingPreferences(enabled = true) {
+  const repos = useRepositories();
+  return useQuery({
+    queryKey: mePortalKeys.marketingPreferences(),
+    queryFn: () => repos.mePortal.getMarketingPreferences(),
+    enabled,
+  });
+}
+
+export function usePatchMeMarketingPreferences() {
+  const repos = useRepositories();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: PatchMeMarketingPreferencesBody) =>
+      repos.mePortal.patchMarketingPreferences(body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: mePortalKeys.marketingPreferences() });
+    },
   });
 }
 

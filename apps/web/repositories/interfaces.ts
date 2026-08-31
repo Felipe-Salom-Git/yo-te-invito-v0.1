@@ -2001,6 +2001,10 @@ export interface MePortalRepo {
   ): Promise<import('@yo-te-invito/shared').MeCartCheckoutResponse>;
   getActivity(): Promise<import('@yo-te-invito/shared').MeActivityResponse>;
   getAccount(): Promise<import('@yo-te-invito/shared').MeAccount>;
+  getMarketingPreferences(): Promise<import('@yo-te-invito/shared').MeMarketingPreferences>;
+  patchMarketingPreferences(
+    body: import('@yo-te-invito/shared').PatchMeMarketingPreferencesBody,
+  ): Promise<import('@yo-te-invito/shared').MeMarketingPreferences>;
   patchAccount(
     body: import('@yo-te-invito/shared').PatchMeAccountBody,
   ): Promise<import('@yo-te-invito/shared').MeAccount>;
