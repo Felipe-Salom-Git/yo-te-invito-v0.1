@@ -14,6 +14,13 @@ import {
   snapshotFromPublishedRow,
   canArchiveGastroDiscount,
   canUnarchiveGastroDiscount,
+  initialStatusForDiscountOrigin,
+  isGastroDiscountDateRangeOrderValid,
+  isGastroProfileEligibleForAdminDiscountCreate,
+  normalizeGastroDiscountExpiryDate,
+  normalizeGastroDiscountValidFromDate,
+  type GastroDiscountCreateInput,
+  type GastroWeekday,
   type AdminGastroDiscountMetrics,
   type AdminGastroDiscountPublication,
   type AdminGastroLocationsListQuery,
@@ -1007,5 +1014,96 @@ export class AdminGastroService {
     }
 
     return this.getDiscountDetail(tenantId, profileId, discountId);
+  }
+
+  async createDiscountOnBehalf(
+    tenantId: string,
+    adminUserId: string,
+    adminRole: string,
+    profileId: string,
+    body: GastroDiscountCreateInput,
+  ) {
+    const profile = await this.assertProfile(tenantId, profileId);
+    if (!isGastroProfileEligibleForAdminDiscountCreate(profile.status)) {
+      throw new BadRequestException({
+        code: ErrorCode.VALIDATION_FAILED,
+        message: 'Solo se pueden crear descuentos para un local ACTIVE',
+      });
+    }
+    if (!profile.publicEventId) {
+      throw new BadRequestException({
+        code: ErrorCode.VALIDATION_FAILED,
+        message: 'El local no tiene publicación pública',
+      });
+    }
+    const validityMode = body.validityMode ?? 'DATE_RANGE';
+    const isWeekly = validityMode === 'WEEKLY_RECURRING';
+    const images = urlsJson(body.imageUrls);
+    const qrToken = randomBytes(24).toString('hex');
+    let dateFields: {
+      validFrom: Date | null;
+      validTo: Date | null;
+      discountDate: Date | null;
+      validWeekday: GastroWeekday | null;
+    };
+    if (isWeekly) {
+      dateFields = {
+        validFrom: null,
+        validTo: null,
+        discountDate: null,
+        validWeekday: body.validWeekday ?? null,
+      };
+    } else {
+      const from = body.validFrom ?? body.discountDate;
+      const to = body.validTo ?? body.discountDate;
+      if (!from || !to || !isGastroDiscountDateRangeOrderValid(from, to)) {
+        throw new BadRequestException({
+          code: ErrorCode.VALIDATION_FAILED,
+          message: 'Indicá una vigencia de inicio y cierre válida',
+        });
+      }
+      const validFrom = normalizeGastroDiscountValidFromDate(from);
+      const validTo = normalizeGastroDiscountExpiryDate(to);
+      dateFields = {
+        validFrom,
+        validTo,
+        discountDate: validTo,
+        validWeekday: null,
+      };
+    }
+    const created = await this.prisma.gastroDiscount.create({
+      data: {
+        tenantId,
+        eventId: profile.publicEventId,
+        gastroProfileId: profile.id,
+        code: `ADM-${randomBytes(4).toString('hex').toUpperCase()}`,
+        type: 'PERCENT',
+        value: 0,
+        displayTitle: body.title.trim(),
+        summary: body.summary.trim(),
+        detail: body.detail.trim(),
+        displayDescription: body.summary.trim(),
+        validityMode,
+        ...dateFields,
+        status: initialStatusForDiscountOrigin('ADMIN'),
+        createdByOrigin: 'ADMIN',
+        createdByUserId: adminUserId,
+        qrToken,
+        qrGeneratedAt: new Date(),
+        submittedImageUrls: images,
+        displayImageUrls: images,
+      },
+    });
+    await this.audit(
+      tenantId,
+      adminUserId,
+      adminRole,
+      'ADMIN_GASTRO_DISCOUNT_CREATED',
+      created.id,
+      {},
+      { status: created.status, gastroProfileId: profile.id, origin: 'ADMIN' },
+    );
+    void this.gastroFollowAlerts.notifyFollowersOfNewActiveDiscount(tenantId, created.id);
+    return this.getDiscountDetail(tenantId, profileId, created.id);
   }
 }

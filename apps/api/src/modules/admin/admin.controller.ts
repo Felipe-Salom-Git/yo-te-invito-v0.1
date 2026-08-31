@@ -86,6 +86,8 @@ import {
   type GastroDiscountStatusUpdate,
   gastroDiscountArchiveActionSchema,
   type GastroDiscountArchiveAction,
+  gastroDiscountCreateSchema,
+  type GastroDiscountCreateInput,
   adminDeepDeleteEntityTypeSchema,
   adminDeepDeleteBodySchema,
   type AdminDeepDeleteEntityType,
@@ -1302,6 +1304,24 @@ export class AdminController {
     @Param(new ZodValidationPipe(adminGastroProfileIdParamsSchema)) params: AdminGastroProfileIdParams,
   ) {
     return this.adminGastro.listLocationDiscounts(user.tenantId, params.profileId);
+  }
+
+  @Post('gastronomicos/:profileId/descuentos')
+  @Post('gastronomicos/:profileId/discounts')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async createGastroLocationDiscount(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param(new ZodValidationPipe(adminGastroProfileIdParamsSchema)) params: AdminGastroProfileIdParams,
+    @Body(new ZodValidationPipe(gastroDiscountCreateSchema)) body: GastroDiscountCreateInput,
+  ) {
+    return this.adminGastro.createDiscountOnBehalf(
+      user.tenantId,
+      user.id,
+      user.role,
+      params.profileId,
+      body,
+    );
   }
 
   @Get('gastronomicos/:profileId/discuentos/:discountId')

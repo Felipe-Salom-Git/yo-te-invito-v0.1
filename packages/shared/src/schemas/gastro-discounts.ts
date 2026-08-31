@@ -45,6 +45,16 @@ export type GastroDiscountStatus = z.infer<typeof gastroDiscountStatusSchema>;
 export const gastroDiscountOriginSchema = z.enum(['GASTRO', 'ADMIN']);
 export type GastroDiscountOrigin = z.infer<typeof gastroDiscountOriginSchema>;
 
+export function isGastroProfileEligibleForAdminDiscountCreate(status: string): boolean {
+  return status === 'ACTIVE';
+}
+
+export function initialStatusForDiscountOrigin(
+  origin: GastroDiscountOrigin,
+): 'ACTIVE' | 'PENDING_REVIEW' {
+  return origin === 'ADMIN' ? 'ACTIVE' : 'PENDING_REVIEW';
+}
+
 export const gastroDiscountResponseSchema = z.object({
   id: z.string(),
   tenantId: z.string(),

@@ -85,12 +85,11 @@ export function AdminGastroDiscountsTable({ profileId, discounts }: Props) {
                         Edición pendiente
                       </span>
                     )}
-                    {d.reviewKind === 'NEW' &&
-                      ['PENDING_REVIEW', 'COMMISSION_NEGOTIATION'].includes(d.status) && (
-                        <span className="ml-2 inline-flex rounded-full bg-blue-500/15 px-2 py-0.5 text-xs text-blue-300">
-                          Nuevo
-                        </span>
-                      )}
+                    {d.createdByOrigin === 'ADMIN' && (
+                      <span className="ml-2 inline-flex rounded-full bg-violet-500/15 px-2 py-0.5 text-xs text-violet-300">
+                        Creado por Admin
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-text-muted">{d.validationCount}</td>
                   <td className="px-4 py-3">

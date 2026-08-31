@@ -103,7 +103,17 @@ export default function AdminGastroLocationDetailPage() {
             )}
           </div>
 
-          <h2 className="mt-10 text-lg font-semibold text-text">Tickets de descuento</h2>
+          <div className="mt-10 flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-lg font-semibold text-text">Tickets de descuento</h2>
+            {location.status === 'active' && (
+              <Link
+                href={`/admin/gastronomicos/${profileId}/descuentos/nuevo`}
+                className="rounded-lg bg-accent px-3 py-1.5 text-sm font-medium text-bg hover:bg-accent-hover"
+              >
+                Crear descuento
+              </Link>
+            )}
+          </div>
           {pendingCount > 0 && (
             <p className="mt-2 rounded-lg border border-accent/40 bg-accent/5 px-3 py-2 text-sm text-text">
               {pendingCount} ticket(s) pendiente(s) de revisión en este local.

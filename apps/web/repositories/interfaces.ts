@@ -2854,6 +2854,10 @@ export interface AdminGastroRepo {
     discountId: string,
     archived: boolean,
   ): Promise<AdminGastroDiscountDetail>;
+  createDiscount(
+    profileId: string,
+    payload: GastroDiscountCreatePayload,
+  ): Promise<AdminGastroDiscountDetail>;
   updateLocationStatus(
     profileId: string,
     body: { status: string },

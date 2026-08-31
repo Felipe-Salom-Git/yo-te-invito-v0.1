@@ -2269,6 +2269,11 @@ export class ApiRepository implements Repositories {
         { archived },
         { profileId },
       ),
+    createDiscount: async (profileId, payload) =>
+      this.client.post<AdminGastroDiscountDetail>(
+        `/admin/gastronomicos/${encodeURIComponent(profileId)}/descuentos`,
+        payload,
+      ),
     updateLocationStatus: async (profileId, body) =>
       this.client.patch<AdminGastroLocationDetail>(
         `/admin/gastronomicos/${encodeURIComponent(profileId)}/status`,

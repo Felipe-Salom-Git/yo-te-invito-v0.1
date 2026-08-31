@@ -59,6 +59,7 @@ type Props = {
   /** GastroProfile.id — required for GCS uploads. */
   gastroProfileId?: string;
   mode?: 'create' | 'edit';
+  variant?: 'gastro' | 'admin';
 };
 
 export function GastroDiscountForm({
@@ -67,8 +68,10 @@ export function GastroDiscountForm({
   submitting,
   gastroProfileId,
   mode = 'create',
+  variant = 'gastro',
 }: Props) {
   const isEdit = mode === 'edit';
+  const isAdminCreate = variant === 'admin' && !isEdit;
   const initialRange = parseInitialDateRange(initial);
   const [title, setTitle] = useState(initial?.title ?? '');
   const [summary, setSummary] = useState(initial?.summary ?? '');
@@ -85,7 +88,7 @@ export function GastroDiscountForm({
   const [validWeekday, setValidWeekday] = useState<GastroWeekday>(
     initial?.validWeekday ?? 'WEDNESDAY',
   );
-  const [accepted, setAccepted] = useState(isEdit);
+  const [accepted, setAccepted] = useState(isEdit || isAdminCreate);
   const [isUploadingImages, setIsUploadingImages] = useState(false);
 
   const uploadConfig: GcsImageUploadConfig | undefined = gastroProfileId
@@ -246,7 +249,7 @@ export function GastroDiscountForm({
         </div>
       )}
 
-      {!isEdit ? (
+      {!isEdit && !isAdminCreate ? (
         <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm">
           <p className="font-semibold text-amber-200">Importante</p>
           <p className="mt-2 text-text-muted">
@@ -272,7 +275,11 @@ export function GastroDiscountForm({
         type="submit"
         disabled={!accepted || submitting || isUploadingImages || imageUrls.length === 0 || !validityReady}
       >
-        {isEdit ? 'Guardar cambios' : 'Enviar ticket de descuento a revisión'}
+        {isEdit
+          ? 'Guardar cambios'
+          : isAdminCreate
+            ? 'Crear descuento activo'
+            : 'Enviar ticket de descuento a revisión'}
       </Button>
     </form>
   );
