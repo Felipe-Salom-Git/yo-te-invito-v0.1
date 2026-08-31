@@ -1,5 +1,6 @@
 import type { PublicGastroDiscountListItem } from '@/repositories/interfaces';
 import type { HeroViewModel } from '@/lib/home/heroModel';
+import { getGastroDiscountLocationHref } from '@/lib/gastro/discount-location-href';
 
 /** Map a published gastro discount into a category hero slide. */
 export function mapGastroDiscountToHeroModel(
@@ -20,9 +21,9 @@ export function mapGastroDiscountToHeroModel(
     ratingCount: 0,
     fromPrice: null,
     producerName: item.locationName,
-    detailHref: `/descuentos/${item.id}`,
-    primaryCtaLabel: 'Ver descuento',
-    secondaryCtaLabel: 'Ver local',
+    detailHref: getGastroDiscountLocationHref(item),
+    primaryCtaLabel: 'Ver local',
+    secondaryCtaLabel: 'Ver descuento',
     categoryLabel: 'Descuento',
     hideSecondaryCta: true,
   };

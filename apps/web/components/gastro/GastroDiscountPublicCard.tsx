@@ -2,23 +2,17 @@
 
 import Link from 'next/link';
 import type { PublicGastroDiscountListItem } from '@/repositories/interfaces';
-import {
-  formatGastroDiscountBenefit,
-  formatGastroDiscountValidityLabel,
-} from '@/lib/gastro/discount-status-ui';
+import { getGastroDiscountLocationHref } from '@/lib/gastro/discount-location-href';
 
 export function GastroDiscountPublicCard({ discount }: { discount: PublicGastroDiscountListItem }) {
   const title = discount.title?.trim() || 'Descuento';
-  const benefit = formatGastroDiscountBenefit(discount);
-  const dateLabel = formatGastroDiscountValidityLabel(discount);
-  const summary = discount.summary?.trim() || null;
-  const detail = discount.detail?.trim() || null;
-  const hoverSnippet = detail && detail !== summary ? detail : null;
+  const href = getGastroDiscountLocationHref(discount);
 
   return (
     <Link
-      href={`/descuentos/${discount.id}`}
-      className="group block w-[220px] shrink-0 overflow-hidden rounded-xl border border-white/10 bg-white/5 transition hover:border-accent/50 sm:w-[240px]"
+      href={href}
+      aria-label={`${title} en ${discount.locationName}`}
+      className="group block w-[220px] shrink-0 overflow-hidden rounded-xl border border-white/10 bg-white/5 transition hover:border-accent/50 active:border-accent/60 sm:w-[240px]"
     >
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-black/40">
         {discount.headerImageUrl ? (
@@ -31,20 +25,13 @@ export function GastroDiscountPublicCard({ discount }: { discount: PublicGastroD
         ) : (
           <div className="flex h-full items-center justify-center text-4xl text-white/20">%</div>
         )}
+        <span className="absolute left-2 top-2 rounded-md border border-accent/40 bg-black/70 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent">
+          Descuento
+        </span>
       </div>
       <div className="p-3">
-        <p className="line-clamp-1 text-sm font-semibold text-white">{title}</p>
-        <p className="mt-0.5 line-clamp-1 text-xs text-white/60">{discount.locationName}</p>
-        <p className="mt-2 text-xs font-medium text-accent">{benefit}</p>
-        {dateLabel ? <p className="mt-0.5 text-[11px] text-white/55">{dateLabel}</p> : null}
-        {summary ? (
-          <p className="mt-1.5 line-clamp-2 text-xs text-white/50">{summary}</p>
-        ) : null}
-        {hoverSnippet ? (
-          <p className="mt-1 hidden line-clamp-2 text-xs text-white/45 group-hover:block">
-            {hoverSnippet}
-          </p>
-        ) : null}
+        <p className="line-clamp-2 text-sm font-semibold leading-snug text-white">{title}</p>
+        <p className="mt-1 line-clamp-2 text-xs text-white/65">{discount.locationName}</p>
       </div>
     </Link>
   );
