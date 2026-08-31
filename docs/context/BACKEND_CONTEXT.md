@@ -97,6 +97,8 @@ HTTP → Controller (thin) → ZodValidationPipe → Service → Prisma → Post
 **V3.2 categoría Próximamente:** `packages/shared/src/category-availability.ts` — `event`/`gastro` = `comingSoon`; `publicWhere` excluye categorías denegadas según JWT (`getDeniedComingSoonCategories`). Preview: ADMIN (ambas); `PRODUCER_OWNER`/`PRODUCER_STAFF` → event; `GASTRO_OWNER` → gastro. Portales comerciales no se bloquean.
 
 **V3.3 — Actividades (copy público):** el label de producto es **Actividades**; el identificador técnico permanece **`excursion`** (`Event.category`, filtros API, rutas `/excursiones`, `/categoria/excursion`). No renombrar sin migración transversal planificada. Sin cambios de backend en Etapa 1 V3.3.
+
+**V3.3 Etapa 2 — Avatar usuario:** persistencia en `User.preferences.avatarUrl` (`MeAccountService`); helper `readUserAvatarUrl()` en shared; upload `POST /uploads/public-image` scope `user` + `purpose=profile` (solo propio `userId`); reviews/perfil público exponen `avatarUrl` desde preferences; **sin** endpoint `/me/avatar` dedicado. **No** confundir con `ReferrerProfile.avatarUrl`.
 | `GET /public/reviews/summary`, `GET /public/reviews` | Resumen + listado V2 por entidad; query: `sort` (`newest`/`highest`/`lowest`), `replyFilter`, `overallRating` (1–10) |
 | `GET /public/users/:userId/review-profile`, `…/reviews` | Perfil comentarista; listado con mismos filtros públicos |
 | `GET /public/events/:id/discounts` | Active gastro discounts |
@@ -350,7 +352,7 @@ Opcional cron: `NOTIFICATIONS_CRON_ENABLED=false`, `NOTIFICATION_REMINDER_HOURS`
 
 Detalle operativo: [`docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTION_RUNBOOK.md) §25. Auditoría: [`docs/audits/PRODUCTION_SECURITY_HARDENING_AUDIT.md`](../audits/PRODUCTION_SECURITY_HARDENING_AUDIT.md).
 
-**Google Cloud Storage:** bucket privado + público. **Upload API:** `POST /uploads/public-image` — auth ADMIN bypass + portal ownership (`UploadsAuthorizationService`). Doc: [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §12–18.
+**Google Cloud Storage:** bucket privado + público. **Upload API:** `POST /uploads/public-image` — auth ADMIN bypass + portal ownership (`UploadsAuthorizationService`); scope `user` para avatar de cuenta (solo propio `userId`, `purpose=profile`). Doc: [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §12–18.
 
 ---
 

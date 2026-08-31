@@ -32,10 +32,14 @@
 
 ### A2 — Foto de perfil usuario
 
-- [x] Base existente — API `PATCH /me/account` acepta `avatarUrl` en preferences
-- [x] Base existente — `UserReviewerAvatar` muestra avatar en perfil reseñas
-- [ ] Mejora V3.3 — UI upload foto en `/me/account`
-- [ ] Mejora V3.3 — Upload GCS (no data-URL)
+- [x] Base existente — `avatarUrl` soportado en `User.preferences`
+- [x] Mejora V3.3 — upload GCS desde `/me/account`
+- [x] Mejora V3.3 — validación HTTP(S), sin data URL
+- [x] Mejora V3.3 — mostrar avatar en Navbar
+- [x] Mejora V3.3 — mostrar avatar en reviews
+- [x] Mejora V3.3 — mostrar avatar en perfil público `/users/[id]`
+- [x] Mejora V3.3 — quitar foto
+- [ ] QA manual global V3.3 — upload/reload/logout-login/mobile/error/removal
 
 ### A3 — Carruseles automáticos por subcategoría (≥5 publicaciones)
 

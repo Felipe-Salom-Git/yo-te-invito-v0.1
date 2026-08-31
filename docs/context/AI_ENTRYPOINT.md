@@ -15,7 +15,7 @@ Read this file **before generating or modifying code**.
 | **No commitear secretos** | `.env` local; usar `.env.example` |
 | **Rama Getnet activa** | `feat/v1-s03-api-foundation` — **no** `development` (eliminada); **no** tocar `main` salvo instrucción explícita |
 | **V3.2 discovery** | Código cerrado (slices 0–11); QA manual pendiente — [`V3_2_QA_CLOSING.md`](../audits/V3_2_QA_CLOSING.md). Event/Gastro `comingSoon`; preview por rol en `category-availability.ts`. Hotfixes 2026-08: cache HTML, roles owners, auth resend, horarios overnight — ver § Hotfixes V3.2. |
-| **V3.3 funcional/operativa** | **Activa** — Etapa 0 auditoría cerrada; **Etapa 1 UX pública/mobile implementada** (commits `061e052`…`b01c31f`); QA manual pendiente — [`V3_3_STAGE_1_PUBLIC_MOBILE_CLOSING.md`](../audits/V3_3_STAGE_1_PUBLIC_MOBILE_CLOSING.md), checklist [`Yo_Te_Invito_Checklist_V3_3_Funcional_Operativa.md`](../dev/Yo_Te_Invito_Checklist_V3_3_Funcional_Operativa.md). |
+| **V3.3 funcional/operativa** | **Activa** — Etapa 0 auditoría cerrada; **Etapa 1 UX pública/mobile** implementada; **Etapa 2 Perfil usuario / Avatar** implementada (commits `4142d5e`…`b56599b`); QA manual acumulado pendiente — [`V3_3_STAGE_1_PUBLIC_MOBILE_CLOSING.md`](../audits/V3_3_STAGE_1_PUBLIC_MOBILE_CLOSING.md), [`V3_3_STAGE_2_USER_AVATAR_CLOSING.md`](../audits/V3_3_STAGE_2_USER_AVATAR_CLOSING.md), checklist [`Yo_Te_Invito_Checklist_V3_3_Funcional_Operativa.md`](../dev/Yo_Te_Invito_Checklist_V3_3_Funcional_Operativa.md). |
 | **Handoff nuevo chat** | [`NEXT_CHAT_HANDOFF.md`](./NEXT_CHAT_HANDOFF.md) — punto de entrada operativo (stack, prod, hotfixes, pendientes). |
 
 Detalle histórico demo: [guides/DEMO_REMOVAL.md](../guides/DEMO_REMOVAL.md). Portal: [user/USER_PORTAL.md](../user/USER_PORTAL.md).
@@ -43,10 +43,13 @@ Detalle histórico demo: [guides/DEMO_REMOVAL.md](../guides/DEMO_REMOVAL.md). Po
 |-------|--------|------------|
 | **0 — Auditoría** | Cerrada | [`V3_3_FUNCTIONAL_OPERATIONS_DISCOVERY_AUDIT.md`](../audits/V3_3_FUNCTIONAL_OPERATIONS_DISCOVERY_AUDIT.md) |
 | **1 — UX pública / mobile** | Código implementado; QA manual pendiente | [`V3_3_STAGE_1_PUBLIC_MOBILE_CLOSING.md`](../audits/V3_3_STAGE_1_PUBLIC_MOBILE_CLOSING.md) |
+| **2 — Perfil usuario / Avatar** | Código implementado; QA manual acumulado pendiente | [`V3_3_STAGE_2_USER_AVATAR_CLOSING.md`](../audits/V3_3_STAGE_2_USER_AVATAR_CLOSING.md) |
 
 **Etapa 1 — resumen:** cards descuento discovery → ficha gastro; Home/Explore en nav mobile; modales convencionales centrados; scroll táctil galerías; rails subcategoría solo con **≥5** publicaciones (**sin autoplay**); jerarquía CTA gastro; OG dinámico `/descuentos/[id]`; copy público **Actividades** (`excursionPublicCopy.ts`) con clave técnica **`excursion`** sin cambios.
 
-**Próxima etapa V3.3:** Etapa 2 — Perfil usuario / Avatar (ver checklist).
+**Etapa 2 — resumen:** avatar en `User.preferences.avatarUrl` (sin migración Prisma); upload GCS scope `user` + `purpose=profile`; UI `/me/account` (`MeAccountAvatarSection`), navbar, reviews y `/users/[userId]` vía `UserReviewerAvatar`; validación HTTP(S), sin data URL; helper `readUserAvatarUrl()`.
+
+**Próxima etapa V3.3:** Etapa 3 — Scanner V3 (ver checklist).
 
 ---
 
@@ -162,6 +165,7 @@ Controllers: HTTP + Zod only. Services: business logic. Prisma: persistence only
 | **`CONTEXT_PENDIENTES.md`** | Checkbox backlog — mark `[x]` when done |
 | **`docs/dev/Yo_Te_Invito_Checklist_V3_3_Funcional_Operativa.md`** | Checklist V3.3 funcional/operativa |
 | **`docs/audits/V3_3_STAGE_1_PUBLIC_MOBILE_CLOSING.md`** | Cierre Etapa 1 V3.3 |
+| **`docs/audits/V3_3_STAGE_2_USER_AVATAR_CLOSING.md`** | Cierre Etapa 2 V3.3 — avatar usuario |
 | **`NEXT_CHAT_HANDOFF.md`** | Handoff operativo — iniciar chat sin reconstruir historial |
 | **`NEXT_CHAT_GETNET_WEBCHECKOUT_HANDOFF.md`** | Handoff Getnet Web Checkout Redirect |
 | **`docs/payments/GETNET_WEBCHECKOUT_REDIRECT_CLOSING.md`** | Cierre slice Redirect |

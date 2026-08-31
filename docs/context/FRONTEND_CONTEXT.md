@@ -156,7 +156,7 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`). Shared UI tokens:
 | `/me/tickets`, `/me/tickets/[ticketId]` | Listado agrupado + **detalle ticket comprador** (`MeBuyerTicketPanel`, impresión, transferencia) |
 | `/me/preferences` | Tabs: intereses, productoras, **gastro follows** (`MePreferencesGastro`), favoritos, esperados, notificaciones globales |
 | `/me/activity` | Asistidos, reviews, transfers |
-| `/me/account` | Perfil, contraseña, solicitudes de rol |
+| `/me/account` | Perfil, contraseña, **foto de perfil** (`MeAccountAvatarSection`), solicitudes de rol |
 | `/me/notifications` | Bandeja in-app + **push** (`MePushNotificationsPanel`) + preferencias alertas (`MePushAlertPreferences` en `InterestsDisclosure`) |
 | `/me/orders` | Historial órdenes (fuera del menú principal; ruta viva) |
 | `/me/following` | Redirect → `/me/preferences?tab=producers` |
@@ -268,6 +268,48 @@ Importar labels desde `excursionPublicCopy.ts`; admin puede seguir diciendo «Ex
 ### Galerías / scroll táctil
 
 - `EventGallerySection`, `ContentRail`, `GastroDiscountsRail`, `RentalGalleryThumbnails`, `ContentPreviewExpanded` — clases horizontales + imports React client corregidos en estabilización 1.9.
+
+---
+
+## 7c. V3.3 Etapa 2 — Perfil usuario / Avatar (2026-08, código implementado)
+
+Doc cierre: `docs/audits/V3_3_STAGE_2_USER_AVATAR_CLOSING.md`. Sin migración Prisma.
+
+### Persistencia y contrato
+
+- Fuente: `User.preferences.avatarUrl` expuesto en `GET/PATCH /me/account` — **no** mezclar con `ReferrerProfile.avatarUrl`.
+- Validación PATCH: URL HTTP(S) ≤2048; data URLs rechazadas.
+
+### Upload GCS
+
+| Pieza | Detalle |
+|-------|---------|
+| Hook | `useGcsImageUpload` → `useUploadPublicImage` |
+| Config | `gcs-image-upload-config.ts` — scope `user`, `entityId` = account id |
+| Purpose | `profile` |
+| Hint | `imageUploadHints.ts` variant `avatar` (1080×1080, JPG/PNG/WebP) |
+
+### Flujo `/me/account`
+
+```txt
+file → POST /uploads/public-image (scope user) → avatarUrl
+     → PATCH /me/account → TanStack Query invalidation (mePortalKeys)
+     → navbar / reviews / perfil público actualizan vía cache (useMeAccount / API pública)
+```
+
+No hay refresh instantáneo por sesión JWT — el navbar usa `useMeAccount` (query cache), no claims de NextAuth.
+
+### Componentes
+
+| Componente | Uso |
+|------------|-----|
+| `MeAccountAvatarSection` | Gestión avatar: ver, cambiar, quitar, preview, loading/error |
+| `UserReviewerAvatar` | Circular + iniciales fallback; sizes `sm`/`md`/`lg` |
+| `NavbarUserMenu` | Avatar `sm` cuando existe (`useMeAccount`) |
+| `ReviewCard` | Avatar autor en listados públicos |
+| `UserReviewerProfileHeader` | Header `/users/[userId]` |
+
+Sin cropper avanzado — `object-fit: cover` en UI.
 
 ---
 
@@ -481,7 +523,7 @@ Runbook: [`docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`](../deploy/DONWEB_PRODUCTIO
 
 **Branding metadata (2026-06-23):** favicon `/brand/logo.png` (metadata `icons` + manifest); share `/brand/og-logo3-black-v2.png` en root + `/home`; intro solo `logo_2.png`. Ver §3 Branding. Share WhatsApp/OG verificado en prod (2026-06-23).
 
-**Storage imágenes (prod 2026-05-31):** GCS `yti-prod-public-assets`; `useGcsImageUpload` en rentals, admin eventos/excursiones, productora, gastro, hotel. [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §17–22. Ops pendiente: data-URL/orphans (no bloqueante).
+**Storage imágenes (prod 2026-05-31):** GCS `yti-prod-public-assets`; `useGcsImageUpload` en rentals, admin eventos/excursiones, productora, gastro, hotel, **avatar usuario** (`scope: user`). [`GCS_STORAGE_STRATEGY.md`](../deploy/GCS_STORAGE_STRATEGY.md) §17–22. Ops pendiente: data-URL/orphans (incl. avatars reemplazados — deuda no bloqueante).
 
 **SEO técnico (prod 2026-06-01):** `robots.ts` + `sitemap.ts` activos; metadata global y fichas; canonical; JSON‑LD verticales + local Maps. GSC: propiedad `yoteinvito.club` verificada, sitemap enviado. Pendiente no bloqueante: procesamiento GSC, CWV, Rich Results Test. [`SEO_TECHNICAL_AUDIT.md`](../audits/SEO_TECHNICAL_AUDIT.md) · [`SEARCH_CONSOLE_SEO_RUNBOOK.md`](../deploy/SEARCH_CONSOLE_SEO_RUNBOOK.md).
 

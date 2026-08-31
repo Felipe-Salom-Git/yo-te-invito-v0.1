@@ -1,7 +1,18 @@
 # V3.3 — Etapa 2: Perfil de usuario / Avatar — cierre técnico
 
 **Rama:** `feat/v1-s03-api-foundation`  
-**Estado:** código completado en local — **sin push**; contextos generales y checklist **no actualizados**; **QA manual pendiente**.
+**Estado:** código completado y pusheado — contextos/checklist actualizados; **QA manual acumulado pendiente** (cierre global V3.3).
+
+| Check | Estado |
+| ----- | ------ |
+| Código | ✅ |
+| Build shared | ✅ |
+| Build API | ✅ |
+| Build web | ✅ |
+| Contextos | ✅ |
+| Checklist | ✅ |
+| Push | ✅ (post-cierre documental) |
+| QA manual | ⏳ cierre global V3.3 |
 
 ---
 
@@ -145,5 +156,5 @@ Acumulado para cierre global V3.3 — **no ejecutado en esta etapa**:
 ## 11. Documentación relacionada
 
 - Auditoría: `docs/audits/V3_3_STAGE_2_AVATAR_AUDIT.md`
-- Checklist V3.3: pendiente actualización post-revisión
-- Contextos (`AI_ENTRYPOINT`, `NEXT_CHAT_HANDOFF`, etc.): pendiente actualización post-revisión
+- Checklist V3.3: actualizado (A2)
+- Contextos (`AI_ENTRYPOINT`, `NEXT_CHAT_HANDOFF`, `PROJECT_CONTEXT`, `FRONTEND_CONTEXT`, `BACKEND_CONTEXT`, `CONTEXT_PENDIENTES`): actualizados post-Etapa 2

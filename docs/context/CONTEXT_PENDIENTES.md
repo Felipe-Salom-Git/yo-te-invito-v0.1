@@ -4,7 +4,7 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 
 **Convención:** `- [ ]` pendiente · `- [x]` hecho
 
-**Rama activa:** `feat/v1-s03-api-foundation` · HEAD: `b01c31f` (2026-08-31)
+**Rama activa:** `feat/v1-s03-api-foundation` · HEAD: ver `git log -1` (2026-08-31)
 
 **Handoff nuevo chat:** [`NEXT_CHAT_HANDOFF.md`](./NEXT_CHAT_HANDOFF.md)
 
@@ -13,7 +13,8 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 ## V3.3 — Mejoras funcionales y operativas
 
 Checklist: [`Yo_Te_Invito_Checklist_V3_3_Funcional_Operativa.md`](../dev/Yo_Te_Invito_Checklist_V3_3_Funcional_Operativa.md)  
-Cierre Etapa 1: [`V3_3_STAGE_1_PUBLIC_MOBILE_CLOSING.md`](../audits/V3_3_STAGE_1_PUBLIC_MOBILE_CLOSING.md)
+Cierre Etapa 1: [`V3_3_STAGE_1_PUBLIC_MOBILE_CLOSING.md`](../audits/V3_3_STAGE_1_PUBLIC_MOBILE_CLOSING.md)  
+Cierre Etapa 2: [`V3_3_STAGE_2_USER_AVATAR_CLOSING.md`](../audits/V3_3_STAGE_2_USER_AVATAR_CLOSING.md)
 
 ### Etapa 0 — Auditoría
 
@@ -42,8 +43,30 @@ Cierre Etapa 1: [`V3_3_STAGE_1_PUBLIC_MOBILE_CLOSING.md`](../audits/V3_3_STAGE_1
 
 ### Etapa 2 — Perfil usuario / Avatar
 
-- [ ] UI upload foto `/me/account`
-- [ ] Upload GCS avatar (A2 backlog)
+**Implementación (código):**
+
+- [x] Auditoría contrato avatar (`4142d5e`, `V3_3_STAGE_2_AVATAR_AUDIT.md`)
+- [x] Upload GCS scope `user` + validación HTTP(S) (`1bdb907`)
+- [x] Persistencia `preferences.avatarUrl` + `readUserAvatarUrl()`
+- [x] UI `/me/account` — `MeAccountAvatarSection` (`105696c`)
+- [x] Navbar — `NavbarUserMenu` + `useMeAccount`
+- [x] Reviews — `ReviewCard` + API `buildPublicReviewItem`
+- [x] Perfil público `/users/[userId]`
+- [x] Quitar avatar (`PATCH avatarUrl: null`)
+- [x] Doc cierre técnico (`b56599b`)
+
+**QA manual — pendiente (acumulado cierre global V3.3):**
+
+- [ ] `/me/account` — upload, preview, reload, logout/login, quitar foto, error upload
+- [ ] Navbar — avatar con/sin foto
+- [ ] Review card — avatar autor
+- [ ] `/users/[id]` — header avatar
+- [ ] Mobile 360 / 390 / 430 px
+
+**Deuda no bloqueante:**
+
+- [ ] Orphan GCS de avatars reemplazados (sin lifecycle cleanup automático)
+- [ ] Sin cropper avanzado (solo `object-fit: cover`)
 
 ---
 

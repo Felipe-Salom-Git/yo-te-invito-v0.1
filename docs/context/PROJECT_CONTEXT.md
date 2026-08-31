@@ -141,12 +141,16 @@ Bloque **Descubrimiento público** cerrado en checklist V2. Detalle: `docs/audit
 |-------|--------|
 | Etapa 0 — Auditoría backlog A1–F | Cerrada — `V3_3_FUNCTIONAL_OPERATIONS_DISCOVERY_AUDIT.md` |
 | Etapa 1 — UX pública / mobile | Código implementado (`061e052`…`b01c31f`); QA manual pendiente |
+| Etapa 2 — Avatar usuario | Código implementado (`4142d5e`…`b56599b`); QA manual acumulado pendiente |
 | Checklist V3.3 | `docs/dev/Yo_Te_Invito_Checklist_V3_3_Funcional_Operativa.md` |
 | Cierre técnico Etapa 1 | `docs/audits/V3_3_STAGE_1_PUBLIC_MOBILE_CLOSING.md` |
+| Cierre técnico Etapa 2 | `docs/audits/V3_3_STAGE_2_USER_AVATAR_CLOSING.md` |
 
 **Decisiones Etapa 1:** rails subcategoría **≥5** (sin autoplay); cards descuento → ficha gastro; `/descuentos/[id]` conservada; OG descuentos; nav mobile Home+Explore; modales centrados; copy público **Actividades** con clave técnica **`excursion`** (`Event.category`, rutas `/excursiones`, API sin cambios).
 
-**Próxima:** Etapa 2 — Perfil usuario / Avatar.
+**Etapa 2 — Avatar usuario:** almacenamiento GCS (`POST /uploads/public-image`, scope `user`); persistencia `User.preferences.avatarUrl` (sin migración); gestión en `/me/account`; visualización en navbar, reviews y perfil público `/users/[userId]`; **no** confundir con `ReferrerProfile.avatarUrl`.
+
+**Próxima:** Etapa 3 — Scanner V3.
 
 ## 5a. Registro y onboarding por tipo de usuario — Estado cerrado (2026-05-24)
 

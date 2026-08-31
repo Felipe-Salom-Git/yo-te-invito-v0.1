@@ -1,6 +1,6 @@
 # Yo Te Invito — Next Chat Handoff
 
-**Actualizado:** 2026-08-31 · Rama: `feat/v1-s03-api-foundation` · HEAD: `b01c31f` (+ commit documental de cierre)
+**Actualizado:** 2026-08-31 · Rama: `feat/v1-s03-api-foundation` · HEAD: ver `git log -1`
 
 Punto de entrada operativo para **V3.3**. Detalle completo: `AI_ENTRYPOINT.md`, `PROJECT_CONTEXT.md`, `CONTEXT_PENDIENTES.md`.
 
@@ -12,11 +12,13 @@ Punto de entrada operativo para **V3.3**. Detalle completo: `AI_ENTRYPOINT.md`, 
 |-------|--------|
 | **Etapa 0 — Auditoría funcional/operativa** | ✅ Cerrada — `docs/audits/V3_3_FUNCTIONAL_OPERATIONS_DISCOVERY_AUDIT.md` |
 | **Etapa 1 — UX pública / mobile** | ✅ Código implementado (9 slices) |
-| **Etapa 1 — QA manual** | ⏳ Pendiente — `docs/audits/V3_3_STAGE_1_PUBLIC_MOBILE_CLOSING.md` §7 |
+| **Etapa 1 — QA manual** | ⏳ Pendiente — acumulado cierre global V3.3 |
+| **Etapa 2 — Perfil usuario / Avatar** | ✅ Código implementado (4 slices) |
+| **Etapa 2 — QA manual** | ⏳ Pendiente — acumulado cierre global V3.3 |
 
 **Checklist V3.3:** `docs/dev/Yo_Te_Invito_Checklist_V3_3_Funcional_Operativa.md`
 
-**Próxima etapa V3.3:** **Etapa 2 — Perfil usuario / Avatar** (A2 del backlog). No iniciar sin instrucción explícita.
+**Próxima etapa V3.3:** **Etapa 3 — Scanner V3**. No iniciar sin instrucción explícita.
 
 ---
 
@@ -59,23 +61,35 @@ Runbook: `docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`.
 
 ---
 
-## 5. V3.3 Etapa 1 — commits principales
+## 5. V3.3 Etapa 2 — commits principales
 
 ```txt
-061e052 feat(v3.3): route discount cards to gastro locations
-20a3b52 feat(v3.3): improve mobile public navigation
-3d0fa69 fix(v3.3): center dialogs across mobile layouts
-d6be6f2 fix(v3.3): improve mobile image scrolling
-bbc8956 feat(v3.3): add thresholded subcategory rails
-1ea1d56 refactor(v3.3): improve gastro public action hierarchy
-67ebfe4 feat(v3.3): improve public sharing metadata
-c2883b6 feat(v3.3): rename excursions to activities in public ui
-b01c31f docs(v3.3): close public mobile ux stage
+4142d5e docs(v3.3): audit user avatar flow
+1bdb907 feat(v3.3): add user avatar upload
+105696c feat(v3.3): surface user avatars across profile ui
+b56599b docs(v3.3): close user avatar stage
 ```
+
+(+ commit documental de cierre de contextos tras este handoff)
 
 ---
 
-## 6. Decisiones importantes (V3.3 Etapa 1)
+## 6. Decisiones importantes (V3.3 Etapa 2 — Avatar)
+
+| Tema | Regla |
+|------|-------|
+| **Persistencia** | `User.preferences.avatarUrl` — **no** columna Prisma; **no** mezclar con `ReferrerProfile.avatarUrl` |
+| **Upload** | `POST /uploads/public-image` — scope `user`, `entityId=userId`, `purpose=profile` |
+| **Path GCS** | `public/users/{userId}/profile/{yyyy}/{mm}/{uuid}.{ext}` |
+| **Validación** | URL HTTP(S) ≤2048; data URLs rechazadas; lectura con `readUserAvatarUrl()` |
+| **UI gestión** | `/me/account` → `MeAccountAvatarSection` (cambiar / quitar foto) |
+| **UI display** | `UserReviewerAvatar` en navbar, reviews, `/users/[userId]` |
+| **Reemplazo** | Nuevo objeto GCS + PATCH; asset anterior **no** se borra (deuda orphan cleanup) |
+| **Sin cropper** | `object-fit: cover`; hint 1080×1080 |
+
+---
+
+## 7. V3.3 Etapa 1 — decisiones (referencia)
 
 | Tema | Regla |
 |------|-------|
@@ -83,13 +97,10 @@ b01c31f docs(v3.3): close public mobile ux stage
 | **Autoplay** | **No** — navegación horizontal manual |
 | **Cards descuento** | Click → ficha gastro; `/descuentos/[id]` se conserva (claim/QR/email) |
 | **Actividades** | Label público **Actividades**; clave técnica **`excursion`** sin cambios |
-| **Rutas legacy** | `/excursiones/*`, `/categoria/excursion` sin renombrar |
-
-Fuente copy Actividades: `apps/web/lib/categories/excursionPublicCopy.ts`
 
 ---
 
-## 7. V3.2 — estado previo (sin cerrar QA)
+## 8. V3.2 — estado previo (sin cerrar QA)
 
 Código slices 0–11 cerrado. Hotfixes 2026-08: `15f2776` (cache), `b8dc571` (roles), `ff6f8e0` (auth resend), `920c5d7` (horarios overnight).
 
@@ -97,9 +108,9 @@ Código slices 0–11 cerrado. Hotfixes 2026-08: `15f2776` (cache), `b8dc571` (r
 
 ---
 
-## 8. Pendientes priorizados
+## 9. Pendientes priorizados
 
-1. **QA manual Etapa 1 V3.3** — mobile 360/390/430px + desktop + sharing OG/WhatsApp.
+1. **QA manual global V3.3** — Etapas 1 + 2 acumuladas (mobile 360/390/430, avatar upload/reload/navbar/reviews).
 2. **QA prod V3.2** — cache, roles, auth resend, horarios (deuda anterior).
 3. Deploy VPS si commits V3.2/V3.3 no están en prod.
 4. Publicar términos comerciales en `/admin/legales`.
@@ -109,22 +120,17 @@ Detalle: `CONTEXT_PENDIENTES.md`.
 
 ---
 
-## 9. Comandos de validación
+## 10. Comandos de validación
 
 ```bash
 pnpm --filter shared run build
+pnpm --filter api run build
 pnpm --filter web run build
-
-# Post-deploy cache (V3.2)
-curl -I https://yoteinvito.club/home
-curl -I https://yoteinvito.club/explore
 ```
-
-**Test umbral subcategorías:** `apps/web/lib/categories/subcategoryRailThreshold.test.ts` — archivo preparado; **no ejecutado** (web sin runner Vitest configurado).
 
 ---
 
-## 10. Próximo paso recomendado
+## 11. Próximo paso recomendado
 
-1. Ejecutar **QA manual Etapa 1** según `V3_3_STAGE_1_PUBLIC_MOBILE_CLOSING.md`.
-2. Luego iniciar **V3.3 Etapa 2 — Perfil usuario / Avatar** (upload foto, GCS).
+1. Iniciar **V3.3 Etapa 3 — Scanner V3** cuando se indique.
+2. QA manual global V3.3 al cerrar todas las etapas planificadas.
