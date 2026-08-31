@@ -1,0 +1,39 @@
+-- V3.3 Etapa 5: pending edits, archive, creator origin, lifecycle notifications/audit enums.
+
+CREATE TYPE "GastroDiscountOrigin" AS ENUM ('GASTRO', 'ADMIN');
+
+ALTER TABLE "GastroDiscount"
+  ADD COLUMN "pendingUpdate" JSONB,
+  ADD COLUMN "pendingUpdateSubmittedAt" TIMESTAMP(3),
+  ADD COLUMN "pendingUpdateSubmittedByUserId" TEXT,
+  ADD COLUMN "archivedAt" TIMESTAMP(3),
+  ADD COLUMN "createdByOrigin" "GastroDiscountOrigin" NOT NULL DEFAULT 'GASTRO',
+  ADD COLUMN "createdByUserId" TEXT;
+
+ALTER TABLE "GastroDiscount"
+  ADD CONSTRAINT "GastroDiscount_createdByUserId_fkey"
+  FOREIGN KEY ("createdByUserId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+ALTER TABLE "GastroDiscount"
+  ADD CONSTRAINT "GastroDiscount_pendingUpdateSubmittedByUserId_fkey"
+  FOREIGN KEY ("pendingUpdateSubmittedByUserId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+CREATE INDEX "GastroDiscount_archivedAt_idx" ON "GastroDiscount"("archivedAt");
+CREATE INDEX "GastroDiscount_createdByOrigin_idx" ON "GastroDiscount"("createdByOrigin");
+CREATE INDEX "GastroDiscount_pendingUpdateSubmittedAt_idx" ON "GastroDiscount"("pendingUpdateSubmittedAt");
+
+ALTER TYPE "AuditAction" ADD VALUE IF NOT EXISTS 'GASTRO_DISCOUNT_EDIT_SUBMITTED';
+ALTER TYPE "AuditAction" ADD VALUE IF NOT EXISTS 'GASTRO_DISCOUNT_EDIT_APPROVED';
+ALTER TYPE "AuditAction" ADD VALUE IF NOT EXISTS 'GASTRO_DISCOUNT_EDIT_REJECTED';
+ALTER TYPE "AuditAction" ADD VALUE IF NOT EXISTS 'GASTRO_DISCOUNT_ARCHIVED';
+ALTER TYPE "AuditAction" ADD VALUE IF NOT EXISTS 'GASTRO_DISCOUNT_UNARCHIVED';
+ALTER TYPE "AuditAction" ADD VALUE IF NOT EXISTS 'ADMIN_GASTRO_DISCOUNT_CREATED';
+ALTER TYPE "AuditAction" ADD VALUE IF NOT EXISTS 'GASTRO_PROFILE_APPROVED';
+ALTER TYPE "AuditAction" ADD VALUE IF NOT EXISTS 'GASTRO_PROFILE_REJECTED';
+
+ALTER TYPE "NotificationKind" ADD VALUE IF NOT EXISTS 'GASTRO_DISCOUNT_PENDING_REVIEW';
+ALTER TYPE "NotificationKind" ADD VALUE IF NOT EXISTS 'GASTRO_DISCOUNT_APPROVED_BY_ADMIN';
+ALTER TYPE "NotificationKind" ADD VALUE IF NOT EXISTS 'GASTRO_DISCOUNT_REJECTED_BY_ADMIN';
+ALTER TYPE "NotificationKind" ADD VALUE IF NOT EXISTS 'GASTRO_DISCOUNT_EXPIRED';
+ALTER TYPE "NotificationKind" ADD VALUE IF NOT EXISTS 'GASTRO_PROFILE_APPROVED_BY_ADMIN';
+ALTER TYPE "NotificationKind" ADD VALUE IF NOT EXISTS 'GASTRO_PROFILE_REJECTED_BY_ADMIN';

@@ -6,17 +6,26 @@ import {
 } from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import { Prisma } from '@prisma/client';
+import { AuditAction } from '@prisma/client';
 import {
+  applyDiscountUpdateToSnapshot,
   buildGastroDiscountQrPayload,
+  buildPendingUpdatePayload,
   ErrorCode,
+  hasMaterialDiscountChanges,
+  parsePendingUpdate,
+  shouldSubmitDiscountPendingEdit,
+  snapshotFromPublishedRow,
   type GastroDiscountCreateInput,
   type GastroDiscountResponse,
   type GastroDiscountUpdateInput,
+  type GastroWeekday,
   isGastroDiscountDateRangeOrderValid,
   normalizeGastroDiscountExpiryDate,
   normalizeGastroDiscountValidFromDate,
 } from '@yo-te-invito/shared';
 import { PrismaService } from '../../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 import { ProfilesAuthorizationService } from '../../common/profiles-authorization.service';
 import { GastroOwnershipService } from './gastro-ownership.service';
 import { GastroDiscountMetricsService } from './gastro-discount-metrics.service';
@@ -33,6 +42,7 @@ export class GastroPortalDiscountsService {
     private readonly profiles: ProfilesAuthorizationService,
     private readonly ownership: GastroOwnershipService,
     private readonly discountMetrics: GastroDiscountMetricsService,
+    private readonly audit: AuditService,
   ) {}
 
   mapDiscount(row: {
@@ -62,6 +72,10 @@ export class GastroPortalDiscountsService {
     submittedImageUrls?: unknown;
     createdAt: Date;
     updatedAt: Date;
+    createdByOrigin?: string | null;
+    archivedAt?: Date | null;
+    pendingUpdate?: unknown;
+    pendingUpdateSubmittedAt?: Date | null;
   }): GastroDiscountResponse {
     const readUrls = (v: unknown) =>
       v && Array.isArray(v) ? (v as string[]).filter(Boolean) : [];
@@ -101,6 +115,11 @@ export class GastroPortalDiscountsService {
       displayImageUrls: display,
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
+      createdByOrigin: row.createdByOrigin === 'ADMIN' ? 'ADMIN' : 'GASTRO',
+      archivedAt: row.archivedAt?.toISOString() ?? null,
+      hasPendingUpdate: parsePendingUpdate(row.pendingUpdate) != null,
+      pendingUpdate: parsePendingUpdate(row.pendingUpdate),
+      pendingUpdateSubmittedAt: row.pendingUpdateSubmittedAt?.toISOString() ?? null,
     };
   }
 
@@ -295,6 +314,8 @@ export class GastroPortalDiscountsService {
               discountDate: body.discountDate,
             })),
         status: 'PENDING_REVIEW',
+        createdByOrigin: 'GASTRO',
+        createdByUserId: userId,
         commissionCoordinationAcceptedAt: new Date(),
         submittedImageUrls: this.urlsJson(body.imageUrls),
       },
@@ -346,6 +367,55 @@ export class GastroPortalDiscountsService {
         validTo: toSrc,
       });
       dateRangePatch = { ...range, validWeekday: null };
+    }
+
+    if (shouldSubmitDiscountPendingEdit(existing.status)) {
+      const published = snapshotFromPublishedRow(existing);
+      const proposed = applyDiscountUpdateToSnapshot(published, body, {
+        validityMode: nextValidityMode,
+        validWeekday: switchingToWeekly
+          ? ((body.validWeekday ?? existing.validWeekday) as GastroWeekday | null)
+          : null,
+        validFrom: dateRangePatch?.validFrom ?? existing.validFrom,
+        validTo: dateRangePatch?.validTo ?? existing.validTo,
+        discountDate: dateRangePatch?.discountDate ?? existing.discountDate,
+      });
+      const material = hasMaterialDiscountChanges(published, proposed);
+      if (!material) {
+        if (existing.pendingUpdate == null) {
+          return this.mapDiscount(existing);
+        }
+        const cleared = await this.prisma.gastroDiscount.update({
+          where: { id },
+          data: {
+            pendingUpdate: Prisma.DbNull,
+            pendingUpdateSubmittedAt: null,
+            pendingUpdateSubmittedByUserId: null,
+          },
+        });
+        return this.mapDiscount(cleared);
+      }
+
+      const pending = buildPendingUpdatePayload(proposed);
+      const updated = await this.prisma.gastroDiscount.update({
+        where: { id },
+        data: {
+          pendingUpdate: pending as Prisma.InputJsonValue,
+          pendingUpdateSubmittedAt: new Date(),
+          pendingUpdateSubmittedByUserId: userId,
+        },
+      });
+      await this.audit.logAction({
+        tenantId,
+        actorId: userId,
+        actorRole: userRole,
+        action: AuditAction.GASTRO_DISCOUNT_EDIT_SUBMITTED,
+        entityType: 'GastroDiscount',
+        entityId: id,
+        before: published,
+        after: pending,
+      });
+      return this.mapDiscount(updated);
     }
 
     const updated = await this.prisma.gastroDiscount.update({

@@ -96,6 +96,11 @@ enum GastroDiscountStatus {
   EXPIRED
 }
 
+enum GastroDiscountOrigin {
+  GASTRO
+  ADMIN
+}
+
 enum GastroDiscountVisibility {
   PUBLIC
   COURTESY_ONLY
@@ -749,6 +754,8 @@ model User {
   reviewsModerated    Review[]               @relation("ReviewModerator")
   reviewsHidden       Review[]               @relation("ReviewHiddenBy")
   gastroDiscountClaims GastroDiscountClaim[]
+  gastroDiscountsCreated GastroDiscount[] @relation("GastroDiscountCreator")
+  gastroDiscountPendingEdits GastroDiscount[] @relation("GastroDiscountPendingSubmitter")
   gastroCourtesyCampaignsCreated GastroCourtesyCampaign[]
   commercialRelationshipReviews CommercialRelationshipReview[]
   reviewDisputesRequested       ReviewDisputeRequest[]         @relation("ReviewDisputeRequester")
@@ -1102,6 +1109,12 @@ enum NotificationKind {
   TICKET_DATE_CHANGE_APPROVED
   TICKET_DATE_CHANGE_REJECTED
   TICKET_DATE_CHANGE_APPLIED
+  GASTRO_DISCOUNT_PENDING_REVIEW
+  GASTRO_DISCOUNT_APPROVED_BY_ADMIN
+  GASTRO_DISCOUNT_REJECTED_BY_ADMIN
+  GASTRO_DISCOUNT_EXPIRED
+  GASTRO_PROFILE_APPROVED_BY_ADMIN
+  GASTRO_PROFILE_REJECTED_BY_ADMIN
 }
 
 enum NotificationChannel {
@@ -2034,6 +2047,14 @@ enum AuditAction {
   GASTRO_DISCOUNT_COURTESY_SENT
   GASTRO_DISCOUNT_REQUESTED
   GASTRO_DISCOUNT_REDEEMED
+  GASTRO_DISCOUNT_EDIT_SUBMITTED
+  GASTRO_DISCOUNT_EDIT_APPROVED
+  GASTRO_DISCOUNT_EDIT_REJECTED
+  GASTRO_DISCOUNT_ARCHIVED
+  GASTRO_DISCOUNT_UNARCHIVED
+  ADMIN_GASTRO_DISCOUNT_CREATED
+  GASTRO_PROFILE_APPROVED
+  GASTRO_PROFILE_REJECTED
   REVIEW_DISPUTE_IN_REVIEW
   REVIEW_DISPUTE_ACCEPTED
   REVIEW_DISPUTE_REJECTED
@@ -2242,12 +2263,20 @@ model GastroDiscount {
   commissionCoordinationAcceptedAt DateTime?
   sourceInboxItemId String?              @unique
   visibility        GastroDiscountVisibility @default(PUBLIC)
+  pendingUpdate     Json?
+  pendingUpdateSubmittedAt DateTime?
+  pendingUpdateSubmittedByUserId String?
+  archivedAt        DateTime?
+  createdByOrigin   GastroDiscountOrigin @default(GASTRO)
+  createdByUserId   String?
   createdAt         DateTime             @default(now())
   updatedAt         DateTime             @updatedAt
 
   tenant        Tenant                  @relation(fields: [tenantId], references: [id])
   event         Event                   @relation(fields: [eventId], references: [id], onDelete: Cascade)
   gastroProfile GastroProfile?          @relation(fields: [gastroProfileId], references: [id], onDelete: SetNull)
+  createdBy     User?                   @relation("GastroDiscountCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  pendingUpdateSubmittedBy User?        @relation("GastroDiscountPendingSubmitter", fields: [pendingUpdateSubmittedByUserId], references: [id], onDelete: SetNull)
   validations   GastroDiscountValidation[]
   claims        GastroDiscountClaim[]
   courtesyCampaign GastroCourtesyCampaign?
@@ -2257,6 +2286,9 @@ model GastroDiscount {
   @@index([tenantId, status])
   @@index([gastroProfileId, status])
   @@index([gastroProfileId, visibility, status])
+  @@index([archivedAt])
+  @@index([createdByOrigin])
+  @@index([pendingUpdateSubmittedAt])
 }
 
 model GastroCourtesyCampaign {

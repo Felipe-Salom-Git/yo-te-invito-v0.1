@@ -42,6 +42,9 @@ export const gastroDiscountStatusSchema = z.enum([
 ]);
 export type GastroDiscountStatus = z.infer<typeof gastroDiscountStatusSchema>;
 
+export const gastroDiscountOriginSchema = z.enum(['GASTRO', 'ADMIN']);
+export type GastroDiscountOrigin = z.infer<typeof gastroDiscountOriginSchema>;
+
 export const gastroDiscountResponseSchema = z.object({
   id: z.string(),
   tenantId: z.string(),
@@ -75,6 +78,24 @@ export const gastroDiscountResponseSchema = z.object({
   displayImageUrls: z.array(z.string()).optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
+  createdByOrigin: gastroDiscountOriginSchema.optional(),
+  archivedAt: z.string().datetime().nullable().optional(),
+  hasPendingUpdate: z.boolean().optional(),
+  pendingUpdate: z
+    .object({
+      title: z.string(),
+      summary: z.string(),
+      detail: z.string(),
+      imageUrls: z.array(z.string()),
+      validityMode: gastroDiscountValidityModeSchema,
+      validWeekday: gastroWeekdaySchema.nullable(),
+      validFrom: z.string().datetime().nullable(),
+      validTo: z.string().datetime().nullable(),
+      discountDate: z.string().datetime().nullable(),
+    })
+    .nullable()
+    .optional(),
+  pendingUpdateSubmittedAt: z.string().datetime().nullable().optional(),
 });
 export type GastroDiscountResponse = z.infer<typeof gastroDiscountResponseSchema>;
 

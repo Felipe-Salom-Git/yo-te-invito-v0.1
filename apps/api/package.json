@@ -37,6 +37,7 @@
     "test:scanner-manual-short-code": "tsx scripts/test-scanner-manual-short-code.util.ts",
     "test:scanner-username-auth": "tsx scripts/test-scanner-username-auth.util.ts",
     "test:gastro-multi-local": "tsx scripts/test-gastro-multi-local.util.ts",
+    "test:gastro-discount-pending-edit": "tsx scripts/test-gastro-discount-pending-edit.util.ts",
     "test:gastro-discount-expiry": "tsx scripts/test-gastro-discount-expiry.util.ts",
     "test:gastro-discount-scan": "tsx scripts/test-gastro-discount-scan.ts",
     "smoke:reviews": "tsx scripts/smoke-reviews-v2.ts",
