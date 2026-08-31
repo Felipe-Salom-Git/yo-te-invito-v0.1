@@ -628,4 +628,49 @@ Repository `adminBenefitSettlements` (infra); UI completa → Slice 9.6.
 
 ---
 
-**STOP slice 9.2** — siguiente paso: slice 9.3 transfers.
+## 25. Slice 9.3 implementation decisions
+
+**Fecha:** 2026-08-31  
+**Commit:** `feat(v3.3): add settlement transfer accounting`
+
+### Cash semantics
+
+| Magnitud | Fuente |
+|----------|--------|
+| `cashDueCents` | `SUM(baseAmountCents)` allocations `mode=CASH` |
+| `cashReceivedCents` | `SUM(amountCents)` transfers activos (`reversedAt IS NULL`) |
+| `cashOutstandingCents` | `max(due - received, 0)` |
+
+`cashCollectionStatus` **derivado** (no persistido): `NONE | PENDING | PARTIALLY_RECEIVED | RECEIVED`.
+
+### CLOSED ≠ PAID
+
+`BenefitSettlement.status=CLOSED` congela usages/allocation; **no** implica cobranza completa. Transfers permitidos en settlement `CLOSED` si hay outstanding.
+
+### Overpayment
+
+Rechazado: `received + newAmount > due` → `BENEFIT_TRANSFER_OVERPAYMENT`. Sin `cashDue` → `BENEFIT_SETTLEMENT_NO_CASH_DUE`.
+
+### Reversal
+
+Modelo A: `reversedAt`, `reversedByUserId`, `reversalReason` en `BenefitSettlementTransfer`. Sin hard delete. Transfer revertido no cuenta en `cashReceived`.
+
+### Concurrency
+
+`Serializable` transaction + `SELECT ... FOR UPDATE` en `BenefitSettlement` al registrar/revertir transfer.
+
+### Proof upload
+
+**DEFERRED** — `GcsStorageService` solo expone `uploadPublicObject` (bucket público). Campo `proofUrl` existe en schema para evolución con storage privado/signed URLs. V1: `reference` + `notes`.
+
+### API
+
+`GET/POST /admin/benefit-settlements/:id/transfers`, `POST .../transfers/:transferId/reverse`.
+
+### Summary extension
+
+`cashDueCents`, `cashReceivedCents`, `cashOutstandingCents`, `cashCollectionStatus`, `transferCount`, `barterCreditPreviewCents` (preview, no ledger).
+
+---
+
+**STOP slice 9.3** — siguiente paso: slice 9.4 ledger.

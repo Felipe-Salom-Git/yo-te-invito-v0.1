@@ -8,6 +8,7 @@ import {
 } from '../benefit-settlement';
 import { benefitVerticalSchema } from './benefit-commercial-agreements';
 import { moneyCentsStringSchema } from '../money/benefit-money';
+import { BENEFIT_CASH_COLLECTION_STATUSES } from '../benefit-settlement';
 
 const partnerFieldsBaseSchema = z
   .object({
@@ -81,6 +82,12 @@ export const benefitSettlementSummarySchema = z.object({
   cashBaseAmountCents: moneyCentsStringSchema,
   barterBaseAmountCents: moneyCentsStringSchema,
   pendingBaseAmountCents: moneyCentsStringSchema,
+  cashDueCents: moneyCentsStringSchema,
+  cashReceivedCents: moneyCentsStringSchema,
+  cashOutstandingCents: moneyCentsStringSchema,
+  cashCollectionStatus: z.enum(BENEFIT_CASH_COLLECTION_STATUSES),
+  transferCount: z.number().int(),
+  barterCreditPreviewCents: moneyCentsStringSchema.optional(),
 });
 
 export type BenefitSettlementSummary = z.infer<typeof benefitSettlementSummarySchema>;
@@ -136,4 +143,55 @@ export const allocateBenefitSettlementResponseSchema = z.object({
 
 export type AllocateBenefitSettlementResponse = z.infer<
   typeof allocateBenefitSettlementResponseSchema
+>;
+
+export const registerBenefitSettlementTransferBodySchema = z
+  .object({
+    amountCents: moneyCentsStringSchema.refine((v) => BigInt(v) > 0n, 'amount must be positive'),
+    currency: z.literal('ARS').default('ARS'),
+    transferredAt: z.string().datetime(),
+    reference: z.string().trim().max(120).optional(),
+    notes: z.string().trim().max(2000).optional(),
+  })
+  .strict();
+
+export type RegisterBenefitSettlementTransferBody = z.infer<
+  typeof registerBenefitSettlementTransferBodySchema
+>;
+
+export const reverseBenefitSettlementTransferBodySchema = z
+  .object({
+    reason: z.string().trim().min(1).max(500),
+  })
+  .strict();
+
+export type ReverseBenefitSettlementTransferBody = z.infer<
+  typeof reverseBenefitSettlementTransferBodySchema
+>;
+
+export const benefitSettlementTransferDtoSchema = z.object({
+  id: z.string(),
+  settlementId: z.string(),
+  amountCents: moneyCentsStringSchema,
+  currency: z.string(),
+  transferredAt: z.string().datetime(),
+  reference: z.string().nullable(),
+  notes: z.string().nullable(),
+  proofUrl: z.string().nullable(),
+  registeredByUserId: z.string().nullable(),
+  createdAt: z.string().datetime(),
+  reversedAt: z.string().datetime().nullable(),
+  reversedByUserId: z.string().nullable(),
+  reversalReason: z.string().nullable(),
+  isActive: z.boolean(),
+});
+
+export type BenefitSettlementTransferDto = z.infer<typeof benefitSettlementTransferDtoSchema>;
+
+export const benefitSettlementTransfersListResponseSchema = z.object({
+  data: z.array(benefitSettlementTransferDtoSchema),
+});
+
+export type BenefitSettlementTransfersListResponse = z.infer<
+  typeof benefitSettlementTransfersListResponseSchema
 >;

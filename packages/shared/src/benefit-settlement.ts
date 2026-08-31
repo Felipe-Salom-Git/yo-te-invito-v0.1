@@ -131,3 +131,58 @@ export function assertBenefitSettlementPartnerXor(
   }
   return Boolean(excursionOperatorId) && !gastroProfileId;
 }
+
+export const BENEFIT_CASH_COLLECTION_STATUSES = [
+  'NONE',
+  'PENDING',
+  'PARTIALLY_RECEIVED',
+  'RECEIVED',
+] as const;
+export type BenefitCashCollectionStatus = (typeof BENEFIT_CASH_COLLECTION_STATUSES)[number];
+
+export function computeCashDueCents(
+  allocations: ReadonlyArray<{ mode: string; baseAmountCents: bigint }>,
+): bigint {
+  let total = 0n;
+  for (const allocation of allocations) {
+    if (allocation.mode === 'CASH') {
+      total += allocation.baseAmountCents;
+    }
+  }
+  return total;
+}
+
+export function computeCashReceivedCents(
+  transfers: ReadonlyArray<{ amountCents: bigint; reversedAt?: Date | null }>,
+): bigint {
+  let total = 0n;
+  for (const transfer of transfers) {
+    if (transfer.reversedAt == null) {
+      total += transfer.amountCents;
+    }
+  }
+  return total;
+}
+
+export function computeCashOutstandingCents(cashDueCents: bigint, cashReceivedCents: bigint): bigint {
+  const diff = cashDueCents - cashReceivedCents;
+  return diff > 0n ? diff : 0n;
+}
+
+export function deriveCashCollectionStatus(
+  cashDueCents: bigint,
+  cashReceivedCents: bigint,
+): BenefitCashCollectionStatus {
+  if (cashDueCents === 0n) return 'NONE';
+  if (cashReceivedCents === 0n) return 'PENDING';
+  if (cashReceivedCents < cashDueCents) return 'PARTIALLY_RECEIVED';
+  return 'RECEIVED';
+}
+
+export function assertTransferWouldNotOverpay(
+  cashDueCents: bigint,
+  cashReceivedCents: bigint,
+  transferAmountCents: bigint,
+): boolean {
+  return cashReceivedCents + transferAmountCents <= cashDueCents;
+}

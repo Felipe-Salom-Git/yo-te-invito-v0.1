@@ -8,12 +8,18 @@ import { Prisma } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import type {
   BenefitSettlement,
+  BenefitSettlementTransfer,
   BenefitSettlementUsageAllocation,
 } from '@prisma/client';
 import {
   ErrorCode,
+  computeCashDueCents,
+  computeCashOutstandingCents,
+  computeCashReceivedCents,
   deriveBenefitSettlementStatus,
+  deriveCashCollectionStatus,
   moneyCentsToString,
+  roundBarterCreditCents,
   sumMoneyCentsBigInt,
   type AllocateBenefitSettlementResponse,
   type AllocateBenefitSettlementUsagesBody,
@@ -34,6 +40,7 @@ type SettlementRow = BenefitSettlement & {
   gastroProfile?: { displayName: string } | null;
   excursionOperator?: { name: string } | null;
   allocations?: BenefitSettlementUsageAllocation[];
+  transfers?: BenefitSettlementTransfer[];
 };
 
 @Injectable()
@@ -62,6 +69,7 @@ export class BenefitSettlementsService {
           gastroProfile: { select: { displayName: true } },
           excursionOperator: { select: { name: true } },
           allocations: true,
+          transfers: true,
         },
         orderBy: [{ periodKey: 'desc' }, { createdAt: 'desc' }],
         skip,
@@ -74,6 +82,19 @@ export class BenefitSettlementsService {
 
   async get(tenantId: string, id: string): Promise<BenefitSettlementDto> {
     return this.toDto(tenantId, await this.require(tenantId, id));
+  }
+
+  async assertSettlementExists(tenantId: string, id: string): Promise<void> {
+    const row = await this.prisma.benefitSettlement.findFirst({
+      where: { id, tenantId },
+      select: { id: true },
+    });
+    if (!row) {
+      throw new NotFoundException({
+        code: ErrorCode.BENEFIT_SETTLEMENT_NOT_FOUND,
+        message: 'Benefit settlement not found',
+      });
+    }
   }
 
   async generate(
@@ -119,6 +140,7 @@ export class BenefitSettlementsService {
         gastroProfile: { select: { displayName: true } },
         excursionOperator: { select: { name: true } },
         allocations: true,
+        transfers: true,
       },
     });
 
@@ -228,6 +250,7 @@ export class BenefitSettlementsService {
             gastroProfile: { select: { displayName: true } },
             excursionOperator: { select: { name: true } },
             allocations: true,
+            transfers: true,
           },
         });
 
@@ -246,6 +269,7 @@ export class BenefitSettlementsService {
             gastroProfile: { select: { displayName: true } },
             excursionOperator: { select: { name: true } },
             allocations: true,
+            transfers: true,
           },
         });
 
@@ -308,6 +332,7 @@ export class BenefitSettlementsService {
         gastroProfile: { select: { displayName: true } },
         excursionOperator: { select: { name: true } },
         allocations: true,
+        transfers: true,
       },
     });
 
@@ -369,6 +394,19 @@ export class BenefitSettlementsService {
     const eligibleBase = sumMoneyCentsBigInt(eligibleAll.map((v) => v.unitPriceCents));
     const pendingBase = sumMoneyCentsBigInt(discovery.priced.map((v) => v.unitPriceCents));
 
+    const cashDueCents = computeCashDueCents(allocations);
+    const transfers = row.transfers ?? [];
+    const cashReceivedCents = computeCashReceivedCents(transfers);
+    const activeTransferCount = transfers.filter((t) => t.reversedAt == null).length;
+
+    let barterCreditPreview = 0n;
+    for (const allocation of barterAllocations) {
+      barterCreditPreview += roundBarterCreditCents(
+        allocation.baseAmountCents,
+        allocation.barterMultiplier.toString(),
+      );
+    }
+
     return {
       eligibleUsageCount: eligibleAll.length,
       allocatedCashCount: cashAllocations.length,
@@ -378,6 +416,16 @@ export class BenefitSettlementsService {
       cashBaseAmountCents: sumMoneyCentsBigInt(cashAllocations.map((a) => a.baseAmountCents)),
       barterBaseAmountCents: sumMoneyCentsBigInt(barterAllocations.map((a) => a.baseAmountCents)),
       pendingBaseAmountCents: pendingBase,
+      cashDueCents: moneyCentsToString(cashDueCents),
+      cashReceivedCents: moneyCentsToString(cashReceivedCents),
+      cashOutstandingCents: moneyCentsToString(
+        computeCashOutstandingCents(cashDueCents, cashReceivedCents),
+      ),
+      cashCollectionStatus: deriveCashCollectionStatus(cashDueCents, cashReceivedCents),
+      transferCount: activeTransferCount,
+      ...(barterAllocations.length > 0
+        ? { barterCreditPreviewCents: moneyCentsToString(barterCreditPreview) }
+        : {}),
     };
   }
 
@@ -441,6 +489,7 @@ export class BenefitSettlementsService {
         gastroProfile: { select: { displayName: true } },
         excursionOperator: { select: { name: true } },
         allocations: true,
+        transfers: true,
       },
     });
     if (!row) {
@@ -469,6 +518,7 @@ export class BenefitSettlementsService {
         gastroProfile: { select: { displayName: true } },
         excursionOperator: { select: { name: true } },
         allocations: true,
+        transfers: true,
       },
     });
   }

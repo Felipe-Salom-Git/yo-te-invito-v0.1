@@ -1700,6 +1700,15 @@ export class ApiRepository implements Repositories {
       this.client.post(`/admin/benefit-settlements/${encodeURIComponent(id)}/allocate`, body),
     close: async (id) =>
       this.client.post(`/admin/benefit-settlements/${encodeURIComponent(id)}/close`),
+    listTransfers: async (id) =>
+      this.client.get(`/admin/benefit-settlements/${encodeURIComponent(id)}/transfers`),
+    registerTransfer: async (id, body) =>
+      this.client.post(`/admin/benefit-settlements/${encodeURIComponent(id)}/transfers`, body),
+    reverseTransfer: async (id, transferId, body) =>
+      this.client.post(
+        `/admin/benefit-settlements/${encodeURIComponent(id)}/transfers/${encodeURIComponent(transferId)}/reverse`,
+        body,
+      ),
   };
 
   adminUsers: import('./interfaces').AdminUsersRepo = {

@@ -3322,6 +3322,18 @@ export interface AdminBenefitSettlementsRepo {
     body: import('@yo-te-invito/shared').AllocateBenefitSettlementUsagesBody,
   ): Promise<import('@yo-te-invito/shared').AllocateBenefitSettlementResponse>;
   close(id: string): Promise<import('@yo-te-invito/shared').BenefitSettlementDto>;
+  listTransfers(
+    id: string,
+  ): Promise<import('@yo-te-invito/shared').BenefitSettlementTransfersListResponse>;
+  registerTransfer(
+    id: string,
+    body: import('@yo-te-invito/shared').RegisterBenefitSettlementTransferBody,
+  ): Promise<import('@yo-te-invito/shared').BenefitSettlementTransferDto>;
+  reverseTransfer(
+    id: string,
+    transferId: string,
+    body: import('@yo-te-invito/shared').ReverseBenefitSettlementTransferBody,
+  ): Promise<import('@yo-te-invito/shared').BenefitSettlementTransferDto>;
 }
 
 export interface Repositories {
