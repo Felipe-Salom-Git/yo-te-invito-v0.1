@@ -2,11 +2,12 @@
 
 **Fecha:** 2026-08-31  
 **Branch:** `feat/v1-s03-api-foundation`  
-**HEAD pre-hardening:** `25548ab` (`feat(v3.3): add benefit settlement audit reporting`)  
+**HEAD:** `b920553` (`fix(v3.3): harden benefit settlement accounting`)  
+**Context update:** `docs(v3.3): close benefit settlements context`  
 **Auditoría diseño:** [`V3_3_STAGE_9_SETTLEMENTS_AUDIT.md`](./V3_3_STAGE_9_SETTLEMENTS_AUDIT.md)
 
-**Estado código:** ✅ implementado (slices 9.0–9.8) + hardening pre-cierre  
-**DB integration / concurrency real / QA manual global V3.3:** pendientes (PostgreSQL `localhost:5433` no disponible en esta sesión)
+**Estado:** ✅ Etapa 9 cerrada funcionalmente (slices 9.0–9.8)  
+**DB integration / concurrency real / QA manual global V3.3:** ⏳ pendientes (PostgreSQL `localhost:5433` no disponible)
 
 ---
 
@@ -36,6 +37,19 @@ uso validado (scanner)
   → transferencia manual (CASH) y/o crédito ledger (BARTER)
   → cortesía gastro con funding (opcional)
 ```
+
+**Ejemplo (no mezclar magnitudes):**
+
+```
+20 usos × $5.000 unit price
+
+10 CASH → $50.000 a cobrar (transferencias manuales)
+10 BARTER → $50.000 base × 2x → $100.000 crédito ledger
+
+NO presentar $150.000 "cobrado" — CASH y crédito comercial son magnitudes distintas.
+```
+
+---
 
 **No incluido en V1:**
 

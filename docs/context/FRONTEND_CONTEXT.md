@@ -102,7 +102,7 @@ ApiClient → HTTP (NEXT_PUBLIC_API_BASE_URL)
 | Public | `/`, `/home`, **`/explore`** (filtros URL: `q`, `category`, `subcategoryId`, `city`, `from`, `to`, `page`; `?category=hotel` → banner Próximamente), `/events/[id]`, **`/restaurants/[id]`** (ficha gastro `GastroPublicDetailContent`, no ticketera), `/gastronomicos/[id]`, `/excursiones/[id]` (sección Beneficios/Cupones), **`/excursiones/cupones/[id]`**, **`/excursiones/cupones/reclamo/[claimId]`**, **`/rentals/[id]`**, **`/hoteles`** + **`/hoteles/[id]`** (vertical Próximamente; ver abajo), **`/users/[userId]`** (perfil comentarista), **`/legal/[slug]`** (documentos publicados, ISR), **`/baja-promos?token=...`** (unsubscribe marketing — GET preview + POST confirm), checkout, `/me/tickets`, `/referrers`, `/r/[code]` |
 | Account | `/login`, **`/register`** (wizard `RegisterWizard`: cuenta → perfil → paso por tipo → legales SIGNUP con términos del perfil vía `/public/legal/requirements?profileType=` → `POST /auth/register` con `signupLegalAcceptance` → sin auto-login → `/login?registered=1&verifyEmail=1`), **`/cuenta/solicitar-gastro`**, **`/me/*`** |
 | Cuenta (legacy) | `/cuenta/*` → **redirects** a `/me/*` (no mantener lógica duplicada) |
-| Admin | `/admin/*` (**solo rol `ADMIN`**, `ProfileProtectedLayout` en `admin/layout.tsx`), sidebar operaciones; **`/admin`** dashboard; **`/admin/eventos`** listado filtrado; **`/admin/campanas`**, **`/admin/campanas/nueva`**, **`/admin/campanas/[id]`** (campañas — WhatsApp provider pending); **`/admin/pagos`** pagos Getnet + revisión manual; **`/admin/legales`** documentos legales versionados; **`/admin/reviews`** reporte reputación (KPIs, CSV); **`/admin/review-disputes`** cola disputas; **`/admin/usuarios`** listado usuarios con filtros URL; **`/admin/categorias`** subcategorías + banners (`/admin/subcategorias` redirige); **`/admin/auditoria`** logs operativos; post-login y `/profiles` → redirect por rol (`rolePortalHome.ts`); usuario maestro: sidebar multi-portal |
+| Admin | `/admin/*` (**solo rol `ADMIN`**, `ProfileProtectedLayout` en `admin/layout.tsx`), sidebar operaciones; **`/admin`** dashboard; **`/admin/eventos`** listado filtrado; **`/admin/campanas`**, **`/admin/campanas/nueva`**, **`/admin/campanas/[id]`** (campañas — WhatsApp provider pending); **`/admin/liquidaciones`**, **`/admin/liquidaciones/[id]`**, **`/admin/liquidaciones/acuerdos`**, **`/admin/liquidaciones/acuerdos/nuevo`**, **`/admin/liquidaciones/creditos`** (liquidaciones Etapa 9 — CASH/BARTER separados, `CLOSED ≠ PAID`); **`/admin/pagos`** pagos Getnet + revisión manual; **`/admin/legales`** documentos legales versionados; **`/admin/reviews`** reporte reputación (KPIs, CSV); **`/admin/review-disputes`** cola disputas; **`/admin/usuarios`** listado usuarios con filtros URL; **`/admin/categorias`** subcategorías + banners (`/admin/subcategorias` redirige); **`/admin/auditoria`** logs operativos; post-login y `/profiles` → redirect por rol (`rolePortalHome.ts`); usuario maestro: sidebar multi-portal |
 | Producer | `/producer` (hub: KPIs, engagement, **`ProducerDashboardEventStatusAlerts`**, eventos; nav en sidebar), `/producer/events`, ticket studio, **`/producer/profile`** (hub por bloques + completitud frontend), **`/producer/profile/create`** (solo nombre; slug en servidor), **`/producer/profile/identity|images|contact`**, **`/producer/comments`** (`ManagedReviewsCommentsPage`), referidos, payouts |
 | Gastro / Hotel / Referrer | `/gastro/*`, **`/gastro/contenido`** (editorial Prisma; **ADMIN** selector de evento/establecimiento, **GASTRO_OWNER** solo su local), **`/gastro/valoraciones`**, `/hotel`, **`/hotel/valoraciones`**, `/referrer`, `/cuenta/solicitar-referrer` |
 
@@ -461,6 +461,25 @@ Doc cierre: `docs/audits/V3_3_STAGE_8_CAMPAIGNS_CLOSING.md`. Auditoría: `docs/a
 | Detalle / envío | `/admin/campanas/[id]` — eligible estimate, confirm send, results, deliveries paginadas, cancel |
 
 Arquitectura: UI → TanStack Query → repositories → `ApiRepository` → Nest API. Sin fetch directo.
+
+---
+
+## 7j. V3.3 Etapa 9 — Liquidaciones Admin (2026-08, código implementado)
+
+Doc cierre: `docs/audits/V3_3_STAGE_9_SETTLEMENTS_CLOSING.md`. Auditoría: `docs/audits/V3_3_STAGE_9_SETTLEMENTS_AUDIT.md`.
+
+**Semántica UI:** separar **BASE**, **CASH**, **BARTER CREDIT** — nunca sumar cash received + crédito como “total cobrado”. `CLOSED` ≠ “Pagado”. Activity: saldo visible; sin CTA consumo cortesía.
+
+| Pieza | Ubicación |
+|-------|-----------|
+| Listado liquidaciones + reporting mensual | `/admin/liquidaciones` |
+| Detalle settlement | `/admin/liquidaciones/[id]` — generate, refresh, allocate CASH/BARTER, close, transfers, audit panel |
+| Acuerdos comerciales | `/admin/liquidaciones/acuerdos` |
+| Nuevo acuerdo | `/admin/liquidaciones/acuerdos/nuevo` |
+| Créditos / ledger | `/admin/liquidaciones/creditos` — balance, entries, adjustment, reversal |
+| Cortesía con funding | `/admin/gastronomicos/[profileId]/cortesia` — crear cortesía debitando ledger (ADMIN) |
+
+Shared: `packages/shared/src/benefit-settlement-admin.ts`, `benefit-settlement-reporting.ts`. Hooks/repos: `lib/query/benefit-settlements.ts`, `benefit-reporting.ts`; `AdminBenefit*` en `ApiRepository`.
 
 ---
 

@@ -340,9 +340,26 @@ Etapa 7 implementada; DB smoke / Scanner DB integration / QA global pendientes.
 - [x] Base existente — `GastroDiscountClaim`, `GastroDiscountValidation`
 - [x] Base existente — Métricas por descuento (`GET .../summary`)
 - [x] Base existente — `AuditLog` operativo
-- [ ] Mejora V3.3 — Reporte conciliación admin/gastro
-- [ ] Mejora V3.3 — Trazabilidad campaña → cupón → claim → validación → liquidación
-- [ ] Mejora V3.3 — Modelo settlement (sin mezclar ticketera/referidos)
+- [x] Mejora V3.3 — Acuerdos comerciales (`BenefitCommercialAgreement`)
+- [x] Mejora V3.3 — Tarifa histórica / snapshot en allocation
+- [x] Mejora V3.3 — Settlement mensual (`BenefitSettlement`, `periodKey` YYYY-MM AR)
+- [x] Mejora V3.3 — Allocation validation-level (`CASH` / `BARTER`, unique por validation)
+- [x] Mejora V3.3 — CASH accounting (due / received / outstanding derivados)
+- [x] Mejora V3.3 — Transferencias manuales (`BenefitSettlementTransfer`)
+- [x] Mejora V3.3 — Transfer reversals (append-only, no hard-delete)
+- [x] Mejora V3.3 — BARTER credit (`CourtesyCreditLedgerEntry`, exactly once)
+- [x] Mejora V3.3 — Ledger append-only (adjustment / reversal)
+- [x] Mejora V3.3 — Gastro courtesy funding (ADMIN, `DEBIT_COURTESY`)
+- [x] Mejora V3.3 — Admin settlement UI (`/admin/liquidaciones/*`)
+- [x] Mejora V3.3 — Reporting (monthly, partners, integrity, settlement audit)
+- [x] Mejora V3.3 — Integrity checks (barter drift, overpayment, orphan, CLOSED+pending)
+- [x] Mejora V3.3 — Modelo settlement (sin mezclar ticketera/referidos)
+- [ ] Mejora V3.3 — Trazabilidad campaña → cupón → claim → validación → liquidación (indirecta vía validation; sin acoplamiento Etapa 8)
+- [ ] DB integration / migration apply — PostgreSQL no disponible localmente
+- [ ] Concurrency smoke — transfer overpayment, double allocation, BARTER materialization, courtesy overspend
+- [ ] QA manual global V3.3 — casos liquidaciones acumulados
+- [ ] Activity courtesy consumption — futuro
+- [ ] Private transfer proof storage — futuro
 
 ---
 

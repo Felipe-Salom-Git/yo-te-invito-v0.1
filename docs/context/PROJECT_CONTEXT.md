@@ -148,6 +148,7 @@ Bloque **Descubrimiento público** cerrado en checklist V2. Detalle: `docs/audit
 | Etapa 6 — QR Studio | Código implementado (`4f3b07f`…`de4e07d`); QA manual + DB smoke pendientes |
 | Etapa 7 — Actividades + Cupones QR | Código implementado (`01aa1a8`…`a494274`); DB smoke / Scanner DB / QA global pendientes |
 | Etapa 8 — Campañas Email / WhatsApp | Código implementado (`9b4b7b5`…`39a8a0b`); DB smoke / Redis / SMTP live / QA global pendientes |
+| Etapa 9 — Liquidaciones, Transferencias y Canjes | Código implementado (`a57df1e`…`b920553`); migration apply / DB integration / concurrency / QA global pendientes |
 | Checklist V3.3 | `docs/dev/Yo_Te_Invito_Checklist_V3_3_Funcional_Operativa.md` |
 | Cierre técnico Etapa 1 | `docs/audits/V3_3_STAGE_1_PUBLIC_MOBILE_CLOSING.md` |
 | Cierre técnico Etapa 2 | `docs/audits/V3_3_STAGE_2_USER_AVATAR_CLOSING.md` |
@@ -162,6 +163,8 @@ Bloque **Descubrimiento público** cerrado en checklist V2. Detalle: `docs/audit
 | Cierre técnico Etapa 7 | `docs/audits/V3_3_STAGE_7_ACTIVITY_COUPONS_CLOSING.md` |
 | Auditoría Etapa 8 | `docs/audits/V3_3_STAGE_8_CAMPAIGNS_AUDIT.md` |
 | Cierre técnico Etapa 8 | `docs/audits/V3_3_STAGE_8_CAMPAIGNS_CLOSING.md` |
+| Auditoría Etapa 9 | `docs/audits/V3_3_STAGE_9_SETTLEMENTS_AUDIT.md` |
+| Cierre técnico Etapa 9 | `docs/audits/V3_3_STAGE_9_SETTLEMENTS_CLOSING.md` |
 | Auth Scanner username | `docs/audits/V3_3_SCANNER_USERNAME_AUTH.md` |
 
 **Decisiones Etapa 1:** rails subcategoría **≥5** (sin autoplay); cards descuento → ficha gastro; `/descuentos/[id]` conservada; OG descuentos; nav mobile Home+Explore; modales centrados; copy público **Actividades** con clave técnica **`excursion`** (`Event.category`, rutas `/excursiones`, API sin cambios).
@@ -180,7 +183,9 @@ Bloque **Descubrimiento público** cerrado en checklist V2. Detalle: `docs/audit
 
 **Etapa 8 — Campañas Email / WhatsApp:** arquitectura **transactional ≠ marketing** — `UserNotificationsService` / cola `emails` no es campaign engine; `NotificationDeliveryLog` no es tabla de campañas. Consent `UserMarketingPreference` (EMAIL/WA por canal; sin fila = no elegible; usuarios existentes sin opt-in por defecto). Unsubscribe token 64 hex; `GET /public/marketing/unsubscribe` read-only; `POST` mutación idempotente; `/baja-promos?token=...`; re-subscribe en `/me/account` → Comunicaciones. Campañas `AdminCampaign` + `AdminCampaignDelivery` (`unique(campaignId,userId,channel)`; `userId` `onDelete: SetNull`). Cola BullMQ `campaign-emails` (attempts 3, backoff 4s, ~4/s, concurrency 2); worker revalida consent/user/content/cancel; template `ADMIN_CAMPAIGN` sin tracking. WhatsApp **provider-ready / envío real NOT CONFIGURED**. Digest operativo vencidos cron **08:20 AR**; no requiere opt-in marketing. Migraciones `20260831180000_user_marketing_preference`, `20260831190000_admin_campaign_domain`, `20260831200000_admin_operational_digest_log` — no aplicadas localmente. Hardening `39a8a0b`.
 
-**Próxima:** Etapa 9 — Auditoría Económica / Conciliación.
+**Etapa 9 — Liquidaciones, Transferencias y Canjes:** contabilidad operativa de usos Gastro/Activity validados — **no** pasarela, **no** API bancaria, **no** conciliación automática, **no** facturación fiscal. Cadena: acuerdo comercial histórico → settlement mensual (`periodKey` YYYY-MM AR) → allocation `CASH`/`BARTER` por validation (`@@unique([validationSource, validationId])`) → CASH: transferencias manuales + `CLOSED ≠ PAID` → BARTER: ledger append-only + funding cortesía Gastro (ADMIN). Money BigInt/string/Decimal. Reporting read-only. Activity crédito visible; consumo cortesía **diferido**. Migraciones `20260901120000`…`20260901200000` — apply NO EJECUTADO. Hardening `b920553`.
+
+**Próximo:** cierre global V3.3 + QA manual acumulada (Etapas 1–9).
 
 ## 5a. Registro y onboarding por tipo de usuario — Estado cerrado (2026-05-24)
 

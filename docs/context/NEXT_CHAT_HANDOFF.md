@@ -27,10 +27,12 @@ Punto de entrada operativo para **V3.3**. Detalle completo: `AI_ENTRYPOINT.md`, 
 | **Etapa 7 — QA manual / DB smoke / Scanner DB** | ⏳ Pendiente — acumulado cierre global V3.3 |
 | **Etapa 8 — Campañas Email / WhatsApp** | ✅ Código implementado (slices 8.0–8.7 + hardening `39a8a0b`) |
 | **Etapa 8 — QA manual / DB smoke / Redis / SMTP live** | ⏳ Pendiente — acumulado cierre global V3.3 |
+| **Etapa 9 — Liquidaciones, Transferencias y Canjes** | ✅ Código implementado (slices 9.0–9.8 + hardening `b920553`) |
+| **Etapa 9 — QA manual / DB smoke / concurrency** | ⏳ Pendiente — acumulado cierre global V3.3 |
 
 **Checklist V3.3:** `docs/dev/Yo_Te_Invito_Checklist_V3_3_Funcional_Operativa.md`
 
-**Próxima etapa V3.3:** **Etapa 9 — Auditoría Económica / Conciliación**. No iniciar sin instrucción explícita.
+**Próximo paso V3.3:** **cierre global + QA manual acumulada** (Etapas 1–9). No iniciar otra etapa funcional sin instrucción explícita.
 
 ---
 
@@ -77,12 +79,55 @@ User → Next.js → ApiRepository → NestJS Controller → Service → Prisma 
 - `20260831180000_user_marketing_preference` (**no aplicada localmente**)
 - `20260831190000_admin_campaign_domain` (**no aplicada localmente**)
 - `20260831200000_admin_operational_digest_log` (**no aplicada localmente**)
+- `20260901120000_benefit_commercial_agreements` (**no aplicada localmente**)
+- `20260901140000_benefit_settlement_domain` (**no aplicada localmente**)
+- `20260901160000_benefit_settlement_transfers` (**no aplicada localmente**)
+- `20260901180000_courtesy_credit_ledger` (**no aplicada localmente**)
+- `20260901200000_gastro_courtesy_credit_funding` (**no aplicada localmente**)
 
 Runbook: `docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`.
 
 ---
 
-## 5. V3.3 Etapa 8 — commits principales
+## 5. V3.3 Etapa 9 — commits principales
+
+```txt
+a57df1e docs(v3.3): audit benefit settlements architecture
+b2d975b feat(v3.3): add benefit commercial agreements
+f6d1099 feat(v3.3): add benefit settlement domain
+2d8b83a feat(v3.3): add benefit settlement cash transfers
+9bf83aa feat(v3.3): add courtesy credit ledger
+4d33c31 feat(v3.3): add gastro courtesy credit funding
+584c590 feat(v3.3): add benefit settlement admin ui
+25548ab feat(v3.3): add benefit settlement audit reporting
+b920553 fix(v3.3): harden benefit settlement accounting
+```
+
+(+ commit documental de contextos: `docs(v3.3): close benefit settlements context`)
+
+---
+
+## 6. Decisiones importantes (V3.3 Etapa 9 — Liquidaciones)
+
+| Tema | Regla |
+|------|--------|
+| **Modelo** | Uso validado → acuerdo histórico → settlement mensual → CASH / BARTER. **No** pasarela, **no** API bancaria, **no** facturación fiscal. |
+| **CASH ≠ BARTER** | Magnitudes separadas en UI/API/reporting. Nunca sumar cash received + crédito comercial como “cobrado”. |
+| **Money** | Prisma `BigInt` cents; API `string`; backend `bigint`; `barterMultiplier` `Decimal`; half-up. Tests > Int32 (`3000000000` cents). |
+| **Agreements** | Históricos inmutables; cambio tarifa = cerrar + crear nuevo; snapshot en allocation. |
+| **Validation única** | `@@unique([validationSource, validationId])`; conflicto → rechazado (CASH+BARTER o settlements distintos). |
+| **Logical validation ref** | Sin FK Prisma; hardening deep delete + integrity orphan/partner mismatch. |
+| **CLOSED ≠ PAID** | `settlement.status=CLOSED` congela usages; transfers CASH siguen; `cashCollectionStatus` independiente. |
+| **Ledger** | Append-only; balance = `SUM(entries)`; BARTER → `CREDIT_FROM_SETTLEMENT` exactly once (`sourceAllocationId @unique`). |
+| **Gastro funding** | ADMIN only; `1 funded campaign → 1 DEBIT_COURTESY`; GASTRO_OWNER cortesía histórica sin debit. |
+| **Activity** | Agreement/settlement/CASH/BARTER/crédito visible; **consumo cortesía diferido**. |
+| **Proof storage** | `proofUrl` preparado; upload **diferido** (GCS público no apto para comprobantes). |
+
+Doc: `V3_3_STAGE_9_SETTLEMENTS_AUDIT.md`, `V3_3_STAGE_9_SETTLEMENTS_CLOSING.md`.
+
+---
+
+## 7. V3.3 Etapa 8 — commits principales
 
 ```txt
 9b4b7b5 docs(v3.3): audit campaign communications architecture
@@ -100,7 +145,7 @@ e39bef4 docs(v3.3): close admin campaigns stage
 
 ---
 
-## 6. Decisiones importantes (V3.3 Etapa 8 — Campañas)
+## 8. Decisiones importantes (V3.3 Etapa 8 — Campañas)
 
 | Tema | Regla |
 |------|--------|
@@ -118,7 +163,7 @@ Doc: `V3_3_STAGE_8_CAMPAIGNS_AUDIT.md`, `V3_3_STAGE_8_CAMPAIGNS_CLOSING.md`.
 
 ---
 
-## 7. V3.3 Etapa 7 — commits principales
+## 9. V3.3 Etapa 7 — commits principales
 
 ```txt
 01aa1a8 docs(v3.3): audit activity coupons architecture
@@ -139,7 +184,7 @@ Slice **7.8 skip deliberado** — custom Activity QR Studio diferido (no commit 
 
 ---
 
-## 8. Decisiones importantes (V3.3 Etapa 7 — Actividades + Cupones)
+## 10. Decisiones importantes (V3.3 Etapa 7 — Actividades + Cupones)
 
 | Tema | Regla |
 |------|--------|
@@ -308,8 +353,8 @@ Código slices 0–11 cerrado. Hotfixes 2026-08: `15f2776`, `b8dc571`, `ff6f8e0`
 
 ## 19. Pendientes priorizados
 
-1. **QA manual / integración global V3.3** — Etapas 1–8 acumuladas (incl. Campañas: opt-in/out, unsubscribe GET/POST, draft, send, cancel, digest, WhatsApp disabled).
-2. **Migración deploy + smoke DB** — `prisma migrate deploy` (acumula Etapa 3–8 incl. `20260831180000_user_marketing_preference`, `20260831190000_admin_campaign_domain`, `20260831200000_admin_operational_digest_log`). **NO EJECUTADO** — P1001 `localhost:5433`.
+1. **QA manual / integración global V3.3** — Etapas 1–9 acumuladas (incl. liquidaciones: agreements, CASH/BARTER, transfers, ledger, funding, reporting, integrity).
+2. **Migración deploy + smoke DB** — `prisma migrate deploy` (acumula Etapa 3–9 incl. `20260901120000`…`20260901200000`). **NO EJECUTADO** — P1001 `localhost:5433`.
 3. **Redis integration** — worker `campaign-emails` end-to-end **NO EJECUTADO**.
 4. **Scanner DB integration** — `test:gastro-discount-scan` y Activity vs PostgreSQL **NO EJECUTADO**. `test:activity-coupon-scan` PASS = dispatch/unit, no integración DB.
 5. **SMTP live smoke** — campaña masiva real **NO EJECUTADO** (a propósito).
@@ -333,6 +378,14 @@ pnpm --filter api run test:marketing-preferences
 pnpm --filter api run test:admin-campaign-domain
 pnpm --filter api run test:admin-campaign-delivery
 pnpm --filter api run test:admin-expired-benefits-digest
+pnpm --filter api run test:benefit-commercial-agreements
+pnpm --filter api run test:benefit-settlement-domain
+pnpm --filter api run test:benefit-settlement-transfers
+pnpm --filter api run test:courtesy-credit-ledger
+pnpm --filter api run test:gastro-courtesy-credit-funding
+pnpm --filter api run test:benefit-settlement-reporting
+pnpm --filter api run test:benefit-settlement-hardening
+pnpm --filter api run test:benefit-settlement-admin-ui
 pnpm --filter api run test:activity-coupon-domain
 pnpm --filter api run test:activity-coupon-ownership
 pnpm --filter api run test:activity-coupon-claim
@@ -361,5 +414,5 @@ pnpm --filter api run test:scanner-manual-short-code
 
 ## 21. Próximo paso recomendado
 
-1. Iniciar **V3.3 Etapa 9 — Auditoría Económica / Conciliación** cuando se indique. **No iniciar ahora.**
-2. QA manual + migración DB + Redis/SMTP smokes al cerrar V3.3 globalmente.
+1. **V3.3 — cierre global + QA manual acumulada** (Etapas 1–9). **No** iniciar otra etapa funcional automáticamente.
+2. Migración DB + Redis/SMTP/concurrency smokes cuando PostgreSQL esté disponible.

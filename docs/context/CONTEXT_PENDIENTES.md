@@ -20,7 +20,8 @@ Cierre Etapa 4: [`V3_3_STAGE_4_GASTRO_MULTI_LOCAL_CLOSING.md`](../audits/V3_3_ST
 Cierre Etapa 5: [`V3_3_STAGE_5_GASTRO_DISCOUNTS_CLOSING.md`](../audits/V3_3_STAGE_5_GASTRO_DISCOUNTS_CLOSING.md)  
 Cierre Etapa 6: [`V3_3_STAGE_6_QR_STUDIO_CLOSING.md`](../audits/V3_3_STAGE_6_QR_STUDIO_CLOSING.md)  
 Cierre Etapa 7: [`V3_3_STAGE_7_ACTIVITY_COUPONS_CLOSING.md`](../audits/V3_3_STAGE_7_ACTIVITY_COUPONS_CLOSING.md)  
-Cierre Etapa 8: [`V3_3_STAGE_8_CAMPAIGNS_CLOSING.md`](../audits/V3_3_STAGE_8_CAMPAIGNS_CLOSING.md)
+Cierre Etapa 8: [`V3_3_STAGE_8_CAMPAIGNS_CLOSING.md`](../audits/V3_3_STAGE_8_CAMPAIGNS_CLOSING.md)  
+Cierre Etapa 9: [`V3_3_STAGE_9_SETTLEMENTS_CLOSING.md`](../audits/V3_3_STAGE_9_SETTLEMENTS_CLOSING.md)
 
 ### Etapa 0 — Auditoría
 
@@ -239,6 +240,41 @@ Cierre Etapa 8: [`V3_3_STAGE_8_CAMPAIGNS_CLOSING.md`](../audits/V3_3_STAGE_8_CAM
 - [ ] Admin test-send campaña
 - [ ] Custom campaign image GCS
 - [ ] WhatsApp provider adapter (Meta/Twilio/BSP)
+
+### Etapa 9 — Liquidaciones, Transferencias y Canjes
+
+**Implementación (código) — Etapa 9 cerrada funcionalmente; migration apply / DB integration / concurrency / QA global pendientes.**
+
+- [x] Auditoría arquitectura settlements (`a57df1e`, `V3_3_STAGE_9_SETTLEMENTS_AUDIT.md`)
+- [x] Commercial agreements Gastro/Activity (`b2d975b`)
+- [x] Settlement domain generate/refresh/allocate/close (`f6d1099`)
+- [x] CASH transfers manuales + reversals (`2d8b83a`)
+- [x] Courtesy credit ledger append-only (`9bf83aa`)
+- [x] Gastro courtesy funding ADMIN (`4d33c31`)
+- [x] Admin UI liquidaciones (`584c590`)
+- [x] Reporting monthly/partners/integrity/settlement audit (`25548ab`)
+- [x] Hardening deep delete, orphan integrity, allocate Serializable (`b920553`)
+- [x] Builds shared/api/web/scanner PASS; `prisma validate` PASS
+- [x] Tests PASS: `test:benefit-commercial-agreements`, `test:benefit-settlement-domain`, `test:benefit-settlement-transfers`, `test:courtesy-credit-ledger`, `test:gastro-courtesy-credit-funding`, `test:benefit-settlement-reporting`, `test:benefit-settlement-hardening`, `test:benefit-settlement-admin-ui`
+- [x] Gastro/Activity QR/scanner regression unit PASS
+- [x] Doc cierre técnico (`V3_3_STAGE_9_SETTLEMENTS_CLOSING.md`)
+
+**Pendiente integración / QA (conservar):**
+
+- [ ] Migration apply — PostgreSQL `localhost:5433` P1001; migraciones `20260901120000`…`20260901200000`
+- [ ] DB integration / concurrency smoke — double allocation, transfer overpayment, BARTER materialization, courtesy overspend **NO EJECUTADO**
+- [ ] Scripts DB — `benefit-settlements:materialize-barter-credits`, `benefit-settlements:audit-integrity` **NO EJECUTADO**
+- [ ] QA manual global V3.3 — agreements, generate, CASH/BARTER allocate, partial/full transfer, reversal, ledger, funding, insufficient balance, reporting, integrity, Activity credit, responsive Admin
+
+**Deuda real (no bugs):**
+
+- [ ] Activity courtesy credit consumption
+- [ ] Private transfer proof storage (`proofUrl` preparado; GCS público no apto)
+- [ ] CSV export reporting
+- [ ] Partner portal liquidaciones
+- [ ] Auto-refund Gastro courtesy al cancelar (V1: reversal manual)
+- [ ] Late validation adjustment flow (settlement CLOSED)
+- [ ] `cleanup-content.ts` dev script — sin guard allocations (no prod)
 
 ---
 
