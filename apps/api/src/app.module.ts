@@ -29,6 +29,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { UploadsModule } from './modules/uploads/uploads.module';
 import { ScannerAccountsModule } from './modules/scanner-accounts/scanner-accounts.module';
 import { GeoModule } from './modules/geo/geo.module';
+import { ActivityCouponsModule } from './modules/activity-coupons/activity-coupons.module';
 
 @Module({
   imports: [
@@ -62,6 +63,7 @@ import { GeoModule } from './modules/geo/geo.module';
     UploadsModule,
     ScannerAccountsModule,
     GeoModule,
+    ActivityCouponsModule,
   ],
 })
 export class AppModule {}

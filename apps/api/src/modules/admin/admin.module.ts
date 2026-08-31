@@ -16,6 +16,7 @@ import { SubcategoriesModule } from '../subcategories/subcategories.module';
 import { ContentTagsModule } from '../content-tags/content-tags.module';
 import { RentalLocationsModule } from '../rental-locations/rental-locations.module';
 import { ExcursionOperatorsModule } from '../excursion-operators/excursion-operators.module';
+import { ActivityCouponsModule } from '../activity-coupons/activity-coupons.module';
 import { CategoryBannersModule } from '../category-banners/category-banners.module';
 import { ProducerModule } from '../producer/producer.module';
 import { AdminProducersService } from './admin-producers.service';
@@ -44,6 +45,7 @@ import { AdminDeepDeleteService } from './admin-deep-delete.service';
     ContentTagsModule,
     RentalLocationsModule,
     ExcursionOperatorsModule,
+    ActivityCouponsModule,
     CategoryBannersModule,
     ProducerModule,
     EmailModule,

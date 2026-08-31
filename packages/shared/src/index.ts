@@ -92,6 +92,8 @@ export * from './activity-coupon-qr';
 export * from './gastro-discount-expiry';
 export * from './gastro-discount-pending-update';
 export * from './gastro-discount-archive';
+export * from './activity-coupon-archive';
+export * from './schemas/activity-coupons';
 export * from './category-availability';
 export * from './schemas/gastro-discounts';
 export * from './schemas/gastro-discount-summary';

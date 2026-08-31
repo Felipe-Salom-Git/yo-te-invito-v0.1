@@ -121,6 +121,37 @@ enum GastroWeekday {
   SUNDAY
 }
 
+enum ActivityCouponType {
+  PERCENT
+  FIXED
+}
+
+enum ActivityCouponStatus {
+  PENDING_REVIEW
+  APPROVED
+  ACTIVE
+  REJECTED
+  CANCELLED
+  EXPIRED
+}
+
+enum ActivityCouponOrigin {
+  ADMIN
+  OPERATOR
+}
+
+enum ActivityCouponValidityMode {
+  DATE_RANGE
+  WEEKLY_RECURRING
+}
+
+enum ActivityCouponClaimStatus {
+  ACTIVE
+  USED
+  EXPIRED
+  CANCELLED
+}
+
 enum GastroDiscountClaimType {
   PUBLIC_REQUEST
   COURTESY
@@ -235,6 +266,8 @@ model Tenant {
   scannerAccounts               ScannerAccount[]
   eventOccurrences              EventOccurrence[]
   ticketDateChangeRequests      TicketDateChangeRequest[]
+  activityCoupons               ActivityCoupon[]
+  activityCouponClaims          ActivityCouponClaim[]
 }
 
 model RentalLocation {
@@ -290,6 +323,7 @@ model ExcursionOperator {
 
   tenant     Tenant  @relation(fields: [tenantId], references: [id])
   excursions Event[]
+  activityCoupons ActivityCoupon[]
 
   @@index([tenantId])
   @@index([tenantId, isActive])
@@ -757,6 +791,9 @@ model User {
   gastroDiscountClaims GastroDiscountClaim[]
   gastroDiscountsCreated GastroDiscount[] @relation("GastroDiscountCreator")
   gastroDiscountPendingEdits GastroDiscount[] @relation("GastroDiscountPendingSubmitter")
+  activityCouponsCreated ActivityCoupon[] @relation("ActivityCouponCreator")
+  activityCouponClaims ActivityCouponClaim[]
+  activityCouponValidations ActivityCouponValidation[] @relation("ActivityCouponValidator")
   gastroDiscountTemplatesCreated GastroDiscountTemplate[] @relation("GastroDiscountTemplateCreator")
   gastroDiscountTemplatesUpdated GastroDiscountTemplate[] @relation("GastroDiscountTemplateUpdater")
   gastroCourtesyCampaignsCreated GastroCourtesyCampaign[]
@@ -991,6 +1028,7 @@ model Event {
   payouts             Payout[]
   ticketBatches       TicketBatch[]
   gastroDiscounts     GastroDiscount[]
+  activityCoupons     ActivityCoupon[]
   gastroContents      GastroContent[]
   categoryBannerItems CategoryBannerItem[]
   gastroProfilePublic GastroProfile?       @relation("GastroPublicEvent")
@@ -2059,6 +2097,14 @@ enum AuditAction {
   GASTRO_DISCOUNT_TEMPLATE_CREATED
   GASTRO_DISCOUNT_TEMPLATE_UPDATED
   GASTRO_DISCOUNT_TEMPLATE_RESET
+  ACTIVITY_COUPON_CREATED
+  ACTIVITY_COUPON_UPDATED
+  ACTIVITY_COUPON_APPROVED
+  ACTIVITY_COUPON_REJECTED
+  ACTIVITY_COUPON_CANCELLED
+  ACTIVITY_COUPON_ARCHIVED
+  ACTIVITY_COUPON_UNARCHIVED
+  ACTIVITY_COUPON_REDEEMED
   GASTRO_PROFILE_APPROVED
   GASTRO_PROFILE_REJECTED
   REVIEW_DISPUTE_IN_REVIEW
@@ -2394,6 +2440,90 @@ model GastroDiscountClaim {
   @@index([userId])
   @@index([email])
   @@index([courtesyCampaignId])
+}
+
+/// V3.3 Etapa 7: cupón QR de Actividades (`Event.category = excursion`). No es GastroDiscount.
+model ActivityCoupon {
+  id                   String                     @id @default(cuid())
+  tenantId             String
+  eventId              String
+  excursionOperatorId  String
+  code                 String
+  title                String
+  summary              String
+  detail               String
+  type                 ActivityCouponType
+  value                Float
+  validityMode         ActivityCouponValidityMode @default(DATE_RANGE)
+  validWeekday         GastroWeekday?
+  validFrom            DateTime?
+  validTo              DateTime?
+  couponDate           DateTime?
+  imageUrls            Json?
+  status               ActivityCouponStatus       @default(PENDING_REVIEW)
+  rejectionReason      String?
+  pendingUpdate        Json?
+  pendingUpdateSubmittedAt DateTime?
+  archivedAt           DateTime?
+  createdByOrigin      ActivityCouponOrigin       @default(ADMIN)
+  createdByUserId      String?
+  createdAt            DateTime                   @default(now())
+  updatedAt            DateTime                   @updatedAt
+
+  tenant            Tenant             @relation(fields: [tenantId], references: [id])
+  event             Event              @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  excursionOperator ExcursionOperator  @relation(fields: [excursionOperatorId], references: [id], onDelete: Restrict)
+  createdBy         User?              @relation("ActivityCouponCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  claims            ActivityCouponClaim[]
+  validations       ActivityCouponValidation[]
+
+  @@unique([eventId, code])
+  @@index([tenantId, eventId])
+  @@index([tenantId, status])
+  @@index([excursionOperatorId, status])
+  @@index([archivedAt])
+  @@index([createdByOrigin])
+}
+
+model ActivityCouponClaim {
+  id          String                    @id @default(cuid())
+  tenantId    String
+  couponId    String
+  userId      String?
+  email       String
+  qrToken     String                    @unique
+  accessToken String                    @unique
+  shortCode   String                    @unique
+  status      ActivityCouponClaimStatus @default(ACTIVE)
+  expiresAt   DateTime?
+  usedAt      DateTime?
+  createdAt   DateTime                  @default(now())
+
+  tenant      Tenant                     @relation(fields: [tenantId], references: [id])
+  coupon      ActivityCoupon             @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  user        User?                      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  validations ActivityCouponValidation[]
+
+  @@unique([couponId, email])
+  @@index([tenantId, couponId])
+  @@index([userId])
+  @@index([email])
+}
+
+model ActivityCouponValidation {
+  id             String   @id @default(cuid())
+  couponId       String
+  claimId        String?  @unique
+  scannerUserId  String?
+  result         String
+  validatedAt    DateTime @default(now())
+
+  coupon  ActivityCoupon       @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  claim   ActivityCouponClaim? @relation(fields: [claimId], references: [id], onDelete: SetNull)
+  scanner User?                @relation("ActivityCouponValidator", fields: [scannerUserId], references: [id], onDelete: SetNull)
+
+  @@index([couponId])
+  @@index([scannerUserId])
 }
 
 // ─── Legal documents (administrable TyC / policies) ───────────────────────────
