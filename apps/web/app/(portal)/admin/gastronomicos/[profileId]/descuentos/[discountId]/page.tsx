@@ -11,6 +11,7 @@ import { getErrorMessage } from '@/lib/errors';
 import { AdminGastroDiscountStatusBadge } from '@/components/admin/gastro/AdminGastroDiscountStatusBadge';
 import { AdminGastroDiscountPublicationEditor } from '@/components/admin/gastro/AdminGastroDiscountPublicationEditor';
 import { AdminGastroDiscountQrPanel } from '@/components/admin/gastro/AdminGastroDiscountQrPanel';
+import { AdminGastroDiscountVisualPreview } from '@/components/admin/gastro/AdminGastroDiscountVisualPreview';
 import { AdminGastroPendingEditPanel } from '@/components/admin/gastro/AdminGastroPendingEditPanel';
 import { GastroDiscountDetailContent } from '@/components/gastro/GastroDiscountDetailContent';
 import {
@@ -262,6 +263,15 @@ export default function AdminGastroDiscountDetailPage() {
       )}
 
       <AdminGastroDiscountQrPanel qrPayload={item.qrPayload} status={item.status} />
+      <AdminGastroDiscountVisualPreview
+        profileId={profileId}
+        discountId={discountId}
+        qrPayload={item.qrPayload ?? null}
+        gastroName={null}
+        discountTitle={item.title}
+        discountType={item.type}
+        discountValue={item.value}
+      />
 
       {summaryQuery.data ? (
         <div className="mt-8">
