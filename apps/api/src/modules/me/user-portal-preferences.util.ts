@@ -184,6 +184,7 @@ export function shouldSendPushForKind(
     case 'GASTRO_DISCOUNT_EXPIRED':
     case 'GASTRO_PROFILE_APPROVED_BY_ADMIN':
     case 'GASTRO_PROFILE_REJECTED_BY_ADMIN':
+    case 'ACTIVITY_COUPON_CLAIMED':
       return prefs.notifyUnreadNotifications;
     case 'REVIEW_RECEIVED':
     case 'REVIEW_DISPUTE_CREATED':
@@ -235,6 +236,8 @@ export function pushTypeForKind(kind: NotificationKind): string {
     case 'GASTRO_PROFILE_APPROVED_BY_ADMIN':
     case 'GASTRO_PROFILE_REJECTED_BY_ADMIN':
       return 'GASTRO_LIFECYCLE';
+    case 'ACTIVITY_COUPON_CLAIMED':
+      return 'ACTIVITY_COUPON';
     case 'REVIEW_RECEIVED':
       return 'REVIEW_RECEIVED';
     case 'REVIEW_OFFICIAL_REPLY':

@@ -39,6 +39,7 @@
     "test:activity-coupon-ownership": "tsx scripts/test-activity-coupon-ownership.util.ts",
     "test:activity-coupon-claim": "tsx scripts/test-activity-coupon-claim.util.ts",
     "test:activity-coupon-scan": "tsx scripts/test-activity-coupon-scan.util.ts",
+    "test:activity-coupon-metrics": "tsx scripts/test-activity-coupon-metrics.util.ts",
     "test:scanner-manual-short-code": "tsx scripts/test-scanner-manual-short-code.util.ts",
     "test:scanner-username-auth": "tsx scripts/test-scanner-username-auth.util.ts",
     "test:gastro-multi-local": "tsx scripts/test-gastro-multi-local.util.ts",

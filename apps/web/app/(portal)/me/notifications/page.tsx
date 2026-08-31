@@ -49,6 +49,7 @@ const KIND_LABELS: Record<string, string> = {
   GASTRO_DISCOUNT_EXPIRED: 'Descuento vencido',
   GASTRO_PROFILE_APPROVED_BY_ADMIN: 'Local gastronómico aprobado',
   GASTRO_PROFILE_REJECTED_BY_ADMIN: 'Local gastronómico rechazado',
+  ACTIVITY_COUPON_CLAIMED: 'Cupón de Actividades',
 };
 
 export default function MeNotificationsPage() {

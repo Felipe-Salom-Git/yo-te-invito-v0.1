@@ -37,6 +37,12 @@ export default function AdminActivityCouponDetailPage() {
   });
 
   const [form, setForm] = useState<ReturnType<typeof activityCouponToForm> | null>(null);
+
+  const { data: metrics } = useQuery({
+    queryKey: [...activityCouponsKeys.adminDetail(operatorId, couponId), 'metrics'],
+    queryFn: () => repos.activityCoupons.getMetrics(operatorId, couponId),
+    enabled: !!operatorId && !!couponId,
+  });
   const formValue = form ?? (coupon ? activityCouponToForm(coupon) : null);
 
   const invalidate = () => {
@@ -115,6 +121,12 @@ export default function AdminActivityCouponDetailPage() {
             {coupon.benefitLabel} · {coupon.status}
             {coupon.archivedAt ? ' · archivado' : ''}
           </p>
+          {metrics ? (
+            <p className="mt-2 text-sm text-text-muted">
+              Claims {metrics.claimsIssued} · usados {metrics.claimsUsed} · sin usar{' '}
+              {metrics.claimsUnused} · validaciones {metrics.validations} · uso {metrics.useRate}%
+            </p>
+          ) : null}
           <div className="mt-4 flex flex-wrap gap-2">
             {coupon.status === 'PENDING_REVIEW' ? (
               <>

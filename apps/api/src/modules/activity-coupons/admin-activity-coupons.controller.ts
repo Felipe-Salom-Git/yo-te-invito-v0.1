@@ -51,6 +51,15 @@ export class AdminActivityCouponsController {
     );
   }
 
+  @Get(':couponId/metrics')
+  async metrics(
+    @CurrentUser() user: { tenantId: string },
+    @Param(new ZodValidationPipe(activityCouponIdParamsSchema))
+    params: { operatorId: string; couponId: string },
+  ) {
+    return this.coupons.getMetrics(user.tenantId, params.operatorId, params.couponId);
+  }
+
   @Get(':couponId')
   async getOne(
     @CurrentUser() user: { tenantId: string },

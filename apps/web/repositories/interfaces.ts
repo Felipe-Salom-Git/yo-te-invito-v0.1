@@ -368,6 +368,10 @@ export interface ActivityCouponsRepo {
     couponId: string,
     reason: string,
   ): Promise<import('@yo-te-invito/shared').ActivityCouponResponse>;
+  getMetrics(
+    operatorId: string,
+    couponId: string,
+  ): Promise<import('@yo-te-invito/shared').ActivityCouponMetrics>;
   listPublicByEvent(
     tenantId: string,
     eventId: string,

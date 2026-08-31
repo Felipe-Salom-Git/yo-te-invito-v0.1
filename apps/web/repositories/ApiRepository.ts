@@ -645,6 +645,10 @@ export class ApiRepository implements Repositories {
         `/admin/excursion-operators/${encodeURIComponent(operatorId)}/activity-coupons/${encodeURIComponent(couponId)}/reject`,
         { reason },
       ),
+    getMetrics: async (operatorId, couponId) =>
+      this.client.get(
+        `/admin/excursion-operators/${encodeURIComponent(operatorId)}/activity-coupons/${encodeURIComponent(couponId)}/metrics`,
+      ),
     listPublicByEvent: async (tenantId, eventId) =>
       this.client.get('/public/activity-coupons/by-event', { tenantId, eventId }),
     getPublic: async (tenantId, id) =>

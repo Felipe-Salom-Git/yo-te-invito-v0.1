@@ -1,14 +1,16 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, type ActivityCoupon, type GastroWeekday } from '@prisma/client';
+import { NotificationKind, Prisma, type ActivityCoupon, type GastroWeekday } from '@prisma/client';
 import { randomBytes } from 'crypto';
 import {
   canArchiveActivityCoupon,
   canUnarchiveActivityCoupon,
   ErrorCode,
+  computeActivityCouponMetrics,
   formatCouponVisualBenefit,
   formatManualShortCodeDisplay,
   getGastroWeekdayLabelEs,
@@ -29,7 +31,9 @@ import {
 } from '@yo-te-invito/shared';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
+import { UserNotificationsService } from '../notifications/user-notifications.service';
 import { allocateActivityCouponClaimShortCode } from '../../common/activity-claim-short-code.util';
+import { ActivityCouponClaimEmailService } from './activity-coupon-claim-email.service';
 
 const couponInclude = {
   event: { select: { id: true, title: true, category: true, deletedAt: true } },
@@ -45,9 +49,13 @@ function readImageUrls(value: Prisma.JsonValue | null | undefined): string[] {
 
 @Injectable()
 export class ActivityCouponsService {
+  private readonly logger = new Logger(ActivityCouponsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly claimEmail: ActivityCouponClaimEmailService,
+    private readonly notifications: UserNotificationsService,
   ) {}
 
   async assertOperator(tenantId: string, operatorId: string) {
@@ -464,6 +472,26 @@ export class ActivityCouponsService {
     return this.toResponse(updated);
   }
 
+  async getMetrics(tenantId: string, operatorId: string, couponId: string) {
+    await this.getRow(tenantId, operatorId, couponId);
+    const [issued, used, unused, validations] = await Promise.all([
+      this.prisma.activityCouponClaim.count({ where: { tenantId, couponId } }),
+      this.prisma.activityCouponClaim.count({
+        where: { tenantId, couponId, status: 'USED' },
+      }),
+      this.prisma.activityCouponClaim.count({
+        where: { tenantId, couponId, status: 'ACTIVE' },
+      }),
+      this.prisma.activityCouponValidation.count({ where: { couponId } }),
+    ]);
+    return computeActivityCouponMetrics({
+      claimsIssued: issued,
+      claimsUsed: used,
+      claimsUnused: unused,
+      validations,
+    });
+  }
+
   async listPublicByEvent(tenantId: string, eventId: string) {
     const event = await this.prisma.event.findFirst({
       where: { id: eventId, tenantId, deletedAt: null },
@@ -618,9 +646,11 @@ export class ActivityCouponsService {
     const expiresAt = rawExpires ? normalizeGastroDiscountExpiryDate(rawExpires) : null;
 
     if (existing && isActivityCouponClaimActive(existing.status)) {
+      const view = this.toClaimView({ ...existing, coupon });
+      const emailSent = await this.notifyClaim(tenantId, userId, view);
       return {
-        ...this.toClaimView({ ...existing, coupon }),
-        emailSent: false,
+        ...view,
+        emailSent,
         message: 'Ya tenés este cupón. Podés verlo en Mi cuenta.',
       };
     }
@@ -648,16 +678,62 @@ export class ActivityCouponsService {
       tenantId,
       actorId: actorId ?? userId ?? 'anonymous',
       actorRole,
-      action: 'ACTIVITY_COUPON_CREATED',
+      action: 'ACTIVITY_COUPON_CLAIMED',
       entityType: 'ActivityCouponClaim',
       entityId: claim.id,
       metadata: { couponId, email: normalizedEmail },
     });
+    const view = this.toClaimView({ ...claim, coupon });
+    const emailSent = await this.notifyClaim(tenantId, userId, view);
     return {
-      ...this.toClaimView({ ...claim, coupon }),
-      emailSent: false,
-      message: 'Cupón reclamado. Guardalo en Mi cuenta y presentá el QR o el código corto.',
+      ...view,
+      emailSent,
+      message: emailSent
+        ? 'Cupón reclamado. Te enviamos el QR por email. También está en Mi cuenta.'
+        : 'Cupón reclamado. Guardalo en Mi cuenta y presentá el QR o el código corto.',
     };
+  }
+
+  private async notifyClaim(
+    tenantId: string,
+    userId: string | null | undefined,
+    view: ActivityCouponClaimView,
+  ): Promise<boolean> {
+    const sendResult = await this.claimEmail.sendClaimEmail({
+      claimId: view.claimId,
+      accessToken: view.accessToken,
+      to: view.email,
+      recipientUserId: userId ?? null,
+      operatorName: view.operatorName ?? 'Actividad',
+      eventTitle: view.eventTitle ?? 'Actividad',
+      couponTitle: view.coupon.title,
+      benefitLabel: view.coupon.benefitLabel,
+      qrPayload: view.qrPayload,
+      shortCodeDisplay: view.shortCodeDisplay,
+      validTo: view.validTo,
+    });
+
+    if (userId) {
+      void this.notifications
+        .deliver({
+          tenantId,
+          userId,
+          userEmail: view.email?.trim() || null,
+          kind: NotificationKind.ACTIVITY_COUPON_CLAIMED,
+          referenceKey: `activity-coupon-claim:${view.claimId}`,
+          title: 'Tu cupón de Actividades está listo',
+          body: `«${view.coupon.title}» ya está en Mi cuenta. Presentá el QR o el código corto.`,
+          href: '/me/descuentos',
+          sendInApp: true,
+          sendEmail: false,
+          sendPush: true,
+        })
+        .catch((err) => {
+          this.logger.error(`activity coupon IN_APP failed claim=${view.claimId}`, err);
+        });
+    }
+
+    return sendResult.sent;
   }
 
   async getPublicClaim(

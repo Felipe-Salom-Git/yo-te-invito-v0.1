@@ -301,3 +301,40 @@ export type MeActivityCouponListResponse = z.infer<typeof meActivityCouponListRe
 export function isActivityCouponClaimActive(status: string): boolean {
   return status === 'ACTIVE';
 }
+
+export const activityCouponMetricsSchema = z.object({
+  claimsIssued: z.number().int().nonnegative(),
+  claimsUsed: z.number().int().nonnegative(),
+  claimsUnused: z.number().int().nonnegative(),
+  validations: z.number().int().nonnegative(),
+  useRate: z.number().nonnegative(),
+});
+export type ActivityCouponMetrics = z.infer<typeof activityCouponMetricsSchema>;
+
+/** KPI V1: issued / used / unused (ACTIVE) / validations / use rate %. No settlement. */
+export function computeActivityCouponMetrics(input: {
+  claimsIssued: number;
+  claimsUsed: number;
+  claimsUnused: number;
+  validations: number;
+}): ActivityCouponMetrics {
+  const issued = Math.max(0, input.claimsIssued);
+  const used = Math.max(0, input.claimsUsed);
+  const unused = Math.max(0, input.claimsUnused);
+  const validations = Math.max(0, input.validations);
+  const useRate = issued === 0 ? 0 : Math.round((used / issued) * 1000) / 10;
+  return {
+    claimsIssued: issued,
+    claimsUsed: used,
+    claimsUnused: unused,
+    validations,
+    useRate,
+  };
+}
+
+/** Transversal: email == null / blank → skip EMAIL. Never invent addresses. */
+export function shouldSendActivityCouponClaimEmail(
+  email: string | null | undefined,
+): boolean {
+  return Boolean(email?.trim());
+}
