@@ -36,6 +36,7 @@ import { loadEventSubcategoriesPublic } from '../../common/event-subcategories.u
 import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../../email/email.service';
 import { GastroFollowDiscountAlertsService } from '../notifications/gastro-follow-discount-alerts.service';
+import { GastroLifecycleNotificationsService } from '../notifications/gastro-lifecycle-notifications.service';
 
 function readUrls(value: unknown): string[] {
   if (value == null) return [];
@@ -72,6 +73,7 @@ export class AdminGastroService {
     private readonly prisma: PrismaService,
     private readonly email: EmailService,
     private readonly gastroFollowAlerts: GastroFollowDiscountAlertsService,
+    private readonly lifecycleNotifications: GastroLifecycleNotificationsService,
   ) {}
 
   private toProfileStatus(status: ProfileStatus) {
@@ -719,6 +721,12 @@ export class AdminGastroService {
       { status: 'ACTIVE' },
     );
     void this.gastroFollowAlerts.notifyFollowersOfNewActiveDiscount(tenantId, discountId);
+    this.lifecycleNotifications.notifyDiscountApproved(
+      tenantId,
+      discountId,
+      row.displayTitle ?? 'tu descuento',
+      'create',
+    );
     return this.getDiscountDetail(tenantId, profileId, discountId);
   }
 
@@ -754,6 +762,13 @@ export class AdminGastroService {
       discountId,
       { status: row.status },
       { status: 'REJECTED' },
+    );
+    this.lifecycleNotifications.notifyDiscountRejected(
+      tenantId,
+      discountId,
+      row.displayTitle ?? 'tu descuento',
+      'create',
+      reason,
     );
     return this.getDiscountDetail(tenantId, profileId, discountId);
   }
@@ -805,6 +820,12 @@ export class AdminGastroService {
       published,
       pending,
     );
+    this.lifecycleNotifications.notifyDiscountApproved(
+      tenantId,
+      discountId,
+      fields.displayTitle ?? row.displayTitle ?? 'tu descuento',
+      'edit',
+    );
     return this.getDiscountDetail(tenantId, profileId, discountId);
   }
 
@@ -842,6 +863,13 @@ export class AdminGastroService {
       discountId,
       published,
       pending,
+    );
+    this.lifecycleNotifications.notifyDiscountRejected(
+      tenantId,
+      discountId,
+      row.displayTitle ?? 'tu descuento',
+      'edit',
+      note ?? undefined,
     );
     return this.getDiscountDetail(tenantId, profileId, discountId);
   }
@@ -1104,6 +1132,12 @@ export class AdminGastroService {
       { status: created.status, gastroProfileId: profile.id, origin: 'ADMIN' },
     );
     void this.gastroFollowAlerts.notifyFollowersOfNewActiveDiscount(tenantId, created.id);
+    this.lifecycleNotifications.notifyDiscountApproved(
+      tenantId,
+      created.id,
+      created.displayTitle ?? body.title,
+      'create',
+    );
     return this.getDiscountDetail(tenantId, profileId, created.id);
   }
 }

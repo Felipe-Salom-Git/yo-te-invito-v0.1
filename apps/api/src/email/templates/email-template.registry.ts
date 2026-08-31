@@ -46,6 +46,7 @@ import {
   renderGastroDiscountQrCourtesy,
   renderGastroDiscountQrRequested,
 } from './templates/gastro-discount-qr.template';
+import { renderGastroLifecycle } from './templates/gastro-lifecycle.template';
 
 export type EmailTemplateRenderer = (
   variables: Record<string, unknown>,
@@ -97,6 +98,7 @@ const REGISTRY: Record<EmailTemplateId, EmailTemplateRenderer> = {
   TICKET_DATE_CHANGE_REJECTED: renderTicketDateChangeRejected,
   GASTRO_DISCOUNT_QR_REQUESTED: renderGastroDiscountQrRequested,
   GASTRO_DISCOUNT_QR_COURTESY: renderGastroDiscountQrCourtesy,
+  GASTRO_LIFECYCLE: renderGastroLifecycle,
 };
 
 export function getEmailTemplateRenderer(

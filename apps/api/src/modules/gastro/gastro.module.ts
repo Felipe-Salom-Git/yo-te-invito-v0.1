@@ -19,9 +19,17 @@ import { GastroDiscountClaimEmailService } from './gastro-discount-claim-email.s
 import { GastroOwnershipService } from './gastro-ownership.service';
 import { GastroDiscountMetricsService } from './gastro-discount-metrics.service';
 import { GastroDiscountExpiryService } from './gastro-discount-expiry.service';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
-  imports: [AuthModule, EmailModule, SubcategoriesModule, ReviewDisputesModule, ReviewsModule],
+  imports: [
+    AuthModule,
+    EmailModule,
+    SubcategoriesModule,
+    ReviewDisputesModule,
+    ReviewsModule,
+    NotificationsModule,
+  ],
   controllers: [GastroController, GastroReviewsController],
   providers: [
     ProfilesAuthorizationService,

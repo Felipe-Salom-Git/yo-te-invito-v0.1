@@ -2,12 +2,16 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { isGastroDiscountDateExpired } from '@yo-te-invito/shared';
 import { PrismaService } from '../../prisma/prisma.service';
+import { GastroLifecycleNotificationsService } from '../notifications/gastro-lifecycle-notifications.service';
 
 @Injectable()
 export class GastroDiscountExpiryService {
   private readonly logger = new Logger(GastroDiscountExpiryService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly lifecycleNotifications: GastroLifecycleNotificationsService,
+  ) {}
 
   @Cron(process.env.NODE_ENV === 'development' ? '*/15 * * * *' : '5 * * * *')
   async runScheduledExpiry(): Promise<void> {
@@ -34,23 +38,25 @@ export class GastroDiscountExpiryService {
       },
       select: {
         id: true,
+        tenantId: true,
+        displayTitle: true,
         validityMode: true,
         validTo: true,
         discountDate: true,
       },
     });
 
-    const ids = candidates
-      .filter((row) =>
-        isGastroDiscountDateExpired({
-          status: 'ACTIVE',
-          validityMode: row.validityMode,
-          validTo: row.validTo,
-          discountDate: row.discountDate,
-          now,
-        }),
-      )
-      .map((row) => row.id);
+    const expired = candidates.filter((row) =>
+      isGastroDiscountDateExpired({
+        status: 'ACTIVE',
+        validityMode: row.validityMode,
+        validTo: row.validTo,
+        discountDate: row.discountDate,
+        now,
+      }),
+    );
+
+    const ids = expired.map((row) => row.id);
 
     if (ids.length === 0) return { updated: 0, ids: [] };
 
@@ -58,6 +64,14 @@ export class GastroDiscountExpiryService {
       where: { id: { in: ids }, status: { in: ['ACTIVE', 'APPROVED'] } },
       data: { status: 'EXPIRED' },
     });
+
+    for (const row of expired) {
+      this.lifecycleNotifications.notifyDiscountExpired(
+        row.tenantId,
+        row.id,
+        row.displayTitle ?? 'tu descuento',
+      );
+    }
 
     return { updated: updated.count, ids };
   }

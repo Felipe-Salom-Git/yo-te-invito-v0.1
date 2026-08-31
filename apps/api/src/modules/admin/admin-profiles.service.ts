@@ -1,12 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { GastroPublicEventSyncService } from '../gastro/gastro-public-event-sync.service';
+import { GastroLifecycleNotificationsService } from '../notifications/gastro-lifecycle-notifications.service';
 
 @Injectable()
 export class AdminProfilesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly gastroPublicEventSync: GastroPublicEventSyncService,
+    private readonly gastroLifecycleNotifications: GastroLifecycleNotificationsService,
   ) {}
 
   async listPendingProducerProfiles(tenantId: string) {
@@ -91,6 +93,12 @@ export class AdminProfilesService {
       await this.gastroPublicEventSync.syncVisibilityForProfile(updated);
     }
 
+    this.gastroLifecycleNotifications.notifyProfileApproved(
+      tenantId,
+      profileId,
+      updated.displayName ?? profile.displayName,
+    );
+
     return { id: profileId, status: 'ACTIVE', message: 'Perfil aprobado' };
   }
 
@@ -117,6 +125,13 @@ export class AdminProfilesService {
     if (updated.publicEventId) {
       await this.gastroPublicEventSync.syncVisibilityForProfile(updated);
     }
+
+    this.gastroLifecycleNotifications.notifyProfileRejected(
+      tenantId,
+      profileId,
+      updated.displayName ?? profile.displayName,
+      reason ?? undefined,
+    );
 
     return { id: profileId, status: 'REJECTED', message: 'Perfil rechazado' };
   }

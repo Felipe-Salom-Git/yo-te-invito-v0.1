@@ -44,6 +44,7 @@ export const EMAIL_TEMPLATE_IDS = [
   'TICKET_DATE_CHANGE_REJECTED',
   'GASTRO_DISCOUNT_QR_REQUESTED',
   'GASTRO_DISCOUNT_QR_COURTESY',
+  'GASTRO_LIFECYCLE',
 ] as const;
 
 export type EmailTemplateId = (typeof EMAIL_TEMPLATE_IDS)[number];

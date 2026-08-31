@@ -31,6 +31,7 @@ import { AuditService } from '../audit/audit.service';
 import { ProfilesAuthorizationService } from '../../common/profiles-authorization.service';
 import { GastroOwnershipService } from './gastro-ownership.service';
 import { GastroDiscountMetricsService } from './gastro-discount-metrics.service';
+import { GastroLifecycleNotificationsService } from '../notifications/gastro-lifecycle-notifications.service';
 import type {
   GastroDiscountArchiveAction,
   GastroDiscountStatusUpdate,
@@ -49,6 +50,7 @@ export class GastroPortalDiscountsService {
     private readonly ownership: GastroOwnershipService,
     private readonly discountMetrics: GastroDiscountMetricsService,
     private readonly audit: AuditService,
+    private readonly lifecycleNotifications: GastroLifecycleNotificationsService,
   ) {}
 
   mapDiscount(row: {
@@ -326,6 +328,12 @@ export class GastroPortalDiscountsService {
         submittedImageUrls: this.urlsJson(body.imageUrls),
       },
     });
+    this.lifecycleNotifications.notifyDiscountPending(
+      tenantId,
+      created.id,
+      created.displayTitle ?? body.title,
+      'create',
+    );
     return this.mapDiscount(created);
   }
 
@@ -427,6 +435,12 @@ export class GastroPortalDiscountsService {
         before: published,
         after: pending,
       });
+      this.lifecycleNotifications.notifyDiscountPending(
+        tenantId,
+        id,
+        updated.displayTitle ?? existing.displayTitle ?? body.title ?? 'tu descuento',
+        'edit',
+      );
       return this.mapDiscount(updated);
     }
 

@@ -43,6 +43,12 @@ const KIND_LABELS: Record<string, string> = {
   TICKET_DATE_CHANGE_APPROVED: 'Cambio de fecha aprobado',
   TICKET_DATE_CHANGE_REJECTED: 'Cambio de fecha rechazado',
   TICKET_DATE_CHANGE_APPLIED: 'Fecha de entrada actualizada',
+  GASTRO_DISCOUNT_PENDING_REVIEW: 'Descuento en revisión',
+  GASTRO_DISCOUNT_APPROVED_BY_ADMIN: 'Descuento aprobado',
+  GASTRO_DISCOUNT_REJECTED_BY_ADMIN: 'Descuento rechazado',
+  GASTRO_DISCOUNT_EXPIRED: 'Descuento vencido',
+  GASTRO_PROFILE_APPROVED_BY_ADMIN: 'Local gastronómico aprobado',
+  GASTRO_PROFILE_REJECTED_BY_ADMIN: 'Local gastronómico rechazado',
 };
 
 export default function MeNotificationsPage() {

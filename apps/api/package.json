@@ -41,6 +41,7 @@
     "test:gastro-discount-edit-moderation": "tsx scripts/test-gastro-discount-edit-moderation.util.ts",
     "test:gastro-discount-archive": "tsx scripts/test-gastro-discount-archive.util.ts",
     "test:gastro-discount-origin": "tsx scripts/test-gastro-discount-origin.util.ts",
+    "test:gastro-lifecycle-notifications": "tsx scripts/test-gastro-lifecycle-notifications.util.ts",
     "test:gastro-discount-expiry": "tsx scripts/test-gastro-discount-expiry.util.ts",
     "test:gastro-discount-scan": "tsx scripts/test-gastro-discount-scan.ts",
     "smoke:reviews": "tsx scripts/smoke-reviews-v2.ts",

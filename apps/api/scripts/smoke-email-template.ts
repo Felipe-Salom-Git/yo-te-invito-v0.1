@@ -418,6 +418,16 @@ function sampleVariables(templateId: EmailTemplateId): Record<string, unknown> {
         adminUrl: `${appUrl}/admin`,
         supportEmail: 'soporte@yoteinvito.club',
       };
+    case 'GASTRO_LIFECYCLE':
+      return {
+        recipientName: 'Local Demo',
+        subject: 'Descuento aprobado',
+        previewText: 'Tu descuento fue aprobado',
+        body: '«2x1 pizzas» fue aprobado y ya puede mostrarse y canjearse.',
+        ctaLabel: 'Ver en el portal',
+        ctaUrl: `${appUrl}/gastro/descuentos`,
+        supportEmail: 'soporte@yoteinvito.club',
+      };
     default:
       return {};
   }

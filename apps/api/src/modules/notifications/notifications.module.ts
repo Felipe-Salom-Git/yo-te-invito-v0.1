@@ -9,6 +9,7 @@ import { UserNotificationsService } from './user-notifications.service';
 import { ProducerEventStatusNotificationsService } from './producer-event-status-notifications.service';
 import { ReviewNotificationsService } from './review-notifications.service';
 import { GastroFollowDiscountAlertsService } from './gastro-follow-discount-alerts.service';
+import { GastroLifecycleNotificationsService } from './gastro-lifecycle-notifications.service';
 import { WebPushService } from './web-push.service';
 
 @Module({
@@ -23,6 +24,7 @@ import { WebPushService } from './web-push.service';
     ProducerEventStatusNotificationsService,
     ReviewNotificationsService,
     GastroFollowDiscountAlertsService,
+    GastroLifecycleNotificationsService,
   ],
   exports: [
     WebPushService,
@@ -33,6 +35,7 @@ import { WebPushService } from './web-push.service';
     ProducerEventStatusNotificationsService,
     ReviewNotificationsService,
     GastroFollowDiscountAlertsService,
+    GastroLifecycleNotificationsService,
   ],
 })
 export class NotificationsModule {}
