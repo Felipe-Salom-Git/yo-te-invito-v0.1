@@ -3,6 +3,10 @@
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  canArchiveGastroDiscount,
+  canUnarchiveGastroDiscount,
+} from '@yo-te-invito/shared';
 import { useRepositories } from '@/repositories/context';
 import { PageContainer, PageLoader, QueryError, useToast } from '@/components';
 import { GastroDiscountDetailContent } from '@/components/gastro/GastroDiscountDetailContent';
@@ -46,6 +50,16 @@ export default function GastroDescuentoDetallePage() {
     queryClient.invalidateQueries({ queryKey: gastroKeys.discounts(discountProfileId) });
   };
 
+  const statusMutation = useMutation({
+    mutationFn: (status: 'ACTIVE' | 'CANCELLED') =>
+      repos.gastro.updateMyDiscountStatus(id, { status }),
+    onError: (err) => addToast(getErrorMessage(err), 'error'),
+    onSuccess: (_, status) => {
+      addToast(status === 'ACTIVE' ? 'Descuento activado' : 'Descuento desactivado', 'success');
+      invalidate();
+    },
+  });
+
   const archiveMutation = useMutation({
     mutationFn: (archived: boolean) => repos.gastro.archiveMyDiscount(id, { archived }),
     onError: (err) => addToast(getErrorMessage(err), 'error'),
@@ -54,6 +68,19 @@ export default function GastroDescuentoDetallePage() {
       invalidate();
     },
   });
+
+  const discount = discountQuery.data;
+  const archiveInput = discount
+    ? {
+        status: discount.status,
+        archivedAt: discount.archivedAt,
+        validityMode: discount.validityMode,
+        validTo: discount.validTo,
+        discountDate: discount.discountDate,
+      }
+    : null;
+  const showArchive = archiveInput ? canArchiveGastroDiscount(archiveInput) : false;
+  const showUnarchive = archiveInput ? canUnarchiveGastroDiscount(archiveInput) : false;
 
   return (
     <PageContainer>
@@ -82,15 +109,15 @@ export default function GastroDescuentoDetallePage() {
         />
       ) : null}
 
-      {discountQuery.data?.hasPendingUpdate && (
+      {discount?.hasPendingUpdate && (
         <p className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
           Tu descuento publicado sigue activo con la versión actual mientras revisamos los cambios.
         </p>
       )}
 
-      {discountQuery.data && (
+      {discount && (showArchive || showUnarchive) && (
         <div className="mt-6">
-          {discountQuery.data.archivedAt ? (
+          {showUnarchive ? (
             <button
               type="button"
               className="rounded-lg border border-border px-4 py-2 text-sm"

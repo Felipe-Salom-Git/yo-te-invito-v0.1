@@ -183,7 +183,11 @@ export class AdminGastroService {
       validationCount: r._count.validations,
       createdAt: r.createdAt.toISOString(),
       hasPendingUpdate,
-      reviewKind: hasPendingUpdate ? ('EDIT' as const) : ('NEW' as const),
+      reviewKind: hasPendingUpdate
+        ? ('EDIT' as const)
+        : ['PENDING_REVIEW', 'COMMISSION_NEGOTIATION'].includes(r.status)
+          ? ('NEW' as const)
+          : undefined,
       createdByOrigin: r.createdByOrigin === 'ADMIN' ? ('ADMIN' as const) : ('GASTRO' as const),
       archivedAt: r.archivedAt?.toISOString() ?? null,
     };

@@ -80,6 +80,11 @@ export function AdminGastroDiscountsTable({ profileId, discounts }: Props) {
                   </td>
                   <td className="px-4 py-3">
                     <AdminGastroDiscountStatusBadge status={d.status} />
+                    {d.reviewKind === 'NEW' && !d.hasPendingUpdate && (
+                      <span className="ml-2 inline-flex rounded-full bg-sky-500/15 px-2 py-0.5 text-xs text-sky-300">
+                        Nuevo pendiente
+                      </span>
+                    )}
                     {d.hasPendingUpdate && (
                       <span className="ml-2 inline-flex rounded-full bg-amber-500/15 px-2 py-0.5 text-xs text-amber-300">
                         Edición pendiente
@@ -88,6 +93,11 @@ export function AdminGastroDiscountsTable({ profileId, discounts }: Props) {
                     {d.createdByOrigin === 'ADMIN' && (
                       <span className="ml-2 inline-flex rounded-full bg-violet-500/15 px-2 py-0.5 text-xs text-violet-300">
                         Creado por Admin
+                      </span>
+                    )}
+                    {d.createdByOrigin === 'GASTRO' && (
+                      <span className="ml-2 inline-flex rounded-full bg-zinc-500/15 px-2 py-0.5 text-xs text-zinc-300">
+                        Creado por Gastro
                       </span>
                     )}
                   </td>

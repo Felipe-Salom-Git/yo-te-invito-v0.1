@@ -13,6 +13,10 @@ import { AdminGastroDiscountPublicationEditor } from '@/components/admin/gastro/
 import { AdminGastroDiscountQrPanel } from '@/components/admin/gastro/AdminGastroDiscountQrPanel';
 import { AdminGastroPendingEditPanel } from '@/components/admin/gastro/AdminGastroPendingEditPanel';
 import { GastroDiscountDetailContent } from '@/components/gastro/GastroDiscountDetailContent';
+import {
+  canArchiveGastroDiscount,
+  canUnarchiveGastroDiscount,
+} from '@yo-te-invito/shared';
 
 export default function AdminGastroDiscountDetailPage() {
   const params = useParams();
@@ -194,7 +198,12 @@ export default function AdminGastroDiscountDetailPage() {
 
       <p className="mt-2 text-sm text-text-muted">
         Contacto: {item.ownerEmail ?? '—'} · {item.ownerPhone ?? '—'}
-        {item.createdByOrigin === 'ADMIN' ? ' · Creado por Admin' : ''}
+        {item.createdByOrigin === 'ADMIN' ? ' · Creado por Admin' : ' · Creado por Gastro'}
+        {item.hasPendingUpdate
+          ? ' · Edición pendiente'
+          : item.status === 'PENDING_REVIEW' || item.status === 'COMMISSION_NEGOTIATION'
+            ? ' · Nuevo descuento pendiente'
+            : ''}
       </p>
 
       {item.hasPendingUpdate && item.pendingUpdate && (
@@ -352,31 +361,43 @@ export default function AdminGastroDiscountDetailPage() {
         </>
       )}
 
-      <div className="mt-6">
-        {item.archivedAt ? (
-          <Button
-            type="button"
-            variant="secondary"
-            disabled={moderationPending}
-            onClick={() => archive.mutate(false)}
-          >
-            Restaurar del archivo
-          </Button>
-        ) : (
-          <Button
-            type="button"
-            variant="secondary"
-            disabled={moderationPending}
-            onClick={() => {
-              if (window.confirm('¿Archivar? Se conserva el histórico de claims y métricas.')) {
-                archive.mutate(true);
-              }
-            }}
-          >
-            Archivar
-          </Button>
-        )}
-      </div>
+      {(canUnarchiveGastroDiscount({
+        status: item.status,
+        archivedAt: item.archivedAt,
+      }) ||
+        canArchiveGastroDiscount({
+          status: item.status,
+          archivedAt: item.archivedAt,
+          validityMode: item.validityMode,
+          validTo: item.validTo,
+          discountDate: item.discountDate,
+        })) && (
+        <div className="mt-6">
+          {item.archivedAt ? (
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={moderationPending}
+              onClick={() => archive.mutate(false)}
+            >
+              Restaurar del archivo
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={moderationPending}
+              onClick={() => {
+                if (window.confirm('¿Archivar? Se conserva el histórico de claims y métricas.')) {
+                  archive.mutate(true);
+                }
+              }}
+            >
+              Archivar
+            </Button>
+          )}
+        </div>
+      )}
     </PageContainer>
   );
 }

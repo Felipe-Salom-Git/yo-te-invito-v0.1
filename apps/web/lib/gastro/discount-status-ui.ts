@@ -109,3 +109,27 @@ export function formatGastroDiscountValidityLabel(
     input.discountDate,
   );
 }
+
+/** Portal/admin label for the published lifecycle — pending edit is a separate chip. */
+export function gastroDiscountPortalStatusLabel(input: {
+  status: string;
+  archivedAt?: string | Date | null;
+}): string {
+  if (input.archivedAt) return 'Archivado';
+  switch (input.status) {
+    case 'PENDING_REVIEW':
+    case 'COMMISSION_NEGOTIATION':
+      return 'En revisión';
+    case 'ACTIVE':
+    case 'APPROVED':
+      return 'Publicado';
+    case 'EXPIRED':
+      return 'Vencido';
+    case 'REJECTED':
+      return 'Rechazado';
+    case 'CANCELLED':
+      return 'Cancelado';
+    default:
+      return input.status;
+  }
+}

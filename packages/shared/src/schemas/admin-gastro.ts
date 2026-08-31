@@ -110,6 +110,8 @@ export const adminGastroDiscountListItemSchema = z.object({
   discountDate: z.string().datetime().nullable(),
   validityMode: gastroDiscountValidityModeSchema.optional(),
   validWeekday: gastroWeekdaySchema.nullable().optional(),
+  validFrom: z.string().datetime().nullable().optional(),
+  validTo: z.string().datetime().nullable().optional(),
   validationCount: z.number().int().min(0),
   createdAt: z.string().datetime(),
   hasPendingUpdate: z.boolean().optional(),

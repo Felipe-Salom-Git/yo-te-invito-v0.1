@@ -2,17 +2,30 @@
 
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import {
+  classifyGastroDiscountLifecycle,
+  type GastroDiscountLifecycleBucket,
+} from '@yo-te-invito/shared';
 import { useRepositories } from '@/repositories/context';
 import { adminGastroKeys } from '@/lib/query/keys';
 import { PageContainer, SectionTitle } from '@/components';
 import { AdminGastroDiscountsTable } from '@/components/admin/gastro/AdminGastroDiscountsTable';
 import { AdminGastroHardDeleteActions } from '@/components/admin/gastro/AdminGastroHardDeleteActions';
 
+const TABS: Array<{ id: GastroDiscountLifecycleBucket; label: string }> = [
+  { id: 'ACTIVE', label: 'Activos' },
+  { id: 'PENDING', label: 'Pendientes' },
+  { id: 'FINISHED', label: 'Vencidos / finalizados' },
+  { id: 'ARCHIVED', label: 'Archivados' },
+];
+
 export default function AdminGastroLocationDetailPage() {
   const params = useParams();
   const profileId = (params?.profileId as string) ?? '';
   const repos = useRepositories();
+  const [tabOverride, setTabOverride] = useState<GastroDiscountLifecycleBucket | null>(null);
 
   const { data: location, isLoading: loadingLocation } = useQuery({
     queryKey: adminGastroKeys.detail(profileId),
@@ -26,16 +39,32 @@ export default function AdminGastroLocationDetailPage() {
     enabled: !!profileId,
   });
 
-  const PENDING = ['PENDING_REVIEW', 'COMMISSION_NEGOTIATION', 'APPROVED'] as const;
-  const discounts = [...(discountsData?.data ?? [])].sort((a, b) => {
-    const aPending = PENDING.includes(a.status as (typeof PENDING)[number]);
-    const bPending = PENDING.includes(b.status as (typeof PENDING)[number]);
-    if (aPending !== bPending) return aPending ? -1 : 1;
-    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-  });
-  const pendingCount = discounts.filter((d) =>
-    PENDING.includes(d.status as (typeof PENDING)[number]),
-  ).length;
+  const grouped = useMemo(() => {
+    const buckets: Record<GastroDiscountLifecycleBucket, NonNullable<typeof discountsData>['data']> =
+      {
+        ACTIVE: [],
+        PENDING: [],
+        FINISHED: [],
+        ARCHIVED: [],
+      };
+    for (const d of discountsData?.data ?? []) {
+      const bucket = classifyGastroDiscountLifecycle({
+        status: d.status,
+        archivedAt: d.archivedAt,
+        validityMode: d.validityMode,
+        validTo: d.validTo,
+        discountDate: d.discountDate,
+        hasPendingUpdate: Boolean(d.hasPendingUpdate),
+      });
+      buckets[bucket].push(d);
+    }
+    return buckets;
+  }, [discountsData]);
+
+  const pendingCount = grouped.PENDING.length;
+  const tab: GastroDiscountLifecycleBucket =
+    tabOverride ?? (pendingCount > 0 ? 'PENDING' : 'ACTIVE');
+  const visible = grouped[tab];
 
   return (
     <PageContainer>
@@ -123,12 +152,28 @@ export default function AdminGastroLocationDetailPage() {
             Expandí una fila para ver métricas. Usá &quot;Revisar y publicar&quot; para curar
             imágenes y moderar.
           </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {TABS.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setTabOverride(t.id)}
+                className={`rounded-full px-3 py-1 text-sm ${
+                  tab === t.id
+                    ? 'bg-accent text-bg'
+                    : 'border border-border text-text-muted hover:border-accent/50'
+                }`}
+              >
+                {t.label} ({grouped[t.id].length})
+              </button>
+            ))}
+          </div>
 
           {loadingDiscounts ? (
             <p className="mt-4 text-text-muted">Cargando tickets…</p>
           ) : (
             <div className="mt-4">
-              <AdminGastroDiscountsTable profileId={profileId} discounts={discounts} />
+              <AdminGastroDiscountsTable profileId={profileId} discounts={visible} />
             </div>
           )}
         </>

@@ -37,6 +37,7 @@ export const adminDashboardPendingGastroDiscountSchema = z.object({
   profileName: z.string().nullable(),
   status: z.string(),
   createdAt: z.string().datetime(),
+  reviewKind: z.enum(['NEW', 'EDIT']).optional(),
 });
 export type AdminDashboardPendingGastroDiscount = z.infer<
   typeof adminDashboardPendingGastroDiscountSchema

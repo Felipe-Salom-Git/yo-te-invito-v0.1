@@ -30,6 +30,14 @@ const GASTRO_DISCOUNT_STATUS_LABEL: Record<string, string> = {
   COMMISSION_NEGOTIATION: 'Negociación comisión',
 };
 
+function gastroPendingKindLabel(
+  d: AdminDashboardPendingGastroDiscount,
+): string {
+  if (d.reviewKind === 'EDIT') return 'Edición pendiente';
+  if (d.reviewKind === 'NEW') return 'Nuevo descuento pendiente';
+  return GASTRO_DISCOUNT_STATUS_LABEL[d.status] ?? d.status;
+}
+
 function pickDefaultTab(
   approvalCount: number,
   draftCount: number,
@@ -74,8 +82,7 @@ function GastroDiscountsPendingList({
           <div className="min-w-0">
             <p className="truncate font-medium text-text">{d.title}</p>
             <p className="mt-1 text-xs text-text-muted">
-              {d.profileName ?? 'Local gastro'} ·{' '}
-              {GASTRO_DISCOUNT_STATUS_LABEL[d.status] ?? d.status} · Creado{' '}
+              {d.profileName ?? 'Local gastro'} · {gastroPendingKindLabel(d)} · Creado{' '}
               {formatDate(d.createdAt)}
             </p>
           </div>
@@ -137,7 +144,7 @@ export function AdminPendingReviewSection({
           count: gastroCount,
           href: '/admin/gastronomicos?hasPendingDiscounts=1',
           hrefLabel: 'Ver locales →',
-          description: 'Descuentos en revisión o negociación de comisión.',
+          description: 'Descuentos nuevos y ediciones pendientes de revisión.',
         },
       ] as const,
     [approvalCount, draftCount, gastroCount],

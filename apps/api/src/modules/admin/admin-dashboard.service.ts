@@ -57,7 +57,11 @@ export class AdminDashboardService {
       this.prisma.gastroDiscount.count({
         where: {
           tenantId,
-          status: { in: ['PENDING_REVIEW', 'COMMISSION_NEGOTIATION'] },
+          archivedAt: null,
+          OR: [
+            { status: { in: ['PENDING_REVIEW', 'COMMISSION_NEGOTIATION'] } },
+            { pendingUpdateSubmittedAt: { not: null } },
+          ],
         },
       }),
       this.prisma.gastroDiscountClaim.count({
@@ -108,7 +112,11 @@ export class AdminDashboardService {
       this.prisma.gastroDiscount.findMany({
         where: {
           tenantId,
-          status: { in: ['PENDING_REVIEW', 'COMMISSION_NEGOTIATION'] },
+          archivedAt: null,
+          OR: [
+            { status: { in: ['PENDING_REVIEW', 'COMMISSION_NEGOTIATION'] } },
+            { pendingUpdateSubmittedAt: { not: null } },
+          ],
         },
         orderBy: { createdAt: 'desc' },
         take: PENDING_QUEUE_LIMIT,
@@ -118,6 +126,7 @@ export class AdminDashboardService {
           code: true,
           status: true,
           createdAt: true,
+          pendingUpdateSubmittedAt: true,
           gastroProfileId: true,
           gastroProfile: { select: { id: true, displayName: true } },
         },
@@ -160,6 +169,7 @@ export class AdminDashboardService {
         profileName: d.gastroProfile?.displayName ?? null,
         status: d.status,
         createdAt: d.createdAt.toISOString(),
+        reviewKind: d.pendingUpdateSubmittedAt ? ('EDIT' as const) : ('NEW' as const),
       })),
     };
   }

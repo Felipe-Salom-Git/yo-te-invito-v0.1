@@ -14,18 +14,7 @@ import { PageContainer, SectionTitle } from '@/components';
 import { GastroLocationSelector } from '@/components/gastro/GastroLocationSelector';
 import { useGastroActiveLocation } from '@/lib/gastro/GastroActiveLocationContext';
 import { gastroKeys } from '@/lib/query/keys';
-import { formatGastroDiscountValidityRangeLabel } from '@/lib/gastro/discount-status-ui';
-import type { GastroDiscountStatus } from '@/repositories/interfaces';
-
-const STATUS_LABEL: Record<GastroDiscountStatus, string> = {
-  PENDING_REVIEW: 'En revisión',
-  COMMISSION_NEGOTIATION: 'Coordinación comisión',
-  APPROVED: 'Aprobado',
-  ACTIVE: 'Activo',
-  REJECTED: 'Rechazado',
-  CANCELLED: 'Cancelado',
-  EXPIRED: 'Vencido',
-};
+import { formatGastroDiscountValidityRangeLabel, gastroDiscountPortalStatusLabel } from '@/lib/gastro/discount-status-ui';
 
 const TABS: Array<{ id: GastroDiscountLifecycleBucket; label: string }> = [
   { id: 'ACTIVE', label: 'Activos' },
@@ -144,7 +133,10 @@ export default function GastroDescuentosPage() {
                 )}
               </div>
               <span className="rounded-full bg-bg-muted px-2 py-0.5 text-xs text-text">
-                {d.archivedAt ? 'Archivado' : STATUS_LABEL[d.status]}
+                {gastroDiscountPortalStatusLabel({
+                  status: d.status,
+                  archivedAt: d.archivedAt,
+                })}
               </span>
             </div>
             </Link>

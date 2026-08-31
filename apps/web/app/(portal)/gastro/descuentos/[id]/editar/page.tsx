@@ -42,11 +42,16 @@ export default function GastroDescuentoEditarPage() {
     mutationFn: (payload: Parameters<typeof repos.gastro.updateMyDiscount>[1]) =>
       repos.gastro.updateMyDiscount(id, payload),
     onError: (err) => addToast(getErrorMessage(err), 'error'),
-    onSuccess: () => {
+    onSuccess: (updated) => {
       queryClient.invalidateQueries({ queryKey: gastroKeys.discount(id) });
       queryClient.invalidateQueries({ queryKey: gastroKeys.discountSummary(id) });
       queryClient.invalidateQueries({ queryKey: gastroKeys.discounts(gastroProfileId) });
-      addToast('Descuento actualizado', 'success');
+      addToast(
+        updated.hasPendingUpdate
+          ? 'Cambios enviados a revisión. El descuento publicado sigue activo.'
+          : 'Descuento actualizado',
+        'success',
+      );
       router.push(`/gastro/descuentos/${id}${profileQuery(gastroProfileId)}`);
     },
   });
@@ -72,10 +77,26 @@ export default function GastroDescuentoEditarPage() {
         />
       ) : null}
 
-      {hasClaims ? (
+      {discount?.hasPendingUpdate ? (
         <p className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
-          Este descuento ya tiene cupones emitidos. Los cambios afectarán futuras validaciones de
-          cupones disponibles.
+          Tu descuento publicado sigue activo con la versión actual mientras revisamos los cambios.
+          Si volvés a guardar, se reemplaza la propuesta pendiente.
+        </p>
+      ) : discount && ['ACTIVE', 'APPROVED'].includes(discount.status) ? (
+        <p className="mb-4 rounded-lg border border-border bg-bg-muted/40 px-4 py-3 text-sm text-text-muted">
+          Los cambios de contenido se envían a revisión. El descuento publicado sigue activo con la
+          versión actual hasta que administración apruebe la edición.
+        </p>
+      ) : discount?.status === 'PENDING_REVIEW' ? (
+        <p className="mb-4 rounded-lg border border-border bg-bg-muted/40 px-4 py-3 text-sm text-text-muted">
+          Este ticket todavía no está publicado. Los cambios se aplican al envío en revisión.
+        </p>
+      ) : null}
+
+      {hasClaims ? (
+        <p className="mb-4 rounded-lg border border-border px-4 py-3 text-sm text-text-muted">
+          Este descuento ya tiene cupones emitidos. Los cupones existentes siguen válidos; no se
+          regeneran QR ni códigos cortos.
         </p>
       ) : null}
 
