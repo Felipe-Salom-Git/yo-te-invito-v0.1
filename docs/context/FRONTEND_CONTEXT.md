@@ -139,7 +139,8 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`). Shared UI tokens:
 | `/admin/gastronomicos/nuevo` | Alta local — `AdminGastroLocationFormClient` + `POST /admin/gastronomicos` |
 | `/admin/gastronomicos/[profileId]` | Detalle + descuentos + editar + CTA ficha pública (si ACTIVE) |
 | `/admin/gastronomicos/[profileId]/editar` | Edición — `GastroLocalForm` mode `admin` + `PATCH` + GCS |
-| `/admin/gastronomicos/[profileId]/descuentos/[discountId]` | Moderación ticket descuento |
+| `/admin/gastronomicos/[profileId]/descuentos/[discountId]` | Moderación ticket descuento (Etapa 5: current vs proposed) |
+| `/admin/gastronomicos/[profileId]/descuentos/nuevo` | Etapa 5 — crear descuento on-behalf (`POST .../descuentos`) |
 
 **Ficha pública canónica (admin CTA):** `/gastronomicos/[profileId]`. Alias discovery en cards: `/restaurants/[publicEventId]` (`contentRoutes.ts`).
 
@@ -167,7 +168,7 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`). Shared UI tokens:
 - Componentes portal: `MeDashboardAlerts`, `MeRecommendationsSection`, `MePreferencesInterests` + **`InterestsDisclosure`** (acordeones reutilizables); órdenes: `MeOrderDetailSummary`, `MeOrderTicketsList`.
 - **Ticket comprador (V2.2):** `components/tickets/` (`BuyerTicketVisual`, `TicketTemplateRenderer`, `DefaultBuyerTicket`, `TicketQrImage`, `TicketEntryStatusBanner`); utilidades `lib/tickets/` (`qr-display.ts`, `qr-image-url.ts`, `ticket-status-ui.ts`); estilos impresión en `styles/globals.css` (`@media print`).
 - Ficha gastro pública: `components/gastro/GastroPublicDetailContent` + hooks `lib/query/gastro-public-detail.ts`; **`GastroFollowButton`** → `/me/gastro-follows` (sin favoritos/esperados de evento en ficha restaurante). **V3.3 Etapa 1:** jerarquía CTA en sidebar — `GastroPublicActionCard` (WhatsApp/reserva primario, «Ver descuentos» secundario); sección descuentos con anchor `#gastro-discounts`; claim sigue en `/descuentos/[id]`.
-- Portal gastro: dashboard + validaciones (Slice 6). **V3.3 Etapa 4 multi-local:** listado `GastroLocationsList`, selector `GastroLocationSelector` (`?profileId=`), `/gastro/local/nuevo` con copy/snapshot, descuentos/scanners scoped por perfil; detalle/editar descuento con ownership por recurso. **Imágenes GCS:** `GastroLocalForm`, `GastroDiscountForm` (tipo validez: **fecha/rango** con inicio+cierre o recurrente semanal; modo `edit`), `/gastro/contenido`. **Descuentos V2.2:** listado clickeable `/gastro/descuentos`; detalle `/gastro/descuentos/[id]` (`GastroDiscountDetailContent` — métricas, claims, activar/desactivar, estado email); edición `/gastro/descuentos/[id]/editar`. Admin detalle local integra mismo panel de métricas. **Contenido editorial (hotfix 2026-06-23):** `GASTRO_OWNER` no carga lista global de eventos gastro ni muestra select; usa `getMyLocal().publicEventId`. **Subcategorías múltiples (2026-06-23):** `GastroSubcategoryMultiSelect` + sync `EventSubcategory` en evento público. **Cortesías (V2.1):** `/gastro/descuentos/cortesia` muestra fallos de email y `emailConfigured`. Valoraciones: `ManagedReviewsCommentsPage` scope `gastro` + `ManagedPortalReviewAlerts`. Follows: `GastroFollowButton`, `MePreferencesGastro` (toggles web/email por local). Notificaciones descuento: kind `FOLLOWED_GASTRO_NEW_DISCOUNT` en bandeja `/me/notifications`. **Scanner panel:** `ScannerUsersPanel` toast post-creación indica login inmediato en app scanner. **Admin dashboard:** KPI cupones escaneados + sección «Pendientes operativos» (borradores + descuentos gastro).
+- Portal gastro: dashboard + validaciones (Slice 6). **V3.3 Etapa 4 multi-local:** listado `GastroLocationsList`, selector `GastroLocationSelector` (`?profileId=`), `/gastro/local/nuevo` con copy/snapshot, descuentos/scanners scoped por perfil; detalle/editar descuento con ownership por recurso. **V3.3 Etapa 5:** listado con tabs lifecycle; edición pendiente **no** saca el publicado; ver §7f. **Imágenes GCS:** `GastroLocalForm`, `GastroDiscountForm` (tipo validez: **fecha/rango** con inicio+cierre o recurrente semanal; modo `edit`), `/gastro/contenido`. **Descuentos V2.2:** listado clickeable `/gastro/descuentos`; detalle `/gastro/descuentos/[id]` (`GastroDiscountDetailContent` — métricas, claims, activar/desactivar, estado email); edición `/gastro/descuentos/[id]/editar`. Admin detalle local integra mismo panel de métricas. **Contenido editorial (hotfix 2026-06-23):** `GASTRO_OWNER` no carga lista global de eventos gastro ni muestra select; usa `getMyLocal().publicEventId`. **Subcategorías múltiples (2026-06-23):** `GastroSubcategoryMultiSelect` + sync `EventSubcategory` en evento público. **Cortesías (V2.1):** `/gastro/descuentos/cortesia` muestra fallos de email y `emailConfigured`. Valoraciones: `ManagedReviewsCommentsPage` scope `gastro` + `ManagedPortalReviewAlerts`. Follows: `GastroFollowButton`, `MePreferencesGastro` (toggles web/email por local). Notificaciones descuento: kind `FOLLOWED_GASTRO_NEW_DISCOUNT` en bandeja `/me/notifications`. **Scanner panel:** `ScannerUsersPanel` toast post-creación indica login inmediato en app scanner. **Admin dashboard:** KPI cupones escaneados + sección «Pendientes operativos» (borradores + descuentos gastro).
 - Engagement eventos: `EventEngagementRow` en fichas de **eventos** (favoritos / expected-events).
 - Checkout autenticado: redirige a `/me/cart` (aceptación `CHECKOUT` vía `POST /me/legal/accept`); invitado `/checkout` y `/checkout/[eventId]` — checkbox obligatorio (declaración; persistencia al tener cuenta). Post-Getnet: **`/checkout/return`** (estado + polling). Getnet **Web Checkout Redirect**: `checkoutUrl` / `redirectUrl` desde API (`feat/v1-s03-api-foundation`).
 - **Alias portal Getnet:** `/checkout/success` → return (salvo `orderIds` demo carrito); `/checkout/error` → return `cancelled=1`; `POST /api/getnet/callback` → proxy webhook API — [GETNET_PORTAL_URL_COMPATIBILITY.md](../payments/GETNET_PORTAL_URL_COMPATIBILITY.md).
@@ -373,6 +374,29 @@ Doc cierre: `docs/audits/V3_3_STAGE_4_GASTRO_MULTI_LOCAL_CLOSING.md`. Arquitectu
 - Portal accesible con perfil PENDING (edición permitida); operación pública/discovery requiere ACTIVE.
 
 **Nullable email (web):** `MeAccount.email` nullable en shared; `/me/account` y checkout manejan ausencia de email (Scanner); sin emails ficticios.
+
+---
+
+## 7f. V3.3 Etapa 5 — Descuentos Gastro V3 (2026-08, código implementado)
+
+Doc cierre: `docs/audits/V3_3_STAGE_5_GASTRO_DISCOUNTS_CLOSING.md`. Auditoría: `docs/audits/V3_3_STAGE_5_GASTRO_DISCOUNTS_AUDIT.md`.
+
+**Regla UX central:** una edición pendiente **no** saca el descuento publicado. Discovery, claims, QR y scanner siguen operando contra `ACTIVE`/`APPROVED`.
+
+| Pieza | Ubicación |
+|-------|-----------|
+| Listado lifecycle | `/gastro/descuentos` — tabs Activos / Pendientes / Vencidos / Archivados |
+| Detalle | `/gastro/descuentos/[id]` — copy pending + acciones archive/unarchive si aplica |
+| Editar | `/gastro/descuentos/[id]/editar` — cambio material → pending; no-material/lifecycle puede aplicar ya |
+| Admin moderación | compare current vs proposed (`AdminGastroPendingEditPanel`); approve/reject edit |
+| Admin create on-behalf | `/admin/gastronomicos/[profileId]/descuentos/nuevo` — target perfil concreto |
+| Badges origin | `GASTRO` vs `ADMIN` en listados admin |
+
+**Reglas UX:**
+
+- Tabs distinguen lifecycle; archivo soft (`archivedAt`) no borra claims/métricas.
+- Diff admin: publicado vs propuesto; reject deja publicado intacto.
+- `?profileId=` sigue siendo navegación (Etapa 4); autorización por `discountId`.
 
 ---
 

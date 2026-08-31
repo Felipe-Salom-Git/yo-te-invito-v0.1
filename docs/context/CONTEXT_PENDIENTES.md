@@ -16,7 +16,8 @@ Checklist: [`Yo_Te_Invito_Checklist_V3_3_Funcional_Operativa.md`](../dev/Yo_Te_I
 Cierre Etapa 1: [`V3_3_STAGE_1_PUBLIC_MOBILE_CLOSING.md`](../audits/V3_3_STAGE_1_PUBLIC_MOBILE_CLOSING.md)  
 Cierre Etapa 2: [`V3_3_STAGE_2_USER_AVATAR_CLOSING.md`](../audits/V3_3_STAGE_2_USER_AVATAR_CLOSING.md)  
 Cierre Etapa 3: [`V3_3_STAGE_3_SCANNER_V3_CLOSING.md`](../audits/V3_3_STAGE_3_SCANNER_V3_CLOSING.md)  
-Cierre Etapa 4: [`V3_3_STAGE_4_GASTRO_MULTI_LOCAL_CLOSING.md`](../audits/V3_3_STAGE_4_GASTRO_MULTI_LOCAL_CLOSING.md)
+Cierre Etapa 4: [`V3_3_STAGE_4_GASTRO_MULTI_LOCAL_CLOSING.md`](../audits/V3_3_STAGE_4_GASTRO_MULTI_LOCAL_CLOSING.md)  
+Cierre Etapa 5: [`V3_3_STAGE_5_GASTRO_DISCOUNTS_CLOSING.md`](../audits/V3_3_STAGE_5_GASTRO_DISCOUNTS_CLOSING.md)
 
 ### Etapa 0 — Auditoría
 
@@ -114,13 +115,35 @@ Cierre Etapa 4: [`V3_3_STAGE_4_GASTRO_MULTI_LOCAL_CLOSING.md`](../audits/V3_3_ST
 
 **Pendiente integración / QA:**
 
-- [ ] Notificaciones local aprobado/rechazado — backlog **A9**
+- [x] Notificaciones local aprobado/rechazado — **A9 cerrado en Etapa 5** (`a18d298`)
 - [ ] DB smoke / migraciones ejecutadas (sin Docker/PostgreSQL local)
 - [ ] QA manual global V3.3 — multi-local, approval, copy/snapshot, descuentos por local, scanner picker
 
 **Deuda no bloqueante:**
 
 - [ ] `ScannerAccountsService.getManagedGastroProfileIds` — duplica lógica ownership
+
+### Etapa 5 — Descuentos Gastro V3
+
+**Implementación (código):**
+
+- [x] **A1** — publicado + `pendingUpdate`; no baja `ACTIVE` (`cb1dbaf`, `a2f308d`)
+- [x] **A1** — `type`/`value` materiales (`c91c205`)
+- [x] Approve/reject pending edit; claims/QR/shortCode preservados
+- [x] **A8 core** — `GastroDiscountExpiryService` + notificación `GASTRO_DISCOUNT_EXPIRED` + dedupe
+- [x] **A24** — soft archive `archivedAt`; UI Gastro/Admin (Activos / Pendientes / Vencidos / Archivados)
+- [x] **C1** — `POST /admin/gastronomicos/:profileId/descuentos`; `createdByOrigin` / `createdByUserId`
+- [x] **A9** discount lifecycle + GastroProfile approve/reject (`a18d298`)
+- [x] Builds shared/api/web/scanner PASS; `prisma validate` PASS
+- [x] Tests unit/static PASS (`test:gastro-discount-expiry`, `qr`, `pending-edit`, `edit-moderation`, `archive`, `origin`, `lifecycle-notifications`, `gastro-multi-local`)
+- [x] Doc cierre técnico (`692f454` + hardening `c91c205`)
+
+**Pendiente integración / QA (conservar):**
+
+- [ ] DB smoke — PostgreSQL/Docker no disponible; migración `20260831140000_gastro_discount_v3_lifecycle`
+- [ ] Scanner integration — `test:gastro-discount-scan` **NO EJECUTADO**
+- [ ] QA manual global V3.3 — create discount, material edit, non-material/lifecycle, pending visible, admin compare current/proposed, approve/reject edit, claims/QR/shortCode previos, scanner, expiry, archive/unarchive, admin create on-behalf, multi-local target, notifications, nullable email, mobile, desktop
+- [ ] Admin expired discounts digest — **diferido Etapa 8** (no bug de Etapa 5)
 
 ---
 

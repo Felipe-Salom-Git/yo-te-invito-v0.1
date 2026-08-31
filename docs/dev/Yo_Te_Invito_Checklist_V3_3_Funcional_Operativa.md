@@ -27,8 +27,13 @@
 
 - [x] Base existente — Creación descuento → `PENDING_REVIEW`
 - [x] Base existente — Flujo moderación admin (approve/reject)
-- [ ] Mejora V3.3 — Edición de descuento `ACTIVE`/`APPROVED` vuelve a `PENDING_REVIEW`
-- [ ] Mejora V3.3 — Notificación admin/gastro al re-enviar
+- [x] Mejora V3.3 — Edición material de descuento aprobado requiere re-aprobación (`pendingUpdate`; **no** baja el publicado a `PENDING_REVIEW`)
+- [x] Mejora V3.3 — Versión publicada permanece activa durante review
+- [x] Mejora V3.3 — `type`/`value` considerados materiales (`c91c205`)
+- [x] Mejora V3.3 — Approve/reject pending edit
+- [x] Mejora V3.3 — Claims/QR/shortCode preservados (mismo `discountId`)
+- [x] Mejora V3.3 — Notificación create/edit (`referenceKey` `:create`/`:edit`)
+- [ ] QA manual global V3.3
 
 ### A2 — Foto de perfil usuario
 
@@ -86,8 +91,10 @@
 
 - [x] Base existente — Status `EXPIRED` en `GastroDiscount`
 - [x] Base existente — Alerta dashboard gastro `EXPIRED_DISCOUNTS`
-- [ ] Mejora V3.3 — Notificación in-app/email/push a gastro owner
-- [ ] Mejora V3.3 — Alerta admin consolidada (opcional)
+- [x] Mejora V3.3 — Expiry materializada (`GastroDiscountExpiryService`)
+- [x] Mejora V3.3 — Notificación descuento vencido (`GASTRO_DISCOUNT_EXPIRED`)
+- [x] Mejora V3.3 — Dedupe notification (`NotificationDeliveryLog`, `gastro-discount-expired:{discountId}`)
+- [ ] Mejora V3.3 — Admin consolidated expired alert — **diferido Etapa 8**
 
 ### A9 — Notificaciones usuarios
 
@@ -95,8 +102,8 @@
 - [x] Base existente — Email BullMQ + templates
 - [x] Base existente — Web Push (`UserPushSubscription`)
 - [x] Base existente — Kinds reviews, eventos, transferencias, gastro-follow
-- [ ] Mejora V3.3 — Kinds descuentos (vencido, aprobado, rechazado, pendiente)
-- [ ] Mejora V3.3 — Kinds locales gastro (aprobación)
+- [x] Mejora V3.3 — Kinds descuentos (vencido, aprobado, rechazado, pendiente)
+- [x] Mejora V3.3 — Kinds locales gastro (aprobación/rechazo)
 
 ### A10 — Cards descuentos simplificadas → ficha local
 
@@ -208,8 +215,11 @@
 
 - [x] Base existente — Status `EXPIRED`, `CANCELLED`
 - [x] Base existente — Métricas y claims conservados en DB
-- [ ] Mejora V3.3 — Archivo soft sin borrar trazabilidad
-- [ ] Mejora V3.3 — UI gestión vencidos portal + admin
+- [x] Mejora V3.3 — Soft archive (`archivedAt`) sin borrar trazabilidad
+- [x] Mejora V3.3 — Histórico preservado (claims, validations, metrics, audit)
+- [x] Mejora V3.3 — UI Gastro (tabs Activos / Pendientes / Vencidos / Archivados)
+- [x] Mejora V3.3 — UI Admin
+- [ ] QA manual global V3.3
 
 ---
 
@@ -238,8 +248,10 @@
 
 - [x] Base existente — Moderación `GET /admin/gastronomicos/pending-discounts`
 - [x] Base existente — Approve/reject/status descuentos admin
-- [ ] Mejora V3.3 — `POST` admin crear descuento on-behalf
-- [ ] Mejora V3.3 — Distinción `creado_por_admin` vs `creado_por_gastro`
+- [x] Mejora V3.3 — Admin create discount on-behalf (`POST /admin/gastronomicos/:profileId/descuentos`)
+- [x] Mejora V3.3 — Profile target obligatorio (nunca “primer local”)
+- [x] Mejora V3.3 — `createdByOrigin` (`GASTRO` \| `ADMIN`)
+- [x] Mejora V3.3 — `createdByUserId`
 
 ### C2 — Campañas email / WhatsApp
 
@@ -268,7 +280,7 @@
 - [x] Mejora V3.3 — Admin approve → `ACTIVE` + sync publicación
 - [x] Mejora V3.3 — Admin reject → `REJECTED`
 - [x] Mejora V3.3 — PENDING/REJECTED fuera de discovery; otros ACTIVE no afectados
-- [ ] Mejora V3.3 — Notificaciones aprobación/rechazo local — **A9**
+- [x] Mejora V3.3 — Notificaciones aprobación/rechazo local — **A9** (cerrado Etapa 5)
 - [ ] QA manual global V3.3
 
 ### E2 — Multi-local por cuenta
@@ -319,3 +331,30 @@
 ## Context updates recommended after Slice 0
 
 Ver sección final de [`V3_3_FUNCTIONAL_OPERATIONS_DISCOVERY_AUDIT.md`](../audits/V3_3_FUNCTIONAL_OPERATIONS_DISCOVERY_AUDIT.md).
+
+---
+
+## QA manual global V3.3 — Etapa 5 (pendiente, no ejecutar ahora)
+
+Acumulado cierre global. Incluir:
+
+- [ ] Gastro create discount
+- [ ] Material edit
+- [ ] Non-material / lifecycle action
+- [ ] Pending edit visible
+- [ ] Admin compare current / proposed
+- [ ] Approve edit
+- [ ] Reject edit
+- [ ] Claims previos
+- [ ] QR previos
+- [ ] shortCode
+- [ ] Scanner
+- [ ] Expiry
+- [ ] Archive
+- [ ] Unarchive si aplica
+- [ ] Admin create on-behalf
+- [ ] Multi-local target
+- [ ] Notifications
+- [ ] Nullable email
+- [ ] Mobile
+- [ ] Desktop

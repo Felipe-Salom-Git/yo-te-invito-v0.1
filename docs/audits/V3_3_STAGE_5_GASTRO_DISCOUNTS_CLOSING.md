@@ -2,10 +2,10 @@
 
 **Fecha:** 2026-08-31  
 **Branch:** `feat/v1-s03-api-foundation`  
-**HEAD al cierre:** ver `git log` (commit de este documento)  
+**HEAD al cierre técnico:** `c91c205` (`fix(v3.3): harden gastro discount reapproval lifecycle`)  
 **Auditoría:** [`V3_3_STAGE_5_GASTRO_DISCOUNTS_AUDIT.md`](./V3_3_STAGE_5_GASTRO_DISCOUNTS_AUDIT.md)
 
-No actualiza contextos globales (`AI_ENTRYPOINT.md`, `NEXT_CHAT_HANDOFF.md`, etc.). Eso queda para después de la revisión humana.
+Contextos globales (`AI_ENTRYPOINT.md`, `NEXT_CHAT_HANDOFF.md`, `PROJECT_CONTEXT.md`, `BACKEND_CONTEXT.md`, `FRONTEND_CONTEXT.md`, `CONTEXT_PENDIENTES.md`) y checklist V3.3 se actualizan en el commit documental posterior: `docs(v3.3): close gastro discounts stage context`.
 
 **Pre-cierre / hardening:** `type` y `value` son cambios materiales. Admin create ACTIVE se verificó sin cambios. Cron de expiry activo por defecto (solo se apaga con `GASTRO_DISCOUNT_EXPIRY_CRON_ENABLED=false`).
 
