@@ -88,6 +88,14 @@ function buildCategoryNavItems(role?: string | null): PublicNavItem[] {
 function buildPublicNavItems(role?: string | null): PublicNavItem[] {
   return [
     {
+      id: 'home-entry',
+      label: PUBLIC_NAV_HOME_ENTRY.label,
+      href: PUBLIC_NAV_HOME_ENTRY.href,
+      ariaLabel: PUBLIC_NAV_HOME_ENTRY.ariaLabel,
+      desktop: false,
+      mobileMenu: true,
+    },
+    {
       id: 'explore',
       label: 'Explorar',
       href: '/explore',
@@ -98,7 +106,7 @@ function buildPublicNavItems(role?: string | null): PublicNavItem[] {
     },
     {
       id: 'categories-gateway',
-      label: 'Inicio / Categorías',
+      label: 'Categorías',
       href: CATEGORY_GATEWAY_PATH,
       ariaLabel: 'Elegir categoría',
       desktop: false,
@@ -130,8 +138,9 @@ export const PUBLIC_NAV_ITEMS: PublicNavItem[] = buildPublicNavItems(null);
 
 /** Display order for the mobile public drawer (Slice 6). */
 const MOBILE_DRAWER_PUBLIC_ORDER: PublicNavItemId[] = [
-  'categories-gateway',
+  'home-entry',
   'explore',
+  'categories-gateway',
   'category-event',
   'category-gastro',
   'category-rental',

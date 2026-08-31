@@ -12,7 +12,7 @@ export function NavbarHomeButton() {
   return (
     <Link
       href={PUBLIC_NAV_HOME_ENTRY.href}
-      className={`${linkClass} hidden md:inline-flex`}
+      className={`${linkClass} inline-flex`}
       aria-label={PUBLIC_NAV_HOME_ENTRY.ariaLabel}
     >
       <HomeIcon />
