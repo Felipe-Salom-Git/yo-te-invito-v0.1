@@ -15,7 +15,8 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 Checklist: [`Yo_Te_Invito_Checklist_V3_3_Funcional_Operativa.md`](../dev/Yo_Te_Invito_Checklist_V3_3_Funcional_Operativa.md)  
 Cierre Etapa 1: [`V3_3_STAGE_1_PUBLIC_MOBILE_CLOSING.md`](../audits/V3_3_STAGE_1_PUBLIC_MOBILE_CLOSING.md)  
 Cierre Etapa 2: [`V3_3_STAGE_2_USER_AVATAR_CLOSING.md`](../audits/V3_3_STAGE_2_USER_AVATAR_CLOSING.md)  
-Cierre Etapa 3: [`V3_3_STAGE_3_SCANNER_V3_CLOSING.md`](../audits/V3_3_STAGE_3_SCANNER_V3_CLOSING.md)
+Cierre Etapa 3: [`V3_3_STAGE_3_SCANNER_V3_CLOSING.md`](../audits/V3_3_STAGE_3_SCANNER_V3_CLOSING.md)  
+Cierre Etapa 4: [`V3_3_STAGE_4_GASTRO_MULTI_LOCAL_CLOSING.md`](../audits/V3_3_STAGE_4_GASTRO_MULTI_LOCAL_CLOSING.md)
 
 ### Etapa 0 — Auditoría
 
@@ -94,6 +95,32 @@ Cierre Etapa 3: [`V3_3_STAGE_3_SCANNER_V3_CLOSING.md`](../audits/V3_3_STAGE_3_SC
 **Limitación conocida (no bug):**
 
 - [x] Gastro short code **no** soporta offline — requiere conexión (documentado)
+
+### Etapa 4 — Gastro Multi-local + Approval
+
+**Implementación (código):**
+
+- [x] Arquitectura multi-local — `GastroProfile` = unidad operativa (`612fd2d`)
+- [x] `GastroOwnershipService` — listar, assert, resolve create (`f582517`)
+- [x] API multi-local — `GET/POST /gastro/locations`, `GET/PATCH /gastro/local?profileId=` (`f582517`)
+- [x] Portal — `GastroLocationsList`, `GastroLocationSelector`, `GastroActiveLocationContext` (`3d7481d`)
+- [x] Crear local/propuesta — `/gastro/local/nuevo` + `copyFromProfileId` snapshot (`3d7481d`)
+- [x] Approval workflow — PENDING registro + adicional; admin approve/reject (`d037b4c`)
+- [x] Scope scanners/discounts/dashboard por `profileId` (`4135e41`)
+- [x] Discount resource ownership por `discountId` → `gastroProfileId` (`ea79aa6`)
+- [x] API build restored — `user-contact.util.ts`, nullable email (`ea79aa6`)
+- [x] Builds shared/api/web/scanner PASS; `test:gastro-multi-local` PASS; `prisma validate` PASS
+- [x] Doc cierre técnico (`6b0a96b`, actualizado pre-cierre)
+
+**Pendiente integración / QA:**
+
+- [ ] Notificaciones local aprobado/rechazado — backlog **A9**
+- [ ] DB smoke / migraciones ejecutadas (sin Docker/PostgreSQL local)
+- [ ] QA manual global V3.3 — multi-local, approval, copy/snapshot, descuentos por local, scanner picker
+
+**Deuda no bloqueante:**
+
+- [ ] `ScannerAccountsService.getManagedGastroProfileIds` — duplica lógica ownership
 
 ---
 

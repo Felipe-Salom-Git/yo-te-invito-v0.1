@@ -167,7 +167,7 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`). Shared UI tokens:
 - Componentes portal: `MeDashboardAlerts`, `MeRecommendationsSection`, `MePreferencesInterests` + **`InterestsDisclosure`** (acordeones reutilizables); órdenes: `MeOrderDetailSummary`, `MeOrderTicketsList`.
 - **Ticket comprador (V2.2):** `components/tickets/` (`BuyerTicketVisual`, `TicketTemplateRenderer`, `DefaultBuyerTicket`, `TicketQrImage`, `TicketEntryStatusBanner`); utilidades `lib/tickets/` (`qr-display.ts`, `qr-image-url.ts`, `ticket-status-ui.ts`); estilos impresión en `styles/globals.css` (`@media print`).
 - Ficha gastro pública: `components/gastro/GastroPublicDetailContent` + hooks `lib/query/gastro-public-detail.ts`; **`GastroFollowButton`** → `/me/gastro-follows` (sin favoritos/esperados de evento en ficha restaurante). **V3.3 Etapa 1:** jerarquía CTA en sidebar — `GastroPublicActionCard` (WhatsApp/reserva primario, «Ver descuentos» secundario); sección descuentos con anchor `#gastro-discounts`; claim sigue en `/descuentos/[id]`.
-- Portal gastro: dashboard + validaciones (Slice 6). **Imágenes GCS:** `GastroLocalForm`, `GastroDiscountForm` (tipo validez: **fecha/rango** con inicio+cierre o recurrente semanal; modo `edit`), `/gastro/contenido`. **Descuentos V2.2:** listado clickeable `/gastro/descuentos`; detalle `/gastro/descuentos/[id]` (`GastroDiscountDetailContent` — métricas, claims, activar/desactivar, estado email); edición `/gastro/descuentos/[id]/editar`. Admin detalle local integra mismo panel de métricas. **Contenido editorial (hotfix 2026-06-23):** `GASTRO_OWNER` no carga lista global de eventos gastro ni muestra select; usa `getMyLocal().publicEventId`. **Subcategorías múltiples (2026-06-23):** `GastroSubcategoryMultiSelect` + sync `EventSubcategory` en evento público. **Cortesías (V2.1):** `/gastro/descuentos/cortesia` muestra fallos de email y `emailConfigured`. Valoraciones: `ManagedReviewsCommentsPage` scope `gastro` + `ManagedPortalReviewAlerts`. Follows: `GastroFollowButton`, `MePreferencesGastro` (toggles web/email por local). Notificaciones descuento: kind `FOLLOWED_GASTRO_NEW_DISCOUNT` en bandeja `/me/notifications`. **Scanner panel:** `ScannerUsersPanel` toast post-creación indica login inmediato en app scanner. **Admin dashboard:** KPI cupones escaneados + sección «Pendientes operativos» (borradores + descuentos gastro).
+- Portal gastro: dashboard + validaciones (Slice 6). **V3.3 Etapa 4 multi-local:** listado `GastroLocationsList`, selector `GastroLocationSelector` (`?profileId=`), `/gastro/local/nuevo` con copy/snapshot, descuentos/scanners scoped por perfil; detalle/editar descuento con ownership por recurso. **Imágenes GCS:** `GastroLocalForm`, `GastroDiscountForm` (tipo validez: **fecha/rango** con inicio+cierre o recurrente semanal; modo `edit`), `/gastro/contenido`. **Descuentos V2.2:** listado clickeable `/gastro/descuentos`; detalle `/gastro/descuentos/[id]` (`GastroDiscountDetailContent` — métricas, claims, activar/desactivar, estado email); edición `/gastro/descuentos/[id]/editar`. Admin detalle local integra mismo panel de métricas. **Contenido editorial (hotfix 2026-06-23):** `GASTRO_OWNER` no carga lista global de eventos gastro ni muestra select; usa `getMyLocal().publicEventId`. **Subcategorías múltiples (2026-06-23):** `GastroSubcategoryMultiSelect` + sync `EventSubcategory` en evento público. **Cortesías (V2.1):** `/gastro/descuentos/cortesia` muestra fallos de email y `emailConfigured`. Valoraciones: `ManagedReviewsCommentsPage` scope `gastro` + `ManagedPortalReviewAlerts`. Follows: `GastroFollowButton`, `MePreferencesGastro` (toggles web/email por local). Notificaciones descuento: kind `FOLLOWED_GASTRO_NEW_DISCOUNT` en bandeja `/me/notifications`. **Scanner panel:** `ScannerUsersPanel` toast post-creación indica login inmediato en app scanner. **Admin dashboard:** KPI cupones escaneados + sección «Pendientes operativos» (borradores + descuentos gastro).
 - Engagement eventos: `EventEngagementRow` en fichas de **eventos** (favoritos / expected-events).
 - Checkout autenticado: redirige a `/me/cart` (aceptación `CHECKOUT` vía `POST /me/legal/accept`); invitado `/checkout` y `/checkout/[eventId]` — checkbox obligatorio (declaración; persistencia al tener cuenta). Post-Getnet: **`/checkout/return`** (estado + polling). Getnet **Web Checkout Redirect**: `checkoutUrl` / `redirectUrl` desde API (`feat/v1-s03-api-foundation`).
 - **Alias portal Getnet:** `/checkout/success` → return (salvo `orderIds` demo carrito); `/checkout/error` → return `cancelled=1`; `POST /api/getnet/callback` → proxy webhook API — [GETNET_PORTAL_URL_COMPATIBILITY.md](../payments/GETNET_PORTAL_URL_COMPATIBILITY.md).
@@ -345,6 +345,34 @@ Doc cierre: `docs/audits/V3_3_STAGE_3_SCANNER_V3_CLOSING.md`. Migraciones Prisma
 ### Portales web
 
 - `ScannerUsersPanel` (producer/gastro) — creación con **username** + password; tabla muestra username (o email legacy).
+
+---
+
+## 7e. V3.3 Etapa 4 — Gastro Multi-local + Approval (2026-08, código implementado)
+
+Doc cierre: `docs/audits/V3_3_STAGE_4_GASTRO_MULTI_LOCAL_CLOSING.md`. Arquitectura: `docs/audits/V3_3_STAGE_4_GASTRO_MULTI_LOCAL_ARCHITECTURE.md`.
+
+**Modelo UI:** una cuenta Gastro gestiona N `GastroProfile` independientes. **No** `GastroOrganization` ni entidad ubicación compartida.
+
+| Pieza | Ubicación |
+|-------|-----------|
+| Listado locales | `GastroLocationsList` — `/gastro` |
+| Selector local activo | `GastroLocationSelector` + `GastroActiveLocationContext` (`?profileId=` en URL) |
+| Badge estado | `GastroLocationStatusBadge` — PENDING / ACTIVE / REJECTED / … |
+| Crear propuesta | `/gastro/local/nuevo` — checkboxes copiar ubicación/contactos desde perfil existente (`copyFromProfileId`) |
+| Editar local | `/gastro/local`, `/gastro/local/editar` — scoped por `profileId` |
+| Descuentos list/create | `/gastro/descuentos`, `/gastro/descuentos/nuevo` — `profileId` navegación; selector si N ACTIVE |
+| Descuento detalle/editar | `/gastro/descuentos/[id]`, `.../editar` — ownership backend por `discountId`; links preservan `profileId` para volver al listado correcto |
+| Scanners | `/gastro/scanners` — picker de local si N perfiles |
+
+**Reglas UX:**
+
+- `?profileId=` = contexto de navegación (dashboard, listados, crear); **no** fuente de autorización.
+- Copy/snapshot: prefill ubicación (provincia, ciudad, dirección, lat/lng, `googlePlaceId`) y contactos (teléfono, email, menú/web/booking, `socialLinks`); editar copia **no** modifica origen; imágenes/galería **no** se copian.
+- Crear descuento: 1 ACTIVE → auto; N ACTIVE → usuario elige local.
+- Portal accesible con perfil PENDING (edición permitida); operación pública/discovery requiere ACTIVE.
+
+**Nullable email (web):** `MeAccount.email` nullable en shared; `/me/account` y checkout manejan ausencia de email (Scanner); sin emails ficticios.
 
 ---
 

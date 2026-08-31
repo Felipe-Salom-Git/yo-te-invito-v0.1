@@ -264,17 +264,24 @@
 ### E1 — Aprobación locales nuevos
 
 - [x] Base existente — `ProfileStatus` enum (PENDING, ACTIVE, …)
-- [x] Base existente — Registro gastro → perfil `ACTIVE` inmediato
-- [ ] Mejora V3.3 — Nuevos locales `PENDING` hasta aprobación admin
-- [ ] Mejora V3.3 — Notificaciones aprobación/rechazo local
+- [x] Mejora V3.3 — Nuevos perfiles Gastro → `PENDING` (registro + local adicional)
+- [x] Mejora V3.3 — Admin approve → `ACTIVE` + sync publicación
+- [x] Mejora V3.3 — Admin reject → `REJECTED`
+- [x] Mejora V3.3 — PENDING/REJECTED fuera de discovery; otros ACTIVE no afectados
+- [ ] Mejora V3.3 — Notificaciones aprobación/rechazo local — **A9**
+- [ ] QA manual global V3.3
 
 ### E2 — Multi-local por cuenta
 
 - [x] Base existente — `UserGastroMembership` N:M a nivel modelo
-- [x] Base existente — Un local operativo por owner (`createMyLocal` bloquea 2º)
-- [ ] Mejora V3.3 — Gestión múltiples locales (franquicia/sucursales)
-- [ ] Mejora V3.3 — Scanners y descuentos por local
-- [ ] Mejora V3.3 — Modelo organización o `GastroProfile` = local
+- [x] Mejora V3.3 — Una cuenta administra N `GastroProfile` independientes
+- [x] Mejora V3.3 — Listado «Mis locales» + selector `?profileId=`
+- [x] Mejora V3.3 — Crear nuevo local/propuesta (`/gastro/local/nuevo`)
+- [x] Mejora V3.3 — Reutilizar ubicación + contactos (`copyFromProfileId`, snapshot independiente)
+- [x] Mejora V3.3 — Scanners y descuentos por `GastroProfile` (`parentProfileId` / `gastroProfileId`)
+- [x] Mejora V3.3 — `GastroOwnershipService` + resource ownership descuentos por `discountId`
+- [x] Mejora V3.3 — Sin `GastroOrganization` — `GastroProfile` = local/propuesta
+- [ ] QA manual global V3.3
 
 ### E3 — Scanner username sin email
 

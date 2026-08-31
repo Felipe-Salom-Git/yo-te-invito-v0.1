@@ -15,7 +15,7 @@ Read this file **before generating or modifying code**.
 | **No commitear secretos** | `.env` local; usar `.env.example` |
 | **Rama Getnet activa** | `feat/v1-s03-api-foundation` — **no** `development` (eliminada); **no** tocar `main` salvo instrucción explícita |
 | **V3.2 discovery** | Código cerrado (slices 0–11); QA manual pendiente — [`V3_2_QA_CLOSING.md`](../audits/V3_2_QA_CLOSING.md). Event/Gastro `comingSoon`; preview por rol en `category-availability.ts`. Hotfixes 2026-08: cache HTML, roles owners, auth resend, horarios overnight — ver § Hotfixes V3.2. |
-| **V3.3 funcional/operativa** | **Activa** — Etapa 0 auditoría cerrada; **Etapas 1–3** implementadas (UX pública/mobile, Avatar, Scanner V3); QA manual/integración acumulado pendiente — [`V3_3_STAGE_1_PUBLIC_MOBILE_CLOSING.md`](../audits/V3_3_STAGE_1_PUBLIC_MOBILE_CLOSING.md), [`V3_3_STAGE_2_USER_AVATAR_CLOSING.md`](../audits/V3_3_STAGE_2_USER_AVATAR_CLOSING.md), [`V3_3_STAGE_3_SCANNER_V3_CLOSING.md`](../audits/V3_3_STAGE_3_SCANNER_V3_CLOSING.md), checklist [`Yo_Te_Invito_Checklist_V3_3_Funcional_Operativa.md`](../dev/Yo_Te_Invito_Checklist_V3_3_Funcional_Operativa.md). |
+| **V3.3 funcional/operativa** | **Activa** — Etapa 0 auditoría cerrada; **Etapas 1–4** implementadas (UX pública/mobile, Avatar, Scanner V3, Gastro Multi-local + Approval); QA manual/integración acumulado pendiente — [`V3_3_STAGE_1_PUBLIC_MOBILE_CLOSING.md`](../audits/V3_3_STAGE_1_PUBLIC_MOBILE_CLOSING.md), [`V3_3_STAGE_2_USER_AVATAR_CLOSING.md`](../audits/V3_3_STAGE_2_USER_AVATAR_CLOSING.md), [`V3_3_STAGE_3_SCANNER_V3_CLOSING.md`](../audits/V3_3_STAGE_3_SCANNER_V3_CLOSING.md), [`V3_3_STAGE_4_GASTRO_MULTI_LOCAL_CLOSING.md`](../audits/V3_3_STAGE_4_GASTRO_MULTI_LOCAL_CLOSING.md), checklist [`Yo_Te_Invito_Checklist_V3_3_Funcional_Operativa.md`](../dev/Yo_Te_Invito_Checklist_V3_3_Funcional_Operativa.md). |
 | **Handoff nuevo chat** | [`NEXT_CHAT_HANDOFF.md`](./NEXT_CHAT_HANDOFF.md) — punto de entrada operativo (stack, prod, hotfixes, pendientes). |
 
 Detalle histórico demo: [guides/DEMO_REMOVAL.md](../guides/DEMO_REMOVAL.md). Portal: [user/USER_PORTAL.md](../user/USER_PORTAL.md).
@@ -45,6 +45,7 @@ Detalle histórico demo: [guides/DEMO_REMOVAL.md](../guides/DEMO_REMOVAL.md). Po
 | **1 — UX pública / mobile** | Código implementado; QA manual pendiente | [`V3_3_STAGE_1_PUBLIC_MOBILE_CLOSING.md`](../audits/V3_3_STAGE_1_PUBLIC_MOBILE_CLOSING.md) |
 | **2 — Perfil usuario / Avatar** | Código implementado; QA manual acumulado pendiente | [`V3_3_STAGE_2_USER_AVATAR_CLOSING.md`](../audits/V3_3_STAGE_2_USER_AVATAR_CLOSING.md) |
 | **3 — Scanner V3** | Código implementado + auth hardening; migración DB smoke pendiente | [`V3_3_STAGE_3_SCANNER_V3_CLOSING.md`](../audits/V3_3_STAGE_3_SCANNER_V3_CLOSING.md), [`V3_3_SCANNER_USERNAME_AUTH.md`](../audits/V3_3_SCANNER_USERNAME_AUTH.md) |
+| **4 — Gastro Multi-local + Approval** | Código implementado + pre-cierre hardening; QA manual acumulado pendiente | [`V3_3_STAGE_4_GASTRO_MULTI_LOCAL_ARCHITECTURE.md`](../audits/V3_3_STAGE_4_GASTRO_MULTI_LOCAL_ARCHITECTURE.md), [`V3_3_STAGE_4_GASTRO_MULTI_LOCAL_CLOSING.md`](../audits/V3_3_STAGE_4_GASTRO_MULTI_LOCAL_CLOSING.md) |
 
 **Etapa 1 — resumen:** cards descuento discovery → ficha gastro; Home/Explore en nav mobile; modales convencionales centrados; scroll táctil galerías; rails subcategoría solo con **≥5** publicaciones (**sin autoplay**); jerarquía CTA gastro; OG dinámico `/descuentos/[id]`; copy público **Actividades** (`excursionPublicCopy.ts`) con clave técnica **`excursion`** sin cambios.
 
@@ -52,7 +53,9 @@ Detalle histórico demo: [guides/DEMO_REMOVAL.md](../guides/DEMO_REMOVAL.md). Po
 
 **Etapa 3 — resumen:** PWA **Yo Te Invito Scanner** (branding dark); short codes manuales (tickets `shortTicketCode` 8 chars; gastro `GastroDiscountClaim.shortCode` 6 chars); cámara rápida (1 target / target persistido / `?mode=camera`); auth **username + password** (`User.username` global unique; `User.email` nullable en DB); login legacy por email; bypass `emailVerified` **solo** `Role.SCANNER` (`198fc38`); migraciones `20260831120000_gastro_claim_short_code` (pgcrypto idempotente) y `20260831130000_user_scanner_username` — **smoke DB pendiente**.
 
-**Próxima etapa V3.3:** Etapa 4 — Gastro Multi-local + Aprobación (ver checklist).
+**Etapa 4 — resumen:** `GastroProfile` = unidad operativa/pública independiente; cuenta Gastro gestiona **N** perfiles vía `UserGastroMembership`; nuevos perfiles → `PENDING` hasta aprobación admin; copy/snapshot ubicación+contactos (`copyFromProfileId`); `GastroOwnershipService` + `?profileId=` como contexto de navegación (no autorización); descuentos resource-specific por `discountId` → `gastroProfileId`; API build restaurado (`user-contact.util.ts`); notificaciones aprobación → backlog **A9**.
+
+**Próxima etapa V3.3:** Etapa 5 — Descuentos Gastro V3 (ver checklist).
 
 ---
 
@@ -171,6 +174,8 @@ Controllers: HTTP + Zod only. Services: business logic. Prisma: persistence only
 | **`docs/audits/V3_3_STAGE_2_USER_AVATAR_CLOSING.md`** | Cierre Etapa 2 V3.3 — avatar usuario |
 | **`docs/audits/V3_3_STAGE_3_SCANNER_V3_CLOSING.md`** | Cierre Etapa 3 V3.3 — Scanner V3 |
 | **`docs/audits/V3_3_SCANNER_USERNAME_AUTH.md`** | Auth username Scanner — arquitectura y reglas |
+| **`docs/audits/V3_3_STAGE_4_GASTRO_MULTI_LOCAL_ARCHITECTURE.md`** | Arquitectura Etapa 4 — Gastro multi-local |
+| **`docs/audits/V3_3_STAGE_4_GASTRO_MULTI_LOCAL_CLOSING.md`** | Cierre Etapa 4 V3.3 — Gastro multi-local + approval |
 | **`NEXT_CHAT_HANDOFF.md`** | Handoff operativo — iniciar chat sin reconstruir historial |
 | **`NEXT_CHAT_GETNET_WEBCHECKOUT_HANDOFF.md`** | Handoff Getnet Web Checkout Redirect |
 | **`docs/payments/GETNET_WEBCHECKOUT_REDIRECT_CLOSING.md`** | Cierre slice Redirect |

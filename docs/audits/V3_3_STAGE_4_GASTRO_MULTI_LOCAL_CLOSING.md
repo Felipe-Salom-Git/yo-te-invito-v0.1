@@ -192,9 +192,10 @@ f582517 feat(v3.3): support multiple gastro locations per account
 d037b4c feat(v3.3): add gastro location approval workflow
 4135e41 refactor(v3.3): scope gastro operations by location
 6b0a96b docs(v3.3): close gastro multi-location stage
+ea79aa6 fix(v3.3): harden gastro multi-location ownership
 ```
 
-(+ commit pre-cierre: `fix(v3.3): harden gastro multi-location ownership` — API build + discount resource ownership)
+(+ commit documental contextos: `docs(v3.3): update context after gastro multi-location stage`)
 
 ---
 
@@ -205,6 +206,29 @@ d037b4c feat(v3.3): add gastro location approval workflow
 | API build restored | ~104 errores TS por `User.email \| null`; patrones A–G corregidos sin emails ficticios |
 | Discount resource ownership hardened | Rutas por `discountId` usan `GastroDiscount.gastroProfileId` como fuente autoritativa |
 | Approval notifications | Postergadas a **A9** |
+
+---
+
+## 18. Cierre documental Etapa 4
+
+| Check | Resultado |
+|-------|-----------|
+| Código | ✅ |
+| Shared build | ✅ |
+| API build | ✅ |
+| Web build | ✅ |
+| Scanner build | ✅ |
+| Prisma validate | ✅ |
+| Multi-local tests | ✅ |
+| Contextos | ✅ |
+| Checklist | ✅ |
+| Push | ✅ (post-commit documental) |
+| DB smoke | ⏳ NO EJECUTADO |
+| QA manual | ⏳ global V3.3 |
+
+**Regla de producto:** una cuenta Gastro puede gestionar múltiples `GastroProfile` independientes. Cada uno tiene estado, publicación, ubicación, contactos, scanners y descuentos propios. Reutilización vía copy/snapshot (`copyFromProfileId`) sin vinculación permanente.
+
+**No introducido:** `GastroOrganization`, `GastroLocation` física compartida, `GastroBranch`.
 
 ---
 
