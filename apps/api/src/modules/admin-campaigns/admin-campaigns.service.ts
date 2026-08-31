@@ -10,6 +10,8 @@ import {
   ErrorCode,
   canArchiveCampaign,
   canCancelCampaign,
+  getWhatsAppCampaignChannelStatus,
+  canSendWhatsAppCampaign,
   canEditCampaignDraft,
   canHardDeleteCampaign,
   canSendCampaign,
@@ -24,10 +26,10 @@ import {
 } from '@yo-te-invito/shared';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
-import { isWhatsAppCampaignProviderConfigured } from '../marketing-preferences/whatsapp-campaign-provider.util';
 import { CampaignAudienceService } from './campaign-audience.service';
 import { CampaignContentService } from './campaign-content.service';
 import { CampaignEmailQueueService } from './campaign-email-queue.service';
+import { sendCampaignWhatsApp } from './campaign-whatsapp-adapter';
 
 @Injectable()
 export class AdminCampaignsService {
@@ -65,7 +67,11 @@ export class AdminCampaignsService {
     q?: string,
   ) {
     const data = await this.content.listPicker(tenantId, contentType, q);
-    return { data, whatsappConfigured: isWhatsAppCampaignProviderConfigured() };
+    return { data, whatsappConfigured: canSendWhatsAppCampaign() };
+  }
+
+  channelStatus() {
+    return getWhatsAppCampaignChannelStatus();
   }
 
   async get(tenantId: string, id: string) {
@@ -174,7 +180,8 @@ export class AdminCampaignsService {
       ctaUrl: row.ctaUrl ?? snapshot.canonicalUrl,
       audienceKind: row.audienceKind,
       eligibleCount: members.length,
-      whatsappConfigured: isWhatsAppCampaignProviderConfigured(),
+      whatsappConfigured: canSendWhatsAppCampaign(),
+      whatsapp: getWhatsAppCampaignChannelStatus(),
     };
   }
 
@@ -186,11 +193,8 @@ export class AdminCampaignsService {
         message: 'Campaign cannot be sent in its current status',
       });
     }
-    if (row.channel === 'WHATSAPP' && !isWhatsAppCampaignProviderConfigured()) {
-      throw new BadRequestException({
-        code: ErrorCode.WHATSAPP_PROVIDER_NOT_CONFIGURED,
-        message: 'WhatsApp provider is not configured',
-      });
+    if (row.channel === 'WHATSAPP') {
+      sendCampaignWhatsApp({ toE164: '' });
     }
     if (
       row.channel === 'EMAIL' &&
@@ -428,7 +432,8 @@ export class AdminCampaignsService {
   }) {
     return {
       ...row,
-      whatsappConfigured: isWhatsAppCampaignProviderConfigured(),
+      whatsappConfigured: canSendWhatsAppCampaign(),
+      whatsapp: getWhatsAppCampaignChannelStatus(),
     };
   }
 }

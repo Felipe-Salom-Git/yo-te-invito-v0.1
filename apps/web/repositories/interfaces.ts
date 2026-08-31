@@ -3236,6 +3236,12 @@ export interface AdminCampaignsRepo {
     data: AdminCampaignSummary[];
   }>;
   get(id: string): Promise<AdminCampaignSummary>;
+  channelStatus(): Promise<{
+    channel: 'WHATSAPP';
+    status: 'NOT_CONFIGURED';
+    sendEnabled: false;
+    reason: 'PROVIDER_NOT_CONFIGURED';
+  }>;
   create(
     body: import('@yo-te-invito/shared').CreateAdminCampaignBody,
   ): Promise<AdminCampaignSummary>;

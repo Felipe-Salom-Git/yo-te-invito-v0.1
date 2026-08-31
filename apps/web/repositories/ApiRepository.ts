@@ -1647,6 +1647,7 @@ export class ApiRepository implements Repositories {
     list: async (query) =>
       this.client.get('/admin/campaigns', query as Record<string, string | number | boolean | undefined>),
     get: async (id) => this.client.get(`/admin/campaigns/${encodeURIComponent(id)}`),
+    channelStatus: async () => this.client.get('/admin/campaigns/channel-status'),
     create: async (body) => this.client.post('/admin/campaigns', body),
     update: async (id, body) =>
       this.client.patch(`/admin/campaigns/${encodeURIComponent(id)}`, body),

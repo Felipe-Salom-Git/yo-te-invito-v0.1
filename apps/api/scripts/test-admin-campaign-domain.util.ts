@@ -11,6 +11,8 @@ import {
   canSendCampaign,
   canonicalCampaignContentPath,
   createAdminCampaignBodySchema,
+  canSendWhatsAppCampaign,
+  getWhatsAppCampaignChannelStatus,
   finalizeCampaignStatus,
   isAllowedCampaignCtaUrl,
   isEmailCampaignEligible,
@@ -28,6 +30,12 @@ function assert(cond: boolean, msg: string) {
 assert(canEditCampaignDraft('DRAFT'), 'draft editable');
 assert(!canEditCampaignDraft('SENDING'), 'sending not editable');
 assert(canSendCampaign('DRAFT'), 'draft can send');
+assert(!canSendWhatsAppCampaign(), 'whatsapp send disabled without adapter');
+assert(
+  getWhatsAppCampaignChannelStatus().status === 'NOT_CONFIGURED',
+  'whatsapp provider status NOT_CONFIGURED',
+);
+assert(getWhatsAppCampaignChannelStatus().sendEnabled === false, 'whatsapp sendEnabled false');
 assert(!canSendCampaign('SENDING'), 'sending cannot send again (idempotent lock)');
 assert(canCancelCampaign('DRAFT') && canCancelCampaign('SENDING'), 'cancel draft/sending');
 assert(!canCancelCampaign('COMPLETED'), 'completed not cancelled as draft');

@@ -51,6 +51,11 @@ export class AdminCampaignsController {
     return this.campaigns.create(user.tenantId, user, body);
   }
 
+  @Get('channel-status')
+  channelStatus() {
+    return this.campaigns.channelStatus();
+  }
+
   @Get('content-picker')
   contentPicker(
     @CurrentUser() user: { tenantId: string },
