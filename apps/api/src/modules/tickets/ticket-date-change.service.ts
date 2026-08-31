@@ -61,7 +61,7 @@ export class TicketDateChangeService {
     };
   }
 
-  private async requireUserEmail(tenantId: string, userId: string): Promise<string> {
+  private async loadUserEmail(tenantId: string, userId: string): Promise<string | null> {
     const user = await this.prisma.user.findFirst({
       where: { id: userId, tenantId },
       select: { email: true },
@@ -77,7 +77,7 @@ export class TicketDateChangeService {
     userId: string,
     ticketId: string,
   ): Promise<TicketDateChangeEligibility> {
-    const userEmail = await this.requireUserEmail(tenantId, userId);
+    const userEmail = await this.loadUserEmail(tenantId, userId);
     const ticket = await this.eligibility.loadTicketForEligibility(tenantId, ticketId);
     if (!ticket) {
       return {
@@ -98,7 +98,7 @@ export class TicketDateChangeService {
     ticketId: string,
     body: CreateTicketDateChangeRequestBody,
   ): Promise<TicketDateChangeRequestResponse & { autoApproved?: boolean }> {
-    const userEmail = await this.requireUserEmail(tenantId, userId);
+    const userEmail = await this.loadUserEmail(tenantId, userId);
     const ticket = await this.eligibility.loadTicketForEligibility(tenantId, ticketId);
     if (!ticket) {
       throw new NotFoundException({
@@ -382,7 +382,7 @@ export class TicketDateChangeService {
     userId: string,
     ticketId: string,
   ): Promise<TicketDateChangeHistoryItem[]> {
-    const userEmail = await this.requireUserEmail(tenantId, userId);
+    const userEmail = await this.loadUserEmail(tenantId, userId);
     const ticket = await this.eligibility.loadTicketForEligibility(tenantId, ticketId);
     if (!ticket || !this.eligibility.isOwner(ticket, userId, userEmail)) {
       throw new NotFoundException({

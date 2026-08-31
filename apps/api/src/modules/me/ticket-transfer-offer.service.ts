@@ -52,10 +52,10 @@ type OfferRow = {
   rejectedAt?: Date | null;
   message?: string | null;
   createdAt: Date;
-  sellerUser?: { firstName: string; lastName: string; email: string } | null;
+  sellerUser?: { firstName: string; lastName: string; email: string | null } | null;
   buyerUser?: {
     id: string;
-    email: string;
+    email: string | null;
     firstName: string;
     lastName: string;
   } | null;

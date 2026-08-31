@@ -10,6 +10,7 @@ import {
   type ProducerReviewsListQuery,
 } from '@yo-te-invito/shared';
 import { mergePublicEventVisibility } from '../common/utils/event-public-visibility.util';
+import { userDisplayLabel } from '../common/user-contact.util';
 
 export interface ProducerSummary {
   id: string;
@@ -238,7 +239,7 @@ export class PublicProducersService {
         rating: r.score,
         comment: r.comment,
         userDisplayName: r.user
-          ? `${r.user.firstName} ${r.user.lastName}`.trim() || r.user.email
+          ? userDisplayLabel(r.user)
           : r.guestName?.trim() || 'Visitante',
         createdAt: r.createdAt.toISOString(),
       })),

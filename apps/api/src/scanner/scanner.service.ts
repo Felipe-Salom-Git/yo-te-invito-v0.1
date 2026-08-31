@@ -18,23 +18,7 @@ import type {
 } from '@yo-te-invito/shared';
 import { ErrorCode } from '@yo-te-invito/shared';
 import { ScannerShortCodeService } from './scanner-short-code.service';
-
-function buyerDisplayName(input: {
-  order?: { buyerFirstName: string; buyerLastName: string; buyerEmail: string } | null;
-  ownerUser?: { firstName: string | null; lastName: string | null; email: string } | null;
-}): string | undefined {
-  if (input.order) {
-    const name = `${input.order.buyerFirstName} ${input.order.buyerLastName}`.trim();
-    if (name) return name;
-    return input.order.buyerEmail;
-  }
-  if (input.ownerUser) {
-    const name = `${input.ownerUser.firstName ?? ''} ${input.ownerUser.lastName ?? ''}`.trim();
-    if (name) return name;
-    return input.ownerUser.email;
-  }
-  return undefined;
-}
+import { ticketBuyerDisplayName } from '../common/user-contact.util';
 
 function occurrenceLabel(startAt: Date | null | undefined): string | undefined {
   if (!startAt) return undefined;
@@ -186,7 +170,7 @@ export class ScannerService {
     const ctx: ScanTicketContext = {
       eventTitle: event.title,
       holderName: ticket
-        ? buyerDisplayName({ order: ticket.order, ownerUser: ticket.ownerUser })
+        ? ticketBuyerDisplayName({ order: ticket.order, ownerUser: ticket.ownerUser })
         : undefined,
       occurrenceLabel: ticket
         ? occurrenceLabel(ticket.occurrence?.startAt ?? null)

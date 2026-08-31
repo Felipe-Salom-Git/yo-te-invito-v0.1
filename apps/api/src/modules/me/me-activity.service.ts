@@ -11,6 +11,7 @@ import type {
   MeActivityReviewsResponse,
 } from '@yo-te-invito/shared';
 import { TicketTransferOfferService } from './ticket-transfer-offer.service';
+import { ticketOwnershipOrClauses } from '../../common/user-contact.util';
 
 @Injectable()
 export class MeActivityService {
@@ -30,17 +31,7 @@ export class MeActivityService {
       where: {
         status: 'USED',
         event: { tenantId, deletedAt: null },
-        OR: [
-          { ownerUserId: userId },
-          {
-            ownerUserId: null,
-            order: {
-              tenantId,
-              status: 'PAID',
-              buyerEmail: { equals: user.email, mode: 'insensitive' },
-            },
-          },
-        ],
+        OR: ticketOwnershipOrClauses(userId, user.email, tenantId),
       },
       include: {
         event: {

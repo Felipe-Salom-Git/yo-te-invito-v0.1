@@ -50,4 +50,22 @@ assert(
 const PORTAL = ['DRAFT', 'PENDING', 'ACTIVE'] as const;
 assert(PORTAL.includes('PENDING'), 'PENDING is a portal-manageable status');
 
+assert(
+  GastroOwnershipService.resolveCreateProfileId([{ id: 'only' }]) === 'only',
+  'create auto-selects single operational profile',
+);
+
+let threw = false;
+try {
+  GastroOwnershipService.resolveCreateProfileId([{ id: 'a' }, { id: 'b' }]);
+} catch (e) {
+  threw = e instanceof Error && e.message === 'GASTRO_PROFILE_REQUIRED';
+}
+assert(threw, 'create requires explicit profile when multiple operational locals');
+
+assert(
+  GastroOwnershipService.resolveCreateProfileId([{ id: 'a' }, { id: 'b' }], 'b') === 'b',
+  'create honors explicit profile id',
+);
+
 console.log('\nAll gastro multi-local util checks passed.');

@@ -101,13 +101,17 @@ export default function MeAccountPage() {
   return (
     <PageContainer>
       <SectionTitle>Mi cuenta</SectionTitle>
-      {account && <p className="mt-1 text-sm text-text-muted">{account.email}</p>}
+      {account?.email ? (
+        <p className="mt-1 text-sm text-text-muted">{account.email}</p>
+      ) : null}
 
       {account ? (
         <div className="mt-8">
           <MeAccountAvatarSection
             accountId={account.id}
-            displayName={`${account.firstName} ${account.lastName}`.trim() || account.email}
+            displayName={
+              `${account.firstName} ${account.lastName}`.trim() || account.email || 'Usuario'
+            }
             avatarUrl={account.avatarUrl}
           />
         </div>

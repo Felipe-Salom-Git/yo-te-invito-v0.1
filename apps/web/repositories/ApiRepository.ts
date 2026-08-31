@@ -2053,8 +2053,12 @@ export class ApiRepository implements Repositories {
       ),
     getMyDiscount: async (id) =>
       this.client.get<GastroPortalDiscount>(`/gastro/discounts/${encodeURIComponent(id)}`),
-    createMyDiscount: async (payload) =>
-      this.client.post<GastroPortalDiscount>('/gastro/discounts', payload),
+    createMyDiscount: async (payload, profileId) =>
+      this.client.post<GastroPortalDiscount>(
+        '/gastro/discounts',
+        payload,
+        profileId ? { profileId } : undefined,
+      ),
     updateMyDiscount: async (id, payload) =>
       this.client.patch<GastroPortalDiscount>(
         `/gastro/discounts/${encodeURIComponent(id)}`,

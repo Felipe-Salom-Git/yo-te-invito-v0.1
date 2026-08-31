@@ -21,25 +21,9 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { ScannerAccountsService } from '../scanner-accounts/scanner-accounts.service';
 import { createHash } from 'crypto';
+import { ticketBuyerDisplayName } from '../../common/user-contact.util';
 
 type ExportActor = { id: string; tenantId: string; role: string };
-
-function buyerDisplayName(input: {
-  order?: { buyerFirstName: string; buyerLastName: string; buyerEmail: string } | null;
-  ownerUser?: { firstName: string | null; lastName: string | null; email: string } | null;
-}): string {
-  if (input.order) {
-    const name = `${input.order.buyerFirstName} ${input.order.buyerLastName}`.trim();
-    if (name) return name;
-    return input.order.buyerEmail;
-  }
-  if (input.ownerUser) {
-    const name = `${input.ownerUser.firstName ?? ''} ${input.ownerUser.lastName ?? ''}`.trim();
-    if (name) return name;
-    return input.ownerUser.email;
-  }
-  return '—';
-}
 
 function validationStatusLabel(status: string, usedAt: Date | null): string {
   if (status === 'USED' || usedAt) return 'Validada';
@@ -134,7 +118,7 @@ export class TicketListExportService {
 
     return tickets.map((t) => ({
       ticketId: t.id,
-      buyerName: buyerDisplayName({ order: t.order, ownerUser: t.ownerUser }),
+      buyerName: ticketBuyerDisplayName({ order: t.order, ownerUser: t.ownerUser }),
       ticketType: t.ticketType?.name ?? 'Entrada',
       status: t.status,
       code: shortTicketCode(t.id),
@@ -321,7 +305,7 @@ export class TicketListExportService {
       tickets: tickets.map((t) => ({
         ticketId: t.id,
         status: t.status,
-        buyerName: buyerDisplayName({ order: t.order, ownerUser: t.ownerUser }),
+        buyerName: ticketBuyerDisplayName({ order: t.order, ownerUser: t.ownerUser }),
         ticketType: t.ticketType?.name ?? 'Entrada',
         code: shortTicketCode(t.id),
         qrPayload: t.qrPayload,
@@ -428,7 +412,7 @@ export class TicketListExportService {
       };
     }
 
-    const buyerName = buyerDisplayName({ order: ticket.order, ownerUser: ticket.ownerUser });
+    const buyerName = ticketBuyerDisplayName({ order: ticket.order, ownerUser: ticket.ownerUser });
     const ticketType = ticket.ticketType?.name ?? 'Entrada';
 
     if (ticket.status === 'REVOKED') {

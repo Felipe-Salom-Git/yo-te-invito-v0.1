@@ -22,6 +22,7 @@ import {
 } from './review-public.util';
 import { ReviewNotificationsService } from '../notifications/review-notifications.service';
 import { ReviewRankingService } from './review-ranking.service';
+import { userDisplayLabel } from '../../common/user-contact.util';
 
 @Injectable()
 export class ReviewsService {
@@ -169,7 +170,7 @@ export class ReviewsService {
       title: r.title,
       comment: r.comment,
       userName: r.user
-        ? `${r.user.firstName} ${r.user.lastName}`.trim() || r.user.email
+        ? userDisplayLabel(r.user)
         : r.guestName?.trim() || 'Visitante',
       createdAt: r.createdAt.toISOString(),
       officialReply: r.officialReply,
@@ -229,7 +230,7 @@ export class ReviewsService {
         title: r.title,
         comment: r.comment,
         userName: r.user
-          ? `${r.user.firstName} ${r.user.lastName}`.trim() || r.user.email
+          ? userDisplayLabel(r.user)
           : r.guestName?.trim() || 'Visitante',
         createdAt: r.createdAt.toISOString(),
         officialReply: r.officialReply,

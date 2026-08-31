@@ -228,7 +228,7 @@ export class AdminUsersService {
 
   private async buildPolicyBlockers(
     tenantId: string,
-    targetUser: { id: string; email: string; role: PrismaRole },
+    targetUser: { id: string; email: string | null; role: PrismaRole },
     actorUserId: string,
   ) {
     const blockers: AdminUserDeletePreflight['blockers'] = [];

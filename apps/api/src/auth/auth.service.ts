@@ -319,19 +319,28 @@ export class AuthService {
       return created;
     });
 
-    await this.issueAndSendVerificationEmail(user);
+    if (shouldIssueVerificationEmail(user)) {
+      await this.issueAndSendVerificationEmail({
+        id: user.id,
+        email: user.email!.trim(),
+        firstName: user.firstName,
+      });
+    }
 
-    const appUrl = getAppUrl();
-    await this.emailQueue.enqueueTemplate({
-      templateId: welcomeTemplateIdForProfile(profileType),
-      to: user.email,
-      variables: buildWelcomeTemplateVariables(
-        profileType,
-        user.firstName,
-        body.profileData,
-        appUrl,
-      ),
-    });
+    const welcomeEmail = user.email?.trim();
+    if (welcomeEmail) {
+      const appUrl = getAppUrl();
+      await this.emailQueue.enqueueTemplate({
+        templateId: welcomeTemplateIdForProfile(profileType),
+        to: welcomeEmail,
+        variables: buildWelcomeTemplateVariables(
+          profileType,
+          user.firstName,
+          body.profileData,
+          appUrl,
+        ),
+      });
+    }
 
     return {
       emailVerificationRequired: true as const,
@@ -385,7 +394,11 @@ export class AuthService {
     });
 
     if (shouldIssueVerificationEmail(user)) {
-      await this.issueAndSendVerificationEmail(user!);
+      await this.issueAndSendVerificationEmail({
+        id: user!.id,
+        email: user!.email!.trim(),
+        firstName: user!.firstName,
+      });
       this.logger.log(`Verification email queued for unverified user ${user!.id}`);
     }
 

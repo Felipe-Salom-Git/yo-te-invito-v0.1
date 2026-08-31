@@ -80,7 +80,7 @@ export default function CheckoutEventPage() {
     if (account) {
       setForm((f) => ({
         ...f,
-        email: account.email,
+        email: account.email ?? f.email,
         firstName: account.firstName,
         lastName: account.lastName,
         phone: account.phone ?? f.phone,

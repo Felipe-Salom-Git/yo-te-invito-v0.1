@@ -146,22 +146,14 @@ export class GastroController {
   async getMyDiscountSummary(
     @CurrentUser() user: { id: string; tenantId: string; role: string },
     @Param('id') id: string,
-    @Query(new ZodValidationPipe(gastroProfileIdQuerySchema)) query: GastroProfileIdQuery,
   ) {
-    return this.portalDiscounts.getDiscountSummary(
-      user.tenantId,
-      user.id,
-      user.role,
-      id,
-      query.profileId,
-    );
+    return this.portalDiscounts.getDiscountSummary(user.tenantId, user.id, user.role, id);
   }
 
   @Patch('discounts/:id/status')
   async updateMyDiscountStatus(
     @CurrentUser() user: { id: string; tenantId: string; role: string },
     @Param('id') id: string,
-    @Query(new ZodValidationPipe(gastroProfileIdQuerySchema)) query: GastroProfileIdQuery,
     @Body(new ZodValidationPipe(gastroDiscountStatusUpdateSchema)) body: GastroDiscountStatusUpdate,
   ) {
     return this.portalDiscounts.updateDiscountStatus(
@@ -170,7 +162,6 @@ export class GastroController {
       user.role,
       id,
       body,
-      query.profileId,
     );
   }
 
@@ -178,15 +169,8 @@ export class GastroController {
   async getMyDiscount(
     @CurrentUser() user: { id: string; tenantId: string; role: string },
     @Param('id') id: string,
-    @Query(new ZodValidationPipe(gastroProfileIdQuerySchema)) query: GastroProfileIdQuery,
   ) {
-    return this.portalDiscounts.getMyDiscount(
-      user.tenantId,
-      user.id,
-      user.role,
-      id,
-      query.profileId,
-    );
+    return this.portalDiscounts.getMyDiscount(user.tenantId, user.id, user.role, id);
   }
 
   @Post('discounts')
@@ -208,17 +192,9 @@ export class GastroController {
   async updateMyDiscount(
     @CurrentUser() user: { id: string; tenantId: string; role: string },
     @Param('id') id: string,
-    @Query(new ZodValidationPipe(gastroProfileIdQuerySchema)) query: GastroProfileIdQuery,
     @Body(new ZodValidationPipe(gastroDiscountUpdateSchema)) body: GastroDiscountUpdateInput,
   ) {
-    return this.portalDiscounts.updateMyDiscount(
-      user.tenantId,
-      user.id,
-      user.role,
-      id,
-      body,
-      query.profileId,
-    );
+    return this.portalDiscounts.updateMyDiscount(user.tenantId, user.id, user.role, id, body);
   }
 
   @Get('events/:eventId/content')

@@ -6,6 +6,7 @@ import { eventCategoryToReviewCategory } from '../reviews/review-public.util';
 import type { MeDashboardResponse, MeTicketItem } from '@yo-te-invito/shared';
 import { getContentDetailPath } from './user-portal-links.util';
 import { MeRecommendationsService } from './me-recommendations.service';
+import { ticketOwnershipOrClauses } from '../../common/user-contact.util';
 
 @Injectable()
 export class MeDashboardService {
@@ -45,21 +46,15 @@ export class MeDashboardService {
     };
   }
 
-  private async loadOwnedTickets(tenantId: string, userId: string, email: string) {
+  private async loadOwnedTickets(
+    tenantId: string,
+    userId: string,
+    email: string | null | undefined,
+  ) {
     return this.prisma.ticket.findMany({
       where: {
         event: { tenantId, deletedAt: null },
-        OR: [
-          { ownerUserId: userId },
-          {
-            ownerUserId: null,
-            order: {
-              tenantId,
-              status: 'PAID',
-              buyerEmail: { equals: email, mode: 'insensitive' },
-            },
-          },
-        ],
+        OR: ticketOwnershipOrClauses(userId, email, tenantId),
       },
       include: {
         event: {

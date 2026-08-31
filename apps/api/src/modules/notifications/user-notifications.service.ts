@@ -22,7 +22,7 @@ import { WebPushService } from './web-push.service';
 export type DeliverNotificationInput = {
   tenantId: string;
   userId: string;
-  userEmail: string;
+  userEmail: string | null;
   kind: NotificationKind;
   referenceKey: string;
   title: string;

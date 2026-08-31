@@ -12,6 +12,7 @@ import {
   isProtectedMasterEmail,
   safeCount,
 } from './admin-user-delete.util';
+import { userDisplayLabel } from '../../common/user-contact.util';
 
 const logger = new Logger('AdminDeepDeletePreflight');
 
@@ -68,7 +69,7 @@ export function finalizeDeepDeletePreflight(
 async function buildUserPolicyBlockers(
   prisma: PrismaService,
   tenantId: string,
-  user: { id: string; email: string; role: string },
+  user: { id: string; email: string | null; role: string },
   actorUserId: string,
 ): Promise<AdminDeepDeleteImpactItem[]> {
   const items: AdminDeepDeleteImpactItem[] = [];
@@ -176,7 +177,7 @@ export async function buildUserDeepDeletePreflight(
     throw new NotFoundException({ code: ErrorCode.NOT_FOUND, message: 'User not found' });
   }
 
-  const label = user.email ?? `${user.firstName} ${user.lastName}`.trim() || user.id;
+  const label = userDisplayLabel(user);
   const [policy, counts] = await Promise.all([
     buildUserPolicyBlockers(prisma, tenantId, user, actorUserId),
     countUserDeleteDependencies(prisma, tenantId, userId),

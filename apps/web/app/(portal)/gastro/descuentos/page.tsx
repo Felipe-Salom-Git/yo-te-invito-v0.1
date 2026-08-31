@@ -46,7 +46,7 @@ export default function GastroDescuentosPage() {
             Enviar cortesías
           </Link>
           <Link
-            href="/gastro/descuentos/nuevo"
+            href={`/gastro/descuentos/nuevo${profileId ? `?profileId=${encodeURIComponent(profileId)}` : ''}`}
             className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-bg hover:bg-accent-hover"
           >
             Nuevo ticket
@@ -64,7 +64,7 @@ export default function GastroDescuentosPage() {
         {discounts.map((d) => (
           <li key={d.id}>
             <Link
-              href={`/gastro/descuentos/${d.id}`}
+              href={`/gastro/descuentos/${d.id}${profileId ? `?profileId=${encodeURIComponent(profileId)}` : ''}`}
               className="block rounded-lg border border-border p-4 transition hover:border-accent/50 hover:bg-bg-muted/30"
             >
             <div className="flex flex-wrap items-start justify-between gap-2">

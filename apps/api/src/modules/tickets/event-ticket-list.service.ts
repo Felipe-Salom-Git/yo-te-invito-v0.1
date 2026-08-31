@@ -10,30 +10,11 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { ErrorCode } from '@yo-te-invito/shared';
 import type { Prisma, TicketStatus } from '@prisma/client';
-
-function buyerDisplayName(input: {
-  order?: { buyerFirstName: string; buyerLastName: string; buyerEmail: string } | null;
-  ownerUser?: { firstName: string | null; lastName: string | null; email: string } | null;
-}): string {
-  if (input.order) {
-    const name = `${input.order.buyerFirstName} ${input.order.buyerLastName}`.trim();
-    if (name) return name;
-    return input.order.buyerEmail;
-  }
-  if (input.ownerUser) {
-    const name = `${input.ownerUser.firstName ?? ''} ${input.ownerUser.lastName ?? ''}`.trim();
-    if (name) return name;
-    return input.ownerUser.email;
-  }
-  return '—';
-}
-
-function buyerEmail(input: {
-  order?: { buyerEmail: string } | null;
-  ownerUser?: { email: string } | null;
-}): string | null {
-  return input.order?.buyerEmail ?? input.ownerUser?.email ?? null;
-}
+import {
+  ticketBuyerDisplayName,
+  ticketBuyerEmail,
+  userDisplayLabel,
+} from '../../common/user-contact.util';
 
 function occurrenceLabel(startAt: Date | null | undefined): string | null {
   if (!startAt) return null;
@@ -41,13 +22,15 @@ function occurrenceLabel(startAt: Date | null | undefined): string | null {
 }
 
 function scannerLabel(user: {
+  id?: string;
   firstName: string | null;
   lastName: string | null;
-  email: string;
+  email?: string | null;
+  username?: string | null;
 } | null): string | null {
   if (!user) return null;
-  const name = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim();
-  return name || user.email;
+  const label = userDisplayLabel(user);
+  return label === '—' ? null : label;
 }
 
 type TicketRow = Prisma.TicketGetPayload<{
@@ -160,7 +143,7 @@ export class EventTicketListService {
       where: { id: { in: unique } },
       select: { id: true, firstName: true, lastName: true, email: true },
     });
-    return new Map(users.map((u) => [u.id, scannerLabel(u) ?? u.email]));
+    return new Map(users.map((u) => [u.id, scannerLabel(u) ?? userDisplayLabel(u)]));
   }
 
   private mapScanInfo(
@@ -258,8 +241,8 @@ export class EventTicketListService {
       const q = query.q.trim().toLowerCase();
       filtered = filtered.filter((t) => {
         const code = shortTicketCode(t.id).toLowerCase();
-        const name = buyerDisplayName({ order: t.order, ownerUser: t.ownerUser }).toLowerCase();
-        const email = buyerEmail({ order: t.order, ownerUser: t.ownerUser })?.toLowerCase() ?? '';
+        const name = ticketBuyerDisplayName({ order: t.order, ownerUser: t.ownerUser }).toLowerCase();
+        const email = ticketBuyerEmail({ order: t.order, ownerUser: t.ownerUser })?.toLowerCase() ?? '';
         return code.includes(q) || name.includes(q) || email.includes(q);
       });
     }
@@ -273,8 +256,8 @@ export class EventTicketListService {
     const tickets = slice.map((t) => ({
       ticketId: t.id,
       shortCode: shortTicketCode(t.id),
-      buyerName: buyerDisplayName({ order: t.order, ownerUser: t.ownerUser }),
-      buyerEmail: buyerEmail({ order: t.order, ownerUser: t.ownerUser }),
+      buyerName: ticketBuyerDisplayName({ order: t.order, ownerUser: t.ownerUser }),
+      buyerEmail: ticketBuyerEmail({ order: t.order, ownerUser: t.ownerUser }),
       ticketTypeName: t.ticketType?.name ?? 'Entrada',
       occurrenceId: t.occurrenceId ?? t.ticketType?.occurrenceId ?? null,
       occurrenceStartAt: t.occurrence?.startAt?.toISOString() ?? null,
@@ -326,7 +309,7 @@ export class EventTicketListService {
       const q = query.q.trim().toLowerCase();
       filtered = filtered.filter((t) => {
         const code = shortTicketCode(t.id).toLowerCase();
-        const name = buyerDisplayName({ order: t.order, ownerUser: t.ownerUser }).toLowerCase();
+        const name = ticketBuyerDisplayName({ order: t.order, ownerUser: t.ownerUser }).toLowerCase();
         const type = (t.ticketType?.name ?? '').toLowerCase();
         return code.includes(q) || name.includes(q) || type.includes(q);
       });
@@ -338,7 +321,7 @@ export class EventTicketListService {
         ticketId: t.id,
         shortCode: shortTicketCode(t.id),
         qrPayload: t.qrPayload,
-        holderName: buyerDisplayName({ order: t.order, ownerUser: t.ownerUser }),
+        holderName: ticketBuyerDisplayName({ order: t.order, ownerUser: t.ownerUser }),
         ticketTypeName: t.ticketType?.name ?? 'Entrada',
         occurrenceId: t.occurrenceId ?? t.ticketType?.occurrenceId ?? null,
         occurrenceStartAt: t.occurrence?.startAt?.toISOString() ?? null,

@@ -6,8 +6,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRepositories } from '@/repositories/context';
 import { PageContainer, PageLoader, QueryError, useToast } from '@/components';
 import { GastroDiscountDetailContent } from '@/components/gastro/GastroDiscountDetailContent';
+import { useGastroActiveLocation } from '@/lib/gastro/GastroActiveLocationContext';
 import { gastroKeys } from '@/lib/query/keys';
 import { getErrorMessage } from '@/lib/errors';
+
+function profileQuery(profileId?: string) {
+  return profileId ? `?profileId=${encodeURIComponent(profileId)}` : '';
+}
 
 export default function GastroDescuentoDetallePage() {
   const params = useParams();
@@ -15,6 +20,7 @@ export default function GastroDescuentoDetallePage() {
   const repos = useRepositories();
   const queryClient = useQueryClient();
   const { addToast } = useToast();
+  const { profileId } = useGastroActiveLocation();
 
   const summaryQuery = useQuery({
     queryKey: gastroKeys.discountSummary(id),
@@ -22,10 +28,22 @@ export default function GastroDescuentoDetallePage() {
     enabled: !!id,
   });
 
+  const discountQuery = useQuery({
+    queryKey: gastroKeys.discount(id),
+    queryFn: () => repos.gastro.getMyDiscount(id),
+    enabled: !!id,
+  });
+
+  const discountProfileId =
+    discountQuery.data?.gastroProfileId ??
+    summaryQuery.data?.discount.locationId ??
+    profileId ??
+    undefined;
+
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: gastroKeys.discountSummary(id) });
     queryClient.invalidateQueries({ queryKey: gastroKeys.discount(id) });
-    queryClient.invalidateQueries({ queryKey: gastroKeys.discounts() });
+    queryClient.invalidateQueries({ queryKey: gastroKeys.discounts(discountProfileId) });
   };
 
   const statusMutation = useMutation({
@@ -40,7 +58,10 @@ export default function GastroDescuentoDetallePage() {
 
   return (
     <PageContainer>
-      <Link href="/gastro/descuentos" className="mb-4 inline-block text-sm text-accent">
+      <Link
+        href={`/gastro/descuentos${profileQuery(discountProfileId)}`}
+        className="mb-4 inline-block text-sm text-accent"
+      >
         ← Volver a descuentos
       </Link>
 
@@ -55,7 +76,7 @@ export default function GastroDescuentoDetallePage() {
       {summaryQuery.data ? (
         <GastroDiscountDetailContent
           summary={summaryQuery.data}
-          editHref={`/gastro/descuentos/${id}/editar`}
+          editHref={`/gastro/descuentos/${id}/editar${profileQuery(discountProfileId)}`}
           statusLoading={statusMutation.isPending}
           onActivate={() => statusMutation.mutate('ACTIVE')}
           onDeactivate={() => statusMutation.mutate('CANCELLED')}

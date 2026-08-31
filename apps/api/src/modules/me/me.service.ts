@@ -22,6 +22,10 @@ import {
 import { ErrorCode } from '@yo-te-invito/shared';
 import { TicketDateChangeEligibilityService } from '../tickets/ticket-date-change-eligibility.service';
 import { TicketDateChangeService } from '../tickets/ticket-date-change.service';
+import {
+  orderOwnershipOrClauses,
+  ticketOwnershipOrClauses,
+} from '../../common/user-contact.util';
 
 @Injectable()
 export class MeService {
@@ -211,18 +215,7 @@ export class MeService {
     const tickets = await this.prisma.ticket.findMany({
       where: {
         event: { deletedAt: null, tenantId },
-        OR: [
-          { ownerUserId: userId },
-          {
-            ownerUserId: null,
-            status: { not: 'TRANSFERRED' },
-            order: {
-              tenantId,
-              status: 'PAID',
-              buyerEmail: { equals: user.email, mode: 'insensitive' },
-            },
-          },
-        ],
+        OR: ticketOwnershipOrClauses(userId, user.email, tenantId),
       },
       include: {
         event: {
@@ -251,18 +244,7 @@ export class MeService {
       where: {
         id: ticketId,
         event: { deletedAt: null, tenantId },
-        OR: [
-          { ownerUserId: userId },
-          {
-            ownerUserId: null,
-            status: { not: 'TRANSFERRED' },
-            order: {
-              tenantId,
-              status: 'PAID',
-              buyerEmail: { equals: user.email, mode: 'insensitive' },
-            },
-          },
-        ],
+        OR: ticketOwnershipOrClauses(userId, user.email, tenantId),
       },
       include: {
         event: {
@@ -295,7 +277,7 @@ export class MeService {
     const orders = await this.prisma.order.findMany({
       where: {
         tenantId,
-        OR: [{ buyerUserId: userId }, { buyerEmail: user.email }],
+        OR: orderOwnershipOrClauses(userId, user.email),
       },
       select: {
         id: true,
@@ -426,18 +408,7 @@ export class MeService {
       where: {
         id: ticketId,
         event: { deletedAt: null, tenantId },
-        OR: [
-          { ownerUserId: userId },
-          {
-            ownerUserId: null,
-            status: { not: 'TRANSFERRED' },
-            order: {
-              tenantId,
-              status: 'PAID',
-              buyerEmail: { equals: user.email, mode: 'insensitive' },
-            },
-          },
-        ],
+        OR: ticketOwnershipOrClauses(userId, user.email, tenantId),
       },
       include: {
         event: {

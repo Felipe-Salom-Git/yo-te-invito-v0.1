@@ -170,29 +170,29 @@ export class GastroPortalDiscountsService {
     userId: string,
     userRole: string,
     id: string,
-    profileId?: string,
   ) {
     await this.assertGastroUser(tenantId, userId, userRole);
-    const profile = await this.getOwnedProfile(tenantId, userId, profileId);
     const row = await this.prisma.gastroDiscount.findFirst({
-      where: { id, tenantId, gastroProfileId: profile.id },
+      where: { id, tenantId },
     });
     if (!row) {
-      const foreign = await this.prisma.gastroDiscount.findFirst({
-        where: { id, tenantId },
-        select: { id: true },
-      });
-      if (foreign) {
-        throw new ForbiddenException({
-          code: ErrorCode.FORBIDDEN,
-          message: 'No tenés permiso para gestionar este descuento',
-        });
-      }
       throw new NotFoundException({
         code: ErrorCode.NOT_FOUND,
         message: 'Discount not found',
       });
     }
+    if (!row.gastroProfileId) {
+      throw new ForbiddenException({
+        code: ErrorCode.FORBIDDEN,
+        message: 'No tenés permiso para gestionar este descuento',
+      });
+    }
+
+    const profile = await this.ownership.assertCanOperateProfile(
+      tenantId,
+      userId,
+      row.gastroProfileId,
+    );
     return { row, profile };
   }
 
@@ -233,19 +233,8 @@ export class GastroPortalDiscountsService {
     userId: string,
     userRole: string,
     id: string,
-    profileId?: string,
   ) {
-    await this.assertGastroUser(tenantId, userId, userRole);
-    const profile = await this.getOwnedProfile(tenantId, userId, profileId);
-    const row = await this.prisma.gastroDiscount.findFirst({
-      where: { id, tenantId, gastroProfileId: profile.id },
-    });
-    if (!row) {
-      throw new NotFoundException({
-        code: ErrorCode.NOT_FOUND,
-        message: 'Discount not found',
-      });
-    }
+    const { row } = await this.assertOwnDiscount(tenantId, userId, userRole, id);
     return this.mapDiscount(row);
   }
 
@@ -257,7 +246,26 @@ export class GastroPortalDiscountsService {
     profileId?: string,
   ) {
     await this.assertGastroUser(tenantId, userId, userRole);
-    const profile = await this.getOwnedProfile(tenantId, userId, profileId);
+    const operational = await this.ownership.listOperationalProfiles(tenantId, userId);
+    let resolvedProfileId: string;
+    try {
+      resolvedProfileId = GastroOwnershipService.resolveCreateProfileId(
+        operational,
+        profileId,
+      );
+    } catch (e) {
+      if (e instanceof Error && e.message === 'GASTRO_PROFILE_REQUIRED') {
+        throw new BadRequestException({
+          code: ErrorCode.VALIDATION_FAILED,
+          message: 'Seleccioná el local al que pertenece este descuento',
+        });
+      }
+      throw new BadRequestException({
+        code: ErrorCode.VALIDATION_FAILED,
+        message: 'Configurá un local gastronómico activo antes de crear tickets de descuento',
+      });
+    }
+    const profile = await this.getOwnedProfile(tenantId, userId, resolvedProfileId);
     const validityMode = body.validityMode ?? 'DATE_RANGE';
     const isWeekly = validityMode === 'WEEKLY_RECURRING';
 
@@ -300,19 +308,13 @@ export class GastroPortalDiscountsService {
     userRole: string,
     id: string,
     body: GastroDiscountUpdateInput,
-    profileId?: string,
   ) {
-    await this.assertGastroUser(tenantId, userId, userRole);
-    const profile = await this.getOwnedProfile(tenantId, userId, profileId);
-    const existing = await this.prisma.gastroDiscount.findFirst({
-      where: { id, tenantId, gastroProfileId: profile.id },
-    });
-    if (!existing) {
-      throw new NotFoundException({
-        code: ErrorCode.NOT_FOUND,
-        message: 'Discount not found',
-      });
-    }
+    const { row: existing } = await this.assertOwnDiscount(
+      tenantId,
+      userId,
+      userRole,
+      id,
+    );
     this.assertEditableStatus(existing.status);
 
     const nextValidityMode = body.validityMode ?? existing.validityMode;
@@ -378,9 +380,8 @@ export class GastroPortalDiscountsService {
     userId: string,
     userRole: string,
     id: string,
-    profileId?: string,
   ): Promise<GastroDiscountSummaryResponse> {
-    await this.assertOwnDiscount(tenantId, userId, userRole, id, profileId);
+    await this.assertOwnDiscount(tenantId, userId, userRole, id);
     return this.discountMetrics.buildSummaryForDiscount(tenantId, id, false);
   }
 
@@ -390,15 +391,8 @@ export class GastroPortalDiscountsService {
     userRole: string,
     id: string,
     body: GastroDiscountStatusUpdate,
-    profileId?: string,
   ): Promise<GastroDiscountSummaryResponse> {
-    const { profile } = await this.assertOwnDiscount(
-      tenantId,
-      userId,
-      userRole,
-      id,
-      profileId,
-    );
+    const { profile } = await this.assertOwnDiscount(tenantId, userId, userRole, id);
     return this.discountMetrics.updateDiscountStatus(tenantId, id, body, {
       id: userId,
       role: userRole,

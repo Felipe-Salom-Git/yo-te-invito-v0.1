@@ -43,12 +43,16 @@ export class MeGastroDiscountsService {
     });
     if (!user) return { data: [] };
 
-    const normalizedEmail = user.email.trim().toLowerCase();
+    const normalizedEmail = user.email?.trim().toLowerCase();
+    const claimOr: Array<{ userId: string } | { email: string }> = [{ userId }];
+    if (normalizedEmail) {
+      claimOr.push({ email: normalizedEmail });
+    }
 
     const claims = await this.prisma.gastroDiscountClaim.findMany({
       where: {
         tenantId,
-        OR: [{ userId }, { email: normalizedEmail }],
+        OR: claimOr,
       },
       include: {
         discount: {

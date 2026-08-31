@@ -207,6 +207,16 @@ Sin rediseño Scanner V3. `parentProfileId` sigue apuntando al `GastroProfile` c
 | Aprobación sin notificación | Deuda; admin panel + status visible en portal |
 | Métricas dashboard mezcladas | Dashboard scoped por `profileId` |
 | Código legacy `findFirst` | Auditoría estática en Slice 4.6 |
+| Rutas descuento por `discountId` | Pre-cierre: ownership desde `GastroDiscount.gastroProfileId`, no primer ACTIVE |
+| `User.email` nullable (Scanner V3) | Pre-cierre: API build restaurado; sin emails ficticios |
+
+---
+
+## Pre-cierre (estabilización)
+
+- **API build restored:** consumidores adaptados a `User.email | null` (`user-contact.util.ts` + dominios auth/me/tickets/admin/notifications).
+- **Discount resource ownership:** detalle/editar/status/metrics resuelven perfil desde el descuento; `?profileId=` solo para navegación/list/create.
+- **Notificaciones aprobación:** postergadas a backlog **A9 — Notificaciones usuarios V3.3**.
 
 ---
 

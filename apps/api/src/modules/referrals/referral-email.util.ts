@@ -116,7 +116,7 @@ export async function resolveProducerRecipientEmails(
 
   const pushUser = (u: {
     id: string;
-    email: string;
+    email: string | null;
     firstName: string;
     lastName: string;
     deletedAt: Date | null;

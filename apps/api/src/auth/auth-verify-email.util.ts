@@ -25,9 +25,9 @@ export function emailVerificationExpiresAt(now = Date.now()): Date {
 }
 
 export function shouldIssueVerificationEmail(
-  user: { emailVerified: Date | null } | null | undefined,
+  user: { emailVerified: Date | null; email?: string | null } | null | undefined,
 ): boolean {
-  return Boolean(user) && user!.emailVerified == null;
+  return Boolean(user?.email?.trim()) && user!.emailVerified == null;
 }
 
 export function genericResendAcceptedMessage(): string {

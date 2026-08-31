@@ -488,7 +488,7 @@ export type MeActivityReviewsResponse = z.infer<typeof meActivityReviewsResponse
 
 export const meAccountSchema = z.object({
   id: z.string(),
-  email: z.string().email(),
+  email: z.string().email().nullable(),
   firstName: z.string(),
   lastName: z.string(),
   phone: z.string().nullable(),

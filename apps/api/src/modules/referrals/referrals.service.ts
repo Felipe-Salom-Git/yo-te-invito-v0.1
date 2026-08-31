@@ -6,6 +6,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { userDisplayLabel } from '../../common/user-contact.util';
 import * as crypto from 'crypto';
 import type {
   CreateReferralLinkBody,
@@ -196,7 +197,7 @@ export class ReferralsService {
           eventId,
           code,
           referrerId,
-          label: `${user.firstName} ${user.lastName}`.trim() || user.email,
+          label: userDisplayLabel(user),
         },
       });
     }
@@ -205,7 +206,7 @@ export class ReferralsService {
   }
 
   async listReferrers(tenantId: string): Promise<
-    Array<{ id: string; email: string; firstName: string; lastName: string }>
+    Array<{ id: string; email: string | null; firstName: string; lastName: string }>
   > {
     const users = await this.prisma.user.findMany({
       where: { tenantId, role: 'REFERRER', deletedAt: null },

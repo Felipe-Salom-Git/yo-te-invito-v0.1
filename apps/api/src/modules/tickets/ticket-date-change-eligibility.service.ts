@@ -20,7 +20,7 @@ type TicketWithRelations = Ticket & {
 export type DateChangeEligibilityContext = {
   ticket: TicketWithRelations;
   userId: string;
-  userEmail: string;
+  userEmail: string | null;
   toOccurrenceId?: string;
   /** Skip pending-request block when re-validating an existing request. */
   excludeRequestId?: string;
@@ -53,15 +53,15 @@ export class TicketDateChangeEligibilityService {
     });
   }
 
-  isOwner(ticket: TicketWithRelations, userId: string, userEmail: string): boolean {
+  isOwner(ticket: TicketWithRelations, userId: string, userEmail: string | null): boolean {
     if (ticket.ownerUserId) {
       return ticket.ownerUserId === userId;
     }
     if (ticket.order?.status === 'PAID') {
-      return (
-        ticket.order.buyerUserId === userId ||
-        ticket.order.buyerEmail.toLowerCase() === userEmail.toLowerCase()
-      );
+      if (ticket.order.buyerUserId === userId) return true;
+      const normalized = userEmail?.trim();
+      if (!normalized) return false;
+      return ticket.order.buyerEmail.toLowerCase() === normalized.toLowerCase();
     }
     return false;
   }

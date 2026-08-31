@@ -103,7 +103,7 @@ Discovery público: solo `GastroProfile.status === ACTIVE` (`public-gastro-locat
 - Aprobar/rechazar: endpoints dedicados
 - Panel existente: `/admin/gastronomicos` con filtro/status patch (ACTIVE, REJECTED, SUSPENDED)
 
-Notificaciones in-app para aprobación: **no implementadas** (sin `NotificationKind` nuevo).
+Notificaciones in-app para aprobación: **no implementadas** (sin `NotificationKind` nuevo). **Postergado a backlog A9 — Notificaciones usuarios V3.3** (approval funciona sin delivery notification).
 
 ---
 
@@ -117,7 +117,9 @@ Notificaciones in-app para aprobación: **no implementadas** (sin `NotificationK
 
 ## 10. Discounts
 
-- CRUD portal scoped por `?profileId=` (default: primer ACTIVE)
+- **Listado/crear:** scoped por `?profileId=` (navegación); crear con 1 ACTIVE auto-selecciona, con N ACTIVE exige elección explícita
+- **Detalle/editar/status/metrics:** ownership resuelto desde `discountId` → `GastroDiscount.gastroProfileId` (no depende del primer ACTIVE)
+- Links de navegación preservan `profileId` en URL cuando mejora UX; seguridad no depende solo del query param
 - Requiere perfil operativo ACTIVE con `publicEventId`
 - `GastroDiscount.gastroProfileId` sin cambio de schema
 
@@ -142,14 +144,14 @@ Notificaciones in-app para aprobación: **no implementadas** (sin `NotificationK
 
 ---
 
-## 13. Builds/tests
+## 13. Builds/tests (pre-cierre Etapa 4)
 
 | Check | Resultado |
 |-------|-----------|
 | `pnpm --filter shared run build` | **PASS** |
+| `pnpm --filter api run build` | **PASS** (restaurado tras adaptar consumidores `User.email \| null`) |
 | `pnpm --filter web run build` | **PASS** |
 | `pnpm --filter scanner run build` | **PASS** |
-| `pnpm --filter api run build` | **FAIL** (104 errores TS preexistentes, no introducidos por Etapa 4 — `email: string \| null` post Scanner V3) |
 | `prisma validate` | **PASS** |
 | `pnpm --filter api run test:gastro-multi-local` | **PASS** |
 | DB smoke / migraciones ejecutadas | **NO EJECUTADO** |
@@ -175,11 +177,9 @@ Acumulado para cierre global V3.3:
 
 | Riesgo/Deuda | Notas |
 |--------------|-------|
-| API build roto (pre-existente) | Errores `email \| null` en varios servicios |
-| Sin notificaciones aprobación | Admin panel + badge portal |
+| Sin notificaciones aprobación | Admin panel + badge portal; **A9 — Notificaciones usuarios V3.3** |
 | `getOwnedProfile` local en discounts service | Wrapper sobre ownership — nombre legacy |
-| `ScannerAccountsService.getManagedGastroProfileIds` | Duplica lógica ownership (deuda menor) |
-| Páginas descuentos detalle/editar | No todas pasan `profileId` en URL aún (usan default ACTIVE) |
+| `ScannerAccountsService.getManagedGastroProfileIds` | Duplica lógica ownership (deuda menor, no bloqueante si tenant/membership/parentProfileId correctos) |
 
 ---
 
@@ -191,9 +191,20 @@ f582517 feat(v3.3): support multiple gastro locations per account
 3d7481d feat(v3.3): add multi-location gastro portal
 d037b4c feat(v3.3): add gastro location approval workflow
 4135e41 refactor(v3.3): scope gastro operations by location
+6b0a96b docs(v3.3): close gastro multi-location stage
 ```
 
-(+ commit cierre pendiente: `docs(v3.3): close gastro multi-location stage`)
+(+ commit pre-cierre: `fix(v3.3): harden gastro multi-location ownership` — API build + discount resource ownership)
+
+---
+
+## 17. Pre-cierre (estabilización)
+
+| Item | Resultado |
+|------|-----------|
+| API build restored | ~104 errores TS por `User.email \| null`; patrones A–G corregidos sin emails ficticios |
+| Discount resource ownership hardened | Rutas por `discountId` usan `GastroDiscount.gastroProfileId` como fuente autoritativa |
+| Approval notifications | Postergadas a **A9** |
 
 ---
 

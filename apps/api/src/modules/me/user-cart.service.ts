@@ -15,6 +15,10 @@ import type {
   PatchUserCartItemBody,
 } from '@yo-te-invito/shared';
 import { ErrorCode } from '@yo-te-invito/shared';
+import {
+  orderOwnershipOrClauses,
+  requireUserEmail,
+} from '../../common/user-contact.util';
 
 @Injectable()
 export class UserCartService {
@@ -223,7 +227,7 @@ export class UserCartService {
       where: {
         tenantId,
         status: 'PENDING_PAYMENT',
-        OR: [{ buyerUserId: userId }, { buyerEmail: user.email }],
+        OR: orderOwnershipOrClauses(userId, user.email),
       },
       select: {
         id: true,
@@ -275,6 +279,11 @@ export class UserCartService {
       throw new NotFoundException({ code: ErrorCode.NOT_FOUND, message: 'User not found' });
     }
 
+    const buyerEmail = requireUserEmail(
+      user,
+      'Se requiere un email para finalizar la compra',
+    );
+
     const cart = await this.prisma.userCart.findUnique({
       where: { tenantId_userId: { tenantId, userId } },
       include: { items: true },
@@ -303,7 +312,7 @@ export class UserCartService {
         eventId,
         occurrenceId,
         buyer: {
-          email: user.email,
+          email: buyerEmail,
           firstName: user.firstName,
           lastName: user.lastName,
         },

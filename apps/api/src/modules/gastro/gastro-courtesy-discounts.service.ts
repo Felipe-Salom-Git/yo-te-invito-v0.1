@@ -133,7 +133,9 @@ export class GastroCourtesyDiscountsService {
       });
       for (const follow of follows) {
         if (follow.user.deletedAt) continue;
-        const email = normalizeEmail(follow.user.email);
+        const rawEmail = follow.user.email?.trim();
+        if (!rawEmail) continue;
+        const email = normalizeEmail(rawEmail);
         if (byEmail.has(email)) {
           duplicateCount += 1;
           continue;

@@ -37,6 +37,7 @@ import {
   readUserAvatarUrl,
 } from '@yo-te-invito/shared';
 import { mergePublicEventVisibility } from '../../common/utils/event-public-visibility.util';
+import { userDisplayLabel } from '../../common/user-contact.util';
 
 @Injectable()
 export class PublicReviewsService {
@@ -52,9 +53,11 @@ export class PublicReviewsService {
   private displayName(user: {
     firstName: string;
     lastName: string;
-    email: string;
+    email?: string | null;
+    id?: string;
+    username?: string | null;
   }): string {
-    return `${user.firstName} ${user.lastName}`.trim() || user.email;
+    return userDisplayLabel(user);
   }
 
   /** Public reviewer profile — never falls back to email. */

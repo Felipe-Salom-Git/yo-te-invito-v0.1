@@ -47,6 +47,20 @@ export class GastroOwnershipService {
     return GastroOwnershipService.pickDefaultProfileId(operational);
   }
 
+  /** Create flows: explicit profile when N>1 operational locals; auto when exactly one. */
+  static resolveCreateProfileId(
+    operationalProfiles: Array<{ id: string }>,
+    profileId?: string | null,
+  ): string {
+    const explicit = profileId?.trim();
+    if (explicit) return explicit;
+    if (operationalProfiles.length === 1) return operationalProfiles[0]!.id;
+    if (operationalProfiles.length === 0) {
+      throw new Error('NO_OPERATIONAL_GASTRO_PROFILE');
+    }
+    throw new Error('GASTRO_PROFILE_REQUIRED');
+  }
+
   async listManagedProfiles(
     tenantId: string,
     userId: string,

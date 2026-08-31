@@ -70,7 +70,7 @@ export type ReviewWithRelations = Review & {
     id: string;
     firstName: string;
     lastName: string;
-    email: string;
+    email: string | null;
     preferences?: unknown;
   } | null;
 };

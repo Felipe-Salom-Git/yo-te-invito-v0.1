@@ -2636,7 +2636,10 @@ export interface GastroRepo {
   ): Promise<GastroLocal>;
   listMyDiscounts(profileId?: string): Promise<{ data: GastroPortalDiscount[] }>;
   getMyDiscount(id: string): Promise<GastroPortalDiscount>;
-  createMyDiscount(payload: GastroDiscountCreatePayload): Promise<GastroPortalDiscount>;
+  createMyDiscount(
+    payload: GastroDiscountCreatePayload,
+    profileId?: string,
+  ): Promise<GastroPortalDiscount>;
   updateMyDiscount(id: string, payload: Partial<Omit<GastroDiscountCreatePayload, 'commissionCoordinationAccepted'>>): Promise<GastroPortalDiscount>;
   getMyDiscountSummary(id: string): Promise<import('@yo-te-invito/shared').GastroDiscountSummaryResponse>;
   updateMyDiscountStatus(

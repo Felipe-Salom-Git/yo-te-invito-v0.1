@@ -7,8 +7,11 @@ import { useRepositories } from '@/repositories/context';
 import { PageContainer, PageLoader, QueryError, SectionTitle, useToast } from '@/components';
 import { GastroDiscountForm } from '@/components/gastro/GastroDiscountForm';
 import { getErrorMessage } from '@/lib/errors';
-import { useMe } from '@/hooks/useMe';
 import { gastroKeys } from '@/lib/query/keys';
+
+function profileQuery(profileId?: string) {
+  return profileId ? `?profileId=${encodeURIComponent(profileId)}` : '';
+}
 
 export default function GastroDescuentoEditarPage() {
   const params = useParams();
@@ -17,14 +20,6 @@ export default function GastroDescuentoEditarPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { addToast } = useToast();
-
-  const { data: local } = useQuery({
-    queryKey: gastroKeys.local(),
-    queryFn: () => repos.gastro.getMyLocal(),
-    staleTime: 60_000,
-  });
-  const { user: me } = useMe();
-  const gastroProfileId = local?.id ?? me?.availableProfiles?.gastro?.profiles?.[0]?.id;
 
   const discountQuery = useQuery({
     queryKey: gastroKeys.discount(id),
@@ -38,6 +33,11 @@ export default function GastroDescuentoEditarPage() {
     enabled: !!id,
   });
 
+  const gastroProfileId =
+    discountQuery.data?.gastroProfileId ??
+    summaryQuery.data?.discount.locationId ??
+    undefined;
+
   const updateMutation = useMutation({
     mutationFn: (payload: Parameters<typeof repos.gastro.updateMyDiscount>[1]) =>
       repos.gastro.updateMyDiscount(id, payload),
@@ -45,9 +45,9 @@ export default function GastroDescuentoEditarPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: gastroKeys.discount(id) });
       queryClient.invalidateQueries({ queryKey: gastroKeys.discountSummary(id) });
-      queryClient.invalidateQueries({ queryKey: gastroKeys.discounts() });
+      queryClient.invalidateQueries({ queryKey: gastroKeys.discounts(gastroProfileId) });
       addToast('Descuento actualizado', 'success');
-      router.push(`/gastro/descuentos/${id}`);
+      router.push(`/gastro/descuentos/${id}${profileQuery(gastroProfileId)}`);
     },
   });
 
@@ -56,7 +56,10 @@ export default function GastroDescuentoEditarPage() {
 
   return (
     <PageContainer>
-      <Link href={`/gastro/descuentos/${id}`} className="mb-4 inline-block text-sm text-accent">
+      <Link
+        href={`/gastro/descuentos/${id}${profileQuery(gastroProfileId)}`}
+        className="mb-4 inline-block text-sm text-accent"
+      >
         ← Volver al detalle
       </Link>
       <SectionTitle>Editar ticket de descuento</SectionTitle>

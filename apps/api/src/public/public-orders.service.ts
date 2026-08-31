@@ -373,7 +373,8 @@ export class PublicOrdersService {
         select: { id: true, email: true },
       });
       if (byId) {
-        if (byId.email.trim().toLowerCase() !== emailNorm) {
+        const accountEmail = byId.email?.trim().toLowerCase();
+        if (accountEmail && accountEmail !== emailNorm) {
           throw new BadRequestException({
             code: ErrorCode.VALIDATION_FAILED,
             message: 'buyer email must match the logged-in user',
