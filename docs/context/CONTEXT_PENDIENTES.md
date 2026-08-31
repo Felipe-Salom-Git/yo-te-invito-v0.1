@@ -14,7 +14,8 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 
 Checklist: [`Yo_Te_Invito_Checklist_V3_3_Funcional_Operativa.md`](../dev/Yo_Te_Invito_Checklist_V3_3_Funcional_Operativa.md)  
 Cierre Etapa 1: [`V3_3_STAGE_1_PUBLIC_MOBILE_CLOSING.md`](../audits/V3_3_STAGE_1_PUBLIC_MOBILE_CLOSING.md)  
-Cierre Etapa 2: [`V3_3_STAGE_2_USER_AVATAR_CLOSING.md`](../audits/V3_3_STAGE_2_USER_AVATAR_CLOSING.md)
+Cierre Etapa 2: [`V3_3_STAGE_2_USER_AVATAR_CLOSING.md`](../audits/V3_3_STAGE_2_USER_AVATAR_CLOSING.md)  
+Cierre Etapa 3: [`V3_3_STAGE_3_SCANNER_V3_CLOSING.md`](../audits/V3_3_STAGE_3_SCANNER_V3_CLOSING.md)
 
 ### Etapa 0 — Auditoría
 
@@ -67,6 +68,32 @@ Cierre Etapa 2: [`V3_3_STAGE_2_USER_AVATAR_CLOSING.md`](../audits/V3_3_STAGE_2_U
 
 - [ ] Orphan GCS de avatars reemplazados (sin lifecycle cleanup automático)
 - [ ] Sin cropper avanzado (solo `object-fit: cover`)
+
+### Etapa 3 — Scanner V3
+
+**Implementación (código):**
+
+- [x] Branding PWA Yo Te Invito Scanner (`b05bdff`)
+- [x] Short code tickets — `shortTicketCode` manual (`476cad9`)
+- [x] Short code Gastro — `GastroDiscountClaim.shortCode` (`476cad9`)
+- [x] Resolución server-side + scope preservado (`476cad9`)
+- [x] Cámara rápida — 1 target, target persistido, `?mode=camera` (`323dca8`)
+- [x] Username auth — `User.username`, login identifier (`f4a5b4f`)
+- [x] Legacy email login compatible (`f4a5b4f`)
+- [x] Auth hardening — bypass verification solo `Role.SCANNER` (`198fc38`)
+- [x] Builds shared/api/scanner/web PASS
+- [x] Unit tests `test:scanner-manual-short-code`, `test:scanner-username-auth` PASS
+- [x] Doc cierre técnico (`621c31a`)
+
+**Pendiente integración / QA:**
+
+- [ ] Migration deploy/smoke — `prisma migrate deploy` (Docker/PostgreSQL no disponible localmente 2026-08-31)
+- [ ] Integration smoke — `smoke:v31-scanner-accounts`, `smoke:v31-scanner-scope`
+- [ ] QA manual global V3.3 — PWA install, username, cámara, QR, short codes, legacy email, offline tickets
+
+**Limitación conocida (no bug):**
+
+- [x] Gastro short code **no** soporta offline — requiere conexión (documentado)
 
 ---
 

@@ -51,8 +51,9 @@
 ### A4 — Branding Scanner
 
 - [x] Base existente — PWA scanner operativa (`apps/scanner`)
-- [x] Base existente — Metadata «Yo Te Invito — Scanner»
-- [ ] Mejora V3.3 — Nombre, iconos y colores alineados a marca web
+- [x] Mejora V3.3 — Nombre **Yo Te Invito Scanner** / short **YT Scanner**
+- [x] Mejora V3.3 — Manifest/branding/iconos dark (`manifest.json`, `scanner-brand.ts`, logo local)
+- [ ] QA manual global — instalación PWA y assets
 
 ### A5 — Botón instalar / descargar app
 
@@ -62,9 +63,17 @@
 
 ### A6 — Scanner auth por username
 
-- [x] Base existente — Login scanner email + password
-- [x] Base existente — Creación scanner desde portal (email obligatorio)
-- [ ] Mejora V3.3 — Login username + password sin email
+- [x] Base existente — Login scanner email + password (legacy)
+- [x] Mejora V3.3 — `User.username` global unique
+- [x] Mejora V3.3 — `User.email` nullable para Scanner nuevo
+- [x] Mejora V3.3 — Creación Scanner username + password (sin email)
+- [x] Mejora V3.3 — Login Scanner por username
+- [x] Mejora V3.3 — Compatibilidad legacy por email
+- [x] Mejora V3.3 — Normalización lowercase/trim
+- [x] Mejora V3.3 — Bypass email verification solo `Role.SCANNER` (`198fc38`)
+- [x] Mejora V3.3 — Portales Producer/Gastro actualizados (`ScannerUsersPanel`)
+- [ ] Migración smoke con DB
+- [ ] QA manual global
 
 ### A7 — Tags + multi-subcategorías Gastro
 
@@ -134,14 +143,26 @@
 
 - [x] Base existente — Payload seguro `yti:gastro-discount:v1:…`
 - [x] Base existente — Input manual scanner (payload completo)
-- [x] Base existente — `shortTicketCode` solo para listado PDF tickets
-- [ ] Mejora V3.3 — Código corto human-readable para descuentos (lookup server)
+- [x] Base existente — `shortTicketCode` en PDF/listados
+- [x] Mejora V3.3 — Tickets `shortTicketCode` manual (8 chars, lookup server)
+- [x] Mejora V3.3 — Gastro `GastroDiscountClaim.shortCode` (6 chars, display `XXX-XXX`)
+- [x] Mejora V3.3 — Resolución server-side + scope preservado
+- [x] Mejora V3.3 — QR seguro preservado (short code ≠ token)
+- [x] Mejora V3.3 — Normalización manual (trim, separadores, uppercase)
+- [x] Mejora V3.3 — Ticket short code offline vía snapshot
+- [x] Limitación conocida — Gastro short code **no** offline (requiere conexión; documentado)
+- [ ] QA manual global
 
 ### A17 — Acceso directo cámara Scanner
 
 - [x] Base existente — Flujo setup → scan con persistencia LS
 - [x] Base existente — Modo cámara vs manual
-- [ ] Mejora V3.3 — Atajo directo a cámara (skip setup cuando aplica)
+- [x] Mejora V3.3 — 1 target → flujo simplificado (entrada directa a scan)
+- [x] Mejora V3.3 — Target persistido válido → reabre scan
+- [x] Mejora V3.3 — Múltiples targets → selector obligatorio
+- [x] Mejora V3.3 — CTAs «Escanear con cámara» / «Ingresar código manualmente»
+- [x] Mejora V3.3 — Deep link `?mode=camera`
+- [ ] QA cámara física global
 
 ### A18 — Valoraciones menú desplegable
 
@@ -257,8 +278,10 @@
 
 ### E3 — Scanner username sin email
 
-- [x] Base existente — Scanner con email + `emailVerified` auto al crear desde portal
-- [ ] Mejora V3.3 — Username sin email obligatorio (ver A6)
+- [x] Base existente — Scanner con email + login legacy
+- [x] Mejora V3.3 — Username sin email obligatorio (ver A6)
+- [x] Mejora V3.3 — `User.username` + `User.email` nullable (migración `20260831130000`)
+- [x] Mejora V3.3 — Auth hardening bypass solo `Role.SCANNER`
 
 ---
 

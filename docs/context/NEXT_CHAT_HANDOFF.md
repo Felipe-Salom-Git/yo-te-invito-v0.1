@@ -15,10 +15,12 @@ Punto de entrada operativo para **V3.3**. Detalle completo: `AI_ENTRYPOINT.md`, 
 | **Etapa 1 — QA manual** | ⏳ Pendiente — acumulado cierre global V3.3 |
 | **Etapa 2 — Perfil usuario / Avatar** | ✅ Código implementado (4 slices) |
 | **Etapa 2 — QA manual** | ⏳ Pendiente — acumulado cierre global V3.3 |
+| **Etapa 3 — Scanner V3** | ✅ Código implementado (5 slices + auth hardening) |
+| **Etapa 3 — QA manual / migración DB** | ⏳ Pendiente — acumulado cierre global V3.3 |
 
 **Checklist V3.3:** `docs/dev/Yo_Te_Invito_Checklist_V3_3_Funcional_Operativa.md`
 
-**Próxima etapa V3.3:** **Etapa 3 — Scanner V3**. No iniciar sin instrucción explícita.
+**Próxima etapa V3.3:** **Etapa 4 — Gastro Multi-local + Aprobación**. No iniciar sin instrucción explícita.
 
 ---
 
@@ -30,7 +32,7 @@ Punto de entrada operativo para **V3.3**. Detalle completo: `AI_ENTRYPOINT.md`, 
 | Web | Next.js 15 App Router, React, Tailwind, TanStack Query, NextAuth |
 | API | NestJS, Prisma, PostgreSQL, Zod, BullMQ + Redis (emails) |
 | Shared | `packages/shared` — schemas, enums, helpers |
-| Scanner | PWA `apps/scanner` |
+| Scanner | PWA `apps/scanner` — **Yo Te Invito Scanner** |
 | Auth | JWT + NextAuth; dev: `X-Dev-User-Id` |
 
 ---
@@ -55,82 +57,99 @@ User → Next.js → ApiRepository → NestJS Controller → Service → Prisma 
 | Procesos | systemd: `yti-web` (:3000), `yti-api` (:3001), `yti-scanner` (:3002) |
 | Dominios | `yoteinvito.club`, `api.yoteinvito.club`, `scanner.yoteinvito.club` |
 
-**Migraciones prod:** solo `npx prisma migrate deploy`.
+**Migraciones prod:** solo `npx prisma migrate deploy`. Incluye Etapa 3:
+- `20260831120000_gastro_claim_short_code` (pgcrypto idempotente)
+- `20260831130000_user_scanner_username`
 
 Runbook: `docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`.
 
 ---
 
-## 5. V3.3 Etapa 2 — commits principales
+## 5. V3.3 Etapa 3 — commits principales
 
 ```txt
-4142d5e docs(v3.3): audit user avatar flow
-1bdb907 feat(v3.3): add user avatar upload
-105696c feat(v3.3): surface user avatars across profile ui
-b56599b docs(v3.3): close user avatar stage
+b05bdff feat(v3.3): refresh scanner branding
+476cad9 feat(v3.3): add scanner manual short codes
+323dca8 feat(v3.3): streamline scanner camera flow
+f4a5b4f feat(v3.3): support scanner username authentication
+621c31a docs(v3.3): close scanner v3 stage
+198fc38 fix(v3.3): harden scanner username authentication
 ```
 
-(+ commit documental de cierre de contextos tras este handoff)
+(+ commit documental de contextos tras este handoff)
 
 ---
 
-## 6. Decisiones importantes (V3.3 Etapa 2 — Avatar)
+## 6. Decisiones importantes (V3.3 Etapa 3 — Scanner V3)
 
 | Tema | Regla |
 |------|-------|
-| **Persistencia** | `User.preferences.avatarUrl` — **no** columna Prisma; **no** mezclar con `ReferrerProfile.avatarUrl` |
-| **Upload** | `POST /uploads/public-image` — scope `user`, `entityId=userId`, `purpose=profile` |
-| **Path GCS** | `public/users/{userId}/profile/{yyyy}/{mm}/{uuid}.{ext}` |
-| **Validación** | URL HTTP(S) ≤2048; data URLs rechazadas; lectura con `readUserAvatarUrl()` |
-| **UI gestión** | `/me/account` → `MeAccountAvatarSection` (cambiar / quitar foto) |
-| **UI display** | `UserReviewerAvatar` en navbar, reviews, `/users/[userId]` |
-| **Reemplazo** | Nuevo objeto GCS + PATCH; asset anterior **no** se borra (deuda orphan cleanup) |
-| **Sin cropper** | `object-fit: cover`; hint 1080×1080 |
+| **Branding PWA** | Nombre **Yo Te Invito Scanner** / short **YT Scanner**; manifest dark `#0a0a0a`; logo duplicado en `apps/scanner/public/brand/` (deliberado PWA) |
+| **Short code ≠ QR** | Lookup server-side → recurso real → misma validación y scope que QR |
+| **Tickets short code** | `shortTicketCode` — 8 chars alfanuméricos; offline vía snapshot |
+| **Gastro short code** | `GastroDiscountClaim.shortCode` — 6 chars, display `XXX-XXX`; **solo online** |
+| **Auth Scanner nuevo** | `User.username` global unique + password; `email: null` |
+| **Auth Scanner legacy** | Login por email sigue compatible (`identifier` o campo `email`) |
+| **Email verification** | Bypass **solo** `Role.SCANNER` (+ master user); **no** `email == null` genérico (`198fc38`) |
+| **User.email nullable** | A nivel DB; registro público/comercial sigue exigiendo email por schema |
+| **Cámara rápida** | 1 target → scan directo; target persistido válido → reabre scan; `?mode=camera` |
+| **Arquitectura auth** | `User.username` en lugar de auth duplicada en `ScannerAccount` — reutiliza JWT/guards |
 
 ---
 
-## 7. V3.3 Etapa 1 — decisiones (referencia)
+## 7. V3.3 Etapa 2 — Avatar (referencia)
 
 | Tema | Regla |
 |------|-------|
-| **Rails subcategoría** | Carrusel dedicado solo con **≥5** publicaciones públicas válidas |
-| **Autoplay** | **No** — navegación horizontal manual |
-| **Cards descuento** | Click → ficha gastro; `/descuentos/[id]` se conserva (claim/QR/email) |
-| **Actividades** | Label público **Actividades**; clave técnica **`excursion`** sin cambios |
+| **Persistencia** | `User.preferences.avatarUrl` — **no** columna Prisma |
+| **Upload** | `POST /uploads/public-image` — scope `user`, `purpose=profile` |
+
+Doc: `V3_3_STAGE_2_USER_AVATAR_CLOSING.md`.
 
 ---
 
-## 8. V3.2 — estado previo (sin cerrar QA)
+## 8. V3.3 Etapa 1 — UX pública (referencia)
 
-Código slices 0–11 cerrado. Hotfixes 2026-08: `15f2776` (cache), `b8dc571` (roles), `ff6f8e0` (auth resend), `920c5d7` (horarios overnight).
+Rails subcategoría **≥5** sin autoplay; cards descuento → ficha gastro; copy **Actividades**.
 
-**Pendiente V3.2:** deploy VPS + QA prod de hotfixes + QA browser (`V3_2_QA_CLOSING.md`). **No sustituido por V3.3.**
+Doc: `V3_3_STAGE_1_PUBLIC_MOBILE_CLOSING.md`.
 
 ---
 
-## 9. Pendientes priorizados
+## 9. V3.2 — estado previo (sin cerrar QA)
 
-1. **QA manual global V3.3** — Etapas 1 + 2 acumuladas (mobile 360/390/430, avatar upload/reload/navbar/reviews).
-2. **QA prod V3.2** — cache, roles, auth resend, horarios (deuda anterior).
-3. Deploy VPS si commits V3.2/V3.3 no están en prod.
-4. Publicar términos comerciales en `/admin/legales`.
-5. Ticketera real — nueva pasarela TBD.
+Código slices 0–11 cerrado. Hotfixes 2026-08: `15f2776`, `b8dc571`, `ff6f8e0`, `920c5d7`.
+
+**Pendiente V3.2:** deploy VPS + QA prod. **No sustituido por V3.3.**
+
+---
+
+## 10. Pendientes priorizados
+
+1. **QA manual / integración global V3.3** — Etapas 1 + 2 + 3 acumuladas.
+2. **Migración deploy + smoke DB** — `prisma migrate deploy`; `smoke:v31-scanner-accounts`, `smoke:v31-scanner-scope`.
+3. **QA prod V3.2** — cache, roles, auth resend, horarios.
+4. Deploy VPS si commits V3.2/V3.3 no están en prod.
+5. Publicar términos comerciales en `/admin/legales`.
 
 Detalle: `CONTEXT_PENDIENTES.md`.
 
 ---
 
-## 10. Comandos de validación
+## 11. Comandos de validación
 
 ```bash
 pnpm --filter shared run build
 pnpm --filter api run build
+pnpm --filter scanner run build
 pnpm --filter web run build
+pnpm --filter api run test:scanner-manual-short-code
+pnpm --filter api run test:scanner-username-auth
 ```
 
 ---
 
-## 11. Próximo paso recomendado
+## 12. Próximo paso recomendado
 
-1. Iniciar **V3.3 Etapa 3 — Scanner V3** cuando se indique.
-2. QA manual global V3.3 al cerrar todas las etapas planificadas.
+1. Iniciar **V3.3 Etapa 4 — Gastro Multi-local + Aprobación** cuando se indique.
+2. QA manual + migración DB al cerrar V3.3 globalmente.

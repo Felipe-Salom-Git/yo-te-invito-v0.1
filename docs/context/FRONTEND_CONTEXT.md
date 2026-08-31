@@ -313,6 +313,41 @@ Sin cropper avanzado — `object-fit: cover` en UI.
 
 ---
 
+## 7d. V3.3 Etapa 3 — Scanner V3 (2026-08, código implementado)
+
+Doc cierre: `docs/audits/V3_3_STAGE_3_SCANNER_V3_CLOSING.md`. Migraciones Prisma: `20260831120000_gastro_claim_short_code`, `20260831130000_user_scanner_username`.
+
+### Branding PWA (`apps/scanner`)
+
+| Pieza | Detalle |
+|-------|---------|
+| Nombre | **Yo Te Invito Scanner** / short **YT Scanner** |
+| Manifest | `public/manifest.json` — dark `#0a0a0a`, standalone, start `/door` |
+| Assets | `lib/scanner-brand.ts`, `ScannerBrandHeader`, logo en `public/brand/logo.png` (copia deliberada desde web) |
+
+### Login Scanner
+
+- `ScannerLoginForm` — **Usuario o email** + contraseña → `POST /auth/login` con `identifier`.
+- Legacy: scanners con email siguen logueando por email.
+
+### Operación puerta
+
+| Componente | Rol |
+|------------|-----|
+| `DoorScannerClient` | Setup/scan, cámara rápida, input short code, offline snapshot |
+| `QrCameraScanner` | Escaneo manual por botón (sin loop agresivo) |
+| `ScannerOperationalMenu` | Menú operativo |
+
+**Cámara rápida:** 1 target → scan directo; target persistido válido → reabre scan; múltiples targets → selector; `?mode=camera`.
+
+**Input manual:** short code (tickets 8 chars / gastro `XXX-XXX`) o payload QR completo; Enter para validar.
+
+### Portales web
+
+- `ScannerUsersPanel` (producer/gastro) — creación con **username** + password; tabla muestra username (o email legacy).
+
+---
+
 **Etapa 12 extras:** `/admin/hoteles` archivar/restaurar; cards excursión con `getExcursionCardScheduleLine`; doc `docs/audits/V3_1_STAGE_12_*`.
 
 | **ExcursionSubcategoryMultiSelect** | `components/excursions/` — multi-select chips excursiones; principal = primera (Slice 8) |

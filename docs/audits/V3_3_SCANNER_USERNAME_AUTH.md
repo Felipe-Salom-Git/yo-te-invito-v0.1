@@ -82,6 +82,14 @@ Scanners existentes con email:
 - Rate limiting existente en auth (sin debilitar).
 - Scope scanner (`ScannerAccount`, `assertScannerCanAccess*`) intacto.
 
+## Nullable email — impacto acotado (hardening `198fc38`)
+
+- `User.email` nullable en DB **solo** para soportar Scanner nuevo; registro público sigue exigiendo email.
+- `isProtectedMasterEmail` tolera `null`.
+- Admin list mapea `email ?? ''` para scanners sin email.
+- Deep-delete preflight usa fallback de label (nombre/id).
+- Mail paths deben comprobar presencia de email antes de enviar.
+
 ## Archivos principales
 
 | Área | Archivo |
