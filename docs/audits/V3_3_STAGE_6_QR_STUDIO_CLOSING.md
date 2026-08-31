@@ -55,7 +55,8 @@ Renderer de cupón: `DiscountTemplateRenderer` (helpers de ticket: `ticketTextSh
 | 6.4 | QR Studio UI + CTA Gastro | ✅ | `409da5e` |
 | 6.5 | Integración claim `/me/descuentos` + reclamo público | ✅ | `47a9357` |
 | 6.6 | Presets en UI (ya en 6.1) + preview Admin | ✅ | `feb6d1b` |
-| 6.7 | Hardening / cierre técnico | ✅ | este commit |
+| 6.7 | Hardening / cierre técnico | ✅ | `b3a0905` |
+| 6.7b | Hardening campos canónicos visibles | ✅ | (commit `fix(v3.3): harden gastro qr studio canonical content`) |
 
 Copy desde otro descuento del mismo perfil: **diferido**.
 
@@ -120,21 +121,44 @@ No hay `GastroDiscountClaimTemplate`. El template pertenece al descuento; cada c
 
 Upsert DTO: `.strict()` — rechaza `discountId`, `claimId`, `qrToken`, `shortCode`, `tenantId`, `gastroProfileId`.
 
+### Campos canónicos obligatorios (hardening)
+
+Un template custom **no se guarda** (y un JSON ya persistido **no se renderiza**) si falta alguno de:
+
+| Requisito | Validación |
+|----------|-----------|
+| Zona QR scannable | `assertVisualQrZoneSafe` — min 0.18, margen 0.04, sin overlap |
+| `discountValue` DYNAMIC visible | binding real `GastroDiscount.type` + `value` |
+| `shortCode` DYNAMIC visible | valor de `GastroDiscountClaim.shortCode` en claim; dummy solo en Studio |
+| `discountTitle` DYNAMIC visible | título canónico del descuento |
+
+Visibilidad mínima (solo campos canónicos): ancho ≥ 0.20, alto ≥ 0.045, `fontSize` ≥ 12, `opacity` ≥ 0.7, dentro del canvas, sin rotación, no tapados por una capa de z-index mayor.
+
+Texto libre (`TEXT`) sigue permitido para copy editorial. No hay detector de porcentajes.
+
+`compileDiscountVisualTemplateDesign` **borra `content` de capas DYNAMIC** para que no quede un valor falso persistido. `resolveDiscountVisualField` no lee `content`.
+
+Templates Etapa 6 anteriores a este hardening (si existieran en DB) sin los bindings: `mapDiscountVisualTemplateRow` → `null` → fallback `GastroDiscountQrCard`.
+
+TicketTemplate **no** hereda estos required fields.
+
 ---
 
 ## 6. Dynamic fields implementados
 
 | `fieldKey` | Fuente en render real | Studio preview |
 |-----------|------------------------|----------------|
-| `gastroName` | `GastroProfile.displayName` | nombre del local o «Restaurante Ejemplo» |
+| `gastroName` | `GastroProfile.displayName` | nombre del local o demo |
 | `discountTitle` | título canónico del descuento | título real o demo |
-| `discountValue` | `type`+`value` canónicos (`10%` / `$N`) | valor real del descuento o 20% |
-| `discountValidity` | vigencia AR existente | vigencia real o demo 30/09/2026 |
-| `shortCode` | `GastroDiscountClaim.shortCode` | dummy `ABC-123` (nunca token real) |
+| `discountValue` | `GastroDiscount.type` + `value` vía `formatDiscountVisualBenefit` | valor real o 20% demo |
+| `discountValidity` | vigencia AR existente | vigencia real o demo |
+| `shortCode` | **solo** `GastroDiscountClaim.shortCode` | placeholder `ABC-123` |
 
-QR payload: **no** es un `fieldKey`. Se inyecta en render desde `buildGastroDiscountQrPayload(discountId, claim.qrToken)` (me/público) o placeholder en el editor.
+QR payload: **no** es un `fieldKey`. Se inyecta en render desde `buildGastroDiscountQrPayload(discountId, claim.qrToken)` (me/público) o placeholder en el editor. `TicketQrImage` pinta negro sobre blanco, `margin=14`, `ecc=M`, min 200px. El template no puede cambiar opacidad, colores, rotation ni payload del QR. La zona QR se pinta a `zIndex: 1000` para que ninguna capa la tape.
 
 V1 no incluye email, user id ni nombre de usuario.
+
+Obligatorios en custom template: `discountValue`, `shortCode`, `discountTitle` + zona QR. `gastroName` y `discountValidity` siguen opcionales.
 
 ---
 
@@ -144,7 +168,8 @@ V1 no incluye email, user id ni nombre de usuario.
 |------------|------|
 | QR payload immutable | No hay campo de template para payload. Renderer usa prop `qrPayload` del claim. Compile rechaza texto `yti:gastro-discount:` |
 | `qrToken` immutable | No está en el schema; `.strict()` lo rechaza en PUT |
-| `shortCode` valor immutable | Binding de render; no hay input de valor en Studio |
+| `shortCode` valor immutable | Binding de render; Studio no edita el valor; compile elimina `content` de DYNAMIC |
+| `discountValue` canónico | Siempre `formatDiscountVisualBenefit(type, value)` del `GastroDiscount`; no hay override en template |
 | `discountId` / `claimId` / `tenantId` / `gastroProfileId` / `status` | No persistibles en JSON; ownership por URL + tenant server-side |
 | HTML/script | No hay tipo HTML. Texto es `string` plano en span. Sin `dangerouslySetInnerHTML` |
 
@@ -336,9 +361,10 @@ c228827 refactor(v3.3): extract reusable visual template primitives
 409da5e feat(v3.3): add gastro discount qr studio
 47a9357 feat(v3.3): use discount templates in qr claims
 feb6d1b feat(v3.3): add qr studio presets and admin preview
+b3a0905 docs(v3.3): close gastro qr studio stage
 ```
 
-(más el commit de este closing)
+(más el commit de hardening canónico de este pre-cierre)
 
 ---
 

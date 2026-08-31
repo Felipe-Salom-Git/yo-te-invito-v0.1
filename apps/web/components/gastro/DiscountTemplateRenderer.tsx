@@ -138,7 +138,7 @@ export function DiscountTemplateRenderer({
               top: `${qr.y * 100}%`,
               width: `${qr.w * 100}%`,
               height: `${qr.h * 100}%`,
-              zIndex: 50,
+              zIndex: 1000,
             }}
           >
             {qrPayload ? (

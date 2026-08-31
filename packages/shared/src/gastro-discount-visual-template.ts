@@ -14,6 +14,7 @@ import {
 import {
   assertVisualQrZoneSafe,
   visualElementsHitQr,
+  visualRectsIntersect,
 } from './visual-template/visual-template-qr-rules';
 
 export type DiscountVisualRenderContext = {
@@ -84,6 +85,84 @@ export function assertDiscountVisualElementsSafe(
     }
     if (el.imageUrl && !/^https:\/\//i.test(el.imageUrl)) {
       return 'Las imágenes del template deben ser URL HTTPS.';
+    }
+  }
+  return null;
+}
+
+/** Bindings that a custom Gastro coupon must show. Not applied to TicketTemplate. */
+export const DISCOUNT_VISUAL_REQUIRED_FIELD_KEYS = [
+  'discountValue',
+  'shortCode',
+  'discountTitle',
+] as const;
+
+export type DiscountVisualRequiredFieldKey = (typeof DISCOUNT_VISUAL_REQUIRED_FIELD_KEYS)[number];
+
+const CANONICAL_LABEL: Record<DiscountVisualRequiredFieldKey, string> = {
+  discountValue: 'beneficio real (discountValue)',
+  shortCode: 'código corto (shortCode)',
+  discountTitle: 'título del descuento (discountTitle)',
+};
+
+const CANONICAL_MIN_W = 0.2;
+const CANONICAL_MIN_H = 0.045;
+const CANONICAL_MIN_FONT = 12;
+const CANONICAL_MIN_OPACITY = 0.7;
+
+function canonicalElementVisibilityError(
+  el: DiscountVisualTemplateElement,
+  others: DiscountVisualTemplateElement[],
+): string | null {
+  if (el.w < CANONICAL_MIN_W || el.h < CANONICAL_MIN_H) {
+    return 'Un campo canónico es demasiado pequeño para leerse.';
+  }
+  if ((el.style?.opacity ?? 1) < CANONICAL_MIN_OPACITY) {
+    return 'Un campo canónico no puede estar transparente.';
+  }
+  if ((el.style?.fontSize ?? 14) < CANONICAL_MIN_FONT) {
+    return 'Un campo canónico tiene tipografía ilegible.';
+  }
+  if (el.rotation != null && Math.abs(el.rotation) > 5) {
+    return 'Un campo canónico no puede rotarse.';
+  }
+  if (el.x + el.w < 0.08 || el.y + el.h < 0.04 || el.x > 0.92 || el.y > 0.96) {
+    return 'Un campo canónico está fuera del área visible del cupón.';
+  }
+  for (const other of others) {
+    if (other.id === el.id) continue;
+    if (other.zIndex <= el.zIndex) continue;
+    if (visualRectsIntersect(el, other)) {
+      return 'Otra capa tapa un campo canónico (beneficio, título o código).';
+    }
+  }
+  return null;
+}
+
+/**
+ * Custom templates must keep a scannable QR plus visible canonical bindings.
+ * Ticket templates are not subject to this rule.
+ */
+export function assertDiscountVisualCanonicalContent(
+  elements: DiscountVisualTemplateElement[],
+  qr: { x: number; y: number; w: number; h: number },
+): string | null {
+  const qrMsg = assertVisualQrZoneSafe(qr);
+  if (qrMsg) return qrMsg;
+  if (visualElementsHitQr(elements, qr)) {
+    return 'Hay elementos superpuestos con la zona QR. Mové o achicá capas para dejar el código visible.';
+  }
+  for (const key of DISCOUNT_VISUAL_REQUIRED_FIELD_KEYS) {
+    const matches = elements.filter((e) => e.type === 'DYNAMIC' && e.fieldKey === key);
+    if (matches.length === 0) {
+      return `El diseño debe mostrar el ${CANONICAL_LABEL[key]}.`;
+    }
+    const readable = matches.some((el) => canonicalElementVisibilityError(el, elements) === null);
+    if (!readable) {
+      return (
+        canonicalElementVisibilityError(matches[0]!, elements) ??
+        `El ${CANONICAL_LABEL[key]} debe permanecer visible.`
+      );
     }
   }
   return null;
@@ -339,7 +418,11 @@ export function mapDiscountVisualTemplateRow(row: {
     createdAt: iso(row.createdAt),
     updatedAt: iso(row.updatedAt),
   });
-  return parsed.success ? parsed.data : null;
+  if (!parsed.success) return null;
+  if (assertDiscountVisualCanonicalContent(parsed.data.elementsJson, parsed.data.qrZoneJson)) {
+    return null;
+  }
+  return parsed.data;
 }
 
 export function compileDiscountVisualTemplateDesign(
@@ -371,19 +454,18 @@ export function compileDiscountVisualTemplateDesign(
     fallback.backgroundType) as 'SOLID' | 'IMAGE';
   const backgroundValue =
     dto.backgroundValue ?? existing?.backgroundValue ?? fallback.backgroundValue;
-  const elementsJson = dto.elementsJson ?? existing?.elementsJson ?? fallback.elementsJson;
+  const elementsJson = (dto.elementsJson ?? existing?.elementsJson ?? fallback.elementsJson).map(
+    (el) => (el.type === 'DYNAMIC' ? { ...el, content: undefined } : el),
+  );
   const qrZoneJson = dto.qrZoneJson ?? existing?.qrZoneJson ?? { ...DISCOUNT_VISUAL_DEFAULT_QR_ZONE };
 
-  const qrMsg = assertVisualQrZoneSafe(qrZoneJson);
-  if (qrMsg) throw new Error(qrMsg);
-  if (visualElementsHitQr(elementsJson, qrZoneJson)) {
-    throw new Error('Hay elementos superpuestos con la zona QR. Mové o achicá capas para dejar el código visible.');
-  }
   const unsafe = assertDiscountVisualElementsSafe(elementsJson);
   if (unsafe) throw new Error(unsafe);
   if (backgroundType === 'IMAGE' && !/^https:\/\//i.test(backgroundValue)) {
     throw new Error('El fondo imagen debe ser URL HTTPS');
   }
+  const canonical = assertDiscountVisualCanonicalContent(elementsJson, qrZoneJson);
+  if (canonical) throw new Error(canonical);
 
   return {
     name,

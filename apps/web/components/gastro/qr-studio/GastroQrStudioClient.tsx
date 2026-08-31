@@ -11,6 +11,7 @@ import type {
 import {
   DISCOUNT_VISUAL_DYNAMIC_FIELD_KEYS,
   DISCOUNT_VISUAL_PRESET_META,
+  DISCOUNT_VISUAL_REQUIRED_FIELD_KEYS,
   defaultDiscountVisualTemplateDesign,
   discountVisualPresetDesign,
   type DiscountVisualPresetId,
@@ -24,6 +25,8 @@ import { StudioColorField } from '@/components/producer/ticket-studio/StudioColo
 import { useGcsImageUpload } from '@/lib/upload/use-gcs-image-upload';
 import { GastroQrStudioCanvas, type GastroQrStudioState } from './GastroQrStudioCanvas';
 
+const REQUIRED_FIELD_KEYS = new Set<string>(DISCOUNT_VISUAL_REQUIRED_FIELD_KEYS);
+
 const FIELD_LABELS: Record<DiscountVisualDynamicFieldKey, string> = {
   gastroName: 'Nombre del local',
   discountTitle: 'Título del descuento',
@@ -31,6 +34,14 @@ const FIELD_LABELS: Record<DiscountVisualDynamicFieldKey, string> = {
   discountValidity: 'Vigencia',
   shortCode: 'Código corto',
 };
+
+function isLastRequiredField(
+  elements: DiscountVisualTemplateElement[],
+  fieldKey: string | undefined,
+): boolean {
+  if (!fieldKey || !REQUIRED_FIELD_KEYS.has(fieldKey)) return false;
+  return elements.filter((e) => e.type === 'DYNAMIC' && e.fieldKey === fieldKey).length <= 1;
+}
 
 function newId() {
   return typeof crypto !== 'undefined' && crypto.randomUUID
@@ -364,11 +375,20 @@ export function GastroQrStudioClient({ discountId, gastroProfileId, previewCtx }
                   density="dense"
                   label="Campo"
                   value={selected.fieldKey ?? 'discountTitle'}
-                  onChange={(e) =>
-                    updateElement(selected.id, {
-                      fieldKey: e.target.value as DiscountVisualDynamicFieldKey,
-                    })
-                  }
+                  onChange={(e) => {
+                    const next = e.target.value as DiscountVisualDynamicFieldKey;
+                    if (
+                      isLastRequiredField(state.elementsJson, selected.fieldKey) &&
+                      next !== selected.fieldKey
+                    ) {
+                      addToast(
+                        'El beneficio, el título y el código corto son obligatorios y no se pueden quitar.',
+                        'error',
+                      );
+                      return;
+                    }
+                    updateElement(selected.id, { fieldKey: next });
+                  }}
                   options={DISCOUNT_VISUAL_DYNAMIC_FIELD_KEYS.map((k) => ({
                     value: k,
                     label: FIELD_LABELS[k],
@@ -390,7 +410,9 @@ export function GastroQrStudioClient({ discountId, gastroProfileId, previewCtx }
                     density="dense"
                     label="Tamaño"
                     type="number"
-                    min={8}
+                    min={
+                      selected.fieldKey && REQUIRED_FIELD_KEYS.has(selected.fieldKey) ? 12 : 8
+                    }
                     max={48}
                     value={selected.style?.fontSize ?? 14}
                     onChange={(e) =>
@@ -464,7 +486,15 @@ export function GastroQrStudioClient({ discountId, gastroProfileId, previewCtx }
                 type="button"
                 size="xs"
                 variant="secondary"
+                disabled={isLastRequiredField(state.elementsJson, selected.fieldKey)}
                 onClick={() => {
+                  if (isLastRequiredField(state.elementsJson, selected.fieldKey)) {
+                    addToast(
+                      'El beneficio, el título y el código corto son obligatorios y no se pueden quitar.',
+                      'error',
+                    );
+                    return;
+                  }
                   setState((s) =>
                     s
                       ? { ...s, elementsJson: s.elementsJson.filter((el) => el.id !== selected.id) }
