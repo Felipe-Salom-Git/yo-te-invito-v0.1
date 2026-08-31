@@ -269,6 +269,8 @@ model Tenant {
   activityCoupons               ActivityCoupon[]
   activityCouponClaims          ActivityCouponClaim[]
   userMarketingPreferences      UserMarketingPreference[]
+  adminCampaigns                AdminCampaign[]
+  adminCampaignDeliveries       AdminCampaignDelivery[]
 }
 
 model RentalLocation {
@@ -818,6 +820,8 @@ model User {
   ticketDateChangeRequests      TicketDateChangeRequest[] @relation("TicketDateChangeRequester")
   ticketDateChangeReviews       TicketDateChangeRequest[] @relation("TicketDateChangeReviewer")
   marketingPreference           UserMarketingPreference?
+  adminCampaignsCreated         AdminCampaign[]         @relation("AdminCampaignCreator")
+  adminCampaignDeliveries       AdminCampaignDelivery[] @relation("AdminCampaignDeliveryRecipient")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -844,6 +848,99 @@ model UserMarketingPreference {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([tenantId, emailOptIn])
+}
+
+enum AdminCampaignStatus {
+  DRAFT
+  SENDING
+  COMPLETED
+  PARTIAL
+  FAILED
+  CANCELLED
+}
+
+enum AdminCampaignChannel {
+  EMAIL
+  WHATSAPP
+}
+
+enum AdminCampaignContentType {
+  GASTRO_DISCOUNT
+  ACTIVITY_COUPON
+  EVENT
+  EXCURSION
+}
+
+enum AdminCampaignAudienceKind {
+  ALL_ELIGIBLE
+  CITY
+  FAVORITE_CATEGORY
+  CONTENT_CLAIMANTS
+}
+
+enum AdminCampaignDeliveryStatus {
+  QUEUED
+  SENT
+  SKIPPED
+  FAILED
+}
+
+model AdminCampaign {
+  id                 String                     @id @default(cuid())
+  tenantId           String
+  createdByUserId    String?
+  status             AdminCampaignStatus        @default(DRAFT)
+  channel            AdminCampaignChannel
+  contentType        AdminCampaignContentType
+  contentId          String
+  contentSnapshot    Json?
+  audienceKind       AdminCampaignAudienceKind
+  audienceFilter     Json?
+  subject            String
+  headline           String
+  body               String
+  ctaLabel           String
+  ctaUrl             String?
+  queuedCount        Int                        @default(0)
+  sentCount          Int                        @default(0)
+  skippedCount       Int                        @default(0)
+  failedCount        Int                        @default(0)
+  startedAt          DateTime?
+  completedAt        DateTime?
+  cancelRequestedAt  DateTime?
+  archivedAt         DateTime?
+  createdAt          DateTime                   @default(now())
+  updatedAt          DateTime                   @updatedAt
+
+  tenant     Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  createdBy  User?                   @relation("AdminCampaignCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  deliveries AdminCampaignDelivery[]
+
+  @@index([tenantId, status])
+  @@index([tenantId, createdAt])
+}
+
+model AdminCampaignDelivery {
+  id                String                       @id @default(cuid())
+  tenantId          String
+  campaignId        String
+  userId            String?
+  channel           AdminCampaignChannel
+  status            AdminCampaignDeliveryStatus  @default(QUEUED)
+  skipReason        String?
+  errorCode         String?
+  providerMessageId String?
+  targetHint        String?
+  queuedAt          DateTime                     @default(now())
+  processedAt       DateTime?
+
+  tenant   Tenant        @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  campaign AdminCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  user     User?         @relation("AdminCampaignDeliveryRecipient", fields: [userId], references: [id], onDelete: SetNull)
+
+  @@unique([campaignId, userId, channel])
+  @@index([tenantId, campaignId, status])
+  @@index([campaignId, status])
 }
 
 enum EventStatus {
@@ -2168,6 +2265,12 @@ enum AuditAction {
   ADMIN_USER_DELETE_BLOCKED
   ADMIN_DEEP_DELETE_EXECUTED
   ADMIN_DEEP_DELETE_BLOCKED
+  CAMPAIGN_CREATED
+  CAMPAIGN_UPDATED
+  CAMPAIGN_SEND_REQUESTED
+  CAMPAIGN_CANCELLED
+  CAMPAIGN_COMPLETED
+  CAMPAIGN_ARCHIVED
 }
 
 /// Scanner user bound to one parent commercial account (tenant-scoped).

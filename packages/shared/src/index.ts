@@ -104,6 +104,7 @@ export * from './schemas/gastro-dashboard';
 export * from './schemas/admin-gastro';
 export * from './schemas/user-portal';
 export * from './schemas/marketing-preferences';
+export * from './schemas/admin-campaigns';
 export * from './schemas/ticket-transfer-offer';
 export * from './schemas/ticket-date-change';
 export * from './schemas/notifications';

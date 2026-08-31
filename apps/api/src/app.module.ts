@@ -31,6 +31,7 @@ import { ScannerAccountsModule } from './modules/scanner-accounts/scanner-accoun
 import { GeoModule } from './modules/geo/geo.module';
 import { ActivityCouponsModule } from './modules/activity-coupons/activity-coupons.module';
 import { MarketingPreferencesModule } from './modules/marketing-preferences/marketing-preferences.module';
+import { AdminCampaignsModule } from './modules/admin-campaigns/admin-campaigns.module';
 
 @Module({
   imports: [
@@ -66,6 +67,7 @@ import { MarketingPreferencesModule } from './modules/marketing-preferences/mark
     GeoModule,
     ActivityCouponsModule,
     MarketingPreferencesModule,
+    AdminCampaignsModule,
   ],
 })
 export class AppModule {}
