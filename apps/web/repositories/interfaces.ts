@@ -2429,6 +2429,7 @@ export interface GastroLocalUpsertPayload {
   socialLinks?: import('@yo-te-invito/shared').EntitySocialLinks | null;
   relatedLinks?: import('@yo-te-invito/shared').RelatedLinkItem[] | null;
   tagIds?: string[];
+  copyFromProfileId?: string;
 }
 
 export interface GastroDiscountCreatePayload {
@@ -2624,9 +2625,14 @@ export interface GastroRepo {
   getDashboard(): Promise<GastroDashboardResponse>;
   listValidations(params?: GastroValidationListParams): Promise<GastroValidationListResponse>;
   recordValidation(discountId: string, userId?: string, orderId?: string): Promise<GastroDiscountValidation>;
-  getMyLocal(): Promise<GastroLocal | null>;
+  getMyLocal(profileId?: string): Promise<GastroLocal | null>;
+  listMyLocations(): Promise<import('@yo-te-invito/shared').GastroLocationsListResponse>;
   createMyLocal(payload: GastroLocalUpsertPayload): Promise<GastroLocal>;
-  updateMyLocal(payload: Partial<GastroLocalUpsertPayload>): Promise<GastroLocal>;
+  createAdditionalLocal(payload: GastroLocalUpsertPayload): Promise<GastroLocal>;
+  updateMyLocal(
+    payload: Partial<GastroLocalUpsertPayload>,
+    profileId?: string,
+  ): Promise<GastroLocal>;
   listMyDiscounts(): Promise<{ data: GastroPortalDiscount[] }>;
   getMyDiscount(id: string): Promise<GastroPortalDiscount>;
   createMyDiscount(payload: GastroDiscountCreatePayload): Promise<GastroPortalDiscount>;

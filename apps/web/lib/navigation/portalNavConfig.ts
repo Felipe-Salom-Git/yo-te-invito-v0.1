@@ -69,7 +69,7 @@ export const PORTAL_NAV_BY_KEY: Record<PortalNavKey, PortalNavDefinition> = {
     title: 'Gastronómico',
     items: [
       { href: '/gastro', label: 'Dashboard' },
-      { href: '/gastro/local', label: 'Mi local' },
+      { href: '/gastro/local', label: 'Mis locales' },
       { href: '/gastro/contenido', label: 'Contenido' },
       { href: '/gastro/descuentos', label: 'Descuentos' },
       { href: '/gastro/descuentos/cortesia', label: 'Cortesías' },

@@ -2026,9 +2026,21 @@ export class ApiRepository implements Repositories {
         orderId: orderId ?? null,
       });
     },
-    getMyLocal: async () => this.client.get<GastroLocal | null>('/gastro/local'),
+    getMyLocal: async (profileId) =>
+      this.client.get<GastroLocal | null>('/gastro/local', profileId ? { profileId } : undefined),
+    listMyLocations: async () =>
+      this.client.get<import('@yo-te-invito/shared').GastroLocationsListResponse>(
+        '/gastro/locations',
+      ),
     createMyLocal: async (payload) => this.client.post<GastroLocal>('/gastro/local', payload),
-    updateMyLocal: async (payload) => this.client.patch<GastroLocal>('/gastro/local', payload),
+    createAdditionalLocal: async (payload) =>
+      this.client.post<GastroLocal>('/gastro/locations', payload),
+    updateMyLocal: async (payload, profileId) =>
+      this.client.patch<GastroLocal>(
+        '/gastro/local',
+        payload,
+        profileId ? { profileId } : undefined,
+      ),
     listMyDiscounts: async () =>
       this.client.get<{ data: GastroPortalDiscount[] }>('/gastro/discounts'),
     getMyDiscount: async (id) =>

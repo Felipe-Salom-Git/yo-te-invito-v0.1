@@ -429,9 +429,12 @@ export const publicHotelKeys = {
 
 export const gastroKeys = {
   all: ['gastro'] as const,
-  dashboard: () => [...gastroKeys.all, 'dashboard'] as const,
-  local: () => [...gastroKeys.all, 'local'] as const,
-  discounts: () => [...gastroKeys.all, 'discounts'] as const,
+  dashboard: (profileId?: string) =>
+    [...gastroKeys.all, 'dashboard', profileId ?? 'default'] as const,
+  locations: () => [...gastroKeys.all, 'locations'] as const,
+  local: (profileId?: string) => [...gastroKeys.all, 'local', profileId ?? 'default'] as const,
+  discounts: (profileId?: string) =>
+    [...gastroKeys.all, 'discounts', profileId ?? 'default'] as const,
   discount: (id: string) => [...gastroKeys.all, 'discount', id] as const,
   discountSummary: (id: string) => [...gastroKeys.all, 'discount-summary', id] as const,
   content: (eventId: string) => [...gastroKeys.all, 'content', eventId] as const,
