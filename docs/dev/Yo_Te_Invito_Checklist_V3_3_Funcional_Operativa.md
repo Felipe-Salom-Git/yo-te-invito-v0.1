@@ -94,7 +94,7 @@
 - [x] Mejora V3.3 — Expiry materializada (`GastroDiscountExpiryService`)
 - [x] Mejora V3.3 — Notificación descuento vencido (`GASTRO_DISCOUNT_EXPIRED`)
 - [x] Mejora V3.3 — Dedupe notification (`NotificationDeliveryLog`, `gastro-discount-expired:{discountId}`)
-- [ ] Mejora V3.3 — Admin consolidated expired alert — **diferido Etapa 8**
+- [x] Mejora V3.3 — Admin consolidated expired alert — digest operativo (`AdminExpiredBenefitsDigestService`, cron 08:20 AR, idempotencia diaria)
 
 ### A9 — Notificaciones usuarios
 
@@ -271,9 +271,17 @@ Etapa 7 implementada; DB smoke / Scanner DB integration / QA global pendientes.
 
 - [x] Base existente — SMTP DonWeb, BullMQ, `MailProvider`
 - [x] Base existente — Templates email transaccionales
-- [x] Base existente — `NotificationDeliveryLog`
-- [ ] Mejora V3.3 — UI campañas admin (segmentación)
-- [ ] Mejora V3.3 — **WhatsApp — NUEVO / REQUIERE PROVEEDOR EXTERNO**
+- [x] Base existente — `NotificationDeliveryLog` (transaccional; no reutilizado como campaign delivery)
+- [x] Mejora V3.3 — Campaign domain (`AdminCampaign`, `AdminCampaignDelivery`)
+- [x] Mejora V3.3 — Admin UI campañas (`/admin/campanas/*`)
+- [x] Mejora V3.3 — Segmentación (`ALL_ELIGIBLE`, `CITY`, `FAVORITE_CATEGORY`, `CONTENT_CLAIMANTS`)
+- [x] Mejora V3.3 — Email delivery + cola `campaign-emails`
+- [x] Mejora V3.3 — Consent marketing (`UserMarketingPreference`)
+- [x] Mejora V3.3 — Unsubscribe (`GET` read-only, `POST` mutation, `/baja-promos`)
+- [x] Mejora V3.3 — Idempotencia delivery + send atómico
+- [x] Mejora V3.3 — Delivery results (queued/sent/skipped/failed)
+- [x] Mejora V3.3 — Arquitectura/provider readiness WhatsApp
+- [ ] Mejora V3.3 — **Envío real WhatsApp — proveedor pendiente**
 
 ---
 

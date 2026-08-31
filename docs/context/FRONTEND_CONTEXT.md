@@ -99,10 +99,10 @@ ApiClient → HTTP (NEXT_PUBLIC_API_BASE_URL)
 
 | Area | Routes |
 |------|--------|
-| Public | `/`, `/home`, **`/explore`** (filtros URL: `q`, `category`, `subcategoryId`, `city`, `from`, `to`, `page`; `?category=hotel` → banner Próximamente), `/events/[id]`, **`/restaurants/[id]`** (ficha gastro `GastroPublicDetailContent`, no ticketera), `/gastronomicos/[id]`, `/excursiones/[id]` (sección Beneficios/Cupones), **`/excursiones/cupones/[id]`**, **`/excursiones/cupones/reclamo/[claimId]`**, **`/rentals/[id]`**, **`/hoteles`** + **`/hoteles/[id]`** (vertical Próximamente; ver abajo), **`/users/[userId]`** (perfil comentarista), **`/legal/[slug]`** (documentos publicados, ISR), checkout, `/me/tickets`, `/referrers`, `/r/[code]` |
+| Public | `/`, `/home`, **`/explore`** (filtros URL: `q`, `category`, `subcategoryId`, `city`, `from`, `to`, `page`; `?category=hotel` → banner Próximamente), `/events/[id]`, **`/restaurants/[id]`** (ficha gastro `GastroPublicDetailContent`, no ticketera), `/gastronomicos/[id]`, `/excursiones/[id]` (sección Beneficios/Cupones), **`/excursiones/cupones/[id]`**, **`/excursiones/cupones/reclamo/[claimId]`**, **`/rentals/[id]`**, **`/hoteles`** + **`/hoteles/[id]`** (vertical Próximamente; ver abajo), **`/users/[userId]`** (perfil comentarista), **`/legal/[slug]`** (documentos publicados, ISR), **`/baja-promos?token=...`** (unsubscribe marketing — GET preview + POST confirm), checkout, `/me/tickets`, `/referrers`, `/r/[code]` |
 | Account | `/login`, **`/register`** (wizard `RegisterWizard`: cuenta → perfil → paso por tipo → legales SIGNUP con términos del perfil vía `/public/legal/requirements?profileType=` → `POST /auth/register` con `signupLegalAcceptance` → sin auto-login → `/login?registered=1&verifyEmail=1`), **`/cuenta/solicitar-gastro`**, **`/me/*`** |
 | Cuenta (legacy) | `/cuenta/*` → **redirects** a `/me/*` (no mantener lógica duplicada) |
-| Admin | `/admin/*` (**solo rol `ADMIN`**, `ProfileProtectedLayout` en `admin/layout.tsx`), sidebar operaciones; **`/admin`** dashboard; **`/admin/eventos`** listado filtrado; **`/admin/pagos`** pagos Getnet + revisión manual; **`/admin/legales`** documentos legales versionados; **`/admin/reviews`** reporte reputación (KPIs, CSV); **`/admin/review-disputes`** cola disputas; **`/admin/usuarios`** listado usuarios con filtros URL; **`/admin/categorias`** subcategorías + banners (`/admin/subcategorias` redirige); **`/admin/auditoria`** logs operativos; post-login y `/profiles` → redirect por rol (`rolePortalHome.ts`); usuario maestro: sidebar multi-portal |
+| Admin | `/admin/*` (**solo rol `ADMIN`**, `ProfileProtectedLayout` en `admin/layout.tsx`), sidebar operaciones; **`/admin`** dashboard; **`/admin/eventos`** listado filtrado; **`/admin/campanas`**, **`/admin/campanas/nueva`**, **`/admin/campanas/[id]`** (campañas — WhatsApp provider pending); **`/admin/pagos`** pagos Getnet + revisión manual; **`/admin/legales`** documentos legales versionados; **`/admin/reviews`** reporte reputación (KPIs, CSV); **`/admin/review-disputes`** cola disputas; **`/admin/usuarios`** listado usuarios con filtros URL; **`/admin/categorias`** subcategorías + banners (`/admin/subcategorias` redirige); **`/admin/auditoria`** logs operativos; post-login y `/profiles` → redirect por rol (`rolePortalHome.ts`); usuario maestro: sidebar multi-portal |
 | Producer | `/producer` (hub: KPIs, engagement, **`ProducerDashboardEventStatusAlerts`**, eventos; nav en sidebar), `/producer/events`, ticket studio, **`/producer/profile`** (hub por bloques + completitud frontend), **`/producer/profile/create`** (solo nombre; slug en servidor), **`/producer/profile/identity|images|contact`**, **`/producer/comments`** (`ManagedReviewsCommentsPage`), referidos, payouts |
 | Gastro / Hotel / Referrer | `/gastro/*`, **`/gastro/contenido`** (editorial Prisma; **ADMIN** selector de evento/establecimiento, **GASTRO_OWNER** solo su local), **`/gastro/valoraciones`**, `/hotel`, **`/hotel/valoraciones`**, `/referrer`, `/cuenta/solicitar-referrer` |
 
@@ -157,7 +157,7 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`). Shared UI tokens:
 | `/me/tickets`, `/me/tickets/[ticketId]` | Listado agrupado + **detalle ticket comprador** (`MeBuyerTicketPanel`, impresión, transferencia) |
 | `/me/preferences` | Tabs: intereses, productoras, **gastro follows** (`MePreferencesGastro`), favoritos, esperados, notificaciones globales |
 | `/me/activity` | Asistidos, reviews, transfers |
-| `/me/account` | Perfil, contraseña, **foto de perfil** (`MeAccountAvatarSection`), solicitudes de rol |
+| `/me/account` | Perfil, contraseña, **foto de perfil** (`MeAccountAvatarSection`), **Comunicaciones** (`MeAccountCommunicationsSection` — opt-in EMAIL marketing), solicitudes de rol |
 | `/me/notifications` | Bandeja in-app + **push** (`MePushNotificationsPanel`) + preferencias alertas (`MePushAlertPreferences` en `InterestsDisclosure`) |
 | `/me/orders` | Historial órdenes (fuera del menú principal; ruta viva) |
 | `/me/following` | Redirect → `/me/preferences?tab=producers` |
@@ -443,6 +443,24 @@ Copy público **Actividades**; rutas técnicas **`/excursiones/*`**. No hay `/ac
 | `/me` | `/me/descuentos` — dos bloques (Gastronomía + Actividades), dos queries |
 | Scanner PWA | Target `EXCURSION_OPERATOR`; `discounts[]` es UX; autorización server-side `canScannerAccessActivityCoupon` |
 | Card QR | `ActivityCouponQrCard` (no reutiliza `GastroDiscountQrCard` ni Studio Gastro) |
+
+---
+
+## 7i. V3.3 Etapa 8 — Campañas Email / WhatsApp (2026-08, código implementado)
+
+Doc cierre: `docs/audits/V3_3_STAGE_8_CAMPAIGNS_CLOSING.md`. Auditoría: `docs/audits/V3_3_STAGE_8_CAMPAIGNS_AUDIT.md`.
+
+**WhatsApp:** canal visible en Admin; envío real **NOT CONFIGURED** (provider pending). Email campaigns operativas.
+
+| Pieza | Ubicación |
+|-------|-----------|
+| Comunicaciones cuenta | `/me/account` — `MeAccountCommunicationsSection` (opt-in EMAIL marketing) |
+| Unsubscribe público | `/baja-promos?token=...` — GET preview + confirmación → POST |
+| Listado campañas | `/admin/campanas` |
+| Nueva campaña | `/admin/campanas/nueva` — draft, content picker, canal, segmento, copy, preview |
+| Detalle / envío | `/admin/campanas/[id]` — eligible estimate, confirm send, results, deliveries paginadas, cancel |
+
+Arquitectura: UI → TanStack Query → repositories → `ApiRepository` → Nest API. Sin fetch directo.
 
 ---
 

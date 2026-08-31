@@ -2,10 +2,8 @@
 
 **Fecha:** 2026-08-31  
 **Branch:** `feat/v1-s03-api-foundation`  
-**HEAD:** ver §22 (post-hardening)  
+**HEAD:** `39a8a0b` (hardening) + commit documental context  
 **Auditoría:** [`V3_3_STAGE_8_CAMPAIGNS_AUDIT.md`](./V3_3_STAGE_8_CAMPAIGNS_AUDIT.md)
-
-**No** context update global. **No** push. **No** Etapa 9. **No** QA global.
 
 **Estado código:** implementado + hardening pre-cierre. DB smoke / Redis worker / SMTP live / QA manual: pendientes.
 
@@ -377,7 +375,7 @@ Preferences opt-in/out, unsubscribe público, draft, content picker, segmento, p
 | `d29b6bd` | `feat(v3.3): prepare campaign whatsapp channel` |
 | `96991c1` | `feat(v3.3): add admin expired benefits digest` |
 | `e39bef4` | `docs(v3.3): close admin campaigns stage` |
-| *(hardening)* | `fix(v3.3): harden campaign delivery lifecycle` |
+| `39a8a0b` | `fix(v3.3): harden campaign delivery lifecycle` |
 
 ---
 

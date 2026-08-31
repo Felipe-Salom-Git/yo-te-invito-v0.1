@@ -19,7 +19,8 @@ Cierre Etapa 3: [`V3_3_STAGE_3_SCANNER_V3_CLOSING.md`](../audits/V3_3_STAGE_3_SC
 Cierre Etapa 4: [`V3_3_STAGE_4_GASTRO_MULTI_LOCAL_CLOSING.md`](../audits/V3_3_STAGE_4_GASTRO_MULTI_LOCAL_CLOSING.md)  
 Cierre Etapa 5: [`V3_3_STAGE_5_GASTRO_DISCOUNTS_CLOSING.md`](../audits/V3_3_STAGE_5_GASTRO_DISCOUNTS_CLOSING.md)  
 Cierre Etapa 6: [`V3_3_STAGE_6_QR_STUDIO_CLOSING.md`](../audits/V3_3_STAGE_6_QR_STUDIO_CLOSING.md)  
-Cierre Etapa 7: [`V3_3_STAGE_7_ACTIVITY_COUPONS_CLOSING.md`](../audits/V3_3_STAGE_7_ACTIVITY_COUPONS_CLOSING.md)
+Cierre Etapa 7: [`V3_3_STAGE_7_ACTIVITY_COUPONS_CLOSING.md`](../audits/V3_3_STAGE_7_ACTIVITY_COUPONS_CLOSING.md)  
+Cierre Etapa 8: [`V3_3_STAGE_8_CAMPAIGNS_CLOSING.md`](../audits/V3_3_STAGE_8_CAMPAIGNS_CLOSING.md)
 
 ### Etapa 0 — Auditoría
 
@@ -145,7 +146,7 @@ Cierre Etapa 7: [`V3_3_STAGE_7_ACTIVITY_COUPONS_CLOSING.md`](../audits/V3_3_STAG
 - [ ] DB smoke — PostgreSQL/Docker no disponible; migración `20260831140000_gastro_discount_v3_lifecycle`
 - [ ] Scanner integration — `test:gastro-discount-scan` **NO EJECUTADO**
 - [ ] QA manual global V3.3 — create discount, material edit, non-material/lifecycle, pending visible, admin compare current/proposed, approve/reject edit, claims/QR/shortCode previos, scanner, expiry, archive/unarchive, admin create on-behalf, multi-local target, notifications, nullable email, mobile, desktop
-- [ ] Admin expired discounts digest — **diferido Etapa 8** (no bug de Etapa 5)
+- [x] Admin expired discounts digest — **implementado Etapa 8** (`AdminExpiredBenefitsDigestService`, cron 08:20 AR)
 
 ### Etapa 6 — QR Studio
 
@@ -206,6 +207,38 @@ Cierre Etapa 7: [`V3_3_STAGE_7_ACTIVITY_COUPONS_CLOSING.md`](../audits/V3_3_STAG
 - [ ] Occurrence / salida / turno scoping (hoy operator-wide + Event completo; sin FK a `EventOccurrence`)
 - [ ] Reserva, pasajero, cupo, multi-use, eligibility avanzada, settlement, campaign distribution
 - [ ] Scanner per Event / Occurrence
+
+### Etapa 8 — Campañas Email / WhatsApp
+
+**Implementación (código) — Etapa 8 cerrada funcionalmente; DB smoke / Redis / SMTP live / QA global pendientes.**
+
+- [x] Auditoría arquitectura transactional vs marketing (`9b4b7b5`, `V3_3_STAGE_8_CAMPAIGNS_AUDIT.md`)
+- [x] `UserMarketingPreference` + consent por canal (`1858ec6`)
+- [x] Unsubscribe token 64 hex; `GET` read-only; `POST` idempotente; `/baja-promos` (`1858ec6` + hardening `39a8a0b`)
+- [x] `/me/account` → Comunicaciones (`MeAccountCommunicationsSection`)
+- [x] Dominio `AdminCampaign` + `AdminCampaignDelivery` (`6bb50b4`)
+- [x] Email delivery BullMQ `campaign-emails` + worker revalidation (`cb2d206`)
+- [x] Admin UI `/admin/campanas/*` (`7478074`)
+- [x] WhatsApp provider-ready — `canSendWhatsAppCampaign()` false (`d29b6bd`)
+- [x] Digest operativo vencidos — cron 08:20 AR + idempotencia diaria (`96991c1` + hardening `39a8a0b`)
+- [x] Hardening lifecycle — cancel guard, GET unsubscribe read-only, digest TZ AR (`39a8a0b`)
+- [x] Builds shared/api/web/scanner PASS; `prisma validate` PASS
+- [x] Tests PASS: `test:marketing-preferences`, `test:admin-campaign-domain`, `test:admin-campaign-delivery`, `test:admin-expired-benefits-digest`
+- [x] Doc cierre técnico (`e39bef4` + hardening `39a8a0b`)
+
+**Pendiente integración / QA (conservar):**
+
+- [ ] DB smoke — PostgreSQL `localhost:5433` P1001; migraciones `20260831180000_user_marketing_preference`, `20260831190000_admin_campaign_domain`, `20260831200000_admin_operational_digest_log`
+- [ ] Redis integration — worker `campaign-emails` end-to-end **NO EJECUTADO**
+- [ ] SMTP live smoke — campaña masiva real **NO EJECUTADO** (a propósito)
+- [ ] QA manual global V3.3 — opt-in/out, unsubscribe GET/POST, re-subscribe, draft, content picker, segment, preview, send, cancel mid-flight, results, WhatsApp disabled, Admin mobile
+
+**Deuda no bloqueante:**
+
+- [ ] `CAMPAIGN_COMPLETED` audit desde worker (requiere actorId real)
+- [ ] Admin test-send campaña
+- [ ] Custom campaign image GCS
+- [ ] WhatsApp provider adapter (Meta/Twilio/BSP)
 
 ---
 

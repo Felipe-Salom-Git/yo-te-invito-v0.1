@@ -25,10 +25,12 @@ Punto de entrada operativo para **V3.3**. Detalle completo: `AI_ENTRYPOINT.md`, 
 | **Etapa 6 — QA manual / DB smoke** | ⏳ Pendiente — acumulado cierre global V3.3 |
 | **Etapa 7 — Actividades + Cupones QR** | ✅ Código implementado (slices 7.0–7.7 + 7.9 + hardening `a494274`; 7.8 skip Studio) |
 | **Etapa 7 — QA manual / DB smoke / Scanner DB** | ⏳ Pendiente — acumulado cierre global V3.3 |
+| **Etapa 8 — Campañas Email / WhatsApp** | ✅ Código implementado (slices 8.0–8.7 + hardening `39a8a0b`) |
+| **Etapa 8 — QA manual / DB smoke / Redis / SMTP live** | ⏳ Pendiente — acumulado cierre global V3.3 |
 
 **Checklist V3.3:** `docs/dev/Yo_Te_Invito_Checklist_V3_3_Funcional_Operativa.md`
 
-**Próxima etapa V3.3:** **Etapa 8 — Campañas Email / WhatsApp**. No iniciar sin instrucción explícita.
+**Próxima etapa V3.3:** **Etapa 9 — Auditoría Económica / Conciliación**. No iniciar sin instrucción explícita.
 
 ---
 
@@ -72,12 +74,51 @@ User → Next.js → ApiRepository → NestJS Controller → Service → Prisma 
 - `20260831150000_gastro_discount_visual_template` (**no aplicada localmente** — PostgreSQL/Docker no disponible)
 - `20260831160000_activity_coupon_domain` (**no aplicada localmente** — PostgreSQL/Docker no disponible)
 - `20260831170000_activity_coupon_claimed_notification` (**no aplicada localmente** — PostgreSQL/Docker no disponible)
+- `20260831180000_user_marketing_preference` (**no aplicada localmente**)
+- `20260831190000_admin_campaign_domain` (**no aplicada localmente**)
+- `20260831200000_admin_operational_digest_log` (**no aplicada localmente**)
 
 Runbook: `docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`.
 
 ---
 
-## 5. V3.3 Etapa 7 — commits principales
+## 5. V3.3 Etapa 8 — commits principales
+
+```txt
+9b4b7b5 docs(v3.3): audit campaign communications architecture
+1858ec6 feat(v3.3): add marketing communication preferences
+6bb50b4 feat(v3.3): add admin campaign domain
+cb2d206 feat(v3.3): deliver admin email campaigns
+7478074 feat(v3.3): add admin campaign management ui
+d29b6bd feat(v3.3): prepare campaign whatsapp channel
+96991c1 feat(v3.3): add admin expired benefits digest
+e39bef4 docs(v3.3): close admin campaigns stage
+39a8a0b fix(v3.3): harden campaign delivery lifecycle
+```
+
+(+ commit documental de contextos: `docs(v3.3): close admin campaigns context`)
+
+---
+
+## 6. Decisiones importantes (V3.3 Etapa 8 — Campañas)
+
+| Tema | Regla |
+|------|--------|
+| **Transactional ≠ marketing** | `EmailQueueService` / `emails` + `UserNotificationsService` ≠ campañas. `NotificationDeliveryLog` no es tabla de campañas. |
+| **Consent** | `UserMarketingPreference`; sin fila → no elegible; usuarios existentes **no** opt-in por defecto; sin backfill. |
+| **Unsubscribe** | Token 64 hex scope EMAIL; `GET` read-only (`previewUnsubscribeByToken`); `POST` mutación idempotente; `/baja-promos?token=...`. |
+| **Email campaigns** | Cola `campaign-emails` separada; worker revalida antes de enviar; `emailOptIn=false` bloquea marketing, **no** verification/claim QR/transaccionales. |
+| **Cancel** | `cancelRequestedAt` revalidado en worker → `SKIPPED`/`CANCELLED_BY_ADMIN`; jobs encolados no se eliminan físicamente. |
+| **Completion** | `refreshCampaign` → `finalizeCampaignStatus` → `COMPLETED`/`PARTIAL`/`FAILED`/`CANCELLED`. |
+| **WhatsApp** | **NOT CONFIGURED** — provider-ready; `canSendWhatsAppCampaign()` → false; canal visible en Admin, send disabled. |
+| **Digest vencidos** | Operativo (≠ marketing); cron **08:20 AR** (`EXPIRED_BENEFITS_DIGEST_TIMEZONE`); idempotencia diaria AR; flag `ADMIN_EXPIRED_BENEFITS_DIGEST_CRON_ENABLED`. |
+| **Audit** | `CAMPAIGN_SEND_REQUESTED` sí; `CAMPAIGN_COMPLETED` desde worker **diferido** (requiere actorId real). |
+
+Doc: `V3_3_STAGE_8_CAMPAIGNS_AUDIT.md`, `V3_3_STAGE_8_CAMPAIGNS_CLOSING.md`.
+
+---
+
+## 7. V3.3 Etapa 7 — commits principales
 
 ```txt
 01aa1a8 docs(v3.3): audit activity coupons architecture
@@ -98,7 +139,7 @@ Slice **7.8 skip deliberado** — custom Activity QR Studio diferido (no commit 
 
 ---
 
-## 6. Decisiones importantes (V3.3 Etapa 7 — Actividades + Cupones)
+## 8. Decisiones importantes (V3.3 Etapa 7 — Actividades + Cupones)
 
 | Tema | Regla |
 |------|--------|
@@ -118,7 +159,7 @@ Doc: `V3_3_STAGE_7_ACTIVITY_COUPONS_AUDIT.md`, `V3_3_STAGE_7_ACTIVITY_COUPONS_CL
 
 ---
 
-## 7. V3.3 Etapa 6 — commits principales
+## 9. V3.3 Etapa 6 — commits principales
 
 ```txt
 4f3b07f docs(v3.3): audit gastro qr studio architecture
@@ -136,7 +177,7 @@ de4e07d fix(v3.3): harden gastro qr studio canonical content
 
 ---
 
-## 8. Decisiones importantes (V3.3 Etapa 6 — QR Studio)
+## 10. Decisiones importantes (V3.3 Etapa 6 — QR Studio)
 
 | Tema | Regla |
 |------|--------|
@@ -156,7 +197,7 @@ Doc: `V3_3_STAGE_6_QR_STUDIO_AUDIT.md`, `V3_3_STAGE_6_QR_STUDIO_CLOSING.md`.
 
 ---
 
-## 9. V3.3 Etapa 5 — commits principales
+## 11. V3.3 Etapa 5 — commits principales
 
 ```txt
 a757c76 docs(v3.3): audit gastro discounts v3 lifecycle
@@ -174,7 +215,7 @@ c91c205 fix(v3.3): harden gastro discount reapproval lifecycle
 
 ---
 
-## 10. Decisiones importantes (V3.3 Etapa 5 — Descuentos Gastro V3)
+## 12. Decisiones importantes (V3.3 Etapa 5 — Descuentos Gastro V3)
 
 | Tema | Regla |
 |------|--------|
@@ -196,7 +237,7 @@ Doc: `V3_3_STAGE_5_GASTRO_DISCOUNTS_AUDIT.md`, `V3_3_STAGE_5_GASTRO_DISCOUNTS_CL
 
 ---
 
-## 11. V3.3 Etapa 4 — commits principales
+## 13. V3.3 Etapa 4 — commits principales
 
 ```txt
 612fd2d docs(v3.3): design gastro multi-local architecture
@@ -212,7 +253,7 @@ ea79aa6 fix(v3.3): harden gastro multi-location ownership
 
 ---
 
-## 12. Decisiones importantes (V3.3 Etapa 4 — Gastro Multi-local)
+## 14. Decisiones importantes (V3.3 Etapa 4 — Gastro Multi-local)
 
 | Tema | Regla |
 |------|-------|
@@ -234,7 +275,7 @@ Doc: `V3_3_STAGE_4_GASTRO_MULTI_LOCAL_ARCHITECTURE.md`, `V3_3_STAGE_4_GASTRO_MUL
 
 ---
 
-## 13. V3.3 Etapa 3 — Scanner (referencia)
+## 15. V3.3 Etapa 3 — Scanner (referencia)
 
 | Tema | Regla |
 |------|-------|
@@ -245,19 +286,19 @@ Doc: `V3_3_STAGE_3_SCANNER_V3_CLOSING.md`.
 
 ---
 
-## 14. V3.3 Etapa 2 — Avatar (referencia)
+## 16. V3.3 Etapa 2 — Avatar (referencia)
 
 Doc: `V3_3_STAGE_2_USER_AVATAR_CLOSING.md`.
 
 ---
 
-## 15. V3.3 Etapa 1 — UX pública (referencia)
+## 17. V3.3 Etapa 1 — UX pública (referencia)
 
 Doc: `V3_3_STAGE_1_PUBLIC_MOBILE_CLOSING.md`.
 
 ---
 
-## 16. V3.2 — estado previo (sin cerrar QA)
+## 18. V3.2 — estado previo (sin cerrar QA)
 
 Código slices 0–11 cerrado. Hotfixes 2026-08: `15f2776`, `b8dc571`, `ff6f8e0`, `920c5d7`.
 
@@ -265,21 +306,22 @@ Código slices 0–11 cerrado. Hotfixes 2026-08: `15f2776`, `b8dc571`, `ff6f8e0`
 
 ---
 
-## 17. Pendientes priorizados
+## 19. Pendientes priorizados
 
-1. **QA manual / integración global V3.3** — Etapas 1–7 acumuladas (incl. Actividades: crear/editar/archive/publicar cupón, claim, claim duplicado, QR, short code, scanner QR/manual, otro operador, expired, already used, metrics, `/me`, ficha pública, mobile).
-2. **Migración deploy + smoke DB** — `prisma migrate deploy` (acumula Etapa 3 + `20260831140000_gastro_discount_v3_lifecycle` + `20260831150000_gastro_discount_visual_template` + `20260831160000_activity_coupon_domain` + `20260831170000_activity_coupon_claimed_notification`). **NO EJECUTADO** — P1001 `localhost:5433`.
-3. **Scanner DB integration** — `test:gastro-discount-scan` y Activity vs PostgreSQL **NO EJECUTADO**. `test:activity-coupon-scan` PASS = dispatch/unit, no integración DB.
-4. **Admin expired discounts digest** — diferido **Etapa 8** (campañas).
-5. **QA prod V3.2** — cache, roles, auth resend, horarios.
-6. Deploy VPS si commits V3.2/V3.3 no están en prod.
-7. Deuda producto Actividades (no bugs Etapa 7): custom QR Studio, operator self-service, occurrence scoping.
+1. **QA manual / integración global V3.3** — Etapas 1–8 acumuladas (incl. Campañas: opt-in/out, unsubscribe GET/POST, draft, send, cancel, digest, WhatsApp disabled).
+2. **Migración deploy + smoke DB** — `prisma migrate deploy` (acumula Etapa 3–8 incl. `20260831180000_user_marketing_preference`, `20260831190000_admin_campaign_domain`, `20260831200000_admin_operational_digest_log`). **NO EJECUTADO** — P1001 `localhost:5433`.
+3. **Redis integration** — worker `campaign-emails` end-to-end **NO EJECUTADO**.
+4. **Scanner DB integration** — `test:gastro-discount-scan` y Activity vs PostgreSQL **NO EJECUTADO**. `test:activity-coupon-scan` PASS = dispatch/unit, no integración DB.
+5. **SMTP live smoke** — campaña masiva real **NO EJECUTADO** (a propósito).
+6. **QA prod V3.2** — cache, roles, auth resend, horarios.
+7. Deploy VPS si commits V3.2/V3.3 no están en prod.
+8. Deuda producto: custom QR Studio Activity, operator self-service, `CAMPAIGN_COMPLETED` audit, WhatsApp provider adapter, Admin test-send, custom campaign image GCS.
 
 Detalle: `CONTEXT_PENDIENTES.md`.
 
 ---
 
-## 18. Comandos de validación
+## 20. Comandos de validación
 
 ```bash
 pnpm --filter shared run build
@@ -287,6 +329,10 @@ pnpm --filter api run build
 pnpm --filter scanner run build
 pnpm --filter web run build
 pnpm --filter api exec prisma validate
+pnpm --filter api run test:marketing-preferences
+pnpm --filter api run test:admin-campaign-domain
+pnpm --filter api run test:admin-campaign-delivery
+pnpm --filter api run test:admin-expired-benefits-digest
 pnpm --filter api run test:activity-coupon-domain
 pnpm --filter api run test:activity-coupon-ownership
 pnpm --filter api run test:activity-coupon-claim
@@ -313,7 +359,7 @@ pnpm --filter api run test:scanner-manual-short-code
 
 ---
 
-## 19. Próximo paso recomendado
+## 21. Próximo paso recomendado
 
-1. Iniciar **V3.3 Etapa 8 — Campañas Email / WhatsApp** cuando se indique. **No iniciar ahora.**
-2. QA manual + migración DB al cerrar V3.3 globalmente.
+1. Iniciar **V3.3 Etapa 9 — Auditoría Económica / Conciliación** cuando se indique. **No iniciar ahora.**
+2. QA manual + migración DB + Redis/SMTP smokes al cerrar V3.3 globalmente.

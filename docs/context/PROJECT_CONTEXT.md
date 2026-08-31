@@ -147,6 +147,7 @@ Bloque **Descubrimiento público** cerrado en checklist V2. Detalle: `docs/audit
 | Etapa 5 — Descuentos Gastro V3 | Código implementado (`a757c76`…`c91c205`); QA manual + DB smoke pendientes |
 | Etapa 6 — QR Studio | Código implementado (`4f3b07f`…`de4e07d`); QA manual + DB smoke pendientes |
 | Etapa 7 — Actividades + Cupones QR | Código implementado (`01aa1a8`…`a494274`); DB smoke / Scanner DB / QA global pendientes |
+| Etapa 8 — Campañas Email / WhatsApp | Código implementado (`9b4b7b5`…`39a8a0b`); DB smoke / Redis / SMTP live / QA global pendientes |
 | Checklist V3.3 | `docs/dev/Yo_Te_Invito_Checklist_V3_3_Funcional_Operativa.md` |
 | Cierre técnico Etapa 1 | `docs/audits/V3_3_STAGE_1_PUBLIC_MOBILE_CLOSING.md` |
 | Cierre técnico Etapa 2 | `docs/audits/V3_3_STAGE_2_USER_AVATAR_CLOSING.md` |
@@ -159,6 +160,8 @@ Bloque **Descubrimiento público** cerrado en checklist V2. Detalle: `docs/audit
 | Cierre técnico Etapa 6 | `docs/audits/V3_3_STAGE_6_QR_STUDIO_CLOSING.md` |
 | Auditoría Etapa 7 | `docs/audits/V3_3_STAGE_7_ACTIVITY_COUPONS_AUDIT.md` |
 | Cierre técnico Etapa 7 | `docs/audits/V3_3_STAGE_7_ACTIVITY_COUPONS_CLOSING.md` |
+| Auditoría Etapa 8 | `docs/audits/V3_3_STAGE_8_CAMPAIGNS_AUDIT.md` |
+| Cierre técnico Etapa 8 | `docs/audits/V3_3_STAGE_8_CAMPAIGNS_CLOSING.md` |
 | Auth Scanner username | `docs/audits/V3_3_SCANNER_USERNAME_AUTH.md` |
 
 **Decisiones Etapa 1:** rails subcategoría **≥5** (sin autoplay); cards descuento → ficha gastro; `/descuentos/[id]` conservada; OG descuentos; nav mobile Home+Explore; modales centrados; copy público **Actividades** con clave técnica **`excursion`** (`Event.category`, rutas `/excursiones`, API sin cambios).
@@ -175,7 +178,9 @@ Bloque **Descubrimiento público** cerrado en checklist V2. Detalle: `docs/audit
 
 **Etapa 7 — Actividades + Cupones QR:** copy público **Actividades**; técnico `Event.category = excursion`; rutas `/excursiones/*` (sin migrar a `/actividades/*`). `GastroDiscount` ≠ `ActivityCoupon` (no hay `GenericCoupon`). Cadena `Event(excursion)` → N `ActivityCoupon` → N `ActivityCouponClaim` → 0..1 `ActivityCouponValidation` (`claimId` unique). Sin FK a `EventOccurrence` (scope V1 = Event completo). Gestión **ADMIN only**. Claim → QR `yti:activity-coupon:v1:<couponId>:<token>` + short code `XXX-XXX` en `ActivityCouponClaim` (lookup por vertical; nunca first-match Gastro+Activity). Scanner `EXCURSION_OPERATOR` **operator-wide** (`canScannerAccessActivityCoupon`). `/me/descuentos` dos bloques. Metrics issued/used/unused/validations/use rate. Claim EMAIL `ACTIVITY_COUPON_QR` + IN_APP `ACTIVITY_COUPON_CLAIMED`. Custom QR Studio Activity **diferido**. Etapa 7 implementada; DB smoke / Scanner DB integration / QA global pendientes. Migraciones `20260831160000_activity_coupon_domain` + `20260831170000_activity_coupon_claimed_notification` — no aplicadas localmente (P1001). Hardening `a494274`.
 
-**Próxima:** Etapa 8 — Campañas Email / WhatsApp.
+**Etapa 8 — Campañas Email / WhatsApp:** arquitectura **transactional ≠ marketing** — `UserNotificationsService` / cola `emails` no es campaign engine; `NotificationDeliveryLog` no es tabla de campañas. Consent `UserMarketingPreference` (EMAIL/WA por canal; sin fila = no elegible; usuarios existentes sin opt-in por defecto). Unsubscribe token 64 hex; `GET /public/marketing/unsubscribe` read-only; `POST` mutación idempotente; `/baja-promos?token=...`; re-subscribe en `/me/account` → Comunicaciones. Campañas `AdminCampaign` + `AdminCampaignDelivery` (`unique(campaignId,userId,channel)`; `userId` `onDelete: SetNull`). Cola BullMQ `campaign-emails` (attempts 3, backoff 4s, ~4/s, concurrency 2); worker revalida consent/user/content/cancel; template `ADMIN_CAMPAIGN` sin tracking. WhatsApp **provider-ready / envío real NOT CONFIGURED**. Digest operativo vencidos cron **08:20 AR**; no requiere opt-in marketing. Migraciones `20260831180000_user_marketing_preference`, `20260831190000_admin_campaign_domain`, `20260831200000_admin_operational_digest_log` — no aplicadas localmente. Hardening `39a8a0b`.
+
+**Próxima:** Etapa 9 — Auditoría Económica / Conciliación.
 
 ## 5a. Registro y onboarding por tipo de usuario — Estado cerrado (2026-05-24)
 
