@@ -17,6 +17,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../modules/audit/audit.service';
 import { GastroDiscountClaimEmailService } from '../modules/gastro/gastro-discount-claim-email.service';
+import { allocateGastroClaimShortCode } from '../common/gastro-claim-short-code.util';
 
 const PUBLIC_STATUSES = ['APPROVED', 'ACTIVE'] as const;
 
@@ -314,6 +315,7 @@ export class PublicGastroDiscountsService {
         userId: userId ?? null,
         qrToken: randomBytes(24).toString('hex'),
         accessToken: randomBytes(32).toString('hex'),
+        shortCode: await allocateGastroClaimShortCode(this.prisma),
         type: 'PUBLIC_REQUEST',
         source: 'WEB',
         status: 'ACTIVE',

@@ -17,6 +17,7 @@ import type {
   ScannerEventOccurrencesResponse,
 } from '@yo-te-invito/shared';
 import { ErrorCode } from '@yo-te-invito/shared';
+import { ScannerShortCodeService } from './scanner-short-code.service';
 
 function buyerDisplayName(input: {
   order?: { buyerFirstName: string; buyerLastName: string; buyerEmail: string } | null;
@@ -51,6 +52,7 @@ export class ScannerService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly scannerAccounts: ScannerAccountsService,
+    private readonly shortCodes: ScannerShortCodeService,
   ) {}
 
   async getEventTickets(
@@ -145,9 +147,15 @@ export class ScannerService {
     scannerId: string,
     body: ScanBody,
   ): Promise<ScanResponse> {
-    const { eventId, qrPayload, deviceId, occurrenceId } = body;
+    const { eventId, qrPayload: rawQrPayload, deviceId, occurrenceId } = body;
 
     await this.scannerAccounts.assertScannerCanAccessEvent(tenantId, scannerId, eventId);
+
+    const qrPayload = await this.shortCodes.resolveTicketQrPayload(
+      tenantId,
+      eventId,
+      rawQrPayload,
+    );
 
     const event = await this.prisma.event.findFirst({
       where: { id: eventId, tenantId, deletedAt: null },

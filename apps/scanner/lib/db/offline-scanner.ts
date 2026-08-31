@@ -226,6 +226,22 @@ export async function getTicketForEvent(
   return t;
 }
 
+export async function getTicketsForEvent(eventId: string): Promise<StoredTicket[]> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(TICKETS_STORE, 'readonly');
+    const req = tx.objectStore(TICKETS_STORE).index('eventId').getAll(eventId);
+    req.onsuccess = () => {
+      db.close();
+      resolve((req.result as StoredTicket[]) ?? []);
+    };
+    req.onerror = () => {
+      db.close();
+      reject(req.error);
+    };
+  });
+}
+
 export async function markTicketUsed(qrPayload: string): Promise<void> {
   const t = await getTicketByQrPayload(qrPayload);
   if (!t) return;

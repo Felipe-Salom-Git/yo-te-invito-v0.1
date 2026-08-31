@@ -201,6 +201,7 @@ async function main() {
       email: 'approved@gastro-scan.test',
       qrToken: approvedToken,
       accessToken: randomBytes(32).toString('hex'),
+      shortCode: 'TSTAP1',
       expiresAt: expiresToday,
       status: 'ACTIVE',
     },

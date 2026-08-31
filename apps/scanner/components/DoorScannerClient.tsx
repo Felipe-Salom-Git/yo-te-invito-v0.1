@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   classifyQrScanPayload,
+  isManualShortCodeInput,
   parseGastroDiscountQrPayload,
   type ScanResponse,
   type ScannerScanTargetsResponse,
@@ -340,8 +341,10 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
       scanningRef.current = true;
       setQrPayload(trimmed);
       const family = classifyQrScanPayload(trimmed);
+      const shortCode = isManualShortCodeInput(trimmed);
+      const isGastroScan = family === 'gastro-discount' || (shortCode && isGastro);
 
-      if (family === 'gastro-discount') {
+      if (isGastroScan) {
         setLoading(true);
         setLastTicket(null);
         setLastGastro(null);
@@ -354,7 +357,7 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
             });
             return;
           }
-          const parsed = parseGastroDiscountQrPayload(trimmed);
+          const parsed = shortCode ? null : parseGastroDiscountQrPayload(trimmed);
           if (isGastro && selectedDiscountId && parsed?.discountId !== selectedDiscountId) {
             setLastGastro({
               status: 'INVALID',
@@ -724,15 +727,28 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
       ) : (
         <div className="flex flex-col gap-2">
           <label className="text-sm text-slate-400">
-            Código QR (texto)
-            <textarea
+            Código corto o QR completo
+            <input
+              type="text"
               value={qrPayload}
               onChange={(e) => setQrPayload(e.target.value)}
-              placeholder="yti:v1:… o yti:gastro-discount:v1:…"
-              rows={2}
-              className="mt-1 block w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 font-mono text-sm text-white"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && qrPayload.trim() && !loading) {
+                  e.preventDefault();
+                  void processScan(qrPayload);
+                }
+              }}
+              placeholder={isGastro ? 'Ej. K7M-428' : 'Ej. AB12CD34 o pegá el QR completo'}
+              autoComplete="off"
+              autoCapitalize="characters"
+              className="mt-1 block w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-3 font-mono text-base text-white placeholder:text-slate-500"
             />
           </label>
+          <p className="text-xs text-slate-500">
+            {isGastro
+              ? 'Ingresá el código del cupón o pegá el QR completo. Los cupones requieren conexión.'
+              : 'Ingresá el código corto de la entrada o pegá el QR completo. Offline: solo código corto si está en el listado guardado.'}
+          </p>
           <button
             type="button"
             onClick={() => void processScan(qrPayload)}

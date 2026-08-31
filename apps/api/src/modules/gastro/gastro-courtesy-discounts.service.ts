@@ -18,6 +18,7 @@ import { ProfilesAuthorizationService } from '../../common/profiles-authorizatio
 import { AuditService } from '../audit/audit.service';
 import { GastroDiscountClaimEmailService } from './gastro-discount-claim-email.service';
 import { EmailService } from '../../email/email.service';
+import { allocateGastroClaimShortCode } from '../../common/gastro-claim-short-code.util';
 
 const MAX_RECIPIENTS = 200;
 
@@ -340,6 +341,7 @@ export class GastroCourtesyDiscountsService {
           recipientName: recipient.displayName,
           qrToken,
           accessToken: randomBytes(32).toString('hex'),
+          shortCode: await allocateGastroClaimShortCode(this.prisma),
           type: 'COURTESY',
           source: recipient.source,
           status: 'ACTIVE',

@@ -1,6 +1,12 @@
 import type { ScanResponse } from '@yo-te-invito/shared';
 import {
+  isManualShortCodeInput,
+  normalizeManualShortCode,
+  resolveTicketQrPayloadByShortCode,
+} from '@yo-te-invito/shared';
+import {
   getTicketForEvent,
+  getTicketsForEvent,
   markTicketUsed,
   addToScanQueue,
   getSnapshotMeta,
@@ -27,7 +33,7 @@ export type OfflineScanResult = ScanResponse & {
 
 export async function scanOffline(
   eventId: string,
-  qrPayload: string,
+  rawInput: string,
 ): Promise<OfflineScanResult> {
   const meta = await getSnapshotMeta(eventId);
   if (!meta) {
@@ -35,7 +41,22 @@ export async function scanOffline(
   }
 
   const stale = isSnapshotStale(meta);
-  const ticket = await getTicketForEvent(qrPayload.trim(), eventId.trim());
+  let qrPayload = rawInput.trim();
+
+  if (isManualShortCodeInput(qrPayload)) {
+    const code = normalizeManualShortCode(qrPayload);
+    const tickets = await getTicketsForEvent(eventId.trim());
+    const resolved = resolveTicketQrPayloadByShortCode(
+      code,
+      tickets.map((t) => ({ id: t.ticketId, qrPayload: t.qrPayload })),
+    );
+    if (!resolved) {
+      return { result: 'INVALID', offline: true, staleSnapshot: stale };
+    }
+    qrPayload = resolved;
+  }
+
+  const ticket = await getTicketForEvent(qrPayload, eventId.trim());
 
   if (!ticket) {
     return {
@@ -64,8 +85,8 @@ export async function scanOffline(
     };
   }
 
-  await markTicketUsed(qrPayload.trim());
-  await addToScanQueue(qrPayload.trim(), eventId.trim(), getDeviceId());
+  await markTicketUsed(qrPayload);
+  await addToScanQueue(qrPayload, eventId.trim(), getDeviceId());
 
   return {
     result: 'OK',

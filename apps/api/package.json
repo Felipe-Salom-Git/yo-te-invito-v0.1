@@ -34,6 +34,7 @@
     "test:referral-commission": "tsx scripts/test-referral-commission.util.ts",
     "test:referral-payment-requests": "tsx scripts/test-referral-payment-requests.util.ts",
     "test:gastro-discount-qr": "tsx scripts/test-gastro-discount-qr.util.ts",
+    "test:scanner-manual-short-code": "tsx scripts/test-scanner-manual-short-code.util.ts",
     "test:gastro-discount-expiry": "tsx scripts/test-gastro-discount-expiry.util.ts",
     "test:gastro-discount-scan": "tsx scripts/test-gastro-discount-scan.ts",
     "smoke:reviews": "tsx scripts/smoke-reviews-v2.ts",

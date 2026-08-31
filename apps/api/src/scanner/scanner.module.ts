@@ -5,11 +5,17 @@ import { ScannerAccountsModule } from '../modules/scanner-accounts/scanner-accou
 import { TicketsModule } from '../modules/tickets/tickets.module';
 import { ScannerController } from './scanner.controller';
 import { ScannerGastroDiscountService } from './scanner-gastro-discount.service';
+import { ScannerShortCodeService } from './scanner-short-code.service';
 import { ScannerService } from './scanner.service';
 
 @Module({
   imports: [AuthModule, ScannerAccountsModule, TicketsModule],
   controllers: [ScannerController],
-  providers: [ScannerService, ScannerGastroDiscountService, ProfilesAuthorizationService],
+  providers: [
+    ScannerService,
+    ScannerGastroDiscountService,
+    ScannerShortCodeService,
+    ProfilesAuthorizationService,
+  ],
 })
 export class ScannerModule {}

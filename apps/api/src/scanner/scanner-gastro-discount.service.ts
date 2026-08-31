@@ -1,7 +1,10 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import {
+  buildGastroDiscountQrPayload,
   parseGastroDiscountQrPayload,
+  isManualShortCodeInput,
+  normalizeManualShortCode,
   type ValidateGastroDiscountBody,
   type ValidateGastroDiscountResponse,
   type GastroDiscountScanStatus,
@@ -238,7 +241,31 @@ export class ScannerGastroDiscountService {
   ): Promise<ValidateGastroDiscountResponse> {
     await this.assertCanScan(tenantId, userId, userRole);
 
-    const parsed = parseGastroDiscountQrPayload(body.qrPayload);
+    let qrPayloadInput = body.qrPayload.trim();
+    if (isManualShortCodeInput(qrPayloadInput)) {
+      const code = normalizeManualShortCode(qrPayloadInput);
+      const claimByCode = await this.prisma.gastroDiscountClaim.findUnique({
+        where: { shortCode: code },
+        select: { discountId: true, qrToken: true, tenantId: true },
+      });
+      if (!claimByCode || claimByCode.tenantId !== tenantId) {
+        return this.response(
+          'INVALID',
+          'Código inválido',
+          'No encontramos un cupón asociado a este código.',
+        );
+      }
+      if (userRole === Role.SCANNER) {
+        await this.scannerAccounts.assertScannerCanAccessGastroDiscount(
+          tenantId,
+          userId,
+          claimByCode.discountId,
+        );
+      }
+      qrPayloadInput = buildGastroDiscountQrPayload(claimByCode.discountId, claimByCode.qrToken);
+    }
+
+    const parsed = parseGastroDiscountQrPayload(qrPayloadInput);
     if (!parsed) {
       return this.response(
         'INVALID',
