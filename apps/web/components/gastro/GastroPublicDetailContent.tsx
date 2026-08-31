@@ -10,7 +10,7 @@ import { GastroDiscountsSection } from './GastroDiscountsSection';
 import { PublicExternalLinksCard } from '@/components/public/PublicExternalLinksCard';
 import { PublicRelatedLinksCard } from '@/components/public/PublicRelatedLinksCard';
 import { GastroLocationEditorialSection } from './GastroLocationEditorialSection';
-import { GastroContactCard } from './GastroContactCard';
+import { GastroPublicActionCard } from './GastroPublicActionCard';
 import { GastroLocationCard } from './GastroLocationCard';
 import { GastroGallerySection } from './GastroGallerySection';
 import { GastroAboutSection } from './GastroAboutSection';
@@ -109,11 +109,11 @@ export function GastroPublicDetailContent({
         city={location.city}
         province={location.province}
       >
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2">
           <GastroFollowButton
             gastroProfileId={location.id}
             displayName={location.displayName}
-            className="border-white/30 bg-black/40 text-white hover:bg-black/60"
+            className="border-white/20 bg-black/30 text-sm text-white/90 hover:bg-black/50"
           />
           {reviewEventId && reviewCountDisplay > 0 ? (
             <a
@@ -167,7 +167,11 @@ export function GastroPublicDetailContent({
           </div>
 
           <aside className="space-y-4 lg:sticky lg:top-8">
-            <GastroContactCard whatsAppHref={whatsAppHref} />
+            <GastroPublicActionCard
+              whatsAppHref={whatsAppHref}
+              bookingUrl={location.bookingUrl}
+              hasDiscounts={discounts.length > 0}
+            />
             <GastroLocationCard
               name={location.displayName}
               address={location.address}
@@ -179,10 +183,11 @@ export function GastroPublicDetailContent({
               onViewLocation={hasLocation ? onLocationModalOpen : undefined}
             />
             <PublicExternalLinksCard
-              title="Reservas y redes"
+              title="Menú, web y redes"
+              className="border-white/10 bg-white/[0.02] opacity-95"
               menuUrl={location.menuUrl}
               websiteUrl={location.websiteUrl}
-              bookingUrl={location.bookingUrl}
+              bookingUrl={whatsAppHref ? location.bookingUrl : null}
               socialLinks={location.socialLinks}
               contactPhone={location.contactPhone}
               contactEmail={location.contactEmail}

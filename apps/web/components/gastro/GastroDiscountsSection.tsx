@@ -40,7 +40,11 @@ export function GastroDiscountsSection({
   }
 
   return (
-    <section className="rounded-xl border border-accent/30 bg-accent/5 p-5">
+    <section
+      id="gastro-discounts"
+      className="scroll-mt-24 rounded-xl border border-border bg-bg-muted/40 p-5"
+      aria-label="Promociones"
+    >
       <h2 className="text-lg font-semibold text-text">Promociones y descuentos</h2>
       <p className="mt-1 text-sm text-text-muted">
         Reclamá tu código QR gratis y presentalo en el local.
@@ -77,7 +81,7 @@ export function GastroDiscountsSection({
                   </p>
                   <Link
                     href={`/descuentos/${d.id}`}
-                    className="mt-3 inline-block rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-bg hover:opacity-90"
+                    className="mt-3 inline-flex min-h-[44px] items-center justify-center rounded-lg border border-accent/50 bg-accent/10 px-4 py-2 text-sm font-semibold text-accent transition-colors hover:bg-accent/20"
                   >
                     Reclamar QR gratis
                   </Link>

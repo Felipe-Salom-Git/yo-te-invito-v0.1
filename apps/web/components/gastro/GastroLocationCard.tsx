@@ -57,7 +57,7 @@ export function GastroLocationCard({
         <button
           type="button"
           onClick={onViewLocation}
-          className="mt-4 flex min-h-[44px] w-full items-center justify-center rounded-lg border border-border bg-bg px-4 py-2.5 text-sm font-medium text-accent transition-colors hover:border-accent/50 hover:bg-accent/10 sm:w-auto sm:min-h-0 sm:inline-flex"
+          className="mt-4 flex min-h-[44px] w-full items-center justify-center rounded-lg border border-border/80 bg-bg/60 px-4 py-2.5 text-sm font-medium text-text-muted transition-colors hover:border-accent/40 hover:bg-bg hover:text-accent sm:w-auto sm:min-h-0 sm:inline-flex"
         >
           Ver ubicación
         </button>
