@@ -440,6 +440,18 @@ function sampleVariables(templateId: EmailTemplateId): Record<string, unknown> {
         unsubscribeUrl: `${appUrl}/baja-promos?token=${'ab'.repeat(32)}`,
         supportEmail: 'soporte@yoteinvito.club',
       };
+    case 'ADMIN_EXPIRED_BENEFITS_DIGEST':
+      return {
+        digestDate: '2026-08-31',
+        gastroCount: '2',
+        couponCount: '1',
+        gastroLines: '2x1 pizzas\nHappy hour',
+        couponLines: '20% trekking',
+        gastroExtraCount: '0',
+        couponExtraCount: '0',
+        adminUrl: `${appUrl}/admin/gastronomicos`,
+        supportEmail: 'soporte@yoteinvito.club',
+      };
     default:
       return {};
   }

@@ -47,6 +47,7 @@ export const EMAIL_TEMPLATE_IDS = [
   'GASTRO_LIFECYCLE',
   'ACTIVITY_COUPON_QR',
   'ADMIN_CAMPAIGN',
+  'ADMIN_EXPIRED_BENEFITS_DIGEST',
 ] as const;
 
 export type EmailTemplateId = (typeof EMAIL_TEMPLATE_IDS)[number];

@@ -49,6 +49,7 @@ import {
 import { renderGastroLifecycle } from './templates/gastro-lifecycle.template';
 import { renderActivityCouponQr } from './templates/activity-coupon-qr.template';
 import { renderAdminCampaign } from './templates/admin-campaign.template';
+import { renderAdminExpiredBenefitsDigest } from './templates/admin-expired-benefits-digest.template';
 
 export type EmailTemplateRenderer = (
   variables: Record<string, unknown>,
@@ -103,6 +104,7 @@ const REGISTRY: Record<EmailTemplateId, EmailTemplateRenderer> = {
   GASTRO_LIFECYCLE: renderGastroLifecycle,
   ACTIVITY_COUPON_QR: renderActivityCouponQr,
   ADMIN_CAMPAIGN: renderAdminCampaign,
+  ADMIN_EXPIRED_BENEFITS_DIGEST: renderAdminExpiredBenefitsDigest,
 };
 
 export function getEmailTemplateRenderer(

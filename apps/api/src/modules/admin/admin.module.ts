@@ -35,6 +35,7 @@ import { AdminContentLifecycleService } from './admin-content-lifecycle.service'
 import { AdminContentPurgeService } from './admin-content-purge.service';
 import { AdminHotelProfilesService } from './admin-hotel-profiles.service';
 import { AdminDeepDeleteService } from './admin-deep-delete.service';
+import { AdminExpiredBenefitsDigestService } from './admin-expired-benefits-digest.service';
 
 @Module({
   imports: [
@@ -75,6 +76,7 @@ import { AdminDeepDeleteService } from './admin-deep-delete.service';
     AdminContentPurgeService,
     AdminHotelProfilesService,
     AdminDeepDeleteService,
+    AdminExpiredBenefitsDigestService,
   ],
   exports: [AdminContentLifecycleService],
 })

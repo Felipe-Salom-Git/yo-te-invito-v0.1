@@ -37,6 +37,7 @@ const INTERNAL_OPERATIONAL_TEMPLATE_IDS: ReadonlySet<EmailTemplateId> = new Set(
   'ADMIN_EMAIL_DELIVERY_FAILED',
   'ADMIN_SCANNER_CRITICAL_ERROR',
   'ADMIN_STORAGE_UPLOAD_FAILED',
+  'ADMIN_EXPIRED_BENEFITS_DIGEST',
 ]);
 
 export function isInternalOperationalEmailTemplate(templateId: string): boolean {

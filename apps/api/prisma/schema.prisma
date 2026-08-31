@@ -271,6 +271,7 @@ model Tenant {
   userMarketingPreferences      UserMarketingPreference[]
   adminCampaigns                AdminCampaign[]
   adminCampaignDeliveries       AdminCampaignDelivery[]
+  adminOperationalDigestLogs    AdminOperationalDigestLog[]
 }
 
 model RentalLocation {
@@ -822,6 +823,7 @@ model User {
   marketingPreference           UserMarketingPreference?
   adminCampaignsCreated         AdminCampaign[]         @relation("AdminCampaignCreator")
   adminCampaignDeliveries       AdminCampaignDelivery[] @relation("AdminCampaignDeliveryRecipient")
+  adminOperationalDigestLogs    AdminOperationalDigestLog[] @relation("AdminOperationalDigestRecipient")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -941,6 +943,22 @@ model AdminCampaignDelivery {
   @@unique([campaignId, userId, channel])
   @@index([tenantId, campaignId, status])
   @@index([campaignId, status])
+}
+
+/// Operational Admin digest (expired benefits). Not marketing; no opt-in required.
+model AdminOperationalDigestLog {
+  id               String   @id @default(cuid())
+  tenantId         String
+  kind             String
+  digestKey        String
+  recipientUserId  String?
+  createdAt        DateTime @default(now())
+
+  tenant    Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  recipient User?  @relation("AdminOperationalDigestRecipient", fields: [recipientUserId], references: [id], onDelete: SetNull)
+
+  @@unique([tenantId, kind, digestKey, recipientUserId])
+  @@index([tenantId, kind, digestKey])
 }
 
 enum EventStatus {

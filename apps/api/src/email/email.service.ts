@@ -48,7 +48,8 @@ export class EmailService {
       });
 
       const isAdminOperational =
-        options.templateId.startsWith('ADMIN_') && options.templateId !== 'ADMIN_CAMPAIGN';
+        options.templateId.startsWith('ADMIN_') &&
+        options.templateId !== 'ADMIN_CAMPAIGN';
       const to =
         options.to?.trim() ||
         (isAdminOperational ? resolveMailOperationsTo() : undefined);
