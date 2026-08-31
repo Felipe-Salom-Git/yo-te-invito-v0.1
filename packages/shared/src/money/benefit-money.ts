@@ -29,6 +29,25 @@ export function moneyCentsToString(value: bigint): string {
   return value.toString();
 }
 
+/** Signed cents for ledger entries (credits positive, debits/reversals negative). */
+export const signedMoneyCentsStringSchema = z
+  .string()
+  .regex(/^-?\d+$/, 'signed money cents must be an integer string');
+
+export type SignedMoneyCentsString = z.infer<typeof signedMoneyCentsStringSchema>;
+
+export function parseSignedMoneyCentsString(value: string): bigint {
+  const parsed = signedMoneyCentsStringSchema.safeParse(value);
+  if (!parsed.success) {
+    throw new Error('invalid signed money cents string');
+  }
+  return BigInt(parsed.data);
+}
+
+export function signedMoneyCentsToString(value: bigint): string {
+  return value.toString();
+}
+
 export function assertPositiveMoneyCentsString(value: string): bigint {
   const cents = parseMoneyCentsString(value);
   if (cents <= 0n) {

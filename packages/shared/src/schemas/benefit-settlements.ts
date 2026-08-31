@@ -88,6 +88,8 @@ export const benefitSettlementSummarySchema = z.object({
   cashCollectionStatus: z.enum(BENEFIT_CASH_COLLECTION_STATUSES),
   transferCount: z.number().int(),
   barterCreditPreviewCents: moneyCentsStringSchema.optional(),
+  barterCreditExpectedCents: moneyCentsStringSchema.optional(),
+  barterCreditMaterializedCents: moneyCentsStringSchema.optional(),
 });
 
 export type BenefitSettlementSummary = z.infer<typeof benefitSettlementSummarySchema>;

@@ -674,3 +674,66 @@ Modelo A: `reversedAt`, `reversedByUserId`, `reversalReason` en `BenefitSettleme
 ---
 
 **STOP slice 9.3** — siguiente paso: slice 9.4 ledger.
+
+---
+
+## 26. Slice 9.4 implementation decisions
+
+**Fecha:** 2026-08-31  
+**Commit:** `feat(v3.3): add courtesy credit ledger`
+
+### Ledger model
+
+`CourtesyCreditLedgerEntry` append-only. Montos **signed** (`BigInt`): créditos positivos, débitos/reversals negativos. Saldo = `SUM(amountCents)` por tenant + vertical + partner + currency.
+
+### Partner strategy
+
+FK real XOR: `gastroProfileId` (GASTRO) / `excursionOperatorId` (ACTIVITY). Sin `partnerId` polimórfico. `onDelete: Restrict`.
+
+### BARTER calculation
+
+`creditAmountCents = roundBarterCreditCents(baseAmountCents, barterMultiplier)` desde snapshot de allocation. No consulta acuerdo actual.
+
+### Materialization
+
+Nueva allocation `BARTER` → `CREDIT_FROM_SETTLEMENT` en la misma transacción que `allocate()`. CASH no genera crédito. Actor Admin de allocation → audit `BENEFIT_CREDIT_MATERIALIZED`.
+
+### Pre-existing BARTER allocations
+
+Script idempotente: `pnpm --filter api run benefit-settlements:materialize-barter-credits`. `createdByUserId = null` en reconciliación migratoria (sin actor fabricado).
+
+### Idempotency
+
+Partial unique: `sourceAllocationId` WHERE `type = CREDIT_FROM_SETTLEMENT`. Retry → retorna entry existente.
+
+### Balance
+
+`getPartnerBalance`: `SUM(entries)`. `creditGeneratedCents` vs `balanceAvailableCents` separados semánticamente (en 9.4 coinciden; 9.5 divergirán con debits).
+
+### Adjustments
+
+`POST /admin/courtesy-credit-ledger/adjustments` — `ADJUSTMENT` con reason obligatorio. Negativo rechazado si balance resultante &lt; 0.
+
+### Reversals
+
+Nueva row `REVERSAL` con `reversalOfEntryId` (unique). Original intacto. Solo entries positivas reversibles. Doble reversión → `BENEFIT_CREDIT_ALREADY_REVERSED`.
+
+### Negative balance
+
+Protegido en adjustment y reversal via `Serializable` + `FOR UPDATE` en partner row.
+
+### Settlement summary
+
+`barterCreditExpectedCents` (snapshot) + `barterCreditMaterializedCents` (ledger net por allocations). `barterCreditPreviewCents` preservado.
+
+### Drift detection
+
+Helper `detectBarterCreditDrift()` en shared — allocation sin crédito, duplicados, mismatch de monto.
+
+### API
+
+`GET /admin/courtesy-credit-ledger`, `GET .../balance`, `POST .../adjustments`, `POST .../:entryId/reverse`.
+
+---
+
+**STOP slice 9.4** — siguiente paso: slice 9.5 courtesy consumption.

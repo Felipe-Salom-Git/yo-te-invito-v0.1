@@ -34,6 +34,7 @@ import { MarketingPreferencesModule } from './modules/marketing-preferences/mark
 import { AdminCampaignsModule } from './modules/admin-campaigns/admin-campaigns.module';
 import { BenefitAgreementsModule } from './modules/benefit-agreements/benefit-agreements.module';
 import { BenefitSettlementsModule } from './modules/benefit-settlements/benefit-settlements.module';
+import { CourtesyCreditLedgerModule } from './modules/courtesy-credit-ledger/courtesy-credit-ledger.module';
 
 @Module({
   imports: [
@@ -72,6 +73,7 @@ import { BenefitSettlementsModule } from './modules/benefit-settlements/benefit-
     AdminCampaignsModule,
     BenefitAgreementsModule,
     BenefitSettlementsModule,
+    CourtesyCreditLedgerModule,
   ],
 })
 export class AppModule {}

@@ -35,6 +35,7 @@ import {
   BenefitSettlementEligibilityService,
   type PricedEligibleValidation,
 } from './benefit-settlement-eligibility.service';
+import { CourtesyCreditLedgerService } from '../courtesy-credit-ledger/courtesy-credit-ledger.service';
 
 type SettlementRow = BenefitSettlement & {
   gastroProfile?: { displayName: string } | null;
@@ -49,6 +50,7 @@ export class BenefitSettlementsService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly eligibility: BenefitSettlementEligibilityService,
+    private readonly courtesyLedger: CourtesyCreditLedgerService,
   ) {}
 
   async list(tenantId: string, query: BenefitSettlementsListQuery) {
@@ -237,10 +239,33 @@ export class BenefitSettlementsService {
     try {
       const result = await this.prisma.$transaction(async (tx) => {
         const created: BenefitSettlementUsageAllocation[] = [];
+        const materializedCredits: Array<{ entryId: string; allocationId: string; amountCents: string }> =
+          [];
         for (const usage of selected) {
           const allocation = await tx.benefitSettlementUsageAllocation.create({
             data: this.allocationData(tenantId, row.id, usage, body.mode, actor.id),
           });
+          if (body.mode === 'BARTER') {
+            const { entry, created: creditCreated } =
+              await this.courtesyLedger.materializeBarterCreditForAllocation(tx, {
+                tenantId,
+                settlement: {
+                  vertical: row.vertical,
+                  gastroProfileId: row.gastroProfileId,
+                  excursionOperatorId: row.excursionOperatorId,
+                  currency: allocation.currency,
+                },
+                allocation,
+                actorId: actor.id,
+              });
+            if (creditCreated) {
+              materializedCredits.push({
+                entryId: entry.id,
+                allocationId: allocation.id,
+                amountCents: moneyCentsToString(entry.amountCents),
+              });
+            }
+          }
           created.push(allocation);
         }
 
@@ -273,7 +298,7 @@ export class BenefitSettlementsService {
           },
         });
 
-        return { updated, created };
+        return { updated, created, materializedCredits };
       });
 
       await this.audit.logAction({
@@ -285,6 +310,22 @@ export class BenefitSettlementsService {
         entityId: result.updated.id,
         metadata: { mode: body.mode, count: body.count },
       });
+
+      for (const credit of result.materializedCredits) {
+        await this.audit.logAction({
+          tenantId,
+          actorId: actor.id,
+          actorRole: actor.role,
+          action: 'BENEFIT_CREDIT_MATERIALIZED',
+          entityType: 'CourtesyCreditLedgerEntry',
+          entityId: credit.entryId,
+          metadata: {
+            settlementId: result.updated.id,
+            allocationId: credit.allocationId,
+            amountCents: credit.amountCents,
+          },
+        });
+      }
 
       return {
         settlement: await this.toDto(tenantId, result.updated),
@@ -407,6 +448,10 @@ export class BenefitSettlementsService {
       );
     }
 
+    const barterCreditMaterialized = await this.courtesyLedger.sumMaterializedCreditForAllocations(
+      barterAllocations.map((a) => a.id),
+    );
+
     return {
       eligibleUsageCount: eligibleAll.length,
       allocatedCashCount: cashAllocations.length,
@@ -424,7 +469,11 @@ export class BenefitSettlementsService {
       cashCollectionStatus: deriveCashCollectionStatus(cashDueCents, cashReceivedCents),
       transferCount: activeTransferCount,
       ...(barterAllocations.length > 0
-        ? { barterCreditPreviewCents: moneyCentsToString(barterCreditPreview) }
+        ? {
+            barterCreditPreviewCents: moneyCentsToString(barterCreditPreview),
+            barterCreditExpectedCents: moneyCentsToString(barterCreditPreview),
+            barterCreditMaterializedCents: moneyCentsToString(barterCreditMaterialized),
+          }
         : {}),
     };
   }

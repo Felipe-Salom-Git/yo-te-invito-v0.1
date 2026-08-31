@@ -81,6 +81,9 @@ export const auditActionSchema = z.enum([
   'BENEFIT_SETTLEMENT_CLOSED',
   'BENEFIT_TRANSFER_REGISTERED',
   'BENEFIT_TRANSFER_REVERSED',
+  'BENEFIT_CREDIT_MATERIALIZED',
+  'BENEFIT_CREDIT_ADJUSTED',
+  'BENEFIT_CREDIT_REVERSED',
 ]);
 export type AuditActionValue = z.infer<typeof auditActionSchema>;
 

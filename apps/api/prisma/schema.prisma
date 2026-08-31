@@ -276,6 +276,7 @@ model Tenant {
   benefitSettlements            BenefitSettlement[]
   benefitSettlementUsageAllocations BenefitSettlementUsageAllocation[]
   benefitSettlementTransfers          BenefitSettlementTransfer[]
+  courtesyCreditLedgerEntries         CourtesyCreditLedgerEntry[]
 }
 
 model RentalLocation {
@@ -334,6 +335,7 @@ model ExcursionOperator {
   activityCoupons ActivityCoupon[]
   benefitCommercialAgreements BenefitCommercialAgreement[]
   benefitSettlements          BenefitSettlement[]
+  courtesyCreditLedgerEntries CourtesyCreditLedgerEntry[]
 
   @@index([tenantId])
   @@index([tenantId, isActive])
@@ -430,6 +432,7 @@ model GastroProfile {
   courtesyCampaigns GastroCourtesyCampaign[]
   benefitCommercialAgreements BenefitCommercialAgreement[]
   benefitSettlements          BenefitSettlement[]
+  courtesyCreditLedgerEntries CourtesyCreditLedgerEntry[]
 
   @@index([tenantId])
   @@index([tenantId, status])
@@ -835,6 +838,7 @@ model User {
   benefitSettlementAllocationsCreated BenefitSettlementUsageAllocation[] @relation("BenefitSettlementAllocator")
   benefitSettlementTransfersRegistered BenefitSettlementTransfer[] @relation("BenefitSettlementTransferRegistrar")
   benefitSettlementTransfersReversed BenefitSettlementTransfer[] @relation("BenefitSettlementTransferReverser")
+  courtesyCreditLedgerEntriesCreated CourtesyCreditLedgerEntry[] @relation("CourtesyCreditLedgerCreator")
   adminCampaignDeliveries       AdminCampaignDelivery[] @relation("AdminCampaignDeliveryRecipient")
   adminOperationalDigestLogs    AdminOperationalDigestLog[] @relation("AdminOperationalDigestRecipient")
 
@@ -960,6 +964,7 @@ model BenefitSettlementUsageAllocation {
   settlement BenefitSettlement          @relation(fields: [settlementId], references: [id], onDelete: Restrict)
   agreement  BenefitCommercialAgreement @relation(fields: [agreementId], references: [id], onDelete: Restrict)
   allocatedBy User?                     @relation("BenefitSettlementAllocator", fields: [allocatedByUserId], references: [id], onDelete: SetNull)
+  courtesyCreditFromSettlement CourtesyCreditLedgerEntry? @relation("AllocationSettlementCredit")
 
   @@unique([validationSource, validationId])
   @@index([tenantId, settlementId])
@@ -989,6 +994,42 @@ model BenefitSettlementTransfer {
 
   @@index([tenantId, settlementId])
   @@index([settlementId, reversedAt])
+}
+
+enum CourtesyCreditLedgerEntryType {
+  CREDIT_FROM_SETTLEMENT
+  DEBIT_COURTESY
+  ADJUSTMENT
+  REVERSAL
+}
+
+model CourtesyCreditLedgerEntry {
+  id                  String                        @id @default(cuid())
+  tenantId            String
+  vertical            BenefitVertical
+  gastroProfileId     String?
+  excursionOperatorId String?
+  type                CourtesyCreditLedgerEntryType
+  amountCents         BigInt
+  currency            String                        @default("ARS")
+  sourceAllocationId  String?                       @unique
+  reversalOfEntryId   String?                       @unique
+  adjustmentReason    String?
+  createdByUserId     String?
+  createdAt           DateTime                      @default(now())
+
+  tenant            Tenant                           @relation(fields: [tenantId], references: [id])
+  gastroProfile     GastroProfile?                   @relation(fields: [gastroProfileId], references: [id], onDelete: Restrict)
+  excursionOperator ExcursionOperator?               @relation(fields: [excursionOperatorId], references: [id], onDelete: Restrict)
+  sourceAllocation  BenefitSettlementUsageAllocation? @relation("AllocationSettlementCredit", fields: [sourceAllocationId], references: [id], onDelete: Restrict)
+  reversalOfEntry   CourtesyCreditLedgerEntry?       @relation("CourtesyCreditReversal", fields: [reversalOfEntryId], references: [id], onDelete: Restrict)
+  reversalEntry     CourtesyCreditLedgerEntry?       @relation("CourtesyCreditReversal")
+  createdBy         User?                            @relation("CourtesyCreditLedgerCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, vertical, gastroProfileId, currency])
+  @@index([tenantId, vertical, excursionOperatorId, currency])
+  @@index([tenantId, createdAt])
+  @@index([sourceAllocationId])
 }
 
 enum AdminCampaignStatus {
@@ -2439,6 +2480,9 @@ enum AuditAction {
   BENEFIT_SETTLEMENT_CLOSED
   BENEFIT_TRANSFER_REGISTERED
   BENEFIT_TRANSFER_REVERSED
+  BENEFIT_CREDIT_MATERIALIZED
+  BENEFIT_CREDIT_ADJUSTED
+  BENEFIT_CREDIT_REVERSED
 }
 
 /// Scanner user bound to one parent commercial account (tenant-scoped).

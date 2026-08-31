@@ -110,6 +110,8 @@ export * from './benefit-commercial-agreements';
 export * from './schemas/benefit-commercial-agreements';
 export * from './benefit-settlement';
 export * from './schemas/benefit-settlements';
+export * from './courtesy-credit-ledger';
+export * from './schemas/courtesy-credit-ledger';
 export * from './campaign-email-delivery';
 export * from './campaign-whatsapp';
 export * from './expired-benefits-digest';
