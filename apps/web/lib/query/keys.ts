@@ -369,6 +369,17 @@ export const adminLegalDocumentsKeys = {
   versions: (key: string) => [...adminLegalDocumentsKeys.all, 'versions', key] as const,
 };
 
+export const adminCampaignsKeys = {
+  all: ['admin', 'campaigns'] as const,
+  list: (filtersKey: string) => [...adminCampaignsKeys.all, 'list', filtersKey] as const,
+  detail: (id: string) => [...adminCampaignsKeys.all, 'detail', id] as const,
+  preview: (id: string) => [...adminCampaignsKeys.all, 'preview', id] as const,
+  deliveries: (id: string, filtersKey: string) =>
+    [...adminCampaignsKeys.all, 'deliveries', id, filtersKey] as const,
+  contentPicker: (contentType: string, q: string) =>
+    [...adminCampaignsKeys.all, 'picker', contentType, q] as const,
+};
+
 export const publicLegalDocumentsKeys = {
   all: ['public', 'legal'] as const,
   bySlug: (tenantId: string, slug: string) =>

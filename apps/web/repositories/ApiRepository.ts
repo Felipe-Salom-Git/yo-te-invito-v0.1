@@ -1643,6 +1643,27 @@ export class ApiRepository implements Repositories {
     },
   };
 
+  adminCampaigns: import('./interfaces').AdminCampaignsRepo = {
+    list: async (query) =>
+      this.client.get('/admin/campaigns', query as Record<string, string | number | boolean | undefined>),
+    get: async (id) => this.client.get(`/admin/campaigns/${encodeURIComponent(id)}`),
+    create: async (body) => this.client.post('/admin/campaigns', body),
+    update: async (id, body) =>
+      this.client.patch(`/admin/campaigns/${encodeURIComponent(id)}`, body),
+    preview: async (id) => this.client.get(`/admin/campaigns/${encodeURIComponent(id)}/preview`),
+    send: async (id) => this.client.post(`/admin/campaigns/${encodeURIComponent(id)}/send`),
+    cancel: async (id) => this.client.post(`/admin/campaigns/${encodeURIComponent(id)}/cancel`),
+    archive: async (id) => this.client.post(`/admin/campaigns/${encodeURIComponent(id)}/archive`),
+    removeDraft: async (id) => this.client.delete(`/admin/campaigns/${encodeURIComponent(id)}`),
+    listDeliveries: async (id, query) =>
+      this.client.get(
+        `/admin/campaigns/${encodeURIComponent(id)}/deliveries`,
+        query as Record<string, string | number | boolean | undefined>,
+      ),
+    listContentPicker: async (query) =>
+      this.client.get('/admin/campaigns/content-picker', query),
+  };
+
   adminUsers: import('./interfaces').AdminUsersRepo = {
     list: async (query) => {
       return this.client.get<import('./interfaces').AdminUsersListResponse>(

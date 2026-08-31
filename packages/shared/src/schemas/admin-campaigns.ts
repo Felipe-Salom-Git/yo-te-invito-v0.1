@@ -115,6 +115,15 @@ export const adminCampaignDeliveriesQuerySchema = z.object({
 
 export type AdminCampaignDeliveriesQuery = z.infer<typeof adminCampaignDeliveriesQuerySchema>;
 
+export const adminCampaignContentPickerQuerySchema = z.object({
+  contentType: z.enum(ADMIN_CAMPAIGN_CONTENT_TYPES),
+  q: z.string().trim().max(80).optional(),
+});
+
+export type AdminCampaignContentPickerQuery = z.infer<
+  typeof adminCampaignContentPickerQuerySchema
+>;
+
 export function canonicalCampaignContentPath(
   contentType: AdminCampaignContentType,
   contentId: string,

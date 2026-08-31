@@ -18,6 +18,7 @@ import {
   type AdminCampaignAudienceFilter,
   type AdminCampaignsListQuery,
   type AdminCampaignDeliveriesQuery,
+  type AdminCampaignContentType,
   type CreateAdminCampaignBody,
   type UpdateAdminCampaignBody,
 } from '@yo-te-invito/shared';
@@ -56,6 +57,15 @@ export class AdminCampaignsService {
       }),
     ]);
     return { total, page: query.page, pageSize: query.pageSize, data: rows.map((r) => this.summary(r)) };
+  }
+
+  async listContentPicker(
+    tenantId: string,
+    contentType: AdminCampaignContentType,
+    q?: string,
+  ) {
+    const data = await this.content.listPicker(tenantId, contentType, q);
+    return { data, whatsappConfigured: isWhatsAppCampaignProviderConfigured() };
   }
 
   async get(tenantId: string, id: string) {

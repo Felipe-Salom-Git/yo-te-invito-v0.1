@@ -11,10 +11,12 @@ import {
 } from '@nestjs/common';
 import {
   Role,
+  adminCampaignContentPickerQuerySchema,
   adminCampaignDeliveriesQuerySchema,
   adminCampaignsListQuerySchema,
   createAdminCampaignBodySchema,
   updateAdminCampaignBodySchema,
+  type AdminCampaignContentPickerQuery,
   type AdminCampaignDeliveriesQuery,
   type AdminCampaignsListQuery,
   type CreateAdminCampaignBody,
@@ -47,6 +49,15 @@ export class AdminCampaignsController {
     @Body(new ZodValidationPipe(createAdminCampaignBodySchema)) body: CreateAdminCampaignBody,
   ) {
     return this.campaigns.create(user.tenantId, user, body);
+  }
+
+  @Get('content-picker')
+  contentPicker(
+    @CurrentUser() user: { tenantId: string },
+    @Query(new ZodValidationPipe(adminCampaignContentPickerQuerySchema))
+    query: AdminCampaignContentPickerQuery,
+  ) {
+    return this.campaigns.listContentPicker(user.tenantId, query.contentType, query.q);
   }
 
   @Get(':id/preview')

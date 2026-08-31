@@ -3161,6 +3161,108 @@ export interface GeoRepo {
   ): Promise<import('@yo-te-invito/shared').ResolveAddressResponse>;
 }
 
+export type AdminCampaignSummary = {
+  id: string;
+  status: string;
+  channel: string;
+  contentType: string;
+  contentId: string;
+  audienceKind: string;
+  audienceFilter: { city?: string; category?: string } | null;
+  subject: string;
+  headline: string;
+  body: string;
+  ctaLabel: string;
+  ctaUrl: string | null;
+  queuedCount: number;
+  sentCount: number;
+  skippedCount: number;
+  failedCount: number;
+  startedAt: string | null;
+  completedAt: string | null;
+  cancelRequestedAt: string | null;
+  archivedAt: string | null;
+  createdAt: string;
+  createdByUserId: string | null;
+  whatsappConfigured: boolean;
+  contentSnapshot: {
+    title?: string;
+    benefit?: string | null;
+    canonicalUrl?: string;
+    imageUrl?: string | null;
+  } | null;
+};
+
+export type AdminCampaignPreview = {
+  campaignId: string;
+  channel: string;
+  content: {
+    title: string;
+    benefit: string | null;
+    canonicalUrl: string;
+    imageUrl: string | null;
+  };
+  subject: string;
+  headline: string;
+  body: string;
+  ctaLabel: string;
+  ctaUrl: string;
+  audienceKind: string;
+  eligibleCount: number;
+  whatsappConfigured: boolean;
+};
+
+export type AdminCampaignDeliveryRow = {
+  id: string;
+  status: string;
+  channel: string;
+  skipReason: string | null;
+  errorCode: string | null;
+  targetHint: string | null;
+  queuedAt: string;
+  processedAt: string | null;
+};
+
+export interface AdminCampaignsRepo {
+  list(query?: {
+    status?: string;
+    channel?: string;
+    page?: number;
+    pageSize?: number;
+  }): Promise<{
+    total: number;
+    page: number;
+    pageSize: number;
+    data: AdminCampaignSummary[];
+  }>;
+  get(id: string): Promise<AdminCampaignSummary>;
+  create(
+    body: import('@yo-te-invito/shared').CreateAdminCampaignBody,
+  ): Promise<AdminCampaignSummary>;
+  update(
+    id: string,
+    body: import('@yo-te-invito/shared').UpdateAdminCampaignBody,
+  ): Promise<AdminCampaignSummary>;
+  preview(id: string): Promise<AdminCampaignPreview>;
+  send(id: string): Promise<AdminCampaignSummary>;
+  cancel(id: string): Promise<AdminCampaignSummary>;
+  archive(id: string): Promise<AdminCampaignSummary>;
+  removeDraft(id: string): Promise<{ ok: true }>;
+  listDeliveries(
+    id: string,
+    query?: { status?: string; page?: number; pageSize?: number },
+  ): Promise<{
+    total: number;
+    page: number;
+    pageSize: number;
+    data: AdminCampaignDeliveryRow[];
+  }>;
+  listContentPicker(query: {
+    contentType: string;
+    q?: string;
+  }): Promise<{ data: Array<{ id: string; title: string; benefit: string | null }>; whatsappConfigured: boolean }>;
+}
+
 export interface Repositories {
   auth: AuthRepo;
   uploads: UploadsRepo;
@@ -3201,6 +3303,7 @@ export interface Repositories {
   adminUsers: AdminUsersRepo;
   adminDeepDelete: AdminDeepDeleteRepo;
   adminPayments: AdminPaymentsRepo;
+  adminCampaigns: AdminCampaignsRepo;
   legalDocuments: LegalDocumentsRepo;
   producerDashboard: ProducerDashboardRepo;
   producers: ProducersRepo;

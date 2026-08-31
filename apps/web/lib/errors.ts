@@ -23,6 +23,12 @@ const ERROR_CODE_MESSAGES: Record<string, string> = {
   OCCURRENCE_REQUIRED: 'Seleccioná para qué fecha es esta entrada.',
   USER_DELETE_BLOCKED:
     'No se puede eliminar este usuario porque tiene publicaciones o historial asociado.',
+  CAMPAIGN_CONTENT_NOT_ELIGIBLE: 'Ese contenido ya no se puede promocionar.',
+  CAMPAIGN_ALREADY_SENDING: 'La campaña ya se está enviando o no está en borrador.',
+  CAMPAIGN_NOT_EDITABLE: 'Esta campaña no se puede editar o cancelar en su estado actual.',
+  CAMPAIGN_INVALID_CTA: 'El enlace del botón debe ser HTTPS.',
+  CAMPAIGN_QUEUE_UNAVAILABLE: 'La cola de envío no está disponible. Probá más tarde.',
+  WHATSAPP_PROVIDER_NOT_CONFIGURED: 'WhatsApp no está configurado. No se puede enviar por ese canal.',
 };
 
 export function isApiNotFoundError(err: unknown): boolean {
