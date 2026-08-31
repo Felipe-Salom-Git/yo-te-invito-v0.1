@@ -186,3 +186,66 @@ export function runBarterCreditDriftCheck(params: {
     }),
   );
 }
+
+export function benefitValidationAllocationKey(
+  validationSource: string,
+  validationId: string,
+): string {
+  return `${validationSource}:${validationId}`;
+}
+
+export function checkOrphanAllocation(params: {
+  allocationId: string;
+  validationSource: string;
+  validationId: string;
+  validationExists: boolean;
+}): BenefitIntegrityIssue | null {
+  if (params.validationExists) return null;
+  return {
+    code: 'ORPHAN_ALLOCATION',
+    severity: 'ERROR',
+    message: `Allocation referencia una validación inexistente (${params.validationSource})`,
+    entityType: 'BenefitSettlementUsageAllocation',
+    entityId: params.allocationId,
+  };
+}
+
+export function checkPartnerMismatchAllocation(params: {
+  allocationId: string;
+  settlementVertical: 'GASTRO' | 'ACTIVITY';
+  settlementGastroProfileId: string | null;
+  settlementExcursionOperatorId: string | null;
+  validationGastroProfileId: string | null;
+  validationExcursionOperatorId: string | null;
+}): BenefitIntegrityIssue | null {
+  if (params.settlementVertical === 'GASTRO') {
+    if (
+      params.validationGastroProfileId != null &&
+      params.settlementGastroProfileId != null &&
+      params.validationGastroProfileId !== params.settlementGastroProfileId
+    ) {
+      return {
+        code: 'PARTNER_MISMATCH',
+        severity: 'ERROR',
+        message: 'La validación asignada pertenece a otro partner gastronómico',
+        entityType: 'BenefitSettlementUsageAllocation',
+        entityId: params.allocationId,
+      };
+    }
+    return null;
+  }
+  if (
+    params.validationExcursionOperatorId != null &&
+    params.settlementExcursionOperatorId != null &&
+    params.validationExcursionOperatorId !== params.settlementExcursionOperatorId
+  ) {
+    return {
+      code: 'PARTNER_MISMATCH',
+      severity: 'ERROR',
+      message: 'La validación asignada pertenece a otro operador',
+      entityType: 'BenefitSettlementUsageAllocation',
+      entityId: params.allocationId,
+    };
+  }
+  return null;
+}

@@ -22,6 +22,7 @@ async function main() {
   }
 
   const settlements = await prisma.benefitSettlement.findMany({
+    where: { tenantId },
     include: { allocations: true, transfers: true },
     take: 500,
   });
@@ -65,6 +66,7 @@ async function main() {
     if (partnerScope) {
       const entries = await prisma.courtesyCreditLedgerEntry.findMany({
         where: {
+          tenantId: row.tenantId,
           vertical: row.vertical,
           gastroProfileId: partnerScope.gastroProfileId,
           excursionOperatorId: partnerScope.excursionOperatorId,

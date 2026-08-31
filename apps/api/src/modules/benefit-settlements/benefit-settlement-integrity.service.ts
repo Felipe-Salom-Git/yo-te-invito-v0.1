@@ -10,6 +10,8 @@ import {
   checkClosedWithPendingUsages,
   checkCurrencyMismatch,
   checkNegativeCourtesyBalance,
+  checkOrphanAllocation,
+  checkPartnerMismatchAllocation,
   runBarterCreditDriftCheck,
 } from '@yo-te-invito/shared';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -29,6 +31,8 @@ type SettlementIntegrityRow = {
   };
   allocations: Array<{
     id: string;
+    validationSource: string;
+    validationId: string;
     mode: string;
     baseAmountCents: bigint;
     barterMultiplier: { toString(): string };
@@ -122,6 +126,8 @@ export class BenefitSettlementIntegrityService {
     );
     if (barterDrift) issues.push(barterDrift);
 
+    issues.push(...(await this.checkAllocationLogicalIntegrity(tenantId, row)));
+
     const barterAllocationIds = row.allocations
       .filter((a) => a.mode === 'BARTER')
       .map((a) => a.id);
@@ -187,5 +193,90 @@ export class BenefitSettlementIntegrityService {
       return { gastroProfileId: null, excursionOperatorId: row.excursionOperatorId };
     }
     return null;
+  }
+
+  private async checkAllocationLogicalIntegrity(
+    tenantId: string,
+    row: SettlementIntegrityRow,
+  ): Promise<BenefitIntegrityIssue[]> {
+    const issues: BenefitIntegrityIssue[] = [];
+    if (!row.allocations.length) return issues;
+
+    const gastroIds = row.allocations
+      .filter((a) => a.validationSource === 'GASTRO_DISCOUNT_VALIDATION')
+      .map((a) => a.validationId);
+    const activityIds = row.allocations
+      .filter((a) => a.validationSource === 'ACTIVITY_COUPON_VALIDATION')
+      .map((a) => a.validationId);
+
+    const [gastroRows, activityRows] = await Promise.all([
+      gastroIds.length
+        ? this.prisma.gastroDiscountValidation.findMany({
+            where: { id: { in: gastroIds } },
+            select: {
+              id: true,
+              discount: { select: { gastroProfileId: true } },
+            },
+          })
+        : Promise.resolve([]),
+      activityIds.length
+        ? this.prisma.activityCouponValidation.findMany({
+            where: { id: { in: activityIds } },
+            select: {
+              id: true,
+              coupon: { select: { excursionOperatorId: true } },
+            },
+          })
+        : Promise.resolve([]),
+    ]);
+
+    const gastroMap = new Map(
+      gastroRows.map((v) => [v.id, v.discount.gastroProfileId] as const),
+    );
+    const activityMap = new Map(
+      activityRows.map((v) => [v.id, v.coupon.excursionOperatorId] as const),
+    );
+
+    for (const allocation of row.allocations) {
+      if (allocation.validationSource === 'GASTRO_DISCOUNT_VALIDATION') {
+        const partnerId = gastroMap.get(allocation.validationId);
+        const orphan = checkOrphanAllocation({
+          allocationId: allocation.id,
+          validationSource: allocation.validationSource,
+          validationId: allocation.validationId,
+          validationExists: partnerId != null,
+        });
+        if (orphan) issues.push(orphan);
+        const mismatch = checkPartnerMismatchAllocation({
+          allocationId: allocation.id,
+          settlementVertical: row.vertical,
+          settlementGastroProfileId: row.gastroProfileId,
+          settlementExcursionOperatorId: row.excursionOperatorId,
+          validationGastroProfileId: partnerId ?? null,
+          validationExcursionOperatorId: null,
+        });
+        if (mismatch) issues.push(mismatch);
+      } else if (allocation.validationSource === 'ACTIVITY_COUPON_VALIDATION') {
+        const partnerId = activityMap.get(allocation.validationId);
+        const orphan = checkOrphanAllocation({
+          allocationId: allocation.id,
+          validationSource: allocation.validationSource,
+          validationId: allocation.validationId,
+          validationExists: partnerId != null,
+        });
+        if (orphan) issues.push(orphan);
+        const mismatch = checkPartnerMismatchAllocation({
+          allocationId: allocation.id,
+          settlementVertical: row.vertical,
+          settlementGastroProfileId: row.gastroProfileId,
+          settlementExcursionOperatorId: row.excursionOperatorId,
+          validationGastroProfileId: null,
+          validationExcursionOperatorId: partnerId ?? null,
+        });
+        if (mismatch) issues.push(mismatch);
+      }
+    }
+
+    return issues;
   }
 }

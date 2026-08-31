@@ -15,6 +15,7 @@ import type {
 import { ErrorCode } from '@yo-te-invito/shared';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
+import { countPartnerSettlementAllocations } from '../benefit-settlements/benefit-settlement-allocation-guards';
 import { AdminUsersService } from './admin-users.service';
 import { buildDeepDeletePreflight } from './admin-deep-delete-preflight.util';
 
@@ -271,8 +272,12 @@ export class AdminDeepDeleteService {
     const validations = await tx.gastroDiscountValidation.count({
       where: { discount: { gastroProfileId: profileId } },
     });
+    const settlementAllocations = await countPartnerSettlementAllocations(tx, tenantId, {
+      vertical: 'GASTRO',
+      gastroProfileId: profileId,
+    });
 
-    if (usedClaims + validations === 0) {
+    if (usedClaims + validations === 0 && settlementAllocations === 0) {
       const discounts = await tx.gastroDiscount.findMany({
         where: { gastroProfileId: profileId },
         select: { id: true },
@@ -310,7 +315,12 @@ export class AdminDeepDeleteService {
       const validations = await tx.gastroDiscountValidation.count({
         where: { discount: { gastroProfileId: profileId } },
       });
-      hard = usedClaims + validations === 0;
+      const settlementAllocations = await countPartnerSettlementAllocations(
+        tx,
+        tenantId,
+        { vertical: 'GASTRO', gastroProfileId: profileId },
+      );
+      hard = usedClaims + validations === 0 && settlementAllocations === 0;
       await this.suspendGastroInTx(tx, tenantId, profileId);
     });
 
@@ -450,6 +460,21 @@ export class AdminDeepDeleteService {
         code: ErrorCode.NOT_FOUND,
         message: 'Excursion operator not found',
       });
+    }
+
+    const settlementAllocations = await countPartnerSettlementAllocations(
+      this.prisma,
+      tenantId,
+      { vertical: 'ACTIVITY', excursionOperatorId: operatorId },
+    );
+    if (settlementAllocations > 0) {
+      await this.prisma.$transaction(async (tx) => {
+        await tx.excursionOperator.update({
+          where: { id: operatorId },
+          data: { deletedAt: new Date(), isActive: false },
+        });
+      });
+      return;
     }
 
     await this.prisma.$transaction(async (tx) => {

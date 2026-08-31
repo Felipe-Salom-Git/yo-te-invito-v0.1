@@ -6,6 +6,7 @@ import {
 import { AuditAction, Prisma } from '@prisma/client';
 import { ErrorCode } from '@yo-te-invito/shared';
 import { PrismaService } from '../../prisma/prisma.service';
+import { countPartnerSettlementAllocations } from '../benefit-settlements/benefit-settlement-allocation-guards';
 
 const HISTORY_MESSAGE =
   'Esta publicación tiene historial operativo y no puede eliminarse definitivamente. Podés pausarla/archivarla para ocultarla.';
@@ -142,15 +143,19 @@ export class AdminContentPurgeService {
       }
     }
 
-    const [validations, claims] = await Promise.all([
+    const [validations, claims, settlementAllocations] = await Promise.all([
       this.prisma.gastroDiscountValidation.count({
         where: { discount: { gastroProfileId: profileId } },
       }),
       this.prisma.gastroDiscountClaim.count({
         where: { discount: { gastroProfileId: profileId } },
       }),
+      countPartnerSettlementAllocations(this.prisma, tenantId, {
+        vertical: 'GASTRO',
+        gastroProfileId: profileId,
+      }),
     ]);
-    if (validations + claims > 0) {
+    if (validations + claims > 0 || settlementAllocations > 0) {
       this.rejectIfHistory();
     }
 
@@ -269,6 +274,14 @@ export class AdminContentPurgeService {
       if (await this.eventHasCriticalHistory(tenantId, excursion.id)) {
         this.rejectIfHistory();
       }
+    }
+
+    const settlementAllocations = await countPartnerSettlementAllocations(this.prisma, tenantId, {
+      vertical: 'ACTIVITY',
+      excursionOperatorId: operatorId,
+    });
+    if (settlementAllocations > 0) {
+      this.rejectIfHistory();
     }
 
     const before = { id: operator.id, name: operator.name, isActive: operator.isActive };

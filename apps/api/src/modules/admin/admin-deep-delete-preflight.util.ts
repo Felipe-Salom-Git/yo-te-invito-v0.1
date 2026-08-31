@@ -13,6 +13,7 @@ import {
   safeCount,
 } from './admin-user-delete.util';
 import { userDisplayLabel } from '../../common/user-contact.util';
+import { countPartnerSettlementAllocations } from '../benefit-settlements/benefit-settlement-allocation-guards';
 
 const logger = new Logger('AdminDeepDeletePreflight');
 
@@ -211,6 +212,7 @@ export async function buildGastroDeepDeletePreflight(
     claimsUsed,
     validations,
     reviews,
+    settlementAllocations,
   ] = await Promise.all([
     safeCount('gastroDiscounts', () =>
       prisma.gastroDiscount.count({ where: { gastroProfileId: profileId } }),
@@ -246,6 +248,12 @@ export async function buildGastroDeepDeletePreflight(
           prisma.review.count({ where: { tenantId, eventId: profile.publicEventId! } }),
         )
       : Promise.resolve(0),
+    safeCount('settlementAllocations', () =>
+      countPartnerSettlementAllocations(prisma, tenantId, {
+        vertical: 'GASTRO',
+        gastroProfileId: profileId,
+      }),
+    ),
   ]);
 
   const publicEvents = profile.publicEventId ? 1 : 0;
@@ -260,6 +268,9 @@ export async function buildGastroDeepDeletePreflight(
       description: 'Se conservan para auditoría.',
     }),
     impact('GASTRO_VALIDATIONS', 'Validaciones scanner', validations, 'critical', 'keep'),
+    impact('BENEFIT_SETTLEMENT_ALLOCATIONS', 'Asignaciones económicas', settlementAllocations, 'critical', 'keep', {
+      description: 'Liquidaciones con usos contabilizados — no eliminar validaciones asociadas.',
+    }),
     impact('GASTRO_CONTENT', 'Contenido editorial', content, 'info', 'delete'),
     impact('GASTRO_FOLLOWERS', 'Seguidores', followers, 'info', 'delete'),
     impact('SCANNER_ACCOUNTS', 'Cuentas scanner', scanners, 'warning', 'soft_delete'),
@@ -484,7 +495,7 @@ export async function buildExcursionOperatorDeepDeletePreflight(
   });
   const ids = excursions.map((e) => e.id);
 
-  const [orders, tickets, payments, reviews] = await Promise.all([
+  const [orders, tickets, payments, reviews, settlementAllocations] = await Promise.all([
     ids.length
       ? safeCount('orders', () => prisma.order.count({ where: { tenantId, eventId: { in: ids } } }))
       : Promise.resolve(0),
@@ -501,6 +512,12 @@ export async function buildExcursionOperatorDeepDeletePreflight(
           prisma.review.count({ where: { tenantId, eventId: { in: ids } } }),
         )
       : Promise.resolve(0),
+    safeCount('settlementAllocations', () =>
+      countPartnerSettlementAllocations(prisma, tenantId, {
+        vertical: 'ACTIVITY',
+        excursionOperatorId: operatorId,
+      }),
+    ),
   ]);
 
   return finalizeDeepDeletePreflight('EXCURSION_OPERATOR', operatorId, operator.name, [
@@ -511,6 +528,9 @@ export async function buildExcursionOperatorDeepDeletePreflight(
     impact('TICKETS', 'Entradas', tickets, 'critical', 'keep'),
     impact('PAYMENTS', 'Pagos', payments, 'critical', 'keep'),
     impact('REVIEWS', 'Valoraciones', reviews, 'critical', 'keep'),
+    impact('BENEFIT_SETTLEMENT_ALLOCATIONS', 'Asignaciones económicas', settlementAllocations, 'critical', 'keep', {
+      description: 'Liquidaciones con usos contabilizados — no eliminar validaciones asociadas.',
+    }),
     impact('EXCURSION_OPERATOR', 'Operador de excursiones', 1, 'warning', 'soft_delete'),
   ].filter((i): i is AdminDeepDeleteImpactItem => i != null));
 }

@@ -18,6 +18,7 @@ import {
   resolveBenefitAgreementAtDate,
   resolveSettlementAgreementForValidation,
   sumMoneyCentsBigInt,
+  benefitValidationAllocationKey,
 } from '@yo-te-invito/shared';
 
 function assert(cond: boolean, msg: string) {
@@ -136,6 +137,12 @@ const order = [
   { validatedAt: new Date('2026-08-01'), validationId: 'a' },
 ].sort(compareSettlementValidationOrder);
 assert(order[0]!.validationId === 'a', 'oldest first tie-break id');
+
+assert(
+  benefitValidationAllocationKey('GASTRO_DISCOUNT_VALIDATION', 'v1') ===
+    'GASTRO_DISCOUNT_VALIDATION:v1',
+  'validation allocation composite key',
+);
 
 async function tryDbIntegration() {
   const { PrismaClient } = await import('@prisma/client');

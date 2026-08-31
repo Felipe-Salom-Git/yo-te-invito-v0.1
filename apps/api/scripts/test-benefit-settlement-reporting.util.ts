@@ -7,6 +7,8 @@ import {
   addMoneyCentsField,
   checkCashOverpayment,
   checkClosedWithPendingUsages,
+  checkOrphanAllocation,
+  checkPartnerMismatchAllocation,
   compareBenefitTimelineEvents,
   deriveIntegrityStatus,
   emptyBenefitReportingKpis,
@@ -119,6 +121,28 @@ assert(
       { ...emptyBenefitReportingKpis(), barterCreditMaterializedCents: '10000000' },
     ).barterCreditMaterializedCents === '10000000',
   'cash 50k + credit 100k kept separate',
+);
+
+assert(
+  checkOrphanAllocation({
+    allocationId: 'a1',
+    validationSource: 'ACTIVITY_COUPON_VALIDATION',
+    validationId: 'x',
+    validationExists: false,
+  })?.severity === 'ERROR',
+  'orphan allocation severity ERROR',
+);
+
+assert(
+  checkPartnerMismatchAllocation({
+    allocationId: 'a2',
+    settlementVertical: 'ACTIVITY',
+    settlementGastroProfileId: null,
+    settlementExcursionOperatorId: 'op1',
+    validationGastroProfileId: null,
+    validationExcursionOperatorId: 'op2',
+  }) !== null,
+  'activity partner mismatch',
 );
 
 console.log('\nAll benefit settlement reporting checks passed.');

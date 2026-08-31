@@ -237,8 +237,23 @@ export class BenefitSettlementsService {
       body.mode === 'CASH' ? 'BENEFIT_USAGE_ALLOCATED_CASH' : 'BENEFIT_USAGE_ALLOCATED_BARTER';
 
     try {
-      const result = await this.prisma.$transaction(async (tx) => {
-        const created: BenefitSettlementUsageAllocation[] = [];
+      const result = await this.prisma.$transaction(
+        async (tx) => {
+          await tx.$executeRaw(
+            Prisma.sql`SELECT id FROM "BenefitSettlement" WHERE id = ${row.id} AND "tenantId" = ${tenantId} FOR UPDATE`,
+          );
+          const locked = await tx.benefitSettlement.findFirst({
+            where: { id: row.id, tenantId },
+            select: { status: true },
+          });
+          if (!locked || locked.status === 'CLOSED') {
+            throw new ConflictException({
+              code: ErrorCode.BENEFIT_SETTLEMENT_ALREADY_CLOSED,
+              message: 'Cannot allocate on a closed settlement',
+            });
+          }
+
+          const created: BenefitSettlementUsageAllocation[] = [];
         const materializedCredits: Array<{ entryId: string; allocationId: string; amountCents: string }> =
           [];
         for (const usage of selected) {
@@ -299,7 +314,9 @@ export class BenefitSettlementsService {
         });
 
         return { updated, created, materializedCredits };
-      });
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
 
       await this.audit.logAction({
         tenantId,
