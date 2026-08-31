@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { EXCURSION_PUBLIC_LABEL } from '@/lib/categories/excursionPublicCopy';
 
 /** Secondary block — hotels exist in the system but are not primary discovery. */
 export function HomeHotelsComingSoon() {
@@ -13,7 +14,7 @@ export function HomeHotelsComingSoon() {
       <h2 className="mt-1 text-lg font-semibold text-white">Próximamente</h2>
       <p className="mt-2 max-w-xl text-sm text-text-muted">
         Estamos preparando alojamiento en Bariloche. Mientras tanto, explorá eventos, gastronomía,
-        equipos y excursiones.
+        equipos y {EXCURSION_PUBLIC_LABEL.toLowerCase()}.
       </p>
       <Link
         href="/explore"

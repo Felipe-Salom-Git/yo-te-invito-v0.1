@@ -229,7 +229,7 @@ export function ExcursionProductDetailContent({
             <div className="h-px bg-gradient-to-r from-accent/60 via-white/10 to-transparent" aria-hidden />
 
             <section className="space-y-4">
-              <ExcursionDetailSectionHeading title="Sobre la excursión" />
+              <ExcursionDetailSectionHeading title="Sobre la actividad" />
               <RentalDescriptionBlock
                 productTitle={event.title}
                 description={event.description}

@@ -14,12 +14,13 @@ import {
 } from '@/lib/query/me-portal';
 import { getErrorMessage } from '@/lib/errors';
 import type { ContentMainCategory } from '@/repositories/interfaces';
+import { EXCURSION_PUBLIC_LABEL } from '@/lib/categories/excursionPublicCopy';
 
 const MAIN_CATEGORIES: { id: ContentMainCategory; label: string }[] = [
   { id: 'event', label: 'Eventos' },
   { id: 'gastro', label: 'Gastronomía' },
   { id: 'rental', label: 'Equipos y Rentals' },
-  { id: 'excursion', label: 'Excursiones' },
+  { id: 'excursion', label: EXCURSION_PUBLIC_LABEL },
 ];
 
 function PrefCheckbox({

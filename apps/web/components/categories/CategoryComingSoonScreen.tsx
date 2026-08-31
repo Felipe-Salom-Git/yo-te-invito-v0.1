@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { PageContainer } from '@/components';
+import { EXCURSION_PUBLIC_LABEL } from '@/lib/categories/excursionPublicCopy';
 
 type Props = {
   categoryLabel: string;
@@ -19,7 +20,7 @@ export function CategoryComingSoonScreen({ categoryLabel, variant = 'page' }: Pr
         <p className="text-xs font-bold uppercase tracking-wider text-white/70">{categoryLabel}</p>
         <p className="mt-1 text-lg font-semibold text-text">Próximamente</p>
         <p className="mt-2 max-w-2xl text-sm text-text-muted">
-          Estamos preparando esta categoría. Mientras tanto explorá rentals y excursiones.
+          Estamos preparando esta categoría. Mientras tanto explorá rentals y {EXCURSION_PUBLIC_LABEL.toLowerCase()}.
         </p>
         <div className="mt-4 flex flex-wrap gap-3 text-sm">
           <Link href="/categorias" className="font-medium text-accent hover:underline">

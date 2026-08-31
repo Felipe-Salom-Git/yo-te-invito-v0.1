@@ -3,6 +3,10 @@
  */
 
 import {
+  EXCURSION_PUBLIC_GATEWAY_DESCRIPTION,
+  EXCURSION_PUBLIC_GATEWAY_TITLE,
+} from '@/lib/categories/excursionPublicCopy';
+import {
   RENTAL_GATEWAY_DESCRIPTION,
   RENTAL_GATEWAY_IMAGE,
   RENTAL_GATEWAY_IMAGE_ALT,
@@ -53,8 +57,8 @@ export const CATEGORY_GATEWAY_OPTIONS: CategoryGatewayOption[] = [
   },
   {
     id: 'excursion',
-    title: 'EXCURSIONES',
-    description: 'AVENTURAS, RECORRIDOS Y EXPERIENCIAS ÚNICAS.',
+    title: EXCURSION_PUBLIC_GATEWAY_TITLE,
+    description: EXCURSION_PUBLIC_GATEWAY_DESCRIPTION,
     imageSrc:
       'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=800&q=80',
     imageAlt: 'Montañas y lago, paisaje de aventura',

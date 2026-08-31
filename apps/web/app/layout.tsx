@@ -8,7 +8,7 @@ import { BRAND_FAVICON_SIZE, BRAND_FAVICON_SRC, OG_SHARE_METADATA } from '@/lib/
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://yoteinvito.club';
 const SITE_DESCRIPTION =
-  'Eventos, gastronomía, excursiones y rentals. Comprá entradas y descubrí experiencias en tu ciudad.';
+  'Eventos, gastronomía, actividades y rentals. Comprá entradas y descubrí experiencias en tu ciudad.';
 
 export const metadata: Metadata = {
   metadataBase: new URL(APP_URL),

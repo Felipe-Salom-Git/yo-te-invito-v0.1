@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { EXCURSION_PUBLIC_LABEL } from '@/lib/categories/excursionPublicCopy';
 
 /**
  * Server segment config for `/categorias` gateway.
@@ -10,7 +11,7 @@ export const revalidate = 0;
 export const metadata: Metadata = {
   title: 'Categorías',
   description:
-    'Navegá propuestas por categoría: eventos, gastronomía, excursiones, hoteles, rentals y más.',
+    `Navegá propuestas por categoría: eventos, gastronomía, ${EXCURSION_PUBLIC_LABEL.toLowerCase()}, hoteles, rentals y más.`,
   alternates: {
     canonical: '/categorias',
   },

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { EXCURSION_PUBLIC_LABEL } from '@/lib/categories/excursionPublicCopy';
 
 /**
  * Server segment config for `/explore`.
@@ -10,7 +11,7 @@ export const revalidate = 0;
 export const metadata: Metadata = {
   title: 'Explorar',
   description:
-    'Explorá eventos, excursiones, gastronomía, hoteles y servicios disponibles en Yo Te Invito.',
+    `Explorá eventos, ${EXCURSION_PUBLIC_LABEL.toLowerCase()}, gastronomía, hoteles y servicios disponibles en Yo Te Invito.`,
   alternates: {
     canonical: '/explore',
   },

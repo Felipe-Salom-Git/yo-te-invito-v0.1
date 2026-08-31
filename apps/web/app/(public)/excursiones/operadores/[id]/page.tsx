@@ -1,5 +1,6 @@
 'use client';
 
+import { EXCURSION_PUBLIC_LABEL } from '@/lib/categories/excursionPublicCopy';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
@@ -37,7 +38,7 @@ export default function ExcursionOperatorPublicPage() {
       <PageContainer>
         <p className="text-text-muted">Operador no encontrado o no disponible.</p>
         <Link href="/categoria/excursion" className="mt-4 inline-block text-accent hover:underline">
-          Ver excursiones
+          Ver {EXCURSION_PUBLIC_LABEL.toLowerCase()}
         </Link>
       </PageContainer>
     );
@@ -52,7 +53,7 @@ export default function ExcursionOperatorPublicPage() {
         href="/categoria/excursion"
         className="mb-4 inline-block text-sm text-text-muted hover:text-text"
       >
-        ← Excursiones
+        ← {EXCURSION_PUBLIC_LABEL}
       </Link>
       <SectionTitle>{operator.name}</SectionTitle>
       {operator.city && (
@@ -81,9 +82,11 @@ export default function ExcursionOperatorPublicPage() {
           </a>
         )}
         {cards.length > 0 ? (
-          <ContentRail title="Excursiones disponibles" items={cards} />
+          <ContentRail title={`${EXCURSION_PUBLIC_LABEL} disponibles`} items={cards} />
         ) : (
-          <p className="text-sm text-text-muted">Este operador aún no tiene excursiones publicadas.</p>
+          <p className="text-sm text-text-muted">
+            Este operador aún no tiene {EXCURSION_PUBLIC_LABEL.toLowerCase()} publicadas.
+          </p>
         )}
       </div>
     </PageContainer>

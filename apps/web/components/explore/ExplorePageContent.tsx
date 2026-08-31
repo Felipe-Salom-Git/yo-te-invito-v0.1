@@ -19,6 +19,7 @@ import { ContentCardSkeleton } from '@/components/home/ContentCardSkeleton';
 import { PublicSearchBar } from '@/components/public/PublicSearchBar';
 import { PageContainer, SectionTitle, EmptyState, QueryError } from '@/components';
 import { RENTAL_EXPLORE_EMPTY_HINT, RENTAL_PUBLIC_TAGLINE } from '@/lib/rentals/publicCopy';
+import { EXCURSION_PUBLIC_LABEL } from '@/lib/categories/excursionPublicCopy';
 import { HotelsComingSoonScreen } from '@/components/hotel/HotelsComingSoonScreen';
 import type { ContentMainCategory } from '@/repositories/interfaces';
 import { ExploreCityFilter } from '@/components/explore/ExploreCityFilter';
@@ -185,7 +186,7 @@ export function ExplorePageContent() {
         <p className="mt-2 max-w-2xl text-sm text-text-muted">
           {mainCategory === 'rental'
             ? RENTAL_PUBLIC_TAGLINE
-            : 'Encontrá eventos, gastronomía, equipos y rentals, y excursiones en un solo lugar.'}
+            : `Encontrá eventos, gastronomía, equipos y rentals, y ${EXCURSION_PUBLIC_LABEL.toLowerCase()} en un solo lugar.`}
         </p>
       </header>
 

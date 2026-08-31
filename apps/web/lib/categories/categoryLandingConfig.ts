@@ -1,6 +1,10 @@
 import type { CategoryGatewayId } from '@/lib/home/categoryGatewayConfig';
 import { getCategoryGatewayHref } from '@/lib/home/categoryGatewayConfig';
 import {
+  EXCURSION_PUBLIC_LABEL,
+  EXCURSION_PUBLIC_SUBTITLE,
+} from '@/lib/categories/excursionPublicCopy';
+import {
   RENTAL_PUBLIC_SUBTITLE,
   RENTAL_PUBLIC_TAGLINE,
 } from '@/lib/rentals/publicCopy';
@@ -41,8 +45,8 @@ export const CROSS_CATEGORY_RAIL_META: Record<CategoryGatewayId, CrossCategoryRa
   },
   excursion: {
     category: 'excursion',
-    title: 'Excursiones destacadas',
-    subtitle: 'Aventuras, recorridos y paisajes para descubrir.',
+    title: `${EXCURSION_PUBLIC_LABEL} destacadas`,
+    subtitle: EXCURSION_PUBLIC_SUBTITLE,
     href: getCategoryGatewayHref('excursion'),
   },
 };
@@ -91,10 +95,9 @@ export const CATEGORY_LANDING_META: Record<CategoryGatewayId, CategoryLandingMet
   },
   excursion: {
     id: 'excursion',
-    title: 'EXCURSIONES',
+    title: EXCURSION_PUBLIC_LABEL.toUpperCase(),
     subtitle: 'Aventuras, recorridos y experiencias únicas',
-    editorialDescription:
-      'Recorridos guiados, aventuras y experiencias al aire libre en la región.',
+    editorialDescription: `${EXCURSION_PUBLIC_SUBTITLE} en la región.`,
   },
 };
 

@@ -3,6 +3,7 @@
  */
 
 import { cityQueryValue } from '@yo-te-invito/shared';
+import { EXCURSION_PUBLIC_LABEL } from '@/lib/categories/excursionPublicCopy';
 
 export const EXPLORE_MAIN_CATEGORIES = ['event', 'gastro', 'rental', 'excursion'] as const;
 
@@ -13,7 +14,7 @@ export const EXPLORE_CATEGORY_OPTIONS: { value: string; label: string }[] = [
   { value: 'event', label: 'Eventos' },
   { value: 'gastro', label: 'Gastronomía' },
   { value: 'rental', label: 'Equipos y Rentals' },
-  { value: 'excursion', label: 'Excursiones' },
+  { value: 'excursion', label: EXCURSION_PUBLIC_LABEL },
 ];
 
 export interface ExploreFiltersState {

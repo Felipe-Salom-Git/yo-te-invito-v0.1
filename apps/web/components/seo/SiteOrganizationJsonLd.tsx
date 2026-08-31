@@ -9,7 +9,7 @@ const organizationJsonLd = {
   url: APP_URL,
   logo: `${APP_URL.replace(/\/$/, '')}${BRAND_FAVICON_SRC}`,
   description:
-    'Eventos, gastronomía, excursiones y rentals. Comprá entradas y descubrí experiencias en tu ciudad.',
+    'Eventos, gastronomía, actividades y rentals. Comprá entradas y descubrí experiencias en tu ciudad.',
 };
 
 export function SiteOrganizationJsonLd() {

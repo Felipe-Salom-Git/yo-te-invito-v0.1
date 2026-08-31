@@ -2,6 +2,10 @@
  * Pure content route helpers — UI-agnostic.
  */
 
+import {
+  EXCURSION_PUBLIC_LABEL,
+  EXCURSION_PUBLIC_LABEL_SINGULAR,
+} from '@/lib/categories/excursionPublicCopy';
 import { RENTAL_RELATED_SECTION_TITLE } from '@/lib/rentals/publicCopy';
 
 export const DEFAULT_PUBLIC_TENANT_ID = 'tenant-demo';
@@ -56,7 +60,7 @@ export function getCategoryLabel(category?: string): string {
     case 'hotel':
       return 'Hotel';
     case 'excursion':
-      return 'Excursión';
+      return EXCURSION_PUBLIC_LABEL_SINGULAR;
     case 'rental':
       return 'Equipos y Rentals';
     default:
@@ -92,7 +96,7 @@ export function getRelatedSectionTitle(category?: string): string {
     case 'hotel':
       return 'Hoteles que también te pueden interesar';
     case 'excursion':
-      return 'Excursiones que también te pueden gustar';
+      return `${EXCURSION_PUBLIC_LABEL} que también te pueden gustar`;
     case 'rental':
       return RENTAL_RELATED_SECTION_TITLE;
     default:

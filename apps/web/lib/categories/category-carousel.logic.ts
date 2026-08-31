@@ -1,3 +1,7 @@
+import {
+  EXCURSION_PUBLIC_LABEL,
+  EXCURSION_PUBLIC_SUBTITLE,
+} from '@/lib/categories/excursionPublicCopy';
 import type { CategoryGatewayId } from '@/lib/home/categoryGatewayConfig';
 import { RENTAL_PUBLIC_SUBTITLE } from '@/lib/rentals/publicCopy';
 import type { EventSummary } from '@/repositories/interfaces';
@@ -52,8 +56,8 @@ const CATEGORY_FEATURED_TITLES: Record<
     subtitle: RENTAL_PUBLIC_SUBTITLE,
   },
   excursion: {
-    title: 'Destacados en Excursiones',
-    subtitle: 'Recorridos y experiencias al aire libre',
+    title: `Destacados en ${EXCURSION_PUBLIC_LABEL}`,
+    subtitle: EXCURSION_PUBLIC_SUBTITLE,
   },
 };
 

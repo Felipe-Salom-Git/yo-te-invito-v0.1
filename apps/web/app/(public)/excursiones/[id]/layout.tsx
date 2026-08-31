@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { cache } from 'react';
+import { EXCURSION_PUBLIC_LABEL, EXCURSION_PUBLIC_LABEL_SINGULAR } from '@/lib/categories/excursionPublicCopy';
 import { buildEventJsonLd } from '@/lib/seo/jsonld';
 import { FALLBACK_OG_IMAGE } from '@/lib/seo/metadata';
 
@@ -24,10 +25,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     // Excursions detail is currently backed by the public Event detail endpoint (category=excursion).
     const event = await fetchPublicEvent(id);
     if (!event) {
-      return { title: 'Excursión no encontrada', robots: { index: false, follow: false } };
+      return { title: `${EXCURSION_PUBLIC_LABEL_SINGULAR} no encontrada`, robots: { index: false, follow: false } };
     }
 
-    const title = event?.title ? String(event.title) : 'Excursión';
+    const title = event?.title ? String(event.title) : EXCURSION_PUBLIC_LABEL_SINGULAR;
     const rawDescription = typeof event?.description === 'string' ? event.description : '';
     const description =
       rawDescription?.trim()
@@ -57,7 +58,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       },
     };
   } catch {
-    return { title: 'Excursión | Yo Te Invito' };
+    return { title: `${EXCURSION_PUBLIC_LABEL_SINGULAR} | Yo Te Invito` };
   }
 }
 
@@ -82,7 +83,7 @@ async function ExcursionJsonLd({ id }: { id: string }) {
   if (!event) return null;
 
   const title =
-    typeof event?.title === 'string' && event.title.trim() ? event.title : 'Excursión';
+    typeof event?.title === 'string' && event.title.trim() ? event.title : EXCURSION_PUBLIC_LABEL_SINGULAR;
   const jsonLd = buildEventJsonLd({
     url: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://yoteinvito.club'}/excursiones/${encodeURIComponent(id)}`,
     name: title,

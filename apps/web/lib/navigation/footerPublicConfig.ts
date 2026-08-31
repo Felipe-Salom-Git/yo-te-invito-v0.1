@@ -33,4 +33,4 @@ export const FOOTER_DEVELOPER_CREDIT = {
 
 /** Institutional copy — footer público (alineado al mockup). */
 export const FOOTER_INSTITUTIONAL_COPY =
-  'Conectamos personas con eventos, experiencias, gastronomía, excursiones, rentals y propuestas turísticas en un solo lugar.';
+  'Conectamos personas con eventos, experiencias, gastronomía, actividades, rentals y propuestas turísticas en un solo lugar.';

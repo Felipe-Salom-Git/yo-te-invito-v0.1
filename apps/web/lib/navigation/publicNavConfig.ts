@@ -13,6 +13,7 @@ import {
   canAccessPublicCategory,
   isCategoryComingSoon,
 } from '@/lib/categories/categoryAvailability';
+import { EXCURSION_PUBLIC_LABEL } from '@/lib/categories/excursionPublicCopy';
 
 export type PublicNavItemId =
   | 'home-entry'
@@ -60,7 +61,7 @@ const CATEGORY_NAV: { id: PublicNavItemId; category: CategoryGatewayId; label: s
   { id: 'category-event', category: 'event', label: 'Eventos' },
   { id: 'category-gastro', category: 'gastro', label: 'Gastronomía' },
   { id: 'category-rental', category: 'rental', label: 'Equipos y rentals' },
-  { id: 'category-excursion', category: 'excursion', label: 'Excursiones' },
+  { id: 'category-excursion', category: 'excursion', label: EXCURSION_PUBLIC_LABEL },
 ];
 
 function buildCategoryNavItems(role?: string | null): PublicNavItem[] {

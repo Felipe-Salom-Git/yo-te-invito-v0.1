@@ -3,6 +3,7 @@
  * Keeps presentational logic out of components.
  */
 
+import { EXCURSION_PUBLIC_LABEL_SINGULAR } from '@/lib/categories/excursionPublicCopy';
 import { getContentDetailHref } from '@/lib/home/contentRoutes';
 
 export type HeroContentType = 'event' | 'gastro' | 'hotel' | 'excursion' | 'rental';
@@ -67,7 +68,7 @@ function getCategoryLabel(category?: string): string {
     case 'hotel':
       return 'Hotel';
     case 'excursion':
-      return 'Excursión';
+      return EXCURSION_PUBLIC_LABEL_SINGULAR;
     case 'rental':
       return 'Alquiler';
     default:

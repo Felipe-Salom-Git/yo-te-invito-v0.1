@@ -1,6 +1,7 @@
 import { ImageResponse } from 'next/og';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { EXCURSION_PUBLIC_LABEL } from '@/lib/categories/excursionPublicCopy';
 
 export const OG_SHARE_ALT = 'Yo Te Invito';
 export const OG_SHARE_SIZE = { width: 1200, height: 630 } as const;
@@ -44,7 +45,7 @@ export async function createOgShareImageResponse(): Promise<ImageResponse> {
             letterSpacing: '0.04em',
           }}
         >
-          Eventos · Gastronomía · Excursiones · Rentals
+          Eventos · Gastronomía · {EXCURSION_PUBLIC_LABEL} · Rentals
         </p>
       </div>
     ),

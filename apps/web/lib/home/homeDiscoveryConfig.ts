@@ -6,6 +6,10 @@ import {
   getCategoryGatewayHref,
   type CategoryGatewayId,
 } from '@/lib/home/categoryGatewayConfig';
+import {
+  EXCURSION_PUBLIC_LABEL,
+  EXCURSION_PUBLIC_SUBTITLE,
+} from '@/lib/categories/excursionPublicCopy';
 import { RENTAL_PUBLIC_SUBTITLE } from '@/lib/rentals/publicCopy';
 
 export const HOME_MAIN_CATEGORY_IDS: CategoryGatewayId[] = [
@@ -19,7 +23,7 @@ export const HOME_DISCOVERY_TABS = [
   { id: 'event' as const, label: 'Eventos' },
   { id: 'gastro' as const, label: 'Gastronomía' },
   { id: 'rental' as const, label: 'Equipos y Rentals' },
-  { id: 'excursion' as const, label: 'Excursiones' },
+  { id: 'excursion' as const, label: EXCURSION_PUBLIC_LABEL },
 ];
 
 export type HomeRailId =
@@ -93,8 +97,8 @@ export const HOME_CATEGORY_RAIL_DEFS: HomeRailDefinition[] = [
   },
   {
     id: 'excursion',
-    title: 'Excursiones',
-    subtitle: 'Recorridos y experiencias al aire libre',
+    title: EXCURSION_PUBLIC_LABEL,
+    subtitle: EXCURSION_PUBLIC_SUBTITLE,
     seeMoreHref: getCategoryGatewayHref('excursion'),
   },
 ];
