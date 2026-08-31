@@ -12,6 +12,8 @@ import {
   pendingUpdateToPublishedFields,
   parseRentalOpeningHours,
   snapshotFromPublishedRow,
+  canArchiveGastroDiscount,
+  canUnarchiveGastroDiscount,
   type AdminGastroDiscountMetrics,
   type AdminGastroDiscountPublication,
   type AdminGastroLocationsListQuery,
@@ -834,6 +836,67 @@ export class AdminGastroService {
       published,
       pending,
     );
+    return this.getDiscountDetail(tenantId, profileId, discountId);
+  }
+
+  async archiveDiscount(
+    tenantId: string,
+    adminUserId: string,
+    adminRole: string,
+    profileId: string,
+    discountId: string,
+    archived: boolean,
+  ) {
+    const row = await this.loadDiscount(tenantId, profileId, discountId);
+    const input = {
+      status: row.status,
+      archivedAt: row.archivedAt,
+      validityMode: row.validityMode,
+      validTo: row.validTo,
+      discountDate: row.discountDate,
+    };
+    if (archived) {
+      if (!canArchiveGastroDiscount(input)) {
+        throw new BadRequestException({
+          code: ErrorCode.VALIDATION_FAILED,
+          message:
+            'Solo se pueden archivar descuentos vencidos, cancelados o rechazados',
+        });
+      }
+      await this.prisma.gastroDiscount.update({
+        where: { id: discountId },
+        data: { archivedAt: new Date() },
+      });
+      await this.audit(
+        tenantId,
+        adminUserId,
+        adminRole,
+        'GASTRO_DISCOUNT_ARCHIVED',
+        discountId,
+        { archivedAt: null },
+        { archivedAt: true },
+      );
+    } else {
+      if (!canUnarchiveGastroDiscount(input)) {
+        throw new BadRequestException({
+          code: ErrorCode.VALIDATION_FAILED,
+          message: 'Este descuento no está archivado',
+        });
+      }
+      await this.prisma.gastroDiscount.update({
+        where: { id: discountId },
+        data: { archivedAt: null },
+      });
+      await this.audit(
+        tenantId,
+        adminUserId,
+        adminRole,
+        'GASTRO_DISCOUNT_UNARCHIVED',
+        discountId,
+        { archivedAt: row.archivedAt?.toISOString() },
+        { archivedAt: null },
+      );
+    }
     return this.getDiscountDetail(tenantId, profileId, discountId);
   }
 

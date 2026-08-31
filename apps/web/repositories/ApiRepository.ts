@@ -2073,6 +2073,11 @@ export class ApiRepository implements Repositories {
         `/gastro/discounts/${encodeURIComponent(id)}/status`,
         body,
       ),
+    archiveMyDiscount: async (id, body) =>
+      this.client.patch<GastroPortalDiscount>(
+        `/gastro/discounts/${encodeURIComponent(id)}/archive`,
+        body,
+      ),
     previewCourtesyRecipients: async (params) =>
       this.client.get<import('@yo-te-invito/shared').GastroCourtesyRecipientsPreviewResponse>(
         '/gastro/discounts/courtesy/recipients-preview',
@@ -2256,6 +2261,12 @@ export class ApiRepository implements Repositories {
       this.client.post<AdminGastroDiscountDetail>(
         `/admin/gastro-discount-tickets/${encodeURIComponent(discountId)}/send-qr-email`,
         {},
+        { profileId },
+      ),
+    archiveDiscount: async (profileId, discountId, archived) =>
+      this.client.patch<AdminGastroDiscountDetail>(
+        `/admin/gastro-discount-tickets/${encodeURIComponent(discountId)}/archive`,
+        { archived },
         { profileId },
       ),
     updateLocationStatus: async (profileId, body) =>

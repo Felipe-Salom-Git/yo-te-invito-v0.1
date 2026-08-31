@@ -9,6 +9,7 @@ import {
   gastroCourtesyRecipientsPreviewQuerySchema,
   gastroCourtesySendBodySchema,
   gastroDiscountStatusUpdateSchema,
+  gastroDiscountArchiveActionSchema,
   gastroProfileIdQuerySchema,
   Role,
   type GastroContentCreateInput,
@@ -23,6 +24,7 @@ import {
   type GastroCourtesyRecipientsPreviewQuery,
   type GastroCourtesySendBody,
   type GastroDiscountStatusUpdate,
+  type GastroDiscountArchiveAction,
 } from '@yo-te-invito/shared';
 import { JwtOrDevAuthGuard } from '../../auth/jwt-or-dev-auth.guard';
 import { GastroRolesGuard } from '../../common/guards/gastro-roles.guard';
@@ -157,6 +159,22 @@ export class GastroController {
     @Body(new ZodValidationPipe(gastroDiscountStatusUpdateSchema)) body: GastroDiscountStatusUpdate,
   ) {
     return this.portalDiscounts.updateDiscountStatus(
+      user.tenantId,
+      user.id,
+      user.role,
+      id,
+      body,
+    );
+  }
+
+  @Patch('discounts/:id/archive')
+  async archiveMyDiscount(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(gastroDiscountArchiveActionSchema))
+    body: GastroDiscountArchiveAction,
+  ) {
+    return this.portalDiscounts.archiveMyDiscount(
       user.tenantId,
       user.id,
       user.role,

@@ -135,6 +135,16 @@ export default function AdminGastroDiscountDetailPage() {
     },
   });
 
+  const archive = useMutation({
+    mutationFn: (archived: boolean) =>
+      repos.adminGastro.archiveDiscount(profileId, discountId, archived),
+    onError: (e) => addToast(getErrorMessage(e), 'error'),
+    onSuccess: (_, archived) => {
+      addToast(archived ? 'Descuento archivado' : 'Descuento restaurado', 'success');
+      invalidate();
+    },
+  });
+
   if (isLoading) {
     return (
       <PageContainer>
@@ -165,7 +175,8 @@ export default function AdminGastroDiscountDetailPage() {
     cancel.isPending ||
     sendQr.isPending ||
     approveEdit.isPending ||
-    rejectEdit.isPending;
+    rejectEdit.isPending ||
+    archive.isPending;
 
   return (
     <PageContainer>
@@ -340,6 +351,32 @@ export default function AdminGastroDiscountDetailPage() {
           </div>
         </>
       )}
+
+      <div className="mt-6">
+        {item.archivedAt ? (
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={moderationPending}
+            onClick={() => archive.mutate(false)}
+          >
+            Restaurar del archivo
+          </Button>
+        ) : (
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={moderationPending}
+            onClick={() => {
+              if (window.confirm('¿Archivar? Se conserva el histórico de claims y métricas.')) {
+                archive.mutate(true);
+              }
+            }}
+          >
+            Archivar
+          </Button>
+        )}
+      </div>
     </PageContainer>
   );
 }

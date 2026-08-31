@@ -11,6 +11,8 @@ import {
   applyDiscountUpdateToSnapshot,
   buildGastroDiscountQrPayload,
   buildPendingUpdatePayload,
+  canArchiveGastroDiscount,
+  canUnarchiveGastroDiscount,
   ErrorCode,
   hasMaterialDiscountChanges,
   parsePendingUpdate,
@@ -29,7 +31,11 @@ import { AuditService } from '../audit/audit.service';
 import { ProfilesAuthorizationService } from '../../common/profiles-authorization.service';
 import { GastroOwnershipService } from './gastro-ownership.service';
 import { GastroDiscountMetricsService } from './gastro-discount-metrics.service';
-import type { GastroDiscountStatusUpdate, GastroDiscountSummaryResponse } from '@yo-te-invito/shared';
+import type {
+  GastroDiscountArchiveAction,
+  GastroDiscountStatusUpdate,
+  GastroDiscountSummaryResponse,
+} from '@yo-te-invito/shared';
 
 function pendingCode(): string {
   return `PND-${randomBytes(4).toString('hex').toUpperCase()}`;
@@ -337,6 +343,12 @@ export class GastroPortalDiscountsService {
       id,
     );
     this.assertEditableStatus(existing.status);
+    if (existing.archivedAt) {
+      throw new BadRequestException({
+        code: ErrorCode.VALIDATION_FAILED,
+        message: 'Restaurá el descuento del archivo antes de editarlo',
+      });
+    }
 
     const nextValidityMode = body.validityMode ?? existing.validityMode;
     const switchingToWeekly = nextValidityMode === 'WEEKLY_RECURRING';
@@ -467,5 +479,67 @@ export class GastroPortalDiscountsService {
       id: userId,
       role: userRole,
     }, { profileId: profile.id });
+  }
+
+  async archiveMyDiscount(
+    tenantId: string,
+    userId: string,
+    userRole: string,
+    id: string,
+    body: GastroDiscountArchiveAction,
+  ) {
+    const { row } = await this.assertOwnDiscount(tenantId, userId, userRole, id);
+    const input = {
+      status: row.status,
+      archivedAt: row.archivedAt,
+      validityMode: row.validityMode,
+      validTo: row.validTo,
+      discountDate: row.discountDate,
+    };
+    if (body.archived) {
+      if (!canArchiveGastroDiscount(input)) {
+        throw new BadRequestException({
+          code: ErrorCode.VALIDATION_FAILED,
+          message:
+            'Solo se pueden archivar descuentos vencidos, cancelados o rechazados. Desactivá uno activo antes.',
+        });
+      }
+      const updated = await this.prisma.gastroDiscount.update({
+        where: { id },
+        data: { archivedAt: new Date() },
+      });
+      await this.audit.logAction({
+        tenantId,
+        actorId: userId,
+        actorRole: userRole,
+        action: AuditAction.GASTRO_DISCOUNT_ARCHIVED,
+        entityType: 'GastroDiscount',
+        entityId: id,
+        before: { archivedAt: null, status: row.status },
+        after: { archivedAt: updated.archivedAt?.toISOString(), status: row.status },
+      });
+      return this.mapDiscount(updated);
+    }
+    if (!canUnarchiveGastroDiscount(input)) {
+      throw new BadRequestException({
+        code: ErrorCode.VALIDATION_FAILED,
+        message: 'Este descuento no está archivado',
+      });
+    }
+    const updated = await this.prisma.gastroDiscount.update({
+      where: { id },
+      data: { archivedAt: null },
+    });
+    await this.audit.logAction({
+      tenantId,
+      actorId: userId,
+      actorRole: userRole,
+      action: AuditAction.GASTRO_DISCOUNT_UNARCHIVED,
+      entityType: 'GastroDiscount',
+      entityId: id,
+      before: { archivedAt: row.archivedAt?.toISOString(), status: row.status },
+      after: { archivedAt: null, status: row.status },
+    });
+    return this.mapDiscount(updated);
   }
 }

@@ -2398,6 +2398,21 @@ export interface GastroPortalDiscount {
   submittedImageUrls?: string[];
   createdAt: string;
   updatedAt: string;
+  createdByOrigin?: 'GASTRO' | 'ADMIN';
+  archivedAt?: string | null;
+  hasPendingUpdate?: boolean;
+  pendingUpdateSubmittedAt?: string | null;
+  pendingUpdate?: {
+    title: string;
+    summary: string;
+    detail: string;
+    imageUrls: string[];
+    validityMode: 'DATE_RANGE' | 'WEEKLY_RECURRING';
+    validWeekday: import('@yo-te-invito/shared').GastroWeekday | null;
+    validFrom: string | null;
+    validTo: string | null;
+    discountDate: string | null;
+  } | null;
 }
 
 export interface GastroLocalUpsertPayload {
@@ -2646,6 +2661,10 @@ export interface GastroRepo {
     id: string,
     body: import('@yo-te-invito/shared').GastroDiscountStatusUpdate,
   ): Promise<GastroPortalDiscount>;
+  archiveMyDiscount(
+    id: string,
+    body: import('@yo-te-invito/shared').GastroDiscountArchiveAction,
+  ): Promise<GastroPortalDiscount>;
   previewCourtesyRecipients(
     params: import('@yo-te-invito/shared').GastroCourtesyRecipientsPreviewQuery,
   ): Promise<import('@yo-te-invito/shared').GastroCourtesyRecipientsPreviewResponse>;
@@ -2830,6 +2849,11 @@ export interface AdminGastroRepo {
     note?: string | null,
   ): Promise<AdminGastroDiscountDetail>;
   sendQrEmail(profileId: string, discountId: string): Promise<AdminGastroDiscountDetail>;
+  archiveDiscount(
+    profileId: string,
+    discountId: string,
+    archived: boolean,
+  ): Promise<AdminGastroDiscountDetail>;
   updateLocationStatus(
     profileId: string,
     body: { status: string },

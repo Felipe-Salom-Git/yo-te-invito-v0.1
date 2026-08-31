@@ -70,3 +70,8 @@ export type GastroDiscountSummaryMetrics = z.infer<typeof gastroDiscountSummaryM
 export type GastroDiscountSummaryClaim = z.infer<typeof gastroDiscountSummaryClaimSchema>;
 export type GastroDiscountSummaryResponse = z.infer<typeof gastroDiscountSummaryResponseSchema>;
 export type GastroDiscountStatusUpdate = z.infer<typeof gastroDiscountStatusUpdateSchema>;
+
+export const gastroDiscountArchiveActionSchema = z.object({
+  archived: z.boolean(),
+});
+export type GastroDiscountArchiveAction = z.infer<typeof gastroDiscountArchiveActionSchema>;

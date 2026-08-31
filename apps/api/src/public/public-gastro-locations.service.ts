@@ -178,6 +178,7 @@ export class PublicGastroLocationsService {
         gastroProfileId: profile.id,
         visibility: 'PUBLIC',
         status: { in: ['APPROVED', 'ACTIVE'] },
+        archivedAt: null,
         OR: [
           { validityMode: 'WEEKLY_RECURRING' },
           { validTo: { gte: todayStart } },

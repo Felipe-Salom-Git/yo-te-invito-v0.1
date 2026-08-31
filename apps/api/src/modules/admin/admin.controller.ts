@@ -84,6 +84,8 @@ import {
   type AdminHotelProfileIdParams,
   gastroDiscountStatusUpdateSchema,
   type GastroDiscountStatusUpdate,
+  gastroDiscountArchiveActionSchema,
+  type GastroDiscountArchiveAction,
   adminDeepDeleteEntityTypeSchema,
   adminDeepDeleteBodySchema,
   type AdminDeepDeleteEntityType,
@@ -1137,6 +1139,35 @@ export class AdminController {
       resolvedProfileId,
       discountId,
       body.note,
+    );
+  }
+
+  @Patch('gastro-discount-tickets/:discountId/archive')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async archiveGastroDiscountTicket(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param('discountId') discountId: string,
+    @Query('profileId') profileId: string,
+    @Body(new ZodValidationPipe(gastroDiscountArchiveActionSchema))
+    body: GastroDiscountArchiveAction,
+  ) {
+    const resolvedProfileId =
+      profileId?.trim() ??
+      (await this.adminGastro.resolveProfileIdForDiscount(user.tenantId, discountId));
+    if (!resolvedProfileId) {
+      throw new NotFoundException({
+        code: ErrorCode.NOT_FOUND,
+        message: 'Discount not found',
+      });
+    }
+    return this.adminGastro.archiveDiscount(
+      user.tenantId,
+      user.id,
+      user.role,
+      resolvedProfileId,
+      discountId,
+      body.archived,
     );
   }
 

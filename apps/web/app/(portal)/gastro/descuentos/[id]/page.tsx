@@ -46,12 +46,11 @@ export default function GastroDescuentoDetallePage() {
     queryClient.invalidateQueries({ queryKey: gastroKeys.discounts(discountProfileId) });
   };
 
-  const statusMutation = useMutation({
-    mutationFn: (status: 'ACTIVE' | 'CANCELLED') =>
-      repos.gastro.updateMyDiscountStatus(id, { status }),
+  const archiveMutation = useMutation({
+    mutationFn: (archived: boolean) => repos.gastro.archiveMyDiscount(id, { archived }),
     onError: (err) => addToast(getErrorMessage(err), 'error'),
-    onSuccess: (_, status) => {
-      addToast(status === 'ACTIVE' ? 'Descuento activado' : 'Descuento desactivado', 'success');
+    onSuccess: (_, archived) => {
+      addToast(archived ? 'Descuento archivado' : 'Descuento restaurado del archivo', 'success');
       invalidate();
     },
   });
@@ -82,6 +81,40 @@ export default function GastroDescuentoDetallePage() {
           onDeactivate={() => statusMutation.mutate('CANCELLED')}
         />
       ) : null}
+
+      {discountQuery.data?.hasPendingUpdate && (
+        <p className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
+          Tu descuento publicado sigue activo con la versión actual mientras revisamos los cambios.
+        </p>
+      )}
+
+      {discountQuery.data && (
+        <div className="mt-6">
+          {discountQuery.data.archivedAt ? (
+            <button
+              type="button"
+              className="rounded-lg border border-border px-4 py-2 text-sm"
+              disabled={archiveMutation.isPending}
+              onClick={() => archiveMutation.mutate(false)}
+            >
+              Restaurar del archivo
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="rounded-lg border border-border px-4 py-2 text-sm text-text-muted"
+              disabled={archiveMutation.isPending}
+              onClick={() => {
+                if (window.confirm('¿Archivar este descuento? No se borra el histórico de claims.')) {
+                  archiveMutation.mutate(true);
+                }
+              }}
+            >
+              Archivar
+            </button>
+          )}
+        </div>
+      )}
     </PageContainer>
   );
 }

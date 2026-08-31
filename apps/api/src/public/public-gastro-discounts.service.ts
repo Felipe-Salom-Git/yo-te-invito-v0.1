@@ -105,6 +105,7 @@ export class PublicGastroDiscountsService {
       tenantId,
       visibility: 'PUBLIC' as const,
       status: { in: [...PUBLIC_STATUSES] },
+      archivedAt: null,
       gastroProfile: {
         status: 'ACTIVE' as const,
         ...(subcategorySlug ? { subcategory: { slug: subcategorySlug } } : {}),
