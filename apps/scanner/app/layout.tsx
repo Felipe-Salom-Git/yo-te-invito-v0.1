@@ -1,23 +1,24 @@
 import type { Metadata, Viewport } from 'next';
+import { SCANNER_APP_NAME, SCANNER_COLORS, SCANNER_TAGLINE, SCANNER_LOGO_SRC } from '@/lib/scanner-brand';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Yo Te Invito — Scanner',
-  description: 'Validación de entradas y descuentos en puerta',
+  title: SCANNER_APP_NAME,
+  description: SCANNER_TAGLINE,
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
-    title: 'Scanner',
+    title: 'YT Scanner',
     statusBarStyle: 'black-translucent',
   },
   icons: {
-    icon: '/icons/icon-192.svg',
-    apple: '/icons/icon-192.svg',
+    icon: SCANNER_LOGO_SRC,
+    apple: SCANNER_LOGO_SRC,
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: '#0f172a',
+  themeColor: SCANNER_COLORS.bg,
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
@@ -31,9 +32,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <body className="min-h-screen bg-slate-900 text-white">
-        {children}
-      </body>
+      <body className="min-h-screen bg-scanner-bg text-white antialiased">{children}</body>
     </html>
   );
 }

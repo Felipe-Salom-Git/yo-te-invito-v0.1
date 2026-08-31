@@ -56,7 +56,7 @@ export function ScannerLoginForm({ onSuccess }: Props) {
   return (
     <form onSubmit={(e) => void handleSubmit(e)} className="flex w-full max-w-sm flex-col gap-4">
       <div>
-        <label htmlFor="scanner-email" className="text-sm text-slate-400">
+        <label htmlFor="scanner-email" className="text-sm text-scanner-muted">
           Email
         </label>
         <input
@@ -66,12 +66,12 @@ export function ScannerLoginForm({ onSuccess }: Props) {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
-          className="mt-1 block w-full rounded-lg border border-slate-600 bg-slate-900 px-4 py-3 text-white"
+          className="mt-1 block w-full rounded-lg border border-scanner-border bg-scanner-bg px-4 py-3 text-white placeholder:text-scanner-muted/60 focus:border-scanner-accent focus:outline-none focus:ring-1 focus:ring-scanner-accent"
           placeholder="tu@email.com"
         />
       </div>
       <div>
-        <label htmlFor="scanner-password" className="text-sm text-slate-400">
+        <label htmlFor="scanner-password" className="text-sm text-scanner-muted">
           Contraseña
         </label>
         <input
@@ -81,18 +81,18 @@ export function ScannerLoginForm({ onSuccess }: Props) {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
-          className="mt-1 block w-full rounded-lg border border-slate-600 bg-slate-900 px-4 py-3 text-white"
+          className="mt-1 block w-full rounded-lg border border-scanner-border bg-scanner-bg px-4 py-3 text-white focus:border-scanner-accent focus:outline-none focus:ring-1 focus:ring-scanner-accent"
         />
       </div>
       {error && (
-        <p className="rounded-lg border border-red-800 bg-red-900/30 px-3 py-2 text-sm text-red-200">
+        <p className="rounded-lg border border-red-800/80 bg-red-950/40 px-3 py-2 text-sm text-red-200">
           {error}
         </p>
       )}
       <button
         type="submit"
         disabled={loading || !email.trim() || !password}
-        className="h-12 rounded-xl bg-emerald-600 text-base font-semibold text-white disabled:opacity-50"
+        className="h-12 min-h-[48px] rounded-xl bg-scanner-accent text-base font-semibold text-scanner-bg transition-colors hover:bg-scanner-accent-hover disabled:opacity-50"
       >
         {loading ? 'Ingresando…' : 'Ingresar al scanner'}
       </button>

@@ -1,19 +1,19 @@
 {
-  "name": "Yo Te Invito — Scanner",
-  "short_name": "Scanner",
+  "name": "Yo Te Invito Scanner",
+  "short_name": "YT Scanner",
   "description": "Validación de entradas y descuentos en puerta",
   "start_url": "/door",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#0f172a",
-  "theme_color": "#0f172a",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
   "lang": "es-AR",
   "icons": [
     {
-      "src": "/icons/icon-192.svg",
+      "src": "/brand/logo.png",
       "sizes": "192x192",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any"
     },
     {
@@ -21,6 +21,12 @@
       "sizes": "512x512",
       "type": "image/svg+xml",
       "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
     }
   ]
 }
