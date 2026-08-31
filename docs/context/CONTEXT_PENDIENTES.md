@@ -4,9 +4,46 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 
 **Convención:** `- [ ]` pendiente · `- [x]` hecho
 
-**Rama activa:** `feat/v1-s03-api-foundation` · HEAD: `920c5d7` (2026-08-30)
+**Rama activa:** `feat/v1-s03-api-foundation` · HEAD: `b01c31f` (2026-08-31)
 
 **Handoff nuevo chat:** [`NEXT_CHAT_HANDOFF.md`](./NEXT_CHAT_HANDOFF.md)
+
+---
+
+## V3.3 — Mejoras funcionales y operativas
+
+Checklist: [`Yo_Te_Invito_Checklist_V3_3_Funcional_Operativa.md`](../dev/Yo_Te_Invito_Checklist_V3_3_Funcional_Operativa.md)  
+Cierre Etapa 1: [`V3_3_STAGE_1_PUBLIC_MOBILE_CLOSING.md`](../audits/V3_3_STAGE_1_PUBLIC_MOBILE_CLOSING.md)
+
+### Etapa 0 — Auditoría
+
+- [x] Auditoría funcional/operativa cerrada (`085923a`, `V3_3_FUNCTIONAL_OPERATIONS_DISCOVERY_AUDIT.md`)
+
+### Etapa 1 — UX pública / mobile
+
+**Implementación (código):**
+
+- [x] Cards descuento → ficha gastro (`061e052`)
+- [x] Nav mobile Home + Explore (`20a3b52`)
+- [x] Modales centrados mobile (`3d0fa69`)
+- [x] Scroll táctil galerías (`d6be6f2`)
+- [x] Rails subcategoría ≥5, sin autoplay (`bbc8956`)
+- [x] Jerarquía CTA gastro (`1ea1d56`)
+- [x] OG metadata `/descuentos/[id]` (`67ebfe4`)
+- [x] Copy público Actividades (`c2883b6`)
+- [x] Doc cierre técnico (`b01c31f`)
+
+**QA manual — pendiente:**
+
+- [ ] Mobile 360 / 390 / 430 px — Home, Explore, Categorías, modales, swipe, discount→local, rails 4 vs 5, CTA gastro, Actividades
+- [ ] Desktop — home, explore, landings, fichas gastro/descuento/rental/actividad
+- [ ] Sharing — OG/WhatsApp/Facebook Debugger con URL desplegada
+- [ ] Test `subcategoryRailThreshold.test.ts` — archivo preparado, **no ejecutado** (sin Vitest en web)
+
+### Etapa 2 — Perfil usuario / Avatar
+
+- [ ] UI upload foto `/me/account`
+- [ ] Upload GCS avatar (A2 backlog)
 
 ---
 

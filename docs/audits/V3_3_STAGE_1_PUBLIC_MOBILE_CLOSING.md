@@ -1,7 +1,7 @@
 # V3.3 — Etapa 1: UX pública / mobile — cierre técnico
 
 **Rama:** `feat/v1-s03-api-foundation`  
-**Estado:** código completado en local — pendiente revisión del usuario, actualización de contextos, checklist y push.
+**Estado:** código completado y pusheado — contextos/checklist actualizados; **QA manual pendiente**.
 
 ---
 

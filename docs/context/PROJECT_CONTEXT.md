@@ -12,7 +12,7 @@ High-level project-wide summary. **Current state as verified from the repository
 |----------|------------------|--------|
 | Events | `event` | Ticketing, scanner, referrals |
 | Gastronomy | `gastro` | Discounts, inbox promos, validations |
-| Excursions | `excursion` | Content as events |
+| Excursions (**Actividades** en UI pública) | `excursion` | Content as events; label público V3.3 en `excursionPublicCopy.ts` |
 | **Rentals** | `rental` | **Locales** (`RentalLocation`) + **products** (events linked to a local) |
 | Hotels | `hotel` | `HotelProfile`, portal `/hotel` |
 
@@ -134,6 +134,19 @@ Bloque **Descubrimiento público** cerrado en checklist V2. Detalle: `docs/audit
 | Hotfix auth resend | `ff6f8e0` — `POST /auth/resend-verification-email` |
 | Hotfix horarios overnight | `920c5d7` — `20:00→00:00` válido; error bajo horarios |
 | QA browser V3.2 + hotfixes prod | Pendiente smoke manual |
+
+## 5g. V3.3 — Mejoras funcionales y operativas (2026-08)
+
+| Pieza | Estado |
+|-------|--------|
+| Etapa 0 — Auditoría backlog A1–F | Cerrada — `V3_3_FUNCTIONAL_OPERATIONS_DISCOVERY_AUDIT.md` |
+| Etapa 1 — UX pública / mobile | Código implementado (`061e052`…`b01c31f`); QA manual pendiente |
+| Checklist V3.3 | `docs/dev/Yo_Te_Invito_Checklist_V3_3_Funcional_Operativa.md` |
+| Cierre técnico Etapa 1 | `docs/audits/V3_3_STAGE_1_PUBLIC_MOBILE_CLOSING.md` |
+
+**Decisiones Etapa 1:** rails subcategoría **≥5** (sin autoplay); cards descuento → ficha gastro; `/descuentos/[id]` conservada; OG descuentos; nav mobile Home+Explore; modales centrados; copy público **Actividades** con clave técnica **`excursion`** (`Event.category`, rutas `/excursiones`, API sin cambios).
+
+**Próxima:** Etapa 2 — Perfil usuario / Avatar.
 
 ## 5a. Registro y onboarding por tipo de usuario — Estado cerrado (2026-05-24)
 

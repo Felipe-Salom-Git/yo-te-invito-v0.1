@@ -40,8 +40,9 @@
 ### A3 — Carruseles automáticos por subcategoría (≥5 publicaciones)
 
 - [x] Base existente — Carruseles manuales por subcategoría (`useCategoryCarousels`, `ContentRail`)
-- [ ] Mejora V3.3 — Umbral mínimo 5 ítems
-- [ ] Mejora V3.3 — Autoplay / rotación automática
+- [x] Mejora V3.3 — Carrusel dedicado cuando subcategoría tiene **≥5** publicaciones válidas (`subcategoryRailThreshold.ts`, Etapa 1)
+- [x] Mejora V3.3 — **Sin autoplay**; navegación horizontal manual
+- [ ] QA manual — validar 4 vs 5 publicaciones
 
 ### A4 — Branding Scanner
 
@@ -87,8 +88,10 @@
 ### A10 — Cards descuentos simplificadas → ficha local
 
 - [x] Base existente — Card con miniatura, título + local (`GastroDiscountPublicCard`)
-- [ ] Mejora V3.3 — Link a ficha restaurante (`/gastronomicos` o `/restaurants`)
-- [ ] Mejora V3.3 — Reducir metadata secundaria en card (beneficio/fechas opcional)
+- [x] Mejora V3.3 — Card simplificada (título + local; badge Descuento)
+- [x] Mejora V3.3 — Link principal → ficha Gastro (`discount-location-href.ts`)
+- [x] Mejora V3.3 — Ruta detalle descuento conservada para claim/QR (`/descuentos/[id]`)
+- [ ] QA manual público/mobile
 
 ### A11 — Más de un descuento mismo día
 
@@ -100,8 +103,9 @@
 
 - [x] Base existente — OG dinámico eventos, gastro, rentals, excursiones, producers
 - [x] Base existente — Fallback global `brandAssets.ts`
-- [ ] Mejora V3.3 — `generateMetadata` en `/descuentos/[id]`
-- [ ] Mejora V3.3 — Imagen OG por publicación/contenido consistente
+- [x] Mejora V3.3 — Metadata dinámica descuentos (`/descuentos/[id]/layout.tsx`)
+- [x] Mejora V3.3 — OG title/description/image/canonical descuentos
+- [ ] QA real de preview WhatsApp/social
 
 ### A13 — Horarios local
 
@@ -119,7 +123,8 @@
 ### A15 — Mejorar botones Gastro
 
 - [x] Base existente — CTAs WhatsApp, follow, ubicación, descuentos en ficha
-- [ ] Mejora V3.3 — Auditoría visual/jerarquía botones portal + público
+- [x] Mejora V3.3 — Jerarquía visual CTA (`GastroPublicActionCard`, primario/secundario/terciario)
+- [ ] QA manual mobile/desktop
 
 ### A16 — Códigos cortos ingreso manual QR
 
@@ -142,26 +147,31 @@
 ### A19 — Diseño botones subcategorías
 
 - [x] Base existente — `SubcategoryRail` chips scroll
-- [ ] Mejora V3.3 — Rediseño visual chips/cards subcategoría
+- [x] Mejora V3.3 — Rediseño visual chips (`SubcategoryFilterChip`)
+- [ ] QA responsive manual
 
 ### A20 — Modales centrados
 
 - [x] Base existente — `Modal.tsx` centrado con portal
-- [x] Base existente — Varios modales bottom-sheet mobile intencionales
-- [ ] Mejora V3.3 — Auditoría y corrección modales mal posicionados
+- [x] Base existente — Drawers/sheets laterales intencionales (sin cambio)
+- [x] Mejora V3.3 — Corrección dialogs convencionales centrados en mobile
+- [ ] Smoke visual mobile pendiente
 
 ### A21 — Navbar mobile Home + Explore
 
 - [x] Base existente — Explore en `MobilePublicNavDrawer`
 - [x] Base existente — Categorías gateway en drawer
-- [x] Base existente — Home `/home` en navbar desktop (`NavbarHomeButton`)
-- [ ] Mejora V3.3 — Acceso explícito `/home` en drawer mobile
-- [ ] Mejora V3.3 — Icono Home visible en navbar mobile
+- [x] Mejora V3.3 — Home (`/home`) en drawer mobile
+- [x] Mejora V3.3 — Explore accesible en drawer
+- [x] Mejora V3.3 — Categorías conservadas en drawer
+- [x] Mejora V3.3 — Botón Home visible (`NavbarHomeButton` todos viewports)
+- [ ] QA manual mobile
 
 ### A22 — Scroll imágenes mobile
 
 - [x] Base existente — Galerías horizontales (`GastroGallerySection`, `EventGallerySection`, rentals)
-- [ ] Mejora V3.3 — QA touch scroll en eventos/gastro/rentals/excursiones/modales
+- [x] Mejora V3.3 — Mejoras técnicas touch scroll (`horizontalScrollClasses.ts`, galerías/carruseles)
+- [ ] QA touch real mobile
 
 ### A23 — Botón «Nuevo Scanner» mobile
 
@@ -183,8 +193,10 @@
 ### B1 — Excursiones → Actividades (público)
 
 - [x] Base existente — Vertical `excursion` en DB/API
-- [x] Base existente — Rutas `/excursiones`, label nav «Excursiones»
-- [ ] Mejora V3.3 — Copy público «Actividades» (sin migrar `excursion` en DB)
+- [x] Base existente — Rutas `/excursiones`, `/categoria/excursion` (legacy preservadas)
+- [x] Mejora V3.3 — Copy público «Actividades» (`excursionPublicCopy.ts`)
+- [x] Mejora V3.3 — Identifier técnico `excursion` preservado
+- [ ] QA completo de labels públicos
 
 ### B2 — Cupones QR Actividades
 

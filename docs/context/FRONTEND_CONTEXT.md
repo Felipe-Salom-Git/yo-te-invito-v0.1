@@ -89,7 +89,7 @@ ApiClient → HTTP (NEXT_PUBLIC_API_BASE_URL)
 | ProfilesRepo, ApplicationsRepo, PlatformConfigRepo | ✓ | Admin `GET/PATCH /admin/config` |
 | **PublicPlatformConfigRepo** | ✓ | `GET /public/platform-config` — contacto footer (sin auth) |
 
-**Category routing**: `gastro` → `/restaurants`, `excursion` → `/excursiones`, `rental` → `/rentals`, `hotel` → `/hoteles`, default → `/events`.
+**Category routing**: `gastro` → `/restaurants` o `/gastronomicos`; `excursion` → `/excursiones` (label público **Actividades** — `lib/categories/excursionPublicCopy.ts`); `rental` → `/rentals`; `hotel` → `/hoteles`; default → `/events`.
 
 **Auth:** solo NextAuth + API NestJS. Eliminados `app/api/auth/*`, `app/api/admin/*`, `demo-users`, `dynamic-users`, `validate.ts` local.
 
@@ -166,7 +166,7 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`). Shared UI tokens:
 - Layout: `app/(portal)/me/layout.tsx` + **`PortalLayoutShell`** (`portalKey="me"`); sidebar/mobile nav vía `portalNavConfig` (Slice 7). Usuario maestro (`MASTER_USER_EMAIL`): sidebar acordeón con **todas** las verticales (`MasterPortalSidebar` / `MasterMobilePortalNav`).
 - Componentes portal: `MeDashboardAlerts`, `MeRecommendationsSection`, `MePreferencesInterests` + **`InterestsDisclosure`** (acordeones reutilizables); órdenes: `MeOrderDetailSummary`, `MeOrderTicketsList`.
 - **Ticket comprador (V2.2):** `components/tickets/` (`BuyerTicketVisual`, `TicketTemplateRenderer`, `DefaultBuyerTicket`, `TicketQrImage`, `TicketEntryStatusBanner`); utilidades `lib/tickets/` (`qr-display.ts`, `qr-image-url.ts`, `ticket-status-ui.ts`); estilos impresión en `styles/globals.css` (`@media print`).
-- Ficha gastro pública: `components/gastro/GastroPublicDetailContent` + hooks `lib/query/gastro-public-detail.ts`; **`GastroFollowButton`** → `/me/gastro-follows` (sin favoritos/esperados de evento en ficha restaurante).
+- Ficha gastro pública: `components/gastro/GastroPublicDetailContent` + hooks `lib/query/gastro-public-detail.ts`; **`GastroFollowButton`** → `/me/gastro-follows` (sin favoritos/esperados de evento en ficha restaurante). **V3.3 Etapa 1:** jerarquía CTA en sidebar — `GastroPublicActionCard` (WhatsApp/reserva primario, «Ver descuentos» secundario); sección descuentos con anchor `#gastro-discounts`; claim sigue en `/descuentos/[id]`.
 - Portal gastro: dashboard + validaciones (Slice 6). **Imágenes GCS:** `GastroLocalForm`, `GastroDiscountForm` (tipo validez: **fecha/rango** con inicio+cierre o recurrente semanal; modo `edit`), `/gastro/contenido`. **Descuentos V2.2:** listado clickeable `/gastro/descuentos`; detalle `/gastro/descuentos/[id]` (`GastroDiscountDetailContent` — métricas, claims, activar/desactivar, estado email); edición `/gastro/descuentos/[id]/editar`. Admin detalle local integra mismo panel de métricas. **Contenido editorial (hotfix 2026-06-23):** `GASTRO_OWNER` no carga lista global de eventos gastro ni muestra select; usa `getMyLocal().publicEventId`. **Subcategorías múltiples (2026-06-23):** `GastroSubcategoryMultiSelect` + sync `EventSubcategory` en evento público. **Cortesías (V2.1):** `/gastro/descuentos/cortesia` muestra fallos de email y `emailConfigured`. Valoraciones: `ManagedReviewsCommentsPage` scope `gastro` + `ManagedPortalReviewAlerts`. Follows: `GastroFollowButton`, `MePreferencesGastro` (toggles web/email por local). Notificaciones descuento: kind `FOLLOWED_GASTRO_NEW_DISCOUNT` en bandeja `/me/notifications`. **Scanner panel:** `ScannerUsersPanel` toast post-creación indica login inmediato en app scanner. **Admin dashboard:** KPI cupones escaneados + sección «Pendientes operativos» (borradores + descuentos gastro).
 - Engagement eventos: `EventEngagementRow` en fichas de **eventos** (favoritos / expected-events).
 - Checkout autenticado: redirige a `/me/cart` (aceptación `CHECKOUT` vía `POST /me/legal/accept`); invitado `/checkout` y `/checkout/[eventId]` — checkbox obligatorio (declaración; persistencia al tener cuenta). Post-Getnet: **`/checkout/return`** (estado + polling). Getnet **Web Checkout Redirect**: `checkoutUrl` / `redirectUrl` desde API (`feat/v1-s03-api-foundation`).
@@ -217,6 +217,59 @@ Uses **`RentalProductDetailContent`** (not `PlaceDetailView`). Shared UI tokens:
 **Slice 8.5 smoke (subcategorías):** checklist manual UI en `docs/audits/V3_1_SLICE_8_5_SUBCATEGORIES_SMOKE.md` — multi-select solo excursiones; detalle `/excursiones/[id]`; filtros categoría/explore por secundaria.
 
 **Slice 9 admin archivar:** `AdminEventLifecycleActions`, `AdminRentalLocationLifecycleActions`, `AdminExcursionOperatorLifecycleActions`, `AdminArchiveConfirmModal` — `/admin/eventos`, rentals locales, operadores excursión; gastro suspend/activate en `AdminGastroLocationsPageClient`.
+
+---
+
+## 7b. V3.3 Etapa 1 — UX pública / mobile (2026-08, código implementado)
+
+Doc cierre: `docs/audits/V3_3_STAGE_1_PUBLIC_MOBILE_CLOSING.md`. Sin cambios API/Prisma.
+
+### Helpers nuevos
+
+| Archivo | Uso |
+|---------|-----|
+| `lib/gastro/discount-location-href.ts` | Href discovery descuento → ficha gastro (`getContentDetailHref` + `locationId`) |
+| `lib/ui/horizontalScrollClasses.ts` | `HORIZONTAL_SCROLL_RAIL_CLASS` — `touch-pan-x`, `overscroll-x-contain`, snap |
+| `lib/categories/subcategoryRailThreshold.ts` | `MIN_SUBCATEGORY_RAIL_ITEMS = 5`, `shouldRenderSubcategoryRail()` |
+| `lib/categories/excursionPublicCopy.ts` | Label público **Actividades**; clave técnica `excursion` documentada |
+| `lib/categories/subcategoryRailThreshold.test.ts` | Test Vitest preparado — **no ejecutado** (web sin runner configurado) |
+
+### Category landing — rails subcategoría
+
+- `useCategoryCarousels.ts`: query por subcategoría; rail dedicado solo si `shouldRenderSubcategoryRail(count)`.
+- **Sin autoplay** — scroll horizontal manual; flechas desktop en `ContentRail` ocultas en mobile.
+- Chips: `SubcategoryFilterChip` (diseño V3.3); scroll en `SubcategoryRail`.
+
+### Mobile navigation
+
+- `publicNavConfig.ts`: drawer orden **Home** (`/home`) → **Explore** → **Categorías** (+ verticales).
+- `NavbarHomeButton`: visible en todos los viewports.
+
+### Modales
+
+- Dialogs convencionales centrados en mobile (`items-center` en `Modal.tsx`, `ContentPreviewModal`, reviews, admin delete, `PublicDescriptionBlock`, etc.).
+- **Drawers/sheets** (`MobilePublicNavDrawer`, `SideSheet`) sin cambio — siguen laterales/bottom según diseño.
+
+### Descuentos discovery
+
+- `GastroDiscountPublicCard`: título + local → ficha gastro.
+- `/descuentos/[id]`: página claim conservada; **OG** en `app/(public)/descuentos/[id]/layout.tsx` (`generateMetadata` server).
+
+### Actividades (copy público)
+
+```txt
+Public label: Actividades
+Technical category key: excursion
+Legacy routes: /excursiones/*, /categoria/excursion (sin cambio)
+```
+
+Importar labels desde `excursionPublicCopy.ts`; admin puede seguir diciendo «Excursiones» en rutas internas.
+
+### Galerías / scroll táctil
+
+- `EventGallerySection`, `ContentRail`, `GastroDiscountsRail`, `RentalGalleryThumbnails`, `ContentPreviewExpanded` — clases horizontales + imports React client corregidos en estabilización 1.9.
+
+---
 
 **Etapa 12 extras:** `/admin/hoteles` archivar/restaurar; cards excursión con `getExcursionCardScheduleLine`; doc `docs/audits/V3_1_STAGE_12_*`.
 
