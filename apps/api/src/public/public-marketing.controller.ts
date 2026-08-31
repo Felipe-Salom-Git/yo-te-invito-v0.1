@@ -15,7 +15,7 @@ export class PublicMarketingController {
     @Query(new ZodValidationPipe(publicMarketingUnsubscribeQuerySchema))
     query: PublicMarketingUnsubscribeQuery,
   ) {
-    return this.marketing.unsubscribeByToken(query.token);
+    return this.marketing.previewUnsubscribeByToken(query.token);
   }
 
   @Post('unsubscribe')

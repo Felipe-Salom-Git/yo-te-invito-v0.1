@@ -5,6 +5,7 @@
 
 import {
   evaluateCampaignEmailDelivery,
+  finalizeCampaignStatus,
   isCampaignProviderErrorRetryable,
   isTransactionalEmailIndependentOfMarketingOptIn,
   sanitizeCampaignErrorCode,
@@ -80,6 +81,38 @@ assert(
 assert(
   evaluateCampaignEmailDelivery({ ...eligibleBase, cancelRequested: true }).action === 'skip',
   'cancel requested skipped',
+);
+assert(
+  (evaluateCampaignEmailDelivery({ ...eligibleBase, cancelRequested: true }) as { reason: string })
+    .reason === 'CANCELLED_BY_ADMIN',
+  'cancel skip reason',
+);
+assert(
+  evaluateCampaignEmailDelivery({
+    ...eligibleBase,
+    deliveryStatus: 'SENT',
+    cancelRequested: true,
+  }).action === 'already_sent',
+  'cancel does not retract SENT delivery',
+);
+assert(
+  evaluateCampaignEmailDelivery({
+    ...eligibleBase,
+    deliveryStatus: 'SKIPPED',
+    skipReason: 'CANCELLED_BY_ADMIN',
+    cancelRequested: true,
+  }).action === 'skip',
+  'cancelled skip is not retried',
+);
+assert(
+  finalizeCampaignStatus({ sent: 0, skipped: 3, failed: 0, cancelRequested: true }) ===
+    'CANCELLED',
+  'all skipped cancel → CANCELLED terminal',
+);
+assert(
+  finalizeCampaignStatus({ sent: 2, skipped: 1, failed: 0, cancelRequested: true }) ===
+    'PARTIAL',
+  'partial send + cancel → PARTIAL terminal',
 );
 
 assert(

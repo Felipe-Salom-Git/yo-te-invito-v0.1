@@ -4,6 +4,8 @@
  */
 
 import {
+  buildMarketingUnsubscribePreview,
+  buildMarketingUnsubscribeResult,
   emptyMeMarketingPreferences,
   isEmailCampaignEligible,
   isMarketingUnsubscribeTokenShape,
@@ -122,6 +124,36 @@ assert(
 assert(
   shouldSendActivityCouponClaimEmail(null) === false,
   'claim QR still skips null email',
+);
+
+assert(
+  buildMarketingUnsubscribePreview(true).emailOptIn === true &&
+    buildMarketingUnsubscribePreview(true).alreadyUnsubscribed === false,
+  'GET preview subscribed user is read-only shape',
+);
+assert(
+  buildMarketingUnsubscribePreview(false).alreadyUnsubscribed === true,
+  'GET preview already unsubscribed',
+);
+assert(
+  buildMarketingUnsubscribeResult(true).alreadyUnsubscribed === false,
+  'POST first unsubscribe marks changed',
+);
+assert(
+  buildMarketingUnsubscribeResult(false).alreadyUnsubscribed === true,
+  'POST repeated unsubscribe is idempotent',
+);
+assert(
+  isEmailCampaignEligible({ ...baseUser, emailOptIn: false }).ok === false,
+  'unsubscribe EMAIL blocks campaign eligibility',
+);
+assert(
+  isTransactionalEmailIndependentOfMarketingOptIn() === true,
+  'unsubscribe EMAIL does not block verification/claim conceptually',
+);
+assert(
+  shouldSendActivityCouponClaimEmail('user@example.com') === true,
+  'unsubscribe EMAIL does not block Gastro/Activity claim email gate',
 );
 
 console.log('All marketing preference tests passed');

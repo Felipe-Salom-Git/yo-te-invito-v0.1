@@ -2,12 +2,52 @@
 
 **Fecha:** 2026-08-31  
 **Branch:** `feat/v1-s03-api-foundation`  
-**HEAD:** `96991c1` `feat(v3.3): add admin expired benefits digest` (antes del commit de este closing)  
+**HEAD:** ver §22 (post-hardening)  
 **Auditoría:** [`V3_3_STAGE_8_CAMPAIGNS_AUDIT.md`](./V3_3_STAGE_8_CAMPAIGNS_AUDIT.md)
 
 **No** context update global. **No** push. **No** Etapa 9. **No** QA global.
 
-**Estado código:** implementado. DB smoke / Redis worker / SMTP live / QA manual: pendientes.
+**Estado código:** implementado + hardening pre-cierre. DB smoke / Redis worker / SMTP live / QA manual: pendientes.
+
+---
+
+## 0. Hardening pre-cierre (2026-08-31)
+
+### Unsubscribe GET read-only
+
+| Método | Comportamiento |
+|--------|----------------|
+| `GET /public/marketing/unsubscribe?token=` | **Solo lectura.** Valida token y devuelve `{ ok, valid, emailOptIn, alreadyUnsubscribed }`. **No** escribe `emailOptIn` ni `emailOptOutAt`. |
+| `POST /public/marketing/unsubscribe?token=` | **Mutación.** `emailOptIn=false`, `emailOptOutAt=now()`, `source=UNSUBSCRIBE`. Idempotente: segundo POST → `alreadyUnsubscribed: true`. |
+
+Web `/baja-promos?token=...`:
+
+1. `GET` al cargar (validación / preview)
+2. Si sigue opt-in → pantalla de confirmación
+3. Usuario confirma → `POST`
+4. Éxito o “ya estabas dado de baja”
+
+Motivo: scanners de email, previews y prefetch no deben disparar opt-out.
+
+Helpers puros en shared: `buildMarketingUnsubscribePreview`, `buildMarketingUnsubscribeResult`.
+
+### Digest timezone determinística
+
+- Cron prod: `20 8 * * *` — **08:20** en `America/Argentina/Buenos_Aires` (`EXPIRED_BENEFITS_DIGEST_TIMEZONE`, misma que `GASTRO_DISCOUNT_TIMEZONE`).
+- Cron dev: `*/30 * * * *` en la misma timezone.
+- `@Cron(..., { timeZone: EXPIRED_BENEFITS_DIGEST_TIMEZONE })` en `AdminExpiredBenefitsDigestService`.
+- `expiredBenefitsDigestKey()` usa calendario AR (`getGastroDiscountCalendarKey`), no UTC `toISOString().slice(0,10)`.
+- `ADMIN_EXPIRED_BENEFITS_DIGEST_CRON_ENABLED`: omitida o ≠ `"false"` → activo; `"false"` → skip.
+
+### Cancel worker guard
+
+`evaluateCampaignEmailDelivery` revalida `cancelRequestedAt` antes de enviar → `SKIPPED` / `CANCELLED_BY_ADMIN`. Deliveries ya `SENT` → `already_sent` (no retracta). Jobs BullMQ encolados pueden ejecutarse; el worker hace skip (no se cancelan jobs físicamente).
+
+`refreshCampaign` agrega cuando `queued=0`: `COMPLETED` | `PARTIAL` | `FAILED` | `CANCELLED` vía `finalizeCampaignStatus`. Bulk-skip de `QUEUED` restantes si `cancelRequestedAt` al drenar.
+
+### Audit `CAMPAIGN_COMPLETED`
+
+**Diferido.** `AuditService.logAction` exige `actorId` real; el worker no tiene actor sistema. `CAMPAIGN_SEND_REQUESTED` sí se audita al enviar. Estado terminal visible en `AdminCampaign.status`.
 
 ---
 
@@ -96,10 +136,12 @@ No se infiere desde cuenta, `emailVerified`, claims, compras ni TyC generales.
 
 | Pieza | Valor |
 |-------|--------|
-| Web pública | `/baja-promos?token=` |
-| API | `GET/POST /public/marketing/unsubscribe?token=` |
+| Web pública | `/baja-promos?token=` — GET preview + confirmación + POST |
+| API preview | `GET /public/marketing/unsubscribe?token=` — **read-only** |
+| API mutation | `POST /public/marketing/unsubscribe?token=` — opt-out |
 | Token | `^[a-f0-9]{64}$`, no userId/email |
-| Efecto | `emailOptIn=false`, `emailOptOutAt=now()`, `source=UNSUBSCRIBE` |
+| POST efecto | `emailOptIn=false`, `emailOptOutAt=now()`, `source=UNSUBSCRIBE` |
+| POST idempotente | `alreadyUnsubscribed: true` si ya opt-out |
 | No afecta | verify, claim QR, tickets, seguridad |
 
 Re-subscribe: `/me/account` → Comunicaciones. Sin double-opt-in V1.
@@ -233,11 +275,11 @@ User.phone / teléfonos Gastro-Producer **no** se usan como target.
 
 **Implementado.** Operativo, **no** campaña.
 
-- Cron prod `20 8 * * *` (08:20 en TZ del proceso Node; en hosts UTC = 08:20 UTC). Dev `*/30 * * * *`.
+- Cron prod `20 8 * * *` con `timeZone: America/Argentina/Buenos_Aires` (`EXPIRED_BENEFITS_DIGEST_TIMEZONE` = `GASTRO_DISCOUNT_TIMEZONE`). Dev `*/30 * * * *` (misma TZ).
 - Flag `ADMIN_EXPIRED_BENEFITS_DIGEST_CRON_ENABLED=false` desactiva.
 - Ventana: `EXPIRED` + `updatedAt` últimas 24h, GastroDiscount y ActivityCoupon, no archivados.
 - Destinatarios: `Role.ADMIN` + `ACTIVE` + `email != null` del tenant. Skip email null. No hardcode.
-- Idempotencia: `AdminOperationalDigestLog` unique `(tenantId, kind, digestKey, recipientUserId)`, `digestKey = YYYY-MM-DD` UTC.
+- Idempotencia: `AdminOperationalDigestLog` unique `(tenantId, kind, digestKey, recipientUserId)`, `digestKey` = fecha calendario AR (`getGastroDiscountCalendarKey`).
 - Template `ADMIN_EXPIRED_BENEFITS_DIGEST` **sin** unsubscribe marketing.
 - Si la ventana está vacía: no envía.
 
@@ -267,10 +309,10 @@ Deep delete User: `createdByUserId` SetNull, delivery `userId` SetNull, digest r
 
 | Comando | Resultado |
 |---------|-----------|
-| `pnpm --filter api run test:marketing-preferences` | PASS |
+| `pnpm --filter api run test:marketing-preferences` | PASS (GET preview / POST idempotence) |
 | `pnpm --filter api run test:admin-campaign-domain` | PASS |
-| `pnpm --filter api run test:admin-campaign-delivery` | PASS |
-| `pnpm --filter api run test:admin-expired-benefits-digest` | PASS |
+| `pnpm --filter api run test:admin-campaign-delivery` | PASS (cancel guard + terminal aggregation) |
+| `pnpm --filter api run test:admin-expired-benefits-digest` | PASS (AR timezone + digest key) |
 | `pnpm --filter api run test:gastro-discount-qr` | PASS |
 | `pnpm --filter api run test:activity-coupon-qr` | PASS |
 | `pnpm --filter api run test:activity-coupon-claim` | PASS |
@@ -314,7 +356,7 @@ Preferences opt-in/out, unsubscribe público, draft, content picker, segmento, p
 |------|------|
 | Migraciones no aplicadas en este entorno | Postgres caído |
 | Worker Redis no ejercitado end-to-end | Sin Redis local verificado |
-| `CAMPAIGN_COMPLETED` audit desde worker | Send requested sí se loguea; completed es visible en status |
+| `CAMPAIGN_COMPLETED` audit desde worker | Diferido — requiere actorId; status en campaña |
 | Test send al Admin actor | Diferido; `smoke:email-template` cubre HTML |
 | Imagen custom GCS de campaña | Diferido; se usa imagen canónica HTTPS del recurso |
 | Adapter WhatsApp real | Pendiente decisión de proveedor |
@@ -334,7 +376,8 @@ Preferences opt-in/out, unsubscribe público, draft, content picker, segmento, p
 | `7478074` | `feat(v3.3): add admin campaign management ui` |
 | `d29b6bd` | `feat(v3.3): prepare campaign whatsapp channel` |
 | `96991c1` | `feat(v3.3): add admin expired benefits digest` |
-| *(este archivo)* | `docs(v3.3): close admin campaigns stage` |
+| `e39bef4` | `docs(v3.3): close admin campaigns stage` |
+| *(hardening)* | `fix(v3.3): harden campaign delivery lifecycle` |
 
 ---
 

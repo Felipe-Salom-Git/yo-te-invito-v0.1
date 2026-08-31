@@ -52,6 +52,39 @@ export type PublicMarketingUnsubscribeResponse = z.infer<
   typeof publicMarketingUnsubscribeResponseSchema
 >;
 
+/** GET /public/marketing/unsubscribe — read-only preview; must not mutate preferences. */
+export const publicMarketingUnsubscribePreviewSchema = z.object({
+  ok: z.literal(true),
+  valid: z.literal(true),
+  emailOptIn: z.boolean(),
+  alreadyUnsubscribed: z.boolean(),
+});
+
+export type PublicMarketingUnsubscribePreview = z.infer<
+  typeof publicMarketingUnsubscribePreviewSchema
+>;
+
+/** Pure preview for a valid token row — no DB write. */
+export function buildMarketingUnsubscribePreview(emailOptIn: boolean): PublicMarketingUnsubscribePreview {
+  return {
+    ok: true,
+    valid: true,
+    emailOptIn,
+    alreadyUnsubscribed: !emailOptIn,
+  };
+}
+
+/** Pure POST result shape — idempotent when already opted out. */
+export function buildMarketingUnsubscribeResult(
+  emailOptIn: boolean,
+): PublicMarketingUnsubscribeResponse {
+  return {
+    ok: true,
+    emailOptIn: false,
+    alreadyUnsubscribed: !emailOptIn,
+  };
+}
+
 export const EMAIL_CAMPAIGN_SKIP_REASONS = [
   'NO_PREFERENCE',
   'OPT_OUT',

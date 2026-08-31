@@ -4,6 +4,8 @@
  */
 
 import {
+  EXPIRED_BENEFITS_DIGEST_CRON_PRODUCTION,
+  EXPIRED_BENEFITS_DIGEST_TIMEZONE,
   EXPIRED_BENEFITS_DIGEST_KIND,
   expiredBenefitsDigestKey,
   formatExpiredBenefitsDigestLines,
@@ -21,7 +23,19 @@ function assert(cond: boolean, msg: string) {
 }
 
 assert(EXPIRED_BENEFITS_DIGEST_KIND === 'EXPIRED_BENEFITS', 'digest kind');
-assert(expiredBenefitsDigestKey(new Date('2026-08-31T12:00:00.000Z')) === '2026-08-31', 'UTC date key');
+assert(
+  EXPIRED_BENEFITS_DIGEST_TIMEZONE === 'America/Argentina/Buenos_Aires',
+  'digest timezone AR',
+);
+assert(EXPIRED_BENEFITS_DIGEST_CRON_PRODUCTION === '20 8 * * *', 'prod cron 08:20');
+assert(
+  expiredBenefitsDigestKey(new Date('2026-08-31T12:00:00.000Z')) === '2026-08-31',
+  'AR calendar key midday UTC',
+);
+assert(
+  expiredBenefitsDigestKey(new Date('2026-08-31T02:30:00.000Z')) === '2026-08-30',
+  'AR calendar key before UTC midnight boundary',
+);
 assert(
   shouldSendExpiredBenefitsDigest({ gastroExpiredCount: 0, activityCouponExpiredCount: 0 }) ===
     false,

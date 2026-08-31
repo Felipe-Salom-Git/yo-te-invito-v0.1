@@ -6,11 +6,14 @@ import {
 } from '@nestjs/common';
 import {
   ErrorCode,
+  buildMarketingUnsubscribePreview,
+  buildMarketingUnsubscribeResult,
   emptyMeMarketingPreferences,
   isMarketingUnsubscribeTokenShape,
   type MeMarketingPreferences,
   type MarketingPreferenceSource,
   type PatchMeMarketingPreferencesBody,
+  type PublicMarketingUnsubscribePreview,
   type PublicMarketingUnsubscribeResponse,
 } from '@yo-te-invito/shared';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -71,7 +74,30 @@ export class MarketingPreferencesService {
     return this.toDto(updated);
   }
 
+  async previewUnsubscribeByToken(token: string): Promise<PublicMarketingUnsubscribePreview> {
+    const row = await this.findPreferenceByUnsubscribeToken(token);
+    return buildMarketingUnsubscribePreview(row.emailOptIn);
+  }
+
   async unsubscribeByToken(token: string): Promise<PublicMarketingUnsubscribeResponse> {
+    const row = await this.findPreferenceByUnsubscribeToken(token);
+
+    if (!row.emailOptIn) {
+      return buildMarketingUnsubscribeResult(false);
+    }
+
+    await this.prisma.userMarketingPreference.update({
+      where: { id: row.id },
+      data: {
+        emailOptIn: false,
+        emailOptOutAt: new Date(),
+        source: 'UNSUBSCRIBE',
+      },
+    });
+    return buildMarketingUnsubscribeResult(true);
+  }
+
+  private async findPreferenceByUnsubscribeToken(token: string) {
     if (!isMarketingUnsubscribeTokenShape(token)) {
       throw new NotFoundException({
         code: ErrorCode.MARKETING_UNSUBSCRIBE_INVALID,
@@ -88,20 +114,7 @@ export class MarketingPreferencesService {
         message: 'Enlace inválido o vencido',
       });
     }
-
-    if (!row.emailOptIn) {
-      return { ok: true, emailOptIn: false, alreadyUnsubscribed: true };
-    }
-
-    await this.prisma.userMarketingPreference.update({
-      where: { id: row.id },
-      data: {
-        emailOptIn: false,
-        emailOptOutAt: new Date(),
-        source: 'UNSUBSCRIBE',
-      },
-    });
-    return { ok: true, emailOptIn: false, alreadyUnsubscribed: false };
+    return row;
   }
 
   private buildPatchData(

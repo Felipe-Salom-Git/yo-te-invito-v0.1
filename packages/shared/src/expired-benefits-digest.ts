@@ -1,7 +1,21 @@
+import {
+  GASTRO_DISCOUNT_TIMEZONE,
+  getGastroDiscountCalendarKey,
+} from './gastro-discount-expiry';
+
 export const EXPIRED_BENEFITS_DIGEST_KIND = 'EXPIRED_BENEFITS' as const;
 
-export function expiredBenefitsDigestKey(now: Date = new Date()): string {
-  return now.toISOString().slice(0, 10);
+/** Same IANA zone as gastro discount calendar rules. */
+export const EXPIRED_BENEFITS_DIGEST_TIMEZONE = GASTRO_DISCOUNT_TIMEZONE;
+
+export const EXPIRED_BENEFITS_DIGEST_CRON_PRODUCTION = '20 8 * * *';
+export const EXPIRED_BENEFITS_DIGEST_CRON_DEVELOPMENT = '*/30 * * * *';
+
+export function expiredBenefitsDigestKey(
+  now: Date = new Date(),
+  timeZone: string = EXPIRED_BENEFITS_DIGEST_TIMEZONE,
+): string {
+  return getGastroDiscountCalendarKey(now, timeZone);
 }
 
 export function shouldSendExpiredBenefitsDigest(input: {

@@ -2,7 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { Prisma } from '@prisma/client';
 import {
+  EXPIRED_BENEFITS_DIGEST_CRON_DEVELOPMENT,
+  EXPIRED_BENEFITS_DIGEST_CRON_PRODUCTION,
   EXPIRED_BENEFITS_DIGEST_KIND,
+  EXPIRED_BENEFITS_DIGEST_TIMEZONE,
   expiredBenefitsDigestKey,
   formatExpiredBenefitsDigestLines,
   shouldSendExpiredBenefitsDigest,
@@ -23,7 +26,12 @@ export class AdminExpiredBenefitsDigestService {
     private readonly emailQueue: EmailQueueService,
   ) {}
 
-  @Cron(process.env.NODE_ENV === 'development' ? '*/30 * * * *' : '20 8 * * *')
+  @Cron(
+    process.env.NODE_ENV === 'development'
+      ? EXPIRED_BENEFITS_DIGEST_CRON_DEVELOPMENT
+      : EXPIRED_BENEFITS_DIGEST_CRON_PRODUCTION,
+    { timeZone: EXPIRED_BENEFITS_DIGEST_TIMEZONE },
+  )
   async runScheduled(): Promise<void> {
     if (process.env.ADMIN_EXPIRED_BENEFITS_DIGEST_CRON_ENABLED === 'false') return;
     try {

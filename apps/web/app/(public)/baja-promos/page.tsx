@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Button, Card, CardContent, CardHeader } from '@/components';
@@ -8,24 +8,58 @@ import { Logo } from '@/components/brand/Logo';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001';
 
+type PageState =
+  | { kind: 'loading' }
+  | { kind: 'invalid' }
+  | { kind: 'already_unsubscribed' }
+  | { kind: 'confirm' }
+  | { kind: 'success' }
+  | { kind: 'error' };
+
 function UnsubscribeContent() {
   const searchParams = useSearchParams();
   const token = searchParams?.get('token');
-  const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
+  const [state, setState] = useState<PageState>({ kind: 'loading' });
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (!token) {
-      setStatus('error');
+      setState({ kind: 'invalid' });
       return;
     }
-    fetch(
-      `${API_BASE}/public/marketing/unsubscribe?token=${encodeURIComponent(token)}`,
-      { method: 'POST' },
-    )
+    fetch(`${API_BASE}/public/marketing/unsubscribe?token=${encodeURIComponent(token)}`)
       .then(async (res) => {
-        setStatus(res.ok ? 'success' : 'error');
+        if (!res.ok) {
+          setState({ kind: 'invalid' });
+          return;
+        }
+        const data = (await res.json()) as {
+          emailOptIn?: boolean;
+          alreadyUnsubscribed?: boolean;
+        };
+        if (data.alreadyUnsubscribed || data.emailOptIn === false) {
+          setState({ kind: 'already_unsubscribed' });
+          return;
+        }
+        setState({ kind: 'confirm' });
       })
-      .catch(() => setStatus('error'));
+      .catch(() => setState({ kind: 'error' }));
+  }, [token]);
+
+  const confirmUnsubscribe = useCallback(async () => {
+    if (!token) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch(
+        `${API_BASE}/public/marketing/unsubscribe?token=${encodeURIComponent(token)}`,
+        { method: 'POST' },
+      );
+      setState(res.ok ? { kind: 'success' } : { kind: 'error' });
+    } catch {
+      setState({ kind: 'error' });
+    } finally {
+      setSubmitting(false);
+    }
   }, [token]);
 
   return (
@@ -36,18 +70,35 @@ function UnsubscribeContent() {
           <h1 className="text-xl font-semibold text-text">Emails promocionales</h1>
         </CardHeader>
         <CardContent className="space-y-4">
-          {status === 'loading' ? <p className="text-text-muted">Procesando tu solicitud…</p> : null}
-          {status === 'success' ? (
+          {state.kind === 'loading' ? (
+            <p className="text-text-muted">Cargando…</p>
+          ) : null}
+          {state.kind === 'confirm' ? (
+            <>
+              <p className="text-text">
+                ¿Querés dejar de recibir novedades y promociones por email de Yo Te Invito?
+              </p>
+              <Button className="w-full" onClick={confirmUnsubscribe} disabled={submitting}>
+                {submitting ? 'Procesando…' : 'Dejar de recibir promociones'}
+              </Button>
+            </>
+          ) : null}
+          {state.kind === 'success' || state.kind === 'already_unsubscribed' ? (
             <p className="text-text">Has dejado de recibir emails promocionales de Yo Te Invito.</p>
           ) : null}
-          {status === 'error' ? (
+          {state.kind === 'invalid' ? (
             <p className="text-text">Este enlace no es válido o ya no está vigente.</p>
+          ) : null}
+          {state.kind === 'error' ? (
+            <p className="text-text">No pudimos procesar tu solicitud. Intentá de nuevo más tarde.</p>
           ) : null}
           <p className="text-sm text-text-muted">
             Seguirás recibiendo emails de cuenta (verificación, tickets, reclamos QR).
           </p>
           <Link href="/me/account" className="mt-2 block">
-            <Button className="w-full">Gestionar preferencias</Button>
+            <Button variant="secondary" className="w-full">
+              Gestionar preferencias
+            </Button>
           </Link>
         </CardContent>
       </Card>
