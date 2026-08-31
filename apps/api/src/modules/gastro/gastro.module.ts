@@ -19,6 +19,7 @@ import { GastroDiscountClaimEmailService } from './gastro-discount-claim-email.s
 import { GastroOwnershipService } from './gastro-ownership.service';
 import { GastroDiscountMetricsService } from './gastro-discount-metrics.service';
 import { GastroDiscountExpiryService } from './gastro-discount-expiry.service';
+import { GastroDiscountVisualTemplateService } from './gastro-discount-visual-template.service';
 import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
@@ -45,6 +46,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
     GastroDiscountClaimEmailService,
     GastroDiscountMetricsService,
     GastroDiscountExpiryService,
+    GastroDiscountVisualTemplateService,
   ],
   exports: [
     GastroPortalDiscountsService,
@@ -54,6 +56,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
     GastroDiscountClaimEmailService,
     GastroDiscountMetricsService,
     GastroDiscountExpiryService,
+    GastroDiscountVisualTemplateService,
   ],
 })
 export class GastroModule {}

@@ -14,6 +14,7 @@ import {
   upsertGastroDiscountVisualTemplateDtoSchema,
   visualElementsHitQr,
   VISUAL_TEMPLATE_DEFAULT_QR_ZONE,
+  compileDiscountVisualTemplateDesign,
 } from '@yo-te-invito/shared';
 
 function assert(cond: boolean, msg: string) {
@@ -157,5 +158,28 @@ const extraKey = upsertGastroDiscountVisualTemplateDtoSchema.safeParse({
   discountId: 'should-not-pass',
 });
 assert(!extraKey.success, 'strict() rejects discountId mass assignment');
+
+const compiled = compileDiscountVisualTemplateDesign(fallback);
+assert(compiled.qrZoneJson.w >= 0.18, 'compiled QR meets min size');
+
+try {
+  compileDiscountVisualTemplateDesign({
+    ...fallback,
+    elementsJson: [
+      {
+        id: 'cover',
+        type: 'SHAPE',
+        x: 0.22,
+        y: 0.58,
+        w: 0.5,
+        h: 0.25,
+        zIndex: 1,
+      },
+    ],
+  });
+  assert(false, 'overlap should throw');
+} catch {
+  assert(true, 'compile rejects QR overlap');
+}
 
 console.log('PASS: discount visual template schema');

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
 import {
   gastroContentCreateSchema,
   gastroContentUpdateSchema,
@@ -11,6 +11,7 @@ import {
   gastroDiscountStatusUpdateSchema,
   gastroDiscountArchiveActionSchema,
   gastroProfileIdQuerySchema,
+  upsertGastroDiscountVisualTemplateDtoSchema,
   Role,
   type GastroContentCreateInput,
   type GastroContentUpdateInput,
@@ -25,6 +26,7 @@ import {
   type GastroCourtesySendBody,
   type GastroDiscountStatusUpdate,
   type GastroDiscountArchiveAction,
+  type UpsertGastroDiscountVisualTemplateDto,
 } from '@yo-te-invito/shared';
 import { JwtOrDevAuthGuard } from '../../auth/jwt-or-dev-auth.guard';
 import { GastroRolesGuard } from '../../common/guards/gastro-roles.guard';
@@ -37,6 +39,7 @@ import { GastroPortalDiscountsService } from './gastro-portal-discounts.service'
 import { GastroContentService } from './gastro-content.service';
 import { GastroDashboardService } from './gastro-dashboard.service';
 import { GastroCourtesyDiscountsService } from './gastro-courtesy-discounts.service';
+import { GastroDiscountVisualTemplateService } from './gastro-discount-visual-template.service';
 
 @Controller('gastro')
 @UseGuards(JwtOrDevAuthGuard, GastroRolesGuard)
@@ -49,6 +52,7 @@ export class GastroController {
     private readonly contentService: GastroContentService,
     private readonly dashboard: GastroDashboardService,
     private readonly courtesyDiscounts: GastroCourtesyDiscountsService,
+    private readonly visualTemplates: GastroDiscountVisualTemplateService,
   ) {}
 
   @Get('dashboard')
@@ -181,6 +185,32 @@ export class GastroController {
       id,
       body,
     );
+  }
+
+  @Get('discounts/:id/visual-template')
+  async getVisualTemplate(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param('id') id: string,
+  ) {
+    return this.visualTemplates.get(user.tenantId, user.id, user.role, id);
+  }
+
+  @Put('discounts/:id/visual-template')
+  async upsertVisualTemplate(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(upsertGastroDiscountVisualTemplateDtoSchema))
+    body: UpsertGastroDiscountVisualTemplateDto,
+  ) {
+    return this.visualTemplates.upsert(user.tenantId, user.id, user.role, id, body);
+  }
+
+  @Delete('discounts/:id/visual-template')
+  async resetVisualTemplate(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param('id') id: string,
+  ) {
+    return this.visualTemplates.reset(user.tenantId, user.id, user.role, id);
   }
 
   @Get('discounts/:id')

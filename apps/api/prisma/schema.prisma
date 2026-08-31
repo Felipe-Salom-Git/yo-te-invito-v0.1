@@ -204,6 +204,7 @@ model Tenant {
   ticketTypes         TicketType[]
   ticketBatches       TicketBatch[]
   ticketTemplates     TicketTemplate[]
+  gastroDiscountTemplates GastroDiscountTemplate[]
   userProducerMemberships UserProducerMembership[]
   userGastroMemberships   UserGastroMembership[]
   userHotelMemberships    UserHotelMembership[]
@@ -756,6 +757,8 @@ model User {
   gastroDiscountClaims GastroDiscountClaim[]
   gastroDiscountsCreated GastroDiscount[] @relation("GastroDiscountCreator")
   gastroDiscountPendingEdits GastroDiscount[] @relation("GastroDiscountPendingSubmitter")
+  gastroDiscountTemplatesCreated GastroDiscountTemplate[] @relation("GastroDiscountTemplateCreator")
+  gastroDiscountTemplatesUpdated GastroDiscountTemplate[] @relation("GastroDiscountTemplateUpdater")
   gastroCourtesyCampaignsCreated GastroCourtesyCampaign[]
   commercialRelationshipReviews CommercialRelationshipReview[]
   reviewDisputesRequested       ReviewDisputeRequest[]         @relation("ReviewDisputeRequester")
@@ -2053,6 +2056,9 @@ enum AuditAction {
   GASTRO_DISCOUNT_ARCHIVED
   GASTRO_DISCOUNT_UNARCHIVED
   ADMIN_GASTRO_DISCOUNT_CREATED
+  GASTRO_DISCOUNT_TEMPLATE_CREATED
+  GASTRO_DISCOUNT_TEMPLATE_UPDATED
+  GASTRO_DISCOUNT_TEMPLATE_RESET
   GASTRO_PROFILE_APPROVED
   GASTRO_PROFILE_REJECTED
   REVIEW_DISPUTE_IN_REVIEW
@@ -2280,6 +2286,7 @@ model GastroDiscount {
   validations   GastroDiscountValidation[]
   claims        GastroDiscountClaim[]
   courtesyCampaign GastroCourtesyCampaign?
+  visualTemplate   GastroDiscountTemplate?
 
   @@unique([eventId, code])
   @@index([tenantId, eventId])
@@ -2289,6 +2296,32 @@ model GastroDiscount {
   @@index([archivedAt])
   @@index([createdByOrigin])
   @@index([pendingUpdateSubmittedAt])
+}
+
+/// Visual layout for gastro discount QR coupon (QR Studio). Presentation only — does not store payload/token/shortCode values.
+model GastroDiscountTemplate {
+  id              String   @id @default(cuid())
+  tenantId        String
+  gastroDiscountId String  @unique
+  name            String   @default("Diseño personalizado")
+  canvasWidth     Int      @default(320)
+  canvasHeight    Int      @default(560)
+  backgroundType  String   @default("SOLID")
+  backgroundValue String   @default("#0a0a0a")
+  elementsJson    Json     @default("[]")
+  qrZoneJson      Json
+  version         Int      @default(1)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  createdByUserId String?
+  updatedByUserId String?
+
+  tenant     Tenant         @relation(fields: [tenantId], references: [id])
+  discount   GastroDiscount  @relation(fields: [gastroDiscountId], references: [id], onDelete: Cascade)
+  createdBy  User?          @relation("GastroDiscountTemplateCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  updatedBy  User?          @relation("GastroDiscountTemplateUpdater", fields: [updatedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
 }
 
 model GastroCourtesyCampaign {

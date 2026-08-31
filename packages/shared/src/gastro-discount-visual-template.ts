@@ -8,6 +8,10 @@ import type {
   UpsertGastroDiscountVisualTemplateDto,
 } from './schemas/gastro-discount-visual-template.schema';
 import { DISCOUNT_VISUAL_DEFAULT_QR_ZONE } from './schemas/gastro-discount-visual-template.schema';
+import {
+  assertVisualQrZoneSafe,
+  visualElementsHitQr,
+} from './visual-template/visual-template-qr-rules';
 
 export type DiscountVisualRenderContext = {
   gastroName: string;
@@ -292,6 +296,60 @@ export function discountVisualPresetDesign(
         textAlign: 'center',
       }),
     ],
+  };
+}
+
+export function compileDiscountVisualTemplateDesign(
+  dto: UpsertGastroDiscountVisualTemplateDto,
+  existing?: {
+    name: string;
+    canvasWidth: number;
+    canvasHeight: number;
+    backgroundType: string;
+    backgroundValue: string;
+    elementsJson: DiscountVisualTemplateElement[];
+    qrZoneJson: { x: number; y: number; w: number; h: number };
+  } | null,
+): {
+  name: string;
+  canvasWidth: number;
+  canvasHeight: number;
+  backgroundType: 'SOLID' | 'IMAGE';
+  backgroundValue: string;
+  elementsJson: DiscountVisualTemplateElement[];
+  qrZoneJson: { x: number; y: number; w: number; h: number };
+} {
+  const fallback = defaultDiscountVisualTemplateDesign();
+  const name = dto.name ?? existing?.name ?? fallback.name;
+  const canvasWidth = dto.canvasWidth ?? existing?.canvasWidth ?? fallback.canvasWidth;
+  const canvasHeight = dto.canvasHeight ?? existing?.canvasHeight ?? fallback.canvasHeight;
+  const backgroundType = (dto.backgroundType ??
+    existing?.backgroundType ??
+    fallback.backgroundType) as 'SOLID' | 'IMAGE';
+  const backgroundValue =
+    dto.backgroundValue ?? existing?.backgroundValue ?? fallback.backgroundValue;
+  const elementsJson = dto.elementsJson ?? existing?.elementsJson ?? fallback.elementsJson;
+  const qrZoneJson = dto.qrZoneJson ?? existing?.qrZoneJson ?? { ...DISCOUNT_VISUAL_DEFAULT_QR_ZONE };
+
+  const qrMsg = assertVisualQrZoneSafe(qrZoneJson);
+  if (qrMsg) throw new Error(qrMsg);
+  if (visualElementsHitQr(elementsJson, qrZoneJson)) {
+    throw new Error('Hay elementos superpuestos con la zona QR. Mové o achicá capas para dejar el código visible.');
+  }
+  const unsafe = assertDiscountVisualElementsSafe(elementsJson);
+  if (unsafe) throw new Error(unsafe);
+  if (backgroundType === 'IMAGE' && !/^https:\/\//i.test(backgroundValue)) {
+    throw new Error('El fondo imagen debe ser URL HTTPS');
+  }
+
+  return {
+    name,
+    canvasWidth,
+    canvasHeight,
+    backgroundType,
+    backgroundValue,
+    elementsJson,
+    qrZoneJson,
   };
 }
 

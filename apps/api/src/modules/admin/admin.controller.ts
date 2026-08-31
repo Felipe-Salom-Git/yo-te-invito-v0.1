@@ -7,6 +7,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -88,6 +89,8 @@ import {
   type GastroDiscountArchiveAction,
   gastroDiscountCreateSchema,
   type GastroDiscountCreateInput,
+  upsertGastroDiscountVisualTemplateDtoSchema,
+  type UpsertGastroDiscountVisualTemplateDto,
   adminDeepDeleteEntityTypeSchema,
   adminDeepDeleteBodySchema,
   type AdminDeepDeleteEntityType,
@@ -96,6 +99,7 @@ import {
 import { AdminGastroService } from './admin-gastro.service';
 import { AdminGastroLocationsService } from './admin-gastro-locations.service';
 import { GastroDiscountMetricsService } from '../gastro/gastro-discount-metrics.service';
+import { GastroDiscountVisualTemplateService } from '../gastro/gastro-discount-visual-template.service';
 import { AdminProducersService } from './admin-producers.service';
 import { AdminGeneralPublicationsService } from './admin-general-publications.service';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
@@ -143,6 +147,7 @@ export class AdminController {
     private readonly adminGastro: AdminGastroService,
     private readonly adminGastroLocations: AdminGastroLocationsService,
     private readonly gastroDiscountMetrics: GastroDiscountMetricsService,
+    private readonly visualTemplates: GastroDiscountVisualTemplateService,
     private readonly adminHotelProfiles: AdminHotelProfilesService,
     private readonly deepDelete: AdminDeepDeleteService,
   ) {}
@@ -1321,6 +1326,57 @@ export class AdminController {
       user.role,
       params.profileId,
       body,
+    );
+  }
+
+  @Get('gastronomicos/:profileId/discuentos/:discountId/visual-template')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async getGastroDiscountVisualTemplate(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param(new ZodValidationPipe(adminGastroDiscountIdParamsSchema)) params: AdminGastroDiscountIdParams,
+  ) {
+    return this.visualTemplates.get(
+      user.tenantId,
+      user.id,
+      user.role,
+      params.discountId,
+      params.profileId,
+    );
+  }
+
+  @Put('gastronomicos/:profileId/discuentos/:discountId/visual-template')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async upsertGastroDiscountVisualTemplate(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param(new ZodValidationPipe(adminGastroDiscountIdParamsSchema)) params: AdminGastroDiscountIdParams,
+    @Body(new ZodValidationPipe(upsertGastroDiscountVisualTemplateDtoSchema))
+    body: UpsertGastroDiscountVisualTemplateDto,
+  ) {
+    return this.visualTemplates.upsert(
+      user.tenantId,
+      user.id,
+      user.role,
+      params.discountId,
+      body,
+      params.profileId,
+    );
+  }
+
+  @Delete('gastronomicos/:profileId/discuentos/:discountId/visual-template')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async resetGastroDiscountVisualTemplate(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param(new ZodValidationPipe(adminGastroDiscountIdParamsSchema)) params: AdminGastroDiscountIdParams,
+  ) {
+    return this.visualTemplates.reset(
+      user.tenantId,
+      user.id,
+      user.role,
+      params.discountId,
+      params.profileId,
     );
   }
 
