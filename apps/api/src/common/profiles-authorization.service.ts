@@ -75,7 +75,7 @@ export class ProfilesAuthorizationService {
   }
 
   /**
-   * Check if user has active gastro membership.
+   * Portal access: any manageable gastro membership (DRAFT/PENDING/ACTIVE).
    */
   async hasGastroAccess(tenantId: string, userId: string): Promise<boolean> {
     const [membership, user] = await Promise.all([
@@ -84,7 +84,7 @@ export class ProfilesAuthorizationService {
           tenantId,
           userId,
           status: 'ACTIVE',
-          profile: { status: 'ACTIVE' },
+          profile: { status: { in: ['DRAFT', 'PENDING', 'ACTIVE'] } },
         },
       }),
       this.prisma.user.findFirst({
@@ -94,6 +94,27 @@ export class ProfilesAuthorizationService {
     ]);
     if (membership) return true;
     return user?.role === 'GASTRO_OWNER';
+  }
+
+  /** Operational access: at least one ACTIVE gastro profile. */
+  async hasActiveGastroOperationalAccess(
+    tenantId: string,
+    userId: string,
+  ): Promise<boolean> {
+    const membership = await this.prisma.userGastroMembership.findFirst({
+      where: {
+        tenantId,
+        userId,
+        status: 'ACTIVE',
+        profile: { status: 'ACTIVE' },
+      },
+    });
+    if (membership) return true;
+    const owned = await this.prisma.gastroProfile.findFirst({
+      where: { tenantId, createdByUserId: userId, status: 'ACTIVE' },
+      select: { id: true },
+    });
+    return !!owned;
   }
 
   /**
@@ -224,13 +245,17 @@ export class ProfilesAuthorizationService {
         userId,
         profileId: gastroProfileId,
         status: 'ACTIVE',
-        profile: { status: 'ACTIVE' },
+        profile: { status: { in: ['DRAFT', 'PENDING', 'ACTIVE'] } },
       },
     });
     if (membership) return true;
 
     const profile = await this.prisma.gastroProfile.findFirst({
-      where: { id: gastroProfileId, tenantId },
+      where: {
+        id: gastroProfileId,
+        tenantId,
+        status: { in: ['DRAFT', 'PENDING', 'ACTIVE'] },
+      },
       select: { createdByUserId: true },
     });
     return profile?.createdByUserId === userId;

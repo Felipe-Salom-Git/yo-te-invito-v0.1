@@ -85,6 +85,29 @@ export const gastroLocalResponseSchema = z.object({
 });
 export type GastroLocalResponse = z.infer<typeof gastroLocalResponseSchema>;
 
+export const gastroProfileIdQuerySchema = z.object({
+  profileId: z.string().min(1).optional(),
+});
+export type GastroProfileIdQuery = z.infer<typeof gastroProfileIdQuerySchema>;
+
+export const gastroLocationSummarySchema = z.object({
+  id: z.string(),
+  displayName: z.string(),
+  status: gastroProfileStatusSchema,
+  city: z.string().nullable(),
+  province: z.string().nullable(),
+  address: z.string().nullable(),
+  publicEventId: z.string().nullable(),
+  subcategoryName: z.string().nullable().optional(),
+  updatedAt: z.string().datetime(),
+});
+export type GastroLocationSummary = z.infer<typeof gastroLocationSummarySchema>;
+
+export const gastroLocationsListResponseSchema = z.object({
+  data: z.array(gastroLocationSummarySchema),
+});
+export type GastroLocationsListResponse = z.infer<typeof gastroLocationsListResponseSchema>;
+
 export const gastroLocalCreateSchema = z.object({
   displayName: z.string().min(1).max(200),
   summary: z.string().max(PUBLIC_SUMMARY_MAX_LENGTH).nullable().optional(),
@@ -110,6 +133,8 @@ export const gastroLocalCreateSchema = z.object({
   socialLinks: entitySocialLinksInputSchema,
   relatedLinks: relatedLinksInputSchema,
   tagIds: eventTagIdsSchema.optional(),
+  /** Copy location/contact snapshot from an existing managed profile (server-side prefill). */
+  copyFromProfileId: z.string().min(1).optional(),
 });
 export type GastroLocalCreateInput = z.infer<typeof gastroLocalCreateSchema>;
 

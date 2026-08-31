@@ -16,6 +16,7 @@ import { GastroDashboardService } from './gastro-dashboard.service';
 import { GastroPublicEventSyncService } from './gastro-public-event-sync.service';
 import { GastroCourtesyDiscountsService } from './gastro-courtesy-discounts.service';
 import { GastroDiscountClaimEmailService } from './gastro-discount-claim-email.service';
+import { GastroOwnershipService } from './gastro-ownership.service';
 import { GastroDiscountMetricsService } from './gastro-discount-metrics.service';
 
 @Module({
@@ -26,6 +27,7 @@ import { GastroDiscountMetricsService } from './gastro-discount-metrics.service'
     GastroRolesGuard,
     GastroService,
     GastroLocalService,
+    GastroOwnershipService,
     GastroPortalDiscountsService,
     GastroContentService,
     GastroDashboardService,
@@ -36,6 +38,7 @@ import { GastroDiscountMetricsService } from './gastro-discount-metrics.service'
   ],
   exports: [
     GastroPortalDiscountsService,
+    GastroOwnershipService,
     GastroContentService,
     GastroPublicEventSyncService,
     GastroDiscountClaimEmailService,

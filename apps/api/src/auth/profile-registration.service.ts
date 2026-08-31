@@ -139,19 +139,6 @@ export class ProfileRegistrationService {
     tx?: Prisma.TransactionClient,
   ) {
     const db = this.db(tx);
-    const existing = await db.userGastroMembership.findFirst({
-      where: {
-        tenantId,
-        userId,
-        profile: { status: { in: ['PENDING', 'ACTIVE'] } },
-      },
-    });
-    if (existing) {
-      throw new ConflictException({
-        code: 'CONFLICT',
-        message: 'Ya tenés un perfil gastronómico',
-      });
-    }
 
     const profile = await db.gastroProfile.create({
       data: {

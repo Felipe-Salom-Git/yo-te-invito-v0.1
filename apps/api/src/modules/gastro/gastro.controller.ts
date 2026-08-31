@@ -9,6 +9,7 @@ import {
   gastroCourtesyRecipientsPreviewQuerySchema,
   gastroCourtesySendBodySchema,
   gastroDiscountStatusUpdateSchema,
+  gastroProfileIdQuerySchema,
   Role,
   type GastroContentCreateInput,
   type GastroContentUpdateInput,
@@ -17,6 +18,7 @@ import {
   gastroValidationListQuerySchema,
   type GastroLocalCreateInput,
   type GastroLocalUpdateInput,
+  type GastroProfileIdQuery,
   type GastroValidationListQuery,
   type GastroCourtesyRecipientsPreviewQuery,
   type GastroCourtesySendBody,
@@ -52,9 +54,25 @@ export class GastroController {
     return this.dashboard.getDashboard(user.tenantId, user.id, user.role);
   }
 
+  @Get('locations')
+  async listMyLocations(@CurrentUser() user: { id: string; tenantId: string; role: string }) {
+    return this.localService.listMyLocations(user.tenantId, user.id, user.role);
+  }
+
+  @Post('locations')
+  async createAdditionalLocal(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Body(new ZodValidationPipe(gastroLocalCreateSchema)) body: GastroLocalCreateInput,
+  ) {
+    return this.localService.createAdditionalLocal(user.tenantId, user.id, user.role, body);
+  }
+
   @Get('local')
-  async getMyLocal(@CurrentUser() user: { id: string; tenantId: string; role: string }) {
-    return this.localService.getMyLocal(user.tenantId, user.id, user.role);
+  async getMyLocal(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Query(new ZodValidationPipe(gastroProfileIdQuerySchema)) query: GastroProfileIdQuery,
+  ) {
+    return this.localService.getMyLocal(user.tenantId, user.id, user.role, query.profileId);
   }
 
   @Post('local')
@@ -68,9 +86,16 @@ export class GastroController {
   @Patch('local')
   async updateMyLocal(
     @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Query(new ZodValidationPipe(gastroProfileIdQuerySchema)) query: GastroProfileIdQuery,
     @Body(new ZodValidationPipe(gastroLocalUpdateSchema)) body: GastroLocalUpdateInput,
   ) {
-    return this.localService.updateMyLocal(user.tenantId, user.id, user.role, body);
+    return this.localService.updateMyLocal(
+      user.tenantId,
+      user.id,
+      user.role,
+      body,
+      query.profileId,
+    );
   }
 
   @Get('discounts')
