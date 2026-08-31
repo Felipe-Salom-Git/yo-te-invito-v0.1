@@ -273,6 +273,8 @@ model Tenant {
   adminCampaignDeliveries       AdminCampaignDelivery[]
   adminOperationalDigestLogs    AdminOperationalDigestLog[]
   benefitCommercialAgreements   BenefitCommercialAgreement[]
+  benefitSettlements            BenefitSettlement[]
+  benefitSettlementUsageAllocations BenefitSettlementUsageAllocation[]
 }
 
 model RentalLocation {
@@ -330,6 +332,7 @@ model ExcursionOperator {
   excursions Event[]
   activityCoupons ActivityCoupon[]
   benefitCommercialAgreements BenefitCommercialAgreement[]
+  benefitSettlements          BenefitSettlement[]
 
   @@index([tenantId])
   @@index([tenantId, isActive])
@@ -425,6 +428,7 @@ model GastroProfile {
   contentItems    GastroContent[]
   courtesyCampaigns GastroCourtesyCampaign[]
   benefitCommercialAgreements BenefitCommercialAgreement[]
+  benefitSettlements          BenefitSettlement[]
 
   @@index([tenantId])
   @@index([tenantId, status])
@@ -826,6 +830,8 @@ model User {
   marketingPreference           UserMarketingPreference?
   adminCampaignsCreated         AdminCampaign[]         @relation("AdminCampaignCreator")
   benefitCommercialAgreementsCreated BenefitCommercialAgreement[] @relation("BenefitAgreementCreator")
+  benefitSettlementsCreated          BenefitSettlement[]          @relation("BenefitSettlementCreator")
+  benefitSettlementAllocationsCreated BenefitSettlementUsageAllocation[] @relation("BenefitSettlementAllocator")
   adminCampaignDeliveries       AdminCampaignDelivery[] @relation("AdminCampaignDeliveryRecipient")
   adminOperationalDigestLogs    AdminOperationalDigestLog[] @relation("AdminOperationalDigestRecipient")
 
@@ -882,10 +888,78 @@ model BenefitCommercialAgreement {
   gastroProfile     GastroProfile?     @relation(fields: [gastroProfileId], references: [id], onDelete: Restrict)
   excursionOperator ExcursionOperator? @relation(fields: [excursionOperatorId], references: [id], onDelete: Restrict)
   createdBy         User?              @relation("BenefitAgreementCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  settlementAllocations BenefitSettlementUsageAllocation[]
 
   @@index([tenantId, vertical, gastroProfileId])
   @@index([tenantId, vertical, excursionOperatorId])
   @@index([tenantId, validFrom, validTo])
+}
+
+enum BenefitSettlementStatus {
+  OPEN
+  PARTIALLY_ALLOCATED
+  ALLOCATED
+  CLOSED
+}
+
+enum BenefitValidationSource {
+  GASTRO_DISCOUNT_VALIDATION
+  ACTIVITY_COUPON_VALIDATION
+}
+
+enum BenefitSettlementAllocationMode {
+  CASH
+  BARTER
+}
+
+model BenefitSettlement {
+  id                  String                  @id @default(cuid())
+  tenantId            String
+  vertical            BenefitVertical
+  gastroProfileId     String?
+  excursionOperatorId String?
+  periodKey           String
+  status              BenefitSettlementStatus @default(OPEN)
+  createdByUserId     String?
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+  closedAt            DateTime?
+
+  tenant            Tenant             @relation(fields: [tenantId], references: [id])
+  gastroProfile     GastroProfile?     @relation(fields: [gastroProfileId], references: [id], onDelete: Restrict)
+  excursionOperator ExcursionOperator? @relation(fields: [excursionOperatorId], references: [id], onDelete: Restrict)
+  createdBy         User?              @relation("BenefitSettlementCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  allocations       BenefitSettlementUsageAllocation[]
+
+  @@index([tenantId, vertical, gastroProfileId, periodKey])
+  @@index([tenantId, vertical, excursionOperatorId, periodKey])
+  @@index([tenantId, status])
+  @@index([tenantId, periodKey])
+}
+
+model BenefitSettlementUsageAllocation {
+  id                String                        @id @default(cuid())
+  tenantId          String
+  settlementId      String
+  validationSource  BenefitValidationSource
+  validationId      String
+  mode              BenefitSettlementAllocationMode
+  agreementId       String
+  unitPriceCents    BigInt
+  barterMultiplier  Decimal                       @db.Decimal(8, 4)
+  baseAmountCents   BigInt
+  currency          String                        @default("ARS")
+  allocatedAt       DateTime                      @default(now())
+  allocatedByUserId String?
+
+  tenant     Tenant                     @relation(fields: [tenantId], references: [id])
+  settlement BenefitSettlement          @relation(fields: [settlementId], references: [id], onDelete: Restrict)
+  agreement  BenefitCommercialAgreement @relation(fields: [agreementId], references: [id], onDelete: Restrict)
+  allocatedBy User?                     @relation("BenefitSettlementAllocator", fields: [allocatedByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([validationSource, validationId])
+  @@index([tenantId, settlementId])
+  @@index([settlementId, mode])
 }
 
 enum AdminCampaignStatus {
@@ -2329,6 +2403,11 @@ enum AuditAction {
   BENEFIT_AGREEMENT_CLOSED
   BENEFIT_AGREEMENT_REPLACED
   BENEFIT_AGREEMENT_NOTES_UPDATED
+  BENEFIT_SETTLEMENT_GENERATED
+  BENEFIT_SETTLEMENT_REFRESHED
+  BENEFIT_USAGE_ALLOCATED_CASH
+  BENEFIT_USAGE_ALLOCATED_BARTER
+  BENEFIT_SETTLEMENT_CLOSED
 }
 
 /// Scanner user bound to one parent commercial account (tenant-scoped).

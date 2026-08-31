@@ -33,6 +33,7 @@ import { ActivityCouponsModule } from './modules/activity-coupons/activity-coupo
 import { MarketingPreferencesModule } from './modules/marketing-preferences/marketing-preferences.module';
 import { AdminCampaignsModule } from './modules/admin-campaigns/admin-campaigns.module';
 import { BenefitAgreementsModule } from './modules/benefit-agreements/benefit-agreements.module';
+import { BenefitSettlementsModule } from './modules/benefit-settlements/benefit-settlements.module';
 
 @Module({
   imports: [
@@ -70,6 +71,7 @@ import { BenefitAgreementsModule } from './modules/benefit-agreements/benefit-ag
     MarketingPreferencesModule,
     AdminCampaignsModule,
     BenefitAgreementsModule,
+    BenefitSettlementsModule,
   ],
 })
 export class AppModule {}

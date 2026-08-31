@@ -108,6 +108,8 @@ export * from './schemas/admin-campaigns';
 export * from './money/benefit-money';
 export * from './benefit-commercial-agreements';
 export * from './schemas/benefit-commercial-agreements';
+export * from './benefit-settlement';
+export * from './schemas/benefit-settlements';
 export * from './campaign-email-delivery';
 export * from './campaign-whatsapp';
 export * from './expired-benefits-digest';

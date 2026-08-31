@@ -560,4 +560,72 @@ vertical = ACTIVITY   → excursionOperatorId (required), gastroProfileId = null
 
 ---
 
-**STOP slice 9.1** — siguiente paso: slice 9.2 settlement domain.
+## 24. Slice 9.2 implementation decisions
+
+**Fecha:** 2026-08-31  
+**Commit:** `feat(v3.3): add benefit settlement domain`
+
+### Settlement uniqueness
+
+Partial unique indexes (PostgreSQL) — Prisma no expresa `@@unique` dual nullable:
+
+```sql
+BenefitSettlement_tenant_gastro_period_key (tenantId, gastroProfileId, periodKey) WHERE vertical=GASTRO
+BenefitSettlement_tenant_activity_period_key (tenantId, excursionOperatorId, periodKey) WHERE vertical=ACTIVITY
+```
+
+Service guard adicional en `generate` (idempotente → refresh si OPEN).
+
+### Status model (V1 — solo asignación de usos)
+
+| Status | Significado |
+|--------|-------------|
+| `OPEN` | Sin allocations |
+| `PARTIALLY_ALLOCATED` | Algunas validations asignadas, quedan pending |
+| `ALLOCATED` | Todas las eligibles asignadas (pending = 0) |
+| `CLOSED` | Admin cierra; no refresh; pending debe ser 0 |
+
+**No** `cashCollectionStatus` hasta Slice 9.3. **No** `PAID`.
+
+### Eligible validations
+
+- Gastro: `isGastroValidationEligibleForSettlement` → `claimId != null` (master QR excluido).
+- Activity: `isActivityValidationEligibleForSettlement` → `result === 'VALID' && claimId != null`.
+- Period: `validatedAt` → `getBenefitSettlementPeriodKey()` (AR).
+
+### Missing agreement
+
+`generate` / `refresh` / `allocate` rechazan con `BENEFIT_SETTLEMENT_MISSING_AGREEMENTS` + lista de validations sin acuerdo histórico.
+
+### Economic snapshots (allocation)
+
+`BenefitSettlementUsageAllocation`: `agreementId`, `unitPriceCents`, `barterMultiplier`, `baseAmountCents` (= unitPrice), `currency`, `validationSource`, `validationId`, `mode`.
+
+`@@unique([validationSource, validationId])` — idempotencia económica.
+
+### Multiple agreements same month
+
+Soportado: cada validation resuelve acuerdo por `validatedAt`; summary suma montos heterogéneos.
+
+### Allocation
+
+- Modos: `CASH`, `BARTER` (ledger materialización → Slice 9.4).
+- Orden: `validatedAt ASC`, `validationId ASC`.
+- Pending = eligible priced sin allocation row.
+- **No** allocation row hasta Admin asigna.
+
+### Late validations
+
+Settlement `OPEN` / `PARTIALLY_ALLOCATED`: `refresh` revalida eligibles. `CLOSED`: sin refresh automático.
+
+### API
+
+`GET/POST generate /admin/benefit-settlements`, `GET :id`, `POST :id/refresh`, `POST :id/allocate`, `POST :id/close`.
+
+### Web
+
+Repository `adminBenefitSettlements` (infra); UI completa → Slice 9.6.
+
+---
+
+**STOP slice 9.2** — siguiente paso: slice 9.3 transfers.

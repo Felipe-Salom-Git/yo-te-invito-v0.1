@@ -1686,6 +1686,22 @@ export class ApiRepository implements Repositories {
       this.client.patch(`/admin/benefit-agreements/${encodeURIComponent(id)}`, body),
   };
 
+  adminBenefitSettlements: import('./interfaces').AdminBenefitSettlementsRepo = {
+    list: async (query) =>
+      this.client.get(
+        '/admin/benefit-settlements',
+        query as Record<string, string | number | boolean | undefined>,
+      ),
+    get: async (id) => this.client.get(`/admin/benefit-settlements/${encodeURIComponent(id)}`),
+    generate: async (body) => this.client.post('/admin/benefit-settlements/generate', body),
+    refresh: async (id) =>
+      this.client.post(`/admin/benefit-settlements/${encodeURIComponent(id)}/refresh`),
+    allocate: async (id, body) =>
+      this.client.post(`/admin/benefit-settlements/${encodeURIComponent(id)}/allocate`, body),
+    close: async (id) =>
+      this.client.post(`/admin/benefit-settlements/${encodeURIComponent(id)}/close`),
+  };
+
   adminUsers: import('./interfaces').AdminUsersRepo = {
     list: async (query) => {
       return this.client.get<import('./interfaces').AdminUsersListResponse>(

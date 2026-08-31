@@ -3302,6 +3302,28 @@ export interface AdminBenefitAgreementsRepo {
   ): Promise<import('@yo-te-invito/shared').BenefitCommercialAgreementDto>;
 }
 
+export interface AdminBenefitSettlementsRepo {
+  list(query?: {
+    vertical?: string;
+    gastroProfileId?: string;
+    excursionOperatorId?: string;
+    periodKey?: string;
+    status?: string;
+    page?: number;
+    pageSize?: number;
+  }): Promise<import('@yo-te-invito/shared').BenefitSettlementsListResponse>;
+  get(id: string): Promise<import('@yo-te-invito/shared').BenefitSettlementDto>;
+  generate(
+    body: import('@yo-te-invito/shared').GenerateBenefitSettlementBody,
+  ): Promise<import('@yo-te-invito/shared').BenefitSettlementDto>;
+  refresh(id: string): Promise<import('@yo-te-invito/shared').BenefitSettlementDto>;
+  allocate(
+    id: string,
+    body: import('@yo-te-invito/shared').AllocateBenefitSettlementUsagesBody,
+  ): Promise<import('@yo-te-invito/shared').AllocateBenefitSettlementResponse>;
+  close(id: string): Promise<import('@yo-te-invito/shared').BenefitSettlementDto>;
+}
+
 export interface Repositories {
   auth: AuthRepo;
   uploads: UploadsRepo;
@@ -3344,6 +3366,7 @@ export interface Repositories {
   adminPayments: AdminPaymentsRepo;
   adminCampaigns: AdminCampaignsRepo;
   adminBenefitAgreements: AdminBenefitAgreementsRepo;
+  adminBenefitSettlements: AdminBenefitSettlementsRepo;
   legalDocuments: LegalDocumentsRepo;
   producerDashboard: ProducerDashboardRepo;
   producers: ProducersRepo;
