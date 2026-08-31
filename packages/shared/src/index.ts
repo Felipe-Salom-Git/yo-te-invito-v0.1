@@ -26,6 +26,7 @@ export * from './schemas/ticket-list-export';
 export * from './schemas/event-ticket-list';
 export * from './tickets/ticket-code.util';
 export * from './scanner/manual-short-code.util';
+export * from './scanner/scanner-username.util';
 export * from './schemas/scanner-gastro-discount';
 export * from './schemas/scanner-accounts';
 export * from './schemas/foundation-test.schema';

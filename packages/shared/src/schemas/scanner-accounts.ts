@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { scannerUsernameSchema } from '../scanner/scanner-username.util';
 
 export const scannerParentProfileTypeSchema = z.enum([
   'PRODUCER',
@@ -11,7 +12,8 @@ export type ScannerParentProfileType = z.infer<typeof scannerParentProfileTypeSc
 export const scannerAccountSummarySchema = z.object({
   id: z.string(),
   scannerUserId: z.string(),
-  email: z.string().email(),
+  email: z.string().email().nullable().optional(),
+  username: z.string().nullable().optional(),
   firstName: z.string(),
   lastName: z.string(),
   userStatus: z.enum(['ACTIVE', 'SUSPENDED', 'DELETED']),
@@ -53,9 +55,9 @@ export const linkScannerAccountBodySchema = z.object({
 export type LinkScannerAccountBody = z.infer<typeof linkScannerAccountBodySchema>;
 
 export const createScannerUserBodySchema = z.object({
-  email: z.string().email().max(200),
-  firstName: z.string().min(1).max(80),
-  lastName: z.string().min(1).max(80),
+  username: scannerUsernameSchema,
+  firstName: z.string().min(1).max(80).optional(),
+  lastName: z.string().min(1).max(80).optional(),
   password: z
     .string()
     .min(6, 'La contraseña debe tener al menos 6 caracteres')

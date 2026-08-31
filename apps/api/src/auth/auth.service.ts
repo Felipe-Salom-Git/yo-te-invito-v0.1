@@ -30,6 +30,7 @@ import {
   LEGAL_SIGNUP_USER_MESSAGES,
   MASTER_USER_EMAIL,
   Role,
+  normalizeScannerUsername,
   mapSignupProfileTypeToRole,
   resolveSignupProfileType,
 } from '@yo-te-invito/shared';
@@ -91,10 +92,16 @@ export class AuthService {
   ) {}
 
   async login(body: AuthLoginRequest): Promise<AuthLoginResponse> {
-    const email = body.email.trim().toLowerCase();
-    const where = body.tenantId
-      ? { tenantId: body.tenantId, email, deletedAt: null }
-      : { email, deletedAt: null };
+    const rawIdentifier = (body.identifier ?? body.email ?? '').trim();
+    const isEmailLogin = rawIdentifier.includes('@');
+    const normalizedEmail = isEmailLogin ? rawIdentifier.toLowerCase() : null;
+    const normalizedUsername = isEmailLogin ? null : normalizeScannerUsername(rawIdentifier);
+
+    const where = isEmailLogin
+      ? body.tenantId
+        ? { tenantId: body.tenantId, email: normalizedEmail!, deletedAt: null }
+        : { email: normalizedEmail!, deletedAt: null }
+      : { username: normalizedUsername!, deletedAt: null };
 
     const user = await this.prisma.user.findFirst({
       where,
@@ -102,6 +109,7 @@ export class AuthService {
         id: true,
         tenantId: true,
         email: true,
+        username: true,
         role: true,
         status: true,
         firstName: true,
@@ -125,8 +133,11 @@ export class AuthService {
       });
     }
 
-    const isMasterUser = email === MASTER_USER_EMAIL.trim().toLowerCase();
-    if (!user.emailVerified && !isMasterUser) {
+    const isMasterUser =
+      normalizedEmail != null && normalizedEmail === MASTER_USER_EMAIL.trim().toLowerCase();
+    const skipEmailVerification =
+      user.role === Role.SCANNER || user.email == null || isMasterUser;
+    if (!user.emailVerified && !skipEmailVerification) {
       throw new UnauthorizedException({
         code: AUTH_LOGIN_ERROR_CODES.EMAIL_NOT_VERIFIED,
         message: AUTH_LOGIN_USER_MESSAGES.emailNotVerified,
@@ -143,6 +154,7 @@ export class AuthService {
         id: user.id,
         tenantId: user.tenantId,
         email: user.email,
+        username: user.username,
         role: sessionRole as SharedRole,
         status: user.status,
         firstName: user.firstName,

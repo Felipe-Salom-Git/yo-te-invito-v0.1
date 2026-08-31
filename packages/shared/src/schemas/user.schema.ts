@@ -48,7 +48,8 @@ export type MeAvailableProfiles = z.infer<typeof meAvailableProfilesSchema>;
 export const meResponseSchema = z.object({
   id: z.string(),
   tenantId: z.string(),
-  email: z.string(),
+  email: z.string().nullable(),
+  username: z.string().nullable().optional(),
   role: z.nativeEnum(Role),
   status: z.string(),
   firstName: z.string(),
@@ -115,11 +116,18 @@ export const createUserSchema = z.object({
 export type CreateUserInput = z.infer<typeof createUserSchema>;
 
 /** Request body for POST /auth/login */
-export const authLoginRequestSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(1),
-  tenantId: z.string().optional(),
-});
+export const authLoginRequestSchema = z
+  .object({
+    /** Legacy field — email or username depending on value. */
+    email: z.string().min(1).optional(),
+    /** Preferred identifier: email or scanner username. */
+    identifier: z.string().min(1).optional(),
+    password: z.string().min(1),
+    tenantId: z.string().optional(),
+  })
+  .refine((data) => Boolean(data.email?.trim() || data.identifier?.trim()), {
+    message: 'identifier or email is required',
+  });
 export type AuthLoginRequest = z.infer<typeof authLoginRequestSchema>;
 
 /** User payload in login response (same shape as GET /me) */

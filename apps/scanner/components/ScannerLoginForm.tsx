@@ -11,7 +11,7 @@ type Props = {
 };
 
 export function ScannerLoginForm({ onSuccess }: Props) {
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -22,7 +22,7 @@ export function ScannerLoginForm({ onSuccess }: Props) {
     setLoading(true);
     try {
       const response = await loginScanner({
-        email: email.trim(),
+        identifier: identifier.trim(),
         password,
       });
       if (response.user.role !== Role.SCANNER && response.user.role !== Role.ADMIN) {
@@ -56,18 +56,18 @@ export function ScannerLoginForm({ onSuccess }: Props) {
   return (
     <form onSubmit={(e) => void handleSubmit(e)} className="flex w-full max-w-sm flex-col gap-4">
       <div>
-        <label htmlFor="scanner-email" className="text-sm text-scanner-muted">
-          Email
+        <label htmlFor="scanner-identifier" className="text-sm text-scanner-muted">
+          Usuario o email
         </label>
         <input
-          id="scanner-email"
-          type="email"
+          id="scanner-identifier"
+          type="text"
           autoComplete="username"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          value={identifier}
+          onChange={(e) => setIdentifier(e.target.value)}
           required
           className="mt-1 block w-full rounded-lg border border-scanner-border bg-scanner-bg px-4 py-3 text-white placeholder:text-scanner-muted/60 focus:border-scanner-accent focus:outline-none focus:ring-1 focus:ring-scanner-accent"
-          placeholder="tu@email.com"
+          placeholder="usuario o email legacy"
         />
       </div>
       <div>
@@ -91,7 +91,7 @@ export function ScannerLoginForm({ onSuccess }: Props) {
       )}
       <button
         type="submit"
-        disabled={loading || !email.trim() || !password}
+        disabled={loading || !identifier.trim() || !password}
         className="h-12 min-h-[48px] rounded-xl bg-scanner-accent text-base font-semibold text-scanner-bg transition-colors hover:bg-scanner-accent-hover disabled:opacity-50"
       >
         {loading ? 'Ingresando…' : 'Ingresar al scanner'}

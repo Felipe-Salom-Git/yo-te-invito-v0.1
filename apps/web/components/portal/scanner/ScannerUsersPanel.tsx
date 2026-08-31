@@ -66,7 +66,7 @@ export function ScannerUsersPanel({ portal }: Props) {
   const { create, updateStatus, resetPassword } = useScannerAccountsMutations(portal);
 
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [password, setPassword] = useState('');
@@ -93,7 +93,7 @@ export function ScannerUsersPanel({ portal }: Props) {
   const items = listQuery.data?.data ?? [];
 
   const resetForm = () => {
-    setEmail('');
+    setUsername('');
     setFirstName('');
     setLastName('');
     setPassword('');
@@ -109,9 +109,9 @@ export function ScannerUsersPanel({ portal }: Props) {
     }
     try {
       const result = await create.mutateAsync({
-        email: email.trim(),
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
+        username: username.trim(),
+        ...(firstName.trim() ? { firstName: firstName.trim() } : {}),
+        ...(lastName.trim() ? { lastName: lastName.trim() } : {}),
         ...(password.trim() ? { password: password.trim() } : {}),
         ...(resolvedParentId ? { parentProfileId: resolvedParentId } : {}),
       });
@@ -208,7 +208,7 @@ export function ScannerUsersPanel({ portal }: Props) {
             <thead className="border-b border-border bg-bg-muted/50 text-xs uppercase text-text-muted">
               <tr>
                 <th className="px-4 py-3 font-medium">Nombre</th>
-                <th className="px-4 py-3 font-medium">Email</th>
+                <th className="px-4 py-3 font-medium">Usuario</th>
                 <th className="px-4 py-3 font-medium">Estado</th>
                 <th className="px-4 py-3 font-medium text-right">Acciones</th>
               </tr>
@@ -219,7 +219,9 @@ export function ScannerUsersPanel({ portal }: Props) {
                   <td className="px-4 py-3 text-text">
                     {account.firstName} {account.lastName}
                   </td>
-                  <td className="px-4 py-3 text-text-muted">{account.email}</td>
+                  <td className="px-4 py-3 font-mono text-text-muted">
+                    {account.username ?? account.email ?? '—'}
+                  </td>
                   <td className="px-4 py-3">
                     <StatusBadge account={account} />
                   </td>
@@ -276,9 +278,7 @@ export function ScannerUsersPanel({ portal }: Props) {
               form="scanner-create-form"
               disabled={
                 create.isPending ||
-                !email.trim() ||
-                !firstName.trim() ||
-                !lastName.trim() ||
+                !username.trim() ||
                 (showParentPicker && !parentProfileId.trim() && !defaultParentId)
               }
             >
@@ -294,32 +294,30 @@ export function ScannerUsersPanel({ portal }: Props) {
           className="space-y-4"
         >
           <Input
-            label="Email"
-            id="scanner-create-email"
-            name="scanner-create-email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            label="Usuario"
+            id="scanner-create-username"
+            name="scanner-create-username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
             autoComplete="off"
+            placeholder="ej. barrascanner"
             required
           />
           <Input
-            label="Nombre"
+            label="Nombre (opcional)"
             id="scanner-create-first-name"
             name="scanner-create-first-name"
             value={firstName}
             onChange={(e) => setFirstName(e.target.value)}
             autoComplete="off"
-            required
           />
           <Input
-            label="Apellido"
+            label="Apellido (opcional)"
             id="scanner-create-last-name"
             name="scanner-create-last-name"
             value={lastName}
             onChange={(e) => setLastName(e.target.value)}
             autoComplete="off"
-            required
           />
           <div>
             <Input

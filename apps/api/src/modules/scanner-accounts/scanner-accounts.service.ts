@@ -50,6 +50,7 @@ export class ScannerAccountsService {
           select: {
             id: true;
             email: true;
+            username: true;
             firstName: true;
             lastName: true;
             status: true;
@@ -63,6 +64,7 @@ export class ScannerAccountsService {
       id: row.id,
       scannerUserId: row.scannerUserId,
       email: row.scannerUser.email,
+      username: row.scannerUser.username,
       firstName: row.scannerUser.firstName,
       lastName: row.scannerUser.lastName,
       userStatus: row.scannerUser.status,
@@ -82,6 +84,7 @@ export class ScannerAccountsService {
           select: {
             id: true,
             email: true,
+            username: true,
             firstName: true,
             lastName: true,
             status: true,
@@ -407,6 +410,7 @@ export class ScannerAccountsService {
           select: {
             id: true,
             email: true,
+            username: true,
             firstName: true,
             lastName: true,
             status: true,
@@ -458,30 +462,32 @@ export class ScannerAccountsService {
     );
     await this.assertParentProfileExists(actor.tenantId, parentProfileType, parentProfileId);
 
-    const email = body.email.trim().toLowerCase();
-    const existing = await this.prisma.user.findFirst({
-      where: { tenantId: actor.tenantId, email, deletedAt: null },
+    const username = body.username;
+    const existingUsername = await this.prisma.user.findFirst({
+      where: { username, deletedAt: null },
     });
-    if (existing) {
+    if (existingUsername) {
       throw new ConflictException({
-        code: ErrorCode.EMAIL_ALREADY_EXISTS,
-        message: 'Ya existe un usuario con ese email',
+        code: ErrorCode.CONFLICT,
+        message: 'Ya existe un usuario con ese nombre',
       });
     }
 
     let temporaryPassword: string | undefined;
     const plainPassword = body.password ?? (temporaryPassword = generateTemporaryPassword());
+    const firstName = body.firstName?.trim() || username;
+    const lastName = body.lastName?.trim() || '';
 
     const row = await this.prisma.$transaction(async (tx) => {
       const scannerUser = await tx.user.create({
         data: {
           tenantId: actor.tenantId,
-          email,
-          firstName: body.firstName.trim(),
-          lastName: body.lastName.trim(),
+          username,
+          email: null,
+          firstName,
+          lastName,
           role: PrismaRole.SCANNER,
           status: UserStatus.ACTIVE,
-          emailVerified: new Date(),
           passwordHash: hashPassword(plainPassword),
         },
       });
@@ -499,6 +505,7 @@ export class ScannerAccountsService {
             select: {
               id: true,
               email: true,
+            username: true,
               firstName: true,
               lastName: true,
               status: true,
@@ -593,6 +600,7 @@ export class ScannerAccountsService {
             select: {
               id: true,
               email: true,
+            username: true,
               firstName: true,
               lastName: true,
               status: true,
@@ -697,6 +705,7 @@ export class ScannerAccountsService {
           select: {
             id: true,
             email: true,
+            username: true,
             firstName: true,
             lastName: true,
             status: true,
@@ -876,6 +885,7 @@ export class ScannerAccountsService {
           select: {
             id: true,
             email: true,
+            username: true,
             firstName: true,
             lastName: true,
             status: true,

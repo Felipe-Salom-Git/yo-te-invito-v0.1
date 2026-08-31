@@ -28,7 +28,7 @@ export function ScannerDoorPageClient() {
   return (
     <DoorScannerClient
       userLabel={`${session.user.firstName} ${session.user.lastName}`.trim()}
-      userEmail={session.user.email}
+      userEmail={session.user.username ?? session.user.email ?? ''}
       onLogout={() => {
         logout();
         router.replace('/');
