@@ -47,9 +47,9 @@ export function AdminGastroDiscountsTable({ profileId, discounts }: Props) {
         <tbody>
           {discounts.map((d) => {
             const expanded = expandedId === d.id;
-            const isPending = PENDING_STATUSES.includes(
-              d.status as (typeof PENDING_STATUSES)[number],
-            );
+            const isPending =
+              PENDING_STATUSES.includes(d.status as (typeof PENDING_STATUSES)[number]) ||
+              Boolean(d.hasPendingUpdate);
             return (
               <Fragment key={d.id}>
                 <tr
@@ -80,6 +80,17 @@ export function AdminGastroDiscountsTable({ profileId, discounts }: Props) {
                   </td>
                   <td className="px-4 py-3">
                     <AdminGastroDiscountStatusBadge status={d.status} />
+                    {d.hasPendingUpdate && (
+                      <span className="ml-2 inline-flex rounded-full bg-amber-500/15 px-2 py-0.5 text-xs text-amber-300">
+                        Edición pendiente
+                      </span>
+                    )}
+                    {d.reviewKind === 'NEW' &&
+                      ['PENDING_REVIEW', 'COMMISSION_NEGOTIATION'].includes(d.status) && (
+                        <span className="ml-2 inline-flex rounded-full bg-blue-500/15 px-2 py-0.5 text-xs text-blue-300">
+                          Nuevo
+                        </span>
+                      )}
                   </td>
                   <td className="px-4 py-3 text-text-muted">{d.validationCount}</td>
                   <td className="px-4 py-3">

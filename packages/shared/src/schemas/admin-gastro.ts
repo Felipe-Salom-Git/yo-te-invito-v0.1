@@ -112,6 +112,10 @@ export const adminGastroDiscountListItemSchema = z.object({
   validWeekday: gastroWeekdaySchema.nullable().optional(),
   validationCount: z.number().int().min(0),
   createdAt: z.string().datetime(),
+  hasPendingUpdate: z.boolean().optional(),
+  reviewKind: z.enum(['NEW', 'EDIT']).optional(),
+  createdByOrigin: z.enum(['GASTRO', 'ADMIN']).optional(),
+  archivedAt: z.string().datetime().nullable().optional(),
 });
 export type AdminGastroDiscountListItem = z.infer<typeof adminGastroDiscountListItemSchema>;
 
@@ -153,6 +157,8 @@ export const adminGastroDiscountDetailSchema = z.object({
   discountDate: z.string().datetime().nullable(),
   validityMode: gastroDiscountValidityModeSchema.optional(),
   validWeekday: gastroWeekdaySchema.nullable().optional(),
+  validFrom: z.string().datetime().nullable().optional(),
+  validTo: z.string().datetime().nullable().optional(),
   status: gastroDiscountStatusSchema,
   submittedImageUrls: z.array(z.string()),
   displayImageUrls: z.array(z.string()),
@@ -167,6 +173,24 @@ export const adminGastroDiscountDetailSchema = z.object({
   ownerPhone: z.string().nullable(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
+  createdByOrigin: z.enum(['GASTRO', 'ADMIN']).optional(),
+  archivedAt: z.string().datetime().nullable().optional(),
+  hasPendingUpdate: z.boolean().optional(),
+  pendingUpdateSubmittedAt: z.string().datetime().nullable().optional(),
+  pendingUpdate: z
+    .object({
+      title: z.string(),
+      summary: z.string(),
+      detail: z.string(),
+      imageUrls: z.array(z.string()),
+      validityMode: gastroDiscountValidityModeSchema,
+      validWeekday: gastroWeekdaySchema.nullable(),
+      validFrom: z.string().datetime().nullable(),
+      validTo: z.string().datetime().nullable(),
+      discountDate: z.string().datetime().nullable(),
+    })
+    .nullable()
+    .optional(),
 });
 export type AdminGastroDiscountDetail = z.infer<typeof adminGastroDiscountDetailSchema>;
 

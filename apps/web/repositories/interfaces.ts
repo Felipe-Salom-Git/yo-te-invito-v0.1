@@ -2706,6 +2706,10 @@ export interface AdminGastroDiscountListItem {
   validWeekday?: import('@yo-te-invito/shared').GastroWeekday | null;
   validationCount: number;
   createdAt: string;
+  hasPendingUpdate?: boolean;
+  reviewKind?: 'NEW' | 'EDIT';
+  createdByOrigin?: 'GASTRO' | 'ADMIN';
+  archivedAt?: string | null;
 }
 
 export interface AdminGastroDiscountDetail {
@@ -2716,6 +2720,10 @@ export interface AdminGastroDiscountDetail {
   summary: string | null;
   detail: string | null;
   discountDate: string | null;
+  validityMode?: 'DATE_RANGE' | 'WEEKLY_RECURRING';
+  validWeekday?: import('@yo-te-invito/shared').GastroWeekday | null;
+  validFrom?: string | null;
+  validTo?: string | null;
   status: GastroDiscountStatus;
   submittedImageUrls: string[];
   displayImageUrls: string[];
@@ -2729,6 +2737,21 @@ export interface AdminGastroDiscountDetail {
   ownerPhone: string | null;
   createdAt: string;
   updatedAt: string;
+  createdByOrigin?: 'GASTRO' | 'ADMIN';
+  archivedAt?: string | null;
+  hasPendingUpdate?: boolean;
+  pendingUpdateSubmittedAt?: string | null;
+  pendingUpdate?: {
+    title: string;
+    summary: string;
+    detail: string;
+    imageUrls: string[];
+    validityMode: 'DATE_RANGE' | 'WEEKLY_RECURRING';
+    validWeekday: import('@yo-te-invito/shared').GastroWeekday | null;
+    validFrom: string | null;
+    validTo: string | null;
+    discountDate: string | null;
+  } | null;
 }
 
 export interface AdminGastroDiscountMetrics {
@@ -2788,6 +2811,12 @@ export interface AdminGastroRepo {
     note?: string | null,
   ): Promise<AdminGastroDiscountDetail>;
   approve(profileId: string, discountId: string): Promise<AdminGastroDiscountDetail>;
+  approvePendingEdit(profileId: string, discountId: string): Promise<AdminGastroDiscountDetail>;
+  rejectPendingEdit(
+    profileId: string,
+    discountId: string,
+    note?: string | null,
+  ): Promise<AdminGastroDiscountDetail>;
   reject(
     profileId: string,
     discountId: string,

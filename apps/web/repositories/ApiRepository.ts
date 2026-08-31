@@ -2228,6 +2228,18 @@ export class ApiRepository implements Repositories {
         {},
         { profileId },
       ),
+    approvePendingEdit: async (profileId, discountId) =>
+      this.client.post<AdminGastroDiscountDetail>(
+        `/admin/gastro-discount-tickets/${encodeURIComponent(discountId)}/approve-edit`,
+        {},
+        { profileId },
+      ),
+    rejectPendingEdit: async (profileId, discountId, note) =>
+      this.client.post<AdminGastroDiscountDetail>(
+        `/admin/gastro-discount-tickets/${encodeURIComponent(discountId)}/reject-edit`,
+        { note: note ?? null },
+        { profileId },
+      ),
     reject: async (profileId, discountId, reason, note) =>
       this.client.post<AdminGastroDiscountDetail>(
         `/admin/gastro-discount-tickets/${encodeURIComponent(discountId)}/reject`,

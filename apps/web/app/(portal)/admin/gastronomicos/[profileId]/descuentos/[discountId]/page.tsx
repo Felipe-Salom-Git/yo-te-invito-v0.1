@@ -11,6 +11,7 @@ import { getErrorMessage } from '@/lib/errors';
 import { AdminGastroDiscountStatusBadge } from '@/components/admin/gastro/AdminGastroDiscountStatusBadge';
 import { AdminGastroDiscountPublicationEditor } from '@/components/admin/gastro/AdminGastroDiscountPublicationEditor';
 import { AdminGastroDiscountQrPanel } from '@/components/admin/gastro/AdminGastroDiscountQrPanel';
+import { AdminGastroPendingEditPanel } from '@/components/admin/gastro/AdminGastroPendingEditPanel';
 import { GastroDiscountDetailContent } from '@/components/gastro/GastroDiscountDetailContent';
 
 export default function AdminGastroDiscountDetailPage() {
@@ -116,6 +117,24 @@ export default function AdminGastroDiscountDetailPage() {
     },
   });
 
+  const approveEdit = useMutation({
+    mutationFn: () => repos.adminGastro.approvePendingEdit(profileId, discountId),
+    onError: (e) => addToast(getErrorMessage(e), 'error'),
+    onSuccess: () => {
+      addToast('Edición aprobada. La versión publicada se actualizó.', 'success');
+      invalidate();
+    },
+  });
+
+  const rejectEdit = useMutation({
+    mutationFn: () => repos.adminGastro.rejectPendingEdit(profileId, discountId, note || null),
+    onError: (e) => addToast(getErrorMessage(e), 'error'),
+    onSuccess: () => {
+      addToast('Edición rechazada. Se conserva la versión publicada.', 'success');
+      invalidate();
+    },
+  });
+
   if (isLoading) {
     return (
       <PageContainer>
@@ -139,7 +158,14 @@ export default function AdminGastroDiscountDetailPage() {
   }
 
   const canonicalProfileId = item.profileId;
-  const moderationPending = markNegotiation.isPending || approve.isPending || reject.isPending || cancel.isPending || sendQr.isPending;
+  const moderationPending =
+    markNegotiation.isPending ||
+    approve.isPending ||
+    reject.isPending ||
+    cancel.isPending ||
+    sendQr.isPending ||
+    approveEdit.isPending ||
+    rejectEdit.isPending;
 
   return (
     <PageContainer>
@@ -157,7 +183,26 @@ export default function AdminGastroDiscountDetailPage() {
 
       <p className="mt-2 text-sm text-text-muted">
         Contacto: {item.ownerEmail ?? '—'} · {item.ownerPhone ?? '—'}
+        {item.createdByOrigin === 'ADMIN' ? ' · Creado por Admin' : ''}
       </p>
+
+      {item.hasPendingUpdate && item.pendingUpdate && (
+        <AdminGastroPendingEditPanel
+          discount={item}
+          note={note}
+          pending={moderationPending}
+          onApprove={() => {
+            if (window.confirm('¿Aplicar la edición propuesta a la versión publicada?')) {
+              approveEdit.mutate();
+            }
+          }}
+          onReject={() => {
+            if (window.confirm('¿Descartar la edición y conservar lo publicado?')) {
+              rejectEdit.mutate();
+            }
+          }}
+        />
+      )}
       {item.discountDate && (
         <p className="text-sm text-text-muted">
           Fecha del descuento: {new Date(item.discountDate).toLocaleDateString('es-AR')}

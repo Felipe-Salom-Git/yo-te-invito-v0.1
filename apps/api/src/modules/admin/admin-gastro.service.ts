@@ -8,7 +8,10 @@ import { randomBytes } from 'crypto';
 import {
   buildGastroDiscountQrPayload,
   ErrorCode,
+  parsePendingUpdate,
+  pendingUpdateToPublishedFields,
   parseRentalOpeningHours,
+  snapshotFromPublishedRow,
   type AdminGastroDiscountMetrics,
   type AdminGastroDiscountPublication,
   type AdminGastroLocationsListQuery,
@@ -88,7 +91,12 @@ export class AdminGastroService {
 
   private tallyDiscountCounts(
     profiles: GastroProfileRef[],
-    discounts: Array<{ gastroProfileId: string | null; eventId: string; status: string }>,
+    discounts: Array<{
+      gastroProfileId: string | null;
+      eventId: string;
+      status: string;
+      pendingUpdateSubmittedAt?: Date | null;
+    }>,
   ) {
     const eventToProfileId = new Map<string, string>();
     for (const p of profiles) {
@@ -110,7 +118,9 @@ export class AdminGastroService {
       const cur = countMap.get(profileId);
       if (!cur) continue;
       cur.total += 1;
-      if (this.isPendingDiscountStatus(d.status)) cur.pending += 1;
+      if (this.isPendingDiscountStatus(d.status) || d.pendingUpdateSubmittedAt) {
+        cur.pending += 1;
+      }
       if (d.status === 'ACTIVE') cur.active += 1;
     }
 
@@ -141,8 +151,14 @@ export class AdminGastroService {
     validityMode?: string;
     validWeekday?: string | null;
     createdAt: Date;
+    createdByOrigin?: string | null;
+    archivedAt?: Date | null;
+    pendingUpdate?: unknown;
+    pendingUpdateSubmittedAt?: Date | null;
     _count: { validations: number };
   }) {
+    const pending = parsePendingUpdate(r.pendingUpdate);
+    const hasPendingUpdate = pending != null || r.pendingUpdateSubmittedAt != null;
     return {
       id: r.id,
       title: r.displayTitle,
@@ -155,6 +171,10 @@ export class AdminGastroService {
       validWeekday: r.validWeekday ?? null,
       validationCount: r._count.validations,
       createdAt: r.createdAt.toISOString(),
+      hasPendingUpdate,
+      reviewKind: hasPendingUpdate ? ('EDIT' as const) : ('NEW' as const),
+      createdByOrigin: r.createdByOrigin === 'ADMIN' ? ('ADMIN' as const) : ('GASTRO' as const),
+      archivedAt: r.archivedAt?.toISOString() ?? null,
     };
   }
 
@@ -171,7 +191,10 @@ export class AdminGastroService {
     const rows = await this.prisma.gastroDiscount.findMany({
       where: {
         tenantId,
-        status: { in: [...PENDING_DISCOUNT_STATUSES] },
+        OR: [
+          { status: { in: [...PENDING_DISCOUNT_STATUSES] } },
+          { pendingUpdateSubmittedAt: { not: null } },
+        ],
       },
       orderBy: { createdAt: 'desc' },
       include: {
@@ -285,6 +308,7 @@ export class AdminGastroService {
               gastroProfileId: true,
               eventId: true,
               status: true,
+              pendingUpdateSubmittedAt: true,
             },
           })
         : [];
@@ -359,7 +383,7 @@ export class AdminGastroService {
     const profileRef: GastroProfileRef = { id: p.id, publicEventId: p.publicEventId };
     const discountRows = await this.prisma.gastroDiscount.findMany({
       where: this.discountsWhereForProfile(tenantId, profileRef),
-      select: { gastroProfileId: true, eventId: true, status: true },
+      select: { gastroProfileId: true, eventId: true, status: true, pendingUpdateSubmittedAt: true },
     });
     const counts = this.tallyDiscountCounts([profileRef], discountRows).get(p.id) ?? {
       total: 0,
@@ -492,6 +516,8 @@ export class AdminGastroService {
       discountDate: row.discountDate?.toISOString() ?? null,
       validityMode: row.validityMode ?? 'DATE_RANGE',
       validWeekday: row.validWeekday ?? null,
+      validFrom: row.validFrom?.toISOString() ?? null,
+      validTo: row.validTo?.toISOString() ?? null,
       status: row.status,
       submittedImageUrls: submitted,
       displayImageUrls: display.length > 0 ? display : submitted,
@@ -508,6 +534,11 @@ export class AdminGastroService {
       ownerPhone: gastroProfile?.contactPhone ?? null,
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
+      createdByOrigin: row.createdByOrigin === 'ADMIN' ? 'ADMIN' : 'GASTRO',
+      archivedAt: row.archivedAt?.toISOString() ?? null,
+      hasPendingUpdate: parsePendingUpdate(row.pendingUpdate) != null,
+      pendingUpdate: parsePendingUpdate(row.pendingUpdate),
+      pendingUpdateSubmittedAt: row.pendingUpdateSubmittedAt?.toISOString() ?? null,
     };
   }
 
@@ -581,7 +612,12 @@ export class AdminGastroService {
       | 'GASTRO_DISCOUNT_REJECTED'
       | 'GASTRO_DISCOUNT_CANCELLED'
       | 'GASTRO_DISCOUNT_ACTIVATED'
-      | 'GASTRO_DISCOUNT_QR_EMAIL_SENT',
+      | 'GASTRO_DISCOUNT_QR_EMAIL_SENT'
+      | 'GASTRO_DISCOUNT_EDIT_APPROVED'
+      | 'GASTRO_DISCOUNT_EDIT_REJECTED'
+      | 'ADMIN_GASTRO_DISCOUNT_CREATED'
+      | 'GASTRO_DISCOUNT_ARCHIVED'
+      | 'GASTRO_DISCOUNT_UNARCHIVED',
     entityId: string,
     before: unknown,
     after: unknown,
@@ -709,6 +745,94 @@ export class AdminGastroService {
       discountId,
       { status: row.status },
       { status: 'REJECTED' },
+    );
+    return this.getDiscountDetail(tenantId, profileId, discountId);
+  }
+
+  async approvePendingEdit(
+    tenantId: string,
+    adminUserId: string,
+    adminRole: string,
+    profileId: string,
+    discountId: string,
+  ) {
+    const row = await this.loadDiscount(tenantId, profileId, discountId);
+    const pending = parsePendingUpdate(row.pendingUpdate);
+    if (!pending) {
+      throw new BadRequestException({
+        code: ErrorCode.VALIDATION_FAILED,
+        message: 'Este descuento no tiene una edición pendiente',
+      });
+    }
+    const published = snapshotFromPublishedRow(row);
+    const fields = pendingUpdateToPublishedFields(pending);
+    await this.prisma.$transaction(async (tx) => {
+      await tx.gastroDiscount.update({
+        where: { id: discountId },
+        data: {
+          displayTitle: fields.displayTitle,
+          summary: fields.summary,
+          detail: fields.detail,
+          displayDescription: fields.displayDescription,
+          submittedImageUrls: urlsJson(fields.submittedImageUrls),
+          displayImageUrls: urlsJson(fields.submittedImageUrls),
+          validityMode: fields.validityMode,
+          validWeekday: fields.validWeekday,
+          validFrom: fields.validFrom,
+          validTo: fields.validTo,
+          discountDate: fields.discountDate,
+          pendingUpdate: Prisma.DbNull,
+          pendingUpdateSubmittedAt: null,
+          pendingUpdateSubmittedByUserId: null,
+        },
+      });
+    });
+    await this.audit(
+      tenantId,
+      adminUserId,
+      adminRole,
+      'GASTRO_DISCOUNT_EDIT_APPROVED',
+      discountId,
+      published,
+      pending,
+    );
+    return this.getDiscountDetail(tenantId, profileId, discountId);
+  }
+
+  async rejectPendingEdit(
+    tenantId: string,
+    adminUserId: string,
+    adminRole: string,
+    profileId: string,
+    discountId: string,
+    note?: string | null,
+  ) {
+    const row = await this.loadDiscount(tenantId, profileId, discountId);
+    const pending = parsePendingUpdate(row.pendingUpdate);
+    if (!pending) {
+      throw new BadRequestException({
+        code: ErrorCode.VALIDATION_FAILED,
+        message: 'Este descuento no tiene una edición pendiente',
+      });
+    }
+    const published = snapshotFromPublishedRow(row);
+    await this.prisma.gastroDiscount.update({
+      where: { id: discountId },
+      data: {
+        pendingUpdate: Prisma.DbNull,
+        pendingUpdateSubmittedAt: null,
+        pendingUpdateSubmittedByUserId: null,
+        adminNotes: note?.trim() || row.adminNotes,
+      },
+    });
+    await this.audit(
+      tenantId,
+      adminUserId,
+      adminRole,
+      'GASTRO_DISCOUNT_EDIT_REJECTED',
+      discountId,
+      published,
+      pending,
     );
     return this.getDiscountDetail(tenantId, profileId, discountId);
   }
