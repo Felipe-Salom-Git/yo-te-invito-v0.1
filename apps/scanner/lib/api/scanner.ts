@@ -7,6 +7,7 @@ import type {
   ScannerEventOccurrencesResponse,
   ScannerEventTicketsResponse,
   ValidateGastroDiscountResponse,
+  ValidateActivityCouponResponse,
 } from '@yo-te-invito/shared';
 import { getAuthHeaders } from '@/lib/auth/session';
 
@@ -180,5 +181,21 @@ export async function validateGastroDiscount(params: {
     }),
   });
   if (!res.ok) throw new Error('Gastro discount validate request failed');
+  return res.json();
+}
+
+export async function validateActivityCoupon(params: {
+  qrPayload: string;
+  deviceId?: string;
+}): Promise<ValidateActivityCouponResponse> {
+  const res = await fetch(`${API_BASE}/scanner/activity-coupons/validate`, {
+    method: 'POST',
+    headers: jsonHeaders(),
+    body: JSON.stringify({
+      qrPayload: params.qrPayload,
+      deviceId: params.deviceId,
+    }),
+  });
+  if (!res.ok) throw new Error('Activity coupon validate request failed');
   return res.json();
 }

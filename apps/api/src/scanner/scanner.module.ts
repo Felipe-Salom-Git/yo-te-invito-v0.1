@@ -5,6 +5,7 @@ import { ScannerAccountsModule } from '../modules/scanner-accounts/scanner-accou
 import { TicketsModule } from '../modules/tickets/tickets.module';
 import { ScannerController } from './scanner.controller';
 import { ScannerGastroDiscountService } from './scanner-gastro-discount.service';
+import { ScannerActivityCouponService } from './scanner-activity-coupon.service';
 import { ScannerShortCodeService } from './scanner-short-code.service';
 import { ScannerService } from './scanner.service';
 
@@ -14,6 +15,7 @@ import { ScannerService } from './scanner.service';
   providers: [
     ScannerService,
     ScannerGastroDiscountService,
+    ScannerActivityCouponService,
     ScannerShortCodeService,
     ProfilesAuthorizationService,
   ],

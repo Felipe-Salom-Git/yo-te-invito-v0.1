@@ -13,12 +13,14 @@ import {
   validateTicketQuerySchema,
   validateTicketBodySchema,
   validateGastroDiscountBodySchema,
+  validateActivityCouponBodySchema,
   scanBodySchema,
   eventTicketsParamsSchema,
   scannerLogsQuerySchema,
   type ValidateTicketQuery,
   type ValidateTicketBody,
   type ValidateGastroDiscountBody,
+  type ValidateActivityCouponBody,
   type ScanBody,
   type EventTicketsParams,
   type ScannerLogsQuery,
@@ -35,6 +37,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Role } from '@yo-te-invito/shared';
 import { ScannerService } from './scanner.service';
 import { ScannerGastroDiscountService } from './scanner-gastro-discount.service';
+import { ScannerActivityCouponService } from './scanner-activity-coupon.service';
 import { ScannerAccountsService } from '../modules/scanner-accounts/scanner-accounts.service';
 import { TicketListExportService } from '../modules/tickets/ticket-list-export.service';
 import { EventTicketListService } from '../modules/tickets/event-ticket-list.service';
@@ -44,6 +47,7 @@ export class ScannerController {
   constructor(
     private readonly service: ScannerService,
     private readonly gastroDiscountScanner: ScannerGastroDiscountService,
+    private readonly activityCouponScanner: ScannerActivityCouponService,
     private readonly scannerAccounts: ScannerAccountsService,
     private readonly ticketListExport: TicketListExportService,
     private readonly eventTicketList: EventTicketListService,
@@ -170,6 +174,22 @@ export class ScannerController {
     body: ValidateGastroDiscountBody,
   ) {
     return this.gastroDiscountScanner.validate(
+      user.tenantId,
+      user.id,
+      user.role,
+      body,
+    );
+  }
+
+  @Post('activity-coupons/validate')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.SCANNER, Role.ADMIN)
+  async validateActivityCoupon(
+    @CurrentUser() user: { tenantId: string; id: string; role: string },
+    @Body(new ZodValidationPipe(validateActivityCouponBodySchema))
+    body: ValidateActivityCouponBody,
+  ) {
+    return this.activityCouponScanner.validate(
       user.tenantId,
       user.id,
       user.role,

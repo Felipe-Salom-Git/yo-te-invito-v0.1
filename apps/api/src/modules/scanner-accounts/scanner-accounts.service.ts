@@ -1028,6 +1028,24 @@ export class ScannerAccountsService {
     }
   }
 
+  async assertScannerCanAccessActivityCoupon(
+    tenantId: string,
+    scannerUserId: string,
+    couponId: string,
+  ): Promise<void> {
+    const account = await this.requireActiveAccountForScanning(tenantId, scannerUserId);
+    if (account.parentProfileType !== ScannerParentProfileType.EXCURSION_OPERATOR) {
+      throw this.scannerScopeForbidden();
+    }
+    const coupon = await this.prisma.activityCoupon.findFirst({
+      where: { id: couponId, tenantId },
+      select: { excursionOperatorId: true },
+    });
+    if (!coupon || coupon.excursionOperatorId !== account.parentProfileId) {
+      throw this.scannerScopeForbidden();
+    }
+  }
+
   async getScanTargetsForScanner(user: AuthUser): Promise<ScannerScanTargetsResponse> {
     if (user.role !== Role.SCANNER) {
       throw new ForbiddenException({
@@ -1125,6 +1143,43 @@ export class ScannerAccountsService {
         discounts: discounts.map((d) => ({
           id: d.id,
           title: d.displayTitle?.trim() || d.code,
+          status: d.status,
+          validFrom: d.validFrom?.toISOString() ?? null,
+          validTo: d.validTo?.toISOString() ?? null,
+          validationCount: d._count.validations,
+        })),
+      };
+    }
+
+    if (account.parentProfileType === ScannerParentProfileType.EXCURSION_OPERATOR) {
+      const now = new Date();
+      const coupons = await this.prisma.activityCoupon.findMany({
+        where: {
+          tenantId: user.tenantId,
+          excursionOperatorId: account.parentProfileId,
+          archivedAt: null,
+          status: { in: ['ACTIVE', 'APPROVED'] },
+          OR: [{ validTo: null }, { validTo: { gte: now } }],
+        },
+        select: {
+          id: true,
+          title: true,
+          status: true,
+          validFrom: true,
+          validTo: true,
+          _count: { select: { validations: true } },
+        },
+        orderBy: [{ validTo: 'asc' }, { createdAt: 'desc' }],
+        take: 100,
+      });
+      return {
+        parentProfileType: account.parentProfileType,
+        parentProfileId: account.parentProfileId,
+        parentDisplayName,
+        events: [],
+        discounts: coupons.map((d) => ({
+          id: d.id,
+          title: d.title,
           status: d.status,
           validFrom: d.validFrom?.toISOString() ?? null,
           validTo: d.validTo?.toISOString() ?? null,

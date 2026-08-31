@@ -6,6 +6,7 @@ import {
   classifyQrScanPayload,
   isManualShortCodeInput,
   parseGastroDiscountQrPayload,
+  parseActivityCouponQrPayload,
   type ScanResponse,
   type ScannerScanTargetsResponse,
   type ValidateGastroDiscountResponse,
@@ -14,6 +15,7 @@ import {
   scanTicket,
   fetchEventSnapshot,
   validateGastroDiscount,
+  validateActivityCoupon,
   fetchScanTargets,
   downloadEventTicketsPdf,
   fetchEventOccurrences,
@@ -130,6 +132,8 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
   const payloadFamily = classifyQrScanPayload(qrPayload);
   const isProducer = targets?.parentProfileType === 'PRODUCER';
   const isGastro = targets?.parentProfileType === 'GASTRO';
+  const isActivity = targets?.parentProfileType === 'EXCURSION_OPERATOR';
+  const isCouponParent = isGastro || isActivity;
 
   const refreshOfflineState = useCallback(async (eventId: string) => {
     if (!eventId) {
@@ -191,7 +195,10 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
           localStorage.setItem(LS_LAST_EVENT, id);
         }
       }
-      if (data.parentProfileType === 'GASTRO' && data.discounts.length > 0) {
+      if (
+        (data.parentProfileType === 'GASTRO' || data.parentProfileType === 'EXCURSION_OPERATOR') &&
+        data.discounts.length > 0
+      ) {
         const stored = localStorage.getItem(LS_LAST_DISCOUNT);
         const valid = stored && data.discounts.some((d) => d.id === stored);
         const id = valid ? stored! : data.discounts[0]!.id;
@@ -311,7 +318,7 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
     isProducer
       ? !!selectedEventId &&
         (!eventOccurrences.length || !!selectedOccurrenceId)
-      : isGastro
+      : isCouponParent
         ? !!selectedDiscountId
         : false;
 
@@ -322,7 +329,7 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
       if (eventOccurrences.length > 1) return false;
       return true;
     }
-    if (targets.parentProfileType === 'GASTRO') {
+    if (targets.parentProfileType === 'GASTRO' || targets.parentProfileType === 'EXCURSION_OPERATOR') {
       return targets.discounts.length === 1;
     }
     return false;
@@ -354,7 +361,7 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
 
   const targetLabel = isProducer
     ? selectedEvent?.title ?? null
-    : isGastro
+    : isCouponParent
       ? selectedDiscount?.title ?? null
       : null;
 
@@ -383,8 +390,9 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
       const family = classifyQrScanPayload(trimmed);
       const shortCode = isManualShortCodeInput(trimmed);
       const isGastroScan = family === 'gastro-discount' || (shortCode && isGastro);
+      const isActivityScan = family === 'activity-coupon' || (shortCode && isActivity);
 
-      if (isGastroScan) {
+      if (isGastroScan || isActivityScan) {
         setLoading(true);
         setLastTicket(null);
         setLastGastro(null);
@@ -393,25 +401,47 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
             setLastGastro({
               status: 'INVALID',
               title: 'Sin conexión',
-              message: 'Los descuentos gastronómicos requieren conexión para validar.',
+              message: 'Los cupones QR requieren conexión para validar.',
             });
             return;
           }
-          const parsed = shortCode ? null : parseGastroDiscountQrPayload(trimmed);
-          if (isGastro && selectedDiscountId && parsed?.discountId !== selectedDiscountId) {
+          const parsed = shortCode
+            ? null
+            : isActivityScan
+              ? parseActivityCouponQrPayload(trimmed)
+              : parseGastroDiscountQrPayload(trimmed);
+          const parsedId =
+            parsed && 'couponId' in parsed ? parsed.couponId : parsed && 'discountId' in parsed ? parsed.discountId : null;
+          if (isCouponParent && selectedDiscountId && parsedId && parsedId !== selectedDiscountId) {
             setLastGastro({
               status: 'INVALID',
-              title: 'Descuento incorrecto',
-              message: 'El QR no corresponde al descuento seleccionado.',
+              title: isActivity ? 'Cupón incorrecto' : 'Descuento incorrecto',
+              message: 'El QR no corresponde al beneficio seleccionado.',
             });
             return;
           }
-          const res = await validateGastroDiscount({
-            qrPayload: trimmed,
-          });
-          setLastGastro(res);
+          const res = isActivityScan
+            ? await validateActivityCoupon({ qrPayload: trimmed })
+            : await validateGastroDiscount({ qrPayload: trimmed });
+          const asGastro: ValidateGastroDiscountResponse =
+            'coupon' in res
+              ? {
+                  status: res.status,
+                  title: res.title,
+                  message: res.message,
+                  discount: res.coupon
+                    ? {
+                        id: res.coupon.id,
+                        title: res.coupon.title,
+                        valueLabel: res.coupon.valueLabel,
+                        localName: res.coupon.activityName,
+                      }
+                    : undefined,
+                }
+              : res;
+          setLastGastro(asGastro);
           setHistory((prev) =>
-            [{ kind: 'gastro-discount' as const, result: res }, ...prev].slice(0, MAX_HISTORY),
+            [{ kind: 'gastro-discount' as const, result: asGastro }, ...prev].slice(0, MAX_HISTORY),
           );
         } catch {
           setLastGastro({
@@ -494,6 +524,7 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
     [
       isOnline,
       isGastro,
+      isActivity,
       selectedDiscountId,
       selectedEventId,
       selectedOccurrenceId,
@@ -778,14 +809,14 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
                   void processScan(qrPayload);
                 }
               }}
-              placeholder={isGastro ? 'Ej. K7M-428' : 'Ej. AB12CD34 o pegá el QR completo'}
+              placeholder={isCouponParent ? 'Ej. K7M-428' : 'Ej. AB12CD34 o pegá el QR completo'}
               autoComplete="off"
               autoCapitalize="characters"
               className="mt-1 block w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-3 font-mono text-base text-white placeholder:text-slate-500"
             />
           </label>
           <p className="text-xs text-slate-500">
-            {isGastro
+            {isCouponParent
               ? 'Ingresá el código del cupón o pegá el QR completo. Los cupones requieren conexión.'
               : 'Ingresá el código corto de la entrada o pegá el QR completo. Offline: solo código corto si está en el listado guardado.'}
           </p>
@@ -925,9 +956,9 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
               <p className="text-sm text-amber-300">No hay eventos con entradas para escanear.</p>
             )}
 
-            {isGastro && targets && targets.discounts.length > 0 && (
+            {isCouponParent && targets && targets.discounts.length > 0 && (
               <label className="text-sm text-slate-400">
-                Descuento activo
+                {isActivity ? 'Cupón de Actividad' : 'Descuento activo'}
                 <select
                   value={selectedDiscountId}
                   onChange={(e) => {
@@ -946,8 +977,10 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
               </label>
             )}
 
-            {isGastro && targets && targets.discounts.length === 0 && (
-              <p className="text-sm text-amber-300">No hay descuentos activos para validar.</p>
+            {isCouponParent && targets && targets.discounts.length === 0 && (
+              <p className="text-sm text-amber-300">
+                {isActivity ? 'No hay cupones activos para validar.' : 'No hay descuentos activos para validar.'}
+              </p>
             )}
 
             {isProducer && selectedEventId && (
