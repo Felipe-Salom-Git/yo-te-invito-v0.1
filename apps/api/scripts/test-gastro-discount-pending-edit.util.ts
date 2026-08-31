@@ -28,6 +28,8 @@ const published = snapshotFromPublishedRow({
   summary: 'Promo almuerzo',
   detail: 'Válido con bebida',
   submittedImageUrls: ['https://cdn.example/a.jpg'],
+  type: 'PERCENT',
+  value: 10,
   validityMode: 'DATE_RANGE',
   validWeekday: null,
   validFrom: new Date('2026-09-01T03:00:00.000Z'),
@@ -117,5 +119,35 @@ const weeklyPayload = buildPendingUpdatePayload(weekly);
 const weeklyFields = pendingUpdateToPublishedFields(weeklyPayload);
 assert(weeklyFields.validFrom === null, 'weekly promote clears validFrom');
 assert(weeklyFields.validWeekday === 'FRIDAY', 'weekly promote keeps weekday');
+
+const valueChange = applyDiscountUpdateToSnapshot(published, { value: 50 });
+assert(hasMaterialDiscountChanges(published, valueChange), 'value change is material');
+assert(published.value === 10, 'published value unchanged after proposing 50');
+assert(valueChange.value === 50, 'pending proposal has new value');
+assert(
+  getMaterialDiscountChanges(published, valueChange).some((c) => c.field === 'value'),
+  'value listed in changes',
+);
+const valuePending = buildPendingUpdatePayload(valueChange);
+assert(valuePending.value === 50, 'pending payload stores proposed value');
+assert(published.value === 10, 'published snapshot still 10 after pending payload');
+
+const typeChange = applyDiscountUpdateToSnapshot(published, { type: 'FIXED', value: 5000 });
+assert(hasMaterialDiscountChanges(published, typeChange), 'type change is material');
+assert(published.type === 'PERCENT', 'published type unchanged after proposing FIXED');
+assert(typeChange.type === 'FIXED', 'pending proposal has new type');
+const typePending = buildPendingUpdatePayload(typeChange);
+assert(typePending.type === 'FIXED' && typePending.value === 5000, 'pending stores type+value');
+assert(!('qrToken' in typePending), 'pending payload has no qrToken');
+assert(!('shortCode' in typePending), 'pending payload has no shortCode');
+assert(!('claims' in typePending), 'pending payload has no claims');
+
+const promotedOffer = pendingUpdateToPublishedFields(typePending);
+assert(promotedOffer.type === 'FIXED' && promotedOffer.value === 5000, 'approve promotes type/value');
+assert(!('qrToken' in promotedOffer), 'promote does not touch QR');
+assert(!('shortCode' in promotedOffer), 'promote does not touch shortCode');
+assert(!('claims' in promotedOffer), 'promote does not touch claims');
+
+assert(published.type === 'PERCENT' && published.value === 10, 'reject path: published type/value preserved');
 
 console.log('\nAll gastro discount pending-edit util checks passed.');

@@ -11,12 +11,17 @@ import {
   type GastroWeekday,
 } from './schemas/gastro-discounts';
 
+export const gastroDiscountOfferTypeSchema = z.enum(['PERCENT', 'FIXED']);
+export type GastroDiscountOfferType = z.infer<typeof gastroDiscountOfferTypeSchema>;
+
 /** Allowlisted content fields for a pending published-content proposal. */
 export const GASTRO_DISCOUNT_PENDING_UPDATE_KEYS = [
   'title',
   'summary',
   'detail',
   'imageUrls',
+  'type',
+  'value',
   'validityMode',
   'validWeekday',
   'validFrom',
@@ -35,6 +40,8 @@ export const gastroDiscountPendingUpdateSchema = z
     summary: z.string().max(500),
     detail: z.string().max(5000),
     imageUrls: z.array(z.string().min(1).max(2_000_000)).max(30),
+    type: gastroDiscountOfferTypeSchema.default('PERCENT'),
+    value: z.number().finite().min(0).max(1_000_000).default(0),
     validityMode: gastroDiscountValidityModeSchema,
     validWeekday: gastroWeekdaySchema.nullable(),
     validFrom: isoOrNull,
@@ -68,12 +75,11 @@ const BLOCKED_PENDING_KEYS = new Set([
   'qrToken',
   'qrGeneratedAt',
   'code',
-  'type',
-  'value',
   'visibility',
   'adminNotes',
   'rejectionReason',
   'claims',
+  'validations',
   'archivedAt',
   'pendingUpdate',
 ]);
@@ -118,6 +124,8 @@ export function snapshotFromPublishedRow(row: {
   summary?: string | null;
   detail?: string | null;
   submittedImageUrls?: unknown;
+  type?: string | null;
+  value?: number | null;
   validityMode?: string | null;
   validWeekday?: string | null;
   validFrom?: Date | string | null;
@@ -132,6 +140,9 @@ export function snapshotFromPublishedRow(row: {
     summary: normalizeTitle(row.summary),
     detail: normalizeTitle(row.detail),
     imageUrls: normalizeUrls(row.submittedImageUrls),
+    type: row.type === 'FIXED' ? 'FIXED' : 'PERCENT',
+    value:
+      typeof row.value === 'number' && Number.isFinite(row.value) ? row.value : 0,
     validityMode,
     validWeekday: weekly
       ? ((row.validWeekday as GastroWeekday | null) ?? null)
@@ -166,6 +177,8 @@ export function applyDiscountUpdateToSnapshot(
     detail: body.detail !== undefined ? normalizeTitle(body.detail) : published.detail,
     imageUrls:
       body.imageUrls !== undefined ? normalizeUrls(body.imageUrls) : published.imageUrls,
+    type: body.type ?? published.type,
+    value: body.value !== undefined ? body.value : published.value,
     validityMode,
     validWeekday: weekly
       ? (normalizedDates?.validWeekday ??
@@ -205,6 +218,12 @@ export function getMaterialDiscountChanges(
       from: published.imageUrls,
       to: proposed.imageUrls,
     });
+  }
+  if (published.type !== proposed.type) {
+    changes.push({ field: 'type', from: published.type, to: proposed.type });
+  }
+  if (published.value !== proposed.value) {
+    changes.push({ field: 'value', from: published.value, to: proposed.value });
   }
   if (published.validityMode !== proposed.validityMode) {
     changes.push({
@@ -278,6 +297,8 @@ export function pendingUpdateToPublishedFields(payload: GastroDiscountPendingUpd
   detail: string;
   displayDescription: string;
   submittedImageUrls: string[];
+  type: GastroDiscountOfferType;
+  value: number;
   validityMode: 'DATE_RANGE' | 'WEEKLY_RECURRING';
   validWeekday: GastroWeekday | null;
   validFrom: Date | null;
@@ -285,6 +306,10 @@ export function pendingUpdateToPublishedFields(payload: GastroDiscountPendingUpd
   discountDate: Date | null;
 } {
   const weekly = payload.validityMode === 'WEEKLY_RECURRING';
+  const offer = {
+    type: payload.type,
+    value: payload.value,
+  };
   if (weekly) {
     return {
       displayTitle: payload.title.trim(),
@@ -292,6 +317,7 @@ export function pendingUpdateToPublishedFields(payload: GastroDiscountPendingUpd
       detail: payload.detail.trim(),
       displayDescription: payload.summary.trim(),
       submittedImageUrls: normalizeUrls(payload.imageUrls),
+      ...offer,
       validityMode: 'WEEKLY_RECURRING',
       validWeekday: payload.validWeekday,
       validFrom: null,
@@ -318,6 +344,7 @@ export function pendingUpdateToPublishedFields(payload: GastroDiscountPendingUpd
     detail: payload.detail.trim(),
     displayDescription: payload.summary.trim(),
     submittedImageUrls: normalizeUrls(payload.imageUrls),
+    ...offer,
     validityMode: 'DATE_RANGE',
     validWeekday: null,
     validFrom,

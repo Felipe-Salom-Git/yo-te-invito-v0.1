@@ -466,6 +466,8 @@ export class GastroPortalDiscountsService {
         ...(body.imageUrls !== undefined && {
           submittedImageUrls: this.urlsJson(body.imageUrls),
         }),
+        ...(body.type !== undefined && { type: body.type }),
+        ...(body.value !== undefined && { value: body.value }),
       },
     });
     return this.mapDiscount(updated);

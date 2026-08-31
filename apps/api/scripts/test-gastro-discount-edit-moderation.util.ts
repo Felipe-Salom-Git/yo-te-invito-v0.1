@@ -23,6 +23,8 @@ const published = snapshotFromPublishedRow({
   summary: 'Almuerzo',
   detail: 'Con bebida',
   submittedImageUrls: ['https://cdn.example/a.jpg'],
+  type: 'PERCENT',
+  value: 10,
   validityMode: 'DATE_RANGE',
   validFrom: new Date('2026-09-01T03:00:00.000Z'),
   validTo: new Date('2026-09-30T02:59:59.999Z'),
@@ -60,6 +62,26 @@ assert(parsePendingUpdate(null) === null, 'reject path: missing pending is null'
 assert(
   parsePendingUpdate({ id: 'x', status: 'ACTIVE', title: 'x' }) === null,
   'mass-assignment keys cannot be parsed as pending',
+);
+
+const offerProposed = parsePendingUpdate({
+  ...published,
+  type: 'FIXED',
+  value: 5000,
+});
+assert(pending != null && offerProposed != null, 'offer proposal parses');
+assert(published.type === 'PERCENT' && published.value === 10, 'published offer unchanged before approve');
+const offerPromoted = pendingUpdateToPublishedFields(offerProposed!);
+assert(offerPromoted.type === 'FIXED' && offerPromoted.value === 5000, 'approve promotes type/value');
+assert(
+  !('qrToken' in offerPromoted) &&
+    !('shortCode' in offerPromoted) &&
+    !('claims' in offerPromoted),
+  'approve does not rewrite QR/shortCode/claims',
+);
+assert(
+  published.type === 'PERCENT' && published.value === 10,
+  'reject path preserves published type/value',
 );
 
 console.log('\nAll gastro discount edit-moderation util checks passed.');

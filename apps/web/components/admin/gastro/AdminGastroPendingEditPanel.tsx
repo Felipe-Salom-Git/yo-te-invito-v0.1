@@ -12,6 +12,13 @@ type Props = {
   onReject: () => void;
 };
 
+function formatOffer(type?: string | null, value?: number | null): string {
+  if (type == null && (value == null || Number.isNaN(value))) return '—';
+  const n = value ?? 0;
+  if (type === 'FIXED') return `$${n} OFF`;
+  return `${n}%`;
+}
+
 function FieldDiff({
   label,
   current,
@@ -83,6 +90,11 @@ export function AdminGastroPendingEditPanel({
         <FieldDiff label="Título" current={discount.title ?? ''} proposed={proposed.title} />
         <FieldDiff label="Resumen" current={discount.summary ?? ''} proposed={proposed.summary} />
         <FieldDiff label="Detalle" current={discount.detail ?? ''} proposed={proposed.detail} />
+        <FieldDiff
+          label="Oferta"
+          current={formatOffer(discount.type, discount.value)}
+          proposed={formatOffer(proposed.type, proposed.value)}
+        />
         <FieldDiff
           label="Vigencia"
           current={validityLabel(discount)}

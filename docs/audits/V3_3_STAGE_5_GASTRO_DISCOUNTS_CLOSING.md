@@ -7,6 +7,8 @@
 
 No actualiza contextos globales (`AI_ENTRYPOINT.md`, `NEXT_CHAT_HANDOFF.md`, etc.). Eso queda para después de la revisión humana.
 
+**Pre-cierre / hardening:** `type` y `value` son cambios materiales. Admin create ACTIVE se verificó sin cambios. Cron de expiry activo por defecto (solo se apaga con `GASTRO_DISCOUNT_EXPIRY_CRON_ENABLED=false`).
+
 ---
 
 ## 1. Objetivo
@@ -100,12 +102,17 @@ Allowlist (`GASTRO_DISCOUNT_PENDING_UPDATE_KEYS` + `hasMaterialDiscountChanges`)
 
 ```
 title, summary, detail, imageUrls,
+type, value,
 validityMode, validWeekday, validFrom, validTo, discountDate
 ```
 
+`type` y `value` son **materiales** (hardening pre-cierre): cambian la oferta comercial (`10% → 50%`, `$5000 OFF → 50% OFF`) y no pueden publicarse in-place sobre un descuento ya `ACTIVE`/`APPROVED`.
+
 Fechas comparadas por calendar key AR, no por instante UTC.
 
-**No materiales / bloqueados en pending JSON:** `id`, `tenantId`, `gastroProfileId`, `eventId`, `status`, `qrToken`, `code`, `type`, `value`, `createdBy*`, `archivedAt`, claims, etc.
+**No materiales / bloqueados en pending JSON:** `id`, `tenantId`, `gastroProfileId`, `eventId`, `status`, `qrToken`, `code`, `createdBy*`, `archivedAt`, claims, validations.
+
+Al promover una edición: se aplican `type`/`value` allowlisteados. QR, shortCode y claims no se tocan.
 
 ---
 
@@ -123,11 +130,23 @@ Fechas comparadas por calendar key AR, no por instante UTC.
 
 Fuente de verdad: `packages/shared/src/gastro-discount-expiry.ts` (calendario AR).
 
-`GastroDiscountExpiryService` materializa `EXPIRED` sobre candidatos `ACTIVE`/`APPROVED` no archivados. Cron `*/15` (dev) / `5 * * * *` (prod). Disable: `GASTRO_DISCOUNT_EXPIRY_CRON_ENABLED=false`.
+`GastroDiscountExpiryService` materializa `EXPIRED` sobre candidatos `ACTIVE`/`APPROVED` no archivados.
+
+**Scheduler (un solo cron, no hay segundo mecanismo):**
+
+| Entorno | Expresión | Default |
+|---------|-----------|---------|
+| development (`NODE_ENV=development`) | `*/15 * * * *` | **activo** |
+| production / resto | `5 * * * *` | **activo** |
+
+`GASTRO_DISCOUNT_EXPIRY_CRON_ENABLED`:
+
+- **Default real:** activo. El job solo se salta si el valor es exactamente el literal `false`.
+- Omitir la variable, `true`, o cualquier otro valor → el cron corre.
+- Documentado en `apps/api/.env.example`.
+- En producción **no** setear `false` salvo apagado deliberado de A8.
 
 Weekly sin `validTo`: **no** expira.
-
-No hay segundo mecanismo de expiry.
 
 ---
 
@@ -153,11 +172,26 @@ Portal `/gastro/descuentos` y admin local: tabs Activos / Pendientes / Vencidos-
 
 - Target: `GastroProfile` **ACTIVE** con `publicEventId` (selección explícita; nunca “primer local”)
 - `createdByOrigin=ADMIN`, `createdByUserId=admin`
-- Status inicial: **`ACTIVE`** + QR + `displayImageUrls` = imágenes enviadas
-- Gastro create: `PENDING_REVIEW`, origin `GASTRO`
-- **No** se implementó “ADMIN crea → PENDING → ADMIN se auto-aprueba”
+- Status inicial: **`ACTIVE`** (equivalente a un approve normal; no hay auto-PENDING)
 - Tenant isolation: `assertProfile(tenantId, profileId)`
 - Followers: `FOLLOWED_GASTRO_NEW_DISCOUNT` (igual que approve)
+- Lifecycle notify: `GASTRO_DISCOUNT_APPROVED_BY_ADMIN` (`:create`)
+- Audit: `ADMIN_GASTRO_DISCOUNT_CREATED`
+
+**Invariantes ACTIVE (pre-cierre: ya correctas, sin cambio de código):**
+
+| Invariante | Admin create |
+|------------|----------------|
+| `tenantId` / `gastroProfileId` / `eventId` | del profile target |
+| `qrToken` + `qrGeneratedAt` | generados al crear |
+| `displayImageUrls` | = imágenes enviadas (`submittedImageUrls`) |
+| vigencia | `normalizeGastroDiscountValidFromDate` / `ExpiryDate` (DATE_RANGE) o weekday (WEEKLY) |
+| origin / creator | `ADMIN` + `createdByUserId` |
+| status | `ACTIVE` vía `initialStatusForDiscountOrigin('ADMIN')` |
+
+`type`/`value` al crear siguen el contrato de formulario actual (`PERCENT` / `0`), igual que Gastro create. Cambiarlos después sobre un ACTIVE pasa por pending edit.
+
+Gastro create: `PENDING_REVIEW`, origin `GASTRO`.
 
 ---
 
@@ -260,7 +294,7 @@ Checklist futura Etapa 5:
 
 1. Gastro crea descuento → PENDING_REVIEW + notificación memberships del local.
 2. Admin aprueba/rechaza nuevo → notifica; QR solo tras approve.
-3. ACTIVE: edición material → publicado intacto; copy “publicado sigue activo”; admin ve diff; approve aplica; reject descarta.
+3. ACTIVE: edición material (incl. `type`/`value`) → publicado intacto; copy “publicado sigue activo”; admin ve diff de oferta; approve aplica; reject descarta.
 4. Claim/QR/shortCode previos siguen validando en scanner durante pending.
 5. Multi-local: Local A no edita descuento de Local B; notificación no cruza memberships.
 6. Admin crea descuento eligiendo profile ACTIVE → nace ACTIVE, origin ADMIN.
@@ -293,8 +327,9 @@ a2f308d feat(v3.3): moderate gastro discount edits
 7a4b087 feat(v3.3): allow admin gastro discount creation
 a18d298 feat(v3.3): add gastro lifecycle notifications
 eb344e1 feat(v3.3): refine gastro discount lifecycle ux
+692f454 docs(v3.3): close gastro discounts stage
 ```
 
-(el commit de este cierre se agrega a continuación)
+Pre-cierre/hardening (este commit): `type`/`value` materiales, cron A8 documentado, invariantes C1 verificadas.
 
 **NO PUSH.**
