@@ -1,6 +1,4 @@
-'use client';
-
-import { useCallback, useEffect, useState } from 'react';
+import { HORIZONTAL_SCROLL_RAIL_CLASS } from '@/lib/ui/horizontalScrollClasses';
 import type { RentalGalleryImage } from '@/lib/rentals/productGallery';
 
 type RentalGalleryThumbnailsProps = {
@@ -50,7 +48,7 @@ export function RentalGalleryThumbnails({ images }: RentalGalleryThumbnailsProps
   return (
     <>
       <ul
-        className="-mx-1 flex gap-2.5 overflow-x-auto px-1 pb-2 scroll-smooth snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:thin] sm:gap-3"
+        className={`-mx-1 ${HORIZONTAL_SCROLL_RAIL_CLASS} gap-2.5 px-1 pb-2 scroll-smooth [-ms-overflow-style:none] [scrollbar-width:thin] sm:gap-3`}
         aria-label="Galería de imágenes"
       >
         {images.map((img, index) => (

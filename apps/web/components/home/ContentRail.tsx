@@ -1,7 +1,4 @@
-'use client';
-
-import { useRef, useState, useEffect } from 'react';
-import Link from 'next/link';
+import { HORIZONTAL_SCROLL_RAIL_CLASS } from '@/lib/ui/horizontalScrollClasses';
 import { motion } from 'framer-motion';
 import type { EventSummary } from '@/repositories/interfaces';
 import { CategorySectionHeading } from '@/components/categories/CategorySectionHeading';
@@ -142,7 +139,7 @@ export function ContentRail({
         />
 
         {/* Scroll arrows — aligned with rail padding, z-50 above cards */}
-        <div className={`pointer-events-none absolute inset-y-0 left-0 right-0 z-50 flex items-center justify-between ${railPad}`}>
+        <div className={`pointer-events-none absolute inset-y-0 left-0 right-0 z-50 hidden items-center justify-between md:flex ${railPad}`}>
           <button
             type="button"
             onClick={() => scroll('left')}
@@ -167,7 +164,7 @@ export function ContentRail({
         <div
           ref={scrollRef}
           onScroll={updateScrollState}
-          className={`flex gap-5 overflow-x-auto overflow-y-visible py-4 pb-8 scrollbar-hide ${railPad}`}
+          className={`${HORIZONTAL_SCROLL_RAIL_CLASS} gap-5 py-4 pb-8 ${railPad}`}
         >
           {isLoading ? (
             Array.from({ length: 4 }).map((_, i) => (

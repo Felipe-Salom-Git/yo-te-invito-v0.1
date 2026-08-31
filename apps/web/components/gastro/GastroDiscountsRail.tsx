@@ -1,6 +1,4 @@
-'use client';
-
-import { useRef, useState, useEffect } from 'react';
+import { HORIZONTAL_SCROLL_RAIL_CLASS } from '@/lib/ui/horizontalScrollClasses';
 import type { PublicGastroDiscountListItem } from '@/repositories/interfaces';
 import { CategorySectionHeading } from '@/components/categories/CategorySectionHeading';
 import { GastroDiscountPublicCard } from './GastroDiscountPublicCard';
@@ -57,7 +55,7 @@ export function GastroDiscountsRail({
           <div
             ref={scrollRef}
             onScroll={updateScroll}
-            className="scrollbar-hide flex gap-3 overflow-x-auto px-4 pb-2 sm:px-6"
+            className={`${HORIZONTAL_SCROLL_RAIL_CLASS} gap-3 px-4 pb-2 sm:px-6`}
           >
             {discounts.map((d) => (
               <GastroDiscountPublicCard key={d.id} discount={d} />

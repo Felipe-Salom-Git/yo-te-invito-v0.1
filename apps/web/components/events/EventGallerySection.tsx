@@ -1,6 +1,4 @@
-'use client';
-
-import { useRef, useState, useEffect } from 'react';
+import { HORIZONTAL_SCROLL_RAIL_CLASS } from '@/lib/ui/horizontalScrollClasses';
 
 export interface EventGallerySectionProps {
   /** Cover image URL (shown first) */
@@ -87,12 +85,12 @@ export function EventGallerySection({
         <div
           ref={scrollRef}
           onScroll={updateScrollState}
-          className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4 sm:-mx-6 sm:px-6 md:mx-0 md:px-0"
+          className={`${HORIZONTAL_SCROLL_RAIL_CLASS} gap-4 pb-4 -mx-4 px-4 sm:-mx-6 sm:px-6 md:mx-0 md:px-0`}
         >
           {deduped.map((img) => (
             <div
               key={img.id}
-              className="flex-shrink-0 w-[280px] sm:w-[320px] md:w-[360px] aspect-video rounded-lg overflow-hidden border border-border/80 bg-bg-muted"
+              className="flex-shrink-0 w-[min(280px,80vw)] sm:w-[320px] md:w-[360px] aspect-video rounded-lg overflow-hidden border border-border/80 bg-bg-muted snap-start"
             >
               <img
                 src={img.url}

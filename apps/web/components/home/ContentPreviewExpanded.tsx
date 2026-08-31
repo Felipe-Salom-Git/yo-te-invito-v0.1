@@ -13,6 +13,7 @@ import {
   RENTAL_CARD_CTA,
 } from '@/lib/home/contentCardPresentation';
 import { shouldShowPublicEventDate } from '@/lib/public/publicContentDates';
+import { HORIZONTAL_SCROLL_RAIL_CLASS } from '@/lib/ui/horizontalScrollClasses';
 import { formatPublicRatingLabel } from '@/lib/reviews/ratingDisplay';
 
 export interface ContentPreviewExpandedProps {
@@ -143,7 +144,7 @@ export function ContentPreviewExpanded({
           <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-white/80">
             Recomendados
           </h3>
-          <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
+          <div className={`${HORIZONTAL_SCROLL_RAIL_CLASS} gap-3 pb-1`}>
             {filteredSimilar.slice(0, 8).map((sim) => (
               <button
                 key={sim.id}
