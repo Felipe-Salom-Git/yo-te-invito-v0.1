@@ -11,6 +11,7 @@ export type ImageUploadHintVariant =
   | 'galleryHorizontal'
   | 'banner'
   | 'logo'
+  | 'avatar'
   | 'openGraph'
   | 'content';
 
@@ -39,6 +40,10 @@ const HINT_CONFIG: Record<ImageUploadHintVariant, HintConfig> = {
   logo: {
     dimensions: '512 × 512 px',
     usage: 'Logo o avatar de marca, preferiblemente cuadrado.',
+  },
+  avatar: {
+    dimensions: '1080 × 1080 px',
+    usage: 'Foto de perfil visible en tu cuenta, menú y reseñas públicas.',
   },
   openGraph: {
     dimensions: '1200 × 630 px',

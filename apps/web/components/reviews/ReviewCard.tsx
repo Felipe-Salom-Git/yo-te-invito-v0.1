@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import type { PublicReviewItemV2 } from '@yo-te-invito/shared';
 import { UserReviewBadge } from './UserReviewBadge';
+import { UserReviewerAvatar } from './UserReviewerAvatar';
 import { ReviewReply } from './ReviewReply';
 import { ReviewAspectBreakdown } from './ReviewAspectBreakdown';
 import {
@@ -38,14 +39,27 @@ export function ReviewCard({
   return (
     <article className="min-w-0 rounded-xl border border-border/80 bg-bg-muted/50 p-4 sm:p-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
-        <div
-          className="flex shrink-0 items-center justify-center rounded-lg border border-accent/30 bg-accent/10 px-3 py-2 sm:w-[4.5rem] sm:flex-col sm:px-2"
-          aria-label={publicRatingAriaLabel(review.overallRating)}
-        >
-          <span className="text-2xl font-bold tabular-nums text-accent sm:text-3xl">
-            {formatPublicRatingLabel(review.overallRating, { suffix: false })}
-          </span>
-          <span className="text-xs text-text-muted sm:mt-0.5">/5</span>
+        <div className="flex shrink-0 flex-col items-center gap-2 sm:w-[4.5rem]">
+          <Link
+            href={`/users/${review.author.userId}`}
+            className="shrink-0 rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            aria-label={`Ver perfil de ${review.author.displayName}`}
+          >
+            <UserReviewerAvatar
+              displayName={review.author.displayName}
+              avatarUrl={review.author.avatarUrl}
+              size="md"
+            />
+          </Link>
+          <div
+            className="flex items-center justify-center rounded-lg border border-accent/30 bg-accent/10 px-3 py-2 sm:w-full sm:flex-col sm:px-2"
+            aria-label={publicRatingAriaLabel(review.overallRating)}
+          >
+            <span className="text-2xl font-bold tabular-nums text-accent sm:text-3xl">
+              {formatPublicRatingLabel(review.overallRating, { suffix: false })}
+            </span>
+            <span className="text-xs text-text-muted sm:mt-0.5">/5</span>
+          </div>
         </div>
 
         <div className="min-w-0 flex-1">

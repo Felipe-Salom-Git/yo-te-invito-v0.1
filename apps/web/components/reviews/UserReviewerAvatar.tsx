@@ -10,7 +10,7 @@ function initialsFromName(name: string): string {
 type Props = {
   displayName: string;
   avatarUrl?: string | null;
-  size?: 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg';
 };
 
 export function UserReviewerAvatar({
@@ -18,7 +18,12 @@ export function UserReviewerAvatar({
   avatarUrl,
   size = 'lg',
 }: Props) {
-  const sizeClass = size === 'lg' ? 'h-16 w-16 text-xl' : 'h-12 w-12 text-base';
+  const sizeClass =
+    size === 'lg'
+      ? 'h-16 w-16 text-xl'
+      : size === 'md'
+        ? 'h-12 w-12 text-base'
+        : 'h-9 w-9 text-xs';
 
   if (avatarUrl?.trim()) {
     return (

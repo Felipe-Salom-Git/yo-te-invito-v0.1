@@ -13,6 +13,7 @@ import {
 } from '@/components';
 import { PreferredCitySelect } from '@/components/me/PreferredCitySelect';
 import { MeAccountProfiles } from '@/components/me/MeAccountProfiles';
+import { MeAccountAvatarSection } from '@/components/me/MeAccountAvatarSection';
 import { useMeAccount, usePatchMeAccount, useChangePassword } from '@/lib/query/me-portal';
 import { useRepositories } from '@/repositories/context';
 import { getErrorMessage } from '@/lib/errors';
@@ -102,7 +103,17 @@ export default function MeAccountPage() {
       <SectionTitle>Mi cuenta</SectionTitle>
       {account && <p className="mt-1 text-sm text-text-muted">{account.email}</p>}
 
-      <form onSubmit={saveProfile} className="mt-8 max-w-md space-y-4">
+      {account ? (
+        <div className="mt-8">
+          <MeAccountAvatarSection
+            accountId={account.id}
+            displayName={`${account.firstName} ${account.lastName}`.trim() || account.email}
+            avatarUrl={account.avatarUrl}
+          />
+        </div>
+      ) : null}
+
+      <form onSubmit={saveProfile} className="mt-10 max-w-md space-y-4">
         <h3 className="font-medium text-text">Datos personales</h3>
         <Input label="Nombre" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
         <Input label="Apellido" value={lastName} onChange={(e) => setLastName(e.target.value)} />
