@@ -48,6 +48,7 @@ import {
 } from './templates/gastro-discount-qr.template';
 import { renderGastroLifecycle } from './templates/gastro-lifecycle.template';
 import { renderActivityCouponQr } from './templates/activity-coupon-qr.template';
+import { renderAdminCampaign } from './templates/admin-campaign.template';
 
 export type EmailTemplateRenderer = (
   variables: Record<string, unknown>,
@@ -101,6 +102,7 @@ const REGISTRY: Record<EmailTemplateId, EmailTemplateRenderer> = {
   GASTRO_DISCOUNT_QR_COURTESY: renderGastroDiscountQrCourtesy,
   GASTRO_LIFECYCLE: renderGastroLifecycle,
   ACTIVITY_COUPON_QR: renderActivityCouponQr,
+  ADMIN_CAMPAIGN: renderAdminCampaign,
 };
 
 export function getEmailTemplateRenderer(

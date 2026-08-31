@@ -428,6 +428,18 @@ function sampleVariables(templateId: EmailTemplateId): Record<string, unknown> {
         ctaUrl: `${appUrl}/gastro/descuentos`,
         supportEmail: 'soporte@yoteinvito.club',
       };
+    case 'ADMIN_CAMPAIGN':
+      return {
+        subject: 'Novedades de Yo Te Invito',
+        headline: 'Esta semana en Bariloche',
+        body: 'Conocé este descuento destacado.',
+        contentTitle: '2x1 pizzas',
+        contentBenefit: '2x1',
+        ctaLabel: 'Ver descuento',
+        ctaUrl: `${appUrl}/descuentos/demo`,
+        unsubscribeUrl: `${appUrl}/baja-promos?token=${'ab'.repeat(32)}`,
+        supportEmail: 'soporte@yoteinvito.club',
+      };
     default:
       return {};
   }

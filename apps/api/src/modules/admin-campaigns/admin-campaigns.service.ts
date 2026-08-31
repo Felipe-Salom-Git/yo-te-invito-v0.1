@@ -3,6 +3,7 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import {
@@ -25,6 +26,7 @@ import { AuditService } from '../audit/audit.service';
 import { isWhatsAppCampaignProviderConfigured } from '../marketing-preferences/whatsapp-campaign-provider.util';
 import { CampaignAudienceService } from './campaign-audience.service';
 import { CampaignContentService } from './campaign-content.service';
+import { CampaignEmailQueueService } from './campaign-email-queue.service';
 
 @Injectable()
 export class AdminCampaignsService {
@@ -33,6 +35,7 @@ export class AdminCampaignsService {
     private readonly audit: AuditService,
     private readonly content: CampaignContentService,
     private readonly audience: CampaignAudienceService,
+    private readonly campaignEmails: CampaignEmailQueueService,
   ) {}
 
   async list(tenantId: string, query: AdminCampaignsListQuery) {
@@ -179,6 +182,16 @@ export class AdminCampaignsService {
         message: 'WhatsApp provider is not configured',
       });
     }
+    if (
+      row.channel === 'EMAIL' &&
+      process.env.NODE_ENV === 'production' &&
+      !this.campaignEmails.isQueueAvailable()
+    ) {
+      throw new ServiceUnavailableException({
+        code: ErrorCode.CAMPAIGN_QUEUE_UNAVAILABLE,
+        message: 'Campaign email queue requires REDIS_URL',
+      });
+    }
 
     const snapshot = await this.content.resolveEligible(
       tenantId,
@@ -212,7 +225,16 @@ export class AdminCampaignsService {
       });
     }
 
-    if (members.length > 0) {
+    if (members.length === 0) {
+      await this.prisma.adminCampaign.update({
+        where: { id: row.id },
+        data: {
+          status: 'FAILED',
+          completedAt: new Date(),
+          queuedCount: 0,
+        },
+      });
+    } else {
       await this.prisma.adminCampaignDelivery.createMany({
         data: members.map((m) => ({
           tenantId,
@@ -224,6 +246,9 @@ export class AdminCampaignsService {
         })),
         skipDuplicates: true,
       });
+      if (row.channel === 'EMAIL') {
+        await this.campaignEmails.enqueueCampaign(tenantId, row.id);
+      }
     }
 
     await this.audit.logAction({
