@@ -91,7 +91,7 @@ export function AdminDeepDeleteModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 sm:items-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
       <div
         className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-border bg-bg p-6 shadow-xl"
         role="dialog"

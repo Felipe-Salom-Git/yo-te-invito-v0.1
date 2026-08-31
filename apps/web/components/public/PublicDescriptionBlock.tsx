@@ -84,7 +84,7 @@ export function PublicDescriptionBlock({
 
       {modalOpen && (
         <div
-          className="fixed inset-0 z-[70] flex items-end justify-center sm:items-center sm:p-4"
+          className="fixed inset-0 z-[70] flex items-center justify-center p-4"
           role="dialog"
           aria-modal="true"
           aria-labelledby="public-description-modal-title"
@@ -95,7 +95,7 @@ export function PublicDescriptionBlock({
             onClick={() => setModalOpen(false)}
             aria-label="Cerrar"
           />
-          <div className="relative z-10 flex max-h-[90vh] w-full max-w-2xl flex-col rounded-t-2xl border border-white/10 bg-bg shadow-2xl sm:max-h-[85vh] sm:rounded-xl">
+          <div className="relative z-10 flex max-h-[min(90vh,100dvh)] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-white/10 bg-bg shadow-2xl">
             <div className="flex items-start justify-between gap-4 border-b border-white/10 px-5 py-4">
               <h3 id="public-description-modal-title" className="text-lg font-semibold text-white">
                 {title}

@@ -67,7 +67,7 @@ export function ContentPreviewModal({
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 z-50 flex items-end justify-center sm:items-center"
+        className="fixed inset-0 z-50 flex items-center justify-center p-4"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -88,7 +88,7 @@ export function ContentPreviewModal({
 
         {/* Modal panel */}
         <motion.div
-          className={`relative z-10 mx-4 mb-0 flex max-h-[90vh] w-full flex-col overflow-hidden rounded-t-2xl bg-bg-muted shadow-2xl transition-all duration-300 sm:mb-4 sm:max-h-[85vh] sm:rounded-2xl ${item && isExpanded ? 'max-w-5xl' : 'max-w-2xl'}`}
+          className={`relative z-10 flex max-h-[min(90vh,100dvh)] w-full flex-col overflow-hidden rounded-2xl bg-bg-muted shadow-2xl transition-all duration-300 ${item && isExpanded ? 'max-w-5xl' : 'max-w-2xl'}`}
           initial={{ opacity: 0, scale: 0.97, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.97, y: 16 }}

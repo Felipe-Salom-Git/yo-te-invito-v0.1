@@ -53,11 +53,11 @@ export function ReviewDisputeModal({ reviewId, open, onClose, filtersKey }: Prop
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
       onClick={(e) => e.target === e.currentTarget && !mutation.isPending && onClose()}
     >
       <section
-        className="max-h-[92vh] w-full overflow-y-auto rounded-t-xl border border-border bg-bg p-5 shadow-xl sm:max-w-lg sm:rounded-xl sm:p-6"
+        className="max-h-[min(90vh,100dvh)] w-full max-w-lg overflow-y-auto rounded-xl border border-border bg-bg p-5 shadow-xl sm:p-6"
         role="dialog"
         aria-labelledby="dispute-modal-title"
       >

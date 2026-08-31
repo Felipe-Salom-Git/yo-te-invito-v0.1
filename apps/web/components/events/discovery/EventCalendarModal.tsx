@@ -90,13 +90,13 @@ export function EventCalendarModal({
 
   return (
     <div
-      className="fixed inset-0 z-[70] flex items-end justify-center bg-black/80 p-0 sm:items-center sm:p-4"
+      className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 p-4"
       role="dialog"
       aria-modal="true"
       onClick={onClose}
     >
       <div
-        className="relative flex h-[min(780px,92dvh)] w-full max-w-[1100px] flex-col overflow-hidden rounded-t-2xl border border-white/15 bg-black shadow-2xl sm:rounded-xl"
+        className="relative flex h-[min(780px,90dvh)] w-full max-w-[1100px] flex-col overflow-hidden rounded-xl border border-white/15 bg-black shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3 sm:px-6">
