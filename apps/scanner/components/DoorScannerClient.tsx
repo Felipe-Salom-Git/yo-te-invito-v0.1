@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   classifyQrScanPayload,
   isManualShortCodeInput,
@@ -88,6 +89,8 @@ function formatEventLabel(e: ScannerScanTargetsResponse['events'][number]): stri
 }
 
 export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScannerClientProps) {
+  const searchParams = useSearchParams();
+  const autoNavigatedRef = useRef(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [ticketListOpen, setTicketListOpen] = useState(false);
   const [targets, setTargets] = useState<ScannerScanTargetsResponse | null>(null);
@@ -311,6 +314,43 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
       : isGastro
         ? !!selectedDiscountId
         : false;
+
+  const hasSingleTarget = useMemo(() => {
+    if (!targets) return false;
+    if (targets.parentProfileType === 'PRODUCER') {
+      if (targets.events.length !== 1) return false;
+      if (eventOccurrences.length > 1) return false;
+      return true;
+    }
+    if (targets.parentProfileType === 'GASTRO') {
+      return targets.discounts.length === 1;
+    }
+    return false;
+  }, [targets, eventOccurrences.length]);
+
+  const startScan = useCallback(
+    (mode: InputMode) => {
+      setMode(mode);
+      goToScan();
+    },
+    [goToScan],
+  );
+
+  useEffect(() => {
+    if (!targets || !canGoToScan || autoNavigatedRef.current) return;
+
+    const urlCamera = searchParams.get('mode') === 'camera';
+    const persistedScan = localStorage.getItem(LS_SCREEN) === 'scan';
+    const shouldAutoEnter = hasSingleTarget || persistedScan || urlCamera;
+
+    if (!shouldAutoEnter) return;
+
+    autoNavigatedRef.current = true;
+    if (urlCamera) {
+      setMode('camera');
+    }
+    goToScan();
+  }, [targets, canGoToScan, hasSingleTarget, searchParams, goToScan]);
 
   const targetLabel = isProducer
     ? selectedEvent?.title ?? null
@@ -661,7 +701,7 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
               : 'border border-slate-600 text-slate-300'
           }`}
         >
-          Cámara
+          Escanear con cámara
         </button>
         <button
           type="button"
@@ -672,7 +712,7 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
               : 'border border-slate-600 text-slate-300'
           }`}
         >
-          Manual
+          Ingresar código manualmente
         </button>
       </div>
 
@@ -956,14 +996,24 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
             )}
           </div>
 
-          <button
-            type="button"
-            onClick={goToScan}
-            disabled={!canGoToScan}
-            className="h-14 rounded-xl bg-emerald-600 text-lg font-bold text-white disabled:opacity-40"
-          >
-            Ir al escáner
-          </button>
+          <div className="flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={() => startScan('camera')}
+              disabled={!canGoToScan}
+              className="h-14 rounded-xl bg-emerald-600 text-lg font-bold text-white disabled:opacity-40"
+            >
+              Escanear con cámara
+            </button>
+            <button
+              type="button"
+              onClick={() => startScan('manual')}
+              disabled={!canGoToScan}
+              className="h-12 rounded-xl border border-slate-500 text-base font-semibold text-white hover:bg-slate-800 disabled:opacity-40"
+            >
+              Ingresar código manualmente
+            </button>
+          </div>
           {!canGoToScan && (
             <p className="text-center text-xs text-slate-500">
               Seleccioná un evento{eventOccurrences.length > 0 ? ' y una función' : ''} para continuar.
