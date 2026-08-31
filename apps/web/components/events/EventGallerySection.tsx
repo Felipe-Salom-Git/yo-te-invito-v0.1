@@ -1,3 +1,6 @@
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
 import { HORIZONTAL_SCROLL_RAIL_CLASS } from '@/lib/ui/horizontalScrollClasses';
 
 export interface EventGallerySectionProps {

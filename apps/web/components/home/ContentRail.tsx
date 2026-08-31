@@ -1,3 +1,7 @@
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { HORIZONTAL_SCROLL_RAIL_CLASS } from '@/lib/ui/horizontalScrollClasses';
 import { motion } from 'framer-motion';
 import type { EventSummary } from '@/repositories/interfaces';

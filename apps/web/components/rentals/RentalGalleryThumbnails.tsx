@@ -1,3 +1,6 @@
+'use client';
+
+import { useCallback, useEffect, useState } from 'react';
 import { HORIZONTAL_SCROLL_RAIL_CLASS } from '@/lib/ui/horizontalScrollClasses';
 import type { RentalGalleryImage } from '@/lib/rentals/productGallery';
 

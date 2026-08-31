@@ -1,3 +1,6 @@
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
 import { HORIZONTAL_SCROLL_RAIL_CLASS } from '@/lib/ui/horizontalScrollClasses';
 import type { PublicGastroDiscountListItem } from '@/repositories/interfaces';
 import { CategorySectionHeading } from '@/components/categories/CategorySectionHeading';
