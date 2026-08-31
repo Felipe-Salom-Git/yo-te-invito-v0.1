@@ -5,8 +5,10 @@ import { useQuery } from '@tanstack/react-query';
 import { useRepositories } from '@/repositories/context';
 import { PageContainer, SectionTitle } from '@/components';
 import { GastroDiscountVisualCoupon } from '@/components/gastro/GastroDiscountVisualCoupon';
+import { ActivityCouponQrCard } from '@/components/activities/ActivityCouponQrCard';
 import { formatGastroDiscountValidTo } from '@/lib/gastro/discount-status-ui';
-import type { MeGastroDiscountItem } from '@yo-te-invito/shared';
+import { activityCouponsKeys } from '@/lib/query/keys';
+import type { ActivityCouponClaimView, MeGastroDiscountItem } from '@yo-te-invito/shared';
 
 function DiscountCard({ item }: { item: MeGastroDiscountItem }) {
   const restaurantHref = item.locationSlug
@@ -74,29 +76,70 @@ export default function MeGastroDiscountsPage() {
     queryKey: ['me', 'gastro-discounts'],
     queryFn: () => repos.mePortal.listGastroDiscounts(),
   });
+  const { data: activityData, isLoading: activityLoading, error: activityError } = useQuery({
+    queryKey: activityCouponsKeys.me(),
+    queryFn: () => repos.activityCoupons.listMine(),
+  });
 
   const discounts = data?.data ?? [];
+  const activityClaims = activityData?.data ?? [];
 
   return (
     <PageContainer>
-      <SectionTitle>Mis descuentos gastronómicos</SectionTitle>
+      <SectionTitle>Mis descuentos</SectionTitle>
       <p className="mb-6 text-sm text-text-muted">
-        Descuentos que solicitaste o cortesías que recibiste por email.
+        Cupones gastronómicos y de Actividades que reclamaste.
       </p>
 
+      <h2 className="mb-4 text-lg font-semibold text-text">Gastronomía</h2>
       {isLoading && <p className="text-text-muted">Cargando…</p>}
       {error && (
-        <p className="text-sm text-red-400">No se pudieron cargar tus descuentos.</p>
+        <p className="text-sm text-red-400">No se pudieron cargar tus descuentos gastronómicos.</p>
       )}
       {!isLoading && !error && discounts.length === 0 && (
         <p className="rounded-lg border border-border bg-bg-muted px-4 py-8 text-center text-text-muted">
           Todavía no tenés descuentos gastronómicos.
         </p>
       )}
-
       <ul className="space-y-10">
         {discounts.map((item) => (
           <DiscountCard key={item.claimId} item={item} />
+        ))}
+      </ul>
+
+      <h2 className="mb-4 mt-12 text-lg font-semibold text-text">Actividades</h2>
+      {activityLoading && <p className="text-text-muted">Cargando…</p>}
+      {activityError && (
+        <p className="text-sm text-red-400">No se pudieron cargar tus cupones de Actividades.</p>
+      )}
+      {!activityLoading && !activityError && activityClaims.length === 0 && (
+        <p className="rounded-lg border border-border bg-bg-muted px-4 py-8 text-center text-text-muted">
+          Todavía no tenés cupones de Actividades.
+        </p>
+      )}
+      <ul className="space-y-10">
+        {activityClaims.map((item: ActivityCouponClaimView) => (
+          <li key={item.claimId} className="space-y-4">
+            <ActivityCouponQrCard
+              activityName={item.eventTitle || item.operatorName || 'Actividad'}
+              couponTitle={item.coupon.title}
+              benefitLabel={item.coupon.benefitLabel}
+              qrPayload={item.qrPayload}
+              shortCodeDisplay={item.shortCodeDisplay}
+              status={item.status}
+              validTo={item.validTo}
+            />
+            {item.coupon.eventId ? (
+              <div className="mx-auto max-w-sm px-1">
+                <Link
+                  href={`/excursiones/${item.coupon.eventId}`}
+                  className="inline-block text-sm font-medium text-accent hover:underline"
+                >
+                  Ver actividad →
+                </Link>
+              </div>
+            ) : null}
+          </li>
         ))}
       </ul>
     </PageContainer>
