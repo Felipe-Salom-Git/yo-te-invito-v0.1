@@ -13,7 +13,7 @@ import type {
   MeAccount,
   PatchMeAccountBody,
 } from '@yo-te-invito/shared';
-import { ErrorCode } from '@yo-te-invito/shared';
+import { ErrorCode, readUserAvatarUrl } from '@yo-te-invito/shared';
 
 function hashPassword(password: string): string {
   const salt = crypto.randomBytes(16);
@@ -41,7 +41,7 @@ export class MeAccountService {
     const p = (preferences as Record<string, unknown> | null) ?? {};
     return {
       city: typeof p.city === 'string' ? p.city : null,
-      avatarUrl: typeof p.avatarUrl === 'string' ? p.avatarUrl : null,
+      avatarUrl: readUserAvatarUrl(preferences),
       dateOfBirth: typeof p.dateOfBirth === 'string' ? p.dateOfBirth : null,
     };
   }

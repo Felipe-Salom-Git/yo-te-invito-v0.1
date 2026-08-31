@@ -12,6 +12,7 @@ import type {
 import {
   REVIEW_PUBLIC_VISIBLE_STATUSES,
   publicReviewCategorySchema,
+  readUserAvatarUrl,
 } from '@yo-te-invito/shared';
 
 /** Prisma filter for reviews shown on public entity pages */
@@ -70,7 +71,7 @@ export type ReviewWithRelations = Review & {
     firstName: string;
     lastName: string;
     email: string;
-    avatarUrl?: string | null;
+    preferences?: unknown;
   } | null;
 };
 
@@ -95,7 +96,7 @@ export function buildPublicReviewItem(
     author: {
       userId,
       displayName: author.displayName,
-      avatarUrl: review.user?.avatarUrl ?? null,
+      avatarUrl: readUserAvatarUrl(review.user?.preferences),
       reviewerTier: author.reviewerTier,
     },
     reply,

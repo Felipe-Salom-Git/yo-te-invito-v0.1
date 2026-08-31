@@ -36,6 +36,16 @@ export class UploadsAuthorizationService {
       throw this.forbidden('Platform uploads require ADMIN role');
     }
 
+    if (fields.scope === 'user') {
+      if (!fields.entityId?.trim() || fields.entityId !== user.id) {
+        throw this.forbidden('You can only upload images for your own user profile');
+      }
+      if (fields.purpose !== 'profile') {
+        throw this.forbidden('User uploads only support purpose profile');
+      }
+      return;
+    }
+
     if (fields.scope === 'rental') {
       throw this.forbidden(
         'Rental uploads require ADMIN role (no rental owner portal in V1)',

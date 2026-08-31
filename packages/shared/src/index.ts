@@ -100,3 +100,4 @@ export * from './schemas/legal-documents';
 export * from './schemas/me-legal';
 export * from './schemas/event-publication-legal';
 export * from './schemas/public-image-upload';
+export * from './user-preferences.util';

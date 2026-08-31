@@ -34,6 +34,7 @@ import {
   type ReviewEntitySummaryQuery,
   type ReviewReplyBody,
   type UserPublicReviewsQuery,
+  readUserAvatarUrl,
 } from '@yo-te-invito/shared';
 import { mergePublicEventVisibility } from '../../common/utils/event-public-visibility.util';
 
@@ -266,7 +267,13 @@ export class PublicReviewsService {
         include: {
           event: { select: { id: true, title: true, category: true } },
           user: {
-            select: { id: true, firstName: true, lastName: true, email: true },
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              preferences: true,
+            },
           },
         },
         orderBy,
@@ -312,7 +319,13 @@ export class PublicReviewsService {
   async getUserPublicProfile(tenantId: string, userId: string) {
     const user = await this.prisma.user.findFirst({
       where: { id: userId, tenantId, deletedAt: null },
-      select: { id: true, firstName: true, lastName: true, email: true },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        preferences: true,
+      },
     });
     if (!user) {
       throw new NotFoundException({
@@ -328,7 +341,7 @@ export class PublicReviewsService {
     return {
       userId: user.id,
       displayName: this.publicDisplayName(user),
-      avatarUrl: null,
+      avatarUrl: readUserAvatarUrl(user.preferences),
       reviewerTier: tier,
       visibleReviewCount,
       ...stats,
@@ -356,7 +369,13 @@ export class PublicReviewsService {
         include: {
           event: { select: { id: true, title: true, category: true } },
           user: {
-            select: { id: true, firstName: true, lastName: true, email: true },
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              preferences: true,
+            },
           },
         },
         orderBy,

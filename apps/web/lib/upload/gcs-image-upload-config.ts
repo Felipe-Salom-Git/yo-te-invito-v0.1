@@ -3,7 +3,7 @@ import type { UploadScope } from '@yo-te-invito/shared';
 /** Portal + admin scopes supported by shared image upload helpers. */
 export type GcsImageUploadScope = Extract<
   UploadScope,
-  'rental' | 'event' | 'excursion' | 'producer' | 'gastro' | 'hotel' | 'platform'
+  'rental' | 'event' | 'excursion' | 'producer' | 'gastro' | 'hotel' | 'platform' | 'user'
 >;
 
 export type GcsImageUploadConfig =

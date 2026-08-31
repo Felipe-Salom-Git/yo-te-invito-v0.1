@@ -7,6 +7,7 @@ export const uploadScopeSchema = z.enum([
   'rental',
   'hotel',
   'excursion',
+  'user',
   'platform',
 ]);
 
@@ -26,6 +27,7 @@ const ENTITY_SCOPES = new Set([
   'rental',
   'hotel',
   'excursion',
+  'user',
 ]);
 
 const entityIdSchema = z

@@ -8,6 +8,7 @@ const SCOPE_FOLDER: Record<Exclude<UploadScope, 'platform'>, string> = {
   rental: 'rentals',
   hotel: 'hotels',
   excursion: 'excursions',
+  user: 'users',
 };
 
 export function extensionForMime(mime: string): string {

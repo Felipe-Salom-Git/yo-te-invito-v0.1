@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { isHttpImageUrl } from '../user-preferences.util';
 import { contentCategorySchema, contentMainCategorySchema } from './subcategories';
 import { meTicketItemSchema, meOrderItemSchema } from './user.schema';
 import { ticketDateChangeHistoryItemSchema } from './ticket-date-change';
@@ -502,7 +503,14 @@ export const patchMeAccountBodySchema = z.object({
   lastName: z.string().min(1).max(100).optional(),
   phone: z.string().max(40).nullable().optional(),
   city: z.string().max(120).nullable().optional(),
-  avatarUrl: z.string().max(2_000_000).nullable().optional(),
+  avatarUrl: z
+    .string()
+    .max(2048)
+    .refine((value) => isHttpImageUrl(value), {
+      message: 'avatarUrl must be a public http(s) image URL',
+    })
+    .nullable()
+    .optional(),
   dateOfBirth: z.string().date().nullable().optional(),
 });
 export type PatchMeAccountBody = z.infer<typeof patchMeAccountBodySchema>;
