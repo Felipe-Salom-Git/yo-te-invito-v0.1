@@ -154,7 +154,7 @@ export class ProfileRegistrationService {
         contactPhone: body.contactPhone,
         contactEmail: body.contactEmail,
         createdByUserId: userId,
-        status: 'ACTIVE',
+        status: 'PENDING',
       },
     });
 

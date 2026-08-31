@@ -664,6 +664,17 @@ export class AdminController {
     return this.profiles.approveGastroProfile(user.tenantId, profileId);
   }
 
+  @Post('profiles/gastro/:id/reject')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async rejectGastroProfile(
+    @CurrentUser() user: { tenantId: string },
+    @Param('id') profileId: string,
+    @Body() body: { reason?: string | null },
+  ) {
+    return this.profiles.rejectGastroProfile(user.tenantId, profileId, body?.reason);
+  }
+
   @Get('profiles/hotel/pending')
   @UseGuards(JwtOrDevAuthGuard, RolesGuard)
   @RequireRole(Role.ADMIN)

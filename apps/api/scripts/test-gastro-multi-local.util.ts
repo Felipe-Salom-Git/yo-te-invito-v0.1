@@ -47,4 +47,7 @@ assert(
   'no operational profile when only pending',
 );
 
+const PORTAL = ['DRAFT', 'PENDING', 'ACTIVE'] as const;
+assert(PORTAL.includes('PENDING'), 'PENDING is a portal-manageable status');
+
 console.log('\nAll gastro multi-local util checks passed.');

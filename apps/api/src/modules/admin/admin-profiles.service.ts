@@ -1,9 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { GastroPublicEventSyncService } from '../gastro/gastro-public-event-sync.service';
 
 @Injectable()
 export class AdminProfilesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly gastroPublicEventSync: GastroPublicEventSyncService,
+  ) {}
 
   async listPendingProducerProfiles(tenantId: string) {
     const profiles = await this.prisma.producerProfile.findMany({
@@ -51,7 +55,11 @@ export class AdminProfilesService {
         displayName: true,
         createdByUserId: true,
         createdAt: true,
+        city: true,
+        province: true,
+        address: true,
       },
+      orderBy: { createdAt: 'desc' },
     });
     return { profiles };
   }
@@ -67,18 +75,50 @@ export class AdminProfilesService {
       });
     }
 
-    await this.prisma.$transaction([
-      this.prisma.gastroProfile.update({
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const row = await tx.gastroProfile.update({
         where: { id: profileId },
         data: { status: 'ACTIVE' },
-      }),
-      this.prisma.userGastroMembership.updateMany({
+      });
+      await tx.userGastroMembership.updateMany({
         where: { profileId },
         data: { status: 'ACTIVE' },
-      }),
-    ]);
+      });
+      return row;
+    });
+
+    if (updated.publicEventId) {
+      await this.gastroPublicEventSync.syncVisibilityForProfile(updated);
+    }
 
     return { id: profileId, status: 'ACTIVE', message: 'Perfil aprobado' };
+  }
+
+  async rejectGastroProfile(
+    tenantId: string,
+    profileId: string,
+    reason?: string | null,
+  ) {
+    const profile = await this.prisma.gastroProfile.findFirst({
+      where: { id: profileId, tenantId, status: 'PENDING' },
+    });
+    if (!profile) {
+      throw new NotFoundException({
+        code: 'NOT_FOUND',
+        message: 'Perfil no encontrado o ya revisado',
+      });
+    }
+
+    const updated = await this.prisma.gastroProfile.update({
+      where: { id: profileId },
+      data: { status: 'REJECTED' },
+    });
+
+    if (updated.publicEventId) {
+      await this.gastroPublicEventSync.syncVisibilityForProfile(updated);
+    }
+
+    return { id: profileId, status: 'REJECTED', message: 'Perfil rechazado' };
   }
 
   async listPendingHotelProfiles(tenantId: string) {

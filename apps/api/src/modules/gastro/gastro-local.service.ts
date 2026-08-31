@@ -300,7 +300,7 @@ export class GastroLocalService {
         data: {
           ...await this.buildProfileCreateData(tenantId, prepared, subcategoryId),
           createdByUserId: userId,
-          status: 'ACTIVE',
+          status: 'PENDING',
         },
       });
       await tx.userGastroMembership.create({
