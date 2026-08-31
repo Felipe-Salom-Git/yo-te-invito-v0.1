@@ -1711,6 +1711,26 @@ export class ApiRepository implements Repositories {
       ),
   };
 
+  adminCourtesyCreditLedger: import('./interfaces').AdminCourtesyCreditLedgerRepo = {
+    list: async (query) =>
+      this.client.get(
+        '/admin/courtesy-credit-ledger',
+        query as Record<string, string | number | boolean | undefined>,
+      ),
+    getBalance: async (query) =>
+      this.client.get(
+        '/admin/courtesy-credit-ledger/balance',
+        query as Record<string, string | number | boolean | undefined>,
+      ),
+    createAdjustment: async (body) =>
+      this.client.post('/admin/courtesy-credit-ledger/adjustments', body),
+    reverseEntry: async (entryId, body) =>
+      this.client.post(
+        `/admin/courtesy-credit-ledger/${encodeURIComponent(entryId)}/reverse`,
+        body,
+      ),
+  };
+
   adminUsers: import('./interfaces').AdminUsersRepo = {
     list: async (query) => {
       return this.client.get<import('./interfaces').AdminUsersListResponse>(

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   Badge,
   Button,
@@ -9,6 +10,7 @@ import {
   PageContainer,
   SectionTitle,
 } from '@/components';
+import { LiquidacionesSubnav } from '@/components/admin/liquidaciones/LiquidacionesSubnav';
 import {
   useAdminBenefitAgreementsList,
   useCloseAdminBenefitAgreement,
@@ -21,7 +23,9 @@ import {
 import { formatBenefitMoneyCents } from '@yo-te-invito/shared';
 
 export default function AdminBenefitAgreementsPage() {
-  const [vertical, setVertical] = useState<string>('');
+  const searchParams = useSearchParams();
+  const [vertical, setVertical] = useState<string>(searchParams.get('vertical') ?? '');
+  const [partnerId, setPartnerId] = useState<string>(searchParams.get('partnerId') ?? '');
   const [vigency, setVigency] = useState<string>('ALL');
   const query = useMemo(
     () => ({
@@ -34,8 +38,18 @@ export default function AdminBenefitAgreementsPage() {
   const closeMutation = useCloseAdminBenefitAgreement();
   const replaceMutation = useReplaceAdminBenefitAgreement();
 
+  const rows = useMemo(() => {
+    const all = data?.data ?? [];
+    if (!partnerId) return all;
+    return all.filter(
+      (row) =>
+        row.gastroProfileId === partnerId || row.excursionOperatorId === partnerId,
+    );
+  }, [data, partnerId]);
+
   return (
     <PageContainer>
+      <LiquidacionesSubnav />
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <SectionTitle>Acuerdos comerciales</SectionTitle>
@@ -82,15 +96,19 @@ export default function AdminBenefitAgreementsPage() {
         <p className="mt-6 text-text-muted">Cargando…</p>
       ) : isError ? (
         <p className="mt-6 text-sm text-red-400">No se pudieron cargar los acuerdos.</p>
-      ) : !data?.data.length ? (
+      ) : !rows.length ? (
         <EmptyState
           className="mt-8"
-          title="Sin acuerdos"
-          description="Creá el primer acuerdo comercial para un partner."
+          title={partnerId ? 'El partner no tiene acuerdo comercial vigente' : 'Sin acuerdos'}
+          description={
+            partnerId
+              ? 'Creá un acuerdo o quitá el filtro de partner.'
+              : 'Creá el primer acuerdo comercial para un partner.'
+          }
         />
       ) : (
         <ul className="mt-6 space-y-3">
-          {data.data.map((row) => (
+          {rows.map((row) => (
             <li
               key={row.id}
               className="rounded-lg border border-border bg-bg-muted p-4"
@@ -110,6 +128,18 @@ export default function AdminBenefitAgreementsPage() {
               {row.notes ? (
                 <p className="mt-1 text-sm text-text-muted">Notas: {row.notes}</p>
               ) : null}
+              <Link
+                href={`/admin/liquidaciones?vertical=${row.vertical}${
+                  row.gastroProfileId
+                    ? `&partnerId=${row.gastroProfileId}`
+                    : row.excursionOperatorId
+                      ? `&partnerId=${row.excursionOperatorId}`
+                      : ''
+                }`}
+                className="mt-2 inline-block text-sm text-accent hover:underline"
+              >
+                Ver liquidaciones
+              </Link>
               {row.isOpen ? (
                 <div className="mt-3 flex flex-wrap gap-2">
                   <Button

@@ -47,6 +47,7 @@
     "test:benefit-commercial-agreements": "tsx scripts/test-benefit-commercial-agreements.util.ts",
     "test:benefit-settlement-domain": "tsx scripts/test-benefit-settlement-domain.util.ts",
     "test:benefit-settlement-transfers": "tsx scripts/test-benefit-settlement-transfers.util.ts",
+    "test:benefit-settlement-admin-ui": "tsx scripts/test-benefit-settlement-admin-ui.util.ts",
     "test:courtesy-credit-ledger": "tsx scripts/test-courtesy-credit-ledger.util.ts",
     "test:gastro-courtesy-credit-funding": "tsx scripts/test-gastro-courtesy-credit-funding.util.ts",
     "benefit-settlements:materialize-barter-credits": "tsx scripts/materialize-barter-credits.ts",

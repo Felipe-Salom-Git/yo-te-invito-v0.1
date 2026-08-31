@@ -3342,6 +3342,22 @@ export interface AdminBenefitSettlementsRepo {
   ): Promise<import('@yo-te-invito/shared').BenefitSettlementTransferDto>;
 }
 
+export interface AdminCourtesyCreditLedgerRepo {
+  list(
+    query: import('@yo-te-invito/shared').CourtesyCreditLedgerListQuery,
+  ): Promise<import('@yo-te-invito/shared').CourtesyCreditLedgerListResponse>;
+  getBalance(
+    query: import('@yo-te-invito/shared').CourtesyCreditPartnerBalanceQuery,
+  ): Promise<import('@yo-te-invito/shared').CourtesyCreditPartnerBalanceDto>;
+  createAdjustment(
+    body: import('@yo-te-invito/shared').CreateCourtesyCreditAdjustmentBody,
+  ): Promise<import('@yo-te-invito/shared').CourtesyCreditLedgerEntryDto>;
+  reverseEntry(
+    entryId: string,
+    body: import('@yo-te-invito/shared').ReverseCourtesyCreditLedgerEntryBody,
+  ): Promise<import('@yo-te-invito/shared').CourtesyCreditLedgerEntryDto>;
+}
+
 export interface Repositories {
   auth: AuthRepo;
   uploads: UploadsRepo;
@@ -3385,6 +3401,7 @@ export interface Repositories {
   adminCampaigns: AdminCampaignsRepo;
   adminBenefitAgreements: AdminBenefitAgreementsRepo;
   adminBenefitSettlements: AdminBenefitSettlementsRepo;
+  adminCourtesyCreditLedger: AdminCourtesyCreditLedgerRepo;
   legalDocuments: LegalDocumentsRepo;
   producerDashboard: ProducerDashboardRepo;
   producers: ProducersRepo;

@@ -800,3 +800,72 @@ Sin consumo — solo Gastro funding en 9.5.
 ---
 
 **STOP slice 9.5** — siguiente paso: slice 9.6 UI liquidaciones.
+
+---
+
+## 28. Slice 9.6 implementation decisions
+
+**Fecha:** 2026-08-31  
+**Commit:** `feat(v3.3): add benefit settlement admin ui`
+
+### Rutas
+
+| Ruta | Función |
+|------|---------|
+| `/admin/liquidaciones` | Listado, filtros, generar liquidación, resumen período |
+| `/admin/liquidaciones/[id]` | Detalle: usos, CASH, canje, transferencias, link ledger |
+| `/admin/liquidaciones/acuerdos` | Acuerdos (9.1) + subnav integrado |
+| `/admin/liquidaciones/acuerdos/nuevo` | Nuevo acuerdo |
+| `/admin/liquidaciones/creditos` | Ledger partner: saldo, movimientos, ajuste, reversión |
+
+Sidebar Admin: entrada `Liquidaciones` → `/admin/liquidaciones`. Subnav interno: Liquidaciones / Acuerdos / Créditos.
+
+### UX estados
+
+- Empty: “No hay liquidaciones para este período”, “El partner no tiene acuerdo comercial vigente”, “No hay usos pendientes de asignar”.
+- Errores API mapeados vía `mapBenefitSettlementErrorMessage()` — sin códigos crudos.
+- `CLOSED` badge **Cerrada** — nunca “Pagado”. Cobranza cash en badge separado (`PENDING` / `PARTIALLY_RECEIVED` / `RECEIVED`).
+
+### Cash vs credit separation
+
+Tres bloques visuales obligatorios: base económico, CASH (transferencias), crédito de canje. Sin card “total” que sume cash + credit. Dashboard listado agrega cash pendiente/recibido y crédito materializado por separado.
+
+### Allocation UX
+
+Input principal: **cantidad**. Confirmación CASH/BARTER con usos disponibles y base estimada (`estimatePendingAllocationBaseCents`). Valor final siempre del backend. BARTER: mensaje explícito “crédito de canje ≠ dinero recibido”.
+
+### Transfers
+
+Registrar: monto, fecha, referencia/notas opcionales. Sin `proofUrl`. Revertir con motivo; historial muestra “Revertida” sin sumar a recibido.
+
+### Ledger
+
+`/admin/liquidaciones/creditos` + panel en detalle settlement. Ajuste manual con monto firmado + motivo. Reversión crea nuevo movimiento.
+
+### Activity
+
+Saldo de canje visible; sin CTA de consumo (“no disponible en V3.3”).
+
+### Gastro courtesy funding
+
+CTA “Crear cortesía con saldo” → `/admin/gastronomicos/[profileId]/cortesia` (9.5).
+
+### Repository architecture
+
+UI → TanStack Query → `adminBenefitSettlements` / `adminCourtesyCreditLedger` → ApiRepository. Sin fetch directo. Invalidación selectiva en mutaciones.
+
+### Money safety
+
+`formatBenefitMoneyCents()` / `formatSignedBenefitMoneyCents()`; montos API como strings; agregaciones listado con `BigInt`.
+
+### Tests
+
+`pnpm --filter api run test:benefit-settlement-admin-ui` — labels, error mapping, CLOSED ≠ PAID, period AR, estimate helper.
+
+### Migration
+
+Ninguna (solo UI).
+
+---
+
+**STOP slice 9.6** — Etapa 9 UI operativa Admin. Sin slice 9.7 en este entregable.

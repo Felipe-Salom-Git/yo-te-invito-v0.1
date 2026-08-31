@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button, PageContainer, SectionTitle } from '@/components';
+import { LiquidacionesSubnav } from '@/components/admin/liquidaciones/LiquidacionesSubnav';
 import { useCreateAdminBenefitAgreement } from '@/lib/query/benefit-agreements';
 import { useAdminGastroLocationsList } from '@/lib/query/admin-gastro';
 import { useRepositories } from '@/repositories/context';
@@ -72,6 +73,7 @@ export default function AdminNewBenefitAgreementPage() {
 
   return (
     <PageContainer>
+      <LiquidacionesSubnav />
       <Link
         href="/admin/liquidaciones/acuerdos"
         className="mb-4 inline-block text-sm text-text-muted hover:text-text"
