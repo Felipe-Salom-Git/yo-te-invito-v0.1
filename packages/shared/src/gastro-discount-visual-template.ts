@@ -2,12 +2,15 @@ import {
   formatGastroDiscountDateAr,
 } from './gastro-discount-expiry';
 import { GASTRO_WEEKDAY_LABELS_ES, type GastroWeekday } from './schemas/gastro-discounts';
-import type {
-  DiscountVisualDynamicFieldKey,
-  DiscountVisualTemplateElement,
-  UpsertGastroDiscountVisualTemplateDto,
+import {
+  DISCOUNT_VISUAL_DEFAULT_QR_ZONE,
+  discountVisualTemplateElementSchema,
+  gastroDiscountVisualTemplateResponseSchema,
+  type DiscountVisualDynamicFieldKey,
+  type DiscountVisualTemplateElement,
+  type GastroDiscountVisualTemplateResponse,
+  type UpsertGastroDiscountVisualTemplateDto,
 } from './schemas/gastro-discount-visual-template.schema';
-import { DISCOUNT_VISUAL_DEFAULT_QR_ZONE } from './schemas/gastro-discount-visual-template.schema';
 import {
   assertVisualQrZoneSafe,
   visualElementsHitQr,
@@ -297,6 +300,46 @@ export function discountVisualPresetDesign(
       }),
     ],
   };
+}
+
+export function mapDiscountVisualTemplateRow(row: {
+  id: string;
+  tenantId: string;
+  gastroDiscountId: string;
+  name: string;
+  canvasWidth: number;
+  canvasHeight: number;
+  backgroundType: string;
+  backgroundValue: string;
+  elementsJson: unknown;
+  qrZoneJson: unknown;
+  version: number;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+}): GastroDiscountVisualTemplateResponse | null {
+  const elements = Array.isArray(row.elementsJson)
+    ? row.elementsJson
+        .map((item) => discountVisualTemplateElementSchema.safeParse(item))
+        .filter((p): p is { success: true; data: DiscountVisualTemplateElement } => p.success)
+        .map((p) => p.data)
+    : [];
+  const iso = (d: Date | string) => (d instanceof Date ? d.toISOString() : d);
+  const parsed = gastroDiscountVisualTemplateResponseSchema.safeParse({
+    id: row.id,
+    tenantId: row.tenantId,
+    gastroDiscountId: row.gastroDiscountId,
+    name: row.name,
+    canvasWidth: row.canvasWidth,
+    canvasHeight: row.canvasHeight,
+    backgroundType: row.backgroundType,
+    backgroundValue: row.backgroundValue,
+    elementsJson: elements,
+    qrZoneJson: row.qrZoneJson,
+    version: row.version,
+    createdAt: iso(row.createdAt),
+    updatedAt: iso(row.updatedAt),
+  });
+  return parsed.success ? parsed.data : null;
 }
 
 export function compileDiscountVisualTemplateDesign(

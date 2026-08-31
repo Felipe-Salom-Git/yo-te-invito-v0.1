@@ -7,9 +7,9 @@ import {
 import { AuditAction, Prisma } from '@prisma/client';
 import {
   compileDiscountVisualTemplateDesign,
-  discountVisualTemplateElementSchema,
+  DISCOUNT_VISUAL_DEFAULT_QR_ZONE,
   ErrorCode,
-  visualTemplateQrZoneSchema,
+  mapDiscountVisualTemplateRow,
   type GastroDiscountVisualTemplateResponse,
   type UpsertGastroDiscountVisualTemplateDto,
 } from '@yo-te-invito/shared';
@@ -39,29 +39,8 @@ export class GastroDiscountVisualTemplateService {
     version: number;
     createdAt: Date;
     updatedAt: Date;
-  }): GastroDiscountVisualTemplateResponse {
-    const elements = Array.isArray(row.elementsJson)
-      ? row.elementsJson
-          .map((item) => discountVisualTemplateElementSchema.safeParse(item))
-          .filter((p) => p.success)
-          .map((p) => p.data)
-      : [];
-    const qr = visualTemplateQrZoneSchema.safeParse(row.qrZoneJson);
-    return {
-      id: row.id,
-      tenantId: row.tenantId,
-      gastroDiscountId: row.gastroDiscountId,
-      name: row.name,
-      canvasWidth: row.canvasWidth,
-      canvasHeight: row.canvasHeight,
-      backgroundType: row.backgroundType,
-      backgroundValue: row.backgroundValue,
-      elementsJson: elements,
-      qrZoneJson: qr.success ? qr.data : { x: 0.22, y: 0.58, w: 0.52, h: 0.28 },
-      version: row.version,
-      createdAt: row.createdAt.toISOString(),
-      updatedAt: row.updatedAt.toISOString(),
-    };
+  }): GastroDiscountVisualTemplateResponse | null {
+    return mapDiscountVisualTemplateRow(row);
   }
 
   private async assertDiscountAccess(
@@ -121,22 +100,33 @@ export class GastroDiscountVisualTemplateService {
     const existing = await this.prisma.gastroDiscountTemplate.findFirst({
       where: { gastroDiscountId: discountId, tenantId },
     });
+    const existingMapped = existing ? this.toApiRow(existing) : null;
 
     let compiled;
     try {
       compiled = compileDiscountVisualTemplateDesign(
         dto,
-        existing
+        existingMapped
           ? {
-              name: existing.name,
-              canvasWidth: existing.canvasWidth,
-              canvasHeight: existing.canvasHeight,
-              backgroundType: existing.backgroundType,
-              backgroundValue: existing.backgroundValue,
-              elementsJson: this.toApiRow(existing).elementsJson,
-              qrZoneJson: this.toApiRow(existing).qrZoneJson,
+              name: existingMapped.name,
+              canvasWidth: existingMapped.canvasWidth,
+              canvasHeight: existingMapped.canvasHeight,
+              backgroundType: existingMapped.backgroundType,
+              backgroundValue: existingMapped.backgroundValue,
+              elementsJson: existingMapped.elementsJson,
+              qrZoneJson: existingMapped.qrZoneJson,
             }
-          : null,
+          : existing
+            ? {
+                name: existing.name,
+                canvasWidth: existing.canvasWidth,
+                canvasHeight: existing.canvasHeight,
+                backgroundType: existing.backgroundType,
+                backgroundValue: existing.backgroundValue,
+                elementsJson: [],
+                qrZoneJson: DISCOUNT_VISUAL_DEFAULT_QR_ZONE,
+              }
+            : null,
       );
     } catch (e) {
       throw new BadRequestException({
@@ -169,7 +159,14 @@ export class GastroDiscountVisualTemplateService {
         entityId: updated.id,
         metadata: { gastroDiscountId: discountId },
       });
-      return { template: this.toApiRow(updated) };
+      const mapped = this.toApiRow(updated);
+      if (!mapped) {
+        throw new BadRequestException({
+          code: ErrorCode.VALIDATION_FAILED,
+          message: 'Plantilla visual inválida',
+        });
+      }
+      return { template: mapped };
     }
 
     const created = await this.prisma.gastroDiscountTemplate.create({
@@ -197,7 +194,14 @@ export class GastroDiscountVisualTemplateService {
       entityId: created.id,
       metadata: { gastroDiscountId: discountId },
     });
-    return { template: this.toApiRow(created) };
+    const mappedCreated = this.toApiRow(created);
+    if (!mappedCreated) {
+      throw new BadRequestException({
+        code: ErrorCode.VALIDATION_FAILED,
+        message: 'Plantilla visual inválida',
+      });
+    }
+    return { template: mappedCreated };
   }
 
   async reset(

@@ -46,6 +46,7 @@
     "test:ticket-template-schema": "tsx scripts/test-ticket-template-schema.util.ts",
     "test:discount-visual-template": "tsx scripts/test-discount-visual-template.util.ts",
     "test:gastro-discount-visual-persist": "tsx scripts/test-gastro-discount-visual-persist.util.ts",
+    "test:discount-visual-render": "tsx scripts/test-discount-visual-render.util.ts",
     "test:gastro-discount-scan": "tsx scripts/test-gastro-discount-scan.ts",
     "smoke:reviews": "tsx scripts/smoke-reviews-v2.ts",
     "smoke:user-portal": "tsx scripts/smoke-user-portal.ts",
