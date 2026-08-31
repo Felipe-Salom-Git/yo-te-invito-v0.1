@@ -99,7 +99,7 @@ ApiClient → HTTP (NEXT_PUBLIC_API_BASE_URL)
 
 | Area | Routes |
 |------|--------|
-| Public | `/`, `/home`, **`/explore`** (filtros URL: `q`, `category`, `subcategoryId`, `city`, `from`, `to`, `page`; `?category=hotel` → banner Próximamente), `/events/[id]`, **`/restaurants/[id]`** (ficha gastro `GastroPublicDetailContent`, no ticketera), `/gastronomicos/[id]`, `/excursiones/[id]`, **`/rentals/[id]`**, **`/hoteles`** + **`/hoteles/[id]`** (vertical Próximamente; ver abajo), **`/users/[userId]`** (perfil comentarista), **`/legal/[slug]`** (documentos publicados, ISR), checkout, `/me/tickets`, `/referrers`, `/r/[code]` |
+| Public | `/`, `/home`, **`/explore`** (filtros URL: `q`, `category`, `subcategoryId`, `city`, `from`, `to`, `page`; `?category=hotel` → banner Próximamente), `/events/[id]`, **`/restaurants/[id]`** (ficha gastro `GastroPublicDetailContent`, no ticketera), `/gastronomicos/[id]`, `/excursiones/[id]` (sección Beneficios/Cupones), **`/excursiones/cupones/[id]`**, **`/excursiones/cupones/reclamo/[claimId]`**, **`/rentals/[id]`**, **`/hoteles`** + **`/hoteles/[id]`** (vertical Próximamente; ver abajo), **`/users/[userId]`** (perfil comentarista), **`/legal/[slug]`** (documentos publicados, ISR), checkout, `/me/tickets`, `/referrers`, `/r/[code]` |
 | Account | `/login`, **`/register`** (wizard `RegisterWizard`: cuenta → perfil → paso por tipo → legales SIGNUP con términos del perfil vía `/public/legal/requirements?profileType=` → `POST /auth/register` con `signupLegalAcceptance` → sin auto-login → `/login?registered=1&verifyEmail=1`), **`/cuenta/solicitar-gastro`**, **`/me/*`** |
 | Cuenta (legacy) | `/cuenta/*` → **redirects** a `/me/*` (no mantener lógica duplicada) |
 | Admin | `/admin/*` (**solo rol `ADMIN`**, `ProfileProtectedLayout` en `admin/layout.tsx`), sidebar operaciones; **`/admin`** dashboard; **`/admin/eventos`** listado filtrado; **`/admin/pagos`** pagos Getnet + revisión manual; **`/admin/legales`** documentos legales versionados; **`/admin/reviews`** reporte reputación (KPIs, CSV); **`/admin/review-disputes`** cola disputas; **`/admin/usuarios`** listado usuarios con filtros URL; **`/admin/categorias`** subcategorías + banners (`/admin/subcategorias` redirige); **`/admin/auditoria`** logs operativos; post-login y `/profiles` → redirect por rol (`rolePortalHome.ts`); usuario maestro: sidebar multi-portal |
@@ -426,6 +426,26 @@ Doc cierre: `docs/audits/V3_3_STAGE_6_QR_STUDIO_CLOSING.md`. Auditoría: `docs/a
 
 Arquitectura: UI → TanStack Query → `GastroRepo` / `AdminGastroRepo` → `ApiRepository`. Sin fetch directo.
 
+---
+
+## 7h. V3.3 Etapa 7 — Actividades + Cupones QR (2026-08, código implementado)
+
+Doc cierre: `docs/audits/V3_3_STAGE_7_ACTIVITY_COUPONS_CLOSING.md`. Auditoría: `docs/audits/V3_3_STAGE_7_ACTIVITY_COUPONS_AUDIT.md`.
+
+Copy público **Actividades**; rutas técnicas **`/excursiones/*`**. No hay `/actividades/*` en esta etapa. Custom QR Studio Activity **diferido** (V1 = fallback `ActivityCouponQrCard`).
+
+| Pieza | Ubicación |
+|-------|-----------|
+| Admin cupones | `/admin/excursiones/operadores/[operatorId]/cupones/...` — CRUD + metrics (V1 ADMIN only; sin portal operador) |
+| Ficha pública | `/excursiones/[id]` — sección **Beneficios / Cupones** (`ActivityCouponsPublicSection`) |
+| Claim | `/excursiones/cupones/[id]` |
+| QR / short code | `/excursiones/cupones/reclamo/[claimId]` |
+| `/me` | `/me/descuentos` — dos bloques (Gastronomía + Actividades), dos queries |
+| Scanner PWA | Target `EXCURSION_OPERATOR`; `discounts[]` es UX; autorización server-side `canScannerAccessActivityCoupon` |
+| Card QR | `ActivityCouponQrCard` (no reutiliza `GastroDiscountQrCard` ni Studio Gastro) |
+
+---
+
 **Etapa 12 extras:** `/admin/hoteles` archivar/restaurar; cards excursión con `getExcursionCardScheduleLine`; doc `docs/audits/V3_1_STAGE_12_*`.
 
 | **ExcursionSubcategoryMultiSelect** | `components/excursions/` — multi-select chips excursiones; principal = primera (Slice 8) |
@@ -557,7 +577,7 @@ Reactivar Event/Gastro: `CATEGORY_PUBLIC_AVAILABILITY` → `'public'` + sitemap 
 
 ## 8d. Gastro y Hoteles V2 — cerrado (2026-05-22)
 
-**Gastro V2 (operativo):** discovery (`/categoria/gastro`, explore), ficha `/restaurants/[id]` (`GastroPublicDetailContent`), portal `/gastro` (dashboard, `/gastro/contenido` Prisma, descuentos, validaciones, **`/gastro/scanners`** usuarios scanner — Etapa 5.2, valoraciones), follows + `FOLLOWED_GASTRO_NEW_DISCOUNT`, QR/scanner (`test:gastro-discount-qr`, `test:gastro-discount-scan`, `test:gastro-discount-expiry`). **Cupones usuario:** `/me/descuentos` + claim público `/descuentos/reclamo/[claimId]` con **`GastroDiscountVisualCoupon`** (template custom si existe y es válido; fallback **`GastroDiscountQrCard`**). Helpers: `lib/gastro/discount-status-ui.ts`. Sin LocalDB ni `fetch` en UI.
+**Gastro V2 (operativo):** discovery (`/categoria/gastro`, explore), ficha `/restaurants/[id]` (`GastroPublicDetailContent`), portal `/gastro` (dashboard, `/gastro/contenido` Prisma, descuentos, validaciones, **`/gastro/scanners`** usuarios scanner — Etapa 5.2, valoraciones), follows + `FOLLOWED_GASTRO_NEW_DISCOUNT`, QR/scanner (`test:gastro-discount-qr`, `test:gastro-discount-scan`, `test:gastro-discount-expiry`). **Cupones usuario:** `/me/descuentos` — bloque **Gastronomía** (`GastroDiscountVisualCoupon` + fallback `GastroDiscountQrCard`) y bloque **Actividades** (`ActivityCouponQrCard`; query `me/activity-coupons`). Claim gastro `/descuentos/reclamo/[claimId]`; claim actividad `/excursiones/cupones/reclamo/[claimId]`. Helpers gastro: `lib/gastro/discount-status-ui.ts`. Sin LocalDB ni `fetch` en UI.
 
 **Scanner (V3.1 Etapa 5 — cerrada):** portales web — `ScannerUsersPanel` (`/producer/scanners`, `/gastro/scanners`), `ScannerPwaCta` (dashboard productora/gastro + panel scanners); repo `scannerAccounts` + `lib/query/scanner-accounts.ts`; nav `portalNavConfig`. PWA `apps/scanner`: `/door` (`DoorScannerClient`), `QrCameraScanner` (`html5-qrcode`), `public/manifest.json`, pestaña Manual, picker desde `GET /scanner/scan-targets`, persistencia `scanner:lastEventId` / `scanner:lastDiscountId`. Auth dev: `X-Dev-User-Id`. Producción: `NEXT_PUBLIC_SCANNER_APP_URL` → `https://scanner.yoteinvito.club/door`. Doc: `docs/audits/V3_1_STAGE_5_CLOSING.md`.
 

@@ -235,10 +235,24 @@
 
 ### B2 — Cupones QR Actividades
 
+Etapa 7 implementada; DB smoke / Scanner DB integration / QA global pendientes.
+
 - [x] Base existente — Motor gastro descuentos QR (referencia)
-- [ ] Mejora V3.3 — Cupones QR para `category=excursion`
-- [ ] Mejora V3.3 — Scanner validación actividades
-- [ ] Mejora V3.3 — Diseño dominio compartido vs vertical
+- [x] Mejora V3.3 — Modelo de cupones para `category=excursion` (`ActivityCoupon` vertical-specific)
+- [x] Mejora V3.3 — Claim (`ActivityCouponClaim`; 1 por `couponId`+`email`)
+- [x] Mejora V3.3 — QR `yti:activity-coupon:v1:<couponId>:<token>`
+- [x] Mejora V3.3 — short code `XXX-XXX` en `ActivityCouponClaim`
+- [x] Mejora V3.3 — Scanner dispatch `POST /scanner/activity-coupons/validate`
+- [x] Mejora V3.3 — Scanner ownership/scope (`EXCURSION_OPERATOR`, operator-wide, `canScannerAccessActivityCoupon`)
+- [x] Mejora V3.3 — Public UX (`/excursiones/[id]`, `/excursiones/cupones/[id]`, reclamo)
+- [x] Mejora V3.3 — `/me/descuentos` bloque Actividades
+- [x] Mejora V3.3 — Metrics (issued / used / unused / validations / use rate)
+- [x] Mejora V3.3 — Claim notifications (EMAIL `ACTIVITY_COUPON_QR` + IN_APP `ACTIVITY_COUPON_CLAIMED`)
+- [x] Mejora V3.3 — Decisión shared vs vertical-specific (`GastroDiscount` ≠ `ActivityCoupon`; no `GenericCoupon`)
+- [ ] DB integration smoke — PostgreSQL no disponible (P1001 `localhost:5433`)
+- [ ] QA manual global V3.3
+- [ ] custom QR Studio Activity — diferido (no fallo de Etapa 7)
+- [ ] occurrence-specific coupons — diferido (no fallo de Etapa 7)
 
 ---
 

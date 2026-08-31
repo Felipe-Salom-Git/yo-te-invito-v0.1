@@ -18,7 +18,8 @@ Cierre Etapa 2: [`V3_3_STAGE_2_USER_AVATAR_CLOSING.md`](../audits/V3_3_STAGE_2_U
 Cierre Etapa 3: [`V3_3_STAGE_3_SCANNER_V3_CLOSING.md`](../audits/V3_3_STAGE_3_SCANNER_V3_CLOSING.md)  
 Cierre Etapa 4: [`V3_3_STAGE_4_GASTRO_MULTI_LOCAL_CLOSING.md`](../audits/V3_3_STAGE_4_GASTRO_MULTI_LOCAL_CLOSING.md)  
 Cierre Etapa 5: [`V3_3_STAGE_5_GASTRO_DISCOUNTS_CLOSING.md`](../audits/V3_3_STAGE_5_GASTRO_DISCOUNTS_CLOSING.md)  
-Cierre Etapa 6: [`V3_3_STAGE_6_QR_STUDIO_CLOSING.md`](../audits/V3_3_STAGE_6_QR_STUDIO_CLOSING.md)
+Cierre Etapa 6: [`V3_3_STAGE_6_QR_STUDIO_CLOSING.md`](../audits/V3_3_STAGE_6_QR_STUDIO_CLOSING.md)  
+Cierre Etapa 7: [`V3_3_STAGE_7_ACTIVITY_COUPONS_CLOSING.md`](../audits/V3_3_STAGE_7_ACTIVITY_COUPONS_CLOSING.md)
 
 ### Etapa 0 — Auditoría
 
@@ -174,6 +175,37 @@ Cierre Etapa 6: [`V3_3_STAGE_6_QR_STUDIO_CLOSING.md`](../audits/V3_3_STAGE_6_QR_
 - [ ] Admin full editor UI (preview + API PUT/DELETE sí)
 - [ ] Emails de claim sin template visual
 - [ ] Autosave / template version history
+
+### Etapa 7 — Actividades + Cupones QR
+
+**Implementación (código) — Etapa 7 implementada; DB smoke / Scanner DB integration / QA global pendientes.**
+
+- [x] Dominio vertical `ActivityCoupon` ≠ `GastroDiscount` (no `GenericCoupon`) (`8331c77`)
+- [x] Shared coupon primitives (QR payload, short-code, benefit, calendario, KPIs) (`beaf71d`)
+- [x] Claim + QR `yti:activity-coupon:v1:` + short code `XXX-XXX` (`0529749`)
+- [x] Scanner dispatch `POST /scanner/activity-coupons/validate` (`ddcf7df`)
+- [x] Scanner ownership/scope operator-wide + hardening (`a494274`, `canScannerAccessActivityCoupon`)
+- [x] Public UX `/excursiones/[id]` + `/excursiones/cupones/*` (`ab56505`)
+- [x] `/me/descuentos` bloque Actividades
+- [x] Metrics issued/used/unused/validations/use rate (`2e704cf`)
+- [x] Claim notifications EMAIL `ACTIVITY_COUPON_QR` + IN_APP `ACTIVITY_COUPON_CLAIMED`
+- [x] Builds shared/api/web/scanner PASS; `prisma validate` PASS
+- [x] Tests `test:activity-coupon-domain|ownership|claim|qr|metrics|scan` PASS (`scan` = dispatch/unit ≠ DB)
+- [x] Doc cierre técnico (`fad396b` + hardening `a494274`)
+
+**Pendiente integración / QA (conservar — no marcan la etapa incompleta):**
+
+- [ ] DB migration/smoke — PostgreSQL/Docker no disponible; P1001 `localhost:5433`; migraciones `20260831160000_activity_coupon_domain` + `20260831170000_activity_coupon_claimed_notification`
+- [ ] Scanner DB integration — **NO EJECUTADO** (PostgreSQL no disponible). No convertir `test:activity-coupon-scan` PASS en integración DB.
+- [ ] QA manual global V3.3 — crear cupón, editar, archive, publicar, claim, claim duplicado, QR, short code, scanner QR, scanner manual, scanner otro operador, expired, already used, metrics, `/me`, public Activity, mobile
+
+**Deuda producto futura (no bugs de Etapa 7):**
+
+- [ ] Custom QR Studio Activity (`ActivityCouponTemplate`) — diferido; V1 = `ActivityCouponQrCard`
+- [ ] Operator self-service / memberships / pending-edit operador → admin
+- [ ] Occurrence / salida / turno scoping (hoy operator-wide + Event completo; sin FK a `EventOccurrence`)
+- [ ] Reserva, pasajero, cupo, multi-use, eligibility avanzada, settlement, campaign distribution
+- [ ] Scanner per Event / Occurrence
 
 ---
 

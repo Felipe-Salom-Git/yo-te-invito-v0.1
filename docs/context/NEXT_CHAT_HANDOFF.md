@@ -23,10 +23,12 @@ Punto de entrada operativo para **V3.3**. Detalle completo: `AI_ENTRYPOINT.md`, 
 | **Etapa 5 — QA manual / DB smoke** | ⏳ Pendiente — acumulado cierre global V3.3 |
 | **Etapa 6 — QR Studio** | ✅ Código implementado (slices 6.0–6.7 + hardening `de4e07d`) |
 | **Etapa 6 — QA manual / DB smoke** | ⏳ Pendiente — acumulado cierre global V3.3 |
+| **Etapa 7 — Actividades + Cupones QR** | ✅ Código implementado (slices 7.0–7.7 + 7.9 + hardening `a494274`; 7.8 skip Studio) |
+| **Etapa 7 — QA manual / DB smoke / Scanner DB** | ⏳ Pendiente — acumulado cierre global V3.3 |
 
 **Checklist V3.3:** `docs/dev/Yo_Te_Invito_Checklist_V3_3_Funcional_Operativa.md`
 
-**Próxima etapa V3.3:** **Etapa 7 — Actividades + Cupones**. No iniciar sin instrucción explícita.
+**Próxima etapa V3.3:** **Etapa 8 — Campañas Email / WhatsApp**. No iniciar sin instrucción explícita.
 
 ---
 
@@ -63,17 +65,60 @@ User → Next.js → ApiRepository → NestJS Controller → Service → Prisma 
 | Procesos | systemd: `yti-web` (:3000), `yti-api` (:3001), `yti-scanner` (:3002) |
 | Dominios | `yoteinvito.club`, `api.yoteinvito.club`, `scanner.yoteinvito.club` |
 
-**Migraciones prod:** solo `npx prisma migrate deploy`. Incluye Etapa 3 + Etapa 5 + Etapa 6:
+**Migraciones prod:** solo `npx prisma migrate deploy`. Incluye Etapa 3 + Etapa 5 + Etapa 6 + Etapa 7:
 - `20260831120000_gastro_claim_short_code` (pgcrypto idempotente)
 - `20260831130000_user_scanner_username`
 - `20260831140000_gastro_discount_v3_lifecycle` (**no aplicada localmente** — PostgreSQL/Docker no disponible)
 - `20260831150000_gastro_discount_visual_template` (**no aplicada localmente** — PostgreSQL/Docker no disponible)
+- `20260831160000_activity_coupon_domain` (**no aplicada localmente** — PostgreSQL/Docker no disponible)
+- `20260831170000_activity_coupon_claimed_notification` (**no aplicada localmente** — PostgreSQL/Docker no disponible)
 
 Runbook: `docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`.
 
 ---
 
-## 5. V3.3 Etapa 6 — commits principales
+## 5. V3.3 Etapa 7 — commits principales
+
+```txt
+01aa1a8 docs(v3.3): audit activity coupons architecture
+beaf71d refactor(v3.3): extract reusable coupon primitives
+8331c77 feat(v3.3): add activity coupon domain
+2c9a30f feat(v3.3): add activity coupon management
+0529749 feat(v3.3): add activity coupon claims
+ddcf7df feat(v3.3): validate activity coupons in scanner
+ab56505 feat(v3.3): add activity coupon public ux
+2e704cf feat(v3.3): add activity coupon metrics and notifications
+fad396b docs(v3.3): close activity coupons stage
+a494274 fix(v3.3): harden activity coupon scanner scope
+```
+
+Slice **7.8 skip deliberado** — custom Activity QR Studio diferido (no commit vacío).
+
+(+ commit documental de contextos: `docs(v3.3): close activity coupons context`)
+
+---
+
+## 6. Decisiones importantes (V3.3 Etapa 7 — Actividades + Cupones)
+
+| Tema | Regla |
+|------|--------|
+| **Dominio** | `GastroDiscount` ≠ `ActivityCoupon`. No existe `GenericCoupon`. |
+| **Copy vs técnico** | Público **Actividades**; `Event.category = excursion`; rutas `/excursiones/*`. Sin migrar `excursion → activity`. |
+| **Owner V1** | `ExcursionOperator` + `Event(excursion)`. Gestión de cupones **ADMIN only**. Sin portal operador / memberships. |
+| **Lifecycle V1** | Admin create → `ACTIVE` + edit in-place (`ADMIN` = creador y moderador). `PENDING_REVIEW` / `pendingUpdate` reservados a futuro self-service. |
+| **Claim** | 1 por `(couponId, email)`; duplicate ACTIVE reutiliza; USED/EXPIRED no re-emite. Sin QR maestro en el cupón. |
+| **QR** | `yti:activity-coupon:v1:<couponId>:<token>` (≠ gastro, ≠ ticket). |
+| **Short code** | Display `XXX-XXX`; lookup **solo** `ActivityCouponClaim` (nunca gastro+activity first-match). |
+| **Scanner** | `parentProfileType = EXCURSION_OPERATOR`, `parentProfileId = ExcursionOperator.id`. **Operator-wide V1** (no Event / occurrence). Helper `canScannerAccessActivityCoupon`. |
+| **Occurrence** | **No** FK a `EventOccurrence`. Scope = Event completo. |
+| **Studio** | Fallback `ActivityCouponQrCard`. Custom Studio **diferido**. |
+| **Notificaciones operador** | Diferidas (no hay membership operador). Claim: EMAIL `ACTIVITY_COUPON_QR` + IN_APP `ACTIVITY_COUPON_CLAIMED`. |
+
+Doc: `V3_3_STAGE_7_ACTIVITY_COUPONS_AUDIT.md`, `V3_3_STAGE_7_ACTIVITY_COUPONS_CLOSING.md`.
+
+---
+
+## 7. V3.3 Etapa 6 — commits principales
 
 ```txt
 4f3b07f docs(v3.3): audit gastro qr studio architecture
@@ -91,7 +136,7 @@ de4e07d fix(v3.3): harden gastro qr studio canonical content
 
 ---
 
-## 6. Decisiones importantes (V3.3 Etapa 6 — QR Studio)
+## 8. Decisiones importantes (V3.3 Etapa 6 — QR Studio)
 
 | Tema | Regla |
 |------|--------|
@@ -111,7 +156,7 @@ Doc: `V3_3_STAGE_6_QR_STUDIO_AUDIT.md`, `V3_3_STAGE_6_QR_STUDIO_CLOSING.md`.
 
 ---
 
-## 7. V3.3 Etapa 5 — commits principales
+## 9. V3.3 Etapa 5 — commits principales
 
 ```txt
 a757c76 docs(v3.3): audit gastro discounts v3 lifecycle
@@ -129,7 +174,7 @@ c91c205 fix(v3.3): harden gastro discount reapproval lifecycle
 
 ---
 
-## 8. Decisiones importantes (V3.3 Etapa 5 — Descuentos Gastro V3)
+## 10. Decisiones importantes (V3.3 Etapa 5 — Descuentos Gastro V3)
 
 | Tema | Regla |
 |------|--------|
@@ -151,7 +196,7 @@ Doc: `V3_3_STAGE_5_GASTRO_DISCOUNTS_AUDIT.md`, `V3_3_STAGE_5_GASTRO_DISCOUNTS_CL
 
 ---
 
-## 9. V3.3 Etapa 4 — commits principales
+## 11. V3.3 Etapa 4 — commits principales
 
 ```txt
 612fd2d docs(v3.3): design gastro multi-local architecture
@@ -167,7 +212,7 @@ ea79aa6 fix(v3.3): harden gastro multi-location ownership
 
 ---
 
-## 10. Decisiones importantes (V3.3 Etapa 4 — Gastro Multi-local)
+## 12. Decisiones importantes (V3.3 Etapa 4 — Gastro Multi-local)
 
 | Tema | Regla |
 |------|-------|
@@ -189,7 +234,7 @@ Doc: `V3_3_STAGE_4_GASTRO_MULTI_LOCAL_ARCHITECTURE.md`, `V3_3_STAGE_4_GASTRO_MUL
 
 ---
 
-## 11. V3.3 Etapa 3 — Scanner (referencia)
+## 13. V3.3 Etapa 3 — Scanner (referencia)
 
 | Tema | Regla |
 |------|-------|
@@ -200,19 +245,19 @@ Doc: `V3_3_STAGE_3_SCANNER_V3_CLOSING.md`.
 
 ---
 
-## 12. V3.3 Etapa 2 — Avatar (referencia)
+## 14. V3.3 Etapa 2 — Avatar (referencia)
 
 Doc: `V3_3_STAGE_2_USER_AVATAR_CLOSING.md`.
 
 ---
 
-## 13. V3.3 Etapa 1 — UX pública (referencia)
+## 15. V3.3 Etapa 1 — UX pública (referencia)
 
 Doc: `V3_3_STAGE_1_PUBLIC_MOBILE_CLOSING.md`.
 
 ---
 
-## 14. V3.2 — estado previo (sin cerrar QA)
+## 16. V3.2 — estado previo (sin cerrar QA)
 
 Código slices 0–11 cerrado. Hotfixes 2026-08: `15f2776`, `b8dc571`, `ff6f8e0`, `920c5d7`.
 
@@ -220,20 +265,21 @@ Código slices 0–11 cerrado. Hotfixes 2026-08: `15f2776`, `b8dc571`, `ff6f8e0`
 
 ---
 
-## 15. Pendientes priorizados
+## 17. Pendientes priorizados
 
-1. **QA manual / integración global V3.3** — Etapas 1–6 acumuladas (incl. QR Studio: crear/guardar/reload/reset, presets, bindings canónicos, claim viejo/nuevo, fallback, print, scanner físico, mobile, admin preview).
-2. **Migración deploy + smoke DB** — `prisma migrate deploy` (acumula Etapa 3 + `20260831140000_gastro_discount_v3_lifecycle` + `20260831150000_gastro_discount_visual_template`).
-3. **Scanner integration** — `test:gastro-discount-scan` **NO EJECUTADO** (PostgreSQL no disponible).
-4. **Admin expired discounts digest** — diferido **Etapa 8**.
+1. **QA manual / integración global V3.3** — Etapas 1–7 acumuladas (incl. Actividades: crear/editar/archive/publicar cupón, claim, claim duplicado, QR, short code, scanner QR/manual, otro operador, expired, already used, metrics, `/me`, ficha pública, mobile).
+2. **Migración deploy + smoke DB** — `prisma migrate deploy` (acumula Etapa 3 + `20260831140000_gastro_discount_v3_lifecycle` + `20260831150000_gastro_discount_visual_template` + `20260831160000_activity_coupon_domain` + `20260831170000_activity_coupon_claimed_notification`). **NO EJECUTADO** — P1001 `localhost:5433`.
+3. **Scanner DB integration** — `test:gastro-discount-scan` y Activity vs PostgreSQL **NO EJECUTADO**. `test:activity-coupon-scan` PASS = dispatch/unit, no integración DB.
+4. **Admin expired discounts digest** — diferido **Etapa 8** (campañas).
 5. **QA prod V3.2** — cache, roles, auth resend, horarios.
 6. Deploy VPS si commits V3.2/V3.3 no están en prod.
+7. Deuda producto Actividades (no bugs Etapa 7): custom QR Studio, operator self-service, occurrence scoping.
 
 Detalle: `CONTEXT_PENDIENTES.md`.
 
 ---
 
-## 16. Comandos de validación
+## 18. Comandos de validación
 
 ```bash
 pnpm --filter shared run build
@@ -241,6 +287,12 @@ pnpm --filter api run build
 pnpm --filter scanner run build
 pnpm --filter web run build
 pnpm --filter api exec prisma validate
+pnpm --filter api run test:activity-coupon-domain
+pnpm --filter api run test:activity-coupon-ownership
+pnpm --filter api run test:activity-coupon-claim
+pnpm --filter api run test:activity-coupon-qr
+pnpm --filter api run test:activity-coupon-metrics
+pnpm --filter api run test:activity-coupon-scan
 pnpm --filter api run test:gastro-discount-expiry
 pnpm --filter api run test:gastro-discount-qr
 pnpm --filter api run test:gastro-discount-pending-edit
@@ -256,11 +308,12 @@ pnpm --filter api run test:discount-visual-render
 pnpm --filter api run test:scanner-manual-short-code
 ```
 
+`test:activity-coupon-scan` PASS = dispatch/unit scope, **≠** DB integration.  
 `test:gastro-discount-scan` — **NO EJECUTADO** (PostgreSQL no disponible). No marcar PASS.
 
 ---
 
-## 17. Próximo paso recomendado
+## 19. Próximo paso recomendado
 
-1. Iniciar **V3.3 Etapa 7 — Actividades + Cupones** cuando se indique. **No iniciar ahora.**
+1. Iniciar **V3.3 Etapa 8 — Campañas Email / WhatsApp** cuando se indique. **No iniciar ahora.**
 2. QA manual + migración DB al cerrar V3.3 globalmente.

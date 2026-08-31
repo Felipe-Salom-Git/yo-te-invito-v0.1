@@ -2,13 +2,15 @@
 
 **Fecha:** 2026-08-31  
 **Branch:** `feat/v1-s03-api-foundation`  
-**HEAD al cierre de código:** (este commit)  
+**HEAD código (hardening scanner):** `a494274` `fix(v3.3): harden activity coupon scanner scope`  
 **Auditoría:** [`V3_3_STAGE_7_ACTIVITY_COUPONS_AUDIT.md`](./V3_3_STAGE_7_ACTIVITY_COUPONS_AUDIT.md)
 
-**No** se actualizan contextos globales ni el checklist V3.3 (espera revisión).  
-**No** push. **No** Etapa 8.
+Cierre documental de contextos/checklist: commit `docs(v3.3): close activity coupons context`.  
+**No** Etapa 8. **No** deploy. **No** QA global.
 
 Copy público: **Actividades**. Clave técnica: **`excursion`**. Rutas públicas: **`/excursiones/*`**.
+
+**Estado:** Etapa 7 implementada; DB smoke / Scanner DB integration / QA global pendientes.
 
 ---
 
@@ -67,13 +69,15 @@ Migraciones (escritas, **no aplicadas** localmente):
 Tenant
   └── ExcursionOperator
         └── Event[category=excursion]
-              └── 0..N ActivityCoupon
-                    ├── 0..N ActivityCouponClaim  (qrToken, accessToken, shortCode unique)
-                    └── 0..N ActivityCouponValidation (claimId unique → 1 éxito)
+              └── N ActivityCoupon
+                    └── N ActivityCouponClaim  (qrToken, accessToken, shortCode unique)
+                          └── 0..1 ActivityCouponValidation (claimId unique → 1 éxito)
 ```
 
+Campos principales reales de `ActivityCoupon` (Prisma): `tenantId`, `eventId`, `excursionOperatorId`, `code`, `title`, `summary`, `detail`, `type`, `value`, `validityMode`, `validWeekday`, `validFrom`, `validTo`, `couponDate`, `imageUrls`, `status`, `rejectionReason`, `pendingUpdate`, `pendingUpdateSubmittedAt`, `archivedAt`, `createdByOrigin`, `createdByUserId`, `createdAt`, `updatedAt`.
+
 `ActivityCoupon.excursionOperatorId` denormalizado, coherente con `Event.excursionOperatorId`.  
-**No** FK a `EventOccurrence` (deuda: future occurrence scoping).
+**No** FK a `EventOccurrence`. Scope V1 = Event completo. Futuro occurrence / salida / turno / fecha concreta queda diferido. No es bug.
 
 Enums cupón: `PERCENT` \| `FIXED`; status `PENDING_REVIEW` \| `APPROVED` \| `ACTIVE` \| `REJECTED` \| `CANCELLED` \| `EXPIRED`; origin `ADMIN` \| `OPERATOR`; validity `DATE_RANGE` \| `WEEKLY_RECURRING`. Weekday reutiliza Prisma `GastroWeekday`.
 
@@ -114,7 +118,7 @@ Diseñado para no impedir un futuro `occurrenceId` opcional; **no** implementado
 | Admin edit in-place | `ACTIVITY_COUPON_UPDATED` (publicado no pasa a `PENDING_REVIEW`) |
 | Approve / reject | Solo si `PENDING_REVIEW` (reservado a futuro operador) |
 | Archive | Soft `archivedAt`; no borra claims/validations |
-| Expiry cron | `ActivityCouponExpiryService` → `EXPIRED`; flag `ACTIVITY_COUPON_EXPIRY_CRON_ENABLED`; **no** mezcla cron Gastro |
+| Expiry cron | `ActivityCouponExpiryService` → `EXPIRED`; flag `ACTIVITY_COUPON_EXPIRY_CRON_ENABLED` (skip si `"false"`); cron **dev `*/15 * * * *`**, **prod `10 * * * *`**; **no** mezcla cron Gastro |
 
 Columna `pendingUpdate` existe; UI pending-edit **diferida** (no hay usuario operador).
 
@@ -338,20 +342,23 @@ Migraciones presentes en repo.
 
 Pendiente del cierre global V3.3. Checklist mínimo:
 
-- crear cupón Activity (admin)
-- aprobar / rechazar (`PENDING_REVIEW` futuro operador)
-- editar aprobado in-place
-- claim
-- QR + short code
-- scanner cámara + manual
-- used twice → `ALREADY_USED`
-- expired
+- crear cupón
+- editar
 - archive
+- publicar
+- claim
+- claim duplicado
+- QR
+- short code
+- scanner QR
+- scanner manual
+- scanner otro operador
+- expired
+- already used
 - metrics
-- notification EMAIL (mail configurado) + IN_APP
+- `/me`
+- public Activity
 - mobile
-- ficha `/excursiones/[id]`
-- `/me/descuentos` ambos bloques
 
 ---
 
@@ -386,6 +393,8 @@ V1 **no** cubre:
 | 7.7 | `2e704cf` | `feat(v3.3): add activity coupon metrics and notifications` |
 | 7.8 | — | Skip Studio (sin commit vacío) |
 | 7.9 | `fad396b` | `docs(v3.3): close activity coupons stage` |
-| Pre-cierre scope | este commit | `fix(v3.3): harden activity coupon scanner scope` |
+| Pre-cierre scope | `a494274` | `fix(v3.3): harden activity coupon scanner scope` |
+
+Cobertura del hardening `a494274`: operador correcto; otro operador; parent `GASTRO`; parent `PRODUCER`; categoría no `excursion`; otro tenant; Activity short code ≠ Gastro short code (lookup por vertical).
 
 HEAD previo a 7.0 (Etapa 6 context): `0d8744e`.

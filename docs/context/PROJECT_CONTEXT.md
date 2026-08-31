@@ -146,6 +146,7 @@ Bloque **Descubrimiento público** cerrado en checklist V2. Detalle: `docs/audit
 | Etapa 4 — Gastro Multi-local + Approval | Código implementado (`612fd2d`…`ea79aa6`); QA manual + DB smoke pendientes |
 | Etapa 5 — Descuentos Gastro V3 | Código implementado (`a757c76`…`c91c205`); QA manual + DB smoke pendientes |
 | Etapa 6 — QR Studio | Código implementado (`4f3b07f`…`de4e07d`); QA manual + DB smoke pendientes |
+| Etapa 7 — Actividades + Cupones QR | Código implementado (`01aa1a8`…`a494274`); DB smoke / Scanner DB / QA global pendientes |
 | Checklist V3.3 | `docs/dev/Yo_Te_Invito_Checklist_V3_3_Funcional_Operativa.md` |
 | Cierre técnico Etapa 1 | `docs/audits/V3_3_STAGE_1_PUBLIC_MOBILE_CLOSING.md` |
 | Cierre técnico Etapa 2 | `docs/audits/V3_3_STAGE_2_USER_AVATAR_CLOSING.md` |
@@ -156,6 +157,8 @@ Bloque **Descubrimiento público** cerrado en checklist V2. Detalle: `docs/audit
 | Cierre técnico Etapa 5 | `docs/audits/V3_3_STAGE_5_GASTRO_DISCOUNTS_CLOSING.md` |
 | Auditoría Etapa 6 | `docs/audits/V3_3_STAGE_6_QR_STUDIO_AUDIT.md` |
 | Cierre técnico Etapa 6 | `docs/audits/V3_3_STAGE_6_QR_STUDIO_CLOSING.md` |
+| Auditoría Etapa 7 | `docs/audits/V3_3_STAGE_7_ACTIVITY_COUPONS_AUDIT.md` |
+| Cierre técnico Etapa 7 | `docs/audits/V3_3_STAGE_7_ACTIVITY_COUPONS_CLOSING.md` |
 | Auth Scanner username | `docs/audits/V3_3_SCANNER_USERNAME_AUTH.md` |
 
 **Decisiones Etapa 1:** rails subcategoría **≥5** (sin autoplay); cards descuento → ficha gastro; `/descuentos/[id]` conservada; OG descuentos; nav mobile Home+Explore; modales centrados; copy público **Actividades** con clave técnica **`excursion`** (`Event.category`, rutas `/excursiones`, API sin cambios).
@@ -170,7 +173,9 @@ Bloque **Descubrimiento público** cerrado en checklist V2. Detalle: `docs/audit
 
 **Etapa 6 — QR Studio:** diseño visual del cupón QR separado de tickets. `GastroDiscount` → 0..1 `GastroDiscountTemplate` (Prisma propio; no `TicketTemplate`). Renderer `DiscountTemplateRenderer` + fallback `GastroDiscountQrCard`. Bindings canónicos obligatorios y visibles: QR + `discountValue` + `discountTitle` + `shortCode`. Presets JSON (Clásico/Minimal/Premium/Promoción). Studio `/gastro/descuentos/[id]/qr-studio`. Editar el diseño **no** toca `pendingUpdate`. Migración `20260831150000_gastro_discount_visual_template` — smoke DB pendiente.
 
-**Próxima:** Etapa 7 — Actividades + Cupones.
+**Etapa 7 — Actividades + Cupones QR:** copy público **Actividades**; técnico `Event.category = excursion`; rutas `/excursiones/*` (sin migrar a `/actividades/*`). `GastroDiscount` ≠ `ActivityCoupon` (no hay `GenericCoupon`). Cadena `Event(excursion)` → N `ActivityCoupon` → N `ActivityCouponClaim` → 0..1 `ActivityCouponValidation` (`claimId` unique). Sin FK a `EventOccurrence` (scope V1 = Event completo). Gestión **ADMIN only**. Claim → QR `yti:activity-coupon:v1:<couponId>:<token>` + short code `XXX-XXX` en `ActivityCouponClaim` (lookup por vertical; nunca first-match Gastro+Activity). Scanner `EXCURSION_OPERATOR` **operator-wide** (`canScannerAccessActivityCoupon`). `/me/descuentos` dos bloques. Metrics issued/used/unused/validations/use rate. Claim EMAIL `ACTIVITY_COUPON_QR` + IN_APP `ACTIVITY_COUPON_CLAIMED`. Custom QR Studio Activity **diferido**. Etapa 7 implementada; DB smoke / Scanner DB integration / QA global pendientes. Migraciones `20260831160000_activity_coupon_domain` + `20260831170000_activity_coupon_claimed_notification` — no aplicadas localmente (P1001). Hardening `a494274`.
+
+**Próxima:** Etapa 8 — Campañas Email / WhatsApp.
 
 ## 5a. Registro y onboarding por tipo de usuario — Estado cerrado (2026-05-24)
 
