@@ -11,6 +11,7 @@ import {
   ErrorCode,
   formatCouponVisualBenefit,
   initialStatusForActivityCouponOrigin,
+  activityCouponBelongsToOperator,
   isEventCategoryEligibleForActivityCoupon,
   isGastroDiscountDateRangeOrderValid,
   normalizeGastroDiscountExpiryDate,
@@ -82,7 +83,7 @@ export class ActivityCouponsService {
         message: 'El cupón solo puede asociarse a una Actividad (category=excursion)',
       });
     }
-    if (event.excursionOperatorId !== operatorId) {
+    if (!activityCouponBelongsToOperator(event.excursionOperatorId, operatorId)) {
       throw new BadRequestException({
         code: ErrorCode.FORBIDDEN,
         message: 'La actividad no pertenece a este operador',
@@ -388,6 +389,69 @@ export class ActivityCouponsService {
       entityType: 'ActivityCoupon',
       entityId: updated.id,
       after: { status },
+    });
+    return this.toResponse(updated);
+  }
+
+  async approvePending(
+    tenantId: string,
+    adminUserId: string,
+    adminRole: string,
+    operatorId: string,
+    couponId: string,
+  ) {
+    const current = await this.getRow(tenantId, operatorId, couponId);
+    if (current.status !== 'PENDING_REVIEW') {
+      throw new BadRequestException({
+        code: ErrorCode.VALIDATION_FAILED,
+        message: 'Solo se pueden aprobar cupones en revisión',
+      });
+    }
+    const updated = await this.prisma.activityCoupon.update({
+      where: { id: current.id },
+      data: { status: 'ACTIVE', rejectionReason: null },
+      include: couponInclude,
+    });
+    await this.audit.logAction({
+      tenantId,
+      actorId: adminUserId,
+      actorRole: adminRole,
+      action: 'ACTIVITY_COUPON_APPROVED',
+      entityType: 'ActivityCoupon',
+      entityId: updated.id,
+      after: { status: 'ACTIVE' },
+    });
+    return this.toResponse(updated);
+  }
+
+  async rejectPending(
+    tenantId: string,
+    adminUserId: string,
+    adminRole: string,
+    operatorId: string,
+    couponId: string,
+    reason: string,
+  ) {
+    const current = await this.getRow(tenantId, operatorId, couponId);
+    if (current.status !== 'PENDING_REVIEW') {
+      throw new BadRequestException({
+        code: ErrorCode.VALIDATION_FAILED,
+        message: 'Solo se pueden rechazar cupones en revisión',
+      });
+    }
+    const updated = await this.prisma.activityCoupon.update({
+      where: { id: current.id },
+      data: { status: 'REJECTED', rejectionReason: reason.trim() },
+      include: couponInclude,
+    });
+    await this.audit.logAction({
+      tenantId,
+      actorId: adminUserId,
+      actorRole: adminRole,
+      action: 'ACTIVITY_COUPON_REJECTED',
+      entityType: 'ActivityCoupon',
+      entityId: updated.id,
+      after: { status: 'REJECTED', reason: reason.trim() },
     });
     return this.toResponse(updated);
   }

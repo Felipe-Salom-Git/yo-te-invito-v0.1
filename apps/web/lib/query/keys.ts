@@ -241,6 +241,19 @@ export const excursionOperatorsKeys = {
     [...excursionOperatorsKeys.all, 'admin', operatorId] as const,
 };
 
+export const activityCouponsKeys = {
+  all: ['activity-coupons'] as const,
+  adminList: (operatorId: string) =>
+    [...activityCouponsKeys.all, 'admin', operatorId] as const,
+  adminDetail: (operatorId: string, couponId: string) =>
+    [...activityCouponsKeys.all, 'admin', operatorId, couponId] as const,
+  publicByEvent: (tenantId: string, eventId: string) =>
+    [...activityCouponsKeys.all, 'public', 'event', tenantId, eventId] as const,
+  publicDetail: (tenantId: string, couponId: string) =>
+    [...activityCouponsKeys.all, 'public', tenantId, couponId] as const,
+  me: () => [...activityCouponsKeys.all, 'me'] as const,
+};
+
 export const categoryBannersKeys = {
   all: ['categoryBanners'] as const,
   public: (tenantId: string, category: string) =>

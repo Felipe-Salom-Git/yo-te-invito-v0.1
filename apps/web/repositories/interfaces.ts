@@ -331,6 +331,45 @@ export interface ExcursionOperatorsRepo {
   ): Promise<{ id: string; title: string }>;
 }
 
+export interface ActivityCouponsRepo {
+  listAdmin(operatorId: string): Promise<import('@yo-te-invito/shared').ActivityCouponListResponse>;
+  getAdmin(
+    operatorId: string,
+    couponId: string,
+  ): Promise<import('@yo-te-invito/shared').ActivityCouponResponse>;
+  createAdmin(
+    operatorId: string,
+    input: import('@yo-te-invito/shared').ActivityCouponCreateInput,
+  ): Promise<import('@yo-te-invito/shared').ActivityCouponResponse>;
+  updateAdmin(
+    operatorId: string,
+    couponId: string,
+    patch: import('@yo-te-invito/shared').ActivityCouponUpdateInput,
+  ): Promise<import('@yo-te-invito/shared').ActivityCouponResponse>;
+  archiveAdmin(
+    operatorId: string,
+    couponId: string,
+  ): Promise<import('@yo-te-invito/shared').ActivityCouponResponse>;
+  unarchiveAdmin(
+    operatorId: string,
+    couponId: string,
+  ): Promise<import('@yo-te-invito/shared').ActivityCouponResponse>;
+  patchStatusAdmin(
+    operatorId: string,
+    couponId: string,
+    status: 'ACTIVE' | 'CANCELLED',
+  ): Promise<import('@yo-te-invito/shared').ActivityCouponResponse>;
+  approveAdmin(
+    operatorId: string,
+    couponId: string,
+  ): Promise<import('@yo-te-invito/shared').ActivityCouponResponse>;
+  rejectAdmin(
+    operatorId: string,
+    couponId: string,
+    reason: string,
+  ): Promise<import('@yo-te-invito/shared').ActivityCouponResponse>;
+}
+
 export interface CategoryBannerResolvedItem {
   id: string;
   eventId: string;
@@ -3105,6 +3144,7 @@ export interface Repositories {
   adminGastro: AdminGastroRepo;
   rentalLocations: RentalLocationsRepo;
   excursionOperators: ExcursionOperatorsRepo;
+  activityCoupons: ActivityCouponsRepo;
   categoryBanners: CategoryBannersRepo;
   categoryEditorialBanners: CategoryEditorialBannersRepo;
   subcategories: SubcategoriesRepo;

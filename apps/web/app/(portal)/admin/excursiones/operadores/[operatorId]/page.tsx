@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { useRepositories } from '@/repositories/context';
-import { excursionOperatorsKeys } from '@/lib/query/keys';
+import { activityCouponsKeys, excursionOperatorsKeys } from '@/lib/query/keys';
 import { PageContainer, SectionTitle } from '@/components';
 import { LatLngMapPreview } from '@/components/admin/LatLngMapPreview';
 import { RentalOpeningHoursDisplay } from '@/lib/rentals/openingHoursDisplay';
@@ -24,6 +24,13 @@ export default function AdminExcursionOperadorDetailPage() {
   });
 
   const excursions = operator?.excursions ?? [];
+
+  const { data: couponsData } = useQuery({
+    queryKey: activityCouponsKeys.adminList(operatorId),
+    queryFn: () => repos.activityCoupons.listAdmin(operatorId),
+    enabled: !!operatorId,
+  });
+  const coupons = couponsData?.data ?? [];
 
   return (
     <PageContainer>
@@ -76,6 +83,12 @@ export default function AdminExcursionOperadorDetailPage() {
             >
               Nueva excursión
             </Link>
+            <Link
+              href={`/admin/excursiones/operadores/${operatorId}/cupones/nuevo`}
+              className="rounded border border-accent px-3 py-1.5 text-sm text-accent hover:bg-accent/10"
+            >
+              Nuevo cupón
+            </Link>
             <AdminExcursionOperatorLifecycleActions
               operatorId={operatorId}
               operatorName={operator.name}
@@ -120,6 +133,34 @@ export default function AdminExcursionOperadorDetailPage() {
                       compact
                     />
                   </div>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <h2 className="mt-10 text-lg font-semibold text-text">Cupones</h2>
+          {coupons.length === 0 ? (
+            <p className="mt-4 text-text-muted">Este operador aún no tiene cupones.</p>
+          ) : (
+            <ul className="mt-4 space-y-3">
+              {coupons.map((c) => (
+                <li
+                  key={c.id}
+                  className="flex items-center justify-between rounded-lg border border-border bg-bg-muted p-4"
+                >
+                  <div>
+                    <p className="font-medium text-text">{c.title}</p>
+                    <p className="mt-1 text-sm text-text-muted">
+                      {c.benefitLabel} · {c.status}
+                      {c.eventTitle ? ` · ${c.eventTitle}` : ''}
+                    </p>
+                  </div>
+                  <Link
+                    href={`/admin/excursiones/operadores/${operatorId}/cupones/${c.id}`}
+                    className="text-sm text-accent hover:underline"
+                  >
+                    Ver / editar
+                  </Link>
                 </li>
               ))}
             </ul>

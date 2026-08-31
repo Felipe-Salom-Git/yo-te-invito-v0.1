@@ -41,6 +41,13 @@ export function isEventCategoryEligibleForActivityCoupon(category: string | null
   return (category ?? '').trim().toLowerCase() === ACTIVITY_COUPON_EVENT_CATEGORY;
 }
 
+export function activityCouponBelongsToOperator(
+  eventOperatorId: string | null | undefined,
+  operatorId: string,
+): boolean {
+  return Boolean(eventOperatorId && eventOperatorId === operatorId);
+}
+
 export function initialStatusForActivityCouponOrigin(
   origin: ActivityCouponOrigin,
 ): 'ACTIVE' | 'PENDING_REVIEW' {

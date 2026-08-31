@@ -116,6 +116,7 @@ import type {
   RentalLocationSummary,
   RentalLocationDetail,
   ExcursionOperatorsRepo,
+  ActivityCouponsRepo,
   ExcursionOperatorSummary,
   ExcursionOperatorDetail,
   GeneralPublicationsRepo,
@@ -599,6 +600,50 @@ export class ApiRepository implements Repositories {
       this.client.patch<{ id: string; title: string }>(
         `/admin/excursion-operators/${encodeURIComponent(operatorId)}/excursions/${encodeURIComponent(excursionId)}`,
         patch,
+      ),
+  };
+
+  activityCoupons: ActivityCouponsRepo = {
+    listAdmin: async (operatorId) =>
+      this.client.get(`/admin/excursion-operators/${encodeURIComponent(operatorId)}/activity-coupons`),
+    getAdmin: async (operatorId, couponId) =>
+      this.client.get(
+        `/admin/excursion-operators/${encodeURIComponent(operatorId)}/activity-coupons/${encodeURIComponent(couponId)}`,
+      ),
+    createAdmin: async (operatorId, input) =>
+      this.client.post(
+        `/admin/excursion-operators/${encodeURIComponent(operatorId)}/activity-coupons`,
+        input,
+      ),
+    updateAdmin: async (operatorId, couponId, patch) =>
+      this.client.patch(
+        `/admin/excursion-operators/${encodeURIComponent(operatorId)}/activity-coupons/${encodeURIComponent(couponId)}`,
+        patch,
+      ),
+    archiveAdmin: async (operatorId, couponId) =>
+      this.client.post(
+        `/admin/excursion-operators/${encodeURIComponent(operatorId)}/activity-coupons/${encodeURIComponent(couponId)}/archive`,
+        {},
+      ),
+    unarchiveAdmin: async (operatorId, couponId) =>
+      this.client.post(
+        `/admin/excursion-operators/${encodeURIComponent(operatorId)}/activity-coupons/${encodeURIComponent(couponId)}/unarchive`,
+        {},
+      ),
+    patchStatusAdmin: async (operatorId, couponId, status) =>
+      this.client.patch(
+        `/admin/excursion-operators/${encodeURIComponent(operatorId)}/activity-coupons/${encodeURIComponent(couponId)}/status`,
+        { status },
+      ),
+    approveAdmin: async (operatorId, couponId) =>
+      this.client.post(
+        `/admin/excursion-operators/${encodeURIComponent(operatorId)}/activity-coupons/${encodeURIComponent(couponId)}/approve`,
+        {},
+      ),
+    rejectAdmin: async (operatorId, couponId, reason) =>
+      this.client.post(
+        `/admin/excursion-operators/${encodeURIComponent(operatorId)}/activity-coupons/${encodeURIComponent(couponId)}/reject`,
+        { reason },
       ),
   };
 
