@@ -5,6 +5,7 @@
 
 import {
   activityCouponBelongsToOperator,
+  canScannerAccessActivityCoupon,
   isEventCategoryEligibleForActivityCoupon,
 } from '@yo-te-invito/shared';
 
@@ -34,6 +35,49 @@ assert(
     activityCouponBelongsToOperator(operatorA, operatorA)
   ),
   'gastro category cannot own activity coupon even with operator match',
+);
+
+const baseScan = {
+  scannerParentType: 'EXCURSION_OPERATOR',
+  scannerParentProfileId: operatorA,
+  scannerTenantId: 'tenant-a',
+  couponTenantId: 'tenant-a',
+  couponExcursionOperatorId: operatorA,
+  eventCategory: 'excursion',
+};
+
+assert(canScannerAccessActivityCoupon(baseScan), 'scanner same operator + excursion allowed');
+assert(
+  !canScannerAccessActivityCoupon({ ...baseScan, scannerParentProfileId: operatorB }),
+  'scanner other operator rejected',
+);
+assert(
+  !canScannerAccessActivityCoupon({ ...baseScan, scannerParentType: 'GASTRO' }),
+  'scanner GASTRO parent rejected',
+);
+assert(
+  !canScannerAccessActivityCoupon({ ...baseScan, scannerParentType: 'PRODUCER' }),
+  'scanner PRODUCER parent rejected',
+);
+assert(
+  !canScannerAccessActivityCoupon({ ...baseScan, eventCategory: 'event' }),
+  'event category rejected',
+);
+assert(
+  !canScannerAccessActivityCoupon({ ...baseScan, eventCategory: 'gastro' }),
+  'gastro event rejected at scanner',
+);
+assert(
+  !canScannerAccessActivityCoupon({ ...baseScan, eventCategory: 'rental' }),
+  'rental event rejected at scanner',
+);
+assert(
+  !canScannerAccessActivityCoupon({ ...baseScan, eventCategory: 'hotel' }),
+  'hotel event rejected at scanner',
+);
+assert(
+  !canScannerAccessActivityCoupon({ ...baseScan, couponTenantId: 'tenant-b' }),
+  'other tenant rejected',
 );
 
 console.log('\nAll activity coupon ownership checks passed.');

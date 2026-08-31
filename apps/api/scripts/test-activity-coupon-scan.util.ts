@@ -32,6 +32,13 @@ assert(parseActivityCouponQrPayload(gastro) === null, 'gastro payload not parsed
 assert(parseActivityCouponQrPayload(activity)?.couponId === couponId, 'activity parse');
 assert(isManualShortCodeInput('K7M-428'), 'manual short code still detected');
 assert(!isManualShortCodeInput(activity), 'activity QR is not short code');
+assert(
+  classifyQrScanPayload(gastro) !== 'activity-coupon' && parseActivityCouponQrPayload(gastro) === null,
+  'gastro QR never resolved as activity short-code/QR family',
+);
 
 console.log('\nActivity coupon scanner dispatch checks passed.');
+console.log(
+  'NOTE: Activity short codes resolve only via ActivityCouponClaim (ScannerActivityCouponService). Gastro uses GastroDiscountClaim. Never both.',
+);
 console.log('NOTE: DB integration (scope, ALREADY_USED, expiry) NO EJECUTADO — PostgreSQL no disponible.');

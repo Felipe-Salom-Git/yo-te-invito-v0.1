@@ -538,7 +538,7 @@ export class ActivityCouponsService {
       where: { id: couponId, tenantId, excursionOperatorId: operatorId },
       include: couponInclude,
     });
-    if (!row) {
+    if (!row || !isEventCategoryEligibleForActivityCoupon(row.event.category)) {
       throw new NotFoundException({
         code: ErrorCode.NOT_FOUND,
         message: 'Cupón no encontrado',

@@ -58,6 +58,7 @@ export class ScannerActivityCouponService {
         where: { shortCode: code },
         select: { couponId: true, qrToken: true, tenantId: true },
       });
+      // Namespace: Activity table only. Never gastroDiscountClaim.findUnique / OR-first.
       if (!claimByCode || claimByCode.tenantId !== tenantId) {
         return this.response(
           'INVALID',

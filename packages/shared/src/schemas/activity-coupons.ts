@@ -48,6 +48,35 @@ export function activityCouponBelongsToOperator(
   return Boolean(eventOperatorId && eventOperatorId === operatorId);
 }
 
+/** ScannerAccount.parentProfileType required to validate Activity coupons. */
+export const ACTIVITY_COUPON_SCANNER_PARENT_TYPE = 'EXCURSION_OPERATOR';
+
+/**
+ * Server-side Scanner allow rule (V1 operator-wide).
+ * Does not trust UI `discounts[]` / selected target.
+ * V1 does not scope by Event or EventOccurrence.
+ */
+export function canScannerAccessActivityCoupon(input: {
+  scannerParentType: string;
+  scannerParentProfileId: string;
+  scannerTenantId: string;
+  couponTenantId: string;
+  couponExcursionOperatorId: string | null | undefined;
+  eventCategory: string | null | undefined;
+}): boolean {
+  if (input.scannerParentType !== ACTIVITY_COUPON_SCANNER_PARENT_TYPE) return false;
+  if (!input.scannerTenantId || input.couponTenantId !== input.scannerTenantId) return false;
+  if (
+    !activityCouponBelongsToOperator(
+      input.couponExcursionOperatorId,
+      input.scannerParentProfileId,
+    )
+  ) {
+    return false;
+  }
+  return isEventCategoryEligibleForActivityCoupon(input.eventCategory);
+}
+
 export function initialStatusForActivityCouponOrigin(
   origin: ActivityCouponOrigin,
 ): 'ACTIVE' | 'PENDING_REVIEW' {

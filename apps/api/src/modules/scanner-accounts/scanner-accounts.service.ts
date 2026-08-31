@@ -15,6 +15,8 @@ import {
 import {
   ErrorCode,
   Role,
+  canScannerAccessActivityCoupon,
+  ACTIVITY_COUPON_EVENT_CATEGORY,
   type AdminScannerAccountsListQuery,
   type CreateScannerUserBody,
   type CreateScannerUserResponse,
@@ -1039,9 +1041,23 @@ export class ScannerAccountsService {
     }
     const coupon = await this.prisma.activityCoupon.findFirst({
       where: { id: couponId, tenantId },
-      select: { excursionOperatorId: true },
+      select: {
+        tenantId: true,
+        excursionOperatorId: true,
+        event: { select: { category: true } },
+      },
     });
-    if (!coupon || coupon.excursionOperatorId !== account.parentProfileId) {
+    if (
+      !coupon ||
+      !canScannerAccessActivityCoupon({
+        scannerParentType: account.parentProfileType,
+        scannerParentProfileId: account.parentProfileId,
+        scannerTenantId: tenantId,
+        couponTenantId: coupon.tenantId,
+        couponExcursionOperatorId: coupon.excursionOperatorId,
+        eventCategory: coupon.event.category,
+      })
+    ) {
       throw this.scannerScopeForbidden();
     }
   }
@@ -1159,6 +1175,10 @@ export class ScannerAccountsService {
           excursionOperatorId: account.parentProfileId,
           archivedAt: null,
           status: { in: ['ACTIVE', 'APPROVED'] },
+          event: {
+            deletedAt: null,
+            category: ACTIVITY_COUPON_EVENT_CATEGORY,
+          },
           OR: [{ validTo: null }, { validTo: { gte: now } }],
         },
         select: {

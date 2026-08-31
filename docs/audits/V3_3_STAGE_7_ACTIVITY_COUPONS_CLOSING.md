@@ -161,18 +161,66 @@ Resolución por **contexto Scanner** (`parentProfileType`).
 
 ## 10. Scanner
 
-- Target: cupones en `discounts[]` cuando `parentProfileType === EXCURSION_OPERATOR` (sin array nuevo; IDs no se mezclan con Gastro porque el parent es distinto).
+**Regla exacta backend (V1, operator-wide):**
+
+```
+POST /scanner/activity-coupons/validate
+  → requireActiveAccountForScanning(tenantId, scannerUserId)
+  → parentProfileType === EXCURSION_OPERATOR
+  → ActivityCoupon.findFirst({ id, tenantId })
+  → canScannerAccessActivityCoupon:
+       scannerParentType === EXCURSION_OPERATOR
+       coupon.tenantId === scanner.tenantId
+       coupon.excursionOperatorId === ScannerAccount.parentProfileId
+       Event.category === excursion
+```
+
+Helper: `canScannerAccessActivityCoupon` (`packages/shared`). Usado en `assertScannerCanAccessActivityCoupon`. **No** confía en `discounts[]` de la UI ni en el target seleccionado.
+
+ADMIN (sin ScannerAccount) omite el assert de cuenta; igual carga el cupón por `{ id, tenantId }` y aplica el guard de categoría.
+
+**Scope V1 deliberado:** el scanner del operador valida cupones de **todas** las Actividades (`Event.category=excursion`) de ese `ExcursionOperator`. **No** hay límite por Event, EventOccurrence, salida ni turno. Evolución futura documentada; no se cambia ahora.
+
+- Target picker: `discounts[]` filtrado por `tenantId` + `excursionOperatorId` + `event.category=excursion` (lista UX, no autorización).
 - Endpoint: `POST /scanner/activity-coupons/validate`
-- Scope: `assertScannerCanAccessActivityCoupon` — parent `EXCURSION_OPERATOR` + mismo operador. PRODUCER/GASTRO → 403.
 - **No** `ActivityScannerAccount`.
 - Cámara: `classifyQrScanPayload === 'activity-coupon'`.
-- Manual: short code + parent excursion → mismo endpoint.
+- Manual: short code → **solo** `ActivityCouponClaim.findUnique` + check `claim.tenantId === scanner tenant` + el mismo assert de scope.
 - Resultados: `VALID` / `INVALID` / `EXPIRED` / `INACTIVE` / `NOT_VALID_TODAY` / `ALREADY_USED`.
 - Idempotencia: transacción + `claimId` unique en `ActivityCouponValidation`.
 
 **Scanner DB integration:** `test:gastro-discount-scan` y equivalentes Activity vs PostgreSQL = **NO EJECUTADO**. No se declara Scanner PASS de integración.
 
 Deuda cosmética: historial PWA tipa el resultado Activity como `kind: 'gastro-discount'` tras mapear al modal Gastro. El dispatch de familia/endpoint es correcto.
+
+---
+
+## 10.1 Event category guard
+
+Backend `isEventCategoryEligibleForActivityCoupon` / `ACTIVITY_COUPON_EVENT_CATEGORY = 'excursion'`. Rechaza `event` / `gastro` / `rental` / `hotel`.
+
+| Superficie | Dónde |
+|------------|--------|
+| Create | `assertExcursionEvent` |
+| Update / archive / status / metrics | `getRow` (incluye categoría del Event) |
+| Public list / get / claim / me | `listPublicByEvent`, `getPublic`, `claimPublic`, `getPublicClaim`, `listMine` |
+| Scanner validate | `canScannerAccessActivityCoupon` + check en `ScannerActivityCouponService` |
+| Scanner targets | `event.category = excursion` |
+
+No se confía en el frontend.
+
+---
+
+## 10.2 Tenant isolation
+
+| Lookup | Aislamiento |
+|--------|-------------|
+| ScannerAccount | `findFirst({ tenantId, scannerUserId })` |
+| Coupon QR | `activityCoupon.findFirst({ id, tenantId })` |
+| Claim QR token | `activityCouponClaim.findFirst({ couponId, qrToken, tenantId })` |
+| Short code | `ActivityCouponClaim.findUnique(shortCode)` luego `claim.tenantId !== tenantId` → `INVALID` (no leak cross-tenant) |
+
+No hay lookup cross-tenant por couponId / token / shortCode.
 
 ---
 
@@ -320,6 +368,7 @@ V1 **no** cubre:
 - pending-edit UI (operador ≠ admin)
 - custom QR Studio Activity
 - copy template / PNG-PDF server
+- **Scanner por Event / EventOccurrence / salida / turno** (V1 es operator-wide; decisión deliberada, no bug)
 
 ---
 
@@ -336,6 +385,7 @@ V1 **no** cubre:
 | 7.6 | `ab56505` | `feat(v3.3): add activity coupon public ux` |
 | 7.7 | `2e704cf` | `feat(v3.3): add activity coupon metrics and notifications` |
 | 7.8 | — | Skip Studio (sin commit vacío) |
-| 7.9 | este commit | `docs(v3.3): close activity coupons stage` + labels audit |
+| 7.9 | `fad396b` | `docs(v3.3): close activity coupons stage` |
+| Pre-cierre scope | este commit | `fix(v3.3): harden activity coupon scanner scope` |
 
 HEAD previo a 7.0 (Etapa 6 context): `0d8744e`.
