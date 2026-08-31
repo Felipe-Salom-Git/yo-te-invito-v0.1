@@ -176,7 +176,7 @@ export async function buildUserDeepDeletePreflight(
     throw new NotFoundException({ code: ErrorCode.NOT_FOUND, message: 'User not found' });
   }
 
-  const label = user.email;
+  const label = user.email ?? `${user.firstName} ${user.lastName}`.trim() || user.id;
   const [policy, counts] = await Promise.all([
     buildUserPolicyBlockers(prisma, tenantId, user, actorUserId),
     countUserDeleteDependencies(prisma, tenantId, userId),

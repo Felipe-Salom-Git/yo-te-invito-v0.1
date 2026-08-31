@@ -110,7 +110,7 @@ export class AdminUsersService {
     const data: AdminUserListItem[] = rows.map((u) => ({
       id: u.id,
       tenantId: u.tenantId,
-      email: u.email,
+      email: u.email ?? '',
       firstName: u.firstName,
       lastName: u.lastName,
       role: u.role,

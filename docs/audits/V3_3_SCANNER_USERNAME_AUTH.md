@@ -48,10 +48,12 @@ Resolución en `AuthService.login`:
 
 ## Email verification
 
-Bypass limpio para scanners:
+Bypass **solo por rol Scanner** (y master user existente):
 
-- `role === SCANNER`, o
-- `email == null`
+- `role === Role.SCANNER` → no requiere `emailVerified`
+- `isMasterUser` → sin cambios
+
+No se usa `email == null` como condición general de bypass (evita abrir login a cuentas no verificadas de otros roles).
 
 No se setea `emailVerified` falso al crear scanner.
 

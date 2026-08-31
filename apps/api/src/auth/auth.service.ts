@@ -135,8 +135,7 @@ export class AuthService {
 
     const isMasterUser =
       normalizedEmail != null && normalizedEmail === MASTER_USER_EMAIL.trim().toLowerCase();
-    const skipEmailVerification =
-      user.role === Role.SCANNER || user.email == null || isMasterUser;
+    const skipEmailVerification = user.role === Role.SCANNER || isMasterUser;
     if (!user.emailVerified && !skipEmailVerification) {
       throw new UnauthorizedException({
         code: AUTH_LOGIN_ERROR_CODES.EMAIL_NOT_VERIFIED,

@@ -521,8 +521,8 @@ export function buildAdminUserDeletePreflight(
   };
 }
 
-export function isProtectedMasterEmail(email: string): boolean {
+export function isProtectedMasterEmail(email: string | null | undefined): boolean {
   const master = MASTER_USER_EMAIL?.trim().toLowerCase();
-  if (!master) return false;
+  if (!master || !email?.trim()) return false;
   return email.trim().toLowerCase() === master;
 }

@@ -83,7 +83,7 @@ Ver `docs/audits/V3_3_SCANNER_USERNAME_AUTH.md`.
 - Login: `identifier` o `email` legacy.
 - Portal: crear con `username` + password.
 - PWA: «Usuario o email» (compat legacy).
-- Sin `emailVerified` falso para scanners.
+- Sin `emailVerified` falso para scanners; bypass de verificación **solo** `Role.SCANNER` (no `email == null` genérico).
 
 ---
 
@@ -167,7 +167,7 @@ Acumulado para cierre global V3.3:
 ## 12. Riesgos / deuda
 
 - Colisión teórica de `shortTicketCode` (8 chars derivados de ID) en eventos muy grandes — mitigado por scope evento; ambigüedad → INVALID.
-- `gen_random_bytes` en migración gastro requiere extensión pgcrypto en PostgreSQL (habitual en prod).
+- `gen_random_bytes` en migración gastro (`20260831120000_gastro_claim_short_code`) incluye `CREATE EXTENSION IF NOT EXISTS pgcrypto` de forma idempotente.
 - Smokes integración requieren DB local.
 - Assets logo duplicados scanner/web (documentado).
 

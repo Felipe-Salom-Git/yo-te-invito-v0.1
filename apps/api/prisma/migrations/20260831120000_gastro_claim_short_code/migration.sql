@@ -1,5 +1,7 @@
 -- Gastro discount claim short codes for manual scanner entry (V3.3 Etapa 3).
 
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 ALTER TABLE "GastroDiscountClaim" ADD COLUMN "shortCode" TEXT;
 
 DO $$
