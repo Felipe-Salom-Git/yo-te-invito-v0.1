@@ -4,12 +4,12 @@ import Link from 'next/link';
 
 /** Shared subtle chip styles — V3.1 Etapa 2 */
 export const PUBLIC_FILTER_CHIP_BASE =
-  'inline-flex shrink-0 items-center justify-center rounded-full border px-3.5 py-2 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black';
+  'inline-flex shrink-0 snap-start items-center justify-center rounded-xl border px-4 py-2.5 text-sm font-medium transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black min-h-[44px]';
 
 export function publicFilterChipStateClass(isActive: boolean): string {
   return isActive
-    ? 'border-accent/50 bg-accent/15 text-accent-soft'
-    : 'border-white/12 bg-white/[0.04] text-white/75 hover:border-white/25 hover:bg-white/[0.08] hover:text-white';
+    ? 'border-accent bg-accent/20 text-white shadow-[0_0_0_1px_rgba(34,197,94,0.35)]'
+    : 'border-white/15 bg-white/[0.06] text-white/80 hover:border-accent/40 hover:bg-white/[0.1] hover:text-white active:scale-[0.98]';
 }
 
 export type SubcategoryFilterChipProps = {
@@ -28,12 +28,12 @@ export function SubcategoryFilterChip({
   return (
     <Link
       href={href}
-      className={`${PUBLIC_FILTER_CHIP_BASE} ${publicFilterChipStateClass(isActive)} min-h-[40px] max-w-[9.5rem] flex-col gap-0.5 sm:max-w-[10.5rem]`}
+      className={`${PUBLIC_FILTER_CHIP_BASE} ${publicFilterChipStateClass(isActive)} min-w-[5.5rem] max-w-[11rem] flex-col gap-0.5 sm:max-w-[12rem]`}
       aria-current={isActive ? 'page' : undefined}
     >
-      <span className="line-clamp-1 w-full text-center leading-tight">{title}</span>
+      <span className="line-clamp-1 w-full text-center text-sm font-semibold leading-tight">{title}</span>
       {subtitle ? (
-        <span className="line-clamp-1 w-full text-center text-[10px] font-normal text-white/45">
+        <span className="line-clamp-1 w-full text-center text-[11px] font-normal text-white/50">
           {subtitle}
         </span>
       ) : null}

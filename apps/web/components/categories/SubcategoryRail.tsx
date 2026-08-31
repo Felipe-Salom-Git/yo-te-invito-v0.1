@@ -68,7 +68,7 @@ export function SubcategoryRail({
             <div
               ref={scrollRef}
               onScroll={updateScroll}
-              className="scrollbar-hide flex gap-2 overflow-x-auto overscroll-x-contain pb-0.5 snap-x snap-mandatory [-webkit-overflow-scrolling:touch]"
+              className="scrollbar-hide flex gap-2.5 overflow-x-auto overscroll-x-contain pb-0.5 snap-x snap-mandatory [-webkit-overflow-scrolling:touch] touch-pan-x"
             >
               <SubcategoryFilterChip
                 href={baseHref}

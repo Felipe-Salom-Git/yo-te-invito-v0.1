@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQueries, useQuery } from '@tanstack/react-query';
 import type { CategoryGatewayId } from '@/lib/home/categoryGatewayConfig';
 import {
   CATEGORY_CAROUSEL_LIMIT,
@@ -13,6 +13,7 @@ import {
   sortRecentItems,
 } from '@/lib/categories/category-carousel.logic';
 import { getCategoryExploreHref } from '@/lib/categories/categoryLandingConfig';
+import { shouldRenderSubcategoryRail } from '@/lib/categories/subcategoryRailThreshold';
 import { RECOMMENDED_LIST_MIN_VALID_REVIEWS } from '@yo-te-invito/shared';
 import type { CategoryCarouselSection } from '@/lib/categories/category-page.types';
 import type {
@@ -157,6 +158,18 @@ export function useCategoryCarousels(
     enabled: !!t && !filterMode,
   });
 
+  const subcategoryRailQueries = useQueries({
+    queries: subcategories.map((sub) => ({
+      queryKey: categoryLandingKeys.carousel(t, category, 'subcategory-rail', sub.slug),
+      queryFn: () =>
+        fetchCategoryList(repos, t, category, {
+          subcategorySlug: sub.slug,
+          sort: category === 'event' ? 'upcoming' : 'recent',
+        }),
+      enabled: !!t && !filterMode && !discountsSubcategoryMode && subcategories.length > 0,
+    })),
+  });
+
   const sections: CategoryCarouselSection[] = useMemo(() => {
     if (filterMode && activeSubcategory && discountsSubcategoryMode) {
       return [];
@@ -168,6 +181,7 @@ export function useCategoryCarousels(
     if (filterMode && activeSubcategory) {
       const items = filteredQuery.data ?? [];
       if (!filteredQuery.isLoading && items.length === 0) return [];
+      if (!filteredQuery.isLoading && !shouldRenderSubcategoryRail(items.length)) return [];
       return [
         {
           id: `subcategory-${activeSubcategory.id}`,
@@ -241,10 +255,32 @@ export function useCategoryCarousels(
       });
     }
 
+    if (!filterMode && !discountsSubcategoryMode) {
+      subcategories.forEach((sub, idx) => {
+        const query = subcategoryRailQueries[idx];
+        if (!query) return;
+        const items = query.data ?? [];
+        if (!query.isLoading && !shouldRenderSubcategoryRail(items.length)) return;
+        if (!query.isLoading && items.length === 0) return;
+        out.push({
+          id: `subcategory-${sub.id}`,
+          title: sub.name,
+          subtitle: sub.description ?? undefined,
+          items,
+          isLoading: query.isLoading,
+          seeMoreHref: exploreSeeMore(sub.id),
+          seeMoreLabel: 'Ver más',
+        });
+      });
+    }
+
     return out;
   }, [
     filterMode,
     activeSubcategory,
+    discountsSubcategoryMode,
+    subcategories,
+    subcategoryRailQueries,
     filteredQuery.data,
     filteredQuery.isLoading,
     recommendedQuery.data,
@@ -267,7 +303,8 @@ export function useCategoryCarousels(
         : recommendedQuery.isLoading ||
           topRatedQuery.isLoading ||
           recentQuery.isLoading ||
-          upcomingQuery.isLoading);
+          upcomingQuery.isLoading ||
+          subcategoryRailQueries.some((q) => q.isLoading));
 
   const visibleSections = sections.filter((s) => s.isLoading || s.items.length > 0);
   const isEmpty =
