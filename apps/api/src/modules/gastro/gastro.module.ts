@@ -21,6 +21,7 @@ import { GastroDiscountMetricsService } from './gastro-discount-metrics.service'
 import { GastroDiscountExpiryService } from './gastro-discount-expiry.service';
 import { GastroDiscountVisualTemplateService } from './gastro-discount-visual-template.service';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { CourtesyCreditLedgerModule } from '../courtesy-credit-ledger/courtesy-credit-ledger.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
     ReviewDisputesModule,
     ReviewsModule,
     NotificationsModule,
+    CourtesyCreditLedgerModule,
   ],
   controllers: [GastroController, GastroReviewsController],
   providers: [
@@ -57,6 +59,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
     GastroDiscountMetricsService,
     GastroDiscountExpiryService,
     GastroDiscountVisualTemplateService,
+    GastroCourtesyDiscountsService,
   ],
 })
 export class GastroModule {}

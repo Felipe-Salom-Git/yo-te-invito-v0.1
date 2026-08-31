@@ -2436,6 +2436,14 @@ export class ApiRepository implements Repositories {
         `/admin/gastronomicos/${encodeURIComponent(profileId)}`,
         body,
       ),
+    getCourtesyCreditBalance: async (gastroProfileId) =>
+      this.client.get('/admin/courtesy-credit-ledger/balance', {
+        vertical: 'GASTRO',
+        gastroProfileId,
+        currency: 'ARS',
+      }),
+    sendFundedCourtesy: async (body) =>
+      this.client.post('/admin/gastro/courtesies/send', body),
   };
 
   mePortal: MePortalRepo = {

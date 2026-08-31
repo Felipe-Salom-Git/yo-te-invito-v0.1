@@ -26,6 +26,19 @@ export function computeCourtesyCreditBalanceCents(
   return total;
 }
 
+/** Net courtesy consumption (DEBIT_COURTESY + reversal offsets), as positive cents string magnitude. */
+export function computeCreditConsumedCents(
+  entries: ReadonlyArray<{ amountCents: bigint; type: string }>,
+): bigint {
+  let consumed = 0n;
+  for (const entry of entries) {
+    if (entry.type === 'DEBIT_COURTESY' || entry.type === 'REVERSAL') {
+      consumed -= entry.amountCents;
+    }
+  }
+  return consumed > 0n ? consumed : 0n;
+}
+
 export function assertLedgerAmountSignForType(
   type: CourtesyCreditLedgerEntryType,
   amountCents: bigint,

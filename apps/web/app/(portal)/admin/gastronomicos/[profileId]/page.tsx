@@ -97,6 +97,12 @@ export default function AdminGastroLocationDetailPage() {
               >
                 Editar local
               </Link>
+              <Link
+                href={`/admin/gastronomicos/${profileId}/cortesia`}
+                className="rounded border border-border px-3 py-1.5 text-sm text-text-muted hover:border-accent hover:text-accent"
+              >
+                Cortesía con canje
+              </Link>
               {location.status === 'active' && location.publicEventId ? (
                 <Link
                   href={`/gastronomicos/${profileId}`}

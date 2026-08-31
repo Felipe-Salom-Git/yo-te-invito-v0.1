@@ -36,6 +36,7 @@ import { AdminContentPurgeService } from './admin-content-purge.service';
 import { AdminHotelProfilesService } from './admin-hotel-profiles.service';
 import { AdminDeepDeleteService } from './admin-deep-delete.service';
 import { AdminExpiredBenefitsDigestService } from './admin-expired-benefits-digest.service';
+import { AdminGastroCourtesyController } from './admin-gastro-courtesy.controller';
 
 @Module({
   imports: [
@@ -55,7 +56,7 @@ import { AdminExpiredBenefitsDigestService } from './admin-expired-benefits-dige
     AuditModule,
     GastroModule,
   ],
-  controllers: [AdminController, AdminPaymentsController],
+  controllers: [AdminController, AdminPaymentsController, AdminGastroCourtesyController],
   providers: [
     AdminEventsService,
     AdminProfilesService,

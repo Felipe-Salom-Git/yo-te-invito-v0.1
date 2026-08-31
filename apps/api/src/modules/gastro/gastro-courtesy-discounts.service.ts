@@ -4,9 +4,11 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { randomBytes } from 'crypto';
 import {
   ErrorCode,
+  parseMoneyCentsString,
   type GastroCourtesyRecipientsPreviewQuery,
   type GastroCourtesySendBody,
   isGastroDiscountExpired,
@@ -19,6 +21,7 @@ import { AuditService } from '../audit/audit.service';
 import { GastroDiscountClaimEmailService } from './gastro-discount-claim-email.service';
 import { EmailService } from '../../email/email.service';
 import { allocateGastroClaimShortCode } from '../../common/gastro-claim-short-code.util';
+import { CourtesyCreditLedgerService } from '../courtesy-credit-ledger/courtesy-credit-ledger.service';
 
 const MAX_RECIPIENTS = 200;
 
@@ -45,6 +48,7 @@ export class GastroCourtesyDiscountsService {
     private readonly audit: AuditService,
     private readonly claimEmail: GastroDiscountClaimEmailService,
     private readonly email: EmailService,
+    private readonly courtesyLedger: CourtesyCreditLedgerService,
   ) {}
 
   private async assertCanManageProfile(
@@ -260,41 +264,74 @@ export class GastroCourtesyDiscountsService {
       });
     }
 
-    const eventId = profile.publicEventId!;
-    const discount = await this.prisma.gastroDiscount.create({
-      data: {
-        tenantId,
-        eventId,
-        gastroProfileId: profile.id,
-        code: pendingCode(),
-        type: 'PERCENT',
-        value: 0,
-        displayTitle: body.title.trim(),
-        summary: body.description?.trim() ?? body.discountLabel.trim(),
-        detail: body.description?.trim() ?? body.discountLabel.trim(),
-        displayDescription: body.description?.trim() ?? body.discountLabel.trim(),
-        validFrom,
-        validTo,
-        discountDate: validTo,
-        status: 'ACTIVE',
-        visibility: 'COURTESY_ONLY',
-      },
-    });
+    if (body.funding) {
+      if (userRole !== 'ADMIN') {
+        throw new ForbiddenException({
+          code: ErrorCode.BENEFIT_CREDIT_FUNDING_ADMIN_ONLY,
+          message: 'Funding courtesy from barter credit is admin-only',
+        });
+      }
+    }
 
-    const campaign = await this.prisma.gastroCourtesyCampaign.create({
-      data: {
-        tenantId,
-        gastroProfileId: profile.id,
-        discountId: discount.id,
-        title: body.title.trim(),
-        description: body.description?.trim() ?? null,
-        discountLabel: body.discountLabel.trim(),
-        message: body.message?.trim() ?? null,
-        validFrom,
-        validTo,
-        createdByUserId: userId,
+    const eventId = profile.publicEventId!;
+    const imputedValueCents = body.funding
+      ? parseMoneyCentsString(body.funding.imputedValueCents)
+      : null;
+
+    const { discount, campaign, debitEntry } = await this.prisma.$transaction(
+      async (tx) => {
+        const discount = await tx.gastroDiscount.create({
+          data: {
+            tenantId,
+            eventId,
+            gastroProfileId: profile.id,
+            code: pendingCode(),
+            type: 'PERCENT',
+            value: 0,
+            displayTitle: body.title.trim(),
+            summary: body.description?.trim() ?? body.discountLabel.trim(),
+            detail: body.description?.trim() ?? body.discountLabel.trim(),
+            displayDescription: body.description?.trim() ?? body.discountLabel.trim(),
+            validFrom,
+            validTo,
+            discountDate: validTo,
+            status: 'ACTIVE',
+            visibility: 'COURTESY_ONLY',
+          },
+        });
+
+        const campaign = await tx.gastroCourtesyCampaign.create({
+          data: {
+            tenantId,
+            gastroProfileId: profile.id,
+            discountId: discount.id,
+            title: body.title.trim(),
+            description: body.description?.trim() ?? null,
+            discountLabel: body.discountLabel.trim(),
+            message: body.message?.trim() ?? null,
+            validFrom,
+            validTo,
+            createdByUserId: userId,
+          },
+        });
+
+        let debitEntry: { id: string; amountCents: bigint } | null = null;
+        if (imputedValueCents != null) {
+          const { entry } = await this.courtesyLedger.debitForGastroCourtesyCampaign(tx, {
+            tenantId,
+            gastroProfileId: profile.id,
+            campaignId: campaign.id,
+            imputedValueCents,
+            currency: 'ARS',
+            actorId: userId,
+          });
+          debitEntry = entry;
+        }
+
+        return { discount, campaign, debitEntry };
       },
-    });
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
 
     await this.audit.logAction({
       tenantId,
@@ -307,8 +344,26 @@ export class GastroCourtesyDiscountsService {
         discountId: discount.id,
         recipientCount: recipients.length,
         gastroProfileId: profile.id,
+        fundedFromCourtesyCredit: debitEntry != null,
       },
     });
+
+    if (debitEntry) {
+      await this.audit.logAction({
+        tenantId,
+        actorId: userId,
+        actorRole: userRole,
+        action: 'BENEFIT_CREDIT_DEBITED_FOR_COURTESY',
+        entityType: 'CourtesyCreditLedgerEntry',
+        entityId: debitEntry.id,
+        metadata: {
+          campaignId: campaign.id,
+          gastroProfileId: profile.id,
+          amountCents: debitEntry.amountCents.toString(),
+          currency: 'ARS',
+        },
+      });
+    }
 
     let sentCount = 0;
     let skippedCount = 0;
@@ -408,6 +463,9 @@ export class GastroCourtesyDiscountsService {
       failedCount,
       failures,
       emailConfigured,
+      fundedFromCourtesyCredit: debitEntry != null,
+      ledgerEntryId: debitEntry?.id ?? null,
+      imputedValueCents: imputedValueCents != null ? imputedValueCents.toString() : null,
     };
   }
 }

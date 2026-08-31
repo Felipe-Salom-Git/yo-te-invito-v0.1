@@ -737,3 +737,66 @@ Helper `detectBarterCreditDrift()` en shared — allocation sin crédito, duplic
 ---
 
 **STOP slice 9.4** — siguiente paso: slice 9.5 courtesy consumption.
+
+---
+
+## 27. Slice 9.5 implementation decisions
+
+**Fecha:** 2026-08-31  
+**Commit:** `feat(v3.3): fund gastro courtesies from barter credit`
+
+### Courtesy lifecycle audit (existing)
+
+- `GastroCourtesyCampaign` 1:1 `GastroDiscount` (`COURTESY_ONLY`, `value=0`).
+- N `GastroDiscountClaim` per campaign (one per recipient email).
+- Used = scanner sets claim `USED` + `GastroDiscountValidation`.
+- Cancel = parent `GastroDiscount.status=CANCELLED` (claims not auto-updated).
+- No monetary value field existed; display via `discountLabel`.
+
+### Funding semantics
+
+`imputedValueCents` = **valor total de la campaña** (único debit al crear). No debit por claim. Una campaña multi-destinatario = un solo `DEBIT_COURTESY`.
+
+### Prisma
+
+`CourtesyCreditLedgerEntry.sourceCourtesyCampaignId` @unique → FK `GastroCourtesyCampaign` `Restrict`. Relación `courtesyCreditDebit` en campaign.
+
+### Debit
+
+`DEBIT_COURTESY`, `amountCents = -imputedValueCents`, atómico con `GastroDiscount` + `GastroCourtesyCampaign` en transacción `Serializable` + lock `GastroProfile`.
+
+### Backward compatibility
+
+Portal Gastro `POST /gastro/discounts/courtesy/send` sin `funding` → sin ledger debit (flujo histórico intacto).
+
+### Admin only
+
+`funding` en body rechazado si `role !== ADMIN`. Endpoint dedicado: `POST /admin/gastro/courtesies/send` (funding requerido).
+
+### Cancel/refund
+
+**Auto-refund DIFERIDO** — cancelación parcial/multi-claim sin semántica clara V1. Cancel NO borra debit; Admin puede `REVERSAL` manual vía ledger 9.4 si corresponde.
+
+### Used courtesy
+
+Si claim `USED` / validation existe → no refund automático (cuando se implemente refund).
+
+### Idempotency
+
+`sourceCourtesyCampaignId` unique → máximo un debit por campaña.
+
+### Concurrency
+
+Misma estrategia 9.4: `Serializable` + `FOR UPDATE` en `GastroProfile`.
+
+### Activity
+
+Sin consumo — solo Gastro funding en 9.5.
+
+### Admin UI
+
+`/admin/gastronomicos/[profileId]/cortesia` — saldo, valor imputado, saldo restante preview, badge “Financiada con canje”.
+
+---
+
+**STOP slice 9.5** — siguiente paso: slice 9.6 UI liquidaciones.

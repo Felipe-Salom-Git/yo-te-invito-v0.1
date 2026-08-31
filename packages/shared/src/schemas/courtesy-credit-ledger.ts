@@ -88,6 +88,7 @@ export const courtesyCreditLedgerEntryDtoSchema = z.object({
   amountCents: signedMoneyCentsStringSchema,
   currency: z.string(),
   sourceAllocationId: z.string().nullable(),
+  sourceCourtesyCampaignId: z.string().nullable(),
   reversalOfEntryId: z.string().nullable(),
   adjustmentReason: z.string().nullable(),
   createdByUserId: z.string().nullable(),
@@ -114,6 +115,7 @@ export const courtesyCreditPartnerBalanceDtoSchema = z.object({
   currency: z.string(),
   balanceCents: signedMoneyCentsStringSchema,
   creditGeneratedCents: moneyCentsStringSchema,
+  creditConsumedCents: moneyCentsStringSchema,
   balanceAvailableCents: signedMoneyCentsStringSchema,
 });
 

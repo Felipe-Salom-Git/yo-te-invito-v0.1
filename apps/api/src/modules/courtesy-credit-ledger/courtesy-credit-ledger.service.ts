@@ -13,6 +13,7 @@ import {
   assertReversalWouldNotGoNegative,
   computeBarterCreditFromAllocation,
   computeCourtesyCreditBalanceCents,
+  computeCreditConsumedCents,
   moneyCentsToString,
   parseSignedMoneyCentsString,
   signedMoneyCentsToString,
@@ -135,6 +136,71 @@ export class CourtesyCreditLedgerService {
         amountCents: creditAmountCents,
         currency: params.allocation.currency,
         sourceAllocationId: params.allocation.id,
+        createdByUserId: params.actorId,
+      },
+    });
+
+    return { entry, created: true };
+  }
+
+  async debitForGastroCourtesyCampaign(
+    tx: Tx,
+    params: {
+      tenantId: string;
+      gastroProfileId: string;
+      campaignId: string;
+      imputedValueCents: bigint;
+      currency: string;
+      actorId: string;
+    },
+  ): Promise<{ entry: CourtesyCreditLedgerEntry; created: boolean }> {
+    const partner: PartnerScope = {
+      vertical: 'GASTRO',
+      gastroProfileId: params.gastroProfileId,
+      excursionOperatorId: null,
+      currency: params.currency,
+    };
+
+    const existing = await tx.courtesyCreditLedgerEntry.findFirst({
+      where: {
+        tenantId: params.tenantId,
+        type: 'DEBIT_COURTESY',
+        sourceCourtesyCampaignId: params.campaignId,
+      },
+    });
+    if (existing) {
+      return { entry: existing, created: false };
+    }
+
+    await this.lockPartner(tx, params.tenantId, partner);
+    const currentBalance = await this.sumPartnerBalance(tx, params.tenantId, partner);
+    if (currentBalance < params.imputedValueCents) {
+      throw new BadRequestException({
+        code: ErrorCode.BENEFIT_CREDIT_INSUFFICIENT_BALANCE,
+        message: 'Insufficient courtesy credit balance for funded courtesy',
+        balanceAvailableCents: signedMoneyCentsToString(currentBalance),
+        imputedValueCents: moneyCentsToString(params.imputedValueCents),
+      });
+    }
+
+    const debitAmount = -params.imputedValueCents;
+    if (!assertLedgerAmountSignForType('DEBIT_COURTESY', debitAmount)) {
+      throw new BadRequestException({
+        code: ErrorCode.BENEFIT_CREDIT_INVALID_AMOUNT,
+        message: 'Courtesy debit amount must be negative',
+      });
+    }
+
+    const entry = await tx.courtesyCreditLedgerEntry.create({
+      data: {
+        tenantId: params.tenantId,
+        vertical: 'GASTRO',
+        gastroProfileId: params.gastroProfileId,
+        excursionOperatorId: null,
+        type: 'DEBIT_COURTESY',
+        amountCents: debitAmount,
+        currency: params.currency,
+        sourceCourtesyCampaignId: params.campaignId,
         createdByUserId: params.actorId,
       },
     });
@@ -486,6 +552,7 @@ export class CourtesyCreditLedgerService {
         creditGenerated += entry.amountCents;
       }
     }
+    const creditConsumed = computeCreditConsumedCents(entries);
     const partner = this.resolvePartnerFromQuery(query);
     return {
       vertical: query.vertical,
@@ -494,6 +561,7 @@ export class CourtesyCreditLedgerService {
       currency: query.currency,
       balanceCents: signedMoneyCentsToString(balance),
       creditGeneratedCents: moneyCentsToString(creditGenerated),
+      creditConsumedCents: moneyCentsToString(creditConsumed),
       balanceAvailableCents: signedMoneyCentsToString(balance),
     };
   }
@@ -509,6 +577,7 @@ export class CourtesyCreditLedgerService {
       amountCents: signedMoneyCentsToString(row.amountCents),
       currency: row.currency,
       sourceAllocationId: row.sourceAllocationId,
+      sourceCourtesyCampaignId: row.sourceCourtesyCampaignId,
       reversalOfEntryId: row.reversalOfEntryId,
       adjustmentReason: row.adjustmentReason,
       createdByUserId: row.createdByUserId,

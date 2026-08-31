@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { gastroDiscountQrPayloadV1Schema } from '../gastro-discount-qr';
+import { moneyCentsStringSchema } from '../money/benefit-money';
 import { gastroDiscountVisualTemplateResponseSchema } from './gastro-discount-visual-template.schema';
 
 export const gastroDiscountClaimTypeSchema = z.enum(['PUBLIC_REQUEST', 'COURTESY']);
@@ -74,6 +75,21 @@ export const gastroCourtesyRecipientsPreviewQuerySchema = z.object({
   sendToFollowers: z.coerce.boolean().optional(),
 });
 
+export const gastroCourtesyFundingSchema = z
+  .object({
+    source: z.literal('COURTESY_CREDIT'),
+    imputedValueCents: moneyCentsStringSchema.refine((v) => {
+      try {
+        return BigInt(v) > 0n;
+      } catch {
+        return false;
+      }
+    }, 'imputedValueCents must be positive'),
+  })
+  .strict();
+
+export type GastroCourtesyFunding = z.infer<typeof gastroCourtesyFundingSchema>;
+
 export const gastroCourtesySendBodySchema = z.object({
   gastroProfileId: z.string().min(1),
   title: z.string().min(1).max(200),
@@ -84,6 +100,11 @@ export const gastroCourtesySendBodySchema = z.object({
   manualEmails: z.array(z.string().email()).max(200).default([]),
   sendToFollowers: z.boolean().default(false),
   message: z.string().max(1000).optional(),
+  funding: gastroCourtesyFundingSchema.optional(),
+});
+
+export const adminGastroCourtesyFundSendBodySchema = gastroCourtesySendBodySchema.extend({
+  funding: gastroCourtesyFundingSchema,
 });
 
 export const gastroCourtesyRecipientsPreviewResponseSchema = z.object({
@@ -115,12 +136,16 @@ export const gastroCourtesySendResponseSchema = z.object({
     }),
   ),
   emailConfigured: z.boolean(),
+  fundedFromCourtesyCredit: z.boolean().optional(),
+  ledgerEntryId: z.string().nullable().optional(),
+  imputedValueCents: z.string().nullable().optional(),
 });
 
 export type GastroCourtesyRecipientsPreviewQuery = z.infer<
   typeof gastroCourtesyRecipientsPreviewQuerySchema
 >;
 export type GastroCourtesySendBody = z.infer<typeof gastroCourtesySendBodySchema>;
+export type AdminGastroCourtesyFundSendBody = z.infer<typeof adminGastroCourtesyFundSendBodySchema>;
 export type GastroCourtesyRecipientsPreviewResponse = z.infer<
   typeof gastroCourtesyRecipientsPreviewResponseSchema
 >;

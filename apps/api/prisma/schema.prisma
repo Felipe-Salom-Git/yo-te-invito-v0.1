@@ -1013,6 +1013,7 @@ model CourtesyCreditLedgerEntry {
   amountCents         BigInt
   currency            String                        @default("ARS")
   sourceAllocationId  String?                       @unique
+  sourceCourtesyCampaignId String?                  @unique
   reversalOfEntryId   String?                       @unique
   adjustmentReason    String?
   createdByUserId     String?
@@ -1024,12 +1025,14 @@ model CourtesyCreditLedgerEntry {
   sourceAllocation  BenefitSettlementUsageAllocation? @relation("AllocationSettlementCredit", fields: [sourceAllocationId], references: [id], onDelete: Restrict)
   reversalOfEntry   CourtesyCreditLedgerEntry?       @relation("CourtesyCreditReversal", fields: [reversalOfEntryId], references: [id], onDelete: Restrict)
   reversalEntry     CourtesyCreditLedgerEntry?       @relation("CourtesyCreditReversal")
+  sourceCourtesyCampaign GastroCourtesyCampaign?     @relation("CourtesyCampaignDebit", fields: [sourceCourtesyCampaignId], references: [id], onDelete: Restrict)
   createdBy         User?                            @relation("CourtesyCreditLedgerCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
 
   @@index([tenantId, vertical, gastroProfileId, currency])
   @@index([tenantId, vertical, excursionOperatorId, currency])
   @@index([tenantId, createdAt])
   @@index([sourceAllocationId])
+  @@index([sourceCourtesyCampaignId])
 }
 
 enum AdminCampaignStatus {
@@ -2483,6 +2486,7 @@ enum AuditAction {
   BENEFIT_CREDIT_MATERIALIZED
   BENEFIT_CREDIT_ADJUSTED
   BENEFIT_CREDIT_REVERSED
+  BENEFIT_CREDIT_DEBITED_FOR_COURTESY
 }
 
 /// Scanner user bound to one parent commercial account (tenant-scoped).
@@ -2730,6 +2734,7 @@ model GastroCourtesyCampaign {
   discount      GastroDiscount      @relation(fields: [discountId], references: [id], onDelete: Cascade)
   createdBy     User                @relation(fields: [createdByUserId], references: [id])
   claims        GastroDiscountClaim[]
+  courtesyCreditDebit CourtesyCreditLedgerEntry? @relation("CourtesyCampaignDebit")
 
   @@index([tenantId, gastroProfileId])
   @@index([createdByUserId])

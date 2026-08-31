@@ -2959,6 +2959,12 @@ export interface AdminGastroRepo {
     profileId: string,
     body: import('@yo-te-invito/shared').AdminGastroLocationUpdateInput,
   ): Promise<AdminGastroLocationDetail>;
+  getCourtesyCreditBalance(
+    gastroProfileId: string,
+  ): Promise<import('@yo-te-invito/shared').CourtesyCreditPartnerBalanceDto>;
+  sendFundedCourtesy(
+    body: import('@yo-te-invito/shared').AdminGastroCourtesyFundSendBody,
+  ): Promise<import('@yo-te-invito/shared').GastroCourtesySendResponse>;
 }
 
 export interface PlatformConfig {
