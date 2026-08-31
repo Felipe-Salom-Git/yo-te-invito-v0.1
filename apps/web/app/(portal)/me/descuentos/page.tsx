@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { useRepositories } from '@/repositories/context';
 import { PageContainer, SectionTitle } from '@/components';
-import { GastroDiscountQrCard } from '@/components/gastro/GastroDiscountQrCard';
+import { GastroDiscountVisualCoupon } from '@/components/gastro/GastroDiscountVisualCoupon';
 import { formatGastroDiscountValidTo } from '@/lib/gastro/discount-status-ui';
 import type { MeGastroDiscountItem } from '@yo-te-invito/shared';
 
@@ -16,7 +16,7 @@ function DiscountCard({ item }: { item: MeGastroDiscountItem }) {
 
   return (
     <li className="space-y-4">
-      <GastroDiscountQrCard
+      <GastroDiscountVisualCoupon
         locationName={item.locationName}
         discountTitle={item.discountTitle ?? item.discountLabel ?? 'Descuento'}
         discountDescription={item.discountDescription}
@@ -26,6 +26,17 @@ function DiscountCard({ item }: { item: MeGastroDiscountItem }) {
         status={item.status}
         validTo={item.validTo}
         type={item.type}
+        visualTemplate={item.visualTemplate}
+        renderContext={{
+          gastroName: item.locationName,
+          discountTitle: item.discountTitle ?? item.discountLabel ?? 'Descuento',
+          discountType: item.discountType ?? 'PERCENT',
+          discountValue: item.discountValue ?? 0,
+          validityMode: item.validityMode,
+          validWeekday: item.validWeekday ?? null,
+          validTo: item.validTo,
+          shortCode: item.shortCode,
+        }}
       />
 
       <dl className="mx-auto grid max-w-sm gap-1 px-1 text-sm text-text-muted">

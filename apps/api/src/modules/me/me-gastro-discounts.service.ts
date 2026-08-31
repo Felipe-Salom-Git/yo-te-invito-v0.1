@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import {
   buildGastroDiscountQrPayload,
+  mapDiscountVisualTemplateRow,
   type MeGastroDiscountItem,
   type MeGastroDiscountsResponse,
   isGastroDiscountExpired,
@@ -64,6 +65,7 @@ export class MeGastroDiscountsService {
                 publicEventId: true,
               },
             },
+            visualTemplate: true,
             courtesyCampaign: {
               select: { title: true, discountLabel: true, validTo: true },
             },
@@ -140,6 +142,12 @@ export class MeGastroDiscountsService {
           usedAt: usedAt?.toISOString() ?? null,
           createdAt: claim.createdAt.toISOString(),
           emailSentAt: claim.emailSentAt?.toISOString() ?? null,
+          visualTemplate: d.visualTemplate
+            ? mapDiscountVisualTemplateRow(d.visualTemplate)
+            : null,
+          discountType: d.type as 'PERCENT' | 'FIXED',
+          discountValue: d.value,
+          shortCode: claim.shortCode,
         };
       });
 

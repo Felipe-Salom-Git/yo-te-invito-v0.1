@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { PageContainer } from '@/components';
-import { GastroDiscountQrCard } from '@/components/gastro/GastroDiscountQrCard';
+import { GastroDiscountVisualCoupon } from '@/components/gastro/GastroDiscountVisualCoupon';
 import { EmailInboxNotice } from '@/components/ux/EmailInboxNotice';
 import { useGastroDiscountClaim } from '@/lib/query/useGastroPublishedDiscounts';
 import { resolveGastroDiscountDisplayStatus } from '@/lib/gastro/discount-status-ui';
@@ -64,7 +64,7 @@ function ClaimContent() {
           {claim.emailSentAt ? '' : ' (el servicio de email puede no estar configurado en desarrollo)'}.
         </p>
 
-        <GastroDiscountQrCard
+        <GastroDiscountVisualCoupon
           locationName={claim.locationName}
           discountTitle={title}
           discountDescription={claim.discountSummary}
@@ -73,6 +73,21 @@ function ClaimContent() {
           status={status}
           validTo={validTo}
           type={claim.type}
+          visualTemplate={
+            claim.visualTemplate && typeof claim.visualTemplate === 'object'
+              ? (claim.visualTemplate as import('@yo-te-invito/shared').GastroDiscountVisualTemplateResponse)
+              : null
+          }
+          renderContext={{
+            gastroName: claim.locationName,
+            discountTitle: title,
+            discountType: claim.discountType ?? 'PERCENT',
+            discountValue: claim.discountValue ?? 0,
+            validityMode: claim.validityMode,
+            validWeekday: (claim.validWeekday as import('@yo-te-invito/shared').GastroWeekday | null) ?? null,
+            validTo: claim.validTo ?? claim.discountDate,
+            shortCode: claim.shortCode,
+          }}
         />
 
         <Link

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { gastroDiscountQrPayloadV1Schema } from '../gastro-discount-qr';
+import { gastroDiscountVisualTemplateResponseSchema } from './gastro-discount-visual-template.schema';
 
 export const gastroDiscountClaimTypeSchema = z.enum(['PUBLIC_REQUEST', 'COURTESY']);
 export type GastroDiscountClaimType = z.infer<typeof gastroDiscountClaimTypeSchema>;
@@ -40,6 +41,10 @@ export const meGastroDiscountItemSchema = z.object({
   usedAt: z.string().datetime().nullable(),
   createdAt: z.string().datetime(),
   emailSentAt: z.string().datetime().nullable(),
+  visualTemplate: gastroDiscountVisualTemplateResponseSchema.nullable().optional(),
+  discountType: z.enum(['PERCENT', 'FIXED']).optional(),
+  discountValue: z.number().optional(),
+  shortCode: z.string().max(16).nullable().optional(),
 });
 
 export const meGastroDiscountsResponseSchema = z.object({

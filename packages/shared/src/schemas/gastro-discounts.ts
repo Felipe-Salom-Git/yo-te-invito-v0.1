@@ -303,10 +303,21 @@ export const publicGastroDiscountClaimViewSchema = z.object({
   qrPayload: gastroDiscountQrPayloadV1Schema,
   discountTitle: z.string().nullable(),
   discountSummary: z.string().nullable(),
+  discountLabel: z.string().nullable().optional(),
   locationName: z.string(),
   locationId: z.string(),
   discountDate: z.string().datetime().nullable(),
+  validTo: z.string().datetime().nullable().optional(),
+  usedAt: z.string().datetime().nullable().optional(),
+  status: z.string().optional(),
+  type: z.string().optional(),
   emailSentAt: z.string().datetime().nullable(),
+  visualTemplate: z.unknown().nullable().optional(),
+  discountType: z.enum(['PERCENT', 'FIXED']).optional(),
+  discountValue: z.number().optional(),
+  shortCode: z.string().max(16).nullable().optional(),
+  validityMode: z.enum(['DATE_RANGE', 'WEEKLY_RECURRING']).optional(),
+  validWeekday: z.string().nullable().optional(),
 });
 
 export const publicGastroDiscountClaimViewQuerySchema = z.object({

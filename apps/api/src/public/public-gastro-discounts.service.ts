@@ -8,6 +8,7 @@ import {
   buildGastroDiscountQrPayload,
   ErrorCode,
   isGastroDiscountExpired,
+  mapDiscountVisualTemplateRow,
   isGastroDiscountValidToday,
   getGastroWeekdayLabelEs,
   getGastroDiscountLocalDayBounds,
@@ -344,6 +345,7 @@ export class PublicGastroDiscountsService {
         discount: {
           include: {
             gastroProfile: { select: { id: true, displayName: true } },
+            visualTemplate: true,
             courtesyCampaign: { select: { title: true, discountLabel: true, validTo: true } },
           },
         },
@@ -390,6 +392,12 @@ export class PublicGastroDiscountsService {
       status,
       type: claim.type,
       emailSentAt: claim.emailSentAt?.toISOString() ?? null,
+      visualTemplate: d.visualTemplate ? mapDiscountVisualTemplateRow(d.visualTemplate) : null,
+      discountType: d.type,
+      discountValue: d.value,
+      shortCode: claim.shortCode,
+      validityMode: d.validityMode,
+      validWeekday: d.validWeekday,
     };
   }
 }
