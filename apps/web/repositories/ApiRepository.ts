@@ -2078,6 +2078,18 @@ export class ApiRepository implements Repositories {
         `/gastro/discounts/${encodeURIComponent(id)}/archive`,
         body,
       ),
+    getDiscountVisualTemplate: async (id) =>
+      this.client.get<{
+        template: import('@yo-te-invito/shared').GastroDiscountVisualTemplateResponse | null;
+      }>(`/gastro/discounts/${encodeURIComponent(id)}/visual-template`),
+    upsertDiscountVisualTemplate: async (id, body) =>
+      this.client.put<{
+        template: import('@yo-te-invito/shared').GastroDiscountVisualTemplateResponse;
+      }>(`/gastro/discounts/${encodeURIComponent(id)}/visual-template`, body),
+    resetDiscountVisualTemplate: async (id) =>
+      this.client.delete<{ ok: true }>(
+        `/gastro/discounts/${encodeURIComponent(id)}/visual-template`,
+      ),
     previewCourtesyRecipients: async (params) =>
       this.client.get<import('@yo-te-invito/shared').GastroCourtesyRecipientsPreviewResponse>(
         '/gastro/discounts/courtesy/recipients-preview',
@@ -2273,6 +2285,12 @@ export class ApiRepository implements Repositories {
       this.client.post<AdminGastroDiscountDetail>(
         `/admin/gastronomicos/${encodeURIComponent(profileId)}/descuentos`,
         payload,
+      ),
+    getDiscountVisualTemplate: async (profileId, discountId) =>
+      this.client.get<{
+        template: import('@yo-te-invito/shared').GastroDiscountVisualTemplateResponse | null;
+      }>(
+        `/admin/gastronomicos/${encodeURIComponent(profileId)}/descuentos/${encodeURIComponent(discountId)}/visual-template`,
       ),
     updateLocationStatus: async (profileId, body) =>
       this.client.patch<AdminGastroLocationDetail>(

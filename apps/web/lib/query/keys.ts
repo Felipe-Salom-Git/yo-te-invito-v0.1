@@ -437,6 +437,8 @@ export const gastroKeys = {
     [...gastroKeys.all, 'discounts', profileId ?? 'default'] as const,
   discount: (id: string) => [...gastroKeys.all, 'discount', id] as const,
   discountSummary: (id: string) => [...gastroKeys.all, 'discount-summary', id] as const,
+  discountVisualTemplate: (id: string) =>
+    [...gastroKeys.all, 'discount-visual-template', id] as const,
   content: (eventId: string) => [...gastroKeys.all, 'content', eventId] as const,
   validations: (filtersKey: string) => [...gastroKeys.all, 'validations', filtersKey] as const,
 };
@@ -453,6 +455,8 @@ export const adminGastroKeys = {
     [...adminGastroKeys.all, 'metrics', profileId, discountId] as const,
   discountSummary: (profileId: string, discountId: string) =>
     [...adminGastroKeys.all, 'discount-summary', profileId, discountId] as const,
+  discountVisualTemplate: (profileId: string, discountId: string) =>
+    [...adminGastroKeys.all, 'discount-visual-template', profileId, discountId] as const,
 };
 
 // ─── Public platform config (footer contact) ───────────────────────────────

@@ -9,6 +9,7 @@ import { formatGastroDiscountValidityRangeLabel } from '@/lib/gastro/discount-st
 type Props = {
   summary: GastroDiscountSummaryResponse;
   editHref?: string;
+  qrStudioHref?: string;
   onActivate?: () => void;
   onDeactivate?: () => void;
   statusLoading?: boolean;
@@ -32,6 +33,7 @@ function claimStatusLabel(status: string): string {
 export function GastroDiscountDetailContent({
   summary,
   editHref,
+  qrStudioHref,
   onActivate,
   onDeactivate,
   statusLoading,
@@ -80,6 +82,13 @@ export function GastroDiscountDetailContent({
               <Link href={editHref}>
                 <Button variant="outline" type="button">
                   Editar
+                </Button>
+              </Link>
+            ) : null}
+            {qrStudioHref ? (
+              <Link href={qrStudioHref}>
+                <Button variant="outline" type="button">
+                  Diseñar QR
                 </Button>
               </Link>
             ) : null}

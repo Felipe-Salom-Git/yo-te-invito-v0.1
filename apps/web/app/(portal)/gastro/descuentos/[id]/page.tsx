@@ -103,6 +103,7 @@ export default function GastroDescuentoDetallePage() {
         <GastroDiscountDetailContent
           summary={summaryQuery.data}
           editHref={`/gastro/descuentos/${id}/editar${profileQuery(discountProfileId)}`}
+          qrStudioHref={`/gastro/descuentos/${id}/qr-studio${profileQuery(discountProfileId)}`}
           statusLoading={statusMutation.isPending}
           onActivate={() => statusMutation.mutate('ACTIVE')}
           onDeactivate={() => statusMutation.mutate('CANCELLED')}

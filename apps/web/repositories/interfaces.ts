@@ -2586,6 +2586,12 @@ export interface PublicGastroDiscountClaimView {
   status: 'ACTIVE' | 'USED' | 'EXPIRED' | 'CANCELLED';
   type: 'PUBLIC_REQUEST' | 'COURTESY';
   emailSentAt: string | null;
+  visualTemplate?: import('@yo-te-invito/shared').GastroDiscountVisualTemplateResponse | null;
+  discountType?: 'PERCENT' | 'FIXED';
+  discountValue?: number;
+  shortCode?: string | null;
+  validityMode?: 'DATE_RANGE' | 'WEEKLY_RECURRING';
+  validWeekday?: string | null;
 }
 
 export interface PublicGastroLocationsRepo {
@@ -2667,6 +2673,14 @@ export interface GastroRepo {
     id: string,
     body: import('@yo-te-invito/shared').GastroDiscountArchiveAction,
   ): Promise<GastroPortalDiscount>;
+  getDiscountVisualTemplate(
+    id: string,
+  ): Promise<{ template: import('@yo-te-invito/shared').GastroDiscountVisualTemplateResponse | null }>;
+  upsertDiscountVisualTemplate(
+    id: string,
+    body: import('@yo-te-invito/shared').UpsertGastroDiscountVisualTemplateDto,
+  ): Promise<{ template: import('@yo-te-invito/shared').GastroDiscountVisualTemplateResponse }>;
+  resetDiscountVisualTemplate(id: string): Promise<{ ok: true }>;
   previewCourtesyRecipients(
     params: import('@yo-te-invito/shared').GastroCourtesyRecipientsPreviewQuery,
   ): Promise<import('@yo-te-invito/shared').GastroCourtesyRecipientsPreviewResponse>;
@@ -2864,6 +2878,10 @@ export interface AdminGastroRepo {
     profileId: string,
     payload: GastroDiscountCreatePayload,
   ): Promise<AdminGastroDiscountDetail>;
+  getDiscountVisualTemplate(
+    profileId: string,
+    discountId: string,
+  ): Promise<{ template: import('@yo-te-invito/shared').GastroDiscountVisualTemplateResponse | null }>;
   updateLocationStatus(
     profileId: string,
     body: { status: string },
