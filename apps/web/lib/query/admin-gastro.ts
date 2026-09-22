@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRepositories } from '@/repositories/context';
-import { adminGastroKeys } from '@/lib/query/keys';
+import { adminDashboardKeys, adminGastroKeys } from '@/lib/query/keys';
 import type {
   AdminGastroLocationCreateInput,
   AdminGastroLocationStatusInput,
@@ -15,6 +15,55 @@ export type AdminGastroListQuery = {
   page?: number;
   limit?: number;
 };
+
+/** Pending GastroProfile approval queue (distinct from pending discounts). */
+export const adminPendingGastroProfilesKey = [
+  'admin',
+  'gastro',
+  'pending-profiles',
+] as const;
+
+export function useAdminPendingGastroProfiles(enabled = true) {
+  const repos = useRepositories();
+  return useQuery({
+    queryKey: adminPendingGastroProfilesKey,
+    queryFn: () => repos.profiles.listPendingGastroProfiles(),
+    enabled,
+  });
+}
+
+function invalidateAfterGastroProfileModeration(
+  queryClient: ReturnType<typeof useQueryClient>,
+  profileId: string,
+) {
+  queryClient.invalidateQueries({ queryKey: adminPendingGastroProfilesKey });
+  queryClient.invalidateQueries({ queryKey: adminGastroKeys.all });
+  queryClient.invalidateQueries({ queryKey: adminGastroKeys.detail(profileId) });
+  queryClient.invalidateQueries({ queryKey: adminDashboardKeys.all });
+}
+
+export function useAdminApproveGastroProfileMutation() {
+  const repos = useRepositories();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (profileId: string) => repos.profiles.approveGastroProfile(profileId),
+    onSuccess: (_data, profileId) => {
+      invalidateAfterGastroProfileModeration(queryClient, profileId);
+    },
+  });
+}
+
+export function useAdminRejectGastroProfileMutation() {
+  const repos = useRepositories();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ profileId, reason }: { profileId: string; reason?: string | null }) =>
+      repos.profiles.rejectGastroProfile(profileId, reason),
+    onSuccess: (_data, { profileId }) => {
+      invalidateAfterGastroProfileModeration(queryClient, profileId);
+    },
+  });
+}
 
 export function useAdminGastroLocationsList(
   query: AdminGastroListQuery,

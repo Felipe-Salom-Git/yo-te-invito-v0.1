@@ -11,6 +11,7 @@ import type {
   HotelRepo,
   HotelProfile,
   PendingProducerProfile,
+  PendingGastroProfile,
   RoleApplication,
   EventsRepo,
   TicketsRepo,
@@ -809,10 +810,15 @@ export class ApiRepository implements Repositories {
         `/admin/profiles/producer/${encodeURIComponent(profileId)}/approve`
       ),
     listPendingGastroProfiles: async () =>
-      this.client.get<{ profiles: PendingProducerProfile[] }>('/admin/profiles/gastro/pending'),
+      this.client.get<{ profiles: PendingGastroProfile[] }>('/admin/profiles/gastro/pending'),
     approveGastroProfile: async (profileId: string) =>
       this.client.post<{ id: string; status: string; message: string }>(
-        `/admin/profiles/gastro/${encodeURIComponent(profileId)}/approve`
+        `/admin/profiles/gastro/${encodeURIComponent(profileId)}/approve`,
+      ),
+    rejectGastroProfile: async (profileId: string, reason?: string | null) =>
+      this.client.post<{ id: string; status: string; message: string }>(
+        `/admin/profiles/gastro/${encodeURIComponent(profileId)}/reject`,
+        { reason: reason ?? null },
       ),
     listPendingHotelProfiles: async () =>
       this.client.get<{ profiles: PendingProducerProfile[] }>('/admin/profiles/hotel/pending'),

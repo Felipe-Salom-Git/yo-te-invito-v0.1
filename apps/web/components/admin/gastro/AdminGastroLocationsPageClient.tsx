@@ -27,6 +27,7 @@ import type { AdminGastroLocationListItem } from '@/repositories/interfaces';
 import { AdminGastroLocationsFilters } from './AdminGastroLocationsFilters';
 import { AdminGastroLocationsTable } from './AdminGastroLocationsTable';
 import { AdminGastroLocationsMobileCard } from './AdminGastroLocationsMobileCard';
+import { AdminPendingGastroProfilesSection } from './AdminPendingGastroProfilesSection';
 
 const SUSPEND_CONFIRM_MESSAGE =
   'Suspender este local lo ocultará del descubrimiento público, pero conservará descuentos, reseñas, seguidores e historial. ¿Continuar?';
@@ -108,6 +109,8 @@ export function AdminGastroLocationsPageClient() {
           </Button>
         </Link>
       </header>
+
+      <AdminPendingGastroProfilesSection />
 
       <div className="mt-6">
         <AdminGastroLocationsFilters

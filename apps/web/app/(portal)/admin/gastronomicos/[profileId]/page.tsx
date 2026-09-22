@@ -10,7 +10,12 @@ import {
 } from '@yo-te-invito/shared';
 import { useRepositories } from '@/repositories/context';
 import { adminGastroKeys } from '@/lib/query/keys';
-import { PageContainer, SectionTitle } from '@/components';
+import { Button, PageContainer, SectionTitle, useToast } from '@/components';
+import { getErrorMessage } from '@/lib/errors';
+import {
+  useAdminApproveGastroProfileMutation,
+  useAdminRejectGastroProfileMutation,
+} from '@/lib/query/admin-gastro';
 import { AdminGastroDiscountsTable } from '@/components/admin/gastro/AdminGastroDiscountsTable';
 import { AdminGastroHardDeleteActions } from '@/components/admin/gastro/AdminGastroHardDeleteActions';
 
@@ -25,7 +30,11 @@ export default function AdminGastroLocationDetailPage() {
   const params = useParams();
   const profileId = (params?.profileId as string) ?? '';
   const repos = useRepositories();
+  const { addToast } = useToast();
   const [tabOverride, setTabOverride] = useState<GastroDiscountLifecycleBucket | null>(null);
+  const approveMutation = useAdminApproveGastroProfileMutation();
+  const rejectMutation = useAdminRejectGastroProfileMutation();
+  const moderationBusy = approveMutation.isPending || rejectMutation.isPending;
 
   const { data: location, isLoading: loadingLocation } = useQuery({
     queryKey: adminGastroKeys.detail(profileId),
@@ -65,6 +74,31 @@ export default function AdminGastroLocationDetailPage() {
   const tab: GastroDiscountLifecycleBucket =
     tabOverride ?? (pendingCount > 0 ? 'PENDING' : 'ACTIVE');
   const visible = grouped[tab];
+
+  const handleApprove = () => {
+    if (!location) return;
+    const ok = window.confirm(`¿Aprobar el local «${location.displayName}»?`);
+    if (!ok) return;
+    approveMutation.mutate(profileId, {
+      onSuccess: () => addToast('Local gastronómico aprobado', 'success'),
+      onError: (err) => addToast(getErrorMessage(err), 'error'),
+    });
+  };
+
+  const handleReject = () => {
+    if (!location) return;
+    const reason = window.prompt('Motivo del rechazo (opcional):');
+    if (reason === null) return;
+    const ok = window.confirm(`¿Rechazar el local «${location.displayName}»?`);
+    if (!ok) return;
+    rejectMutation.mutate(
+      { profileId, reason: reason.trim() || null },
+      {
+        onSuccess: () => addToast('Local gastronómico rechazado', 'success'),
+        onError: (err) => addToast(getErrorMessage(err), 'error'),
+      },
+    );
+  };
 
   return (
     <PageContainer>
@@ -119,6 +153,37 @@ export default function AdminGastroLocationDetailPage() {
               />
             </div>
           </div>
+
+          {location.status === 'pending' ? (
+            <div className="mt-6 rounded-xl border border-amber-500/40 bg-amber-500/5 p-4">
+              <p className="font-medium text-text">
+                Este local está esperando aprobación
+              </p>
+              <p className="mt-1 text-sm text-text-muted">
+                Aprobar activa el perfil, las membresías y la sincronización pública.
+                No uses el toggle genérico de activar/suspender para este estado.
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={moderationBusy}
+                  onClick={handleApprove}
+                >
+                  {approveMutation.isPending ? 'Aprobando…' : 'Aprobar local'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={moderationBusy}
+                  onClick={handleReject}
+                >
+                  {rejectMutation.isPending ? 'Rechazando…' : 'Rechazar local'}
+                </Button>
+              </div>
+            </div>
+          ) : null}
 
           <div className="mt-6 grid gap-4 rounded-lg border border-border bg-bg-muted p-4 sm:grid-cols-2 lg:grid-cols-3">
             <Info label="Teléfono" value={location.contactPhone} />

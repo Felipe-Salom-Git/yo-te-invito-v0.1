@@ -1889,6 +1889,17 @@ export interface PendingProducerProfile {
   websiteUrl?: string;
 }
 
+/** Pending GastroProfile awaiting Admin approve/reject (GET /admin/profiles/gastro/pending). */
+export interface PendingGastroProfile {
+  id: string;
+  displayName: string;
+  createdByUserId: string;
+  createdAt: string;
+  city: string | null;
+  province: string | null;
+  address: string | null;
+}
+
 export interface ApplyReferrerBody {
   displayName: string;
   bio?: string;
@@ -1954,8 +1965,12 @@ export interface ProfilesRepo {
   resolveReferrerAssociation(tenantId: string, token: string): Promise<ReferrerAssociationResolveResponse>;
   listPendingProducerProfiles(): Promise<{ profiles: PendingProducerProfile[] }>;
   approveProducerProfile(profileId: string): Promise<{ id: string; status: string; message: string }>;
-  listPendingGastroProfiles(): Promise<{ profiles: PendingProducerProfile[] }>;
+  listPendingGastroProfiles(): Promise<{ profiles: PendingGastroProfile[] }>;
   approveGastroProfile(profileId: string): Promise<{ id: string; status: string; message: string }>;
+  rejectGastroProfile(
+    profileId: string,
+    reason?: string | null,
+  ): Promise<{ id: string; status: string; message: string }>;
   listPendingHotelProfiles(): Promise<{ profiles: PendingProducerProfile[] }>;
   approveHotelProfile(profileId: string): Promise<{ id: string; status: string; message: string }>;
   listPendingReferrerProfiles(): Promise<{ profiles: PendingProducerProfile[] }>;
