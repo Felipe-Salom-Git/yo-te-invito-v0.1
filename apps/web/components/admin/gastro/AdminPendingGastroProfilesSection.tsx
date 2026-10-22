@@ -73,13 +73,21 @@ export function AdminPendingGastroProfilesSection() {
           id="pending-gastro-profiles-title"
           className="text-base font-semibold text-text"
         >
-          Locales esperando aprobación
+          Locales gastronómicos pendientes
         </h2>
-        {!pendingQuery.isLoading && !pendingQuery.isError ? (
-          <span className="text-sm tabular-nums text-text-muted">
-            {profiles.length} pendiente{profiles.length === 1 ? '' : 's'}
-          </span>
-        ) : null}
+        <div className="flex flex-wrap items-center gap-3">
+          {!pendingQuery.isLoading && !pendingQuery.isError ? (
+            <span className="text-sm tabular-nums text-text-muted">
+              {profiles.length} pendiente{profiles.length === 1 ? '' : 's'}
+            </span>
+          ) : null}
+          <Link
+            href="/admin/gastronomicos"
+            className="text-sm font-medium text-accent hover:underline"
+          >
+            Ver pendientes →
+          </Link>
+        </div>
       </div>
       <p className="mt-1 text-sm text-text-muted">
         Locales creados por cuentas gastronomómicas que requieren aprobación admin
@@ -117,7 +125,7 @@ export function AdminPendingGastroProfilesSection() {
                 <div className="min-w-0">
                   <p className="truncate font-medium text-text">{profile.displayName}</p>
                   <p className="mt-1 text-xs text-text-muted">
-                    {locationLine(profile)}
+                    Pendiente · {locationLine(profile)}
                     {profile.address ? ` · ${profile.address}` : ''}
                   </p>
                   <p className="mt-0.5 text-xs text-text-muted">

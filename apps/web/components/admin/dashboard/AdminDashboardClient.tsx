@@ -14,6 +14,7 @@ import { useRepositories } from '@/repositories/context';
 import { useAdminDashboard } from '@/lib/query/admin-dashboard';
 import { payoutsKeys } from '@/lib/query/keys';
 import { getErrorMessage } from '@/lib/errors';
+import { AdminPendingGastroProfilesSection } from '@/components/admin/gastro/AdminPendingGastroProfilesSection';
 import { AdminDashboardKpiCard } from './AdminDashboardKpiCard';
 import { AdminPendingReviewSection } from './AdminPendingReviewSection';
 import { AdminOperationalLinks } from './AdminOperationalLinks';
@@ -172,6 +173,11 @@ export function AdminDashboardClient() {
           </p>
         ) : null}
       </section>
+
+      {/* PENDING GastroProfiles — reuse GET /admin/profiles/gastro/pending (not discount queue). */}
+      <div className="mt-10">
+        <AdminPendingGastroProfilesSection />
+      </div>
 
       <AdminPendingReviewSection
         pendingEvents={pendingEvents}
