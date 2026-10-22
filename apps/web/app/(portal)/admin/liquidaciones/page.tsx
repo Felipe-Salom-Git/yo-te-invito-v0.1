@@ -13,6 +13,7 @@ import {
 } from '@/components';
 import { LiquidacionesSubnav } from '@/components/admin/liquidaciones/LiquidacionesSubnav';
 import { SettlementGeneratePanel } from '@/components/admin/liquidaciones/SettlementGeneratePanel';
+import { SettlementStatusCell } from '@/components/admin/liquidaciones/SettlementStatusCell';
 import { useAdminBenefitSettlementsList } from '@/lib/query/benefit-settlements';
 import {
   useAdminBenefitReportingMonthly,
@@ -395,10 +396,7 @@ export default function AdminLiquidacionesPage() {
                   </td>
                   <td className="px-2 py-3">{formatBenefitSettlementPeriodLabel(row.periodKey)}</td>
                   <td className="px-2 py-3">
-                    <Badge>{BENEFIT_SETTLEMENT_STATUS_LABEL[row.status]}</Badge>
-                    <div className="mt-1 text-xs text-text-muted">
-                      {BENEFIT_CASH_COLLECTION_STATUS_LABEL[row.summary.cashCollectionStatus]}
-                    </div>
+                    <SettlementStatusCell row={row} />
                   </td>
                   <td className="px-2 py-3 text-xs">
                     <div>Elegibles: {row.summary.eligibleUsageCount}</div>
