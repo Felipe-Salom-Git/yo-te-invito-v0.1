@@ -10,6 +10,7 @@ import {
 import { useRepositories } from '@/repositories/context';
 import { PageContainer, PageLoader, QueryError, useToast } from '@/components';
 import { GastroDiscountDetailContent } from '@/components/gastro/GastroDiscountDetailContent';
+import { GastroDiscountOperationalMetricsPanel } from '@/components/gastro/GastroDiscountOperationalMetricsPanel';
 import { useGastroActiveLocation } from '@/lib/gastro/GastroActiveLocationContext';
 import { gastroKeys } from '@/lib/query/keys';
 import { getErrorMessage } from '@/lib/errors';
@@ -29,6 +30,12 @@ export default function GastroDescuentoDetallePage() {
   const summaryQuery = useQuery({
     queryKey: gastroKeys.discountSummary(id),
     queryFn: () => repos.gastro.getMyDiscountSummary(id),
+    enabled: !!id,
+  });
+
+  const operationalMetricsQuery = useQuery({
+    queryKey: gastroKeys.discountOperationalMetrics(id),
+    queryFn: () => repos.gastro.getMyDiscountOperationalMetrics(id),
     enabled: !!id,
   });
 
@@ -108,6 +115,12 @@ export default function GastroDescuentoDetallePage() {
           onActivate={() => statusMutation.mutate('ACTIVE')}
           onDeactivate={() => statusMutation.mutate('CANCELLED')}
         />
+      ) : null}
+
+      {operationalMetricsQuery.isLoading ? (
+        <p className="mt-8 text-sm text-text-muted">Cargando métricas…</p>
+      ) : operationalMetricsQuery.data ? (
+        <GastroDiscountOperationalMetricsPanel metrics={operationalMetricsQuery.data} />
       ) : null}
 
       {discount?.hasPendingUpdate && (

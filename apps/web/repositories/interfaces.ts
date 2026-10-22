@@ -2784,6 +2784,9 @@ export interface GastroRepo {
   ): Promise<GastroPortalDiscount>;
   updateMyDiscount(id: string, payload: Partial<Omit<GastroDiscountCreatePayload, 'commissionCoordinationAccepted'>>): Promise<GastroPortalDiscount>;
   getMyDiscountSummary(id: string): Promise<import('@yo-te-invito/shared').GastroDiscountSummaryResponse>;
+  getMyDiscountOperationalMetrics(
+    id: string,
+  ): Promise<import('@yo-te-invito/shared').GastroDiscountOperationalMetricsResponse>;
   updateMyDiscountStatus(
     id: string,
     body: import('@yo-te-invito/shared').GastroDiscountStatusUpdate,
@@ -2951,6 +2954,10 @@ export interface AdminGastroRepo {
   listLocationDiscounts(profileId: string): Promise<{ data: AdminGastroDiscountListItem[] }>;
   getDiscount(profileId: string, discountId: string): Promise<AdminGastroDiscountDetail>;
   getDiscountMetrics(profileId: string, discountId: string): Promise<AdminGastroDiscountMetrics>;
+  getDiscountOperationalMetrics(
+    profileId: string,
+    discountId: string,
+  ): Promise<import('@yo-te-invito/shared').GastroDiscountOperationalMetricsResponse>;
   getDiscountSummary(
     profileId: string,
     discountId: string,

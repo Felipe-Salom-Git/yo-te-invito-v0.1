@@ -2279,7 +2279,12 @@ export class ApiRepository implements Repositories {
       this.client.get<import('@yo-te-invito/shared').GastroDiscountSummaryResponse>(
         `/gastro/discounts/${encodeURIComponent(id)}/summary`,
       ),
+    getMyDiscountOperationalMetrics: async (id) =>
+      this.client.get<import('@yo-te-invito/shared').GastroDiscountOperationalMetricsResponse>(
+        `/gastro/discounts/${encodeURIComponent(id)}/operational-metrics`,
+      ),
     updateMyDiscountStatus: async (id, body) =>
+
       this.client.patch<GastroPortalDiscount>(
         `/gastro/discounts/${encodeURIComponent(id)}/status`,
         body,
@@ -2437,7 +2442,12 @@ export class ApiRepository implements Repositories {
         `/admin/gastro-discount-tickets/${encodeURIComponent(discountId)}/metrics`,
         { profileId },
       ),
+    getDiscountOperationalMetrics: async (profileId, discountId) =>
+      this.client.get<import('@yo-te-invito/shared').GastroDiscountOperationalMetricsResponse>(
+        `/admin/gastronomicos/${encodeURIComponent(profileId)}/discuentos/${encodeURIComponent(discountId)}/operational-metrics`,
+      ),
     getDiscountSummary: async (profileId, discountId) =>
+
       this.client.get<import('@yo-te-invito/shared').GastroDiscountSummaryResponse>(
         `/admin/gastro-discount-tickets/${encodeURIComponent(discountId)}/summary`,
         { profileId },

@@ -494,6 +494,8 @@ export const gastroKeys = {
     [...gastroKeys.all, 'discounts', profileId ?? 'default'] as const,
   discount: (id: string) => [...gastroKeys.all, 'discount', id] as const,
   discountSummary: (id: string) => [...gastroKeys.all, 'discount-summary', id] as const,
+  discountOperationalMetrics: (id: string) =>
+    [...gastroKeys.all, 'discount-operational-metrics', id] as const,
   discountVisualTemplate: (id: string) =>
     [...gastroKeys.all, 'discount-visual-template', id] as const,
   content: (eventId: string) => [...gastroKeys.all, 'content', eventId] as const,
@@ -516,6 +518,8 @@ export const adminGastroKeys = {
     [...adminGastroKeys.all, 'discount', profileId, discountId] as const,
   metrics: (profileId: string, discountId: string) =>
     [...adminGastroKeys.all, 'metrics', profileId, discountId] as const,
+  operationalMetrics: (profileId: string, discountId: string) =>
+    [...adminGastroKeys.all, 'operational-metrics', profileId, discountId] as const,
   discountSummary: (profileId: string, discountId: string) =>
     [...adminGastroKeys.all, 'discount-summary', profileId, discountId] as const,
   discountVisualTemplate: (profileId: string, discountId: string) =>
