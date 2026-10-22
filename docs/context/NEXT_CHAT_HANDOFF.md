@@ -31,13 +31,16 @@ Punto de entrada operativo para **V3.3**. Detalle completo: `AI_ENTRYPOINT.md`, 
 | **Etapa 9 — QA manual / DB smoke / concurrency** | ⏳ Pendiente — acumulado cierre global V3.3 |
 | **Expansión Gastro — Discovery** | ✅ `docs/audits/V3_3_GASTRO_EXPANSION_DISCOVERY_AUDIT.md` |
 | **Expansión Gastro — G1 Isolation hardening** | ✅ Código (G1.1–G1.4) |
-| **Expansión Gastro — G2 Taxonomía** | ✅ Código (G2.1–G2.6) — esperar confirmación antes de G3 |
+| **Expansión Gastro — G2 Taxonomía** | ✅ Código (G2.1–G2.6) |
+| **Expansión Gastro — G3 GastroContent + galerías** | ✅ Código (G3.1–G3.6) — esperar confirmación antes de G4 |
 
 **Checklist V3.3:** `docs/dev/Yo_Te_Invito_Checklist_V3_3_Funcional_Operativa.md`
 
-**Próximo paso V3.3:** **Etapa G3 — GastroContent + galerías** tras confirmación. No iniciar G3 sin instrucción explícita. QA manual Etapas 1–9 sigue acumulada.
+**Próximo paso V3.3:** **Etapa G4 — Métricas operativas por descuento** tras confirmación. No iniciar G4 sin instrucción explícita. QA manual Etapas 1–9 sigue acumulada.
 
 **Modelo canónico G2:** subcategorías = `EventSubcategory` (+ `subcategoryId` legacy/primary); tags = `ContentTag`/`EventTag` en el `publicEvent` del `GastroProfile`. Local activo = `GastroActiveLocation` / `?profileId=` (G1.3). Suite: `pnpm --filter api run test:gastro-taxonomy-compat`.
+
+**Modelo canónico G3:** `GastroContent` por `gastroProfileId` con `galleryUrls` Json (patrón local) + `imageUrl` legacy/cover; público solo `PUBLISHED`; archive = `INACTIVE`. Migration: `20261022120000_gastro_content_gallery_urls` (aplicar en deploy, no reset). Tests: `test:gastro-content-gallery`, `test:gastro-content-profile-scope`, `test:gastro-content-lifecycle`.
 
 ---
 

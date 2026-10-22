@@ -30,7 +30,16 @@ Auditoría: [`V3_3_GASTRO_EXPANSION_DISCOVERY_AUDIT.md`](../audits/V3_3_GASTRO_E
 - [x] G2.5 Público/discovery (ficha multi + filtro OR legacy/junction)
 - [x] G2.6 Compat suite `test:gastro-taxonomy-compat` + context docs
 
-- [ ] G3 — GastroContent + galerías — **no iniciar sin confirmación**
+### G3 — GastroContent + galerías
+
+- [x] G3.1 `galleryUrls` Json + migration backfill `imageUrl` + shared helpers
+- [x] G3.2 API CRUD profile-scoped (`list/create/get/archive/reorder`)
+- [x] G3.3 Gallery upload/remove/reorder field (GCS reuse)
+- [x] G3.4 Portal `/gastro/contenido` scoped to active local
+- [x] G3.5 Public `/gastronomicos/[id]` publicaciones antes de descuentos
+- [x] G3.6 Admin panel + lifecycle hardening + context docs
+
+- [ ] G4 — Métricas operativas por descuento — **no iniciar sin confirmación**
 
 ---
 

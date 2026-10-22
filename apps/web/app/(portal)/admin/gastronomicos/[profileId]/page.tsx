@@ -18,6 +18,7 @@ import {
 } from '@/lib/query/admin-gastro';
 import { AdminGastroDiscountsTable } from '@/components/admin/gastro/AdminGastroDiscountsTable';
 import { AdminGastroHardDeleteActions } from '@/components/admin/gastro/AdminGastroHardDeleteActions';
+import { AdminGastroContentPanel } from '@/components/admin/gastro/AdminGastroContentPanel';
 
 const TABS: Array<{ id: GastroDiscountLifecycleBucket; label: string }> = [
   { id: 'ACTIVE', label: 'Activos' },
@@ -250,6 +251,8 @@ export default function AdminGastroLocationDetailPage() {
               )}
             </div>
           </div>
+
+          <AdminGastroContentPanel profileId={profileId} />
 
           <div className="mt-10 flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-lg font-semibold text-text">Tickets de descuento</h2>
