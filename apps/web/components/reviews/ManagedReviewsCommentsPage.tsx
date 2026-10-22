@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import type {
@@ -29,7 +29,7 @@ import {
   type ManagedReviewsQuickFilter,
 } from '@/lib/producer/managed-reviews-filters';
 import {
-  buildManagedReviewsSearchParams,
+  mergeManagedReviewsSearchParams,
   parseManagedReviewsUrl,
 } from '@/lib/producer/managed-reviews-url';
 import {
@@ -129,9 +129,16 @@ export function ManagedReviewsCommentsPage({
     setUrlReady(true);
   }, [searchParams]);
 
+  const previousScopedEventId = useRef(scopedEventId);
+  useEffect(() => {
+    if (previousScopedEventId.current === scopedEventId) return;
+    previousScopedEventId.current = scopedEventId;
+    setPage(1);
+  }, [scopedEventId]);
+
   useEffect(() => {
     if (!urlReady) return;
-    const built = buildManagedReviewsSearchParams({
+    const built = mergeManagedReviewsSearchParams(searchParams, {
       quick: quickFilter,
       eventId,
       overallRating,

@@ -71,3 +71,29 @@ export function buildManagedReviewsSearchParams(
   if (state.page > 1) p.set('page', String(state.page));
   return p;
 }
+
+const MANAGED_REVIEWS_URL_KEYS = [
+  'quick',
+  'event',
+  'rating',
+  'dispute',
+  'reply',
+  'status',
+  'sort',
+  'page',
+] as const;
+
+/**
+ * Rewrites only the managed-reviews filter keys and keeps any other param
+ * (e.g. gastro portal `profileId`), so filter sync never resets the active local.
+ * Reescribe solo los filtros de reseñas y conserva el resto (p. ej. `profileId`).
+ */
+export function mergeManagedReviewsSearchParams(
+  current: URLSearchParams,
+  state: ManagedReviewsUrlState,
+): URLSearchParams {
+  const p = new URLSearchParams(current.toString());
+  for (const key of MANAGED_REVIEWS_URL_KEYS) p.delete(key);
+  buildManagedReviewsSearchParams(state).forEach((value, key) => p.set(key, value));
+  return p;
+}

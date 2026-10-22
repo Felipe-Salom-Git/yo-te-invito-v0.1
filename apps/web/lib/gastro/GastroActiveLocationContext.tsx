@@ -11,6 +11,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { useRepositories } from '@/repositories/context';
 import { gastroKeys } from '@/lib/query/keys';
+import { resolveActiveGastroProfileId } from './resolve-active-profile-id';
 import type { GastroLocationSummary } from '@yo-te-invito/shared';
 
 type GastroActiveLocationContextValue = {
@@ -40,14 +41,10 @@ export function GastroActiveLocationProvider({ children }: { children: ReactNode
 
   const locations = locationsQuery.data?.data ?? [];
 
-  const profileId = useMemo(() => {
-    if (profileIdFromUrl && locations.some((l) => l.id === profileIdFromUrl)) {
-      return profileIdFromUrl;
-    }
-    const active = locations.find((l) => l.status === 'ACTIVE');
-    if (active) return active.id;
-    return locations[0]?.id;
-  }, [profileIdFromUrl, locations]);
+  const profileId = useMemo(
+    () => resolveActiveGastroProfileId(profileIdFromUrl, locations),
+    [profileIdFromUrl, locations],
+  );
 
   const setProfileId = useCallback(
     (id: string | undefined) => {
