@@ -6,8 +6,7 @@
 
 ```text
 HEAD inicial (pre-G1 isolation): bf97378
-HEAD final:                       cdcfcee
-Working tree:                     clean (at close)
+HEAD final:                       tip de feat/v1-s03-api-foundation (git rev-parse HEAD)
 Push: NO
 Merge: NO
 Deploy: NO
