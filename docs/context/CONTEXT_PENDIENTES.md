@@ -72,15 +72,17 @@ Auditoría: [`V3_3_GASTRO_EXPANSION_DISCOVERY_AUDIT.md`](../audits/V3_3_GASTRO_E
 
 ### G6 — Reporting económico por descuento
 
-- [ ] G6.1 Traceability discount → validation → allocation
-- [ ] G6.2 Economic summary contract
-- [ ] G6.3 Admin economic metrics UI
-- [ ] G6.4 CASH drilldown (settlement-labeled)
-- [ ] G6.5 BARTER drilldown + partner ledger
-- [ ] G6.6 Semantic hardening
-- [ ] G6.7 Accounting regression tests
+- [x] G6.1 Traceability discount → validation → allocation
+- [x] G6.2 Economic summary contract
+- [x] G6.3 Admin economic metrics UI
+- [x] G6.4 CASH drilldown (settlement-labeled)
+- [x] G6.5 BARTER drilldown + partner ledger
+- [x] G6.6 Semantic hardening
+- [x] G6.7 Accounting regression tests
 
 **Regla:** sin `cashTransferredByDiscount` / `barterConsumedByDiscount` inventados. G4 operativo ≠ G6 económico.
+
+**APIs:** `GET …/economic-traceability`, `GET …/economic-metrics` (ADMIN, scope profile+discount).
 
 **Deploy note (migrations pendientes):**
 
@@ -88,6 +90,8 @@ Auditoría: [`V3_3_GASTRO_EXPANSION_DISCOVERY_AUDIT.md`](../audits/V3_3_GASTRO_E
 20261022120000_gastro_content_gallery_urls
 20261022140000_gastro_profile_views
 ```
+
+**Issue preexistente (fuera de G6):** `subcategoryRailThreshold.test.ts` / vitest.
 
 ---
 
