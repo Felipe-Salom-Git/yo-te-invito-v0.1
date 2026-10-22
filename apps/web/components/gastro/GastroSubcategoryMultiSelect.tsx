@@ -126,10 +126,20 @@ export function gastroSubcategoryIdsToPayload(ids: string[]): {
 
 export function gastroSubcategoryIdsFromLocal(local: {
   subcategoryId?: string | null;
-  subcategories?: Array<{ id: string }> | null;
+  subcategories?: Array<{ id: string; isPrimary?: boolean }> | null;
 }): string[] {
   if (local.subcategories?.length) {
-    return local.subcategories.map((s) => s.id);
+    const sorted = [...local.subcategories].sort((a, b) => {
+      if (!!a.isPrimary !== !!b.isPrimary) return a.isPrimary ? -1 : 1;
+      return 0;
+    });
+    const ids = sorted.map((s) => s.id);
+    // Prefer legacy primary id first when it is present but not flagged in the list.
+    const legacy = local.subcategoryId?.trim();
+    if (legacy && ids.includes(legacy) && ids[0] !== legacy) {
+      return [legacy, ...ids.filter((id) => id !== legacy)];
+    }
+    return ids;
   }
   return local.subcategoryId ? [local.subcategoryId] : [];
 }
