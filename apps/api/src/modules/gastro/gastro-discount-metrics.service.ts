@@ -8,6 +8,8 @@ import { randomBytes } from 'crypto';
 import {
   ErrorCode,
   GASTRO_DISCOUNT_TIMEZONE,
+  getGastroDiscountCalendarKey,
+  gastroDiscountStartOfDay,
   type GastroDiscountOperationalMetricsResponse,
   type GastroDiscountSummaryResponse,
   type GastroDiscountStatusUpdate,
@@ -20,6 +22,18 @@ import {
   computeGastroDiscountClaimMetrics,
   mapGastroDiscountSummaryClaim,
 } from './gastro-discount-metrics.util';
+
+function shiftCalendarDays(key: string, deltaDays: number): string {
+  const [y, m, d] = key.split('-').map(Number) as [number, number, number];
+  const utc = Date.UTC(y, m - 1, d + deltaDays);
+  const dt = new Date(utc);
+  return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}-${String(dt.getUTCDate()).padStart(2, '0')}`;
+}
+
+function parseCalendarKey(key: string): { year: number; month: number; day: number } {
+  const [y, m, d] = key.split('-').map(Number) as [number, number, number];
+  return { year: y, month: m, day: d };
+}
 
 type DiscountRow = {
   id: string;
@@ -79,7 +93,6 @@ export class GastroDiscountMetricsService {
 
   /**
    * Operational metrics for one discount. Scope: tenantId + gastroProfileId + discountId.
-   * activityByDay filled in G4.8 (empty array until then).
    */
   async getOperationalMetrics(
     tenantId: string,
@@ -121,6 +134,17 @@ export class GastroDiscountMetricsService {
       });
     }
 
+    const timezone = GASTRO_DISCOUNT_TIMEZONE;
+    const todayKey = getGastroDiscountCalendarKey(new Date(), timezone);
+    const start30Key = shiftCalendarDays(todayKey, -29);
+    const start30 = parseCalendarKey(start30Key);
+    const start30At = gastroDiscountStartOfDay(
+      start30.year,
+      start30.month,
+      start30.day,
+      timezone,
+    );
+
     const [
       claims,
       validations,
@@ -128,6 +152,8 @@ export class GastroDiscountMetricsService {
       lastValidation,
       recentClaimCodes,
       recentValidationRows,
+      claimsLast30,
+      validationsLast30,
     ] = await Promise.all([
       this.prisma.gastroDiscountClaim.count({
         where: { tenantId, discountId },
@@ -164,12 +190,38 @@ export class GastroDiscountMetricsService {
           claim: { select: { shortCode: true, status: true } },
         },
       }),
+      this.prisma.gastroDiscountClaim.findMany({
+        where: { tenantId, discountId, createdAt: { gte: start30At } },
+        select: { createdAt: true },
+      }),
+      this.prisma.gastroDiscountValidation.findMany({
+        where: { discountId, validatedAt: { gte: start30At } },
+        select: { validatedAt: true },
+      }),
     ]);
+
+    const byDay = new Map<string, { claims: number; validations: number }>();
+    for (let i = 0; i < 30; i++) {
+      byDay.set(shiftCalendarDays(start30Key, i), { claims: 0, validations: 0 });
+    }
+    for (const c of claimsLast30) {
+      const key = getGastroDiscountCalendarKey(c.createdAt, timezone);
+      const bucket = byDay.get(key);
+      if (bucket) bucket.claims += 1;
+    }
+    for (const v of validationsLast30) {
+      const key = getGastroDiscountCalendarKey(v.validatedAt, timezone);
+      const bucket = byDay.get(key);
+      if (bucket) bucket.validations += 1;
+    }
+    const activityByDay = [...byDay.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, counts]) => ({ date, ...counts }));
 
     return {
       discountId: row.id,
       gastroProfileId: row.gastroProfileId,
-      timezone: GASTRO_DISCOUNT_TIMEZONE,
+      timezone,
       status: row.status as GastroDiscountOperationalMetricsResponse['status'],
       claims,
       validations,
@@ -179,7 +231,7 @@ export class GastroDiscountMetricsService {
       hasQrToken: Boolean(row.qrToken),
       qrGeneratedAt: row.qrGeneratedAt?.toISOString() ?? null,
       recentShortCodes: recentClaimCodes.map((c) => c.shortCode),
-      activityByDay: [],
+      activityByDay,
       recentValidations: recentValidationRows.map((v) => ({
         id: v.id,
         validatedAt: v.validatedAt.toISOString(),
