@@ -8,6 +8,7 @@ import {
 } from '../benefit-settlement';
 import { benefitVerticalSchema } from './benefit-commercial-agreements';
 import { moneyCentsStringSchema } from '../money/benefit-money';
+import { safeExternalUrlSchema } from './external-links';
 import { BENEFIT_CASH_COLLECTION_STATUSES } from '../benefit-settlement';
 
 const partnerFieldsBaseSchema = z
@@ -198,6 +199,8 @@ export const registerBenefitSettlementTransferBodySchema = z
     transferredAt: z.string().datetime(),
     reference: z.string().trim().max(120).optional(),
     notes: z.string().trim().max(2000).optional(),
+    /** Link to proof (bank receipt) hosted by ADMIN — no file stored in DB. */
+    proofUrl: safeExternalUrlSchema.optional(),
   })
   .strict();
 

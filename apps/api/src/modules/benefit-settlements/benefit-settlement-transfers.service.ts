@@ -101,6 +101,7 @@ export class BenefitSettlementTransfersService {
             transferredAt,
             reference: body.reference ?? null,
             notes: body.notes ?? null,
+            proofUrl: body.proofUrl ?? null,
             registeredByUserId: actor.id,
           },
         });

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import {
   BENEFIT_CASH_COLLECTION_STATUS_LABEL,
   formatBenefitMoneyCents,
+  isSafeExternalHttpUrl,
   mapBenefitSettlementErrorMessage,
   type BenefitSettlementSummary,
 } from '@yo-te-invito/shared';
@@ -32,6 +33,7 @@ export function SettlementCashTransfersSection({ settlementId, summary }: Props)
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [reference, setReference] = useState('');
   const [notes, setNotes] = useState('');
+  const [proofUrl, setProofUrl] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   const transfers = data?.data ?? [];
@@ -43,6 +45,10 @@ export function SettlementCashTransfersSection({ settlementId, summary }: Props)
     const amountCents = pesosInputToCentsString(pesos);
     if (amountCents === '0') {
       setError('Ingresá un monto válido.');
+      return;
+    }
+    if (proofUrl.trim() && !isSafeExternalHttpUrl(proofUrl)) {
+      setError('El comprobante debe ser un link http:// o https://');
       return;
     }
     if (BigInt(amountCents) > BigInt(summary.cashOutstandingCents)) {
@@ -60,11 +66,13 @@ export function SettlementCashTransfersSection({ settlementId, summary }: Props)
           transferredAt: new Date(`${date}T12:00:00.000Z`).toISOString(),
           ...(reference.trim() ? { reference: reference.trim() } : {}),
           ...(notes.trim() ? { notes: notes.trim() } : {}),
+          ...(proofUrl.trim() ? { proofUrl: proofUrl.trim() } : {}),
         },
       });
       setPesos('');
       setReference('');
       setNotes('');
+      setProofUrl('');
     } catch (err) {
       setError(mapBenefitSettlementErrorMessage(err));
     }
@@ -120,6 +128,7 @@ export function SettlementCashTransfersSection({ settlementId, summary }: Props)
                 <th className="px-2 py-2">Fecha</th>
                 <th className="px-2 py-2">Monto</th>
                 <th className="px-2 py-2">Referencia</th>
+                <th className="px-2 py-2">Comprobante</th>
                 <th className="px-2 py-2">Estado</th>
                 <th className="px-2 py-2" />
               </tr>
@@ -132,6 +141,20 @@ export function SettlementCashTransfersSection({ settlementId, summary }: Props)
                     {formatBenefitMoneyCents(t.amountCents)}
                   </td>
                   <td className="px-2 py-2">{t.reference ?? '—'}</td>
+                  <td className="px-2 py-2">
+                    {t.proofUrl && isSafeExternalHttpUrl(t.proofUrl) ? (
+                      <a
+                        href={t.proofUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-accent hover:underline"
+                      >
+                        Ver comprobante
+                      </a>
+                    ) : (
+                      '—'
+                    )}
+                  </td>
                   <td className="px-2 py-2">
                     <Badge>{t.isActive ? 'Registrada' : 'Revertida'}</Badge>
                   </td>
@@ -202,6 +225,21 @@ export function SettlementCashTransfersSection({ settlementId, summary }: Props)
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
               />
+            </label>
+            <label className="text-sm">
+              Link al comprobante (opcional)
+              <input
+                type="url"
+                placeholder="https://…"
+                className="mt-1 w-full rounded border border-border bg-bg px-2 py-1"
+                maxLength={2048}
+                value={proofUrl}
+                onChange={(e) => setProofUrl(e.target.value)}
+              />
+              <span className="mt-1 block text-xs text-text-muted">
+                URL del comprobante (banco, Drive). La subida de archivos privados no está
+                habilitada todavía.
+              </span>
             </label>
             <Button disabled={registerMutation.isPending} onClick={() => void handleRegister()}>
               {registerMutation.isPending ? 'Registrando…' : 'Registrar transferencia'}

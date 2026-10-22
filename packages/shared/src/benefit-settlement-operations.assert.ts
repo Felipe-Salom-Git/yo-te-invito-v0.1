@@ -6,7 +6,10 @@ import {
   selectPendingUsagesForAllocation,
   type SettlementAllocationLike,
 } from './benefit-settlement-operations';
-import { allocateBenefitSettlementUsagesBodySchema } from './schemas/benefit-settlements';
+import {
+  allocateBenefitSettlementUsagesBodySchema,
+  registerBenefitSettlementTransferBodySchema,
+} from './schemas/benefit-settlements';
 
 function assert(cond: unknown, msg: string): asserts cond {
   if (!cond) throw new Error(`FAIL: ${msg}`);
@@ -120,5 +123,24 @@ const extra = allocateBenefitSettlementUsagesBodySchema.safeParse({
 assert(okIds.success && okCount.success, 'xor accepted');
 assert(!both.success && !neither.success, 'count xor validationIds');
 assert(!extra.success, 'no discountId in allocation body');
+
+// Transfer proof URL (G7.12.5)
+const transferBase = { amountCents: '3000000', transferredAt: '2026-10-22T12:00:00.000Z' };
+assert(
+  registerBenefitSettlementTransferBodySchema.safeParse({ ...transferBase, proofUrl: 'https://bank/x' })
+    .success,
+  'https proof accepted',
+);
+assert(registerBenefitSettlementTransferBodySchema.safeParse(transferBase).success, 'proof optional');
+assert(
+  !registerBenefitSettlementTransferBodySchema.safeParse({ ...transferBase, proofUrl: 'javascript:alert(1)' })
+    .success,
+  'javascript: proof rejected',
+);
+assert(
+  !registerBenefitSettlementTransferBodySchema.safeParse({ ...transferBase, proofUrl: 'data:text/html,x' })
+    .success,
+  'data: proof rejected',
+);
 
 console.log('OK: settlement rate segments (CASH/BARTER/mixed/snapshots) + pending grouping + selection');
