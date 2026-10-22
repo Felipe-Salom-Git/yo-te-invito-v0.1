@@ -2803,6 +2803,10 @@ export interface AdminGastroLocationDetail extends AdminGastroLocationListItem {
   openingHoursWeekly: import('@yo-te-invito/shared').GastroWeeklyOpeningHours | null;
   subcategoryId: string | null;
   subcategoryName: string | null;
+  /** EventSubcategory on public event; primary via isPrimary / subcategoryId. */
+  subcategories?: Array<{ id: string; name: string; isPrimary?: boolean }>;
+  /** ContentTag via EventTag on public event. */
+  tags?: ContentTagPublic[];
   menuUrl: string | null;
   websiteUrl: string | null;
   bookingUrl: string | null;

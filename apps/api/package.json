@@ -63,6 +63,7 @@
     "test:gastro-primary-subcategory-name": "tsx scripts/test-gastro-primary-subcategory-name.util.ts",
     "test:gastro-subcategory-selection": "tsx scripts/test-gastro-subcategory-selection.util.ts",
     "test:gastro-event-tags": "tsx scripts/test-gastro-event-tags.util.ts",
+    "test:admin-gastro-taxonomy-payload": "tsx scripts/test-admin-gastro-taxonomy-payload.util.ts",
 
     "test:gastro-discount-pending-edit": "tsx scripts/test-gastro-discount-pending-edit.util.ts",
     "test:gastro-discount-edit-moderation": "tsx scripts/test-gastro-discount-edit-moderation.util.ts",

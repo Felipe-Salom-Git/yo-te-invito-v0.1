@@ -203,6 +203,54 @@ export default function AdminGastroLocationDetailPage() {
             )}
           </div>
 
+          <div className="mt-6 grid gap-4 rounded-lg border border-border bg-bg-muted p-4 sm:grid-cols-2">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-text-muted">
+                Subcategorías
+              </p>
+              {location.subcategories && location.subcategories.length > 0 ? (
+                <ul className="mt-2 flex flex-wrap gap-2">
+                  {location.subcategories.map((s) => (
+                    <li
+                      key={s.id}
+                      className="rounded-full border border-border px-3 py-1 text-sm text-text"
+                    >
+                      {s.isPrimary ? (
+                        <span className="mr-1 text-[10px] font-bold uppercase text-accent">
+                          Principal
+                        </span>
+                      ) : null}
+                      {s.name}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-1 text-sm text-text">
+                  {location.subcategoryName?.trim() || '—'}
+                </p>
+              )}
+            </div>
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-text-muted">
+                Etiquetas
+              </p>
+              {location.tags && location.tags.length > 0 ? (
+                <ul className="mt-2 flex flex-wrap gap-2">
+                  {location.tags.map((t) => (
+                    <li
+                      key={t.id}
+                      className="rounded-full border border-border px-3 py-1 text-sm text-text-muted"
+                    >
+                      {t.name}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-1 text-sm text-text">—</p>
+              )}
+            </div>
+          </div>
+
           <div className="mt-10 flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-lg font-semibold text-text">Tickets de descuento</h2>
             {location.status === 'active' && (
