@@ -106,6 +106,13 @@ export function GastroPublicDetailContent({
         summary={location.summary}
         detail={location.detail}
         subcategoryName={location.subcategoryName}
+        subcategoryNames={
+          location.subcategories?.length
+            ? location.subcategories.map((s) => s.name)
+            : location.subcategoryName
+              ? [location.subcategoryName]
+              : []
+        }
         city={location.city}
         province={location.province}
       >
@@ -146,6 +153,27 @@ export function GastroPublicDetailContent({
               description={description}
               hasEditorialContent={hasEditorial}
             />
+
+            {location.subcategories && location.subcategories.length > 1 ? (
+              <section>
+                <h2 className="text-lg font-semibold text-white">Tipos de cocina</h2>
+                <ul className="mt-3 flex flex-wrap gap-2">
+                  {location.subcategories.map((s) => (
+                    <li
+                      key={s.id}
+                      className="rounded-full border border-white/20 bg-white/5 px-3 py-1 text-sm text-white/90"
+                    >
+                      {s.isPrimary ? (
+                        <span className="mr-1 text-[10px] font-bold uppercase tracking-wide text-accent">
+                          Principal
+                        </span>
+                      ) : null}
+                      {s.name}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
 
             {location.tags && location.tags.length > 0 ? (
               <section>

@@ -8,7 +8,10 @@ type GastroLocationHeroProps = {
   title: string;
   summary?: string | null;
   detail?: string | null;
+  /** Legacy/primary display name when `subcategoryNames` is empty. */
   subcategoryName?: string | null;
+  /** Full taxonomy chip labels (primary first). Cards/rails still use primary only. */
+  subcategoryNames?: string[] | null;
   city?: string | null;
   province?: string | null;
   children?: React.ReactNode;
@@ -21,6 +24,7 @@ export function GastroLocationHero({
   summary,
   detail,
   subcategoryName,
+  subcategoryNames,
   city,
   province,
   children,
@@ -29,7 +33,12 @@ export function GastroLocationHero({
   const locationLabel = [city, province].filter(Boolean).join(', ');
 
   const chips: string[] = [getCategoryLabel('gastro')];
-  if (subcategoryName?.trim()) chips.push(subcategoryName.trim());
+  const taxonomy =
+    subcategoryNames?.map((n) => n.trim()).filter(Boolean) ??
+    (subcategoryName?.trim() ? [subcategoryName.trim()] : []);
+  for (const name of taxonomy) {
+    if (!chips.includes(name)) chips.push(name);
+  }
   if (locationLabel) chips.push(locationLabel);
 
   return (
