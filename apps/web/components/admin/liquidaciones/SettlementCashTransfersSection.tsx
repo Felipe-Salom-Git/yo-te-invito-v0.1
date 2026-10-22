@@ -6,6 +6,7 @@ import {
   formatBenefitMoneyCents,
   isSafeExternalHttpUrl,
   mapBenefitSettlementErrorMessage,
+  reverseBenefitSettlementTransferBodySchema,
   type BenefitSettlementSummary,
 } from '@yo-te-invito/shared';
 import { Badge, Button } from '@/components';
@@ -34,6 +35,8 @@ export function SettlementCashTransfersSection({ settlementId, summary }: Props)
   const [reference, setReference] = useState('');
   const [notes, setNotes] = useState('');
   const [proofUrl, setProofUrl] = useState('');
+  const [reversingId, setReversingId] = useState<string | null>(null);
+  const [reversalReason, setReversalReason] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   const transfers = data?.data ?? [];
@@ -78,15 +81,22 @@ export function SettlementCashTransfersSection({ settlementId, summary }: Props)
     }
   };
 
-  const handleReverse = async (transferId: string) => {
+  const handleReverse = async (transferId: string, amountCents: string) => {
     setError(null);
-    const reason = window.prompt('Motivo de reversión (obligatorio):');
-    if (!reason?.trim()) return;
-    if (!window.confirm('La transferencia no se eliminará; quedará registrada como revertida.\n\n¿Confirmar?')) {
+    const parsed = reverseBenefitSettlementTransferBodySchema.safeParse({ reason: reversalReason });
+    if (!parsed.success) {
+      setError('Indicá el motivo de la reversión (máx. 500 caracteres).');
       return;
     }
+    const ok = window.confirm(
+      `Revertir transferencia de ${formatBenefitMoneyCents(amountCents)}.\n\n` +
+        'No se elimina: queda registrada como revertida y deja de contar como transferido.\n\n¿Confirmar?',
+    );
+    if (!ok) return;
     try {
-      await reverseMutation.mutateAsync({ id: settlementId, transferId, body: { reason: reason.trim() } });
+      await reverseMutation.mutateAsync({ id: settlementId, transferId, body: parsed.data });
+      setReversingId(null);
+      setReversalReason('');
     } catch (err) {
       setError(mapBenefitSettlementErrorMessage(err));
     }
@@ -157,17 +167,50 @@ export function SettlementCashTransfersSection({ settlementId, summary }: Props)
                   </td>
                   <td className="px-2 py-2">
                     <Badge>{t.isActive ? 'Registrada' : 'Revertida'}</Badge>
+                    {!t.isActive ? (
+                      <div className="mt-1 max-w-xs text-xs text-text-muted">
+                        {t.reversedAt ? new Date(t.reversedAt).toLocaleString('es-AR') : null}
+                        {t.reversalReason ? ` — ${t.reversalReason}` : null}
+                      </div>
+                    ) : null}
                   </td>
-                  <td className="px-2 py-2">
-                    {t.isActive ? (
+                  <td className="px-2 py-2 align-top">
+                    {t.isActive && reversingId !== t.id ? (
                       <button
                         type="button"
                         className="text-sm text-accent hover:underline disabled:opacity-50"
                         disabled={reverseMutation.isPending}
-                        onClick={() => void handleReverse(t.id)}
+                        onClick={() => {
+                          setReversingId(t.id);
+                          setReversalReason('');
+                        }}
                       >
                         Revertir
                       </button>
+                    ) : null}
+                    {t.isActive && reversingId === t.id ? (
+                      <div className="grid min-w-[14rem] gap-2">
+                        <textarea
+                          className="w-full rounded border border-border bg-bg px-2 py-1 text-sm"
+                          rows={2}
+                          maxLength={500}
+                          placeholder="Motivo (obligatorio)"
+                          value={reversalReason}
+                          onChange={(e) => setReversalReason(e.target.value)}
+                        />
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            disabled={reverseMutation.isPending}
+                            onClick={() => void handleReverse(t.id, t.amountCents)}
+                          >
+                            Confirmar reversión
+                          </Button>
+                          <Button size="sm" variant="secondary" onClick={() => setReversingId(null)}>
+                            Cancelar
+                          </Button>
+                        </div>
+                      </div>
                     ) : null}
                   </td>
                 </tr>

@@ -9,6 +9,7 @@ import {
 import {
   allocateBenefitSettlementUsagesBodySchema,
   registerBenefitSettlementTransferBodySchema,
+  reverseBenefitSettlementTransferBodySchema,
 } from './schemas/benefit-settlements';
 
 function assert(cond: unknown, msg: string): asserts cond {
@@ -141,6 +142,18 @@ assert(
   !registerBenefitSettlementTransferBodySchema.safeParse({ ...transferBase, proofUrl: 'data:text/html,x' })
     .success,
   'data: proof rejected',
+);
+
+// Reversal reason required (G7.12.6)
+assert(!reverseBenefitSettlementTransferBodySchema.safeParse({ reason: '   ' }).success, 'blank reason rejected');
+assert(
+  !reverseBenefitSettlementTransferBodySchema.safeParse({ reason: 'x'.repeat(501) }).success,
+  'reason max 500',
+);
+assert(
+  reverseBenefitSettlementTransferBodySchema.safeParse({ reason: ' Monto erróneo ' }).data?.reason ===
+    'Monto erróneo',
+  'reason trimmed',
 );
 
 console.log('OK: settlement rate segments (CASH/BARTER/mixed/snapshots) + pending grouping + selection');
