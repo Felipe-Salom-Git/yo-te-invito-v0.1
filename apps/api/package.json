@@ -59,6 +59,8 @@
     "test:gastro-multi-local": "tsx scripts/test-gastro-multi-local.util.ts",
     "test:admin-gastro-discount-profile-scope": "tsx scripts/test-admin-gastro-discount-profile-scope.util.ts",
     "test:gastro-owner-discount-scope": "tsx scripts/test-gastro-owner-discount-scope.util.ts",
+    "test:gastro-cross-profile-isolation": "tsx scripts/test-gastro-cross-profile-isolation.util.ts",
+
     "test:gastro-discount-pending-edit": "tsx scripts/test-gastro-discount-pending-edit.util.ts",
     "test:gastro-discount-edit-moderation": "tsx scripts/test-gastro-discount-edit-moderation.util.ts",
     "test:gastro-discount-archive": "tsx scripts/test-gastro-discount-archive.util.ts",

@@ -33,6 +33,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { ProfilesAuthorizationService } from '../../common/profiles-authorization.service';
 import { AuditService } from '../audit/audit.service';
 import { generateTemporaryPassword, hashPassword } from '../../common/password.util';
+import { scannerGastroDiscountMatchesParentProfile } from './scanner-gastro-discount-scope.util';
 import { isEventScannableForScanner } from '../../common/utils/scanner-event-eligibility.util';
 
 type AuthUser = { id: string; tenantId: string; role: string };
@@ -1025,7 +1026,13 @@ export class ScannerAccountsService {
       where: { id: discountId, tenantId },
       select: { gastroProfileId: true },
     });
-    if (!discount || discount.gastroProfileId !== account.parentProfileId) {
+    if (
+      !discount ||
+      !scannerGastroDiscountMatchesParentProfile(
+        account.parentProfileId,
+        discount.gastroProfileId,
+      )
+    ) {
       throw this.scannerScopeForbidden();
     }
   }
