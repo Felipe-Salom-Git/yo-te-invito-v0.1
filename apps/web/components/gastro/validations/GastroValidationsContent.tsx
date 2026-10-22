@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -16,6 +16,8 @@ import { useRepositories } from '@/repositories/context';
 import { gastroKeys } from '@/lib/query/keys';
 import { getErrorMessage } from '@/lib/errors';
 import type { GastroValidationListParams } from '@/repositories/interfaces';
+import { useGastroActiveLocation } from '@/lib/gastro/GastroActiveLocationContext';
+import { GastroLocationSelector } from '@/components/gastro/GastroLocationSelector';
 
 function formatValueLabel(type: string, value: number): string {
   if (type === 'PERCENT') return `${value}%`;
@@ -34,6 +36,7 @@ const STATUS_LABEL: Record<string, string> = {
 
 export function GastroValidationsContent() {
   const repos = useRepositories();
+  const { profileId } = useGastroActiveLocation();
   const [discountId, setDiscountId] = useState('');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
@@ -49,9 +52,15 @@ export function GastroValidationsContent() {
 
   const listQuery = useGastroValidationsList(params);
   const discountsQuery = useQuery({
-    queryKey: gastroKeys.discounts(),
-    queryFn: () => repos.gastro.listMyDiscounts(),
+    queryKey: gastroKeys.discounts(profileId),
+    queryFn: () => repos.gastro.listMyDiscounts(profileId),
+    enabled: !!profileId,
   });
+
+  useEffect(() => {
+    setDiscountId('');
+    setPage(1);
+  }, [profileId]);
 
   const discounts = discountsQuery.data?.data ?? [];
   const items = listQuery.data?.data ?? [];
@@ -84,6 +93,10 @@ export function GastroValidationsContent() {
         Validaciones registradas al escanear QR en puerta. No se muestran datos personales del
         comensal.
       </p>
+
+      <div className="mt-4">
+        <GastroLocationSelector />
+      </div>
 
       <div className="mt-6 grid gap-3 rounded-xl border border-border bg-bg-muted/40 p-4 sm:grid-cols-2 lg:grid-cols-4">
         <label className="text-xs text-text-muted">

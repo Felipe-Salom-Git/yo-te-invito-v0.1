@@ -784,28 +784,32 @@ export class ReviewDisputesService {
       return { eventIds: rows.map((e) => e.id), events: rows };
     }
 
-    const membership = await this.prisma.userGastroMembership.findFirst({
+    const memberships = await this.prisma.userGastroMembership.findMany({
       where: {
         tenantId,
         userId,
         status: 'ACTIVE',
-        profile: { status: 'ACTIVE' },
+        profile: { status: 'ACTIVE', publicEventId: { not: null } },
       },
       include: { profile: { select: { publicEventId: true } } },
       orderBy: { profile: { updatedAt: 'desc' } },
     });
-    const eventId = membership?.profile.publicEventId;
-    if (!eventId) {
+    const eventIds = [
+      ...new Set(
+        memberships
+          .map((m) => m.profile.publicEventId)
+          .filter((id): id is string => Boolean(id)),
+      ),
+    ];
+    if (eventIds.length === 0) {
       return { eventIds: [], events: [] };
     }
-    const event = await this.prisma.event.findFirst({
-      where: { id: eventId, tenantId, deletedAt: null },
+    const events = await this.prisma.event.findMany({
+      where: { id: { in: eventIds }, tenantId, deletedAt: null },
       select: { id: true, title: true },
+      orderBy: { title: 'asc' },
     });
-    if (!event) {
-      return { eventIds: [], events: [] };
-    }
-    return { eventIds: [event.id], events: [{ id: event.id, title: event.title }] };
+    return { eventIds: events.map((e) => e.id), events };
   }
 
   private async hotelReviewEventScope(

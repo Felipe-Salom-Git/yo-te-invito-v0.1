@@ -23,21 +23,16 @@ export class GastroService {
     private readonly profiles: ProfilesAuthorizationService,
   ) {}
 
+  /**
+   * Legacy event-scoped discount routes: require ownership of the GastroProfile
+   * whose publicEventId is this event (not merely any gastro membership).
+   */
   private async assertGastroEvent(
     tenantId: string,
     userId: string,
     userRole: string,
     eventId: string,
-  ) {
-    if (userRole !== 'ADMIN') {
-      const has = await this.profiles.hasGastroAccess(tenantId, userId);
-      if (!has) {
-        throw new ForbiddenException({
-          code: ErrorCode.FORBIDDEN,
-          message: 'Gastro access required',
-        });
-      }
-    }
+  ): Promise<{ eventId: string; gastroProfileId: string | null }> {
     const event = await this.prisma.event.findFirst({
       where: { id: eventId, tenantId, deletedAt: null },
     });
@@ -54,7 +49,36 @@ export class GastroService {
         message: 'Gastro discounts apply only to gastro-category events',
       });
     }
-    return event;
+
+    const profile = await this.prisma.gastroProfile.findFirst({
+      where: { tenantId, publicEventId: eventId },
+      select: { id: true },
+    });
+
+    if (userRole === 'ADMIN') {
+      return { eventId, gastroProfileId: profile?.id ?? null };
+    }
+
+    if (!profile) {
+      throw new ForbiddenException({
+        code: ErrorCode.FORBIDDEN,
+        message: 'No tenés permiso para gestionar descuentos de este local',
+      });
+    }
+
+    const canManage = await this.profiles.canManageGastroProfile(
+      tenantId,
+      userId,
+      profile.id,
+    );
+    if (!canManage) {
+      throw new ForbiddenException({
+        code: ErrorCode.FORBIDDEN,
+        message: 'No tenés permiso para gestionar descuentos de este local',
+      });
+    }
+
+    return { eventId, gastroProfileId: profile.id };
   }
 
   private mapDiscount(d: {
@@ -97,21 +121,24 @@ export class GastroService {
     eventId: string,
     input: DiscountInput,
   ) {
-    await this.assertGastroEvent(tenantId, userId, userRole, eventId);
+    const scope = await this.assertGastroEvent(tenantId, userId, userRole, eventId);
     if (input.type === 'PERCENT' && input.value > 100) {
       throw new BadRequestException({
         code: ErrorCode.VALIDATION_FAILED,
         message: 'Percent value cannot exceed 100',
       });
     }
-    const membership = await this.prisma.userGastroMembership.findFirst({
-      where: { tenantId, userId, status: 'ACTIVE', profile: { status: 'ACTIVE' } },
-    });
+    if (!scope.gastroProfileId) {
+      throw new BadRequestException({
+        code: ErrorCode.VALIDATION_FAILED,
+        message: 'El evento no tiene un local gastronómico vinculado',
+      });
+    }
     const created = await this.prisma.gastroDiscount.create({
       data: {
         tenantId,
         eventId,
-        gastroProfileId: membership?.profileId ?? null,
+        gastroProfileId: scope.gastroProfileId,
         code: input.code.trim(),
         type: input.type,
         value: input.value,
@@ -145,7 +172,18 @@ export class GastroService {
         message: 'Discount not found',
       });
     }
-    await this.assertGastroEvent(tenantId, userId, userRole, existing.eventId);
+    const scope = await this.assertGastroEvent(tenantId, userId, userRole, existing.eventId);
+    if (
+      userRole !== 'ADMIN' &&
+      existing.gastroProfileId &&
+      scope.gastroProfileId &&
+      existing.gastroProfileId !== scope.gastroProfileId
+    ) {
+      throw new ForbiddenException({
+        code: ErrorCode.FORBIDDEN,
+        message: 'No tenés permiso para gestionar este descuento',
+      });
+    }
 
     const updated = await this.prisma.gastroDiscount.update({
       where: { id: discountId },
@@ -161,6 +199,22 @@ export class GastroService {
       },
     });
     return this.mapDiscount(updated);
+  }
+
+  private async ownedGastroProfileIds(
+    tenantId: string,
+    userId: string,
+  ): Promise<string[]> {
+    const memberships = await this.prisma.userGastroMembership.findMany({
+      where: {
+        tenantId,
+        userId,
+        status: 'ACTIVE',
+        profile: { status: { in: ['DRAFT', 'PENDING', 'ACTIVE'] } },
+      },
+      select: { profileId: true },
+    });
+    return [...new Set(memberships.map((m) => m.profileId))];
   }
 
   async listValidations(tenantId: string, userId: string, userRole: string, discountId?: string) {
@@ -184,20 +238,44 @@ export class GastroService {
       }));
     }
 
-    if (userRole !== 'ADMIN') {
-      const has = await this.profiles.hasGastroAccess(tenantId, userId);
-      if (!has) {
-        throw new ForbiddenException({
-          code: ErrorCode.FORBIDDEN,
-          message: 'Gastro access required',
-        });
-      }
+    if (userRole === 'ADMIN') {
+      const rows = await this.prisma.gastroDiscountValidation.findMany({
+        where: {
+          discount: {
+            tenantId,
+            event: { deletedAt: null },
+          },
+        },
+        include: {
+          discount: { include: { event: true } },
+        },
+        orderBy: { validatedAt: 'desc' },
+        take: 500,
+      });
+      return rows
+        .filter((v) => (v.discount.event.category ?? '').toLowerCase() === 'gastro')
+        .map((v) => ({
+          id: v.id,
+          discountId: v.discountId,
+          validatedAt: v.validatedAt.toISOString(),
+          userId: v.userId,
+          orderId: v.orderId,
+        }));
+    }
+
+    const profileIds = await this.ownedGastroProfileIds(tenantId, userId);
+    if (profileIds.length === 0) {
+      throw new ForbiddenException({
+        code: ErrorCode.FORBIDDEN,
+        message: 'Gastro access required',
+      });
     }
 
     const rows = await this.prisma.gastroDiscountValidation.findMany({
       where: {
         discount: {
           tenantId,
+          gastroProfileId: { in: profileIds },
           event: { deletedAt: null },
         },
       },
@@ -235,7 +313,18 @@ export class GastroService {
         message: 'Discount not found',
       });
     }
-    await this.assertGastroEvent(tenantId, userId, userRole, d.eventId);
+    const scope = await this.assertGastroEvent(tenantId, userId, userRole, d.eventId);
+    if (
+      userRole !== 'ADMIN' &&
+      d.gastroProfileId &&
+      scope.gastroProfileId &&
+      d.gastroProfileId !== scope.gastroProfileId
+    ) {
+      throw new ForbiddenException({
+        code: ErrorCode.FORBIDDEN,
+        message: 'No tenés permiso para validar este descuento',
+      });
+    }
     if (d.status !== 'ACTIVE') {
       throw new BadRequestException({
         code: ErrorCode.VALIDATION_FAILED,
