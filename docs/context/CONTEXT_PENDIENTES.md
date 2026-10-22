@@ -95,11 +95,13 @@ Auditoría: [`V3_3_GASTRO_EXPANSION_DISCOVERY_AUDIT.md`](../audits/V3_3_GASTRO_E
 
 ### G7 — QA global + cierre expansión
 
-- [x] G7.1 Settlement unique review — **partial unique indexes ya existen** (`20260901140000`); sin migration nueva (`V3_3_G7_SETTLEMENT_UNIQUE_REVIEW.md`)
-- [ ] G7.2 DB integration (documentar BLOCKED si Postgres down)
-- [ ] G7.3–G7.7 QA checklists
-- [ ] G7.8 Builds
-- [ ] G7.9 Closing docs
+- [x] G7.1 Settlement unique review — partial unique indexes ya existen; sin migration nueva
+- [x] G7.2 DB integration — **BLOCKED** Postgres P1001 (`V3_3_G7_DB_INTEGRATION_STATUS.md`)
+- [x] G7.3–G7.7 Manual QA checklist + unit scripts PASS (`V3_3_G7_MANUAL_QA_CHECKLIST.md`)
+- [x] G7.8 Builds — shared/api/web/scanner PASS; web tsc vitest PREEXISTING (`V3_3_G7_BUILD_STATUS.md`)
+- [x] G7.9 Closing — `V3_3_GASTRO_EXPANSION_CLOSING.md`
+
+**Cierre expansión:** docs listos; QA browser + migrate apply = pendiente ops/humano. **Sin push.**
 
 ---
 
