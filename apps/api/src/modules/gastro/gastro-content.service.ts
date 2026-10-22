@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import type { GastroContent } from '@prisma/client';
+import type { GastroContent, GastroProfile } from '@prisma/client';
 import { Prisma } from '@prisma/client';
 import {
   ErrorCode,
@@ -19,12 +19,14 @@ import {
 } from '@yo-te-invito/shared';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ProfilesAuthorizationService } from '../../common/profiles-authorization.service';
+import { GastroOwnershipService } from './gastro-ownership.service';
 
 @Injectable()
 export class GastroContentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly profiles: ProfilesAuthorizationService,
+    private readonly ownership: GastroOwnershipService,
   ) {}
 
   private mapType(type: string): GastroContentType {
@@ -100,21 +102,77 @@ export class GastroContentService {
     };
   }
 
-  private async assertCanManageEvent(
+  /**
+   * Canonical access: tenant + gastroProfileId + membership (or ADMIN in tenant).
+   * Does not trust client eventId / contentId alone.
+   */
+  private async assertCanManageProfileContent(
     tenantId: string,
     userId: string,
     userRole: string,
-    eventId: string,
-  ) {
-    if (userRole !== 'ADMIN') {
-      const has = await this.profiles.hasGastroAccess(tenantId, userId);
-      if (!has) {
-        throw new ForbiddenException({
-          code: ErrorCode.FORBIDDEN,
-          message: 'Gastro access required',
+    profileId: string,
+  ): Promise<GastroProfile> {
+    const id = profileId.trim();
+    if (!id) {
+      throw new BadRequestException({
+        code: ErrorCode.VALIDATION_FAILED,
+        message: 'profileId is required',
+      });
+    }
+
+    if (userRole === 'ADMIN') {
+      const profile = await this.prisma.gastroProfile.findFirst({
+        where: { id, tenantId },
+      });
+      if (!profile) {
+        throw new NotFoundException({
+          code: ErrorCode.NOT_FOUND,
+          message: 'Gastro location not found',
         });
       }
+      return profile;
     }
+
+    const has = await this.profiles.hasGastroAccess(tenantId, userId);
+    if (!has) {
+      throw new ForbiddenException({
+        code: ErrorCode.FORBIDDEN,
+        message: 'Gastro access required',
+      });
+    }
+    return this.ownership.assertCanManageProfile(tenantId, userId, id);
+  }
+
+  private async loadContentForManage(
+    tenantId: string,
+    userId: string,
+    userRole: string,
+    contentId: string,
+  ): Promise<GastroContent> {
+    const existing = await this.prisma.gastroContent.findFirst({
+      where: { id: contentId, tenantId },
+    });
+    if (!existing) {
+      throw new NotFoundException({
+        code: ErrorCode.NOT_FOUND,
+        message: 'Content not found',
+      });
+    }
+    await this.assertCanManageProfileContent(
+      tenantId,
+      userId,
+      userRole,
+      existing.gastroProfileId,
+    );
+    return existing;
+  }
+
+  private async resolveProfileForEvent(
+    tenantId: string,
+    eventId: string,
+    userId: string,
+    userRole: string,
+  ): Promise<GastroProfile> {
     const event = await this.prisma.event.findFirst({
       where: { id: eventId, tenantId, deletedAt: null },
     });
@@ -130,37 +188,123 @@ export class GastroContentService {
         message: 'Content applies only to gastro-category events',
       });
     }
-    return event;
-  }
-
-  private async resolveProfileForEvent(tenantId: string, eventId: string, userId: string, userRole: string) {
-    await this.assertCanManageEvent(tenantId, userId, userRole, eventId);
     const profile = await this.prisma.gastroProfile.findFirst({
-      where: { tenantId, publicEventId: eventId, status: 'ACTIVE' },
+      where: { tenantId, publicEventId: eventId },
     });
     if (!profile) {
       throw new NotFoundException({
         code: ErrorCode.NOT_FOUND,
-        message: 'No hay un local gastronómico activo vinculado a este evento',
+        message: 'No hay un local gastronómico vinculado a este evento',
       });
     }
-    if (userRole !== 'ADMIN') {
-      const membership = await this.prisma.userGastroMembership.findFirst({
-        where: {
-          tenantId,
-          userId,
-          profileId: profile.id,
-          status: 'ACTIVE',
-        },
-      });
-      if (!membership) {
-        throw new ForbiddenException({
-          code: ErrorCode.FORBIDDEN,
-          message: 'No podés gestionar contenido de este establecimiento',
+    await this.assertCanManageProfileContent(tenantId, userId, userRole, profile.id);
+    return profile;
+  }
+
+  private async resolveProfileIdForCaller(
+    tenantId: string,
+    userId: string,
+    userRole: string,
+    profileId?: string | null,
+  ): Promise<string> {
+    if (userRole === 'ADMIN') {
+      const explicit = profileId?.trim();
+      if (!explicit) {
+        throw new BadRequestException({
+          code: ErrorCode.VALIDATION_FAILED,
+          message: 'profileId is required',
         });
       }
+      await this.assertCanManageProfileContent(tenantId, userId, userRole, explicit);
+      return explicit;
     }
-    return profile;
+    return this.ownership.resolveManagedProfileId(tenantId, userId, profileId);
+  }
+
+  async listByProfile(
+    tenantId: string,
+    userId: string,
+    userRole: string,
+    profileId?: string | null,
+  ): Promise<GastroContentResponse[]> {
+    const resolvedId = await this.resolveProfileIdForCaller(
+      tenantId,
+      userId,
+      userRole,
+      profileId,
+    );
+    const profile = await this.assertCanManageProfileContent(
+      tenantId,
+      userId,
+      userRole,
+      resolvedId,
+    );
+    const rows = await this.prisma.gastroContent.findMany({
+      where: { tenantId, gastroProfileId: profile.id },
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+    });
+    return rows.map((r) => this.toResponse(r));
+  }
+
+  async getById(
+    tenantId: string,
+    userId: string,
+    userRole: string,
+    contentId: string,
+  ): Promise<GastroContentResponse> {
+    const row = await this.loadContentForManage(tenantId, userId, userRole, contentId);
+    return this.toResponse(row);
+  }
+
+  async createForProfile(
+    tenantId: string,
+    userId: string,
+    userRole: string,
+    profileId: string | null | undefined,
+    input: GastroContentCreateInput,
+  ): Promise<GastroContentResponse> {
+    const resolvedId = await this.resolveProfileIdForCaller(
+      tenantId,
+      userId,
+      userRole,
+      profileId,
+    );
+    const profile = await this.assertCanManageProfileContent(
+      tenantId,
+      userId,
+      userRole,
+      resolvedId,
+    );
+    if (!profile.publicEventId) {
+      throw new BadRequestException({
+        code: ErrorCode.VALIDATION_FAILED,
+        message: 'El local debe tener ficha pública antes de publicar contenido',
+      });
+    }
+    const status = input.status ?? 'draft';
+    const gallery = this.galleryWriteData({
+      imageUrl: input.imageUrl,
+      galleryUrls: input.galleryUrls,
+    });
+    const maxSort = await this.prisma.gastroContent.aggregate({
+      where: { tenantId, gastroProfileId: profile.id },
+      _max: { sortOrder: true },
+    });
+    const row = await this.prisma.gastroContent.create({
+      data: {
+        tenantId,
+        gastroProfileId: profile.id,
+        eventId: profile.publicEventId,
+        type: this.toPrismaType(input.type),
+        title: input.title?.trim() || null,
+        body: input.body?.trim() || null,
+        imageUrl: gallery.imageUrl,
+        galleryUrls: gallery.galleryUrls,
+        sortOrder: input.sortOrder ?? (maxSort._max.sortOrder ?? -1) + 1,
+        status: this.toPrismaStatus(status),
+      },
+    });
+    return this.toResponse(row);
   }
 
   async listByEvent(
@@ -169,12 +313,8 @@ export class GastroContentService {
     userRole: string,
     eventId: string,
   ): Promise<GastroContentResponse[]> {
-    await this.resolveProfileForEvent(tenantId, eventId, userId, userRole);
-    const rows = await this.prisma.gastroContent.findMany({
-      where: { tenantId, eventId },
-      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
-    });
-    return rows.map((r) => this.toResponse(r));
+    const profile = await this.resolveProfileForEvent(tenantId, eventId, userId, userRole);
+    return this.listByProfile(tenantId, userId, userRole, profile.id);
   }
 
   async createForEvent(
@@ -185,26 +325,7 @@ export class GastroContentService {
     input: GastroContentCreateInput,
   ): Promise<GastroContentResponse> {
     const profile = await this.resolveProfileForEvent(tenantId, eventId, userId, userRole);
-    const status = input.status ?? 'draft';
-    const gallery = this.galleryWriteData({
-      imageUrl: input.imageUrl,
-      galleryUrls: input.galleryUrls,
-    });
-    const row = await this.prisma.gastroContent.create({
-      data: {
-        tenantId,
-        gastroProfileId: profile.id,
-        eventId,
-        type: this.toPrismaType(input.type),
-        title: input.title?.trim() || null,
-        body: input.body?.trim() || null,
-        imageUrl: gallery.imageUrl,
-        galleryUrls: gallery.galleryUrls,
-        sortOrder: input.sortOrder ?? 0,
-        status: this.toPrismaStatus(status),
-      },
-    });
-    return this.toResponse(row);
+    return this.createForProfile(tenantId, userId, userRole, profile.id, input);
   }
 
   async updateById(
@@ -214,16 +335,7 @@ export class GastroContentService {
     contentId: string,
     patch: GastroContentUpdateInput,
   ): Promise<GastroContentResponse> {
-    const existing = await this.prisma.gastroContent.findFirst({
-      where: { id: contentId, tenantId },
-    });
-    if (!existing) {
-      throw new NotFoundException({
-        code: ErrorCode.NOT_FOUND,
-        message: 'Content not found',
-      });
-    }
-    await this.resolveProfileForEvent(tenantId, existing.eventId, userId, userRole);
+    const existing = await this.loadContentForManage(tenantId, userId, userRole, contentId);
 
     const nextType = patch.type ?? this.mapType(existing.type);
     const nextTitle = patch.title !== undefined ? patch.title?.trim() || null : existing.title;
@@ -268,7 +380,67 @@ export class GastroContentService {
     return this.toResponse(updated);
   }
 
-  /** Published editorial blocks for public location detail. */
+  /** Logical delete — sets status INACTIVE (keeps row + gallery URLs). */
+  async archiveById(
+    tenantId: string,
+    userId: string,
+    userRole: string,
+    contentId: string,
+  ): Promise<GastroContentResponse> {
+    return this.updateById(tenantId, userId, userRole, contentId, { status: 'inactive' });
+  }
+
+  async reorderForProfile(
+    tenantId: string,
+    userId: string,
+    userRole: string,
+    profileId: string | null | undefined,
+    orderedIds: string[],
+  ): Promise<GastroContentResponse[]> {
+    const resolvedId = await this.resolveProfileIdForCaller(
+      tenantId,
+      userId,
+      userRole,
+      profileId,
+    );
+    const profile = await this.assertCanManageProfileContent(
+      tenantId,
+      userId,
+      userRole,
+      resolvedId,
+    );
+    const unique = [...new Set(orderedIds.map((id) => id.trim()).filter(Boolean))];
+    if (unique.length === 0) {
+      throw new BadRequestException({
+        code: ErrorCode.VALIDATION_FAILED,
+        message: 'orderedIds is required',
+      });
+    }
+
+    const existing = await this.prisma.gastroContent.findMany({
+      where: { tenantId, gastroProfileId: profile.id, id: { in: unique } },
+      select: { id: true },
+    });
+    if (existing.length !== unique.length) {
+      throw new ForbiddenException({
+        code: ErrorCode.FORBIDDEN,
+        message: 'One or more content items do not belong to this local',
+      });
+    }
+
+    await this.prisma.$transaction(
+      unique.map((id, index) =>
+        this.prisma.gastroContent.update({
+          where: { id },
+          data: { sortOrder: index },
+        }),
+      ),
+    );
+
+    return this.listByProfile(tenantId, userId, userRole, profile.id);
+  }
+
+  /** Published posts for public location detail (tenant + profile only). */
   async listPublishedForProfile(tenantId: string, gastroProfileId: string) {
     const rows = await this.prisma.gastroContent.findMany({
       where: {

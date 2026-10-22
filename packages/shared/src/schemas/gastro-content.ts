@@ -176,3 +176,18 @@ export const publicGastroContentItemSchema = gastroContentResponseSchema.omit({
   gastroProfileId: true,
 });
 export type PublicGastroContentItem = z.infer<typeof publicGastroContentItemSchema>;
+
+export const gastroContentIdParamsSchema = z.object({
+  id: z.string().min(1),
+});
+export type GastroContentIdParams = z.infer<typeof gastroContentIdParamsSchema>;
+
+export const gastroContentReorderSchema = z.object({
+  orderedIds: z.array(z.string().min(1)).min(1).max(100),
+});
+export type GastroContentReorderInput = z.infer<typeof gastroContentReorderSchema>;
+
+export const gastroContentListResponseSchema = z.object({
+  data: z.array(gastroContentResponseSchema),
+});
+export type GastroContentListResponse = z.infer<typeof gastroContentListResponseSchema>;

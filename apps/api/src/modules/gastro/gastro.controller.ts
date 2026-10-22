@@ -1,6 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
 import {
   gastroContentCreateSchema,
+  gastroContentReorderSchema,
   gastroContentUpdateSchema,
   gastroDiscountCreateSchema,
   gastroDiscountUpdateSchema,
@@ -14,6 +15,7 @@ import {
   upsertGastroDiscountVisualTemplateDtoSchema,
   Role,
   type GastroContentCreateInput,
+  type GastroContentReorderInput,
   type GastroContentUpdateInput,
   type GastroDiscountCreateInput,
   type GastroDiscountUpdateInput,
@@ -245,6 +247,57 @@ export class GastroController {
     return this.portalDiscounts.updateMyDiscount(user.tenantId, user.id, user.role, id, body);
   }
 
+  @Get('content')
+  async listContentByProfile(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Query(new ZodValidationPipe(gastroProfileIdQuerySchema)) query: GastroProfileIdQuery,
+  ) {
+    return this.contentService.listByProfile(
+      user.tenantId,
+      user.id,
+      user.role,
+      query.profileId,
+    );
+  }
+
+  @Post('content')
+  async createContentByProfile(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Query(new ZodValidationPipe(gastroProfileIdQuerySchema)) query: GastroProfileIdQuery,
+    @Body(new ZodValidationPipe(gastroContentCreateSchema)) body: GastroContentCreateInput,
+  ) {
+    return this.contentService.createForProfile(
+      user.tenantId,
+      user.id,
+      user.role,
+      query.profileId,
+      body,
+    );
+  }
+
+  @Put('content/reorder')
+  async reorderContent(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Query(new ZodValidationPipe(gastroProfileIdQuerySchema)) query: GastroProfileIdQuery,
+    @Body(new ZodValidationPipe(gastroContentReorderSchema)) body: GastroContentReorderInput,
+  ) {
+    return this.contentService.reorderForProfile(
+      user.tenantId,
+      user.id,
+      user.role,
+      query.profileId,
+      body.orderedIds,
+    );
+  }
+
+  @Get('content/:id')
+  async getContent(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param('id') id: string,
+  ) {
+    return this.contentService.getById(user.tenantId, user.id, user.role, id);
+  }
+
   @Get('events/:eventId/content')
   async listContent(
     @CurrentUser() user: { id: string; tenantId: string; role: string },
@@ -269,6 +322,22 @@ export class GastroController {
     @Body(new ZodValidationPipe(gastroContentUpdateSchema)) body: GastroContentUpdateInput,
   ) {
     return this.contentService.updateById(user.tenantId, user.id, user.role, id, body);
+  }
+
+  @Post('content/:id/archive')
+  async archiveContent(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param('id') id: string,
+  ) {
+    return this.contentService.archiveById(user.tenantId, user.id, user.role, id);
+  }
+
+  @Delete('content/:id')
+  async deleteContent(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param('id') id: string,
+  ) {
+    return this.contentService.archiveById(user.tenantId, user.id, user.role, id);
   }
 
   @Get('events/:eventId/discounts')
