@@ -2680,6 +2680,11 @@ export interface PublicGastroDiscountClaimView {
 export interface PublicGastroLocationsRepo {
   getById(locationId: string, tenantId: string): Promise<PublicGastroLocation>;
   getByPublicEventId(eventId: string, tenantId: string): Promise<PublicGastroLocation>;
+  /** Page view for GastroProfile ficha (once per client mount). */
+  recordPublicView(
+    gastroProfileId: string,
+    tenantId: string,
+  ): Promise<{ recorded: boolean }>;
   listDiscounts(locationId: string, tenantId: string): Promise<{
     discounts: PublicGastroLocationDiscount[];
   }>;

@@ -52,6 +52,64 @@ export class PublicEngagementService {
     return { recorded: true };
   }
 
+  /**
+   * Page view for a public GastroProfile ficha (`/gastronomicos/[id]`).
+   * Appends GastroProfileView + increments GastroProfile.viewCount.
+   * Skips ADMIN and managers of that local. No unique-visitor / IP / fingerprint.
+   */
+  async recordGastroProfileView(
+    tenantId: string,
+    gastroProfileId: string,
+    viewer?: OptionalViewer,
+  ): Promise<{ recorded: boolean }> {
+    const profile = await this.prisma.gastroProfile.findFirst({
+      where: {
+        id: gastroProfileId,
+        tenantId,
+        status: 'ACTIVE',
+        publicEventId: { not: null },
+      },
+      select: { id: true },
+    });
+
+    if (!profile) {
+      throw new NotFoundException({
+        code: ErrorCode.NOT_FOUND,
+        message: 'Gastro location not found',
+      });
+    }
+
+    if (viewer) {
+      if (viewer.role === Role.ADMIN) {
+        return { recorded: false };
+      }
+      const canManage = await this.profilesAuth.canManageGastroProfile(
+        tenantId,
+        viewer.id,
+        profile.id,
+      );
+      if (canManage) {
+        return { recorded: false };
+      }
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.gastroProfileView.create({
+        data: {
+          tenantId,
+          gastroProfileId: profile.id,
+          viewerUserId: viewer?.id ?? null,
+        },
+      }),
+      this.prisma.gastroProfile.update({
+        where: { id: profile.id },
+        data: { viewCount: { increment: 1 } },
+      }),
+    ]);
+
+    return { recorded: true };
+  }
+
   async recordProducerProfileView(
     tenantId: string,
     idOrSlug: string,

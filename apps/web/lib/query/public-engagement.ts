@@ -43,3 +43,24 @@ export function useRecordPublicProducerView(
     });
   }, [enabled, idOrSlug, tenantId, repos]);
 }
+
+/**
+ * Records one public GastroProfile ficha view per mount (page views, not unique visitors).
+ * Call only from `/gastronomicos/[id]` (or equivalent public detail), after location is loaded.
+ */
+export function useRecordPublicGastroProfileView(
+  gastroProfileId: string | undefined,
+  tenantId: string,
+  enabled = true,
+) {
+  const repos = useRepositories();
+  const recorded = useRef(false);
+
+  useEffect(() => {
+    if (!enabled || !gastroProfileId || !tenantId || recorded.current) return;
+    recorded.current = true;
+    void repos.publicGastro.recordPublicView(gastroProfileId, tenantId).catch(() => {
+      recorded.current = false;
+    });
+  }, [enabled, gastroProfileId, tenantId, repos]);
+}

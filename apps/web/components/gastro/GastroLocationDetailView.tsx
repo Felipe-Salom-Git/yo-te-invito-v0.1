@@ -7,7 +7,7 @@ import { useRepositories } from '@/repositories/context';
 import { eventsKeys } from '@/lib/query/events';
 import { reviewsKeys } from '@/lib/query/keys';
 import { usePublicEntityReviewsState } from '@/lib/query/reviews';
-import { useRecordPublicEventView } from '@/lib/query/public-engagement';
+import { useRecordPublicGastroProfileView } from '@/lib/query/public-engagement';
 import {
   useGastroPublicLocation,
   useGastroPublicDiscounts,
@@ -44,7 +44,12 @@ export function GastroLocationDetailView({
 
   const resolvedLocationId = location?.id;
   const reviewEventId = location?.publicEventId ?? eventId;
-  useRecordPublicEventView(reviewEventId ?? undefined, tenantId, !!reviewEventId && !!location);
+  // Page views belong to GastroProfile, not the linked public Event (multi-local).
+  useRecordPublicGastroProfileView(
+    resolvedLocationId,
+    tenantId,
+    !!resolvedLocationId && !!location && location.status === 'ACTIVE',
+  );
 
   const { data: discountsData } = useGastroPublicDiscounts(
     resolvedLocationId,

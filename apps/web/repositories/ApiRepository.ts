@@ -2340,6 +2340,12 @@ export class ApiRepository implements Repositories {
         `/public/gastro-locations/by-event/${encodeURIComponent(eventId)}`,
         { tenantId },
       ),
+    recordPublicView: async (gastroProfileId, tenantId) =>
+      this.client.post<{ recorded: boolean }>(
+        `/public/gastro-locations/${encodeURIComponent(gastroProfileId)}/view`,
+        undefined,
+        { tenantId },
+      ),
     listDiscounts: async (locationId, tenantId) =>
       this.client.get<{ discounts: PublicGastroLocationDiscount[] }>(
         `/public/gastro-locations/${encodeURIComponent(locationId)}/discounts`,
