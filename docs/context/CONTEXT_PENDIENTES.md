@@ -70,6 +70,25 @@ Auditoría: [`V3_3_GASTRO_EXPANSION_DISCOVERY_AUDIT.md`](../audits/V3_3_GASTRO_E
 
 **Gate (conservador):** sin acuerdo vigente del local → `BENEFIT_AGREEMENT_NOT_FOUND` en `approve`.
 
+### G6 — Reporting económico por descuento
+
+- [ ] G6.1 Traceability discount → validation → allocation
+- [ ] G6.2 Economic summary contract
+- [ ] G6.3 Admin economic metrics UI
+- [ ] G6.4 CASH drilldown (settlement-labeled)
+- [ ] G6.5 BARTER drilldown + partner ledger
+- [ ] G6.6 Semantic hardening
+- [ ] G6.7 Accounting regression tests
+
+**Regla:** sin `cashTransferredByDiscount` / `barterConsumedByDiscount` inventados. G4 operativo ≠ G6 económico.
+
+**Deploy note (migrations pendientes):**
+
+```text
+20261022120000_gastro_content_gallery_urls
+20261022140000_gastro_profile_views
+```
+
 ---
 
 ## V3.3 — Mejoras funcionales y operativas

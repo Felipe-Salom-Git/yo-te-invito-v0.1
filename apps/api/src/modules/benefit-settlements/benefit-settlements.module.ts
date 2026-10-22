@@ -8,6 +8,7 @@ import { BenefitSettlementIntegrityService } from './benefit-settlement-integrit
 import { BenefitSettlementReportingService } from './benefit-settlement-reporting.service';
 import { BenefitSettlementTransfersService } from './benefit-settlement-transfers.service';
 import { BenefitSettlementsService } from './benefit-settlements.service';
+import { GastroDiscountEconomicReportingService } from './gastro-discount-economic-reporting.service';
 
 @Module({
   imports: [AuditModule, CourtesyCreditLedgerModule],
@@ -18,6 +19,7 @@ import { BenefitSettlementsService } from './benefit-settlements.service';
     BenefitSettlementTransfersService,
     BenefitSettlementIntegrityService,
     BenefitSettlementReportingService,
+    GastroDiscountEconomicReportingService,
   ],
   exports: [
     BenefitSettlementsService,
@@ -25,6 +27,7 @@ import { BenefitSettlementsService } from './benefit-settlements.service';
     BenefitSettlementTransfersService,
     BenefitSettlementIntegrityService,
     BenefitSettlementReportingService,
+    GastroDiscountEconomicReportingService,
   ],
 })
 export class BenefitSettlementsModule {}

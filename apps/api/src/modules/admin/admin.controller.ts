@@ -100,6 +100,7 @@ import { AdminGastroService } from './admin-gastro.service';
 import { AdminGastroLocationsService } from './admin-gastro-locations.service';
 import { GastroProfileMetricsService } from '../gastro/gastro-profile-metrics.service';
 import { GastroDiscountMetricsService } from '../gastro/gastro-discount-metrics.service';
+import { GastroDiscountEconomicReportingService } from '../benefit-settlements/gastro-discount-economic-reporting.service';
 import { GastroDiscountVisualTemplateService } from '../gastro/gastro-discount-visual-template.service';
 import { AdminProducersService } from './admin-producers.service';
 import { AdminGeneralPublicationsService } from './admin-general-publications.service';
@@ -148,6 +149,7 @@ export class AdminController {
     private readonly adminGastro: AdminGastroService,
     private readonly adminGastroLocations: AdminGastroLocationsService,
     private readonly gastroDiscountMetrics: GastroDiscountMetricsService,
+    private readonly gastroDiscountEconomic: GastroDiscountEconomicReportingService,
     private readonly gastroProfileMetrics: GastroProfileMetricsService,
     private readonly visualTemplates: GastroDiscountVisualTemplateService,
     private readonly adminHotelProfiles: AdminHotelProfilesService,
@@ -1435,6 +1437,36 @@ export class AdminController {
     params: AdminGastroDiscountIdParams,
   ) {
     return this.gastroDiscountMetrics.getOperationalMetrics(
+      user.tenantId,
+      params.profileId,
+      params.discountId,
+    );
+  }
+
+  @Get('gastronomicos/:profileId/discuentos/:discountId/economic-traceability')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async getGastroLocationDiscountEconomicTraceability(
+    @CurrentUser() user: { tenantId: string },
+    @Param(new ZodValidationPipe(adminGastroDiscountIdParamsSchema))
+    params: AdminGastroDiscountIdParams,
+  ) {
+    return this.gastroDiscountEconomic.getTraceability(
+      user.tenantId,
+      params.profileId,
+      params.discountId,
+    );
+  }
+
+  @Get('gastronomicos/:profileId/discuentos/:discountId/economic-metrics')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async getGastroLocationDiscountEconomicMetrics(
+    @CurrentUser() user: { tenantId: string },
+    @Param(new ZodValidationPipe(adminGastroDiscountIdParamsSchema))
+    params: AdminGastroDiscountIdParams,
+  ) {
+    return this.gastroDiscountEconomic.getEconomicMetrics(
       user.tenantId,
       params.profileId,
       params.discountId,

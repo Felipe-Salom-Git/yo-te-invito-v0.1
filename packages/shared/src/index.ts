@@ -100,6 +100,7 @@ export * from './category-availability';
 export * from './schemas/gastro-discounts';
 export * from './schemas/gastro-discount-summary';
 export * from './schemas/gastro-discount-operational-metrics';
+export * from './schemas/gastro-discount-economic-metrics';
 export * from './schemas/gastro-courtesy-discounts';
 export * from './schemas/geo';
 export * from './schemas/gastro-dashboard';
