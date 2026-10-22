@@ -177,7 +177,12 @@ export const authRegisterRequestSchema = z
         });
       }
     }
-    if (data.profileType !== 'USER' && data.profileData == null) {
+    // GASTRO signup is account-only (G7.10.8); other commercial types still require profileData.
+    if (
+      data.profileType !== 'USER' &&
+      data.profileType !== 'GASTRO' &&
+      data.profileData == null
+    ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'profileData es requerido para el tipo de perfil seleccionado',

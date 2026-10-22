@@ -47,7 +47,7 @@ export default function GastroLocalPage() {
         <GastroLocationsList />
       </div>
 
-      {showListOnly ? null : !local?.publicEventId ? (
+      {showListOnly ? null : !local && locations.length === 0 ? null : !local?.publicEventId ? (
         <div className="rounded-xl border border-border/80 bg-bg-muted/30 p-6">
           <p className="mb-2 font-medium text-text">
             {local?.displayName ?? 'Configurá tu local'}
@@ -61,7 +61,11 @@ export default function GastroLocalPage() {
             Configurá la ficha pública: nombre, ubicación, horarios, imágenes y contacto.
           </p>
           <Link
-            href={`/gastro/local/editar${profileId ? `?profileId=${encodeURIComponent(profileId)}` : ''}`}
+            href={
+              local || profileId
+                ? `/gastro/local/editar${profileId ? `?profileId=${encodeURIComponent(profileId)}` : ''}`
+                : '/gastro/local/nuevo'
+            }
             className="inline-flex items-center justify-center rounded-lg bg-accent px-4 py-2 text-sm font-medium text-bg hover:bg-accent-hover"
           >
             {local ? 'Completar local' : 'Crear local'}

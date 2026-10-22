@@ -13,7 +13,6 @@ import {
   REGISTER_ERROR_MESSAGES,
 } from '@/lib/auth/register-error-messages';
 import { getErrorMessage } from '@/lib/errors';
-import { cityLabelFromValue } from '@yo-te-invito/shared';
 import {
   scheduleFocusRegisterError,
   zodIssuesToFieldMap,
@@ -24,18 +23,15 @@ import {
   LEGAL_ACCEPTANCE_REQUIRED_MSG,
 } from '@/lib/legal/legal-acceptance-validation';
 import {
-  gastroProfileSignupSchema,
   hotelProfileSignupSchema,
   producerProfileSignupSchema,
   referrerProfileSignupSchema,
   LEGAL_SIGNUP_USER_MESSAGES,
-  type GastroProfileSignupInput,
   type HotelProfileSignupInput,
   type ReferrerProfileSignupInput,
 } from '@yo-te-invito/shared';
 import type { AuthRegisterRequest, RegistrationProfileType } from '@yo-te-invito/shared';
 import { RegisterBuyerStep } from './register/RegisterBuyerStep';
-import { RegisterGastroStep, type GastroSignupFormValues } from './register/RegisterGastroStep';
 import { RegisterHotelStep, type HotelSignupFormValues } from './register/RegisterHotelStep';
 import { RegisterProducerStep } from './register/RegisterProducerStep';
 import { RegisterReferrerStep } from './register/RegisterReferrerStep';
@@ -48,14 +44,6 @@ import {
   profileSignupDataStep,
   type RegisterWizardStepKey,
 } from './register/register-wizard-copy';
-
-const EMPTY_GASTRO_FORM: GastroSignupFormValues = {
-  displayName: '',
-  contactEmail: '',
-  province: '',
-  city: '',
-  address: '',
-};
 
 const EMPTY_HOTEL_FORM: HotelSignupFormValues = {
   displayName: '',
@@ -128,11 +116,6 @@ export function RegisterWizard() {
   const [producerProfileData, setProducerProfileData] = useState<{ displayName: string } | null>(
     null,
   );
-  const [gastroForm, setGastroForm] = useState<GastroSignupFormValues>(EMPTY_GASTRO_FORM);
-  const [gastroFieldErrors, setGastroFieldErrors] = useState<
-    Partial<Record<keyof GastroSignupFormValues, string>>
-  >({});
-  const [gastroProfileData, setGastroProfileData] = useState<GastroProfileSignupInput | null>(null);
   const [hotelForm, setHotelForm] = useState<HotelSignupFormValues>(EMPTY_HOTEL_FORM);
   const [hotelFieldErrors, setHotelFieldErrors] = useState<
     Partial<Record<keyof HotelSignupFormValues, string>>
@@ -151,7 +134,6 @@ export function RegisterWizard() {
   const needsLegalQuery =
     step === 'buyer' ||
     step === 'producer' ||
-    step === 'gastro' ||
     step === 'hotel' ||
     step === 'referrer' ||
     step === 'legal' ||
@@ -184,11 +166,6 @@ export function RegisterWizard() {
       setProducerDisplayName('');
       setProducerProfileData(null);
       setProducerDisplayNameError(null);
-    }
-    if (profileType !== 'GASTRO') {
-      setGastroForm(EMPTY_GASTRO_FORM);
-      setGastroFieldErrors({});
-      setGastroProfileData(null);
     }
     if (profileType !== 'HOTEL') {
       setHotelForm(EMPTY_HOTEL_FORM);
@@ -264,35 +241,6 @@ export function RegisterWizard() {
     }
     setProducerDisplayNameError(null);
     setProducerProfileData(parsed.data);
-    setStep('legal');
-  };
-
-  const handleGastroContinue = () => {
-    const parsed = gastroProfileSignupSchema.safeParse({
-      displayName: gastroForm.displayName.trim(),
-      contactEmail: gastroForm.contactEmail.trim(),
-      location: {
-        province: gastroForm.province.trim(),
-        city: gastroForm.city.trim(),
-        address: gastroForm.address.trim(),
-      },
-    });
-    if (!parsed.success) {
-      setGastroFieldErrors(
-        zodIssuesToFieldMap(parsed.error.issues, Object.keys(EMPTY_GASTRO_FORM)) as Partial<
-          Record<keyof GastroSignupFormValues, string>
-        >,
-      );
-      scheduleFocusRegisterError(contentRef.current);
-      return;
-    }
-    setGastroFieldErrors({});
-    setGastroProfileData(parsed.data);
-    if (account) {
-      const cityPref =
-        cityLabelFromValue(parsed.data.location.city) || parsed.data.location.city;
-      setAccount({ ...account, city: cityPref });
-    }
     setStep('legal');
   };
 
@@ -401,14 +349,15 @@ export function RegisterWizard() {
   };
 
   const finishGastroRegistration = async () => {
-    if (!account || !gastroProfileData) return;
+    if (!account) return;
     setError(null);
     setLegalError(null);
     try {
+      // G7.10.8: GASTRO signup creates account only — local is created later in portal.
       const payload = buildRegisterPayload(
         account,
         'GASTRO',
-        gastroProfileData,
+        undefined,
         selectedLegalVersionIds,
         signupRequiredCount,
       );
@@ -593,11 +542,7 @@ export function RegisterWizard() {
               } else if (type === 'PRODUCER') {
                 setStep('producer');
               } else if (type === 'GASTRO') {
-                setGastroForm((prev) => ({
-                  ...prev,
-                  contactEmail: prev.contactEmail || account?.email || '',
-                }));
-                setStep('gastro');
+                setStep('legal');
               } else if (type === 'HOTEL') {
                 setStep('hotel');
               } else if (type === 'REFERRER') {
@@ -635,20 +580,6 @@ export function RegisterWizard() {
             displayNameError={producerDisplayNameError ?? undefined}
             onBack={() => setStep('profile')}
             onContinue={handleProducerContinue}
-            disabled={submitting}
-          />
-        )}
-
-        {step === 'gastro' && account && profileType === 'GASTRO' && (
-          <RegisterGastroStep
-            values={gastroForm}
-            onChange={(patch) => {
-              setGastroForm((prev) => ({ ...prev, ...patch }));
-              if (Object.keys(patch).length > 0) setGastroFieldErrors({});
-            }}
-            fieldErrors={gastroFieldErrors}
-            onBack={() => setStep('profile')}
-            onContinue={handleGastroContinue}
             disabled={submitting}
           />
         )}

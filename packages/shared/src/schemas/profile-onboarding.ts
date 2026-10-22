@@ -80,13 +80,30 @@ export const gastroProfileBaseSchema = z.object({
 });
 export type GastroProfileBaseInput = z.infer<typeof gastroProfileBaseSchema>;
 
-export const gastroProfileSignupSchema = gastroProfileBaseSchema.pick({
+/**
+ * Signup GASTRO (V3.3 G7.10.8): account-only by default — no GastroProfile in the same transaction.
+ * Legacy full local payload still accepted for older clients.
+ */
+export const gastroProfileSignupLocalSchema = gastroProfileBaseSchema.pick({
   displayName: true,
   contactEmail: true,
   summary: true,
   location: true,
 });
+export type GastroProfileSignupLocalInput = z.infer<typeof gastroProfileSignupLocalSchema>;
+
+export const gastroProfileSignupSchema = z.union([
+  z.null(),
+  z.object({}).strict(),
+  gastroProfileSignupLocalSchema,
+]);
 export type GastroProfileSignupInput = z.infer<typeof gastroProfileSignupSchema>;
+
+export function isGastroSignupLocalPayload(
+  data: GastroProfileSignupInput,
+): data is GastroProfileSignupLocalInput {
+  return data != null && typeof data === 'object' && 'displayName' in data && 'location' in data;
+}
 
 export const gastroProfileApplySchema = gastroProfileBaseSchema;
 export type GastroProfileApplyInput = z.infer<typeof gastroProfileApplySchema>;
@@ -106,7 +123,7 @@ export type GastroProfilePersistInput = {
 };
 
 export function gastroProfileToPersistInput(
-  body: GastroProfileSignupInput | GastroProfileApplyInput,
+  body: GastroProfileSignupLocalInput | GastroProfileApplyInput,
 ): GastroProfilePersistInput {
   const lat = body.location.lat;
   const lng = body.location.lng;
@@ -260,7 +277,7 @@ const applySchemaByType = {
 export type ParsedProfileSignupSuccess =
   | { profileType: 'USER'; data: null }
   | { profileType: 'PRODUCER'; data: ProducerProfileSignupInput }
-  | { profileType: 'GASTRO'; data: GastroProfileSignupInput }
+  | { profileType: 'GASTRO'; data: GastroProfileSignupLocalInput | null }
   | { profileType: 'HOTEL'; data: HotelProfileSignupInput }
   | { profileType: 'REFERRER'; data: ReferrerProfileSignupInput };
 
@@ -282,6 +299,24 @@ export function parseProfileSignupData(
       };
     }
     return { success: true, profileType: 'USER', data: null };
+  }
+
+  // GASTRO account-only signup (no local in the same request).
+  if (profileType === 'GASTRO') {
+    if (
+      profileData == null ||
+      profileData === undefined ||
+      (typeof profileData === 'object' &&
+        !Array.isArray(profileData) &&
+        Object.keys(profileData as object).length === 0)
+    ) {
+      return { success: true, profileType: 'GASTRO', data: null };
+    }
+    const legacy = gastroProfileSignupLocalSchema.safeParse(profileData);
+    if (!legacy.success) {
+      return { success: false, error: legacy.error };
+    }
+    return { success: true, profileType: 'GASTRO', data: legacy.data };
   }
 
   if (!isCommercialProfileType(profileType)) {

@@ -21,9 +21,12 @@ export function GastroLocationsList() {
   if (locations.length === 0) {
     return (
       <div className="rounded-xl border border-border/80 bg-bg-muted/30 p-6">
-        <p className="text-text-muted">Todavía no tenés locales cargados.</p>
-        <Link href="/gastro/local/editar" className="mt-4 inline-block">
-          <Button type="button">Crear primer local</Button>
+        <p className="font-medium text-text">Todavía no tenés locales cargados</p>
+        <p className="mt-1 text-sm text-text-muted">
+          Creá tu primer local para publicar la ficha, contenido y descuentos.
+        </p>
+        <Link href="/gastro/local/nuevo" className="mt-4 inline-block">
+          <Button type="button">Crear mi primer local</Button>
         </Link>
       </div>
     );

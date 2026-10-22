@@ -148,7 +148,7 @@ export const PROFILE_CHOICES: {
     type: 'GASTRO',
     title: 'Gastronómico',
     description:
-      'Mostrá tu local, publicá contenido, ofrecé descuentos y recibí valoraciones de clientes.',
+      'Creá tu cuenta de local. Después vas a poder cargar uno o más locales, contenido y descuentos desde el portal.',
   },
   {
     type: 'HOTEL',
@@ -198,7 +198,6 @@ export function getWizardProgressSteps(
     return [
       { key: 'account', label: 'Cuenta' },
       { key: 'profile', label: 'Perfil' },
-      { key: 'gastro', label: 'Local' },
       { key: 'legal', label: 'Legales' },
     ];
   }
@@ -234,7 +233,7 @@ export function profileSignupDataStep(
     case 'PRODUCER':
       return 'producer';
     case 'GASTRO':
-      return 'gastro';
+      return 'profile';
     case 'HOTEL':
       return 'hotel';
     case 'REFERRER':

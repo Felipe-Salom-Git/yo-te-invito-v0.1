@@ -6,7 +6,6 @@ import {
   type RegistrationProfileType,
   type ProducerProfileSignupInput,
   type ProducerProfileApplyInput,
-  type GastroProfileSignupInput,
   type GastroProfileApplyInput,
   type GastroProfilePersistInput,
   type HotelProfileSignupInput,
@@ -61,6 +60,8 @@ export class ProfileRegistrationService {
         await this.createProducerActive(tenantId, userId, parsed.data, tx);
         return;
       case 'GASTRO':
+        // G7.10.8: account-only signup — no GastroProfile unless legacy local payload is sent.
+        if (parsed.data == null) return;
         await this.createGastroActive(
           tenantId,
           userId,

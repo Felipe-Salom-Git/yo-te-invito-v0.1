@@ -247,7 +247,8 @@ export class AuthService {
         message: 'profileType es requerido cuando se envía profileData',
       });
     }
-    if (profileType !== 'USER' && body.profileData == null) {
+    // GASTRO signup is account-only (G7.10.8); other commercial types still require profileData.
+    if (profileType !== 'USER' && profileType !== 'GASTRO' && body.profileData == null) {
       throw new BadRequestException({
         code: 'VALIDATION_FAILED',
         message: 'profileData es requerido para el tipo de perfil seleccionado',
