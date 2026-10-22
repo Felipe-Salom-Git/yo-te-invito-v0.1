@@ -60,13 +60,15 @@ Auditoría: [`V3_3_GASTRO_EXPANSION_DISCOVERY_AUDIT.md`](../audits/V3_3_GASTRO_E
 
 ### G5 — Commercial Agreement en aprobación de descuentos
 
-- [ ] G5.1 Resolver agreement vigente (GastroProfile + fecha)
-- [ ] G5.2 Contexto comercial en UI de aprobación ADMIN
-- [ ] G5.3 Crear/reemplazar agreement desde el flujo (partner-scoped)
-- [ ] G5.4 Gate de aprobación sin agreement
-- [ ] G5.5 Snapshot regression + cierre docs
+- [x] G5.1 Resolver agreement vigente (`resolveApplicable` + `GET …/resolve`)
+- [x] G5.2 Contexto comercial en UI de aprobación ADMIN
+- [x] G5.3 Crear/reemplazar agreement desde el flujo (partner-scoped)
+- [x] G5.4 Gate de aprobación sin agreement (**bloquea** approve si no hay CURRENT)
+- [x] G5.5 Snapshot regression + cierre docs
 
 **Dominio:** `BenefitCommercialAgreement` por `GastroProfile` — **no** FK en `GastroDiscount`.
+
+**Gate (conservador):** sin acuerdo vigente del local → `BENEFIT_AGREEMENT_NOT_FOUND` en `approve`.
 
 ---
 
