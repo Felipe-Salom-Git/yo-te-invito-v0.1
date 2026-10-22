@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
 import { ProfilesAuthorizationService } from '../common/profiles-authorization.service';
+import { GastroModule } from '../modules/gastro/gastro.module';
 import { ScannerAccountsModule } from '../modules/scanner-accounts/scanner-accounts.module';
 import { TicketsModule } from '../modules/tickets/tickets.module';
 import { ScannerController } from './scanner.controller';
@@ -10,7 +11,7 @@ import { ScannerShortCodeService } from './scanner-short-code.service';
 import { ScannerService } from './scanner.service';
 
 @Module({
-  imports: [AuthModule, ScannerAccountsModule, TicketsModule],
+  imports: [AuthModule, ScannerAccountsModule, TicketsModule, GastroModule],
   controllers: [ScannerController],
   providers: [
     ScannerService,

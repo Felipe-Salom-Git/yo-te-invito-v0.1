@@ -14,6 +14,8 @@ export type GastroDiscountScanStatus = z.infer<typeof gastroDiscountScanStatusSc
 export const validateGastroDiscountBodySchema = z.object({
   qrPayload: z.string().min(1, 'qrPayload is required'),
   deviceId: z.string().optional(),
+  /** GASTRO_OWNER: authorized local. When omitted, the owner's default operational profile is used. */
+  profileId: z.string().min(1).optional(),
 });
 export type ValidateGastroDiscountBody = z.infer<typeof validateGastroDiscountBodySchema>;
 

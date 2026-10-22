@@ -19,8 +19,10 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { ProfilesAuthorizationService } from '../common/profiles-authorization.service';
 import { ScannerAccountsService } from '../modules/scanner-accounts/scanner-accounts.service';
+import { GastroOwnershipService } from '../modules/gastro/gastro-ownership.service';
 import { AuditService } from '../modules/audit/audit.service';
 import { Role } from '@yo-te-invito/shared';
+import { gastroOwnerDiscountMatchesAuthorizedProfile } from './gastro-owner-discount-scope.util';
 
 function formatValueLabel(type: string, value: number): string {
   if (type === 'PERCENT') return `${value}%`;
@@ -68,6 +70,7 @@ export class ScannerGastroDiscountService {
     private readonly prisma: PrismaService,
     private readonly profiles: ProfilesAuthorizationService,
     private readonly scannerAccounts: ScannerAccountsService,
+    private readonly ownership: GastroOwnershipService,
     private readonly audit: AuditService,
   ) {}
 
@@ -233,6 +236,73 @@ export class ScannerGastroDiscountService {
     });
   }
 
+  /**
+   * GASTRO_OWNER: authorize against explicit profileId or default operational local,
+   * then require discount.gastroProfileId === that profile (not merely same user).
+   * SCANNER path stays on ScannerAccount.parentProfileId (unchanged).
+   */
+  private async assertGastroOwnerCanAccessDiscount(
+    tenantId: string,
+    userId: string,
+    discountId: string,
+    requestedProfileId?: string | null,
+  ): Promise<void> {
+    const discount = await this.prisma.gastroDiscount.findFirst({
+      where: { id: discountId, tenantId },
+      select: { gastroProfileId: true },
+    });
+    if (!discount?.gastroProfileId) {
+      throw new ForbiddenException({
+        code: ErrorCode.FORBIDDEN,
+        message: 'No tenés permiso para validar este descuento',
+      });
+    }
+
+    const authorizedProfileId = await this.ownership.resolveOperationalProfileId(
+      tenantId,
+      userId,
+      requestedProfileId,
+    );
+
+    if (
+      !gastroOwnerDiscountMatchesAuthorizedProfile(
+        authorizedProfileId,
+        discount.gastroProfileId,
+      )
+    ) {
+      throw new ForbiddenException({
+        code: ErrorCode.FORBIDDEN,
+        message: 'Este descuento pertenece a otro local gastronómico',
+      });
+    }
+  }
+
+  private async assertActorCanAccessDiscount(
+    tenantId: string,
+    userId: string,
+    userRole: string,
+    discountId: string,
+    requestedProfileId?: string | null,
+  ): Promise<void> {
+    if (userRole === Role.ADMIN) return;
+    if (userRole === Role.SCANNER) {
+      await this.scannerAccounts.assertScannerCanAccessGastroDiscount(
+        tenantId,
+        userId,
+        discountId,
+      );
+      return;
+    }
+    if (userRole === Role.GASTRO_OWNER) {
+      await this.assertGastroOwnerCanAccessDiscount(
+        tenantId,
+        userId,
+        discountId,
+        requestedProfileId,
+      );
+    }
+  }
+
   async validate(
     tenantId: string,
     userId: string,
@@ -255,13 +325,13 @@ export class ScannerGastroDiscountService {
           'No encontramos un cupón asociado a este código.',
         );
       }
-      if (userRole === Role.SCANNER) {
-        await this.scannerAccounts.assertScannerCanAccessGastroDiscount(
-          tenantId,
-          userId,
-          claimByCode.discountId,
-        );
-      }
+      await this.assertActorCanAccessDiscount(
+        tenantId,
+        userId,
+        userRole,
+        claimByCode.discountId,
+        body.profileId,
+      );
       qrPayloadInput = buildGastroDiscountQrPayload(claimByCode.discountId, claimByCode.qrToken);
     }
 
@@ -276,13 +346,13 @@ export class ScannerGastroDiscountService {
 
     const { discountId, token } = parsed;
 
-    if (userRole === Role.SCANNER) {
-      await this.scannerAccounts.assertScannerCanAccessGastroDiscount(
-        tenantId,
-        userId,
-        discountId,
-      );
-    }
+    await this.assertActorCanAccessDiscount(
+      tenantId,
+      userId,
+      userRole,
+      discountId,
+      body.profileId,
+    );
 
     if (parsed.version === 'legacy' && parsed.tenantId && parsed.tenantId !== tenantId) {
       return this.response(
