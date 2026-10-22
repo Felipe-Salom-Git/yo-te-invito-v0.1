@@ -120,6 +120,18 @@ Cierre: [`V3_3_G7_11_POST_QA_FIXES_CLOSING.md`](../audits/V3_3_G7_11_POST_QA_FIX
 - [ ] Push / deploy G7.11 — **NO** hasta instrucción
 - [ ] QA browser G7.11 post-deploy (checklist en cierre)
 
+### G7.12 — Operación completa de Liquidaciones
+
+Cierre: [`V3_3_G7_12_SETTLEMENT_OPERATIONS_CLOSING.md`](../audits/V3_3_G7_12_SETTLEMENT_OPERATIONS_CLOSING.md) · Discovery: [`V3_3_G7_12_SETTLEMENT_OPERATIONS_DISCOVERY.md`](../audits/V3_3_G7_12_SETTLEMENT_OPERATIONS_DISCOVERY.md)
+
+- [x] G7.12.0–.11 detalle, pendientes, asignación por selección, transferencias parciales (también tras CLOSED), `proofUrl`, reversión con motivo, desglose BARTER, historial, estado derivado, contexto desde descuento, listado — `3570ccc`…`75c81ac`
+- [x] G7.12.12–.13 tests seguridad + económicos (`test:benefit-settlement-operations`) — `87d912f`
+- [x] Builds shared/api/web/scanner PASS; **sin migrations**
+- [ ] DB integration settlements — **NO EJECUTADO** (sin PostgreSQL local)
+- [ ] Upload privado de comprobantes (URLs firmadas) — diferido
+- [ ] QA browser G7.12 (checklist en cierre)
+- [ ] Push / deploy G7.11 + G7.12 — **NO** hasta confirmación explícita
+
 **Roadmap posterior (docs only, NOT STARTED):** [`V3_3_G8_G9_ROADMAP.md`](./V3_3_G8_G9_ROADMAP.md) — G8 Courtesy Coupons · G9 UX complementaria.
 
 ---
