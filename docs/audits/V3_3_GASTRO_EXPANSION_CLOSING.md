@@ -6,7 +6,7 @@
 
 ```text
 HEAD inicial (pre-G1 isolation): bf97378
-HEAD final:                       (actualizado en commit de cierre)
+HEAD final:                       2e1b5cd
 Push: NO
 Merge: NO
 Deploy: NO
