@@ -16,6 +16,7 @@ import { AdminGastroPendingEditPanel } from '@/components/admin/gastro/AdminGast
 import { GastroDiscountDetailContent } from '@/components/gastro/GastroDiscountDetailContent';
 import { GastroDiscountOperationalMetricsPanel } from '@/components/gastro/GastroDiscountOperationalMetricsPanel';
 import { AdminGastroDiscountCommercialContextPanel } from '@/components/admin/gastro/AdminGastroDiscountCommercialContextPanel';
+import { AdminGastroDiscountEconomicMetricsPanel } from '@/components/admin/gastro/AdminGastroDiscountEconomicMetricsPanel';
 import { useAdminBenefitAgreementPartnerHistory } from '@/lib/query/benefit-agreements';
 import {
   canArchiveGastroDiscount,
@@ -309,6 +310,11 @@ export default function AdminGastroDiscountDetailPage() {
       ) : null}
 
       <AdminGastroDiscountCommercialContextPanel profileId={canonicalProfileId} />
+
+      <AdminGastroDiscountEconomicMetricsPanel
+        profileId={canonicalProfileId}
+        discountId={discountId}
+      />
 
       <div className="mt-8">
         <AdminGastroDiscountPublicationEditor

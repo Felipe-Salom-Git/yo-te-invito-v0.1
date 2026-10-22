@@ -2958,6 +2958,10 @@ export interface AdminGastroRepo {
     profileId: string,
     discountId: string,
   ): Promise<import('@yo-te-invito/shared').GastroDiscountOperationalMetricsResponse>;
+  getDiscountEconomicMetrics(
+    profileId: string,
+    discountId: string,
+  ): Promise<import('@yo-te-invito/shared').GastroDiscountEconomicMetricsResponse>;
   getDiscountSummary(
     profileId: string,
     discountId: string,
