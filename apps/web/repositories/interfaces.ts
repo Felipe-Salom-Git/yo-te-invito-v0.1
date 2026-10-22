@@ -2381,7 +2381,9 @@ export interface GastroContent {
   type: 'editorial' | 'image';
   title: string | null;
   body: string | null;
+  /** Legacy/cover — first of galleryUrls when present. */
   imageUrl: string | null;
+  galleryUrls?: string[];
   sortOrder: number;
   status: GastroContentStatus;
   createdAt?: string;

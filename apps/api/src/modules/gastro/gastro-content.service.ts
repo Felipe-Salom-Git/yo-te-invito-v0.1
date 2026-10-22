@@ -5,8 +5,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import type { GastroContent } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import {
   ErrorCode,
+  prepareGastroContentGalleryWrite,
+  resolveGastroContentCoverImageUrl,
+  resolveGastroContentGalleryUrls,
   type GastroContentCreateInput,
   type GastroContentResponse,
   type GastroContentStatus,
@@ -54,6 +58,10 @@ export class GastroContentService {
   }
 
   private toResponse(row: GastroContent): GastroContentResponse {
+    const galleryInput = {
+      imageUrl: row.imageUrl,
+      galleryUrls: row.galleryUrls,
+    };
     return {
       id: row.id,
       eventId: row.eventId,
@@ -61,11 +69,34 @@ export class GastroContentService {
       type: this.mapType(row.type),
       title: row.title,
       body: row.body,
-      imageUrl: row.imageUrl,
+      imageUrl: resolveGastroContentCoverImageUrl(galleryInput),
+      galleryUrls: resolveGastroContentGalleryUrls(galleryInput),
       sortOrder: row.sortOrder,
       status: this.mapStatus(row.status),
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
+    };
+  }
+
+  private galleryWriteData(
+    input: {
+      imageUrl?: string | null;
+      galleryUrls?: string[] | null;
+    },
+    existing?: Pick<GastroContent, 'imageUrl' | 'galleryUrls'> | null,
+  ): { imageUrl: string | null; galleryUrls: Prisma.InputJsonValue | typeof Prisma.JsonNull } {
+    const prepared = prepareGastroContentGalleryWrite({
+      imageUrl: input.imageUrl,
+      galleryUrls: input.galleryUrls,
+      existingImageUrl: existing?.imageUrl,
+      existingGalleryUrls: existing?.galleryUrls,
+    });
+    return {
+      imageUrl: prepared.imageUrl,
+      galleryUrls:
+        prepared.galleryUrls.length > 0
+          ? (prepared.galleryUrls as Prisma.InputJsonValue)
+          : Prisma.JsonNull,
     };
   }
 
@@ -155,6 +186,10 @@ export class GastroContentService {
   ): Promise<GastroContentResponse> {
     const profile = await this.resolveProfileForEvent(tenantId, eventId, userId, userRole);
     const status = input.status ?? 'draft';
+    const gallery = this.galleryWriteData({
+      imageUrl: input.imageUrl,
+      galleryUrls: input.galleryUrls,
+    });
     const row = await this.prisma.gastroContent.create({
       data: {
         tenantId,
@@ -163,7 +198,8 @@ export class GastroContentService {
         type: this.toPrismaType(input.type),
         title: input.title?.trim() || null,
         body: input.body?.trim() || null,
-        imageUrl: input.imageUrl?.trim() || null,
+        imageUrl: gallery.imageUrl,
+        galleryUrls: gallery.galleryUrls,
         sortOrder: input.sortOrder ?? 0,
         status: this.toPrismaStatus(status),
       },
@@ -192,14 +228,28 @@ export class GastroContentService {
     const nextType = patch.type ?? this.mapType(existing.type);
     const nextTitle = patch.title !== undefined ? patch.title?.trim() || null : existing.title;
     const nextBody = patch.body !== undefined ? patch.body?.trim() || null : existing.body;
-    const nextImage =
-      patch.imageUrl !== undefined ? patch.imageUrl?.trim() || null : existing.imageUrl;
+    const galleryTouched =
+      patch.imageUrl !== undefined || patch.galleryUrls !== undefined;
+    const gallery = galleryTouched
+      ? this.galleryWriteData(
+          { imageUrl: patch.imageUrl, galleryUrls: patch.galleryUrls },
+          existing,
+        )
+      : null;
 
-    if (nextType === 'image' && !nextImage) {
-      throw new BadRequestException({
-        code: ErrorCode.VALIDATION_FAILED,
-        message: 'Las publicaciones de tipo imagen requieren imageUrl',
-      });
+    if (nextType === 'image') {
+      const cover =
+        gallery?.imageUrl ??
+        resolveGastroContentCoverImageUrl({
+          imageUrl: existing.imageUrl,
+          galleryUrls: existing.galleryUrls,
+        });
+      if (!cover) {
+        throw new BadRequestException({
+          code: ErrorCode.VALIDATION_FAILED,
+          message: 'Las publicaciones de tipo imagen requieren al menos una imagen',
+        });
+      }
     }
 
     const updated = await this.prisma.gastroContent.update({
@@ -208,7 +258,9 @@ export class GastroContentService {
         ...(patch.type !== undefined ? { type: this.toPrismaType(patch.type) } : {}),
         ...(patch.title !== undefined ? { title: nextTitle } : {}),
         ...(patch.body !== undefined ? { body: nextBody } : {}),
-        ...(patch.imageUrl !== undefined ? { imageUrl: nextImage } : {}),
+        ...(gallery
+          ? { imageUrl: gallery.imageUrl, galleryUrls: gallery.galleryUrls }
+          : {}),
         ...(patch.sortOrder !== undefined ? { sortOrder: patch.sortOrder } : {}),
         ...(patch.status !== undefined ? { status: this.toPrismaStatus(patch.status) } : {}),
       },

@@ -446,7 +446,10 @@ model GastroContent {
   type            GastroContentType
   title           String?
   body            String?
+  /// Legacy/cover image; kept in sync as first galleryUrls entry when gallery is set.
   imageUrl        String?
+  /// Ordered gallery URLs (same Json String[] pattern as GastroProfile.galleryUrls).
+  galleryUrls     Json?
   sortOrder       Int                 @default(0)
   status          GastroContentStatus @default(DRAFT)
   createdAt       DateTime            @default(now())
