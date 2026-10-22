@@ -94,6 +94,9 @@ export const adminGastroLocationDetailSchema = adminGastroLocationListItemSchema
   openingHoursWeekly: gastroLocalResponseSchema.shape.openingHoursWeekly,
   subcategoryId: z.string().nullable(),
   subcategoryName: z.string().nullable(),
+  /** Canonical multi-subcategory list (EventSubcategory on public event); primary flagged via isPrimary. */
+  subcategories: gastroLocalResponseSchema.shape.subcategories,
+  tags: gastroLocalResponseSchema.shape.tags,
   menuUrl: z.string().nullable(),
   websiteUrl: z.string().nullable(),
   bookingUrl: z.string().nullable(),

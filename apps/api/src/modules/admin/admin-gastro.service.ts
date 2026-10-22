@@ -33,6 +33,7 @@ import { readEntitySocialLinks } from '../../common/entity-social-links.util';
 import { parseRelatedLinks } from '../../common/related-links.util';
 import { loadEventTagsPublic } from '../../common/event-tags.util';
 import { loadEventSubcategoriesPublic } from '../../common/event-subcategories.util';
+import { resolveGastroPrimarySubcategoryName } from '@yo-te-invito/shared';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../../email/email.service';
 import { GastroFollowDiscountAlertsService } from '../notifications/gastro-follow-discount-alerts.service';
@@ -412,6 +413,7 @@ export class AdminGastroService {
     const owner = p.memberships[0]?.user;
     const tags = await loadEventTagsPublic(this.prisma, p.publicEventId);
     const subcategories = await loadEventSubcategoriesPublic(this.prisma, p.publicEventId);
+    const legacySubcategoryName = p.subcategory?.name ?? null;
     return {
       id: p.id,
       tenantId: p.tenantId,
@@ -436,7 +438,10 @@ export class AdminGastroService {
       openingHoursNote: p.openingHoursNote,
       ...readGastroOpeningHoursFields(p),
       subcategoryId: p.subcategoryId,
-      subcategoryName: p.subcategory?.name ?? null,
+      subcategoryName: resolveGastroPrimarySubcategoryName({
+        subcategoryName: legacySubcategoryName,
+        subcategories,
+      }),
       subcategories,
       menuUrl: p.menuUrl,
       websiteUrl: p.websiteUrl,

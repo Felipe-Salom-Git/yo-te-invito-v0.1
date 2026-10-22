@@ -11,6 +11,8 @@ import { readEntitySocialLinks } from '../common/entity-social-links.util';
 import { parseRelatedLinks } from '../common/related-links.util';
 import { readGastroOpeningHoursFields } from '../modules/gastro/gastro-profile-fields.util';
 import { loadEventTagsPublic } from '../common/event-tags.util';
+import { loadEventSubcategoriesPublic } from '../common/event-subcategories.util';
+import { resolveGastroPrimarySubcategoryName } from '@yo-te-invito/shared';
 
 @Injectable()
 export class PublicGastroLocationsService {
@@ -117,7 +119,11 @@ export class PublicGastroLocationsService {
         ? (row.galleryUrls as string[])
         : null;
     const content = await this.gastroContent.listPublishedForProfile(tenantId, row.id);
-    const tags = await loadEventTagsPublic(this.prisma, row.publicEventId);
+    const [tags, subcategories] = await Promise.all([
+      loadEventTagsPublic(this.prisma, row.publicEventId),
+      loadEventSubcategoriesPublic(this.prisma, row.publicEventId),
+    ]);
+    const legacySubcategoryName = row.subcategory?.name ?? null;
     return {
       id: row.id,
       tenantId: row.tenantId,
@@ -150,7 +156,11 @@ export class PublicGastroLocationsService {
       subcategoryId: row.subcategoryId,
       publicEventId: row.publicEventId,
       status: row.status,
-      subcategoryName: row.subcategory?.name ?? null,
+      subcategoryName: resolveGastroPrimarySubcategoryName({
+        subcategoryName: legacySubcategoryName,
+        subcategories,
+      }),
+      subcategories,
       ratingAvg: row.ratingAvg,
       ratingCount: row.ratingCount,
       createdAt: row.createdAt.toISOString(),

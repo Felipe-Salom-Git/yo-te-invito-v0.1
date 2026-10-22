@@ -160,12 +160,26 @@ export type PublicGastroLocationSummary = z.infer<typeof publicGastroLocationSum
 import { publicGastroContentItemSchema } from './gastro-content';
 
 export const publicGastroLocationDetailSchema = gastroLocalResponseSchema.extend({
+  /** Legacy/primary display name; prefer `subcategories` for full taxonomy. */
   subcategoryName: z.string().nullable(),
   ratingAvg: z.number().nullable().optional(),
   ratingCount: z.number().int().optional(),
   content: z.array(publicGastroContentItemSchema).optional(),
 });
 export type PublicGastroLocationDetail = z.infer<typeof publicGastroLocationDetailSchema>;
+
+/** Resolve primary subcategory name from multi-list or legacy single name. */
+export function resolveGastroPrimarySubcategoryName(input: {
+  subcategoryName?: string | null;
+  subcategories?: Array<{ name: string; isPrimary?: boolean }> | null;
+}): string | null {
+  const list = input.subcategories ?? [];
+  if (list.length > 0) {
+    const primary = list.find((s) => s.isPrimary) ?? list[0];
+    return primary?.name?.trim() || null;
+  }
+  return input.subcategoryName?.trim() || null;
+}
 
 export const publicGastroLocationsListQuerySchema = z.object({
   tenantId: z.string().min(1),

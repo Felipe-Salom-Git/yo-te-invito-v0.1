@@ -887,7 +887,7 @@ export class PublicEventsService {
         event.category === 'excursion' ? readExcursionSchedulePublic(event) : undefined,
       relatedLinks: parseRelatedLinks(event.relatedLinks),
       subcategories:
-        event.category === 'excursion'
+        event.category === 'excursion' || event.category === 'gastro'
           ? mapEventSubcategoriesPublic(event.eventSubcategories)
           : undefined,
       tags: mapEventTagsPublic(event.eventTags),
