@@ -2168,11 +2168,39 @@ export class ApiRepository implements Repositories {
       const raw = await this.client.get<GastroContent[]>(`/gastro/events/${encodeURIComponent(eventId)}/content`);
       return Array.isArray(raw) ? raw : [];
     },
+    listContentByProfile: async (profileId) => {
+      const raw = await this.client.get<GastroContent[]>(
+        '/gastro/content',
+        profileId ? { profileId } : undefined,
+      );
+      return Array.isArray(raw) ? raw : [];
+    },
     createContent: async (eventId: string, input) => {
       return this.client.post<GastroContent>(`/gastro/events/${encodeURIComponent(eventId)}/content`, input);
     },
+    createContentForProfile: async (profileId, input) => {
+      return this.client.post<GastroContent>(
+        '/gastro/content',
+        input,
+        profileId ? { profileId } : undefined,
+      );
+    },
     updateContent: async (id: string, patch) => {
       return this.client.patch<GastroContent>(`/gastro/content/${encodeURIComponent(id)}`, patch);
+    },
+    archiveContent: async (id: string) => {
+      return this.client.post<GastroContent>(
+        `/gastro/content/${encodeURIComponent(id)}/archive`,
+        {},
+      );
+    },
+    reorderContent: async (profileId, orderedIds) => {
+      const raw = await this.client.put<GastroContent[]>(
+        '/gastro/content/reorder',
+        { orderedIds },
+        profileId ? { profileId } : undefined,
+      );
+      return Array.isArray(raw) ? raw : [];
     },
     listDiscounts: async (eventId: string) => {
       const raw = await this.client.get<GastroDiscount[]>(`/gastro/events/${encodeURIComponent(eventId)}/discounts`);

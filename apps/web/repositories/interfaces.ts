@@ -2713,7 +2713,9 @@ export interface PublicGastroLocationsRepo {
 }
 
 export interface GastroRepo {
+  /** @deprecated Prefer listContentByProfile — kept for legacy event routes. */
   listContent(eventId: string): Promise<GastroContent[]>;
+  listContentByProfile(profileId?: string): Promise<GastroContent[]>;
   createContent(
     eventId: string,
     input: {
@@ -2721,11 +2723,37 @@ export interface GastroRepo {
       title?: string | null;
       body?: string | null;
       imageUrl?: string | null;
+      galleryUrls?: string[] | null;
       sortOrder?: number;
       status?: GastroContentStatus;
     },
   ): Promise<GastroContent>;
-  updateContent(id: string, patch: Partial<GastroContent>): Promise<GastroContent>;
+  createContentForProfile(
+    profileId: string | undefined,
+    input: {
+      type: GastroContent['type'];
+      title?: string | null;
+      body?: string | null;
+      imageUrl?: string | null;
+      galleryUrls?: string[] | null;
+      sortOrder?: number;
+      status?: GastroContentStatus;
+    },
+  ): Promise<GastroContent>;
+  updateContent(
+    id: string,
+    patch: {
+      type?: GastroContent['type'];
+      title?: string | null;
+      body?: string | null;
+      imageUrl?: string | null;
+      galleryUrls?: string[] | null;
+      sortOrder?: number;
+      status?: GastroContentStatus;
+    },
+  ): Promise<GastroContent>;
+  archiveContent(id: string): Promise<GastroContent>;
+  reorderContent(profileId: string | undefined, orderedIds: string[]): Promise<GastroContent[]>;
   listDiscounts(eventId: string): Promise<GastroDiscount[]>;
   createDiscount(eventId: string, input: { code: string; type: string; value: number; validFrom?: string; validTo?: string }): Promise<GastroDiscount>;
   updateDiscount(id: string, patch: Partial<GastroDiscount>): Promise<GastroDiscount | null>;

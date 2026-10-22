@@ -497,6 +497,8 @@ export const gastroKeys = {
   discountVisualTemplate: (id: string) =>
     [...gastroKeys.all, 'discount-visual-template', id] as const,
   content: (eventId: string) => [...gastroKeys.all, 'content', eventId] as const,
+  contentByProfile: (profileId: string) =>
+    [...gastroKeys.all, 'content-by-profile', profileId] as const,
   validations: (filtersKey: string) => [...gastroKeys.all, 'validations', filtersKey] as const,
 };
 
