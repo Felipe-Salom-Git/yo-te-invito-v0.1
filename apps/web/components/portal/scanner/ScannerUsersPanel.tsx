@@ -207,8 +207,8 @@ export function ScannerUsersPanel({ portal }: Props) {
           <table className="min-w-full text-left text-sm">
             <thead className="border-b border-border bg-bg-muted/50 text-xs uppercase text-text-muted">
               <tr>
-                <th className="px-4 py-3 font-medium">Nombre</th>
-                <th className="px-4 py-3 font-medium">Usuario</th>
+                <th className="px-4 py-3 font-medium">Scanner</th>
+                <th className="px-4 py-3 font-medium">{copy.parentLabel}</th>
                 <th className="px-4 py-3 font-medium">Estado</th>
                 <th className="px-4 py-3 font-medium text-right">Acciones</th>
               </tr>
@@ -217,10 +217,15 @@ export function ScannerUsersPanel({ portal }: Props) {
               {items.map((account) => (
                 <tr key={account.id} className="bg-bg">
                   <td className="px-4 py-3 text-text">
-                    {account.firstName} {account.lastName}
+                    <div className="font-medium">
+                      {account.username ?? account.email ?? '—'}
+                    </div>
+                    <div className="mt-0.5 text-xs text-text-muted">
+                      {[account.firstName, account.lastName].filter(Boolean).join(' ') || 'Sin nombre'}
+                    </div>
                   </td>
-                  <td className="px-4 py-3 font-mono text-text-muted">
-                    {account.username ?? account.email ?? '—'}
+                  <td className="px-4 py-3 text-text">
+                    {account.parentDisplayName?.trim() || '—'}
                   </td>
                   <td className="px-4 py-3">
                     <StatusBadge account={account} />

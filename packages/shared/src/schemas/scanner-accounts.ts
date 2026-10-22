@@ -20,6 +20,8 @@ export const scannerAccountSummarySchema = z.object({
   isActive: z.boolean(),
   parentProfileType: scannerParentProfileTypeSchema,
   parentProfileId: z.string(),
+  /** Human label for parent (GastroProfile.displayName / ProducerProfile.displayName). */
+  parentDisplayName: z.string().nullable().optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });

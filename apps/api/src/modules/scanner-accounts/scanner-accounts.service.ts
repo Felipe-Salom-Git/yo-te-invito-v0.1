@@ -74,9 +74,47 @@ export class ScannerAccountsService {
       isActive: row.isActive,
       parentProfileType: row.parentProfileType,
       parentProfileId: row.parentProfileId,
+      parentDisplayName: null,
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
     };
+  }
+
+  private async resolveParentDisplayNames(
+    rows: Array<{ parentProfileType: ScannerParentProfileType; parentProfileId: string }>,
+  ): Promise<Map<string, string>> {
+    const byType = new Map<ScannerParentProfileType, Set<string>>();
+    for (const row of rows) {
+      const set = byType.get(row.parentProfileType) ?? new Set<string>();
+      set.add(row.parentProfileId);
+      byType.set(row.parentProfileType, set);
+    }
+    const labels = new Map<string, string>();
+    const key = (type: ScannerParentProfileType, id: string) => `${type}:${id}`;
+
+    const gastroIds = [...(byType.get(ScannerParentProfileType.GASTRO) ?? [])];
+    if (gastroIds.length > 0) {
+      const profiles = await this.prisma.gastroProfile.findMany({
+        where: { id: { in: gastroIds } },
+        select: { id: true, displayName: true },
+      });
+      for (const p of profiles) {
+        labels.set(key(ScannerParentProfileType.GASTRO, p.id), p.displayName);
+      }
+    }
+
+    const producerIds = [...(byType.get(ScannerParentProfileType.PRODUCER) ?? [])];
+    if (producerIds.length > 0) {
+      const profiles = await this.prisma.producerProfile.findMany({
+        where: { id: { in: producerIds } },
+        select: { id: true, displayName: true },
+      });
+      for (const p of profiles) {
+        labels.set(key(ScannerParentProfileType.PRODUCER, p.id), p.displayName);
+      }
+    }
+
+    return labels;
   }
 
   private async listRows(where: Prisma.ScannerAccountWhereInput): Promise<ScannerAccountsListResponse> {
@@ -99,10 +137,21 @@ export class ScannerAccountsService {
       orderBy: { createdAt: 'desc' },
     });
 
+    const filtered = rows.filter(
+      (r) => r.scannerUser.deletedAt == null && r.scannerUser.role === PrismaRole.SCANNER,
+    );
+    const labels = await this.resolveParentDisplayNames(filtered);
+    const labelKey = (type: ScannerParentProfileType, id: string) => `${type}:${id}`;
+
     return {
-      data: rows
-        .filter((r) => r.scannerUser.deletedAt == null && r.scannerUser.role === PrismaRole.SCANNER)
-        .map((r) => this.mapRow(r)),
+      data: filtered.map((r) => {
+        const base = this.mapRow(r);
+        return {
+          ...base,
+          parentDisplayName:
+            labels.get(labelKey(r.parentProfileType, r.parentProfileId)) ?? null,
+        };
+      }),
     };
   }
 
