@@ -13,16 +13,14 @@ import { LiquidacionesSubnav } from '@/components/admin/liquidaciones/Liquidacio
 import { SettlementAuditPanel } from '@/components/admin/liquidaciones/SettlementAuditPanel';
 import { SettlementOverviewSection } from '@/components/admin/liquidaciones/SettlementOverviewSection';
 import { SettlementPendingValidationsSection } from '@/components/admin/liquidaciones/SettlementPendingValidationsSection';
+import { SettlementCashTransfersSection } from '@/components/admin/liquidaciones/SettlementCashTransfersSection';
 import { BENEFIT_VERTICAL_LABEL } from '@/lib/admin/benefit-agreement-labels';
 import {
   useAdminBenefitSettlement,
   useAdminBenefitSettlementAudit,
-  useAdminBenefitSettlementTransfers,
   useAllocateAdminBenefitSettlement,
   useCloseAdminBenefitSettlement,
   useRefreshAdminBenefitSettlement,
-  useRegisterAdminBenefitSettlementTransfer,
-  useReverseAdminBenefitSettlementTransfer,
 } from '@/lib/query/benefit-settlements';
 import { useAdminCourtesyCreditBalance } from '@/lib/query/courtesy-credit-ledger';
 import {
@@ -35,12 +33,6 @@ import {
   mapBenefitSettlementErrorMessage,
 } from '@yo-te-invito/shared';
 
-function pesosInputToCentsString(pesos: string): string {
-  const digits = pesos.replace(/\D/g, '');
-  if (!digits) return '0';
-  return (BigInt(digits) * BigInt(100)).toString();
-}
-
 function SummaryCard({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-lg border border-border bg-bg-muted p-3">
@@ -52,20 +44,13 @@ function SummaryCard({ label, value }: { label: string; value: string }) {
 
 export function SettlementDetailClient({ id }: { id: string }) {
   const { data: settlement, isLoading, isError } = useAdminBenefitSettlement(id);
-  const { data: transfersData } = useAdminBenefitSettlementTransfers(id);
   const auditQuery = useAdminBenefitSettlementAudit(id);
   const refreshMutation = useRefreshAdminBenefitSettlement();
   const allocateMutation = useAllocateAdminBenefitSettlement();
   const closeMutation = useCloseAdminBenefitSettlement();
-  const registerTransferMutation = useRegisterAdminBenefitSettlementTransfer();
-  const reverseTransferMutation = useReverseAdminBenefitSettlementTransfer();
 
   const [cashCount, setCashCount] = useState('1');
   const [barterCount, setBarterCount] = useState('1');
-  const [transferPesos, setTransferPesos] = useState('');
-  const [transferDate, setTransferDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [transferReference, setTransferReference] = useState('');
-  const [transferNotes, setTransferNotes] = useState('');
   const [actionError, setActionError] = useState<string | null>(null);
   const [refreshNote, setRefreshNote] = useState<string | null>(null);
 
@@ -106,7 +91,6 @@ export function SettlementDetailClient({ id }: { id: string }) {
 
   const { summary } = settlement;
   const isClosed = settlement.status === 'CLOSED';
-  const transfers = transfersData?.data ?? [];
   const expectedCredit = summary.barterCreditExpectedCents;
   const materializedCredit = summary.barterCreditMaterializedCents;
   const creditDrift =
@@ -191,58 +175,6 @@ export function SettlementDetailClient({ id }: { id: string }) {
     if (!ok) return;
     try {
       await closeMutation.mutateAsync(id);
-    } catch (err) {
-      setActionError(mapBenefitSettlementErrorMessage(err));
-    }
-  };
-
-  const handleRegisterTransfer = async () => {
-    setActionError(null);
-    const amountCents = pesosInputToCentsString(transferPesos);
-    if (amountCents === '0') {
-      setActionError('Ingresá un monto válido.');
-      return;
-    }
-    const outstanding = BigInt(summary.cashOutstandingCents);
-    if (BigInt(amountCents) > outstanding) {
-      const proceed = window.confirm(
-        `El importe supera el saldo pendiente de transferencia (${formatBenefitMoneyCents(summary.cashOutstandingCents)}).\n\nEl backend validará el registro. ¿Continuar?`,
-      );
-      if (!proceed) return;
-    }
-    try {
-      await registerTransferMutation.mutateAsync({
-        id,
-        body: {
-          amountCents,
-          currency: 'ARS',
-          transferredAt: new Date(`${transferDate}T12:00:00.000Z`).toISOString(),
-          ...(transferReference.trim() ? { reference: transferReference.trim() } : {}),
-          ...(transferNotes.trim() ? { notes: transferNotes.trim() } : {}),
-        },
-      });
-      setTransferPesos('');
-      setTransferReference('');
-      setTransferNotes('');
-    } catch (err) {
-      setActionError(mapBenefitSettlementErrorMessage(err));
-    }
-  };
-
-  const handleReverseTransfer = async (transferId: string) => {
-    setActionError(null);
-    const reason = window.prompt('Motivo de reversión (obligatorio):');
-    if (!reason?.trim()) return;
-    const ok = window.confirm(
-      'La transferencia no se eliminará; quedará registrada como revertida.\n\n¿Confirmar?',
-    );
-    if (!ok) return;
-    try {
-      await reverseTransferMutation.mutateAsync({
-        id,
-        transferId,
-        body: { reason: reason.trim() },
-      });
     } catch (err) {
       setActionError(mapBenefitSettlementErrorMessage(err));
     }
@@ -416,109 +348,7 @@ export function SettlementDetailClient({ id }: { id: string }) {
         ) : null}
       </section>
 
-      <section className="mt-8">
-        <h3 className="font-medium text-text">Transferencias</h3>
-        {transfers.length === 0 ? (
-          <p className="mt-2 text-sm text-text-muted">Sin transferencias registradas.</p>
-        ) : (
-          <div className="mt-3 overflow-x-auto">
-            <table className="min-w-full text-left text-sm">
-              <thead>
-                <tr className="border-b border-border text-text-muted">
-                  <th className="px-2 py-2">Fecha</th>
-                  <th className="px-2 py-2">Monto</th>
-                  <th className="px-2 py-2">Referencia</th>
-                  <th className="px-2 py-2">Estado</th>
-                  <th className="px-2 py-2" />
-                </tr>
-              </thead>
-              <tbody>
-                {transfers.map((t) => (
-                  <tr key={t.id} className="border-b border-border/60">
-                    <td className="px-2 py-2">
-                      {new Date(t.transferredAt).toLocaleDateString('es-AR')}
-                    </td>
-                    <td className="px-2 py-2">
-                      {formatBenefitMoneyCents(t.amountCents)}
-                    </td>
-                    <td className="px-2 py-2">{t.reference ?? '—'}</td>
-                    <td className="px-2 py-2">
-                      {t.isActive ? (
-                        <Badge>Registrada</Badge>
-                      ) : (
-                        <Badge>Revertida</Badge>
-                      )}
-                    </td>
-                    <td className="px-2 py-2">
-                      {t.isActive ? (
-                        <button
-                          type="button"
-                          className="text-sm text-accent hover:underline disabled:opacity-50"
-                          disabled={reverseTransferMutation.isPending}
-                          onClick={() => handleReverseTransfer(t.id)}
-                        >
-                          Revertir transferencia
-                        </button>
-                      ) : null}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {summary.cashDueCents !== '0' && !isClosed ? (
-          <div className="mt-4 rounded-lg border border-border p-4">
-            <h4 className="font-medium text-text">Registrar transferencia</h4>
-            <p className="mt-1 text-sm text-text-muted">
-              Pendiente actual: {formatBenefitMoneyCents(summary.cashOutstandingCents)}
-            </p>
-            <div className="mt-3 grid max-w-md gap-3">
-              <label className="text-sm">
-                Monto (ARS, sin centavos)
-                <input
-                  className="mt-1 w-full rounded border border-border bg-bg px-2 py-1"
-                  value={transferPesos}
-                  onChange={(e) => setTransferPesos(e.target.value)}
-                />
-              </label>
-              <label className="text-sm">
-                Fecha
-                <input
-                  type="date"
-                  className="mt-1 w-full rounded border border-border bg-bg px-2 py-1"
-                  value={transferDate}
-                  onChange={(e) => setTransferDate(e.target.value)}
-                />
-              </label>
-              <label className="text-sm">
-                Referencia (opcional)
-                <input
-                  className="mt-1 w-full rounded border border-border bg-bg px-2 py-1"
-                  value={transferReference}
-                  onChange={(e) => setTransferReference(e.target.value)}
-                />
-              </label>
-              <label className="text-sm">
-                Notas (opcional)
-                <textarea
-                  className="mt-1 w-full rounded border border-border bg-bg px-2 py-1"
-                  rows={2}
-                  value={transferNotes}
-                  onChange={(e) => setTransferNotes(e.target.value)}
-                />
-              </label>
-              <Button
-                disabled={registerTransferMutation.isPending}
-                onClick={handleRegisterTransfer}
-              >
-                {registerTransferMutation.isPending ? 'Registrando…' : 'Registrar transferencia'}
-              </Button>
-            </div>
-          </div>
-        ) : null}
-      </section>
+      <SettlementCashTransfersSection settlementId={id} summary={summary} />
 
       <section className="mt-8">
         <h3 className="font-medium text-text">Ledger de crédito</h3>
