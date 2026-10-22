@@ -461,6 +461,7 @@ export class BenefitSettlementReportingService {
           actorLabel: actorMap.get(log.actorId) ?? 'Usuario no disponible',
           entityType: log.entityType,
           entityId: log.entityId,
+          action: log.action,
           tieBreak: log.id,
         }),
       ),
@@ -487,6 +488,7 @@ export class BenefitSettlementReportingService {
         actorLabel: e.actorLabel,
         entityType: e.entityType,
         entityId: e.entityId,
+        ...(e.action ? { action: e.action } : {}),
       })),
     };
   }

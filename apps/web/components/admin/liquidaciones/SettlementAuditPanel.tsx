@@ -5,6 +5,7 @@ import { useAdminBenefitSettlementAudit } from '@/lib/query/benefit-settlements'
 import {
   BENEFIT_INTEGRITY_STATUS_LABEL,
   COURTESY_LEDGER_ENTRY_TYPE_LABEL,
+  buildSettlementHistory,
   formatBenefitMoneyCents,
   formatSignedBenefitMoneyCents,
 } from '@yo-te-invito/shared';
@@ -25,6 +26,8 @@ export function SettlementAuditPanel({ settlementId }: { settlementId: string })
   if (isError || !data) {
     return <p className="mt-4 text-sm text-red-500">No se pudo cargar la auditoría.</p>;
   }
+
+  const history = buildSettlementHistory(data.timeline, data.transfers);
 
   return (
     <section className="mt-8 rounded-lg border border-border p-4">
@@ -67,27 +70,41 @@ export function SettlementAuditPanel({ settlementId }: { settlementId: string })
         </div>
       ) : null}
 
-      {data.timeline.length > 0 ? (
+      {history.length > 0 ? (
         <div className="mt-6">
-          <h4 className="text-sm font-medium text-text">Línea de tiempo</h4>
-          <ul className="mt-2 max-h-64 space-y-2 overflow-y-auto text-sm">
-            {data.timeline.map((event, idx) => (
-              <li key={`${event.occurredAt}-${event.kind}-${idx}`} className="border-l-2 border-border pl-3">
-                <div className="text-xs text-text-muted">
-                  {new Date(event.occurredAt).toLocaleString('es-AR')}
-                </div>
-                <div>{event.label}</div>
-                {event.amountCents ? (
-                  <div className="text-text-muted">
-                    {formatBenefitMoneyCents(event.amountCents)}
-                  </div>
-                ) : null}
-                {event.actorLabel ? (
-                  <div className="text-xs text-text-muted">Por: {event.actorLabel}</div>
-                ) : null}
-              </li>
-            ))}
-          </ul>
+          <h4 className="text-sm font-medium text-text">Historial</h4>
+          <div className="mt-2 max-h-96 overflow-auto">
+            <table className="min-w-full text-left text-xs">
+              <thead>
+                <tr className="text-text-muted">
+                  <th className="px-1 py-1">Fecha</th>
+                  <th className="px-1 py-1">Tipo</th>
+                  <th className="px-1 py-1">Detalle</th>
+                  <th className="px-1 py-1">Monto</th>
+                  <th className="px-1 py-1">Responsable</th>
+                  <th className="px-1 py-1">Referencia</th>
+                  <th className="px-1 py-1">Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {history.map((row, idx) => (
+                  <tr key={`${row.occurredAt}-${idx}`} className="border-t border-border/50">
+                    <td className="whitespace-nowrap px-1 py-1">
+                      {new Date(row.occurredAt).toLocaleString('es-AR')}
+                    </td>
+                    <td className="px-1 py-1">{row.type}</td>
+                    <td className="px-1 py-1">{row.description}</td>
+                    <td className="px-1 py-1">
+                      {row.amountCents ? formatBenefitMoneyCents(row.amountCents) : '—'}
+                    </td>
+                    <td className="px-1 py-1">{row.actorLabel ?? '—'}</td>
+                    <td className="px-1 py-1">{row.reference ?? '—'}</td>
+                    <td className="px-1 py-1">{row.status ?? '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       ) : null}
 

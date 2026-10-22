@@ -177,6 +177,8 @@ export interface BenefitTimelineEvent {
   actorLabel?: string | null;
   entityType?: string;
   entityId?: string;
+  /** AuditLog.action when kind = AUDIT (lets UI dedupe/label without parsing `label`). */
+  action?: string;
   tieBreak: string;
 }
 

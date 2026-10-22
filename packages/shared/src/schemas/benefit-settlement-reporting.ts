@@ -153,6 +153,7 @@ export const benefitSettlementAuditTimelineEventSchema = z.object({
   actorLabel: z.string().nullable().optional(),
   entityType: z.string().optional(),
   entityId: z.string().optional(),
+  action: z.string().optional(),
 });
 
 export const benefitSettlementAuditResponseSchema = z.object({
