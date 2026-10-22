@@ -1,0 +1,61 @@
+import {
+  formatBarterMultiplierLabel,
+  groupSettlementAllocationsByRate,
+  type SettlementAllocationLike,
+} from './benefit-settlement-operations';
+
+function assert(cond: unknown, msg: string): asserts cond {
+  if (!cond) throw new Error(`FAIL: ${msg}`);
+}
+
+const usage = (
+  mode: 'CASH' | 'BARTER',
+  agreementId = 'ag-1',
+  unit = '500000',
+  mult = '2.0000',
+  materialized?: string,
+): SettlementAllocationLike => ({
+  mode,
+  agreementId,
+  unitPriceCents: unit,
+  barterMultiplier: mult,
+  baseAmountCents: unit,
+  creditMaterializedCents: materialized,
+});
+
+// MIXED: 20 uses → 10 CASH + 10 BARTER at $5.000, ×2
+const mixed = [
+  ...Array.from({ length: 10 }, () => usage('CASH')),
+  ...Array.from({ length: 10 }, () => usage('BARTER', 'ag-1', '500000', '2.0000', '1000000')),
+];
+const cash = groupSettlementAllocationsByRate(mixed, 'CASH');
+assert(cash.length === 1 && cash[0]!.usageCount === 10, 'cash 10 uses');
+assert(cash[0]!.baseAmountCents === '5000000', 'cash base $50.000');
+assert(cash[0]!.creditExpectedCents === '0', 'cash has no credit');
+
+const barter = groupSettlementAllocationsByRate(mixed, 'BARTER');
+assert(barter.length === 1 && barter[0]!.usageCount === 10, 'barter 10 uses');
+assert(barter[0]!.baseAmountCents === '5000000', 'barter base $50.000');
+assert(barter[0]!.creditExpectedCents === '10000000', 'barter credit $100.000 (×2)');
+assert(barter[0]!.creditMaterializedCents === '10000000', 'materialized matches ledger');
+
+// Historical snapshots: new agreement after replacement → separate segment, old kept
+const history = [
+  usage('BARTER', 'ag-old', '500000', '2.0000'),
+  usage('BARTER', 'ag-new', '700000', '1.5000'),
+  usage('BARTER', 'ag-old', '500000', '2.0000'),
+];
+const segs = groupSettlementAllocationsByRate(history, 'BARTER');
+assert(segs.length === 2, 'two snapshot segments');
+const old = segs.find((s) => s.agreementId === 'ag-old')!;
+assert(old.usageCount === 2 && old.unitPriceCents === '500000', 'old snapshot preserved');
+assert(old.creditExpectedCents === '2000000', 'old credit uses old multiplier');
+const neu = segs.find((s) => s.agreementId === 'ag-new')!;
+assert(neu.creditExpectedCents === '1050000', 'new credit 7000 × 1.5');
+
+assert(groupSettlementAllocationsByRate([], 'CASH').length === 0, 'empty');
+assert(formatBarterMultiplierLabel('2.0000') === '×2', 'mult ×2');
+assert(formatBarterMultiplierLabel('1.5000') === '×1.5', 'mult ×1.5');
+assert(formatBarterMultiplierLabel('1.2500') === '×1.25', 'mult ×1.25');
+
+console.log('OK: settlement rate segments (CASH/BARTER/mixed/snapshots)');

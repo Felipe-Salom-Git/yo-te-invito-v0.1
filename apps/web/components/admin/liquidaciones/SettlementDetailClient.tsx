@@ -11,9 +11,11 @@ import {
 } from '@/components';
 import { LiquidacionesSubnav } from '@/components/admin/liquidaciones/LiquidacionesSubnav';
 import { SettlementAuditPanel } from '@/components/admin/liquidaciones/SettlementAuditPanel';
+import { SettlementOverviewSection } from '@/components/admin/liquidaciones/SettlementOverviewSection';
 import { BENEFIT_VERTICAL_LABEL } from '@/lib/admin/benefit-agreement-labels';
 import {
   useAdminBenefitSettlement,
+  useAdminBenefitSettlementAudit,
   useAdminBenefitSettlementTransfers,
   useAllocateAdminBenefitSettlement,
   useCloseAdminBenefitSettlement,
@@ -50,6 +52,7 @@ function SummaryCard({ label, value }: { label: string; value: string }) {
 export function SettlementDetailClient({ id }: { id: string }) {
   const { data: settlement, isLoading, isError } = useAdminBenefitSettlement(id);
   const { data: transfersData } = useAdminBenefitSettlementTransfers(id);
+  const auditQuery = useAdminBenefitSettlementAudit(id);
   const refreshMutation = useRefreshAdminBenefitSettlement();
   const allocateMutation = useAllocateAdminBenefitSettlement();
   const closeMutation = useCloseAdminBenefitSettlement();
@@ -292,51 +295,18 @@ export function SettlementDetailClient({ id }: { id: string }) {
       {refreshNote ? <p className="mt-2 text-sm text-accent">{refreshNote}</p> : null}
       {actionError ? <p className="mt-2 text-sm text-red-500">{actionError}</p> : null}
 
-      <section className="mt-8">
-        <h3 className="font-medium text-text">Resumen</h3>
-        <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
-          <div>
-            <dt className="text-text-muted">Partner</dt>
-            <dd>{settlement.partnerDisplayName ?? '—'}</dd>
-          </div>
-          <div>
-            <dt className="text-text-muted">Período</dt>
-            <dd>{formatBenefitSettlementPeriodLabel(settlement.periodKey)}</dd>
-          </div>
-          <div>
-            <dt className="text-text-muted">Base económico generado</dt>
-            <dd>{formatBenefitMoneyCents(summary.eligibleBaseAmountCents)}</dd>
-          </div>
-          <div>
-            <dt className="text-text-muted">Acuerdo comercial</dt>
-            <dd>
-              <Link href={agreementHref} className="text-accent hover:underline">
-                Ver acuerdo comercial
-              </Link>
-            </dd>
-          </div>
-        </dl>
-      </section>
-
-      <section className="mt-8">
-        <h3 className="font-medium text-text">Usos</h3>
-        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <SummaryCard label="Elegibles" value={String(summary.eligibleUsageCount)} />
-          <SummaryCard label="CASH" value={String(summary.allocatedCashCount)} />
-          <SummaryCard label="BARTER" value={String(summary.allocatedBarterCount)} />
-          <SummaryCard
-            label="Pendientes de definir"
-            value={`${summary.pendingUsageCount} usos`}
-          />
-        </div>
-        {summary.pendingUsageCount === 0 && summary.eligibleUsageCount > 0 ? null : summary.pendingUsageCount === 0 ? (
-          <EmptyState
-            className="mt-4"
-            title="No hay usos pendientes de asignar"
-            description="Todos los usos elegibles ya tienen asignación económica."
-          />
-        ) : null}
-      </section>
+      <SettlementOverviewSection
+        settlement={settlement}
+        audit={auditQuery.data}
+        agreementHref={agreementHref}
+      />
+      {summary.eligibleUsageCount === 0 ? (
+        <EmptyState
+          className="mt-4"
+          title="Sin usos validados en el período"
+          description="Cuando haya validaciones del partner en este período, usá «Actualizar usos»."
+        />
+      ) : null}
 
       {!isClosed && summary.pendingUsageCount > 0 ? (
         <section className="mt-8 rounded-lg border border-border p-4">
@@ -394,28 +364,6 @@ export function SettlementDetailClient({ id }: { id: string }) {
           </div>
         </section>
       ) : null}
-
-      <section className="mt-8">
-        <h3 className="font-medium text-text">CASH — transferencias</h3>
-        <div className="mt-3 grid gap-3 sm:grid-cols-3">
-          <SummaryCard
-            label="Cash asignado (base)"
-            value={formatBenefitMoneyCents(summary.cashBaseAmountCents)}
-          />
-          <SummaryCard
-            label="Cash recibido"
-            value={formatBenefitMoneyCents(summary.cashReceivedCents)}
-          />
-          <SummaryCard
-            label="Cash pendiente"
-            value={formatBenefitMoneyCents(summary.cashOutstandingCents)}
-          />
-        </div>
-        <p className="mt-2 text-xs text-text-muted">
-          Due: {formatBenefitMoneyCents(summary.cashDueCents)} · Cobranza:{' '}
-          {BENEFIT_CASH_COLLECTION_STATUS_LABEL[summary.cashCollectionStatus]}
-        </p>
-      </section>
 
       <section className="mt-8">
         <h3 className="font-medium text-text">Canje — crédito de cortesías</h3>
