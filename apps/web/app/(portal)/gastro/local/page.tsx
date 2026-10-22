@@ -11,8 +11,6 @@ import { GastroLocationStatusBadge } from '@/components/gastro/GastroLocationSta
 import { useGastroActiveLocation } from '@/lib/gastro/GastroActiveLocationContext';
 import { gastroKeys } from '@/lib/query/keys';
 
-const TENANT_ID = 'tenant-demo';
-
 export default function GastroLocalPage() {
   const repos = useRepositories();
   const { profileId, locations } = useGastroActiveLocation();
@@ -23,15 +21,10 @@ export default function GastroLocalPage() {
     enabled: !!profileId,
   });
 
-  const { data: subcategories } = useQuery({
-    queryKey: ['subcategories', 'gastro', TENANT_ID],
-    queryFn: () => repos.subcategories.listPublic(TENANT_ID, 'gastro'),
-    enabled: !!local?.subcategoryId,
-  });
-
-  const subcategoryName = local?.subcategoryId
-    ? subcategories?.find((s) => s.id === local.subcategoryId)?.name
-    : null;
+  const subcategoryName =
+    local?.subcategories?.find((s) => s.isPrimary)?.name ??
+    local?.subcategories?.[0]?.name ??
+    null;
 
   const showListOnly = locations.length > 1 && !profileId;
 

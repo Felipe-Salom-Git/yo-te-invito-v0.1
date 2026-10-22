@@ -2,10 +2,12 @@
 
 import { formatPublicLocationText } from '@/lib/maps';
 import Link from 'next/link';
+import { resolveGastroPrimarySubcategoryName } from '@yo-te-invito/shared';
 import type { GastroLocal } from '@/repositories/interfaces';
 import { buildGastroGalleryImages } from '@/lib/gastro/gallery';
 import { GastroOpeningHoursSummary } from '@/components/gastro/GastroOpeningHoursSummary';
 import { RentalGalleryThumbnails } from '@/components/rentals/RentalGalleryThumbnails';
+import { ContentTagChips } from '@/components/content-tags/ContentTagChips';
 
 type GastroLocalPreviewProps = {
   local: GastroLocal;
@@ -21,6 +23,14 @@ export function GastroLocalPreview({ local, subcategoryName }: GastroLocalPrevie
       province: local.province,
     })?.replace('\n', ' · ') ?? null;
   const description = local.detail?.trim() || local.description?.trim();
+  const primaryName =
+    resolveGastroPrimarySubcategoryName({
+      subcategoryName,
+      subcategories: local.subcategories,
+    }) || 'Local gastronómico';
+  const secondaryNames = (local.subcategories ?? [])
+    .filter((s) => !s.isPrimary && s.name !== primaryName)
+    .map((s) => s.name);
 
   return (
     <div className="space-y-6">
@@ -42,12 +52,22 @@ export function GastroLocalPreview({ local, subcategoryName }: GastroLocalPrevie
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-xs font-medium uppercase tracking-wide text-text-muted">
-            {subcategoryName?.trim() || 'Local gastronómico'}
+            {primaryName}
+            {secondaryNames.length > 0 ? ` · ${secondaryNames.join(' · ')}` : ''}
           </p>
           <h2 className="mt-1 text-xl font-semibold text-text">{local.displayName}</h2>
           {local.summary?.trim() && (
             <p className="mt-2 max-w-2xl text-text-muted">{local.summary.trim()}</p>
           )}
+          {local.tags && local.tags.length > 0 ? (
+            <ContentTagChips
+              tags={local.tags}
+              category="gastro"
+              variant="muted"
+              linkable={false}
+              className="mt-3"
+            />
+          ) : null}
         </div>
         <div className="flex flex-wrap gap-2">
           <Link
