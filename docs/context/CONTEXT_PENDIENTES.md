@@ -42,14 +42,31 @@ Auditoría: [`V3_3_GASTRO_EXPANSION_DISCOVERY_AUDIT.md`](../audits/V3_3_GASTRO_E
 ### G4 — Métricas por local y por descuento
 
 - [x] G4.1 Discovery analytics (`docs/audits/V3_3_G4_ANALYTICS_DISCOVERY.md`) + modelo `GastroProfileView`
-- [ ] G4.2 Tracking page view ficha pública
-- [ ] G4.3 Aggregations local
-- [ ] G4.4 Dashboard Gastro por local
-- [ ] G4.5 Admin métricas local
-- [ ] G4.6–G4.10 Métricas por descuento
-- [ ] G4.11 Tests + hardening
+- [x] G4.2 Tracking page view ficha pública
+- [x] G4.3 Aggregations local
+- [x] G4.4 Dashboard Gastro por local
+- [x] G4.5 Admin métricas local
+- [x] G4.6–G4.10 Métricas por descuento
+- [x] G4.11 Tests + hardening
 
-**Deploy note:** aplicar también migration G3 `20261022120000_gastro_content_gallery_urls` si aún no está en el entorno.
+**Deploy note (migrations pendientes de apply en entorno):**
+
+```text
+20261022120000_gastro_content_gallery_urls
+20261022140000_gastro_profile_views
+```
+
+**Issue preexistente (no G4/G5):** `apps/web/lib/categories/subcategoryRailThreshold.test.ts` falla `tsc` por módulo `vitest` ausente — verificado previo a G4; no bloquear G5.
+
+### G5 — Commercial Agreement en aprobación de descuentos
+
+- [ ] G5.1 Resolver agreement vigente (GastroProfile + fecha)
+- [ ] G5.2 Contexto comercial en UI de aprobación ADMIN
+- [ ] G5.3 Crear/reemplazar agreement desde el flujo (partner-scoped)
+- [ ] G5.4 Gate de aprobación sin agreement
+- [ ] G5.5 Snapshot regression + cierre docs
+
+**Dominio:** `BenefitCommercialAgreement` por `GastroProfile` — **no** FK en `GastroDiscount`.
 
 ---
 

@@ -2,12 +2,14 @@ import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@ne
 import {
   Role,
   benefitCommercialAgreementPartnerHistoryQuerySchema,
+  benefitCommercialAgreementResolveQuerySchema,
   benefitCommercialAgreementsListQuerySchema,
   closeBenefitCommercialAgreementBodySchema,
   createBenefitCommercialAgreementBodySchema,
   replaceBenefitCommercialAgreementBodySchema,
   updateBenefitCommercialAgreementNotesBodySchema,
   type BenefitCommercialAgreementPartnerHistoryQuery,
+  type BenefitCommercialAgreementResolveQuery,
   type BenefitCommercialAgreementsListQuery,
   type CloseBenefitCommercialAgreementBody,
   type CreateBenefitCommercialAgreementBody,
@@ -43,6 +45,15 @@ export class AdminBenefitAgreementsController {
     query: BenefitCommercialAgreementPartnerHistoryQuery,
   ) {
     return this.agreements.partnerHistory(user.tenantId, query);
+  }
+
+  @Get('resolve')
+  resolveApplicable(
+    @CurrentUser() user: { tenantId: string },
+    @Query(new ZodValidationPipe(benefitCommercialAgreementResolveQuerySchema))
+    query: BenefitCommercialAgreementResolveQuery,
+  ) {
+    return this.agreements.resolveApplicable(user.tenantId, query);
   }
 
   @Get(':id')

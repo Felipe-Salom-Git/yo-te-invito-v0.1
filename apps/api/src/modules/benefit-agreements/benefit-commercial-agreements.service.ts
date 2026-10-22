@@ -16,9 +16,12 @@ import {
   gastroDiscountStartOfDay,
   moneyCentsToString,
   parseMoneyCentsString,
+  resolveBenefitAgreementAtDate,
   type BenefitCommercialAgreementDto,
   type BenefitCommercialAgreementPartnerHistoryQuery,
   type BenefitCommercialAgreementPartnerHistoryResponse,
+  type BenefitCommercialAgreementResolveQuery,
+  type BenefitCommercialAgreementResolveResponse,
   type BenefitCommercialAgreementsListQuery,
   type CloseBenefitCommercialAgreementBody,
   type CreateBenefitCommercialAgreementBody,
@@ -84,7 +87,7 @@ export class BenefitCommercialAgreementsService {
     });
     const todayKey = benefitAgreementCalendarKeyFromInstant(new Date());
     const dtos = rows.map((row) => this.toDto(row, todayKey));
-    const current = dtos.find((row) => row.vigency === 'CURRENT') ?? null;
+    const current = this.pickApplicableFromRows(rows, todayKey, new Date());
     return {
       vertical: query.vertical,
       gastroProfileId: query.gastroProfileId ?? null,
@@ -94,6 +97,60 @@ export class BenefitCommercialAgreementsService {
       current,
       history: dtos,
     };
+  }
+
+  /**
+   * Canonical resolution of the commercial agreement applicable to a partner on a date.
+   * Uses inclusive AR calendar vigency — not "latest created".
+   */
+  async resolveApplicable(
+    tenantId: string,
+    query: BenefitCommercialAgreementResolveQuery,
+  ): Promise<BenefitCommercialAgreementResolveResponse> {
+    const onDateKey =
+      query.onDate ?? benefitAgreementCalendarKeyFromInstant(new Date());
+    const [y, m, d] = this.parseDateKey(onDateKey);
+    const onInstant = gastroDiscountStartOfDay(y, m, d);
+
+    const rows = await this.prisma.benefitCommercialAgreement.findMany({
+      where: this.partnerWhere(
+        tenantId,
+        query.vertical,
+        query.gastroProfileId,
+        query.excursionOperatorId,
+      ),
+      include: {
+        gastroProfile: { select: { displayName: true } },
+        excursionOperator: { select: { name: true } },
+      },
+    });
+
+    const todayKey = benefitAgreementCalendarKeyFromInstant(new Date());
+    const agreement = this.pickApplicableFromRows(rows, todayKey, onInstant);
+
+    return {
+      vertical: query.vertical,
+      gastroProfileId: query.gastroProfileId ?? null,
+      excursionOperatorId: query.excursionOperatorId ?? null,
+      onDate: onDateKey,
+      agreement,
+    };
+  }
+
+  private pickApplicableFromRows(
+    rows: AgreementRow[],
+    todayKey: string,
+    onInstant: Date,
+  ): BenefitCommercialAgreementDto | null {
+    const likes = rows.map((row) => ({
+      id: row.id,
+      validFromKey: benefitAgreementCalendarKeyFromInstant(row.validFrom),
+      validToKey: row.validTo ? benefitAgreementCalendarKeyFromInstant(row.validTo) : null,
+    }));
+    const match = resolveBenefitAgreementAtDate(likes, onInstant);
+    if (!match) return null;
+    const row = rows.find((r) => r.id === match.id);
+    return row ? this.toDto(row, todayKey) : null;
   }
 
   async create(

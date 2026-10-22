@@ -104,6 +104,17 @@ export type BenefitCommercialAgreementPartnerHistoryQuery = z.infer<
   typeof benefitCommercialAgreementPartnerHistoryQuerySchema
 >;
 
+/** Resolve agreement vigente for partner on a calendar date (default: today AR). */
+export const benefitCommercialAgreementResolveQuerySchema = refinePartnerXor(
+  partnerFieldsBaseSchema.extend({
+    onDate: calendarDateSchema.optional(),
+  }),
+);
+
+export type BenefitCommercialAgreementResolveQuery = z.infer<
+  typeof benefitCommercialAgreementResolveQuerySchema
+>;
+
 export const benefitCommercialAgreementDtoSchema = z.object({
   id: z.string(),
   tenantId: z.string(),
@@ -125,6 +136,18 @@ export const benefitCommercialAgreementDtoSchema = z.object({
 });
 
 export type BenefitCommercialAgreementDto = z.infer<typeof benefitCommercialAgreementDtoSchema>;
+
+export const benefitCommercialAgreementResolveResponseSchema = z.object({
+  vertical: benefitVerticalSchema,
+  gastroProfileId: z.string().nullable(),
+  excursionOperatorId: z.string().nullable(),
+  onDate: calendarDateSchema,
+  agreement: benefitCommercialAgreementDtoSchema.nullable(),
+});
+
+export type BenefitCommercialAgreementResolveResponse = z.infer<
+  typeof benefitCommercialAgreementResolveResponseSchema
+>;
 
 export const benefitCommercialAgreementsListResponseSchema = z.object({
   total: z.number().int(),
