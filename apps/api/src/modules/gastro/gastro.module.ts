@@ -20,6 +20,7 @@ import { GastroOwnershipService } from './gastro-ownership.service';
 import { GastroDiscountMetricsService } from './gastro-discount-metrics.service';
 import { GastroDiscountExpiryService } from './gastro-discount-expiry.service';
 import { GastroDiscountVisualTemplateService } from './gastro-discount-visual-template.service';
+import { GastroProfileMetricsService } from './gastro-profile-metrics.service';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { CourtesyCreditLedgerModule } from '../courtesy-credit-ledger/courtesy-credit-ledger.module';
 
@@ -49,6 +50,7 @@ import { CourtesyCreditLedgerModule } from '../courtesy-credit-ledger/courtesy-c
     GastroDiscountMetricsService,
     GastroDiscountExpiryService,
     GastroDiscountVisualTemplateService,
+    GastroProfileMetricsService,
   ],
   exports: [
     GastroPortalDiscountsService,
@@ -60,6 +62,7 @@ import { CourtesyCreditLedgerModule } from '../courtesy-credit-ledger/courtesy-c
     GastroDiscountExpiryService,
     GastroDiscountVisualTemplateService,
     GastroCourtesyDiscountsService,
+    GastroProfileMetricsService,
   ],
 })
 export class GastroModule {}

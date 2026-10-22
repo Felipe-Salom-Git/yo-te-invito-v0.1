@@ -42,6 +42,7 @@ import { GastroContentService } from './gastro-content.service';
 import { GastroDashboardService } from './gastro-dashboard.service';
 import { GastroCourtesyDiscountsService } from './gastro-courtesy-discounts.service';
 import { GastroDiscountVisualTemplateService } from './gastro-discount-visual-template.service';
+import { GastroProfileMetricsService } from './gastro-profile-metrics.service';
 
 @Controller('gastro')
 @UseGuards(JwtOrDevAuthGuard, GastroRolesGuard)
@@ -55,6 +56,7 @@ export class GastroController {
     private readonly dashboard: GastroDashboardService,
     private readonly courtesyDiscounts: GastroCourtesyDiscountsService,
     private readonly visualTemplates: GastroDiscountVisualTemplateService,
+    private readonly profileMetrics: GastroProfileMetricsService,
   ) {}
 
   @Get('dashboard')
@@ -63,6 +65,19 @@ export class GastroController {
     @Query(new ZodValidationPipe(gastroProfileIdQuerySchema)) query: GastroProfileIdQuery,
   ) {
     return this.dashboard.getDashboard(user.tenantId, user.id, user.role, query.profileId);
+  }
+
+  @Get('metrics')
+  async getProfileMetrics(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Query(new ZodValidationPipe(gastroProfileIdQuerySchema)) query: GastroProfileIdQuery,
+  ) {
+    return this.profileMetrics.getMetricsForProfile(
+      user.tenantId,
+      user.id,
+      user.role,
+      query.profileId,
+    );
   }
 
   @Get('locations')
