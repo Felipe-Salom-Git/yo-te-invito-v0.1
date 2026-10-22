@@ -1,4 +1,6 @@
 import {
+  buildSettlementDetailHref,
+  parseSettlementDetailFromDiscountId,
   buildDiscountSettlementHref,
   buildSettlementGenerateBody,
   parseSettlementGenerateContext,
@@ -62,5 +64,15 @@ assert(missing.length === 1 && missing[0]?.id === 'profile-a', 'fallback keeps o
 
 const activity = buildSettlementGenerateBody('ACTIVITY', 'op-1', '2026-10');
 assert('excursionOperatorId' in activity && !('gastroProfileId' in activity), 'activity body xor');
+
+// G7.12.10 — context reaches the detail as focus only
+const detailHref = buildSettlementDetailHref('set-1', ctx.fromDiscountId);
+assert(detailHref === '/admin/liquidaciones/set-1?fromDiscountId=discount-a', 'detail keeps discount context');
+assert(buildSettlementDetailHref('set-1', null) === '/admin/liquidaciones/set-1', 'general detail href');
+assert(
+  parseSettlementDetailFromDiscountId(new URL(detailHref, 'https://x.test').searchParams) === 'discount-a',
+  'detail parses focus discount',
+);
+assert(parseSettlementDetailFromDiscountId(new URLSearchParams('')) === null, 'no focus by default');
 
 console.log('OK: contextual settlement from discount (GASTRO + own partner, partner+period body)');

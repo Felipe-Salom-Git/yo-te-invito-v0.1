@@ -49,7 +49,14 @@ const CLOSE_BLOCKER_MESSAGE: Record<SettlementCloseBlocker, string> = {
   MISSING_AGREEMENTS: 'hay validaciones sin acuerdo comercial aplicable.',
 };
 
-export function SettlementDetailClient({ id }: { id: string }) {
+export function SettlementDetailClient({
+  id,
+  fromDiscountId = null,
+}: {
+  id: string;
+  /** «Liquidar» from a discount: focuses its usages; settlement stays partner + period. */
+  fromDiscountId?: string | null;
+}) {
   const { data: settlement, isLoading, isError } = useAdminBenefitSettlement(id);
   const auditQuery = useAdminBenefitSettlementAudit(id);
   const pendingQuery = useAdminBenefitSettlementPendingValidations(
@@ -239,6 +246,18 @@ export function SettlementDetailClient({ id }: { id: string }) {
           Liquidación cerrada — no se agregan usos automáticamente.
         </p>
       ) : null}
+      {fromDiscountId && settlement.vertical === 'GASTRO' && settlement.gastroProfileId ? (
+        <p className="mt-4 rounded-lg border border-accent/30 bg-accent/5 p-3 text-sm text-text-muted">
+          Abierta desde un descuento: sus usos aparecen primero. La liquidación es del local y del
+          período e incluye los usos de todos sus descuentos.{' '}
+          <Link
+            href={`/admin/gastronomicos/${encodeURIComponent(settlement.gastroProfileId)}/descuentos/${encodeURIComponent(fromDiscountId)}`}
+            className="text-accent hover:underline"
+          >
+            Volver al descuento
+          </Link>
+        </p>
+      ) : null}
       {refreshNote ? <p className="mt-2 text-sm text-accent">{refreshNote}</p> : null}
       {actionError ? <p className="mt-2 text-sm text-red-500">{actionError}</p> : null}
 
@@ -255,7 +274,7 @@ export function SettlementDetailClient({ id }: { id: string }) {
         />
       ) : null}
       {!isClosed && summary.pendingUsageCount > 0 ? (
-        <SettlementPendingValidationsSection settlementId={id} />
+        <SettlementPendingValidationsSection settlementId={id} focusBenefitId={fromDiscountId} />
       ) : null}
 
       {!isClosed && summary.pendingUsageCount > 0 ? (

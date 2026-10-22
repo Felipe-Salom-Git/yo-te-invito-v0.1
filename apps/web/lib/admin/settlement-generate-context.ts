@@ -44,6 +44,16 @@ export function parseSettlementGenerateContext(params: SearchParamsLike): Settle
   };
 }
 
+/** Settlement detail URL; `fromDiscountId` only focuses/group pending usages (never scopes them). */
+export function buildSettlementDetailHref(settlementId: string, fromDiscountId?: string | null): string {
+  const base = `/admin/liquidaciones/${encodeURIComponent(settlementId)}`;
+  return fromDiscountId ? `${base}?fromDiscountId=${encodeURIComponent(fromDiscountId)}` : base;
+}
+
+export function parseSettlementDetailFromDiscountId(params: SearchParamsLike): string | null {
+  return params.get('fromDiscountId')?.trim() || null;
+}
+
 /** Locked context exposes only its own partner (never another local). */
 export function resolveGeneratePartnerOptions(
   options: SettlementPartnerOption[],

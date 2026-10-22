@@ -8,6 +8,7 @@ import { AdminGastroDiscountCommercialContextPanel } from '@/components/admin/ga
 import { useGenerateAdminBenefitSettlement } from '@/lib/query/benefit-settlements';
 import { resolveSettlementPartnerOptions } from '@/lib/admin/settlement-partner-options';
 import {
+  buildSettlementDetailHref,
   buildSettlementGenerateBody,
   resolveGeneratePartnerOptions,
   type SettlementGenerateContext,
@@ -63,7 +64,7 @@ export function SettlementGeneratePanel({
         buildSettlementGenerateBody(genVertical, genPartnerId, genPeriod),
       );
       onClose();
-      window.location.href = `/admin/liquidaciones/${result.id}`;
+      window.location.href = buildSettlementDetailHref(result.id, context.fromDiscountId);
     } catch (err) {
       setGenError(mapBenefitSettlementErrorMessage(err));
     }
