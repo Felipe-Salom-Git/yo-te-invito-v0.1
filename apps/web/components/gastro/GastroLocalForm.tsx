@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
   createEmptyGastroWeeklyOpeningHours,
   createEmptyRentalOpeningHours,
+  defaultGastroCreateLocationFields,
   sanitizeRentalOpeningHours,
   validateGastroWeeklyOpeningHoursForSubmit,
   validateRentalOpeningHoursForSubmit,
@@ -63,6 +64,18 @@ type Props = {
   imagesHelperText?: string;
 };
 
+function createDefaultLocationValue(): LocationValue {
+  const { province, city } = defaultGastroCreateLocationFields();
+  return {
+    address: '',
+    province,
+    city,
+    lat: null,
+    lng: null,
+    placeId: null,
+  };
+}
+
 function locationFromLocal(local: GastroLocal): LocationValue {
   return {
     address: local.address ?? '',
@@ -72,6 +85,16 @@ function locationFromLocal(local: GastroLocal): LocationValue {
     lng: local.geoLng,
     placeId: local.googlePlaceId ?? null,
   };
+}
+
+/** Create / copy-without-location → Bariloche defaults; persisted edit keeps stored values. */
+function initialLocationValue(local: GastroLocal | null | undefined): LocationValue {
+  if (!local) return createDefaultLocationValue();
+  const hasStoredLocation = Boolean(
+    local.province?.trim() || local.city?.trim() || local.address?.trim(),
+  );
+  if (!local.id && !hasStoredLocation) return createDefaultLocationValue();
+  return locationFromLocal(local);
 }
 
 export function GastroLocalForm({
@@ -103,18 +126,7 @@ export function GastroLocalForm({
     headerImageUrl: initial?.bannerUrl ?? '',
     galleryImageUrls: initial?.galleryUrls ?? [],
   });
-  const [location, setLocation] = useState<LocationValue>(
-    initial
-      ? locationFromLocal(initial)
-      : {
-          address: '',
-          province: '',
-          city: '',
-          lat: null,
-          lng: null,
-          placeId: null,
-        },
-  );
+  const [location, setLocation] = useState<LocationValue>(() => initialLocationValue(initial));
   const [openingHoursMode, setOpeningHoursMode] = useState<GastroOpeningHoursMode>(
     initial?.openingHoursMode ?? 'simple',
   );

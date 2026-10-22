@@ -1,5 +1,23 @@
 import type { ProvinceOption } from './types';
 
+/**
+ * Prefill for **new** GastroProfile create forms (G7.10.9).
+ * Uses Georef-compatible display names (ProvinceCitySelect stores `name` as value).
+ * Editable — not a hard lock to Bariloche.
+ */
+export const DEFAULT_GASTRO_CREATE_PROVINCE_LABEL = 'Río Negro';
+export const DEFAULT_GASTRO_CREATE_CITY_LABEL = 'San Carlos de Bariloche';
+
+export function defaultGastroCreateLocationFields(): {
+  province: string;
+  city: string;
+} {
+  return {
+    province: DEFAULT_GASTRO_CREATE_PROVINCE_LABEL,
+    city: DEFAULT_GASTRO_CREATE_CITY_LABEL,
+  };
+}
+
 /** Normalized Argentina provinces and main cities/localities for form selects. */
 export const ARGENTINA_PROVINCES: ProvinceOption[] = [
   {
