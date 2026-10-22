@@ -8,7 +8,7 @@ import { useRepositories } from '@/repositories/context';
 import { adminGastroKeys } from '@/lib/query/keys';
 import type { AdminGastroDiscountListItem } from '@/repositories/interfaces';
 import { AdminGastroDiscountStatusBadge } from './AdminGastroDiscountStatusBadge';
-import { AdminGastroDiscountMetricsPanel } from './AdminGastroDiscountMetricsPanel';
+import { GastroDiscountOperationalMetricsPanel } from '@/components/gastro/GastroDiscountOperationalMetricsPanel';
 import { formatGastroDiscountValidityRangeLabel } from '@/lib/gastro/discount-status-ui';
 
 const PENDING_STATUSES = ['PENDING_REVIEW', 'COMMISSION_NEGOTIATION', 'APPROVED'] as const;
@@ -23,8 +23,8 @@ export function AdminGastroDiscountsTable({ profileId, discounts }: Props) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const metricsQuery = useQuery({
-    queryKey: adminGastroKeys.metrics(profileId, expandedId ?? ''),
-    queryFn: () => repos.adminGastro.getDiscountMetrics(profileId, expandedId!),
+    queryKey: adminGastroKeys.operationalMetrics(profileId, expandedId ?? ''),
+    queryFn: () => repos.adminGastro.getDiscountOperationalMetrics(profileId, expandedId!),
     enabled: !!expandedId,
   });
 
@@ -114,10 +114,11 @@ export function AdminGastroDiscountsTable({ profileId, discounts }: Props) {
                 {expanded && (
                   <tr>
                     <td colSpan={5} className="bg-bg-muted/30 px-4 py-4">
-                      <AdminGastroDiscountMetricsPanel
-                        metrics={metricsQuery.data}
-                        isLoading={metricsQuery.isLoading}
-                      />
+                      {metricsQuery.isLoading ? (
+                        <p className="text-sm text-text-muted">Cargando métricas…</p>
+                      ) : metricsQuery.data ? (
+                        <GastroDiscountOperationalMetricsPanel metrics={metricsQuery.data} />
+                      ) : null}
                     </td>
                   </tr>
                 )}

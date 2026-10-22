@@ -14,6 +14,7 @@ import { AdminGastroDiscountQrPanel } from '@/components/admin/gastro/AdminGastr
 import { AdminGastroDiscountVisualPreview } from '@/components/admin/gastro/AdminGastroDiscountVisualPreview';
 import { AdminGastroPendingEditPanel } from '@/components/admin/gastro/AdminGastroPendingEditPanel';
 import { GastroDiscountDetailContent } from '@/components/gastro/GastroDiscountDetailContent';
+import { GastroDiscountOperationalMetricsPanel } from '@/components/gastro/GastroDiscountOperationalMetricsPanel';
 import {
   canArchiveGastroDiscount,
   canUnarchiveGastroDiscount,
@@ -39,6 +40,12 @@ export default function AdminGastroDiscountDetailPage() {
   const summaryQuery = useQuery({
     queryKey: adminGastroKeys.discountSummary(profileId, discountId),
     queryFn: () => repos.adminGastro.getDiscountSummary(profileId, discountId),
+    enabled: !!profileId && !!discountId,
+  });
+
+  const operationalMetricsQuery = useQuery({
+    queryKey: adminGastroKeys.operationalMetrics(profileId, discountId),
+    queryFn: () => repos.adminGastro.getDiscountOperationalMetrics(profileId, discountId),
     enabled: !!profileId && !!discountId,
   });
 
@@ -284,6 +291,12 @@ export default function AdminGastroDiscountDetailPage() {
         </div>
       ) : summaryQuery.isLoading ? (
         <p className="mt-8 text-sm text-text-muted">Cargando métricas de cupones…</p>
+      ) : null}
+
+      {operationalMetricsQuery.isLoading ? (
+        <p className="mt-8 text-sm text-text-muted">Cargando métricas operativas…</p>
+      ) : operationalMetricsQuery.data ? (
+        <GastroDiscountOperationalMetricsPanel metrics={operationalMetricsQuery.data} />
       ) : null}
 
       <div className="mt-8">
