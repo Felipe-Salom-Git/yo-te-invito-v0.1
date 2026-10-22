@@ -37,6 +37,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../../email/email.service';
 import { GastroFollowDiscountAlertsService } from '../notifications/gastro-follow-discount-alerts.service';
 import { GastroLifecycleNotificationsService } from '../notifications/gastro-lifecycle-notifications.service';
+import { adminDiscountMatchesRouteProfile } from './admin-gastro-discount-scope.util';
 
 function readUrls(value: unknown): string[] {
   if (value == null) return [];
@@ -481,7 +482,26 @@ export class AdminGastroService {
     };
   }
 
-  private async loadDiscount(tenantId: string, _profileId: string, discountId: string) {
+  private async loadDiscount(tenantId: string, profileId: string, discountId: string) {
+    const routeProfileId = profileId?.trim();
+    if (!routeProfileId) {
+      throw new NotFoundException({
+        code: ErrorCode.NOT_FOUND,
+        message: 'Discount not found',
+      });
+    }
+
+    const routeProfile = await this.prisma.gastroProfile.findFirst({
+      where: { id: routeProfileId, tenantId },
+      select: { id: true },
+    });
+    if (!routeProfile) {
+      throw new NotFoundException({
+        code: ErrorCode.NOT_FOUND,
+        message: 'Discount not found',
+      });
+    }
+
     const row = await this.prisma.gastroDiscount.findFirst({
       where: { id: discountId, tenantId },
       include: { gastroProfile: true },
@@ -494,6 +514,13 @@ export class AdminGastroService {
     }
 
     const canonicalProfileId = await this.resolveDiscountProfileId(tenantId, row);
+    if (!adminDiscountMatchesRouteProfile(routeProfileId, canonicalProfileId)) {
+      throw new NotFoundException({
+        code: ErrorCode.NOT_FOUND,
+        message: 'Discount not found',
+      });
+    }
+
     if (canonicalProfileId && row.gastroProfileId !== canonicalProfileId) {
       await this.prisma.gastroDiscount.update({
         where: { id: row.id },
