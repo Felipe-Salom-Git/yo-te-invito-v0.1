@@ -1,6 +1,6 @@
 # Yo Te Invito — Next Chat Handoff
 
-**Actualizado:** 2026-08-31 · Rama: `feat/v1-s03-api-foundation` · HEAD: ver `git log -1`
+**Actualizado:** 2026-10-22 · Rama: `feat/v1-s03-api-foundation` · HEAD: ver `git log -1`
 
 Punto de entrada operativo para **V3.3**. Detalle completo: `AI_ENTRYPOINT.md`, `PROJECT_CONTEXT.md`, `CONTEXT_PENDIENTES.md`.
 
@@ -29,10 +29,12 @@ Punto de entrada operativo para **V3.3**. Detalle completo: `AI_ENTRYPOINT.md`, 
 | **Etapa 8 — QA manual / DB smoke / Redis / SMTP live** | ⏳ Pendiente — acumulado cierre global V3.3 |
 | **Etapa 9 — Liquidaciones, Transferencias y Canjes** | ✅ Código implementado (slices 9.0–9.8 + hardening `b920553`) |
 | **Etapa 9 — QA manual / DB smoke / concurrency** | ⏳ Pendiente — acumulado cierre global V3.3 |
+| **Expansión Gastro — Discovery** | ✅ `docs/audits/V3_3_GASTRO_EXPANSION_DISCOVERY_AUDIT.md` |
+| **Expansión Gastro — G1 Isolation hardening** | ✅ Código (G1.1–G1.4) — esperar confirmación antes de G2 |
 
 **Checklist V3.3:** `docs/dev/Yo_Te_Invito_Checklist_V3_3_Funcional_Operativa.md`
 
-**Próximo paso V3.3:** **cierre global + QA manual acumulada** (Etapas 1–9). No iniciar otra etapa funcional sin instrucción explícita.
+**Próximo paso V3.3:** **Etapa G2 — Taxonomía Gastro** (multi-subcategorías + tags) tras confirmación. No iniciar G2/G3 sin instrucción explícita. QA manual Etapas 1–9 sigue acumulada.
 
 ---
 

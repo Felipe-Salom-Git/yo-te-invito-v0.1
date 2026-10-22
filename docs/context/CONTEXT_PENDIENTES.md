@@ -4,9 +4,24 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 
 **Convención:** `- [ ]` pendiente · `- [x]` hecho
 
-**Rama activa:** `feat/v1-s03-api-foundation` · HEAD: ver `git log -1` (2026-08-31)
+**Rama activa:** `feat/v1-s03-api-foundation` · HEAD: ver `git log -1` (2026-10-22)
 
 **Handoff nuevo chat:** [`NEXT_CHAT_HANDOFF.md`](./NEXT_CHAT_HANDOFF.md)
+
+---
+
+## V3.3 — Expansión Gastronomía (post Etapa 9)
+
+Auditoría: [`V3_3_GASTRO_EXPANSION_DISCOVERY_AUDIT.md`](../audits/V3_3_GASTRO_EXPANSION_DISCOVERY_AUDIT.md)
+
+### G1 — Multi-local isolation hardening
+
+- [x] G1.1 Admin discount `profileId` path scope (`loadDiscount` → 404 cross-profile)
+- [x] G1.2 `GASTRO_OWNER` validate scoped to authorized `GastroProfile` (QR + shortCode)
+- [x] G1.3 Validations UI + reviews multi-local + legacy event discount ownership
+- [x] G1.4 Cross-profile isolation test suite (`test:gastro-cross-profile-isolation`)
+- [ ] G2 — Taxonomía (multi-subcategorías + tags) — **no iniciar sin confirmación**
+- [ ] G3 — GastroContent + galerías — **no iniciar sin confirmación**
 
 ---
 
