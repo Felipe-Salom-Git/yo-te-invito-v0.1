@@ -14,6 +14,7 @@ import { SettlementAuditPanel } from '@/components/admin/liquidaciones/Settlemen
 import { SettlementOverviewSection } from '@/components/admin/liquidaciones/SettlementOverviewSection';
 import { SettlementPendingValidationsSection } from '@/components/admin/liquidaciones/SettlementPendingValidationsSection';
 import { SettlementCashTransfersSection } from '@/components/admin/liquidaciones/SettlementCashTransfersSection';
+import { SettlementBarterSection } from '@/components/admin/liquidaciones/SettlementBarterSection';
 import { BENEFIT_VERTICAL_LABEL } from '@/lib/admin/benefit-agreement-labels';
 import {
   useAdminBenefitSettlement,
@@ -22,25 +23,14 @@ import {
   useCloseAdminBenefitSettlement,
   useRefreshAdminBenefitSettlement,
 } from '@/lib/query/benefit-settlements';
-import { useAdminCourtesyCreditBalance } from '@/lib/query/courtesy-credit-ledger';
 import {
   BENEFIT_CASH_COLLECTION_STATUS_LABEL,
   BENEFIT_SETTLEMENT_STATUS_LABEL,
   estimatePendingAllocationBaseCents,
   formatBenefitMoneyCents,
   formatBenefitSettlementPeriodLabel,
-  formatSignedBenefitMoneyCents,
   mapBenefitSettlementErrorMessage,
 } from '@yo-te-invito/shared';
-
-function SummaryCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg border border-border bg-bg-muted p-3">
-      <p className="text-xs text-text-muted">{label}</p>
-      <p className="mt-1 text-lg font-semibold text-text">{value}</p>
-    </div>
-  );
-}
 
 export function SettlementDetailClient({ id }: { id: string }) {
   const { data: settlement, isLoading, isError } = useAdminBenefitSettlement(id);
@@ -53,23 +43,6 @@ export function SettlementDetailClient({ id }: { id: string }) {
   const [barterCount, setBarterCount] = useState('1');
   const [actionError, setActionError] = useState<string | null>(null);
   const [refreshNote, setRefreshNote] = useState<string | null>(null);
-
-  const partnerQuery =
-    settlement?.vertical && settlement.gastroProfileId
-      ? {
-          vertical: settlement.vertical as 'GASTRO' | 'ACTIVITY',
-          gastroProfileId: settlement.gastroProfileId,
-          currency: 'ARS' as const,
-        }
-      : settlement?.vertical && settlement.excursionOperatorId
-        ? {
-            vertical: settlement.vertical as 'GASTRO' | 'ACTIVITY',
-            excursionOperatorId: settlement.excursionOperatorId,
-            currency: 'ARS' as const,
-          }
-        : null;
-
-  const { data: ledgerBalance } = useAdminCourtesyCreditBalance(partnerQuery);
 
   if (isLoading) {
     return (
@@ -91,12 +64,6 @@ export function SettlementDetailClient({ id }: { id: string }) {
 
   const { summary } = settlement;
   const isClosed = settlement.status === 'CLOSED';
-  const expectedCredit = summary.barterCreditExpectedCents;
-  const materializedCredit = summary.barterCreditMaterializedCents;
-  const creditDrift =
-    expectedCredit != null &&
-    materializedCredit != null &&
-    expectedCredit !== materializedCredit;
 
   const agreementHref = `/admin/liquidaciones/acuerdos?vertical=${settlement.vertical}${
     settlement.gastroProfileId
@@ -301,64 +268,13 @@ export function SettlementDetailClient({ id }: { id: string }) {
         </section>
       ) : null}
 
-      <section className="mt-8">
-        <h3 className="font-medium text-text">Canje — crédito de cortesías</h3>
-        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <SummaryCard
-            label="Base en canje"
-            value={formatBenefitMoneyCents(summary.barterBaseAmountCents)}
-          />
-          <SummaryCard
-            label="Crédito generado"
-            value={formatBenefitMoneyCents(
-              materializedCredit ?? expectedCredit ?? '0',
-            )}
-          />
-          <SummaryCard
-            label="Crédito consumido"
-            value={formatSignedBenefitMoneyCents(
-              ledgerBalance?.creditConsumedCents ?? '0',
-            )}
-          />
-          <SummaryCard
-            label="Saldo disponible"
-            value={formatSignedBenefitMoneyCents(
-              ledgerBalance?.balanceAvailableCents ?? '0',
-            )}
-          />
-        </div>
-        {creditDrift ? (
-          <p className="mt-3 rounded border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-200">
-            Hay una diferencia de materialización de crédito. Revisar conciliación.
-          </p>
-        ) : null}
-        {settlement.vertical === 'GASTRO' && settlement.gastroProfileId ? (
-          <Link
-            href={`/admin/gastronomicos/${settlement.gastroProfileId}/cortesia`}
-            className="mt-3 inline-block text-sm text-accent hover:underline"
-          >
-            Crear cortesía con saldo →
-          </Link>
-        ) : settlement.vertical === 'ACTIVITY' ? (
-          <p className="mt-3 text-sm text-text-muted">
-            Saldo de canje disponible:{' '}
-            {formatSignedBenefitMoneyCents(ledgerBalance?.balanceAvailableCents ?? '0')}. Consumo
-            de cortesías Activity: no disponible en V3.3.
-          </p>
-        ) : null}
-      </section>
-
       <SettlementCashTransfersSection settlementId={id} summary={summary} />
 
-      <section className="mt-8">
-        <h3 className="font-medium text-text">Ledger de crédito</h3>
-        <p className="mt-2 text-sm text-text-muted">
-          Movimientos de canje del partner — separados del cash de transferencia.
-        </p>
-        <Link href={ledgerHref} className="mt-2 inline-block text-accent hover:underline">
-          Ver créditos del partner →
-        </Link>
-      </section>
+      <SettlementBarterSection
+        settlement={settlement}
+        audit={auditQuery.data}
+        ledgerHref={ledgerHref}
+      />
 
       <SettlementAuditPanel settlementId={id} />
     </PageContainer>
