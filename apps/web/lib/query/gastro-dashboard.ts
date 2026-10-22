@@ -16,6 +16,16 @@ export function useGastroDashboard(enabled = true) {
   });
 }
 
+export function useGastroProfileMetrics(enabled = true) {
+  const repos = useRepositories();
+  const { profileId } = useGastroActiveLocation();
+  return useQuery({
+    queryKey: gastroKeys.profileMetrics(profileId),
+    queryFn: () => repos.gastro.getProfileMetrics(profileId),
+    enabled: enabled && !!profileId,
+  });
+}
+
 function validationsFiltersKey(
   profileId: string | undefined,
   params?: GastroValidationListParams,

@@ -2217,6 +2217,11 @@ export class ApiRepository implements Repositories {
         '/gastro/dashboard',
         profileId ? { profileId } : undefined,
       ),
+    getProfileMetrics: async (profileId) =>
+      this.client.get<import('@yo-te-invito/shared').GastroProfileMetricsResponse>(
+        '/gastro/metrics',
+        profileId ? { profileId } : undefined,
+      ),
     listValidations: async (params) => {
       const query = params
         ? {

@@ -500,6 +500,8 @@ export const gastroKeys = {
   contentByProfile: (profileId: string) =>
     [...gastroKeys.all, 'content-by-profile', profileId] as const,
   validations: (filtersKey: string) => [...gastroKeys.all, 'validations', filtersKey] as const,
+  profileMetrics: (profileId?: string) =>
+    [...gastroKeys.all, 'profile-metrics', profileId ?? 'default'] as const,
 };
 
 export const adminGastroKeys = {

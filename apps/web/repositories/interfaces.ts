@@ -2763,6 +2763,9 @@ export interface GastroRepo {
   createDiscount(eventId: string, input: { code: string; type: string; value: number; validFrom?: string; validTo?: string }): Promise<GastroDiscount>;
   updateDiscount(id: string, patch: Partial<GastroDiscount>): Promise<GastroDiscount | null>;
   getDashboard(profileId?: string): Promise<GastroDashboardResponse>;
+  getProfileMetrics(
+    profileId?: string,
+  ): Promise<import('@yo-te-invito/shared').GastroProfileMetricsResponse>;
   listValidations(params?: GastroValidationListParams): Promise<GastroValidationListResponse>;
   recordValidation(discountId: string, userId?: string, orderId?: string): Promise<GastroDiscountValidation>;
   getMyLocal(profileId?: string): Promise<GastroLocal | null>;

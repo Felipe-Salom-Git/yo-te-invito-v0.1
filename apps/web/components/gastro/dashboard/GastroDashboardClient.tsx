@@ -14,10 +14,11 @@ import { ProducerKpiCard } from '@/components/producer/dashboard/ProducerKpiCard
 import { GastroOnboardingChecklist } from '@/components/onboarding/GastroOnboardingChecklist';
 import { GastroLocationSelector } from '@/components/gastro/GastroLocationSelector';
 import { ManagedPortalReviewAlerts } from '@/components/reviews/ManagedPortalReviewAlerts';
-import { useGastroDashboard } from '@/lib/query/gastro-dashboard';
+import { useGastroDashboard, useGastroProfileMetrics } from '@/lib/query/gastro-dashboard';
 import { getErrorMessage } from '@/lib/errors';
 import type { GastroDashboardAlert } from '@/repositories/interfaces';
 import { ScannerPwaCta } from '@/components/portal/scanner/ScannerPwaCta';
+import { GastroProfileMetricsPanel } from '@/components/gastro/dashboard/GastroProfileMetricsPanel';
 
 const ALERT_COPY: Record<
   GastroDashboardAlert,
@@ -66,6 +67,7 @@ function displayNameFromSession(user: {
 export function GastroDashboardClient() {
   const { data: session, status } = useSession();
   const dashboardQuery = useGastroDashboard(status === 'authenticated');
+  const metricsQuery = useGastroProfileMetrics(status === 'authenticated');
   const data = dashboardQuery.data;
 
   const greeting = useMemo(() => {
@@ -161,6 +163,12 @@ export function GastroDashboardClient() {
           />
         </div>
       </section>
+
+      {metricsQuery.isLoading ? (
+        <p className="mt-8 text-sm text-text-muted">Cargando métricas del local…</p>
+      ) : metricsQuery.data ? (
+        <GastroProfileMetricsPanel metrics={metricsQuery.data} />
+      ) : null}
 
       {alerts.length > 0 && (
         <section className="mt-8 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
