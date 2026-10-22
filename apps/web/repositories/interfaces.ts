@@ -3414,6 +3414,9 @@ export interface AdminBenefitSettlementsRepo {
     body: import('@yo-te-invito/shared').ReverseBenefitSettlementTransferBody,
   ): Promise<import('@yo-te-invito/shared').BenefitSettlementTransferDto>;
   getAudit(id: string): Promise<import('@yo-te-invito/shared').BenefitSettlementAuditResponse>;
+  listPendingValidations(
+    id: string,
+  ): Promise<import('@yo-te-invito/shared').BenefitSettlementPendingValidationsResponse>;
 }
 
 export interface AdminBenefitReportingRepo {

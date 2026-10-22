@@ -22,6 +22,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { userDisplayLabel } from '../../common/user-contact.util';
 import { BenefitSettlementIntegrityService } from './benefit-settlement-integrity.service';
 import { BenefitSettlementsService } from './benefit-settlements.service';
+import { loadBenefitValidationDetails } from './benefit-validation-details';
 import { CourtesyCreditLedgerService } from '../courtesy-credit-ledger/courtesy-credit-ledger.service';
 
 @Injectable()
@@ -229,7 +230,7 @@ export class BenefitSettlementReportingService {
       agreementMap.set(allocation.agreementId, allocation.agreement);
     }
 
-    const benefitTitles = await this.resolveBenefitTitles(row.allocations);
+    const validationDetails = await loadBenefitValidationDetails(this.prisma, row.allocations);
 
     const agreements = [...agreementMap.values()].map((a) => ({
       agreementId: a.id,
@@ -252,8 +253,8 @@ export class BenefitSettlementReportingService {
         allocationId: a.id,
         validationSource: a.validationSource,
         validationId: a.validationId,
-        validatedAt: a.allocatedAt.toISOString(),
-        benefitTitle: benefitTitles.get(a.validationId) ?? null,
+        validatedAt: (validationDetails.get(a.validationId)?.validatedAt ?? a.allocatedAt).toISOString(),
+        benefitTitle: validationDetails.get(a.validationId)?.benefitTitle ?? null,
         mode: a.mode,
         agreementId: a.agreementId,
         unitPriceCents: moneyCentsToString(a.unitPriceCents),
@@ -606,37 +607,5 @@ export class BenefitSettlementReportingService {
       courtesyCreditConsumedCents: balance.creditConsumedCents,
       courtesyCreditAvailableCents: balance.balanceAvailableCents,
     };
-  }
-
-  private async resolveBenefitTitles(
-    allocations: Array<{ validationSource: string; validationId: string }>,
-  ): Promise<Map<string, string>> {
-    const map = new Map<string, string>();
-    const gastroIds = allocations
-      .filter((a) => a.validationSource === 'GASTRO_DISCOUNT_VALIDATION')
-      .map((a) => a.validationId);
-    const activityIds = allocations
-      .filter((a) => a.validationSource === 'ACTIVITY_COUPON_VALIDATION')
-      .map((a) => a.validationId);
-
-    if (gastroIds.length) {
-      const rows = await this.prisma.gastroDiscountValidation.findMany({
-        where: { id: { in: gastroIds } },
-        include: { discount: { select: { displayTitle: true, code: true } } },
-      });
-      for (const v of rows) {
-        map.set(v.id, v.discount.displayTitle ?? v.discount.code);
-      }
-    }
-    if (activityIds.length) {
-      const rows = await this.prisma.activityCouponValidation.findMany({
-        where: { id: { in: activityIds } },
-        include: { coupon: { select: { title: true } } },
-      });
-      for (const v of rows) {
-        map.set(v.id, v.coupon.title);
-      }
-    }
-    return map;
   }
 }

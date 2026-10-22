@@ -6,6 +6,7 @@ import { AdminBenefitSettlementsController } from './admin-benefit-settlements.c
 import { AdminBenefitReportingController } from './admin-benefit-reporting.controller';
 import { BenefitSettlementEligibilityService } from './benefit-settlement-eligibility.service';
 import { BenefitSettlementIntegrityService } from './benefit-settlement-integrity.service';
+import { BenefitSettlementPendingValidationsService } from './benefit-settlement-pending-validations.service';
 import { BenefitSettlementReportingService } from './benefit-settlement-reporting.service';
 import { BenefitSettlementTransfersService } from './benefit-settlement-transfers.service';
 import { BenefitSettlementsService } from './benefit-settlements.service';
@@ -20,6 +21,7 @@ import { GastroDiscountEconomicReportingService } from './gastro-discount-econom
     BenefitSettlementTransfersService,
     BenefitSettlementIntegrityService,
     BenefitSettlementReportingService,
+    BenefitSettlementPendingValidationsService,
     GastroDiscountEconomicReportingService,
   ],
   exports: [

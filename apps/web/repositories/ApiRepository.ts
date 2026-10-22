@@ -1717,6 +1717,10 @@ export class ApiRepository implements Repositories {
       ),
     getAudit: async (id) =>
       this.client.get(`/admin/benefit-settlements/${encodeURIComponent(id)}/audit`),
+    listPendingValidations: async (id) =>
+      this.client.get(
+        `/admin/benefit-settlements/${encodeURIComponent(id)}/pending-validations`,
+      ),
   };
 
   adminBenefitReporting: import('./interfaces').AdminBenefitReportingRepo = {

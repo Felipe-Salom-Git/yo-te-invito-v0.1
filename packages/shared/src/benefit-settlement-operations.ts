@@ -80,6 +80,48 @@ export function groupSettlementAllocationsByRate(
   }));
 }
 
+export type PendingValidationLike = {
+  validationId: string;
+  benefitId: string;
+  benefitTitle: string;
+  unitPriceCents: string;
+};
+
+export type PendingValidationGroup<T extends PendingValidationLike> = {
+  benefitId: string;
+  benefitTitle: string;
+  items: T[];
+  baseAmountCents: string;
+};
+
+/**
+ * Visual grouping by discount/coupon (UX only — settlement stays partner + period).
+ * `focusBenefitId` (e.g. «Liquidar» from a discount) is listed first; others are kept.
+ */
+export function groupPendingValidationsByBenefit<T extends PendingValidationLike>(
+  items: readonly T[],
+  focusBenefitId?: string | null,
+): PendingValidationGroup<T>[] {
+  const groups = new Map<string, PendingValidationGroup<T>>();
+  for (const item of items) {
+    const group = groups.get(item.benefitId) ?? {
+      benefitId: item.benefitId,
+      benefitTitle: item.benefitTitle,
+      items: [],
+      baseAmountCents: '0',
+    };
+    group.items.push(item);
+    group.baseAmountCents = (BigInt(group.baseAmountCents) + BigInt(item.unitPriceCents)).toString();
+    groups.set(item.benefitId, group);
+  }
+  const list = [...groups.values()];
+  if (!focusBenefitId) return list;
+  return [
+    ...list.filter((g) => g.benefitId === focusBenefitId),
+    ...list.filter((g) => g.benefitId !== focusBenefitId),
+  ];
+}
+
 /** «×2» / «×1.5» from Decimal string (`2.0000` → `2`). */
 export function formatBarterMultiplierLabel(multiplier: string): string {
   const [whole, frac = ''] = multiplier.split('.');

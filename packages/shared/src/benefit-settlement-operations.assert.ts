@@ -1,5 +1,6 @@
 import {
   formatBarterMultiplierLabel,
+  groupPendingValidationsByBenefit,
   groupSettlementAllocationsByRate,
   type SettlementAllocationLike,
 } from './benefit-settlement-operations';
@@ -58,4 +59,17 @@ assert(formatBarterMultiplierLabel('2.0000') === '×2', 'mult ×2');
 assert(formatBarterMultiplierLabel('1.5000') === '×1.5', 'mult ×1.5');
 assert(formatBarterMultiplierLabel('1.2500') === '×1.25', 'mult ×1.25');
 
-console.log('OK: settlement rate segments (CASH/BARTER/mixed/snapshots)');
+// Pending validations grouped by discount (UX only)
+const pending = [
+  { validationId: 'v1', benefitId: 'disc-a', benefitTitle: 'A', unitPriceCents: '500000' },
+  { validationId: 'v2', benefitId: 'disc-b', benefitTitle: 'B', unitPriceCents: '500000' },
+  { validationId: 'v3', benefitId: 'disc-a', benefitTitle: 'A', unitPriceCents: '500000' },
+];
+const groups = groupPendingValidationsByBenefit(pending);
+const groupA = groups.find((g) => g.benefitId === 'disc-a')!;
+assert(groupA.items.length === 2 && groupA.baseAmountCents === '1000000', 'discount A group');
+assert(!groupA.items.some((i) => i.validationId === 'v2'), 'discount A does not include validation of B');
+const focused = groupPendingValidationsByBenefit(pending, 'disc-b');
+assert(focused[0]!.benefitId === 'disc-b' && focused.length === 2, 'focus first, others kept');
+
+console.log('OK: settlement rate segments (CASH/BARTER/mixed/snapshots) + pending grouping');

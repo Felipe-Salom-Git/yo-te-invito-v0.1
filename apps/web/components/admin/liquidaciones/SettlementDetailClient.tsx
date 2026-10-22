@@ -12,6 +12,7 @@ import {
 import { LiquidacionesSubnav } from '@/components/admin/liquidaciones/LiquidacionesSubnav';
 import { SettlementAuditPanel } from '@/components/admin/liquidaciones/SettlementAuditPanel';
 import { SettlementOverviewSection } from '@/components/admin/liquidaciones/SettlementOverviewSection';
+import { SettlementPendingValidationsSection } from '@/components/admin/liquidaciones/SettlementPendingValidationsSection';
 import { BENEFIT_VERTICAL_LABEL } from '@/lib/admin/benefit-agreement-labels';
 import {
   useAdminBenefitSettlement,
@@ -306,6 +307,9 @@ export function SettlementDetailClient({ id }: { id: string }) {
           title="Sin usos validados en el período"
           description="Cuando haya validaciones del partner en este período, usá «Actualizar usos»."
         />
+      ) : null}
+      {!isClosed && summary.pendingUsageCount > 0 ? (
+        <SettlementPendingValidationsSection settlementId={id} />
       ) : null}
 
       {!isClosed && summary.pendingUsageCount > 0 ? (

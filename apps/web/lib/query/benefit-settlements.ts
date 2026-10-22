@@ -46,6 +46,15 @@ export function useAdminBenefitSettlementAudit(id: string, enabled = true) {
   });
 }
 
+export function useAdminBenefitSettlementPendingValidations(id: string, enabled = true) {
+  const repos = useRepositories();
+  return useQuery({
+    queryKey: adminBenefitSettlementsKeys.pendingValidations(id),
+    queryFn: () => repos.adminBenefitSettlements.listPendingValidations(id),
+    enabled: enabled && Boolean(id),
+  });
+}
+
 export function useAdminBenefitSettlementTransfers(id: string, enabled = true) {
   const repos = useRepositories();
   return useQuery({

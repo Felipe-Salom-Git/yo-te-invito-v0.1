@@ -138,6 +138,36 @@ export const benefitSettlementsListResponseSchema = z.object({
 
 export type BenefitSettlementsListResponse = z.infer<typeof benefitSettlementsListResponseSchema>;
 
+/** G7.12.2 — pending (eligible, not yet allocated) validation of one settlement. EXACT level. */
+export const benefitSettlementPendingValidationSchema = z.object({
+  validationSource: z.enum(BENEFIT_VALIDATION_SOURCES),
+  validationId: z.string(),
+  validatedAt: z.string().datetime(),
+  /** GastroDiscount.id / ActivityCoupon.id — grouping only, never settlement owner. */
+  benefitId: z.string(),
+  benefitTitle: z.string(),
+  shortCode: z.string().nullable(),
+  agreementId: z.string(),
+  unitPriceCents: moneyCentsStringSchema,
+  barterMultiplier: z.string(),
+  currency: z.string(),
+});
+
+export type BenefitSettlementPendingValidation = z.infer<
+  typeof benefitSettlementPendingValidationSchema
+>;
+
+export const benefitSettlementPendingValidationsResponseSchema = z.object({
+  settlementId: z.string(),
+  data: z.array(benefitSettlementPendingValidationSchema),
+  /** Eligible validations without applicable agreement (not allocatable until fixed). */
+  missingAgreementCount: z.number().int().min(0),
+});
+
+export type BenefitSettlementPendingValidationsResponse = z.infer<
+  typeof benefitSettlementPendingValidationsResponseSchema
+>;
+
 export const allocateBenefitSettlementResponseSchema = z.object({
   settlement: benefitSettlementDtoSchema,
   allocations: z.array(benefitSettlementAllocationDtoSchema),

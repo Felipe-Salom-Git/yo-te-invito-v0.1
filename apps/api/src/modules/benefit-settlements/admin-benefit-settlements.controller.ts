@@ -20,6 +20,7 @@ import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { BenefitSettlementsService } from './benefit-settlements.service';
 import { BenefitSettlementTransfersService } from './benefit-settlement-transfers.service';
 import { BenefitSettlementReportingService } from './benefit-settlement-reporting.service';
+import { BenefitSettlementPendingValidationsService } from './benefit-settlement-pending-validations.service';
 
 @Controller('admin/benefit-settlements')
 @UseGuards(JwtOrDevAuthGuard, RolesGuard)
@@ -29,6 +30,7 @@ export class AdminBenefitSettlementsController {
     private readonly settlements: BenefitSettlementsService,
     private readonly transfers: BenefitSettlementTransfersService,
     private readonly reporting: BenefitSettlementReportingService,
+    private readonly pending: BenefitSettlementPendingValidationsService,
   ) {}
 
   @Get()
@@ -50,6 +52,11 @@ export class AdminBenefitSettlementsController {
   @Get(':id/audit')
   audit(@CurrentUser() user: { tenantId: string }, @Param('id') id: string) {
     return this.reporting.getSettlementAudit(user.tenantId, id);
+  }
+
+  @Get(':id/pending-validations')
+  pendingValidations(@CurrentUser() user: { tenantId: string }, @Param('id') id: string) {
+    return this.pending.list(user.tenantId, id);
   }
 
   @Get(':id')

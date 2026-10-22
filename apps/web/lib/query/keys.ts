@@ -394,6 +394,8 @@ export const adminBenefitSettlementsKeys = {
   detail: (id: string) => [...adminBenefitSettlementsKeys.all, 'detail', id] as const,
   transfers: (id: string) => [...adminBenefitSettlementsKeys.all, 'transfers', id] as const,
   audit: (id: string) => [...adminBenefitSettlementsKeys.all, 'audit', id] as const,
+  pendingValidations: (id: string) =>
+    [...adminBenefitSettlementsKeys.all, 'pending-validations', id] as const,
 };
 
 export const adminBenefitReportingKeys = {
