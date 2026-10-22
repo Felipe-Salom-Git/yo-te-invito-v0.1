@@ -200,7 +200,7 @@ export function GastroPublicDetailContent({
             <GastroGallerySection images={galleryImages} />
           </div>
 
-          <aside className="space-y-4 lg:sticky lg:top-8">
+          <aside className={`space-y-4 ${hasValidCoords ? '' : 'lg:sticky lg:top-8'}`}>
             <GastroPublicActionCard
               whatsAppHref={whatsAppHref}
               bookingUrl={location.bookingUrl}
@@ -216,6 +216,17 @@ export function GastroPublicDetailContent({
               hasLocation={hasLocation}
               onViewLocation={hasLocation ? onLocationModalOpen : undefined}
             />
+            {hasValidCoords ? (
+              <EventLocationSection
+                compact
+                venueName={location.displayName}
+                venueAddress={location.address}
+                city={location.city}
+                province={location.province}
+                geoLat={location.geoLat}
+                geoLng={location.geoLng}
+              />
+            ) : null}
             <PublicExternalLinksCard
               title="Menú, web y redes"
               className="border-white/10 bg-white/[0.02] opacity-95"
@@ -239,17 +250,6 @@ export function GastroPublicDetailContent({
             ) : null}
           </aside>
         </div>
-
-        {hasValidCoords ? (
-          <EventLocationSection
-            venueName={location.displayName}
-            venueAddress={location.address}
-            city={location.city}
-            province={location.province}
-            geoLat={location.geoLat}
-            geoLng={location.geoLng}
-          />
-        ) : null}
 
         {reviewEventId ? (
           <>

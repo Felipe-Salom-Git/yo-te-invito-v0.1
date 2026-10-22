@@ -12,6 +12,8 @@ export interface EventLocationSectionProps {
   geoLng?: number | null;
   /** When true, section fills available height (e.g. when aligned with reviews) */
   fillHeight?: boolean;
+  /** Sidebar variant: full width of its column, short fixed-height map, no top margin. */
+  compact?: boolean;
 }
 
 export function EventLocationSection({
@@ -22,6 +24,7 @@ export function EventLocationSection({
   geoLat,
   geoLng,
   fillHeight,
+  compact = false,
 }: EventLocationSectionProps) {
   const { streetLine, regionLine } = formatPublicLocationDisplay({
     address: venueAddress,
@@ -50,10 +53,18 @@ export function EventLocationSection({
   });
 
   return (
-    <section className={`${fillHeight ? 'flex h-full min-h-[280px] flex-col' : 'mt-10'}`}>
-      <h2 className="text-lg font-semibold text-white mb-3">Ubicación</h2>
+    <section
+      className={
+        compact ? '' : fillHeight ? 'flex h-full min-h-[280px] flex-col' : 'mt-10'
+      }
+    >
+      <h2
+        className={`font-semibold text-white ${compact ? 'mb-2 text-base' : 'mb-3 text-lg'}`}
+      >
+        Ubicación
+      </h2>
       <div className={`rounded-xl border border-border bg-bg-muted/50 overflow-hidden ${fillHeight ? 'flex-1 min-h-0 flex flex-col' : ''}`}>
-        <div className="p-5">
+        <div className={compact ? 'p-4' : 'p-5'}>
           {venueName && streetLine !== venueName ? (
             <p className="font-medium text-white">{venueName}</p>
           ) : null}
@@ -64,7 +75,11 @@ export function EventLocationSection({
             </div>
           )}
           {embedSrc && (
-            <div className={`mt-4 w-full overflow-hidden rounded-lg border border-border/80 ${fillHeight ? 'flex-1 min-h-[200px]' : 'aspect-video'}`}>
+            <div
+              className={`mt-4 w-full overflow-hidden rounded-lg border border-border/80 ${
+                compact ? 'h-48' : fillHeight ? 'flex-1 min-h-[200px]' : 'aspect-video'
+              }`}
+            >
               <iframe
                 src={embedSrc}
                 title="Ubicación en el mapa"
@@ -79,7 +94,7 @@ export function EventLocationSection({
             href={mapsHref}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-4 inline-flex items-center justify-center rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-bg transition-colors hover:bg-accent-hover focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-bg"
+            className={`mt-4 ${compact ? 'flex w-full' : 'inline-flex'} items-center justify-center rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-bg transition-colors hover:bg-accent-hover focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-bg`}
           >
             Abrir en Google Maps
           </a>
