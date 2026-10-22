@@ -46,7 +46,9 @@ HTTP → Controller (thin) → ZodValidationPipe → Service → Prisma → Post
 
 **Stabilization V3.1 (Slice 7.5):** smoke `pnpm --filter api run smoke:v31-stabilization` — verifica columnas Slice 6+7+8 (`EventSubcategory`) y roundtrip efímero; doc `docs/audits/V3_1_SLICE_7_5_STABILIZATION_SMOKE.md`. Deploy: aplicar migraciones `20260610120000_*`, `20260611120000_*`, `20260612120000_event_subcategories` antes de API/web.
 
-**Subcategorías múltiples V3.1 (Slice 8 fase 1):** tabla `EventSubcategory`; excursiones aceptan `subcategoryIds` + `subcategoryId` principal; filtros públicos OR legacy/adicionales; solo categoría `excursion` en formularios/UI.
+**Subcategorías múltiples V3.1 (Slice 8 fase 1):** tabla `EventSubcategory`; excursiones aceptan `subcategoryIds` + `subcategoryId` principal; filtros públicos OR legacy/adicionales; formularios/UI inicialmente `excursion`.
+
+**V3.3 G2 — Taxonomía Gastro:** mismo patrón N:N en el `publicEvent` del local (`EventSubcategory` + `isPrimary`, legacy `GastroProfile.subcategoryId` / `Event.subcategoryId`); tags vía `ContentTag`/`EventTag` (scope `gastro` o global). DTO public/admin incluyen `subcategories[]` + `tags[]`; discovery `subcategoryFilterWhere` OR legacy/junction. Sin modelos `GastroTag`/`GastroProfileTag`. Tests: `test:gastro-taxonomy-compat`.
 
 **Admin archivar V3.1 (Slice 9):** `AdminContentLifecycleService` — `POST /admin/events/:id/pause|restore`, `POST /admin/rental-locations/:id/deactivate|activate`, `POST /admin/excursion-operators/:id/deactivate|activate`; gastro `PATCH .../status` con audit; público filtra padres inactivos (`public-content-availability.util.ts`). Doc: `V3_1_SLICE_9_ADMIN_ARCHIVE_SMOKE.md`.
 

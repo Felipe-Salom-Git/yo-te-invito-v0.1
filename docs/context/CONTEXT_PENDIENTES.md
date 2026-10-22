@@ -20,7 +20,16 @@ Auditoría: [`V3_3_GASTRO_EXPANSION_DISCOVERY_AUDIT.md`](../audits/V3_3_GASTRO_E
 - [x] G1.2 `GASTRO_OWNER` validate scoped to authorized `GastroProfile` (QR + shortCode)
 - [x] G1.3 Validations UI + reviews multi-local + legacy event discount ownership
 - [x] G1.4 Cross-profile isolation test suite (`test:gastro-cross-profile-isolation`)
-- [ ] G2 — Taxonomía (multi-subcategorías + tags) — **no iniciar sin confirmación**
+
+### G2 — Taxonomía Gastro consistente
+
+- [x] G2.1 Lectura canónica multi-subcategoría (DTO public/admin + `resolveGastroPrimarySubcategoryName`)
+- [x] G2.2 Portal multi-subcategoría (primary-first + validación tenant/categoría)
+- [x] G2.3 Tags vía `ContentTag`/`EventTag` (sin modelos Gastro paralelos)
+- [x] G2.4 Admin view/edit taxonomy (`subcategoryIds`/`tagIds` + detalle separado)
+- [x] G2.5 Público/discovery (ficha multi + filtro OR legacy/junction)
+- [x] G2.6 Compat suite `test:gastro-taxonomy-compat` + context docs
+
 - [ ] G3 — GastroContent + galerías — **no iniciar sin confirmación**
 
 ---

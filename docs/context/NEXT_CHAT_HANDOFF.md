@@ -30,11 +30,14 @@ Punto de entrada operativo para **V3.3**. Detalle completo: `AI_ENTRYPOINT.md`, 
 | **Etapa 9 — Liquidaciones, Transferencias y Canjes** | ✅ Código implementado (slices 9.0–9.8 + hardening `b920553`) |
 | **Etapa 9 — QA manual / DB smoke / concurrency** | ⏳ Pendiente — acumulado cierre global V3.3 |
 | **Expansión Gastro — Discovery** | ✅ `docs/audits/V3_3_GASTRO_EXPANSION_DISCOVERY_AUDIT.md` |
-| **Expansión Gastro — G1 Isolation hardening** | ✅ Código (G1.1–G1.4) — esperar confirmación antes de G2 |
+| **Expansión Gastro — G1 Isolation hardening** | ✅ Código (G1.1–G1.4) |
+| **Expansión Gastro — G2 Taxonomía** | ✅ Código (G2.1–G2.6) — esperar confirmación antes de G3 |
 
 **Checklist V3.3:** `docs/dev/Yo_Te_Invito_Checklist_V3_3_Funcional_Operativa.md`
 
-**Próximo paso V3.3:** **Etapa G2 — Taxonomía Gastro** (multi-subcategorías + tags) tras confirmación. No iniciar G2/G3 sin instrucción explícita. QA manual Etapas 1–9 sigue acumulada.
+**Próximo paso V3.3:** **Etapa G3 — GastroContent + galerías** tras confirmación. No iniciar G3 sin instrucción explícita. QA manual Etapas 1–9 sigue acumulada.
+
+**Modelo canónico G2:** subcategorías = `EventSubcategory` (+ `subcategoryId` legacy/primary); tags = `ContentTag`/`EventTag` en el `publicEvent` del `GastroProfile`. Local activo = `GastroActiveLocation` / `?profileId=` (G1.3). Suite: `pnpm --filter api run test:gastro-taxonomy-compat`.
 
 ---
 
