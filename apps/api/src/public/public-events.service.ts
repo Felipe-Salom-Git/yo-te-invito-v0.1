@@ -403,6 +403,10 @@ export class PublicEventsService {
         ? this.prisma.event.findMany({
             where,
             include: {
+              subcategory: { select: { name: true } },
+              eventSubcategories: {
+                include: { subcategory: { select: { id: true, name: true } } },
+              },
               eventTags: this.eventTagsListSelect(),
               gastroDiscounts: {
                 where: {
@@ -453,6 +457,11 @@ export class PublicEventsService {
             isTicketingEnabled: boolean;
             isGeneralPublication: boolean;
             subcategoryId: string | null;
+            subcategory?: { name: string } | null;
+            eventSubcategories?: Array<{
+              isPrimary: boolean;
+              subcategory: { id: string; name: string };
+            }>;
             producerProfile: { displayName: string } | null;
             gastroDiscounts: Array<{
               code: string;
@@ -481,6 +490,7 @@ export class PublicEventsService {
             const first = d.displayImageUrls[0];
             promoImg = typeof first === 'string' ? first : null;
           }
+          const multiTaxonomy = mapEventSubcategoriesPublic(e.eventSubcategories);
           return {
             id: e.id,
             title: e.title,
@@ -496,6 +506,8 @@ export class PublicEventsService {
             isTicketingEnabled: e.isTicketingEnabled,
             isGeneralPublication: e.isGeneralPublication,
             subcategoryId: e.subcategoryId ?? undefined,
+            subcategoryName: e.subcategory?.name ?? null,
+            ...(multiTaxonomy.length > 0 ? { subcategories: multiTaxonomy } : {}),
             gastroPromoLabel: promoLabel ?? null,
             gastroPromoImageUrl: promoImg ?? null,
             producerName: resolvePublicProducerName(e.producerProfile),
