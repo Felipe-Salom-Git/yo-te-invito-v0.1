@@ -230,6 +230,7 @@ model Tenant {
   roleApplications    RoleApplication[]
   producerProfiles    ProducerProfile[]
   gastroProfiles      GastroProfile[]
+  gastroProfileViews  GastroProfileView[]
   hotelProfiles       HotelProfile[]
   referrerProfiles    ReferrerProfile[]
   ticketTypes         TicketType[]
@@ -417,6 +418,8 @@ model GastroProfile {
   publicEventId    String?       @unique
   ratingAvg        Float?
   ratingCount      Int           @default(0)
+  /// Public location page views (mirror of GastroProfileView count; series live on GastroProfileView).
+  viewCount        Int           @default(0)
   createdByUserId  String?
   status           ProfileStatus @default(DRAFT)
   createdAt        DateTime      @default(now())
@@ -429,6 +432,7 @@ model GastroProfile {
   gastroDiscounts GastroDiscount[]
   followers       UserGastroFollow[]
   contentItems    GastroContent[]
+  profileViews    GastroProfileView[]
   courtesyCampaigns GastroCourtesyCampaign[]
   benefitCommercialAgreements BenefitCommercialAgreement[]
   benefitSettlements          BenefitSettlement[]
@@ -436,6 +440,22 @@ model GastroProfile {
 
   @@index([tenantId])
   @@index([tenantId, status])
+}
+
+/// Append-only public page views for a GastroProfile (time series; not unique visitors).
+model GastroProfileView {
+  id              String   @id @default(cuid())
+  tenantId        String
+  gastroProfileId String
+  viewedAt        DateTime @default(now())
+  /// Optional authenticated viewer; never required. No IP / fingerprint.
+  viewerUserId    String?
+
+  tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  gastroProfile GastroProfile @relation(fields: [gastroProfileId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, gastroProfileId, viewedAt])
+  @@index([gastroProfileId, viewedAt])
 }
 
 model GastroContent {

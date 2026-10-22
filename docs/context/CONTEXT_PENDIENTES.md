@@ -39,7 +39,17 @@ Auditoría: [`V3_3_GASTRO_EXPANSION_DISCOVERY_AUDIT.md`](../audits/V3_3_GASTRO_E
 - [x] G3.5 Public `/gastronomicos/[id]` publicaciones antes de descuentos
 - [x] G3.6 Admin panel + lifecycle hardening + context docs
 
-- [ ] G4 — Métricas operativas por descuento — **no iniciar sin confirmación**
+### G4 — Métricas por local y por descuento
+
+- [x] G4.1 Discovery analytics (`docs/audits/V3_3_G4_ANALYTICS_DISCOVERY.md`) + modelo `GastroProfileView`
+- [ ] G4.2 Tracking page view ficha pública
+- [ ] G4.3 Aggregations local
+- [ ] G4.4 Dashboard Gastro por local
+- [ ] G4.5 Admin métricas local
+- [ ] G4.6–G4.10 Métricas por descuento
+- [ ] G4.11 Tests + hardening
+
+**Deploy note:** aplicar también migration G3 `20261022120000_gastro_content_gallery_urls` si aún no está en el entorno.
 
 ---
 

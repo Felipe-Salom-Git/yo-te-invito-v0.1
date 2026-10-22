@@ -48,6 +48,7 @@ export * from './schemas/audit';
 export * from './schemas/platform-config.schema';
 export * from './schemas/producer.schema';
 export * from './schemas/producer-engagement';
+export * from './schemas/gastro-profile-engagement';
 export * from './schemas/producer-reviews';
 export * from './schemas/commercial-relationship-reviews';
 export * from './schemas/review-disputes';
