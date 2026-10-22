@@ -509,6 +509,8 @@ export const adminGastroKeys = {
   pendingDiscounts: () => [...adminGastroKeys.all, 'pending-discounts'] as const,
   list: (filters: string) => [...adminGastroKeys.all, 'list', filters] as const,
   detail: (profileId: string) => [...adminGastroKeys.all, 'detail', profileId] as const,
+  profileMetrics: (profileId: string) =>
+    [...adminGastroKeys.all, 'profile-metrics', profileId] as const,
   discounts: (profileId: string) => [...adminGastroKeys.all, 'discounts', profileId] as const,
   discount: (profileId: string, discountId: string) =>
     [...adminGastroKeys.all, 'discount', profileId, discountId] as const,

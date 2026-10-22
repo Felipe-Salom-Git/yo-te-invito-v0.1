@@ -14,11 +14,13 @@ import { Button, PageContainer, SectionTitle, useToast } from '@/components';
 import { getErrorMessage } from '@/lib/errors';
 import {
   useAdminApproveGastroProfileMutation,
+  useAdminGastroLocationMetrics,
   useAdminRejectGastroProfileMutation,
 } from '@/lib/query/admin-gastro';
 import { AdminGastroDiscountsTable } from '@/components/admin/gastro/AdminGastroDiscountsTable';
 import { AdminGastroHardDeleteActions } from '@/components/admin/gastro/AdminGastroHardDeleteActions';
 import { AdminGastroContentPanel } from '@/components/admin/gastro/AdminGastroContentPanel';
+import { GastroProfileMetricsPanel } from '@/components/gastro/dashboard/GastroProfileMetricsPanel';
 
 const TABS: Array<{ id: GastroDiscountLifecycleBucket; label: string }> = [
   { id: 'ACTIVE', label: 'Activos' },
@@ -48,6 +50,8 @@ export default function AdminGastroLocationDetailPage() {
     queryFn: () => repos.adminGastro.listLocationDiscounts(profileId),
     enabled: !!profileId,
   });
+
+  const metricsQuery = useAdminGastroLocationMetrics(profileId, !!profileId);
 
   const grouped = useMemo(() => {
     const buckets: Record<GastroDiscountLifecycleBucket, NonNullable<typeof discountsData>['data']> =
@@ -251,6 +255,12 @@ export default function AdminGastroLocationDetailPage() {
               )}
             </div>
           </div>
+
+          {metricsQuery.isLoading ? (
+            <p className="mt-8 text-sm text-text-muted">Cargando métricas del local…</p>
+          ) : metricsQuery.data ? (
+            <GastroProfileMetricsPanel metrics={metricsQuery.data} />
+          ) : null}
 
           <AdminGastroContentPanel profileId={profileId} />
 

@@ -2418,6 +2418,10 @@ export class ApiRepository implements Repositories {
       this.client.get<AdminGastroLocationDetail>(
         `/admin/gastronomicos/${encodeURIComponent(profileId)}`,
       ),
+    getLocationMetrics: async (profileId) =>
+      this.client.get<import('@yo-te-invito/shared').GastroProfileMetricsResponse>(
+        `/admin/gastronomicos/${encodeURIComponent(profileId)}/metrics`,
+      ),
     listLocationDiscounts: async (profileId) =>
       this.client.get<{ data: AdminGastroDiscountListItem[] }>(
         '/admin/gastro-discount-tickets',

@@ -98,6 +98,7 @@ import {
 } from '@yo-te-invito/shared';
 import { AdminGastroService } from './admin-gastro.service';
 import { AdminGastroLocationsService } from './admin-gastro-locations.service';
+import { GastroProfileMetricsService } from '../gastro/gastro-profile-metrics.service';
 import { GastroDiscountMetricsService } from '../gastro/gastro-discount-metrics.service';
 import { GastroDiscountVisualTemplateService } from '../gastro/gastro-discount-visual-template.service';
 import { AdminProducersService } from './admin-producers.service';
@@ -147,6 +148,7 @@ export class AdminController {
     private readonly adminGastro: AdminGastroService,
     private readonly adminGastroLocations: AdminGastroLocationsService,
     private readonly gastroDiscountMetrics: GastroDiscountMetricsService,
+    private readonly gastroProfileMetrics: GastroProfileMetricsService,
     private readonly visualTemplates: GastroDiscountVisualTemplateService,
     private readonly adminHotelProfiles: AdminHotelProfilesService,
     private readonly deepDelete: AdminDeepDeleteService,
@@ -1298,6 +1300,22 @@ export class AdminController {
     @Param(new ZodValidationPipe(adminGastroProfileIdParamsSchema)) params: AdminGastroProfileIdParams,
   ) {
     return this.adminGastro.getLocation(user.tenantId, params.profileId);
+  }
+
+  @Get('gastronomicos/:profileId/metrics')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async getGastroLocationMetrics(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param(new ZodValidationPipe(adminGastroProfileIdParamsSchema))
+    params: AdminGastroProfileIdParams,
+  ) {
+    return this.gastroProfileMetrics.getMetricsForProfile(
+      user.tenantId,
+      user.id,
+      user.role,
+      params.profileId,
+    );
   }
 
   @Get('gastronomicos/:profileId/discuentos')

@@ -2945,6 +2945,9 @@ export interface AdminGastroRepo {
     meta: { page: number; limit: number; total: number; totalPages: number };
   }>;
   getLocation(profileId: string): Promise<AdminGastroLocationDetail>;
+  getLocationMetrics(
+    profileId: string,
+  ): Promise<import('@yo-te-invito/shared').GastroProfileMetricsResponse>;
   listLocationDiscounts(profileId: string): Promise<{ data: AdminGastroDiscountListItem[] }>;
   getDiscount(profileId: string, discountId: string): Promise<AdminGastroDiscountDetail>;
   getDiscountMetrics(profileId: string, discountId: string): Promise<AdminGastroDiscountMetrics>;

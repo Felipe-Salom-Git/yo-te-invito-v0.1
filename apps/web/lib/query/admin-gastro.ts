@@ -87,6 +87,15 @@ export function useAdminGastroLocationDetail(profileId: string, enabled = true) 
   });
 }
 
+export function useAdminGastroLocationMetrics(profileId: string, enabled = true) {
+  const repos = useRepositories();
+  return useQuery({
+    queryKey: adminGastroKeys.profileMetrics(profileId),
+    queryFn: () => repos.adminGastro.getLocationMetrics(profileId),
+    enabled: enabled && !!profileId,
+  });
+}
+
 export function useAdminGastroLocationCreateMutation() {
   const repos = useRepositories();
   const queryClient = useQueryClient();
