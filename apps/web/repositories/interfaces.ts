@@ -615,6 +615,8 @@ export interface EventSummary {
   hasTicketing?: boolean;
   isGeneralPublication?: boolean;
   subcategoryName?: string | null;
+  /** Gastro/excursion multi-taxonomy (primary first). */
+  subcategories?: Array<{ id: string; name: string; isPrimary?: boolean }>;
   /** Public list: minimum ticket price (major units). Null when not applicable. */
   fromPrice?: number | null;
   /** Public list: producer display name. Null when no active profile. */

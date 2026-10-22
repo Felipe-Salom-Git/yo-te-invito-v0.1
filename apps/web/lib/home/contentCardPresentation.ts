@@ -1,9 +1,17 @@
+import {
+  resolveGastroSubcategoryNames,
+  truncateSubcategoryChips,
+} from '@yo-te-invito/shared';
 import { getCategoryLabel } from '@/lib/home/contentRoutes';
 import {
   formatPublicEventDate,
   shouldShowPublicEventDate,
 } from '@/lib/public/publicContentDates';
 import { RENTAL_PUBLIC_CTA_LOCAL } from '@/lib/rentals/publicCopy';
+
+/** Compact gastro card: show 2 chips on narrow, 3 on sm+. */
+export const GASTRO_CARD_SUBCATEGORY_MAX_MOBILE = 2;
+export const GASTRO_CARD_SUBCATEGORY_MAX_DESKTOP = 3;
 
 /** Badge on public discovery cards (not section titles). */
 export const RENTAL_CARD_BADGE = 'Alquiler';
@@ -163,6 +171,8 @@ export type ContentCardPresentation = {
   vertical: ContentCardVertical;
   primaryBadge: string | null;
   secondaryBadge: string | null;
+  /** Gastro multi-subcategory chips (empty → fall back to primaryBadge). */
+  subcategoryChips: string[];
   compactSummary: string | null;
   /** Compact surface flags (V3.2 Slice 2) */
   showDateInCompact: boolean;
@@ -180,6 +190,15 @@ export type ContentCardPresentation = {
   ctaLabel: string;
 };
 
+export function getGastroCardSubcategoryChips(item: {
+  category?: string | null;
+  subcategoryName?: string | null;
+  subcategories?: Array<{ name: string; isPrimary?: boolean }> | null;
+}): string[] {
+  if (!isGastroContent(item)) return [];
+  return resolveGastroSubcategoryNames(item);
+}
+
 /**
  * Explicit per-vertical presentation matrix for discovery cards.
  * Compact = title + summary + tags + rating; location/date/schedule → hover/modal.
@@ -187,13 +206,17 @@ export type ContentCardPresentation = {
 export function getContentCardPresentation(item: {
   category?: string | null;
   subcategoryName?: string | null;
+  subcategories?: Array<{ name: string; isPrimary?: boolean }> | null;
   summary?: string | null;
   description?: string | null;
   fromPrice?: number | null;
 }): ContentCardPresentation {
   const vertical = resolveContentCardVertical(item);
-  const primaryBadge = getContentCardPrimaryBadge(item);
-  const secondaryBadge = getContentCardSecondaryBadge(item);
+  const subcategoryChips = getGastroCardSubcategoryChips(item);
+  const primaryBadge =
+    subcategoryChips.length > 0 ? null : getContentCardPrimaryBadge(item);
+  const secondaryBadge =
+    subcategoryChips.length > 0 ? null : getContentCardSecondaryBadge(item);
   const compactSummary = getContentCardCompactSummary(item);
   const showPrice = shouldShowContentCardPrice(item);
 
@@ -201,6 +224,7 @@ export function getContentCardPresentation(item: {
     vertical,
     primaryBadge,
     secondaryBadge,
+    subcategoryChips,
     compactSummary,
     showDateInCompact: false,
     showLocationInCompact: false,
@@ -215,6 +239,13 @@ export function getContentCardPresentation(item: {
     showPriceInHover: showPrice,
     ctaLabel: getContentCardExpandedCta(item.category),
   };
+}
+
+export function getGastroCardVisibleSubcategoryChips(
+  names: string[],
+  maxVisible: number,
+): { visible: string[]; hiddenCount: number } {
+  return truncateSubcategoryChips(names, maxVisible);
 }
 
 /**

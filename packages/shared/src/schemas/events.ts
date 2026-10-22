@@ -107,6 +107,8 @@ export const eventSummarySchema = z.object({
   isGeneralPublication: z.boolean().optional(),
   eventMode: producerEventModeSchema.optional(),
   subcategoryName: z.string().nullable().optional(),
+  /** Full taxonomy for gastro/excursion cards (primary first). Prefer over subcategoryName alone. */
+  subcategories: z.array(eventSubcategoryPublicSchema).optional(),
   /** Minimum purchasable ticket price (major units, e.g. ARS). Null when not on sale. */
   fromPrice: z.number().nullable().optional(),
   /** Active producer profile display name — never email. */

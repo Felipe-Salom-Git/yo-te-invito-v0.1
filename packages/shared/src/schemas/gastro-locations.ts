@@ -181,6 +181,39 @@ export function resolveGastroPrimarySubcategoryName(input: {
   return input.subcategoryName?.trim() || null;
 }
 
+/** Ordered subcategory names for discovery cards (primary first; legacy fallback). */
+export function resolveGastroSubcategoryNames(input: {
+  subcategoryName?: string | null;
+  subcategories?: Array<{ name: string; isPrimary?: boolean }> | null;
+}): string[] {
+  const list = input.subcategories ?? [];
+  if (list.length > 0) {
+    const sorted = [...list].sort((a, b) => {
+      if (!!a.isPrimary !== !!b.isPrimary) return a.isPrimary ? -1 : 1;
+      return 0;
+    });
+    const names = sorted
+      .map((s) => s.name?.trim())
+      .filter((n): n is string => Boolean(n));
+    return [...new Set(names)];
+  }
+  const legacy = input.subcategoryName?.trim();
+  return legacy ? [legacy] : [];
+}
+
+/** Visible chips + overflow for compact gastro cards. */
+export function truncateSubcategoryChips(
+  names: string[],
+  maxVisible: number,
+): { visible: string[]; hiddenCount: number } {
+  const cleaned = names.map((n) => n.trim()).filter(Boolean);
+  if (maxVisible <= 0) return { visible: [], hiddenCount: cleaned.length };
+  return {
+    visible: cleaned.slice(0, maxVisible),
+    hiddenCount: Math.max(0, cleaned.length - maxVisible),
+  };
+}
+
 export const publicGastroLocationsListQuerySchema = z.object({
   tenantId: z.string().min(1),
   city: z.string().optional(),

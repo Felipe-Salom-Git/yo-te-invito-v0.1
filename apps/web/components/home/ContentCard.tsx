@@ -6,8 +6,11 @@ import { motion } from 'framer-motion';
 import type { EventSummary } from '@/repositories/interfaces';
 import { getContentDetailHref } from '@/lib/home/contentRoutes';
 import {
+  GASTRO_CARD_SUBCATEGORY_MAX_DESKTOP,
+  GASTRO_CARD_SUBCATEGORY_MAX_MOBILE,
   getContentCardPresentation,
   getContentCardPlaceholderEmoji,
+  getGastroCardVisibleSubcategoryChips,
   isExcursionContent,
   isGastroContent,
   isRentalContent,
@@ -57,10 +60,19 @@ export function ContentCard({ item, onClick, tenantId }: ContentCardProps) {
   const {
     primaryBadge,
     secondaryBadge,
+    subcategoryChips,
     compactSummary,
     showRatingInCompact,
     showTagsInCompact,
   } = presentation;
+  const mobileChips = getGastroCardVisibleSubcategoryChips(
+    subcategoryChips,
+    GASTRO_CARD_SUBCATEGORY_MAX_MOBILE,
+  );
+  const desktopChips = getGastroCardVisibleSubcategoryChips(
+    subcategoryChips,
+    GASTRO_CARD_SUBCATEGORY_MAX_DESKTOP,
+  );
   const ratingLabel = formatPublicRatingLabel(item.ratingAvg);
   const ratingFace = publicFaceFromTen(item.ratingAvg);
   const emphasizeRating = shouldEmphasizeCardRating(item);
@@ -169,16 +181,51 @@ export function ContentCard({ item, onClick, tenantId }: ContentCardProps) {
         }`}
       >
         <div className="mb-2 flex max-w-full flex-wrap gap-1.5">
-          {primaryBadge ? (
-            <span className="w-fit max-w-[90%] truncate rounded border border-white/20 bg-black/45 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white/90">
-              {primaryBadge}
-            </span>
-          ) : null}
-          {secondaryBadge ? (
-            <span className="w-fit max-w-[85%] truncate rounded border border-white/15 bg-black/35 px-2 py-0.5 text-[10px] text-white/75">
-              {secondaryBadge}
-            </span>
-          ) : null}
+          {subcategoryChips.length > 0 ? (
+            <>
+              <ul className="flex max-w-full flex-wrap gap-1.5 sm:hidden" aria-label="Subcategorías">
+                {mobileChips.visible.map((name) => (
+                  <li key={name}>
+                    <span className="inline-block max-w-[9rem] truncate rounded border border-white/20 bg-black/45 px-2 py-0.5 text-[10px] font-medium text-white/90">
+                      {name}
+                    </span>
+                  </li>
+                ))}
+                {mobileChips.hiddenCount > 0 ? (
+                  <li>
+                    <span className="text-[10px] text-white/65">+{mobileChips.hiddenCount}</span>
+                  </li>
+                ) : null}
+              </ul>
+              <ul className="hidden max-w-full flex-wrap gap-1.5 sm:flex" aria-label="Subcategorías">
+                {desktopChips.visible.map((name) => (
+                  <li key={name}>
+                    <span className="inline-block max-w-[10rem] truncate rounded border border-white/20 bg-black/45 px-2 py-0.5 text-[10px] font-medium text-white/90">
+                      {name}
+                    </span>
+                  </li>
+                ))}
+                {desktopChips.hiddenCount > 0 ? (
+                  <li>
+                    <span className="text-[10px] text-white/65">+{desktopChips.hiddenCount}</span>
+                  </li>
+                ) : null}
+              </ul>
+            </>
+          ) : (
+            <>
+              {primaryBadge ? (
+                <span className="w-fit max-w-[90%] truncate rounded border border-white/20 bg-black/45 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white/90">
+                  {primaryBadge}
+                </span>
+              ) : null}
+              {secondaryBadge ? (
+                <span className="w-fit max-w-[85%] truncate rounded border border-white/15 bg-black/35 px-2 py-0.5 text-[10px] text-white/75">
+                  {secondaryBadge}
+                </span>
+              ) : null}
+            </>
+          )}
         </div>
         <h3 className="gateway-poster-title line-clamp-2 text-[0.95rem] font-bold leading-snug text-white sm:text-base">
           {item.title}

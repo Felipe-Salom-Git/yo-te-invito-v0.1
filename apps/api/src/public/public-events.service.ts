@@ -190,6 +190,9 @@ export class PublicEventsService {
       isTicketingEnabled: true,
       isGeneralPublication: true,
       subcategory: { select: { name: true } },
+      eventSubcategories: {
+        include: { subcategory: { select: { id: true, name: true } } },
+      },
       producerProfile: {
         where: { status: 'ACTIVE' },
         select: { displayName: true },
@@ -225,6 +228,10 @@ export class PublicEventsService {
       isTicketingEnabled: boolean;
       isGeneralPublication: boolean;
       subcategory?: { name: string } | null;
+      eventSubcategories?: Array<{
+        isPrimary: boolean;
+        subcategory: { id: string; name: string };
+      }>;
       producerProfile: { displayName: string } | null;
       ticketTypes: Array<{ id: string }>;
       eventTags: Array<{
@@ -243,6 +250,11 @@ export class PublicEventsService {
       isTicketingEnabled: e.isTicketingEnabled,
       isGeneralPublication: e.isGeneralPublication,
     });
+    const category = (e.category ?? '').toLowerCase();
+    const multiTaxonomy =
+      category === 'gastro' || category === 'excursion'
+        ? mapEventSubcategoriesPublic(e.eventSubcategories)
+        : undefined;
     const base: EventSummary = {
       id: e.id,
       title: e.title,
@@ -253,6 +265,9 @@ export class PublicEventsService {
       category: e.category ?? undefined,
       subcategoryId: e.subcategoryId ?? undefined,
       subcategoryName: e.subcategory?.name ?? null,
+      ...(multiTaxonomy && multiTaxonomy.length > 0
+        ? { subcategories: multiTaxonomy }
+        : {}),
       description: e.description ?? undefined,
       ratingAvg: e.ratingAvg ?? undefined,
       ratingCount: e.ratingCount ?? undefined,
@@ -264,7 +279,7 @@ export class PublicEventsService {
       fromPrice: null,
       tags: mapEventTagsPublic(e.eventTags),
     };
-    if ((e.category ?? '').toLowerCase() !== 'excursion') return base;
+    if (category !== 'excursion') return base;
     const schedule = readExcursionSchedulePublic({
       excursionDepartureTime: e.excursionDepartureTime ?? null,
       excursionDurationText: e.excursionDurationText ?? null,
