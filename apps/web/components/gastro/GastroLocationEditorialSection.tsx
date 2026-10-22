@@ -2,6 +2,8 @@
 
 import type { PublicGastroContentItem } from '@/repositories/interfaces';
 import { RentalDescriptionBlock } from '@/components/rentals/RentalDescriptionBlock';
+import { gastroContentGalleryFromItem } from '@/lib/gastro/gastro-content-gallery';
+import { RentalGalleryThumbnails } from '@/components/rentals/RentalGalleryThumbnails';
 
 type GastroLocationEditorialSectionProps = {
   items: PublicGastroContentItem[];
@@ -14,58 +16,50 @@ export function GastroLocationEditorialSection({
 }: GastroLocationEditorialSectionProps) {
   if (items.length === 0) return null;
 
-  const editorial = items.filter((i) => i.type === 'editorial');
-  const images = items.filter((i) => i.type === 'image' && i.imageUrl);
-
   return (
     <section className="space-y-8">
-      {editorial.map((item) => (
-        <div key={item.id}>
-          {item.title ? (
-            <h2 className="text-lg font-semibold text-text">{item.title}</h2>
-          ) : null}
-          {item.body ? (
-            <div className={item.title ? 'mt-3' : ''}>
-              <RentalDescriptionBlock
-                productTitle={item.title ?? locationName}
-                description={item.body}
-                sectionTitle={item.title ? null : 'Descripción'}
-              />
-            </div>
-          ) : null}
-        </div>
-      ))}
+      <h2 className="text-lg font-semibold text-white">Publicaciones</h2>
+      <ul className="space-y-8">
+        {items.map((item) => {
+          const gallery = gastroContentGalleryFromItem(item);
+          const hasText = Boolean(item.title?.trim() || item.body?.trim());
+          if (!hasText && gallery.length === 0) return null;
 
-      {images.length > 0 ? (
-        <div>
-          <h2 className="text-lg font-semibold text-text">Más sobre el local</h2>
-          <ul className="mt-4 grid gap-4 sm:grid-cols-2">
-            {images.map((item) => (
-              <li
-                key={item.id}
-                className="overflow-hidden rounded-xl border border-border bg-bg-muted/40"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={item.imageUrl!}
-                  alt={item.title ?? 'Imagen del local'}
-                  className="aspect-[4/3] w-full object-cover"
+          return (
+            <li key={item.id} className="space-y-3">
+              {item.title?.trim() ? (
+                <h3 className="text-base font-semibold text-white">{item.title.trim()}</h3>
+              ) : null}
+              {item.body?.trim() ? (
+                <RentalDescriptionBlock
+                  productTitle={item.title?.trim() || locationName}
+                  description={item.body}
+                  sectionTitle={item.title?.trim() ? null : 'Descripción'}
                 />
-                {item.title || item.body ? (
-                  <div className="p-4">
-                    {item.title ? (
-                      <p className="font-medium text-text">{item.title}</p>
-                    ) : null}
-                    {item.body ? (
-                      <p className="mt-1 text-sm text-text-muted whitespace-pre-wrap">{item.body}</p>
-                    ) : null}
-                  </div>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
+              ) : null}
+              {gallery.length > 0 ? (
+                <div className="mt-2">
+                  {gallery.length === 1 ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={gallery[0]}
+                      alt={item.title ?? 'Imagen de la publicación'}
+                      className="aspect-[4/3] w-full max-w-xl rounded-xl object-cover"
+                    />
+                  ) : (
+                    <RentalGalleryThumbnails
+                      images={gallery.map((url, index) => ({
+                        id: `${item.id}-${index}`,
+                        url,
+                      }))}
+                    />
+                  )}
+                </div>
+              ) : null}
+            </li>
+          );
+        })}
+      </ul>
     </section>
   );
 }

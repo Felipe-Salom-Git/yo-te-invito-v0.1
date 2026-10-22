@@ -175,20 +175,20 @@ export function GastroPublicDetailContent({
               </section>
             ) : null}
 
-            {location.tags && location.tags.length > 0 ? (
-              <section>
-                <h2 className="text-lg font-semibold text-white">Etiquetas</h2>
-                <ContentTagChips tags={location.tags} category="gastro" className="mt-3" />
-              </section>
-            ) : null}
-
-            <GastroDiscountsSection discounts={discounts} />
-
             {hasEditorial ? (
               <GastroLocationEditorialSection
                 items={publishedContent}
                 locationName={location.displayName}
               />
+            ) : null}
+
+            <GastroDiscountsSection discounts={discounts} />
+
+            {location.tags && location.tags.length > 0 ? (
+              <section>
+                <h2 className="text-lg font-semibold text-white">Etiquetas</h2>
+                <ContentTagChips tags={location.tags} category="gastro" className="mt-3" />
+              </section>
             ) : null}
 
             <GastroGallerySection images={galleryImages} />
