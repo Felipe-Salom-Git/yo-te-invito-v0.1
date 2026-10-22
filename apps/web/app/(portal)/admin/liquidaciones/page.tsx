@@ -24,6 +24,10 @@ import { useAdminGastroLocationsList } from '@/lib/query/admin-gastro';
 import { useRepositories } from '@/repositories/context';
 import { BENEFIT_VERTICAL_LABEL } from '@/lib/admin/benefit-agreement-labels';
 import {
+  adminGastroActiveListQuery,
+  resolveSettlementPartnerOptions,
+} from '@/lib/admin/settlement-partner-options';
+import {
   BENEFIT_CASH_COLLECTION_STATUS_LABEL,
   BENEFIT_INTEGRITY_STATUS_LABEL,
   BENEFIT_SETTLEMENT_STATUS_LABEL,
@@ -92,31 +96,35 @@ export default function AdminLiquidacionesPage() {
   });
 
   const gastroQuery = useAdminGastroLocationsList(
-    { status: 'ACTIVE', page: 1, limit: 100 },
+    adminGastroActiveListQuery(),
     'liquidaciones-filter-gastro',
   );
   const operatorsQuery = useQuery({
     queryKey: ['excursion-operators', 'liquidaciones', TENANT_ID],
     queryFn: () =>
       repos.excursionOperators.listAdmin({ tenantId: TENANT_ID, includeInactive: false }),
+    enabled: vertical === 'ACTIVITY' || genVertical === 'ACTIVITY' || showGenerate,
   });
 
-  const partnerOptions = useMemo(() => {
-    if (vertical === 'GASTRO') {
-      return (gastroQuery.data?.data ?? []).map((p) => ({ id: p.id, label: p.displayName }));
-    }
-    if (vertical === 'ACTIVITY') {
-      return (operatorsQuery.data?.data ?? []).map((p) => ({ id: p.id, label: p.name }));
-    }
-    return [];
-  }, [vertical, gastroQuery.data, operatorsQuery.data]);
+  const partnerOptions = useMemo(
+    () =>
+      resolveSettlementPartnerOptions(
+        vertical,
+        gastroQuery.data?.data,
+        operatorsQuery.data?.data,
+      ),
+    [vertical, gastroQuery.data, operatorsQuery.data],
+  );
 
-  const genPartnerOptions = useMemo(() => {
-    if (genVertical === 'GASTRO') {
-      return (gastroQuery.data?.data ?? []).map((p) => ({ id: p.id, label: p.displayName }));
-    }
-    return (operatorsQuery.data?.data ?? []).map((p) => ({ id: p.id, label: p.name }));
-  }, [genVertical, gastroQuery.data, operatorsQuery.data]);
+  const genPartnerOptions = useMemo(
+    () =>
+      resolveSettlementPartnerOptions(
+        genVertical,
+        gastroQuery.data?.data,
+        operatorsQuery.data?.data,
+      ),
+    [genVertical, gastroQuery.data, operatorsQuery.data],
+  );
 
   const rows = useMemo(() => {
     const all = data?.data ?? [];
@@ -401,6 +409,20 @@ export default function AdminLiquidacionesPage() {
                   </option>
                 ))}
               </select>
+              {gastroQuery.isError || (genVertical === 'ACTIVITY' && operatorsQuery.isError) ? (
+                <p className="mt-1 text-xs text-red-500">
+                  No se pudo cargar el catálogo de partners.
+                </p>
+              ) : null}
+              {!gastroQuery.isLoading &&
+              !(genVertical === 'ACTIVITY' && operatorsQuery.isLoading) &&
+              genPartnerOptions.length === 0 ? (
+                <p className="mt-1 text-xs text-text-muted">
+                  {genVertical === 'GASTRO'
+                    ? 'No hay locales activos en este tenant.'
+                    : 'No hay operadores activos en este tenant.'}
+                </p>
+              ) : null}
             </label>
             <label className="text-sm">
               Período

@@ -8,6 +8,10 @@ import { Button, PageContainer, SectionTitle } from '@/components';
 import { LiquidacionesSubnav } from '@/components/admin/liquidaciones/LiquidacionesSubnav';
 import { useCreateAdminBenefitAgreement } from '@/lib/query/benefit-agreements';
 import { useAdminGastroLocationsList } from '@/lib/query/admin-gastro';
+import {
+  adminGastroActiveListQuery,
+  resolveSettlementPartnerOptions,
+} from '@/lib/admin/settlement-partner-options';
 import { useRepositories } from '@/repositories/context';
 
 const TENANT_ID = 'tenant-demo';
@@ -30,7 +34,7 @@ export default function AdminNewBenefitAgreementPage() {
   const [notes, setNotes] = useState('');
 
   const gastroQuery = useAdminGastroLocationsList(
-    { status: 'ACTIVE', page: 1, limit: 100 },
+    adminGastroActiveListQuery(),
     'benefit-agreement-create-gastro',
   );
   const operatorsQuery = useQuery({
@@ -40,19 +44,15 @@ export default function AdminNewBenefitAgreementPage() {
     enabled: vertical === 'ACTIVITY',
   });
 
-  const partnerOptions = useMemo(() => {
-    if (vertical === 'GASTRO') {
-      return (gastroQuery.data?.data ?? []).map((p) => ({
-        id: p.id,
-        label: p.displayName,
-      }));
-    }
-    return (operatorsQuery.data?.data ?? []).map((p) => ({
-      id: p.id,
-      label: p.name,
-    }));
-  }, [vertical, gastroQuery.data, operatorsQuery.data]);
-
+  const partnerOptions = useMemo(
+    () =>
+      resolveSettlementPartnerOptions(
+        vertical,
+        gastroQuery.data?.data,
+        operatorsQuery.data?.data,
+      ),
+    [vertical, gastroQuery.data, operatorsQuery.data],
+  );
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const unitPriceCents = pesosInputToCentsString(unitPricePesos);

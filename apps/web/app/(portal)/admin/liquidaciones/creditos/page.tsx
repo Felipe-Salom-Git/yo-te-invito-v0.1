@@ -20,6 +20,10 @@ import {
   useReverseCourtesyCreditLedgerEntry,
 } from '@/lib/query/courtesy-credit-ledger';
 import { useAdminGastroLocationsList } from '@/lib/query/admin-gastro';
+import {
+  adminGastroActiveListQuery,
+  resolveSettlementPartnerOptions,
+} from '@/lib/admin/settlement-partner-options';
 import { useRepositories } from '@/repositories/context';
 import {
   COURTESY_LEDGER_ENTRY_TYPE_LABEL,
@@ -51,22 +55,25 @@ export default function AdminCourtesyCreditLedgerPage() {
   const [actionError, setActionError] = useState<string | null>(null);
 
   const gastroQuery = useAdminGastroLocationsList(
-    { status: 'ACTIVE', page: 1, limit: 100 },
+    adminGastroActiveListQuery(),
     'creditos-gastro',
   );
   const operatorsQuery = useQuery({
     queryKey: ['excursion-operators', 'creditos', TENANT_ID],
     queryFn: () =>
       repos.excursionOperators.listAdmin({ tenantId: TENANT_ID, includeInactive: false }),
+    enabled: vertical === 'ACTIVITY',
   });
 
-  const partnerOptions = useMemo(() => {
-    if (vertical === 'GASTRO') {
-      return (gastroQuery.data?.data ?? []).map((p) => ({ id: p.id, label: p.displayName }));
-    }
-    return (operatorsQuery.data?.data ?? []).map((p) => ({ id: p.id, label: p.name }));
-  }, [vertical, gastroQuery.data, operatorsQuery.data]);
-
+  const partnerOptions = useMemo(
+    () =>
+      resolveSettlementPartnerOptions(
+        vertical,
+        gastroQuery.data?.data,
+        operatorsQuery.data?.data,
+      ),
+    [vertical, gastroQuery.data, operatorsQuery.data],
+  );
   const partnerQuery = useMemo(() => {
     if (!partnerId) return null;
     return {
