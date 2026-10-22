@@ -38,6 +38,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../../email/email.service';
 import { GastroFollowDiscountAlertsService } from '../notifications/gastro-follow-discount-alerts.service';
 import { GastroLifecycleNotificationsService } from '../notifications/gastro-lifecycle-notifications.service';
+import { BenefitCommercialAgreementsService } from '../benefit-agreements/benefit-commercial-agreements.service';
 import { adminDiscountMatchesRouteProfile } from './admin-gastro-discount-scope.util';
 
 function readUrls(value: unknown): string[] {
@@ -76,6 +77,7 @@ export class AdminGastroService {
     private readonly email: EmailService,
     private readonly gastroFollowAlerts: GastroFollowDiscountAlertsService,
     private readonly lifecycleNotifications: GastroLifecycleNotificationsService,
+    private readonly benefitAgreements: BenefitCommercialAgreementsService,
   ) {}
 
   private toProfileStatus(status: ProfileStatus) {
@@ -738,6 +740,18 @@ export class AdminGastroService {
       throw new BadRequestException({
         code: ErrorCode.VALIDATION_FAILED,
         message: 'Guardá la publicación con al menos una imagen antes de aprobar',
+      });
+    }
+    const resolvedProfileId = row.gastroProfileId ?? profileId;
+    const agreementCtx = await this.benefitAgreements.resolveApplicable(tenantId, {
+      vertical: 'GASTRO',
+      gastroProfileId: resolvedProfileId,
+    });
+    if (!agreementCtx.agreement) {
+      throw new BadRequestException({
+        code: ErrorCode.BENEFIT_AGREEMENT_NOT_FOUND,
+        message:
+          'El local no tiene acuerdo comercial vigente. Creá o activá la tarifa del partner antes de aprobar el descuento.',
       });
     }
     const qrToken = randomBytes(24).toString('hex');

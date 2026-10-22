@@ -16,6 +16,7 @@ import { AdminGastroPendingEditPanel } from '@/components/admin/gastro/AdminGast
 import { GastroDiscountDetailContent } from '@/components/gastro/GastroDiscountDetailContent';
 import { GastroDiscountOperationalMetricsPanel } from '@/components/gastro/GastroDiscountOperationalMetricsPanel';
 import { AdminGastroDiscountCommercialContextPanel } from '@/components/admin/gastro/AdminGastroDiscountCommercialContextPanel';
+import { useAdminBenefitAgreementPartnerHistory } from '@/lib/query/benefit-agreements';
 import {
   canArchiveGastroDiscount,
   canUnarchiveGastroDiscount,
@@ -49,6 +50,13 @@ export default function AdminGastroDiscountDetailPage() {
     queryFn: () => repos.adminGastro.getDiscountOperationalMetrics(profileId, discountId),
     enabled: !!profileId && !!discountId,
   });
+
+  const agreementHistoryQuery = useAdminBenefitAgreementPartnerHistory(
+    profileId
+      ? { vertical: 'GASTRO', gastroProfileId: profileId }
+      : null,
+  );
+  const hasCurrentAgreement = Boolean(agreementHistoryQuery.data?.current);
 
   const statusMutation = useMutation({
     mutationFn: (status: 'ACTIVE' | 'CANCELLED') =>
@@ -342,15 +350,33 @@ export default function AdminGastroDiscountDetailPage() {
               </Button>
             )}
             {['PENDING_REVIEW', 'COMMISSION_NEGOTIATION'].includes(item.status) && (
-              <Button
-                type="button"
-                disabled={moderationPending}
-                onClick={() => {
-                  if (window.confirm('¿Aprobar este ticket?')) approve.mutate();
-                }}
-              >
-                Aprobar
-              </Button>
+              <div className="flex flex-col gap-1">
+                <Button
+                  type="button"
+                  disabled={
+                    moderationPending ||
+                    agreementHistoryQuery.isLoading ||
+                    !hasCurrentAgreement
+                  }
+                  onClick={() => {
+                    if (!hasCurrentAgreement) {
+                      addToast(
+                        'Creá el acuerdo comercial del local antes de aprobar',
+                        'error',
+                      );
+                      return;
+                    }
+                    if (window.confirm('¿Aprobar este ticket?')) approve.mutate();
+                  }}
+                >
+                  Aprobar
+                </Button>
+                {!agreementHistoryQuery.isLoading && !hasCurrentAgreement ? (
+                  <p className="text-xs text-amber-700 dark:text-amber-300">
+                    Aprobación bloqueada: falta acuerdo comercial vigente del local.
+                  </p>
+                ) : null}
+              </div>
             )}
             <Button
               type="button"

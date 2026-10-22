@@ -28,6 +28,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
 import { PublicPaymentsModule } from '../public-payments/public-payments.module';
 import { AuditModule } from '../audit/audit.module';
 import { GastroModule } from '../gastro/gastro.module';
+import { BenefitAgreementsModule } from '../benefit-agreements/benefit-agreements.module';
 import { AdminPaymentsController } from './admin-payments.controller';
 import { AdminPaymentsService } from './admin-payments.service';
 import { AdminGastroLocationsService } from './admin-gastro-locations.service';
@@ -55,6 +56,7 @@ import { AdminGastroCourtesyController } from './admin-gastro-courtesy.controlle
     PublicPaymentsModule,
     AuditModule,
     GastroModule,
+    BenefitAgreementsModule,
   ],
   controllers: [AdminController, AdminPaymentsController, AdminGastroCourtesyController],
   providers: [
