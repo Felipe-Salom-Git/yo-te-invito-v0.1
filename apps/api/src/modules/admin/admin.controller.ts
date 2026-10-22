@@ -1426,6 +1426,21 @@ export class AdminController {
     );
   }
 
+  @Get('gastronomicos/:profileId/discuentos/:discountId/operational-metrics')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async getGastroLocationDiscountOperationalMetrics(
+    @CurrentUser() user: { tenantId: string },
+    @Param(new ZodValidationPipe(adminGastroDiscountIdParamsSchema))
+    params: AdminGastroDiscountIdParams,
+  ) {
+    return this.gastroDiscountMetrics.getOperationalMetrics(
+      user.tenantId,
+      params.profileId,
+      params.discountId,
+    );
+  }
+
   @Get('gastronomicos/:profileId/discuentos/:discountId/summary')
   @UseGuards(JwtOrDevAuthGuard, RolesGuard)
   @RequireRole(Role.ADMIN)

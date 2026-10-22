@@ -34,6 +34,7 @@ import { GastroDiscountMetricsService } from './gastro-discount-metrics.service'
 import { GastroLifecycleNotificationsService } from '../notifications/gastro-lifecycle-notifications.service';
 import type {
   GastroDiscountArchiveAction,
+  GastroDiscountOperationalMetricsResponse,
   GastroDiscountStatusUpdate,
   GastroDiscountSummaryResponse,
 } from '@yo-te-invito/shared';
@@ -481,6 +482,16 @@ export class GastroPortalDiscountsService {
   ): Promise<GastroDiscountSummaryResponse> {
     await this.assertOwnDiscount(tenantId, userId, userRole, id);
     return this.discountMetrics.buildSummaryForDiscount(tenantId, id, false);
+  }
+
+  async getDiscountOperationalMetrics(
+    tenantId: string,
+    userId: string,
+    userRole: string,
+    id: string,
+  ): Promise<GastroDiscountOperationalMetricsResponse> {
+    const { row, profile } = await this.assertOwnDiscount(tenantId, userId, userRole, id);
+    return this.discountMetrics.getOperationalMetrics(tenantId, profile.id, row.id);
   }
 
   async updateDiscountStatus(

@@ -173,6 +173,19 @@ export class GastroController {
     return this.portalDiscounts.getDiscountSummary(user.tenantId, user.id, user.role, id);
   }
 
+  @Get('discounts/:id/operational-metrics')
+  async getMyDiscountOperationalMetrics(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param('id') id: string,
+  ) {
+    return this.portalDiscounts.getDiscountOperationalMetrics(
+      user.tenantId,
+      user.id,
+      user.role,
+      id,
+    );
+  }
+
   @Patch('discounts/:id/status')
   async updateMyDiscountStatus(
     @CurrentUser() user: { id: string; tenantId: string; role: string },

@@ -7,6 +7,8 @@ import {
 import { randomBytes } from 'crypto';
 import {
   ErrorCode,
+  GASTRO_DISCOUNT_TIMEZONE,
+  type GastroDiscountOperationalMetricsResponse,
   type GastroDiscountSummaryResponse,
   type GastroDiscountStatusUpdate,
   isGastroDiscountExpired,
@@ -72,6 +74,121 @@ export class GastroDiscountMetricsService {
       metrics: validationCount !== undefined ? { ...metrics, validationCount } : metrics,
       claims,
       hasExistingClaims: claims.length > 0,
+    };
+  }
+
+  /**
+   * Operational metrics for one discount. Scope: tenantId + gastroProfileId + discountId.
+   * activityByDay filled in G4.8 (empty array until then).
+   */
+  async getOperationalMetrics(
+    tenantId: string,
+    gastroProfileId: string,
+    discountId: string,
+  ): Promise<GastroDiscountOperationalMetricsResponse> {
+    const profileId = gastroProfileId?.trim();
+    if (!profileId) {
+      throw new NotFoundException({
+        code: ErrorCode.NOT_FOUND,
+        message: 'Discount not found',
+      });
+    }
+
+    const row = await this.prisma.gastroDiscount.findFirst({
+      where: { id: discountId, tenantId, gastroProfileId: profileId },
+      select: {
+        id: true,
+        gastroProfileId: true,
+        status: true,
+        qrToken: true,
+        qrGeneratedAt: true,
+      },
+    });
+    if (!row || !row.gastroProfileId) {
+      const foreign = await this.prisma.gastroDiscount.findFirst({
+        where: { id: discountId, tenantId },
+        select: { id: true },
+      });
+      if (foreign) {
+        throw new ForbiddenException({
+          code: ErrorCode.FORBIDDEN,
+          message: 'Discount does not belong to this location',
+        });
+      }
+      throw new NotFoundException({
+        code: ErrorCode.NOT_FOUND,
+        message: 'Discount not found',
+      });
+    }
+
+    const [
+      claims,
+      validations,
+      usageCount,
+      lastValidation,
+      recentClaimCodes,
+      recentValidationRows,
+    ] = await Promise.all([
+      this.prisma.gastroDiscountClaim.count({
+        where: { tenantId, discountId },
+      }),
+      this.prisma.gastroDiscountValidation.count({
+        where: { discountId },
+      }),
+      this.prisma.gastroDiscountClaim.count({
+        where: {
+          tenantId,
+          discountId,
+          OR: [{ status: 'USED' }, { usedAt: { not: null } }],
+        },
+      }),
+      this.prisma.gastroDiscountValidation.findFirst({
+        where: { discountId },
+        orderBy: { validatedAt: 'desc' },
+        select: { validatedAt: true },
+      }),
+      this.prisma.gastroDiscountClaim.findMany({
+        where: { tenantId, discountId },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+        select: { shortCode: true },
+      }),
+      this.prisma.gastroDiscountValidation.findMany({
+        where: { discountId },
+        orderBy: { validatedAt: 'desc' },
+        take: 20,
+        select: {
+          id: true,
+          validatedAt: true,
+          claimId: true,
+          claim: { select: { shortCode: true, status: true } },
+        },
+      }),
+    ]);
+
+    return {
+      discountId: row.id,
+      gastroProfileId: row.gastroProfileId,
+      timezone: GASTRO_DISCOUNT_TIMEZONE,
+      status: row.status as GastroDiscountOperationalMetricsResponse['status'],
+      claims,
+      validations,
+      usageCount,
+      availableClaims: Math.max(0, claims - usageCount),
+      lastValidationAt: lastValidation?.validatedAt.toISOString() ?? null,
+      hasQrToken: Boolean(row.qrToken),
+      qrGeneratedAt: row.qrGeneratedAt?.toISOString() ?? null,
+      recentShortCodes: recentClaimCodes.map((c) => c.shortCode),
+      activityByDay: [],
+      recentValidations: recentValidationRows.map((v) => ({
+        id: v.id,
+        validatedAt: v.validatedAt.toISOString(),
+        claimId: v.claimId,
+        shortCode: v.claim?.shortCode ?? null,
+        claimStatus:
+          (v.claim?.status as GastroDiscountOperationalMetricsResponse['recentValidations'][number]['claimStatus']) ??
+          null,
+      })),
     };
   }
 
