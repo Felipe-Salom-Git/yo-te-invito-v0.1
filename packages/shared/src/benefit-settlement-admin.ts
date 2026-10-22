@@ -60,6 +60,8 @@ export const BENEFIT_SETTLEMENT_ERROR_MESSAGES: Partial<Record<string, string>> 
     'La liquidación ya está cerrada.',
   [ErrorCode.BENEFIT_SETTLEMENT_INSUFFICIENT_PENDING_USAGES]:
     'No hay suficientes usos pendientes de asignar.',
+  [ErrorCode.BENEFIT_SETTLEMENT_VALIDATION_NOT_PENDING]:
+    'Alguno de los usos seleccionados ya no está pendiente en esta liquidación. Actualizá e intentá de nuevo.',
 };
 
 export function mapBenefitSettlementErrorMessage(

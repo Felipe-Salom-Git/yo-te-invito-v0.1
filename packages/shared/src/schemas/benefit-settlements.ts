@@ -40,12 +40,26 @@ export const generateBenefitSettlementBodySchema = refineSettlementPartnerXor(
 
 export type GenerateBenefitSettlementBody = z.infer<typeof generateBenefitSettlementBodySchema>;
 
+/**
+ * `count` = oldest-first (legacy); `validationIds` = explicit selection (G7.12.3). Exactly one.
+ * Ids must be pending validations of the same settlement (partner + period) — checked server-side.
+ */
 export const allocateBenefitSettlementUsagesBodySchema = z
   .object({
     mode: z.enum(BENEFIT_SETTLEMENT_ALLOCATION_MODES),
-    count: z.number().int().min(1).max(10_000),
+    count: z.number().int().min(1).max(10_000).optional(),
+    validationIds: z.array(z.string().min(1)).min(1).max(10_000).optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((val, ctx) => {
+    if ((val.count == null) === (val.validationIds == null)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Provide either count or validationIds',
+        path: ['count'],
+      });
+    }
+  });
 
 export type AllocateBenefitSettlementUsagesBody = z.infer<
   typeof allocateBenefitSettlementUsagesBodySchema

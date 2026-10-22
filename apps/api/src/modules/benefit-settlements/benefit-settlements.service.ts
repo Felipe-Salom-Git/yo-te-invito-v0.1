@@ -20,6 +20,7 @@ import {
   deriveCashCollectionStatus,
   moneyCentsToString,
   roundBarterCreditCents,
+  selectPendingUsagesForAllocation,
   sumMoneyCentsBigInt,
   type AllocateBenefitSettlementResponse,
   type AllocateBenefitSettlementUsagesBody,
@@ -224,15 +225,22 @@ export class BenefitSettlementsService {
     );
     this.assertNoMissingAgreements(discovery.missingAgreements);
 
-    const pending = discovery.priced;
-    if (pending.length < body.count) {
-      throw new BadRequestException({
-        code: ErrorCode.BENEFIT_SETTLEMENT_INSUFFICIENT_PENDING_USAGES,
-        message: `Only ${pending.length} pending usages available; requested ${body.count}`,
-      });
+    const selection = selectPendingUsagesForAllocation(discovery.priced, body);
+    if (!selection.ok) {
+      throw new BadRequestException(
+        selection.reason === 'NOT_PENDING'
+          ? {
+              code: ErrorCode.BENEFIT_SETTLEMENT_VALIDATION_NOT_PENDING,
+              message: `${selection.invalidIds.length} selected validation(s) are not pending in this settlement`,
+              invalidValidationIds: selection.invalidIds,
+            }
+          : {
+              code: ErrorCode.BENEFIT_SETTLEMENT_INSUFFICIENT_PENDING_USAGES,
+              message: `Only ${selection.available} pending usages available; requested ${body.count}`,
+            },
+      );
     }
-
-    const selected = pending.slice(0, body.count);
+    const selected = selection.selected;
     const auditAction =
       body.mode === 'CASH' ? 'BENEFIT_USAGE_ALLOCATED_CASH' : 'BENEFIT_USAGE_ALLOCATED_BARTER';
 
@@ -325,7 +333,11 @@ export class BenefitSettlementsService {
         action: auditAction,
         entityType: 'BenefitSettlement',
         entityId: result.updated.id,
-        metadata: { mode: body.mode, count: body.count },
+        metadata: {
+          mode: body.mode,
+          count: selected.length,
+          selection: body.validationIds ? 'EXPLICIT' : 'OLDEST_FIRST',
+        },
       });
 
       for (const credit of result.materializedCredits) {

@@ -314,10 +314,10 @@ export function SettlementDetailClient({ id }: { id: string }) {
 
       {!isClosed && summary.pendingUsageCount > 0 ? (
         <section className="mt-8 rounded-lg border border-border p-4">
-          <h3 className="font-medium text-text">Asignar usos</h3>
+          <h3 className="font-medium text-text">Asignación rápida por cantidad</h3>
           <p className="mt-1 text-sm text-text-muted">
-            Pendientes de definir: {summary.pendingUsageCount} usos. El backend asigna del más
-            antiguo al más reciente.
+            Atajo: asigna los {summary.pendingUsageCount} usos pendientes del más antiguo al más
+            reciente. Para elegir usos puntuales, usá la selección de arriba.
           </p>
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             <div>

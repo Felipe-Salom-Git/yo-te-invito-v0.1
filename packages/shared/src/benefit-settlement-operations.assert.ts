@@ -2,8 +2,11 @@ import {
   formatBarterMultiplierLabel,
   groupPendingValidationsByBenefit,
   groupSettlementAllocationsByRate,
+  previewAllocationSelection,
+  selectPendingUsagesForAllocation,
   type SettlementAllocationLike,
 } from './benefit-settlement-operations';
+import { allocateBenefitSettlementUsagesBodySchema } from './schemas/benefit-settlements';
 
 function assert(cond: unknown, msg: string): asserts cond {
   if (!cond) throw new Error(`FAIL: ${msg}`);
@@ -72,4 +75,50 @@ assert(!groupA.items.some((i) => i.validationId === 'v2'), 'discount A does not 
 const focused = groupPendingValidationsByBenefit(pending, 'disc-b');
 assert(focused[0]!.benefitId === 'disc-b' && focused.length === 2, 'focus first, others kept');
 
-console.log('OK: settlement rate segments (CASH/BARTER/mixed/snapshots) + pending grouping');
+// Allocation selection (G7.12.3)
+const pendingA = [
+  { validationId: 'a1', unitPriceCents: '500000', barterMultiplier: '2.0000' },
+  { validationId: 'a2', unitPriceCents: '500000', barterMultiplier: '2.0000' },
+  { validationId: 'a3', unitPriceCents: '500000', barterMultiplier: '2.0000' },
+];
+const oldest = selectPendingUsagesForAllocation(pendingA, { count: 2 });
+assert(oldest.ok && oldest.selected.map((s) => s.validationId).join() === 'a1,a2', 'count oldest-first');
+const tooMany = selectPendingUsagesForAllocation(pendingA, { count: 4 });
+assert(!tooMany.ok && tooMany.reason === 'INSUFFICIENT', 'count > pending rejected');
+const explicit = selectPendingUsagesForAllocation(pendingA, { validationIds: ['a3', 'a1'] });
+assert(
+  explicit.ok && explicit.selected.map((s) => s.validationId).join() === 'a1,a3',
+  'explicit ids keep pending order',
+);
+const foreign = selectPendingUsagesForAllocation(pendingA, { validationIds: ['a1', 'partner-b-v1'] });
+assert(
+  !foreign.ok && foreign.reason === 'NOT_PENDING' && foreign.invalidIds.join() === 'partner-b-v1',
+  'validation of partner B rejected for settlement A',
+);
+const dup = selectPendingUsagesForAllocation(pendingA, { validationIds: ['a2', 'a2'] });
+assert(dup.ok && dup.selected.length === 1, 'duplicate ids allocate once');
+
+const previewBarter = previewAllocationSelection(pendingA.slice(0, 2), 'BARTER');
+assert(previewBarter.baseAmountCents === '1000000', 'preview base');
+assert(previewBarter.creditExpectedCents === '2000000', 'preview credit ×2');
+const previewCash = previewAllocationSelection(pendingA, 'CASH');
+assert(previewCash.creditExpectedCents === '0' && previewCash.count === 3, 'cash preview no credit');
+
+const okIds = allocateBenefitSettlementUsagesBodySchema.safeParse({ mode: 'CASH', validationIds: ['a1'] });
+const okCount = allocateBenefitSettlementUsagesBodySchema.safeParse({ mode: 'BARTER', count: 2 });
+const both = allocateBenefitSettlementUsagesBodySchema.safeParse({
+  mode: 'CASH',
+  count: 1,
+  validationIds: ['a1'],
+});
+const neither = allocateBenefitSettlementUsagesBodySchema.safeParse({ mode: 'CASH' });
+const extra = allocateBenefitSettlementUsagesBodySchema.safeParse({
+  mode: 'CASH',
+  count: 1,
+  discountId: 'd',
+});
+assert(okIds.success && okCount.success, 'xor accepted');
+assert(!both.success && !neither.success, 'count xor validationIds');
+assert(!extra.success, 'no discountId in allocation body');
+
+console.log('OK: settlement rate segments (CASH/BARTER/mixed/snapshots) + pending grouping + selection');

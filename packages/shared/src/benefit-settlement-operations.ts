@@ -122,6 +122,54 @@ export function groupPendingValidationsByBenefit<T extends PendingValidationLike
   ];
 }
 
+export type AllocationSelectionResult<T extends { validationId: string }> =
+  | { ok: true; selected: T[] }
+  | { ok: false; reason: 'INSUFFICIENT'; available: number }
+  | { ok: false; reason: 'NOT_PENDING'; invalidIds: string[] };
+
+/**
+ * Picks pending usages for allocate: `count` → oldest-first; `validationIds` → only ids
+ * present in this settlement's pending list (anything else — other partner, other period,
+ * already allocated — is rejected). Order of `pending` is preserved.
+ */
+export function selectPendingUsagesForAllocation<T extends { validationId: string }>(
+  pending: readonly T[],
+  request: { count?: number; validationIds?: readonly string[] },
+): AllocationSelectionResult<T> {
+  if (request.validationIds) {
+    const wanted = new Set(request.validationIds);
+    const pendingIds = new Set(pending.map((p) => p.validationId));
+    const invalidIds = [...wanted].filter((id) => !pendingIds.has(id));
+    if (invalidIds.length > 0) return { ok: false, reason: 'NOT_PENDING', invalidIds };
+    return { ok: true, selected: pending.filter((p) => wanted.has(p.validationId)) };
+  }
+  const count = request.count ?? 0;
+  if (count < 1 || pending.length < count) {
+    return { ok: false, reason: 'INSUFFICIENT', available: pending.length };
+  }
+  return { ok: true, selected: pending.slice(0, count) };
+}
+
+/** Pre-confirm preview for a selection (non-authoritative; backend snapshots win). */
+export function previewAllocationSelection(
+  items: ReadonlyArray<{ unitPriceCents: string; barterMultiplier: string }>,
+  mode: BenefitSettlementAllocationMode,
+): { count: number; baseAmountCents: string; creditExpectedCents: string; unitPrices: string[] } {
+  let base = 0n;
+  let credit = 0n;
+  for (const item of items) {
+    const unit = BigInt(item.unitPriceCents);
+    base += unit;
+    if (mode === 'BARTER') credit += roundBarterCreditCents(unit, item.barterMultiplier);
+  }
+  return {
+    count: items.length,
+    baseAmountCents: base.toString(),
+    creditExpectedCents: credit.toString(),
+    unitPrices: [...new Set(items.map((i) => i.unitPriceCents))],
+  };
+}
+
 /** «×2» / «×1.5» from Decimal string (`2.0000` → `2`). */
 export function formatBarterMultiplierLabel(multiplier: string): string {
   const [whole, frac = ''] = multiplier.split('.');
