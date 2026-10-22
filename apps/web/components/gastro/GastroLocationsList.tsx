@@ -11,7 +11,12 @@ function locationSubtitle(city: string | null, province: string | null, address:
   return address ?? 'Sin ubicación';
 }
 
-export function GastroLocationsList() {
+type Props = {
+  /** Opens the «Ver ficha» modal for the clicked local. */
+  onPreview: (profileId: string) => void;
+};
+
+export function GastroLocationsList({ onPreview }: Props) {
   const { locations, isLoading } = useGastroActiveLocation();
 
   if (isLoading) {
@@ -55,12 +60,13 @@ export function GastroLocationsList() {
               </div>
             </div>
             <div className="flex shrink-0 flex-wrap gap-2">
-              <Link
-                href={`/gastro/local?profileId=${encodeURIComponent(loc.id)}`}
+              <button
+                type="button"
+                onClick={() => onPreview(loc.id)}
                 className="text-sm font-medium text-accent hover:underline"
               >
                 Ver ficha
-              </Link>
+              </button>
               <Link
                 href={`/gastro/local/editar?profileId=${encodeURIComponent(loc.id)}`}
                 className="text-sm font-medium text-accent hover:underline"

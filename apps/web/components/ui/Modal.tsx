@@ -8,9 +8,15 @@ interface ModalProps {
   title?: string;
   children: ReactNode;
   footer?: ReactNode;
+  size?: 'md' | '3xl';
 }
 
-export function Modal({ isOpen, onClose, title, children, footer }: ModalProps) {
+const SIZE_CLASS: Record<NonNullable<ModalProps['size']>, string> = {
+  md: 'max-w-md',
+  '3xl': 'max-w-3xl',
+};
+
+export function Modal({ isOpen, onClose, title, children, footer, size = 'md' }: ModalProps) {
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -39,7 +45,7 @@ export function Modal({ isOpen, onClose, title, children, footer }: ModalProps) 
         aria-hidden="true"
       />
       <div
-        className="relative z-10 w-full max-w-md max-h-[min(90vh,100dvh)] overflow-y-auto rounded-lg border border-border bg-bg-muted p-4 shadow-xl"
+        className={`relative z-10 w-full ${SIZE_CLASS[size]} max-h-[min(90vh,100dvh)] overflow-y-auto rounded-lg border border-border bg-bg-muted p-4 shadow-xl`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between gap-4">

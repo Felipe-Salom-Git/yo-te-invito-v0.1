@@ -79,7 +79,7 @@ export function GastroLocalPreview({ local, subcategoryName }: GastroLocalPrevie
             Ver ficha pública
           </Link>
           <Link
-            href="/gastro/local/editar"
+            href={`/gastro/local/editar?profileId=${encodeURIComponent(local.id)}`}
             className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-bg hover:bg-accent-hover"
           >
             Editar local
