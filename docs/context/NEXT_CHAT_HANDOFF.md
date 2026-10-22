@@ -31,16 +31,19 @@ Punto de entrada operativo para **V3.3**. Detalle completo: `AI_ENTRYPOINT.md`, 
 | **Etapa 9 — QA manual / DB smoke / concurrency** | ⏳ Pendiente — acumulado cierre global V3.3 |
 | **Expansión Gastro — Discovery** | ✅ `docs/audits/V3_3_GASTRO_EXPANSION_DISCOVERY_AUDIT.md` |
 | **Expansión Gastro — G1–G7** | ✅ Código + cierre G7 (`V3_3_GASTRO_EXPANSION_CLOSING.md`) |
-| **Expansión Gastro — G7.10 QA fixes** | ✅ Código `51708fd`…`7d83c75` — [`V3_3_G7_10_QA_FIXES_CLOSING.md`](../audits/V3_3_G7_10_QA_FIXES_CLOSING.md) |
+| **Expansión Gastro — G7.10 QA fixes** | ✅ Código `51708fd`…`7d83c75`, cierre `6edb60c` — **desplegado** (R0) — [`V3_3_G7_10_QA_FIXES_CLOSING.md`](../audits/V3_3_G7_10_QA_FIXES_CLOSING.md) |
+| **Expansión Gastro — G7.11 post-QA fixes** | ✅ Código `b82c4af`…`ecb7974` — **sin push/deploy** — [`V3_3_G7_11_POST_QA_FIXES_CLOSING.md`](../audits/V3_3_G7_11_POST_QA_FIXES_CLOSING.md) |
 | **G8 Courtesy Coupons / G9 UX** | ⏸ Roadmap only — [`V3_3_G8_G9_ROADMAP.md`](./V3_3_G8_G9_ROADMAP.md) · **NOT STARTED** |
 
 **Checklist V3.3:** `docs/dev/Yo_Te_Invito_Checklist_V3_3_Funcional_Operativa.md`
 
-**Próximo paso V3.3:** push/deploy G7.10 + QA browser (checklist en cierre). **No** iniciar G8/G9 sin instrucción explícita. QA manual Etapas 1–9 sigue acumulada.
+**Próximo paso V3.3:** push/deploy G7.11 + QA browser G7.11 (checklist en cierre) cuando el operador lo indique; luego G8 discovery (partiendo de la arquitectura de cortesías existente). QA 4 (rails secundarios) pendiente por datos. **No** iniciar G8/G9 sin instrucción explícita. QA manual Etapas 1–9 sigue acumulada.
+
+**Deploy:** la clave SSH del VPS tiene passphrase; si el ssh-agent no la tiene cargada, el deploy lo ejecuta el operador siguiendo `docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`.
 
 **Modelo canónico G2:** subcategorías = `EventSubcategory` (+ `subcategoryId` legacy/primary); tags = `ContentTag`/`EventTag` en el `publicEvent` del `GastroProfile`. Local activo = `GastroActiveLocation` / `?profileId=` (G1.3). Suite: `pnpm --filter api run test:gastro-taxonomy-compat`.
 
-**Modelo canónico G3:** `GastroContent` por `gastroProfileId` con `galleryUrls` Json (patrón local) + `imageUrl` legacy/cover; público solo `PUBLISHED`; archive = `INACTIVE`. Migration: `20261022120000_gastro_content_gallery_urls` (aplicar en deploy, no reset). Tests: `test:gastro-content-gallery`, `test:gastro-content-profile-scope`, `test:gastro-content-lifecycle`.
+**Modelo canónico G3:** `GastroContent` por `gastroProfileId` con `galleryUrls` Json (patrón local) + `imageUrl` legacy/cover; público solo `PUBLISHED`; archive = `INACTIVE`. Migration: `20261022120000_gastro_content_gallery_urls` (aplicada en producción). Tests: `test:gastro-content-gallery`, `test:gastro-content-profile-scope`, `test:gastro-content-lifecycle`.
 
 ---
 

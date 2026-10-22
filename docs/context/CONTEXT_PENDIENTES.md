@@ -49,7 +49,7 @@ Auditoría: [`V3_3_GASTRO_EXPANSION_DISCOVERY_AUDIT.md`](../audits/V3_3_GASTRO_E
 - [x] G4.6–G4.10 Métricas por descuento
 - [x] G4.11 Tests + hardening
 
-**Deploy note:** migrations G3/G4 aplicadas en local (2026-10-22 release readiness). **Pendientes producción:**
+**Deploy note:** migrations G3/G4 aplicadas en local y **en producción** (confirmado en R0 2026-10-22: `111 migrations found` / `No pending migrations to apply.`):
 
 ```text
 20261022120000_gastro_content_gallery_urls
@@ -84,7 +84,7 @@ Auditoría: [`V3_3_GASTRO_EXPANSION_DISCOVERY_AUDIT.md`](../audits/V3_3_GASTRO_E
 
 **APIs:** `GET …/economic-traceability`, `GET …/economic-metrics` (ADMIN, scope profile+discount).
 
-**Deploy note:** ver G4 — locales aplicadas; producción pendiente mismas dos migrations G3/G4.
+**Deploy note:** ver G4 — migrations G3/G4 aplicadas en local y producción.
 
 **Issue preexistente (fuera de G6):** `subcategoryRailThreshold.test.ts` / vitest.
 
@@ -96,16 +96,29 @@ Auditoría: [`V3_3_GASTRO_EXPANSION_DISCOVERY_AUDIT.md`](../audits/V3_3_GASTRO_E
 - [x] G7.8 Builds — shared/api/web/scanner PASS; web tsc vitest PREEXISTING (`V3_3_G7_BUILD_STATUS.md`)
 - [x] G7.9 Closing — `V3_3_GASTRO_EXPANSION_CLOSING.md`
 
-**Release readiness:** DB local OK; Manual QA browser **PENDIENTE**. **Sin push / merge / deploy.** No G8.
+**Release readiness:** DB local OK. G1–G7.10 **desplegado** en producción (R0, `6edb60c`). Sin merge. No G8.
 
 **Hotfix pre-deploy (AuthModule):** absorbido en repo — `BenefitAgreementsModule`, `BenefitSettlementsModule`, `CourtesyCreditLedgerModule`, `MarketingPreferencesModule` importan `AuthModule` (necesitan `JwtOrDevAuthGuard`). Alinea el hotfix manual del VPS; el stash prod no debe reaplicarse ciegamente tras pull.
 
 ### G7.10 — QA fixes + onboarding refinement
 
-- [x] G7.10.1–.9 código + commits (`51708fd`…`7d83c75`) — cierre [`V3_3_G7_10_QA_FIXES_CLOSING.md`](../audits/V3_3_G7_10_QA_FIXES_CLOSING.md)
+- [x] G7.10.1–.9 código + commits (`51708fd`…`7d83c75`); cierre docs `6edb60c` — [`V3_3_G7_10_QA_FIXES_CLOSING.md`](../audits/V3_3_G7_10_QA_FIXES_CLOSING.md)
 - [x] G7.10.10 builds shared/api/web/scanner **PASS**; asserts signup/Bariloche **PASS**
-- [ ] Manual QA browser post-deploy (checklist en cierre G7.10)
-- [ ] Push / merge / deploy — **NO** hasta instrucción
+- [x] Push + deploy R0 (`6edb60c`; `migrate deploy` sin pendientes). Merge: **NO**
+- [x] Manual QA post-deploy: 1, 3, 6, 8, 9, 10 PASS · 2 PASS + mejora · 5 PARTIAL (bug UX) · 7 PASS + polish
+- [ ] QA 4 rails secundarios — **PENDING por falta de datos** (no es bug)
+
+### G7.11 — Post-QA fixes / UX Gastronomía
+
+Cierre: [`V3_3_G7_11_POST_QA_FIXES_CLOSING.md`](../audits/V3_3_G7_11_POST_QA_FIXES_CLOSING.md)
+
+- [x] G7.11.1 Valoraciones: cambio de local refresca reviews (URL sync conserva `profileId`) — `b82c4af`
+- [x] G7.11.2 `/gastro/local`: «Ver ficha» en modal (reusa `GastroLocalPreview`; sin preview inline) — `a7715fc`
+- [x] G7.11.3 Ficha pública: mini mapa compacto en sidebar (`EventLocationSection compact`) — `865c82f`
+- [x] G7.11.4 Admin descuento → **Liquidar** (GASTRO + local preseleccionado/readonly; body partner+period; sin backend) — `ecb7974`
+- [x] Builds shared/api/web/scanner PASS; sin migrations
+- [ ] Push / deploy G7.11 — **NO** hasta instrucción
+- [ ] QA browser G7.11 post-deploy (checklist en cierre)
 
 **Roadmap posterior (docs only, NOT STARTED):** [`V3_3_G8_G9_ROADMAP.md`](./V3_3_G8_G9_ROADMAP.md) — G8 Courtesy Coupons · G9 UX complementaria.
 

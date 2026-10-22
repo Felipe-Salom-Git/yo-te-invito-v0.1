@@ -62,8 +62,8 @@ Unique visitors: NO IMPLEMENTADO
 
 | Migration | Propósito | Aplicada localmente | Pendiente producción |
 |---|---|---|---|
-| `20261022120000_gastro_content_gallery_urls` | GastroContent.galleryUrls | **Sí** (local 2026-10-22) | **Sí** |
-| `20261022140000_gastro_profile_views` | GastroProfileView + viewCount | **Sí** (local 2026-10-22) | **Sí** |
+| `20261022120000_gastro_content_gallery_urls` | GastroContent.galleryUrls | **Sí** (local 2026-10-22) | **No** — aplicada en prod |
+| `20261022140000_gastro_profile_views` | GastroProfileView + viewCount | **Sí** (local 2026-10-22) | **No** — aplicada en prod |
 | `20260901140000_benefit_settlement_domain` | Incluye partial unique settlement | Etapa 9 (ops) | Si entorno fresco |
 | Otras Etapa 9 `20260901*` | Settlements/ledger | Etapa 9 | Según entorno |
 

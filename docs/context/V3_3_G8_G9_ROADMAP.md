@@ -36,6 +36,20 @@ Una cortesía es un cupón consumible que **no** se publica públicamente, pero 
 | **Courtesy Coupon** | Beneficio/cupón para un usuario |
 | **CourtesyCreditLedgerEntry** | Contabilidad BARTER del partner |
 
+### Hipótesis de discovery (registrada 2026-10-22)
+
+Ya existe un flujo de cortesías Gastro (migration `20260615120000_gastro_courtesy_discount_claims`):
+
+- `GastroCourtesyCampaign` (por `gastroProfileId`, `discountId` único)
+- `GastroDiscount.visibility = COURTESY_ONLY` (fuera de ficha/listados públicos)
+- `GastroDiscountClaim.type = COURTESY` + `courtesyCampaignId`
+- Portal `/gastro/descuentos/cortesia`, `POST /gastro/discounts/courtesy/send`, email `GASTRO_DISCOUNT_QR_COURTESY`
+- `CourtesyCreditLedgerEntry.sourceCourtesyCampaignId` (débito BARTER por campaña financiada, Etapa 9)
+
+El discovery debe partir de **extender esta arquitectura**, no de crear un dominio nuevo, salvo que la auditoría demuestre que no alcanza. `CourtesyGrant` es de tickets y no se mezcla.
+
+Numeración vigente (prompt operador): discovery = **G8.0**; los IDs de abajo son referencia histórica.
+
 ### Slices planificados (alto nivel)
 
 | ID | Tema |
