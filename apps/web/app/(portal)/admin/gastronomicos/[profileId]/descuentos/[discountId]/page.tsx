@@ -15,6 +15,7 @@ import { AdminGastroDiscountVisualPreview } from '@/components/admin/gastro/Admi
 import { AdminGastroPendingEditPanel } from '@/components/admin/gastro/AdminGastroPendingEditPanel';
 import { GastroDiscountDetailContent } from '@/components/gastro/GastroDiscountDetailContent';
 import { GastroDiscountOperationalMetricsPanel } from '@/components/gastro/GastroDiscountOperationalMetricsPanel';
+import { AdminGastroDiscountCommercialContextPanel } from '@/components/admin/gastro/AdminGastroDiscountCommercialContextPanel';
 import {
   canArchiveGastroDiscount,
   canUnarchiveGastroDiscount,
@@ -298,6 +299,8 @@ export default function AdminGastroDiscountDetailPage() {
       ) : operationalMetricsQuery.data ? (
         <GastroDiscountOperationalMetricsPanel metrics={operationalMetricsQuery.data} />
       ) : null}
+
+      <AdminGastroDiscountCommercialContextPanel profileId={canonicalProfileId} />
 
       <div className="mt-8">
         <AdminGastroDiscountPublicationEditor
