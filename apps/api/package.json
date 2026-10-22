@@ -69,6 +69,8 @@
     "test:gastro-content-gallery": "tsx scripts/test-gastro-content-gallery.util.ts",
     "test:gastro-profile-view-scope": "tsx scripts/test-gastro-profile-view-scope.util.ts",
     "test:gastro-profile-metrics-days": "tsx scripts/test-gastro-profile-metrics-days.util.ts",
+    "test:gastro-discount-metrics-scope": "tsx scripts/test-gastro-discount-metrics-scope.util.ts",
+    "test:gastro-discount-metrics-days": "tsx scripts/test-gastro-discount-metrics-days.util.ts",
     "test:gastro-content-profile-scope": "tsx scripts/test-gastro-content-profile-scope.util.ts",
     "test:gastro-content-gallery-ops": "tsx scripts/test-gastro-content-gallery-ops.util.ts",
     "test:gastro-content-lifecycle": "tsx scripts/test-gastro-content-lifecycle.util.ts",
