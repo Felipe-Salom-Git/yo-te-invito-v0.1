@@ -16,6 +16,7 @@ import { GastroGallerySection } from './GastroGallerySection';
 import { GastroAboutSection } from './GastroAboutSection';
 import { GastroRelatedLocationsSection } from './GastroRelatedLocationsSection';
 import { EventLocationModal } from '@/components/events/EventLocationModal';
+import { EventLocationSection } from '@/components/events/EventLocationSection';
 import { EventReviewsSection } from '@/components/events/EventReviewsSection';
 import { ReviewForm, type ReviewFormSubmitPayload } from '@/components/reviews/ReviewForm';
 import { GastroFollowButton } from '@/components/me/GastroFollowButton';
@@ -85,6 +86,11 @@ export function GastroPublicDetailContent({
     geoLat: location.geoLat,
     geoLng: location.geoLng,
   });
+  const hasValidCoords =
+    typeof location.geoLat === 'number' &&
+    typeof location.geoLng === 'number' &&
+    !Number.isNaN(location.geoLat) &&
+    !Number.isNaN(location.geoLng);
   const whatsAppHref = buildGastroWhatsAppHref(location.displayName, location.contactPhone);
   const reviewEventId = location.publicEventId;
   const publishedContent = location.content ?? [];
@@ -233,6 +239,17 @@ export function GastroPublicDetailContent({
             ) : null}
           </aside>
         </div>
+
+        {hasValidCoords ? (
+          <EventLocationSection
+            venueName={location.displayName}
+            venueAddress={location.address}
+            city={location.city}
+            province={location.province}
+            geoLat={location.geoLat}
+            geoLng={location.geoLng}
+          />
+        ) : null}
 
         {reviewEventId ? (
           <>
