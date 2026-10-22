@@ -98,6 +98,8 @@ Auditoría: [`V3_3_GASTRO_EXPANSION_DISCOVERY_AUDIT.md`](../audits/V3_3_GASTRO_E
 
 **Release readiness:** DB local OK; Manual QA browser **PENDIENTE**. **Sin push / merge / deploy.** No G8.
 
+**Hotfix pre-deploy (AuthModule):** absorbido en repo — `BenefitAgreementsModule`, `BenefitSettlementsModule`, `CourtesyCreditLedgerModule`, `MarketingPreferencesModule` importan `AuthModule` (necesitan `JwtOrDevAuthGuard`). Alinea el hotfix manual del VPS; el stash prod no debe reaplicarse ciegamente tras pull.
+
 ---
 
 ## V3.3 — Mejoras funcionales y operativas

@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { AuthModule } from '../../auth/auth.module';
 import { AuditModule } from '../audit/audit.module';
 import { CourtesyCreditLedgerModule } from '../courtesy-credit-ledger/courtesy-credit-ledger.module';
 import { AdminBenefitSettlementsController } from './admin-benefit-settlements.controller';
@@ -11,7 +12,7 @@ import { BenefitSettlementsService } from './benefit-settlements.service';
 import { GastroDiscountEconomicReportingService } from './gastro-discount-economic-reporting.service';
 
 @Module({
-  imports: [AuditModule, CourtesyCreditLedgerModule],
+  imports: [AuthModule, AuditModule, CourtesyCreditLedgerModule],
   controllers: [AdminBenefitSettlementsController, AdminBenefitReportingController],
   providers: [
     BenefitSettlementEligibilityService,
