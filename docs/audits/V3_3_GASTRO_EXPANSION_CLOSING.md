@@ -24,7 +24,7 @@ Deploy: NO
 | G4 Métricas operativas | COMPLETADA | GastroProfileView; separado de economía |
 | G5 Commercial agreement UX | COMPLETADA | Agreement por perfil; approve bloqueado sin CURRENT |
 | G6 Economic reporting | COMPLETADA | Semántica EXACT / SETTLEMENT / PARTNER / NOT_ATTRIBUTABLE |
-| G7 QA + hardening + docs | COMPLETADA (cierre código/docs) | Manual QA browser **PENDIENTE**; DB **BLOCKED** |
+| G7 QA + hardening + docs | COMPLETADA (cierre código/docs) | Manual QA browser **PENDIENTE**; DB local **PASS** (release readiness 2026-10-22) |
 
 ---
 
@@ -62,8 +62,8 @@ Unique visitors: NO IMPLEMENTADO
 
 | Migration | Propósito | Aplicada localmente | Pendiente producción |
 |---|---|---|---|
-| `20261022120000_gastro_content_gallery_urls` | GastroContent.galleryUrls | **No verificada** (DB down) | **Sí** |
-| `20261022140000_gastro_profile_views` | GastroProfileView + viewCount | **No verificada** (DB down) | **Sí** |
+| `20261022120000_gastro_content_gallery_urls` | GastroContent.galleryUrls | **Sí** (local 2026-10-22) | **Sí** |
+| `20261022140000_gastro_profile_views` | GastroProfileView + viewCount | **Sí** (local 2026-10-22) | **Sí** |
 | `20260901140000_benefit_settlement_domain` | Incluye partial unique settlement | Etapa 9 (ops) | Si entorno fresco |
 | Otras Etapa 9 `20260901*` | Settlements/ledger | Etapa 9 | Según entorno |
 
@@ -96,7 +96,7 @@ PASS (muestra representativa):
 - `test:g5-agreement-allocation-snapshots`
 - `test:g6-discount-economic-traceability|summary|accounting`
 
-DB integration: **BLOCKED** — `V3_3_G7_DB_INTEGRATION_STATUS.md` (P1001 localhost:5433)
+DB integration: **PASS** local — `V3_3_G7_DB_INTEGRATION_STATUS.md` (migrate deploy + smoke; browser QA aún pendiente)
 
 ---
 
@@ -113,7 +113,7 @@ Pendiente:  SÍ — portal / admin / scanner / público / accounting E2E
 
 ## Known limitations
 
-1. Postgres local no disponible en la sesión de cierre → no migrate apply / no DB integration.
+1. Manual browser QA aún pendiente (checklist G7.3–G7.7). DB local desbloqueada en release readiness.
 2. `subcategoryRailThreshold.test.ts` + vitest: PREEXISTING; rompe `tsc` web standalone; **no** rompe `next build`.
 3. Transfers CASH y DEBIT_COURTESY no atribuibles a descuento (por diseño).
 4. Unique visitors de ficha: no implementado (G4).

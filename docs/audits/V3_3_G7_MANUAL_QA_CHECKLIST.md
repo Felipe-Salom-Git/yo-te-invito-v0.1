@@ -1,8 +1,8 @@
 # V3.3 G7.3–G7.7 — Manual QA checklist (Gastro expansion)
 
 **Fecha:** 2026-10-22  
-**Estado automatizable:** parcial (scripts unitarios PASS; DB/browser **NO ejecutados**)  
-**Estado QA manual humana:** **PENDIENTE** (requiere interacción + Postgres)
+**Estado automatizable:** scripts unitarios PASS; DB local smoke PASS (`V3_3_G7_DB_INTEGRATION_STATUS.md`)  
+**Estado QA manual humana:** **PENDIENTE** (requiere browser / flujos UI; Postgres ya disponible en local)
 
 Marcá cada ítem al completar. No marcar PASS sin evidencia.
 

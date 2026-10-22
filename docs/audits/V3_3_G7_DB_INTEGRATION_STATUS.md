@@ -1,35 +1,73 @@
-# V3.3 G7.2 — DB integration status
+# V3.3 G7.2 / Release readiness — DB integration status
 
-**Fecha:** 2026-10-22  
-**Entorno local:** `DATABASE_URL` → `localhost:5433`
+**Fecha:** 2026-10-22 (actualizado release readiness)  
+**Entorno local:** `DATABASE_URL` → `localhost:5433`  
+**Ops:** Docker Desktop iniciado; `docker compose up -d postgres` → healthy
 
 ## Resultado
 
 ```text
-BLOCKED — DB unavailable
+PASS — PostgreSQL disponible; migrate deploy OK; smoke DB gastro PASS
 ```
+
+## Migrations
 
 ```text
-Prisma P1001: Can't reach database server at localhost:5433
+prisma migrate deploy → All migrations successfully applied (111)
+prisma migrate status → Database schema is up to date
 ```
 
-## Qué no se ejecutó
+Incluye (entre otras aplicadas en este entorno fresco):
 
-- Prisma migrate apply / generate-against-live-DB
-- Scripts con `PrismaClient.$connect()` (benefit commercial agreements DB integration, settlement domain DB, etc.)
-- Smokes que requieren API + Postgres
+- `20260901140000_benefit_settlement_domain` (partial unique GASTRO/ACTIVITY — sin duplicar)
+- `20261022120000_gastro_content_gallery_urls`
+- `20261022140000_gastro_profile_views`
 
-## Qué sí se ejecutó (sin DB)
+## Verificación SQL / índices
 
-Scripts unitarios/domain de la expansión (G1–G6) vía `tsx` sin Postgres — ver cierre G7.9.
+| Check | Resultado |
+|---|---|
+| `GastroContent.galleryUrls` (jsonb) | presente |
+| `GastroProfile.viewCount` | presente |
+| tabla `GastroProfileView` + índices | presente |
+| `BenefitSettlement_tenant_gastro_period_key` (partial unique) | presente |
+| `BenefitSettlement_tenant_activity_period_key` (partial unique) | presente |
+| Filas legacy backfill vacías (DB fresca = 0) | n/a; smoke re-ejecutó SQL de backfill → PASS |
 
-## Acción requerida (ops, fuera de G7 código)
+## Smoke DB (fixtures temporales, cleanup OK)
 
-1. Levantar Postgres local (puerto 5433 o ajustar `.env`).
-2. Aplicar migrations pendientes de deploy (lista en cierre):
-   - Etapa 9 settlements (si el entorno es fresco)
-   - `20261022120000_gastro_content_gallery_urls`
-   - `20261022140000_gastro_profile_views`
-3. Re-ejecutar `pnpm --filter api run test:benefit-commercial-agreements` (sección DB) y smokes.
+| # | Ítem | Resultado |
+|---|---|---|
+| 3 | backfill `imageUrl` → `galleryUrls` | PASS |
+| 4 | CRUD GastroContent + galerías | PASS |
+| 5 | GastroProfileView por `profileId` | PASS |
+| 6 | aislamiento Local A / Local B (content + views) | PASS |
+| 7 | claims + validations (insert fila) | PASS |
+| 8 | agreement CURRENT (profile-scoped) | PASS |
+| 9 | allocations CASH + snapshot | PASS |
+| 10 | allocations BARTER + snapshot | PASS |
+| 11 | settlement + unique partner+period | PASS |
+| 12 | transfers | PASS |
+| 13 | courtesy ledger | PASS |
+| 14 | snapshots históricos post-cambio agreement | PASS |
 
-**No se simuló PASS de integración DB.**
+## Scripts domain/DB existentes (re-ejecutados)
+
+| Script | Resultado |
+|---|---|
+| `test:gastro-content-*` / view-scope / cross-profile / g5 / g6 | PASS (domain) |
+| `test:benefit-settlement-domain` | PASS — DB indexes present |
+| `test:benefit-settlement-transfers` | PASS — transfer table present |
+| `test:courtesy-credit-ledger` | PASS — ledger table present |
+| `test:gastro-courtesy-credit-funding` | PASS — funding column present |
+| `test:benefit-commercial-agreements` | unit PASS; seed partners **NO** (DB vacía salvo smoke) |
+
+## No ejecutado
+
+- Manual browser QA (`V3_3_G7_MANUAL_QA_CHECKLIST.md`) — **PENDIENTE**
+- Concurrency overpayment / concurrent funding scripts dedicados
+- Seed completo de partners de producto (fuera de smoke)
+
+## Nota
+
+No se modificó producto G1–G7. No se crearon migrations nuevas. No push / merge / deploy.

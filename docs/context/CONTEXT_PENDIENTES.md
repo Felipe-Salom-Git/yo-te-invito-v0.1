@@ -49,7 +49,7 @@ Auditoría: [`V3_3_GASTRO_EXPANSION_DISCOVERY_AUDIT.md`](../audits/V3_3_GASTRO_E
 - [x] G4.6–G4.10 Métricas por descuento
 - [x] G4.11 Tests + hardening
 
-**Deploy note (migrations pendientes de apply en entorno):**
+**Deploy note:** migrations G3/G4 aplicadas en local (2026-10-22 release readiness). **Pendientes producción:**
 
 ```text
 20261022120000_gastro_content_gallery_urls
@@ -84,24 +84,19 @@ Auditoría: [`V3_3_GASTRO_EXPANSION_DISCOVERY_AUDIT.md`](../audits/V3_3_GASTRO_E
 
 **APIs:** `GET …/economic-traceability`, `GET …/economic-metrics` (ADMIN, scope profile+discount).
 
-**Deploy note (migrations pendientes):**
-
-```text
-20261022120000_gastro_content_gallery_urls
-20261022140000_gastro_profile_views
-```
+**Deploy note:** ver G4 — locales aplicadas; producción pendiente mismas dos migrations G3/G4.
 
 **Issue preexistente (fuera de G6):** `subcategoryRailThreshold.test.ts` / vitest.
 
 ### G7 — QA global + cierre expansión
 
 - [x] G7.1 Settlement unique review — partial unique indexes ya existen; sin migration nueva
-- [x] G7.2 DB integration — **BLOCKED** Postgres P1001 (`V3_3_G7_DB_INTEGRATION_STATUS.md`)
-- [x] G7.3–G7.7 Manual QA checklist + unit scripts PASS (`V3_3_G7_MANUAL_QA_CHECKLIST.md`)
+- [x] G7.2 DB integration — **PASS** local 2026-10-22 (`V3_3_G7_DB_INTEGRATION_STATUS.md`; Docker + migrate deploy + smoke)
+- [x] G7.3–G7.7 Manual QA checklist escrito + unit scripts PASS (`V3_3_G7_MANUAL_QA_CHECKLIST.md`) — **browser aún PENDIENTE**
 - [x] G7.8 Builds — shared/api/web/scanner PASS; web tsc vitest PREEXISTING (`V3_3_G7_BUILD_STATUS.md`)
 - [x] G7.9 Closing — `V3_3_GASTRO_EXPANSION_CLOSING.md`
 
-**Cierre expansión:** docs listos; QA browser + migrate apply = pendiente ops/humano. **Sin push.**
+**Release readiness:** DB local OK; Manual QA browser **PENDIENTE**. **Sin push / merge / deploy.** No G8.
 
 ---
 
@@ -292,7 +287,7 @@ Cierre Etapa 9: [`V3_3_STAGE_9_SETTLEMENTS_CLOSING.md`](../audits/V3_3_STAGE_9_S
 
 **Pendiente integración / QA (conservar — no marcan la etapa incompleta):**
 
-- [ ] DB migration/smoke — PostgreSQL/Docker no disponible; P1001 `localhost:5433`; migraciones `20260831160000_activity_coupon_domain` + `20260831170000_activity_coupon_claimed_notification`
+- [x] DB migration/smoke — aplicadas en local 2026-10-22 (`migrate deploy`); prod aún pendiente según entorno
 - [ ] Scanner DB integration — **NO EJECUTADO** (PostgreSQL no disponible). No convertir `test:activity-coupon-scan` PASS en integración DB.
 - [ ] QA manual global V3.3 — crear cupón, editar, archive, publicar, claim, claim duplicado, QR, short code, scanner QR, scanner manual, scanner otro operador, expired, already used, metrics, `/me`, public Activity, mobile
 
@@ -324,7 +319,7 @@ Cierre Etapa 9: [`V3_3_STAGE_9_SETTLEMENTS_CLOSING.md`](../audits/V3_3_STAGE_9_S
 
 **Pendiente integración / QA (conservar):**
 
-- [ ] DB smoke — PostgreSQL `localhost:5433` P1001; migraciones `20260831180000_user_marketing_preference`, `20260831190000_admin_campaign_domain`, `20260831200000_admin_operational_digest_log`
+- [x] DB smoke — aplicadas en local 2026-10-22 (`migrate deploy`); prod pendiente según entorno
 - [ ] Redis integration — worker `campaign-emails` end-to-end **NO EJECUTADO**
 - [ ] SMTP live smoke — campaña masiva real **NO EJECUTADO** (a propósito)
 - [ ] QA manual global V3.3 — opt-in/out, unsubscribe GET/POST, re-subscribe, draft, content picker, segment, preview, send, cancel mid-flight, results, WhatsApp disabled, Admin mobile
@@ -356,7 +351,7 @@ Cierre Etapa 9: [`V3_3_STAGE_9_SETTLEMENTS_CLOSING.md`](../audits/V3_3_STAGE_9_S
 
 **Pendiente integración / QA (conservar):**
 
-- [ ] Migration apply — PostgreSQL `localhost:5433` P1001; migraciones `20260901120000`…`20260901200000`
+- [x] Migration apply — locales 2026-10-22 (`20260901120000`…`20260901200000` + gastro G3/G4); prod pendiente
 - [ ] DB integration / concurrency smoke — double allocation, transfer overpayment, BARTER materialization, courtesy overspend **NO EJECUTADO**
 - [ ] Scripts DB — `benefit-settlements:materialize-barter-credits`, `benefit-settlements:audit-integrity` **NO EJECUTADO**
 - [ ] QA manual global V3.3 — agreements, generate, CASH/BARTER allocate, partial/full transfer, reversal, ledger, funding, insufficient balance, reporting, integrity, Activity credit, responsive Admin
