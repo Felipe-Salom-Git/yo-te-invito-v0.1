@@ -70,7 +70,7 @@ Detalle histórico demo: [guides/DEMO_REMOVAL.md](../guides/DEMO_REMOVAL.md). Po
 
 **Etapa 9 — resumen:** **NO payment gateway / NO bank API / NO fiscal invoicing**. Modelo: uso validado → `BenefitCommercialAgreement` histórico → liquidación mensual `BenefitSettlement` (`periodKey` YYYY-MM AR) → allocation `CASH` o `BARTER` por validation concreta (`@@unique([validationSource, validationId])`). CASH: `cashDueCents` / transferencias manuales `BenefitSettlementTransfer` / `CLOSED ≠ PAID`. BARTER: snapshot multiplier → `CourtesyCreditLedgerEntry` append-only (`sourceAllocationId @unique`) → funding cortesía Gastro (`DEBIT_COURTESY`, `sourceCourtesyCampaignId @unique`, ADMIN only). Reporting read-only (monthly, partners, integrity, settlement audit). Money: Prisma `BigInt` cents, API `string`, `Decimal` multiplier, half-up. Activity: crédito visible, consumo cortesía **diferido**. Hardening 9.8: deep delete guards, orphan/partner integrity, allocate `Serializable`+`FOR UPDATE`. Migraciones `20260901120000`…`20260901200000` — **apply NO EJECUTADO** (P1001). Hardening `b920553`.
 
-**Próximo paso V3.3:** cierre global + QA manual acumulada (Etapas 1–9). **No** iniciar otra etapa funcional sin instrucción explícita.
+**Próximo paso V3.3:** G7.10 QA fixes cerrados en código (`V3_3_G7_10_QA_FIXES_CLOSING.md`); push/deploy + QA browser pendientes. Roadmap G8/G9 docs-only (`V3_3_G8_G9_ROADMAP.md`). **No** iniciar G8/G9 ni otra etapa funcional sin instrucción explícita. QA manual Etapas 1–9 sigue acumulada.
 
 ---
 

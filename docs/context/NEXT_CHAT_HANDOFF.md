@@ -30,13 +30,13 @@ Punto de entrada operativo para **V3.3**. Detalle completo: `AI_ENTRYPOINT.md`, 
 | **Etapa 9 — Liquidaciones, Transferencias y Canjes** | ✅ Código implementado (slices 9.0–9.8 + hardening `b920553`) |
 | **Etapa 9 — QA manual / DB smoke / concurrency** | ⏳ Pendiente — acumulado cierre global V3.3 |
 | **Expansión Gastro — Discovery** | ✅ `docs/audits/V3_3_GASTRO_EXPANSION_DISCOVERY_AUDIT.md` |
-| **Expansión Gastro — G1 Isolation hardening** | ✅ Código (G1.1–G1.4) |
-| **Expansión Gastro — G2 Taxonomía** | ✅ Código (G2.1–G2.6) |
-| **Expansión Gastro — G3 GastroContent + galerías** | ✅ Código (G3.1–G3.6) — esperar confirmación antes de G4 |
+| **Expansión Gastro — G1–G7** | ✅ Código + cierre G7 (`V3_3_GASTRO_EXPANSION_CLOSING.md`) |
+| **Expansión Gastro — G7.10 QA fixes** | ✅ Código `51708fd`…`7d83c75` — [`V3_3_G7_10_QA_FIXES_CLOSING.md`](../audits/V3_3_G7_10_QA_FIXES_CLOSING.md) |
+| **G8 Courtesy Coupons / G9 UX** | ⏸ Roadmap only — [`V3_3_G8_G9_ROADMAP.md`](./V3_3_G8_G9_ROADMAP.md) · **NOT STARTED** |
 
 **Checklist V3.3:** `docs/dev/Yo_Te_Invito_Checklist_V3_3_Funcional_Operativa.md`
 
-**Próximo paso V3.3:** **Etapa G4 — Métricas operativas por descuento** tras confirmación. No iniciar G4 sin instrucción explícita. QA manual Etapas 1–9 sigue acumulada.
+**Próximo paso V3.3:** push/deploy G7.10 + QA browser (checklist en cierre). **No** iniciar G8/G9 sin instrucción explícita. QA manual Etapas 1–9 sigue acumulada.
 
 **Modelo canónico G2:** subcategorías = `EventSubcategory` (+ `subcategoryId` legacy/primary); tags = `ContentTag`/`EventTag` en el `publicEvent` del `GastroProfile`. Local activo = `GastroActiveLocation` / `?profileId=` (G1.3). Suite: `pnpm --filter api run test:gastro-taxonomy-compat`.
 

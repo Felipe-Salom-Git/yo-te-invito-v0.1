@@ -100,6 +100,15 @@ Auditoría: [`V3_3_GASTRO_EXPANSION_DISCOVERY_AUDIT.md`](../audits/V3_3_GASTRO_E
 
 **Hotfix pre-deploy (AuthModule):** absorbido en repo — `BenefitAgreementsModule`, `BenefitSettlementsModule`, `CourtesyCreditLedgerModule`, `MarketingPreferencesModule` importan `AuthModule` (necesitan `JwtOrDevAuthGuard`). Alinea el hotfix manual del VPS; el stash prod no debe reaplicarse ciegamente tras pull.
 
+### G7.10 — QA fixes + onboarding refinement
+
+- [x] G7.10.1–.9 código + commits (`51708fd`…`7d83c75`) — cierre [`V3_3_G7_10_QA_FIXES_CLOSING.md`](../audits/V3_3_G7_10_QA_FIXES_CLOSING.md)
+- [x] G7.10.10 builds shared/api/web/scanner **PASS**; asserts signup/Bariloche **PASS**
+- [ ] Manual QA browser post-deploy (checklist en cierre G7.10)
+- [ ] Push / merge / deploy — **NO** hasta instrucción
+
+**Roadmap posterior (docs only, NOT STARTED):** [`V3_3_G8_G9_ROADMAP.md`](./V3_3_G8_G9_ROADMAP.md) — G8 Courtesy Coupons · G9 UX complementaria.
+
 ---
 
 ## V3.3 — Mejoras funcionales y operativas
