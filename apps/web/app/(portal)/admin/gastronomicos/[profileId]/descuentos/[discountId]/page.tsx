@@ -18,6 +18,7 @@ import { GastroDiscountOperationalMetricsPanel } from '@/components/gastro/Gastr
 import { AdminGastroDiscountCommercialContextPanel } from '@/components/admin/gastro/AdminGastroDiscountCommercialContextPanel';
 import { AdminGastroDiscountEconomicMetricsPanel } from '@/components/admin/gastro/AdminGastroDiscountEconomicMetricsPanel';
 import { useAdminBenefitAgreementPartnerHistory } from '@/lib/query/benefit-agreements';
+import { buildDiscountSettlementHref } from '@/lib/admin/settlement-generate-context';
 import {
   canArchiveGastroDiscount,
   canUnarchiveGastroDiscount,
@@ -310,6 +311,20 @@ export default function AdminGastroDiscountDetailPage() {
       ) : null}
 
       <AdminGastroDiscountCommercialContextPanel profileId={canonicalProfileId} />
+      <div className="mt-3 flex flex-wrap items-center gap-3">
+        <Link
+          href={buildDiscountSettlementHref({
+            gastroProfileId: canonicalProfileId,
+            discountId,
+          })}
+          className="inline-flex items-center justify-center rounded-lg bg-accent px-4 py-2 text-sm font-medium text-bg hover:bg-accent-hover"
+        >
+          Liquidar
+        </Link>
+        <p className="text-xs text-text-muted">
+          Liquidación del local por período (incluye usos de todos sus descuentos).
+        </p>
+      </div>
 
       <AdminGastroDiscountEconomicMetricsPanel
         profileId={canonicalProfileId}

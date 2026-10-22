@@ -12,10 +12,8 @@ import {
   SectionTitle,
 } from '@/components';
 import { LiquidacionesSubnav } from '@/components/admin/liquidaciones/LiquidacionesSubnav';
-import {
-  useAdminBenefitSettlementsList,
-  useGenerateAdminBenefitSettlement,
-} from '@/lib/query/benefit-settlements';
+import { SettlementGeneratePanel } from '@/components/admin/liquidaciones/SettlementGeneratePanel';
+import { useAdminBenefitSettlementsList } from '@/lib/query/benefit-settlements';
 import {
   useAdminBenefitReportingMonthly,
   useAdminBenefitReportingPartners,
@@ -27,13 +25,13 @@ import {
   adminGastroActiveListQuery,
   resolveSettlementPartnerOptions,
 } from '@/lib/admin/settlement-partner-options';
+import { parseSettlementGenerateContext } from '@/lib/admin/settlement-generate-context';
 import {
   BENEFIT_CASH_COLLECTION_STATUS_LABEL,
   BENEFIT_INTEGRITY_STATUS_LABEL,
   BENEFIT_SETTLEMENT_STATUS_LABEL,
   formatBenefitMoneyCents,
   formatBenefitSettlementPeriodLabel,
-  mapBenefitSettlementErrorMessage,
 } from '@yo-te-invito/shared';
 
 const TENANT_ID = 'tenant-demo';
@@ -55,11 +53,14 @@ export default function AdminLiquidacionesPage() {
   const [partnerId, setPartnerId] = useState(searchParams.get('partnerId') ?? '');
   const [status, setStatus] = useState('');
   const [cashStatus, setCashStatus] = useState('');
-  const [showGenerate, setShowGenerate] = useState(false);
-  const [genVertical, setGenVertical] = useState<'GASTRO' | 'ACTIVITY'>('GASTRO');
-  const [genPartnerId, setGenPartnerId] = useState('');
-  const [genPeriod, setGenPeriod] = useState(currentPeriodKey());
-  const [genError, setGenError] = useState<string | null>(null);
+  const generateContext = useMemo(
+    () => parseSettlementGenerateContext(searchParams),
+    [searchParams],
+  );
+  const [showGenerate, setShowGenerate] = useState(generateContext.open);
+  const [genVertical, setGenVertical] = useState<'GASTRO' | 'ACTIVITY'>(
+    generateContext.vertical,
+  );
 
   const listQuery = useMemo(
     () => ({
@@ -75,7 +76,6 @@ export default function AdminLiquidacionesPage() {
   );
 
   const { data, isLoading, isError } = useAdminBenefitSettlementsList(listQuery);
-  const generateMutation = useGenerateAdminBenefitSettlement();
 
   const reportingQuery = useMemo(() => {
     const base: import('@yo-te-invito/shared').BenefitReportingPeriodQuery = {
@@ -116,16 +116,6 @@ export default function AdminLiquidacionesPage() {
     [vertical, gastroQuery.data, operatorsQuery.data],
   );
 
-  const genPartnerOptions = useMemo(
-    () =>
-      resolveSettlementPartnerOptions(
-        genVertical,
-        gastroQuery.data?.data,
-        operatorsQuery.data?.data,
-      ),
-    [genVertical, gastroQuery.data, operatorsQuery.data],
-  );
-
   const rows = useMemo(() => {
     const all = data?.data ?? [];
     if (!cashStatus) return all;
@@ -147,27 +137,6 @@ export default function AdminLiquidacionesPage() {
     }
     return { cashOutstanding, cashReceived, creditGenerated, count: rows.length };
   }, [rows]);
-
-  const handleGenerate = async () => {
-    setGenError(null);
-    if (!genPartnerId) {
-      setGenError('Seleccioná un partner.');
-      return;
-    }
-    try {
-      const result = await generateMutation.mutateAsync({
-        vertical: genVertical,
-        periodKey: genPeriod,
-        ...(genVertical === 'GASTRO'
-          ? { gastroProfileId: genPartnerId }
-          : { excursionOperatorId: genPartnerId }),
-      });
-      setShowGenerate(false);
-      window.location.href = `/admin/liquidaciones/${result.id}`;
-    } catch (err) {
-      setGenError(mapBenefitSettlementErrorMessage(err));
-    }
-  };
 
   return (
     <PageContainer>
@@ -378,84 +347,19 @@ export default function AdminLiquidacionesPage() {
       </div>
 
       {showGenerate ? (
-        <div className="mt-6 rounded-lg border border-border bg-bg-muted p-4">
-          <h3 className="font-medium text-text">Generar liquidación</h3>
-          <div className="mt-4 grid max-w-lg gap-3">
-            <label className="text-sm">
-              Vertical
-              <select
-                className="mt-1 w-full rounded border border-border bg-bg px-2 py-1"
-                value={genVertical}
-                onChange={(e) => {
-                  setGenVertical(e.target.value as 'GASTRO' | 'ACTIVITY');
-                  setGenPartnerId('');
-                }}
-              >
-                <option value="GASTRO">Gastronómico</option>
-                <option value="ACTIVITY">Activity</option>
-              </select>
-            </label>
-            <label className="text-sm">
-              Partner
-              <select
-                className="mt-1 w-full rounded border border-border bg-bg px-2 py-1"
-                value={genPartnerId}
-                onChange={(e) => setGenPartnerId(e.target.value)}
-              >
-                <option value="">Seleccionar…</option>
-                {genPartnerOptions.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.label}
-                  </option>
-                ))}
-              </select>
-              {gastroQuery.isError || (genVertical === 'ACTIVITY' && operatorsQuery.isError) ? (
-                <p className="mt-1 text-xs text-red-500">
-                  No se pudo cargar el catálogo de partners.
-                </p>
-              ) : null}
-              {!gastroQuery.isLoading &&
-              !(genVertical === 'ACTIVITY' && operatorsQuery.isLoading) &&
-              genPartnerOptions.length === 0 ? (
-                <p className="mt-1 text-xs text-text-muted">
-                  {genVertical === 'GASTRO'
-                    ? 'No hay locales activos en este tenant.'
-                    : 'No hay operadores activos en este tenant.'}
-                </p>
-              ) : null}
-            </label>
-            <label className="text-sm">
-              Período
-              <input
-                type="month"
-                className="mt-1 w-full rounded border border-border bg-bg px-2 py-1"
-                value={genPeriod}
-                onChange={(e) => setGenPeriod(e.target.value)}
-              />
-            </label>
-            {genError ? (
-              <p className="text-sm text-red-500">
-                {genError}
-                {genError.includes('acuerdo') ? (
-                  <>
-                    {' '}
-                    <Link href="/admin/liquidaciones/acuerdos" className="underline">
-                      Ver acuerdos
-                    </Link>
-                  </>
-                ) : null}
-              </p>
-            ) : null}
-            <div className="flex gap-2">
-              <Button disabled={generateMutation.isPending} onClick={handleGenerate}>
-                {generateMutation.isPending ? 'Generando…' : 'Confirmar'}
-              </Button>
-              <Button variant="secondary" onClick={() => setShowGenerate(false)}>
-                Cancelar
-              </Button>
-            </div>
-          </div>
-        </div>
+        <SettlementGeneratePanel
+          context={generateContext}
+          initialPeriodKey={currentPeriodKey()}
+          gastroRows={gastroQuery.data?.data}
+          operatorRows={operatorsQuery.data?.data}
+          gastroLoading={gastroQuery.isLoading}
+          operatorsLoading={operatorsQuery.isLoading}
+          catalogError={
+            gastroQuery.isError || (genVertical === 'ACTIVITY' && operatorsQuery.isError)
+          }
+          onVerticalChange={setGenVertical}
+          onClose={() => setShowGenerate(false)}
+        />
       ) : null}
 
       {isLoading ? (
