@@ -19,6 +19,7 @@ import {
   deriveBenefitSettlementStatus,
   deriveCashCollectionStatus,
   moneyCentsToString,
+  resolveSettlementCloseBlocker,
   roundBarterCreditCents,
   selectPendingUsagesForAllocation,
   sumMoneyCentsBigInt,
@@ -388,11 +389,29 @@ export class BenefitSettlementsService {
     }
 
     const summary = await this.buildSummary(tenantId, row);
-    if (summary.pendingUsageCount > 0) {
+    const discovery = await this.eligibility.discoverEligibleValidations(
+      tenantId,
+      row.vertical,
+      {
+        gastroProfileId: row.gastroProfileId ?? undefined,
+        excursionOperatorId: row.excursionOperatorId ?? undefined,
+      },
+      row.periodKey,
+      new Set(row.allocations?.map((a) => a.validationId) ?? []),
+    );
+    const blocker = resolveSettlementCloseBlocker({
+      status: row.status,
+      pendingUsageCount: summary.pendingUsageCount,
+      missingAgreementCount: discovery.missingAgreements.length,
+    });
+    if (blocker === 'PENDING_USAGES') {
       throw new BadRequestException({
         code: ErrorCode.BENEFIT_SETTLEMENT_INSUFFICIENT_PENDING_USAGES,
         message: 'Cannot close settlement while pending usages remain',
       });
+    }
+    if (blocker === 'MISSING_AGREEMENTS') {
+      this.assertNoMissingAgreements(discovery.missingAgreements);
     }
 
     const updated = await this.prisma.benefitSettlement.update({

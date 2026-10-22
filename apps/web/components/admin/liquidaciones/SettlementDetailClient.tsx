@@ -19,6 +19,7 @@ import { BENEFIT_VERTICAL_LABEL } from '@/lib/admin/benefit-agreement-labels';
 import {
   useAdminBenefitSettlement,
   useAdminBenefitSettlementAudit,
+  useAdminBenefitSettlementPendingValidations,
   useAllocateAdminBenefitSettlement,
   useCloseAdminBenefitSettlement,
   useRefreshAdminBenefitSettlement,
@@ -28,13 +29,33 @@ import {
   BENEFIT_SETTLEMENT_STATUS_LABEL,
   estimatePendingAllocationBaseCents,
   formatBenefitMoneyCents,
+  deriveSettlementDisplayStatus,
   formatBenefitSettlementPeriodLabel,
   mapBenefitSettlementErrorMessage,
+  resolveSettlementCloseBlocker,
+  type SettlementCloseBlocker,
+  type SettlementDisplayStatus,
 } from '@yo-te-invito/shared';
+
+const DISPLAY_TONE_CLASS: Record<SettlementDisplayStatus['tone'], string> = {
+  neutral: 'bg-bg-muted text-text-muted',
+  warning: 'bg-amber-500/15 text-amber-300',
+  success: 'bg-emerald-500/15 text-emerald-300',
+};
+
+const CLOSE_BLOCKER_MESSAGE: Record<SettlementCloseBlocker, string> = {
+  ALREADY_CLOSED: 'la liquidación ya está cerrada.',
+  PENDING_USAGES: 'hay usos pendientes de asignar a CASH o BARTER.',
+  MISSING_AGREEMENTS: 'hay validaciones sin acuerdo comercial aplicable.',
+};
 
 export function SettlementDetailClient({ id }: { id: string }) {
   const { data: settlement, isLoading, isError } = useAdminBenefitSettlement(id);
   const auditQuery = useAdminBenefitSettlementAudit(id);
+  const pendingQuery = useAdminBenefitSettlementPendingValidations(
+    id,
+    settlement != null && settlement.status !== 'CLOSED',
+  );
   const refreshMutation = useRefreshAdminBenefitSettlement();
   const allocateMutation = useAllocateAdminBenefitSettlement();
   const closeMutation = useCloseAdminBenefitSettlement();
@@ -64,6 +85,12 @@ export function SettlementDetailClient({ id }: { id: string }) {
 
   const { summary } = settlement;
   const isClosed = settlement.status === 'CLOSED';
+  const displayStatus = deriveSettlementDisplayStatus({ status: settlement.status, ...summary });
+  const closeBlocker = resolveSettlementCloseBlocker({
+    status: settlement.status,
+    pendingUsageCount: summary.pendingUsageCount,
+    missingAgreementCount: pendingQuery.data?.missingAgreementCount ?? 0,
+  });
 
   const agreementHref = `/admin/liquidaciones/acuerdos?vertical=${settlement.vertical}${
     settlement.gastroProfileId
@@ -132,8 +159,8 @@ export function SettlementDetailClient({ id }: { id: string }) {
 
   const handleClose = async () => {
     setActionError(null);
-    if (summary.pendingUsageCount > 0) {
-      setActionError('Hay usos pendientes de definir. Asignalos antes de cerrar.');
+    if (closeBlocker) {
+      setActionError(CLOSE_BLOCKER_MESSAGE[closeBlocker]);
       return;
     }
     const ok = window.confirm(
@@ -163,10 +190,21 @@ export function SettlementDetailClient({ id }: { id: string }) {
             {settlement.partnerDisplayName ?? 'Liquidación'} —{' '}
             {formatBenefitSettlementPeriodLabel(settlement.periodKey)}
           </SectionTitle>
-          <div className="mt-2 flex flex-wrap gap-2">
+          <div className="mt-2 flex flex-wrap items-center gap-2">
             <Badge>{BENEFIT_VERTICAL_LABEL[settlement.vertical]}</Badge>
-            <Badge>{BENEFIT_SETTLEMENT_STATUS_LABEL[settlement.status]}</Badge>
-            <Badge>{BENEFIT_CASH_COLLECTION_STATUS_LABEL[summary.cashCollectionStatus]}</Badge>
+            <span
+              className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${DISPLAY_TONE_CLASS[displayStatus.tone]}`}
+              title="Estado operativo derivado (no persistido)"
+            >
+              {displayStatus.label}
+            </span>
+            {displayStatus.flags.map((flag) => (
+              <Badge key={flag}>{flag}</Badge>
+            ))}
+            <span className="text-xs text-text-muted">
+              Persistido: {BENEFIT_SETTLEMENT_STATUS_LABEL[settlement.status]} · Cobranza:{' '}
+              {BENEFIT_CASH_COLLECTION_STATUS_LABEL[summary.cashCollectionStatus]}
+            </span>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -179,13 +217,22 @@ export function SettlementDetailClient({ id }: { id: string }) {
               {refreshMutation.isPending ? 'Actualizando…' : 'Actualizar usos'}
             </Button>
           ) : null}
-          {!isClosed && summary.pendingUsageCount === 0 ? (
-            <Button disabled={closeMutation.isPending} onClick={handleClose}>
+          {!isClosed ? (
+            <Button
+              disabled={closeMutation.isPending || closeBlocker !== null}
+              onClick={handleClose}
+              title={closeBlocker ? CLOSE_BLOCKER_MESSAGE[closeBlocker] : undefined}
+            >
               {closeMutation.isPending ? 'Cerrando…' : 'Cerrar liquidación'}
             </Button>
           ) : null}
         </div>
       </div>
+      {!isClosed && closeBlocker ? (
+        <p className="mt-2 text-xs text-text-muted">
+          Cierre no disponible: {CLOSE_BLOCKER_MESSAGE[closeBlocker]}
+        </p>
+      ) : null}
 
       {isClosed ? (
         <p className="mt-4 text-sm text-text-muted">

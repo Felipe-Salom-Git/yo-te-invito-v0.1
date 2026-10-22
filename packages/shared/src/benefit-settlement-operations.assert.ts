@@ -1,4 +1,6 @@
 import {
+  deriveSettlementDisplayStatus,
+  resolveSettlementCloseBlocker,
   formatBarterMultiplierLabel,
   groupPendingValidationsByBenefit,
   groupSettlementAllocationsByRate,
@@ -155,5 +157,33 @@ assert(
     'Monto erróneo',
   'reason trimmed',
 );
+
+// Close rule + derived status (G7.12.9)
+const closeBase = { status: 'ALLOCATED', pendingUsageCount: 0, missingAgreementCount: 0 };
+assert(resolveSettlementCloseBlocker(closeBase) === null, 'allocated settlement can close');
+assert(resolveSettlementCloseBlocker({ ...closeBase, pendingUsageCount: 3 }) === 'PENDING_USAGES', 'pending blocks');
+assert(
+  resolveSettlementCloseBlocker({ ...closeBase, missingAgreementCount: 1 }) === 'MISSING_AGREEMENTS',
+  'unpriced validations block close',
+);
+assert(resolveSettlementCloseBlocker({ ...closeBase, status: 'CLOSED' }) === 'ALREADY_CLOSED', 'already closed');
+
+const ds = (over: Partial<Parameters<typeof deriveSettlementDisplayStatus>[0]>) =>
+  deriveSettlementDisplayStatus({
+    status: 'ALLOCATED',
+    eligibleUsageCount: 20,
+    pendingUsageCount: 0,
+    allocatedBarterCount: 0,
+    cashCollectionStatus: 'PENDING',
+    ...over,
+  });
+assert(ds({ pendingUsageCount: 5 }).label === 'Pendiente de asignar', 'pending allocation');
+assert(ds({}).label === 'Pendiente de pago', 'cash pending');
+assert(ds({ cashCollectionStatus: 'PARTIALLY_RECEIVED' }).label === 'Parcialmente pagada', 'partial');
+assert(ds({ cashCollectionStatus: 'RECEIVED' }).label === 'Pagada', 'paid');
+assert(ds({ cashCollectionStatus: 'NONE', allocatedBarterCount: 10 }).label === 'Con canje', 'barter only');
+const mixedPaid = ds({ cashCollectionStatus: 'RECEIVED', allocatedBarterCount: 10, status: 'CLOSED' });
+assert(mixedPaid.label === 'Pagada' && mixedPaid.flags.join() === 'Con canje,Cerrada', 'mixed paid closed flags');
+assert(ds({ eligibleUsageCount: 0 }).label === 'Sin usos', 'empty');
 
 console.log('OK: settlement rate segments (CASH/BARTER/mixed/snapshots) + pending grouping + selection');

@@ -170,6 +170,72 @@ export function previewAllocationSelection(
   };
 }
 
+export type SettlementCloseBlocker = 'ALREADY_CLOSED' | 'PENDING_USAGES' | 'MISSING_AGREEMENTS';
+
+/**
+ * Close rule: every eligible validation must be allocated (priced) first. Validations without
+ * an applicable agreement would be stranded in a CLOSED period, so they block close too.
+ * Cash collection does NOT block close (CLOSED ≠ paid; transfers continue after close).
+ */
+export function resolveSettlementCloseBlocker(input: {
+  status: string;
+  pendingUsageCount: number;
+  missingAgreementCount: number;
+}): SettlementCloseBlocker | null {
+  if (input.status === 'CLOSED') return 'ALREADY_CLOSED';
+  if (input.pendingUsageCount > 0) return 'PENDING_USAGES';
+  if (input.missingAgreementCount > 0) return 'MISSING_AGREEMENTS';
+  return null;
+}
+
+export type SettlementDisplayStatus = {
+  /** Human, derived — never persisted. */
+  label: string;
+  tone: 'neutral' | 'warning' | 'success';
+  /** Extra derived flags (e.g. «Con canje», «Cerrada»). */
+  flags: string[];
+};
+
+/**
+ * Visual status derived from persisted status + summary. Persisted values stay
+ * OPEN / PARTIALLY_ALLOCATED / ALLOCATED / CLOSED (no PAID in the domain).
+ */
+export function deriveSettlementDisplayStatus(input: {
+  status: string;
+  eligibleUsageCount: number;
+  pendingUsageCount: number;
+  allocatedBarterCount: number;
+  cashCollectionStatus: string;
+}): SettlementDisplayStatus {
+  const flags: string[] = [];
+  let label: string;
+  let tone: SettlementDisplayStatus['tone'];
+
+  if (input.eligibleUsageCount === 0) {
+    label = 'Sin usos';
+    tone = 'neutral';
+  } else if (input.pendingUsageCount > 0) {
+    label = 'Pendiente de asignar';
+    tone = 'warning';
+  } else if (input.cashCollectionStatus === 'PENDING') {
+    label = 'Pendiente de pago';
+    tone = 'warning';
+  } else if (input.cashCollectionStatus === 'PARTIALLY_RECEIVED') {
+    label = 'Parcialmente pagada';
+    tone = 'warning';
+  } else if (input.cashCollectionStatus === 'RECEIVED') {
+    label = 'Pagada';
+    tone = 'success';
+  } else {
+    label = input.allocatedBarterCount > 0 ? 'Con canje' : 'Asignada';
+    tone = 'success';
+  }
+
+  if (input.allocatedBarterCount > 0 && label !== 'Con canje') flags.push('Con canje');
+  if (input.status === 'CLOSED') flags.push('Cerrada');
+  return { label, tone, flags };
+}
+
 /** «×2» / «×1.5» from Decimal string (`2.0000` → `2`). */
 export function formatBarterMultiplierLabel(multiplier: string): string {
   const [whole, frac = ''] = multiplier.split('.');
