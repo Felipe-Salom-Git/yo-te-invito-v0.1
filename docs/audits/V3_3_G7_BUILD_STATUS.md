@@ -34,3 +34,12 @@ Introducido: bbc8956 (2026-08-30) — feat(v3.3): add thresholded subcategory ra
 
 **Clasificación:** `PREEXISTING / NON-BLOCKING para next build`  
 **No marcar** `tsc -p web` standalone como PASS.
+
+## Re-verificación 2026-10-22 (continuación G7)
+
+| Target | Resultado |
+|---|---|
+| api `tsc --noEmit` + `nest build` | PASS |
+| web `next build` | PASS |
+| scanner `next build` | PASS |
+| web `tsc --noEmit` | FAIL — mismo TS2307 vitest |

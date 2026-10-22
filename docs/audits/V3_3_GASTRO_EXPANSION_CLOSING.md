@@ -6,7 +6,8 @@
 
 ```text
 HEAD inicial (pre-G1 isolation): bf97378
-HEAD final:                       35975d6
+HEAD final:                       cdcfcee
+Working tree:                     clean (at close)
 Push: NO
 Merge: NO
 Deploy: NO
