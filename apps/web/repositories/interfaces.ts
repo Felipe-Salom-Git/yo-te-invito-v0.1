@@ -779,7 +779,7 @@ export interface ReviewDisputeDetail {
 
 export interface ManagedVenueReviewsRepo {
   reply(reviewId: string, body: { body: string }): Promise<{ ok: true }>;
-  getSummary(): Promise<ProducerManagedReviewSummary>;
+  getSummary(params?: { eventId?: string }): Promise<ProducerManagedReviewSummary>;
   listReviews(params?: {
     eventId?: string;
     overallRating?: number;

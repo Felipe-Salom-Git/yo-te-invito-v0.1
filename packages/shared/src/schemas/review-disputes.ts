@@ -74,6 +74,14 @@ export const producerManagedReviewListQuerySchema = z.object({
 });
 export type ProducerManagedReviewListQuery = z.infer<typeof producerManagedReviewListQuerySchema>;
 
+/** Optional eventId scopes gastro/hotel portal summary to one local (publicEventId). */
+export const producerManagedReviewSummaryQuerySchema = z.object({
+  eventId: z.string().min(1).optional(),
+});
+export type ProducerManagedReviewSummaryQuery = z.infer<
+  typeof producerManagedReviewSummaryQuerySchema
+>;
+
 export const producerManagedReviewSummarySchema = z.object({
   averageRating: z.number().nullable(),
   totalReviews: z.number(),

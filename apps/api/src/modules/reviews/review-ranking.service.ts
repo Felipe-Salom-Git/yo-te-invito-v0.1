@@ -83,6 +83,17 @@ export class ReviewRankingService {
         rankingScore: summary.rankingScore,
       },
     });
+
+    // Gastro public detail reads GastroProfile.rating* — keep in sync per publicEventId (not owner-aggregated).
+    if ((event.category ?? '').toLowerCase() === 'gastro') {
+      await this.prisma.gastroProfile.updateMany({
+        where: { tenantId, publicEventId: eventId },
+        data: {
+          ratingAvg: summary.averageRating,
+          ratingCount: summary.validReviewCount,
+        },
+      });
+    }
   }
 
   async summarizeEvent(

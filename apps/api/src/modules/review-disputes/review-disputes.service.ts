@@ -1032,9 +1032,21 @@ export class ReviewDisputesService {
     tenantId: string,
     userId: string,
     userRole: string,
+    eventId?: string,
   ): Promise<ProducerManagedReviewSummary> {
     const scope = await this.gastroPublicEventScope(tenantId, userId, userRole);
-    return this.managedReviewsSummary(tenantId, scope.eventIds);
+    let eventIds = scope.eventIds;
+    if (eventId) {
+      if (!eventIds.includes(eventId)) {
+        return {
+          averageRating: null,
+          totalReviews: 0,
+          distribution: emptyReviewScoreDistribution(),
+        };
+      }
+      eventIds = [eventId];
+    }
+    return this.managedReviewsSummary(tenantId, eventIds);
   }
 
   async listGastroReviews(

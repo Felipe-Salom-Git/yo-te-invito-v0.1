@@ -53,8 +53,8 @@ const COPY: Record<
   gastro: {
     title: 'Valoraciones de clientes',
     subtitle:
-      'Respondé públicamente a las opiniones de tu establecimiento. No podés modificar el puntaje.',
-    eventLabel: 'Establecimiento',
+      'Respondé públicamente a las opiniones del local activo. Cada local tiene su reputación independiente.',
+    eventLabel: 'Local',
   },
   hotel: {
     title: 'Valoraciones de huéspedes',
@@ -85,9 +85,19 @@ const chipClass = (active: boolean) =>
 
 type Props = {
   scope: ManagedReviewsScope;
+  /**
+   * When set (gastro portal active local), force summary/list to that publicEventId.
+   * Prevents mixing reviews across Local A / Local B for the same GASTRO owner.
+   */
+  scopedEventId?: string | null;
+  scopedEntityLabel?: string | null;
 };
 
-export function ManagedReviewsCommentsPage({ scope }: Props) {
+export function ManagedReviewsCommentsPage({
+  scope,
+  scopedEventId,
+  scopedEntityLabel,
+}: Props) {
   const repos = useRepositories();
   const copy = COPY[scope];
   const router = useRouter();
@@ -158,7 +168,7 @@ export function ManagedReviewsCommentsPage({ scope }: Props) {
       JSON.stringify({
         scope,
         quickFilter,
-        eventId,
+        eventId: scope === 'gastro' && scopedEventId ? scopedEventId : eventId,
         overallRating,
         disputeStatus,
         replyFilter,
@@ -170,6 +180,7 @@ export function ManagedReviewsCommentsPage({ scope }: Props) {
       scope,
       quickFilter,
       eventId,
+      scopedEventId,
       overallRating,
       disputeStatus,
       replyFilter,
@@ -179,8 +190,11 @@ export function ManagedReviewsCommentsPage({ scope }: Props) {
     ],
   );
 
+  const effectiveEventId =
+    scope === 'gastro' && scopedEventId ? scopedEventId : eventId || undefined;
+
   const listParams = {
-    eventId: eventId || undefined,
+    eventId: effectiveEventId,
     overallRating: overallRating ? Number(overallRating) : undefined,
     disputeStatus:
       scope === 'producer'
@@ -198,7 +212,7 @@ export function ManagedReviewsCommentsPage({ scope }: Props) {
     scope === 'producer'
       ? producerReviewsKeys.summary()
       : scope === 'gastro'
-        ? gastroReviewsKeys.summary()
+        ? [...gastroReviewsKeys.summary(), effectiveEventId ?? 'all']
         : hotelReviewsKeys.summary();
 
   const summaryQuery = useQuery({
@@ -207,8 +221,11 @@ export function ManagedReviewsCommentsPage({ scope }: Props) {
       scope === 'producer'
         ? repos.producerReviews.getSummary()
         : scope === 'gastro'
-          ? repos.gastroReviews.getSummary()
+          ? repos.gastroReviews.getSummary(
+              effectiveEventId ? { eventId: effectiveEventId } : undefined,
+            )
           : repos.hotelReviews.getSummary(),
+    enabled: scope !== 'gastro' || scopedEventId !== null,
   });
 
   const listQueryKey =
@@ -226,6 +243,7 @@ export function ManagedReviewsCommentsPage({ scope }: Props) {
         : scope === 'gastro'
           ? repos.gastroReviews.listReviews(listParams)
           : repos.hotelReviews.listReviews(listParams),
+    enabled: scope !== 'gastro' || Boolean(effectiveEventId),
   });
 
   const replyFn =
@@ -269,7 +287,15 @@ export function ManagedReviewsCommentsPage({ scope }: Props) {
   return (
     <section>
       <SectionTitle>{copy.title}</SectionTitle>
-      <p className="mt-1 max-w-2xl text-sm text-text-muted">{copy.subtitle}</p>
+      <p className="mt-1 max-w-2xl text-sm text-text-muted">
+        {copy.subtitle}
+        {scopedEntityLabel ? (
+          <>
+            {' '}
+            Local activo: <span className="font-medium text-text">{scopedEntityLabel}</span>.
+          </>
+        ) : null}
+      </p>
 
       {summaryQuery.isLoading ? (
         <p className="mt-6 text-sm text-text-muted">Cargando resumen…</p>

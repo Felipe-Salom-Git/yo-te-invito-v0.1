@@ -2,8 +2,10 @@ import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/co
 import { Role } from '@yo-te-invito/shared';
 import {
   producerManagedReviewListQuerySchema,
+  producerManagedReviewSummaryQuerySchema,
   reviewReplyBodySchema,
   type ProducerManagedReviewListQuery,
+  type ProducerManagedReviewSummaryQuery,
   type ReviewReplyBody,
 } from '@yo-te-invito/shared';
 import { JwtOrDevAuthGuard } from '../../auth/jwt-or-dev-auth.guard';
@@ -24,8 +26,12 @@ export class GastroReviewsController {
   ) {}
 
   @Get('reviews/summary')
-  getSummary(@CurrentUser() user: { id: string; tenantId: string; role: string }) {
-    return this.reviewDisputes.getGastroSummary(user.tenantId, user.id, user.role);
+  getSummary(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Query(new ZodValidationPipe(producerManagedReviewSummaryQuerySchema))
+    query: ProducerManagedReviewSummaryQuery,
+  ) {
+    return this.reviewDisputes.getGastroSummary(user.tenantId, user.id, user.role, query.eventId);
   }
 
   @Get('reviews')

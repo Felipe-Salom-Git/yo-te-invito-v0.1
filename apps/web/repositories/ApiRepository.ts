@@ -1977,8 +1977,10 @@ export class ApiRepository implements Repositories {
         payload,
       );
     },
-    getSummary: async () => {
-      return this.client.get('/gastro/reviews/summary');
+    getSummary: async (params) => {
+      return this.client.get('/gastro/reviews/summary', {
+        ...(params?.eventId ? { eventId: params.eventId } : {}),
+      });
     },
     listReviews: async (params) => {
       return this.client.get<import('@yo-te-invito/shared').ProducerManagedReviewListResponse>(
