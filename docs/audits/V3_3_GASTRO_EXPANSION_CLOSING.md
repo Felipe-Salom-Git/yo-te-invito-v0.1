@@ -6,7 +6,7 @@
 
 ```text
 HEAD inicial (pre-G1 isolation): bf97378
-HEAD final:                       edb6001
+HEAD final:                       35975d6
 Push: NO
 Merge: NO
 Deploy: NO
