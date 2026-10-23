@@ -139,9 +139,20 @@ Discovery: [`V3_3_G8_COURTESY_DISCOVERY.md`](../audits/V3_3_G8_COURTESY_DISCOVER
 
 - [x] G8.0 auditoría: dominio, portal, `/me`, scanner, emails, agreement, accounting, Studio, shortCode, approval. **Sin código ni migrations**
 - [x] Conclusión: **extender** `GastroDiscount(COURTESY_ONLY)` + `GastroCourtesyCampaign` + `GastroDiscountClaim(COURTESY)`; **no** crear `CourtesyCoupon`
-- [ ] **Decisiones D1–D5 del operador** (canje facturable, quién financia, aprobación, largo shortCode, campo Studio) — ver roadmap
-- [ ] G8.1–G8.13 — **NOT STARTED** (esperan confirmación)
-- Hallazgos de riesgo a resolver en G8: canjes de cortesía **facturables** hoy (doble cargo/lazo de crédito si financiada), cortesías sin aprobación/agreement, master QR por reactivación, selector de local ignorado en `/gastro/descuentos/cortesia`, bug `coerce.boolean` en preview, typo de ruta admin `discuentos`
+- [x] **Decisiones D1–D5 aprobadas** (ver roadmap). D1: cortesía financiada con Courtesy Credit ⇒ NO elegible para settlement; no financiada ⇒ elegible. **Se implementa en G8.11; hoy los canjes de cortesía siguen siendo facturables**
+
+### G8.1 + G8.2 — Hardening y lifecycle de cortesías
+
+Cierre: [`V3_3_G8_1_G8_2_COURTESY_HARDENING_CLOSING.md`](../audits/V3_3_G8_1_G8_2_COURTESY_HARDENING_CLOSING.md)
+
+- [x] G8.1 selector de local respetado en `/gastro/descuentos/cortesia`, fix `coerce.boolean` (preview), `validFrom<=validTo`, guard `publicEventId` (admin), `createdByOrigin/UserId`, `visibility` + badge/filtro — `9c87348`
+- [x] G8.2 cortesía **nunca** obtiene master QR (activación/reactivación/scanner), cancelada = terminal, cancelar ⇒ claims `CANCELLED` (misma tx; portal + admin), inmutable tras el envío, sin aviso "vencido", contadores solo `PUBLIC` — `d2143f7`
+- [x] Tests `test:gastro-courtesy-hardening` (18) + `test:gastro-courtesy-lifecycle` (48) + asserts shared/web **PASS**; builds shared/api/web/scanner **PASS**; **sin migrations**
+- [x] Hallazgos inciertos de G8.0 resueltos (PATCH legacy sombreado → guard defensivo; guard `publicEventId` confirmado y corregido)
+- [ ] DB integration — **NO EJECUTADO** (tests con Prisma falso)
+- [ ] QA browser G8.1/G8.2 (checklist en cierre) — post-deploy
+- [ ] G8.3–G8.13 — **NOT STARTED** (esperan confirmación)
+- Pendiente en G8: aprobación/agreement (G8.3), shortCode (G8.6), Studio `0%` (G8.7), elegibilidad de settlement D1 + reversa `DEBIT_COURTESY` (G8.11), typo de ruta admin `discuentos` (G8.7)
 
 ---
 

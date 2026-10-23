@@ -1,10 +1,12 @@
 # V3.3 — Roadmap G8 / G9
 
-**Estado:** G8.0 (discovery) **COMPLETADO** — [`V3_3_G8_COURTESY_DISCOVERY.md`](../audits/V3_3_G8_COURTESY_DISCOVERY.md). G8.1+ **bloqueado** hasta confirmación explícita del operador.
+**Estado:** G8.0 (discovery), G8.1 y G8.2 **COMPLETADOS** (local, sin push/deploy, sin migrations) — [`V3_3_G8_COURTESY_DISCOVERY.md`](../audits/V3_3_G8_COURTESY_DISCOVERY.md) · [`V3_3_G8_1_G8_2_COURTESY_HARDENING_CLOSING.md`](../audits/V3_3_G8_1_G8_2_COURTESY_HARDENING_CLOSING.md). G8.3+ **bloqueado** hasta confirmación explícita del operador.
 
 ```text
 G8.0: DONE (docs only)
-G8.1+: NOT STARTED
+G8.1: DONE (9c87348)
+G8.2: DONE (d2143f7)
+G8.3+: NOT STARTED
 G9:    NOT STARTED
 ```
 
@@ -34,25 +36,25 @@ Una cortesía **no es una entidad nueva**: es `GastroDiscount(visibility = COURT
 | **Courtesy Campaign** | Beneficio que un local regala a usuarios (descuento oculto + claims) |
 | **CourtesyCreditLedgerEntry** | Saldo BARTER del partner; solo puede **financiar** una campaña (`sourceCourtesyCampaignId`) |
 
-### Decisiones pendientes del operador (ver discovery §10)
+### Decisiones del operador D1–D5 (APROBADAS 2026-10-23)
 
-| ID | Decisión | Recomendación | Bloquea |
-|---|---|---|---|
-| D1 | ¿Canje de cortesía facturable? A) sí (hoy) · B) nunca · C) solo no financiadas | C como mínimo | G8.11 |
-| D2 | ¿Owner puede financiar con su crédito? | Admin-only en G8 | G8.3 / G8.11 |
-| D3 | ¿Cortesía de owner requiere aprobación + agreement? | Sí; admin-origin auto-ACTIVE | G8.3 |
-| D4 | ShortCode: ¿mantener 6 o acortar? | Mantener 6 + retry P2002 + mostrar | G8.6 |
-| D5 | Studio: ¿campo `courtesyLabel` nuevo o mapear `discountLabel`? | Campo nuevo + render context | G8.7 |
+| ID | Decisión aprobada | Se implementa en |
+|---|---|---|
+| D1 | Cortesía **financiada con Courtesy Credit** (`DEBIT_COURTESY` + `sourceCourtesyCampaignId`) ⇒ **NO elegible** para settlement (ni CASH, ni BARTER, ni genera crédito). Cortesía **no financiada** ⇒ puede ser elegible según acuerdo y allocations normales. **Hoy NO implementado** (los canjes de cortesía siguen siendo facturables): no introducir comportamiento contrario antes de G8.11 | G8.11 |
+| D2 | GASTRO_OWNER **no** gasta Courtesy Credit; solo ADMIN financia. No ampliar permisos del ledger | vigente (test) |
+| D3 | Cortesía de owner: `PENDING_REVIEW` → claims retenidos/no utilizables → ADMIN review → agreement CURRENT → approve → activar/entregar. ADMIN puede crear `ACTIVE`. Campañas legacy `ACTIVE` **no** se invalidan | G8.3 |
+| D4 | ShortCode: 6 caracteres, alfabeto actual, unicidad global; luego retry `P2002` (tope razonable); compatibilidad legacy | G8.6 |
+| D5 | Reutilizar `GastroDiscountTemplate` + `DiscountTemplateRenderer`; `courtesyLabel` (o `benefitLabel` si es claramente mejor, sin renombrar campos canónicos); en `COURTESY_ONLY` nunca renderizar `0%` | G8.7 |
 
 ### Slices (reconstruidos sobre el repo)
 
 | ID | Tema | Schema |
 |---|---|---|
-| **G8.1** | Hardening + profile scope: selector de local en `/gastro/descuentos/cortesia`, fix `coerce.boolean` del preview, `validFrom<validTo`, guard `publicEventId`, `createdByOrigin/UserId`, exponer `visibility` + badge/filtro | NINGUNO |
-| **G8.2** | Aislamiento de lifecycle: nunca `qrToken` en `COURTESY_ONLY` (reactivación + scanner master), bloquear `type/value` y sincronizar campaña al editar, excluir de aviso "vencido"/contadores, cancelar campaña ⇒ claims `CANCELLED` | NINGUNO |
+| ✅ **G8.1** | Hardening + profile scope: selector de local en `/gastro/descuentos/cortesia`, fix `coerce.boolean` del preview, `validFrom<validTo`, guard `publicEventId`, `createdByOrigin/UserId`, exponer `visibility` + badge/filtro — `9c87348` | NINGUNO |
+| ✅ **G8.2** | Aislamiento de lifecycle: nunca `qrToken` en `COURTESY_ONLY` (reactivación + scanner master), cancelada = terminal, cortesía inmutable tras el envío, cancelar campaña ⇒ claims `CANCELLED`, sin aviso "vencido"/contadores — `d2143f7` | NINGUNO |
 | **G8.3** | Approval + agreement (Opción A): owner → `PENDING_REVIEW` + claims retenidos; reutiliza approve/reject + agreement gate; admin-origin auto-ACTIVE; sin retroactividad | NINGUNO (esperado) |
 | **G8.4** | Claims/entrega: entrega post-aprobación idempotente, reenvío, resumen robusto ante fallos parciales, `/me` oculta claims de padre inactivo | NINGUNO |
-| **G8.5** | Scanner: tests de aislamiento A/B (QR + shortCode), master token rechazado, indicar "Cortesía" en resultado | NINGUNO |
+| **G8.5** | Scanner: tests de aislamiento A/B (QR + shortCode), indicar "Cortesía" en resultado y reemplazar el `valueLabel` `0%` por el beneficio real (master token ya cerrado en G8.2) | NINGUNO |
 | **G8.6** | ShortCode: retry P2002, largo 6 (D4), visible en card/email/`/me`, formato legacy | NINGUNO |
 | **G8.7** | Studio unificado descuento+cortesía: `courtesyLabel` (D5), render context, fin del `0%`, preset, acceso desde el flujo, fix typo ruta admin `discuentos` | NINGUNO |
 | **G8.8** | Emails/notificaciones: aprobada/rechazada (reutiliza `GASTRO_LIFECYCLE`), shortCode en email, `audit-labels`, `sendQrEmail` admin | NINGUNO |
@@ -62,7 +64,7 @@ Una cortesía **no es una entidad nueva**: es `GastroDiscount(visibility = COURT
 | **G8.12** | Tests: cross-profile, tenant, approval/agreement, economía financiada vs no | — |
 | **G8.13** | QA + docs + cierre | — |
 
-**Dependencias:** G8.1 y G8.2 no dependen de D1–D5 (pueden ir primero). Si algún slice requiere migration → **detenerse antes de crearla**.
+**Dependencias:** G8.3 usa D2/D3; G8.6 usa D4; G8.7 usa D5; G8.11 usa D1. Si algún slice requiere migration → **detenerse antes de crearla**.
 
 ---
 

@@ -34,12 +34,13 @@ Punto de entrada operativo para **V3.3**. Detalle completo: `AI_ENTRYPOINT.md`, 
 | **Expansión Gastro — G7.10 QA fixes** | ✅ Código `51708fd`…`7d83c75`, cierre `6edb60c` — **desplegado** (R0) — [`V3_3_G7_10_QA_FIXES_CLOSING.md`](../audits/V3_3_G7_10_QA_FIXES_CLOSING.md) |
 | **Expansión Gastro — G7.11 post-QA fixes** | ✅ Código `b82c4af`…`ecb7974` — **sin push/deploy** — [`V3_3_G7_11_POST_QA_FIXES_CLOSING.md`](../audits/V3_3_G7_11_POST_QA_FIXES_CLOSING.md) |
 | **Liquidaciones — G7.12 operación completa** | ✅ Código `3570ccc`…`87d912f` — **sin push/deploy, sin migrations** — [`V3_3_G7_12_SETTLEMENT_OPERATIONS_CLOSING.md`](../audits/V3_3_G7_12_SETTLEMENT_OPERATIONS_CLOSING.md) |
-| **G8.0 Cortesías — discovery** | ✅ Docs only — [`V3_3_G8_COURTESY_DISCOVERY.md`](../audits/V3_3_G8_COURTESY_DISCOVERY.md); extender arquitectura existente, sin `CourtesyCoupon`; decisiones D1–D5 pendientes |
-| **G8.1+ / G9 UX** | ⏸ [`V3_3_G8_G9_ROADMAP.md`](./V3_3_G8_G9_ROADMAP.md) · **NOT STARTED** (esperan confirmación) |
+| **G8.0 Cortesías — discovery** | ✅ Docs only — [`V3_3_G8_COURTESY_DISCOVERY.md`](../audits/V3_3_G8_COURTESY_DISCOVERY.md); extender arquitectura existente, sin `CourtesyCoupon`; D1–D5 **aprobadas** (ver roadmap) |
+| **G8.1 + G8.2 Cortesías — hardening/lifecycle** | ✅ Código `9c87348`, `d2143f7` — **sin push/deploy, sin migrations** — [`V3_3_G8_1_G8_2_COURTESY_HARDENING_CLOSING.md`](../audits/V3_3_G8_1_G8_2_COURTESY_HARDENING_CLOSING.md). Cortesía sin master QR, inmutable, cancelar⇒claims; elegibilidad de settlement **sin cambios** (D1 en G8.11) |
+| **G8.3+ / G9 UX** | ⏸ [`V3_3_G8_G9_ROADMAP.md`](./V3_3_G8_G9_ROADMAP.md) · **NOT STARTED** (esperan confirmación) |
 
 **Checklist V3.3:** `docs/dev/Yo_Te_Invito_Checklist_V3_3_Funcional_Operativa.md`
 
-**Próximo paso V3.3:** push/deploy G7.11 + G7.12 (ventana conjunta) + QA browser G7.11/G7.12 (checklists en cierres) cuando el operador lo indique; G8.0 discovery ya hecho: el operador debe resolver D1–D5 y confirmar G8.1 (hardening, sin migrations). QA 4 (rails secundarios) pendiente por datos. **No** iniciar G8/G9 sin instrucción explícita. QA manual Etapas 1–9 sigue acumulada.
+**Próximo paso V3.3:** push/deploy G7.11 + G7.12 (ventana conjunta) + QA browser G7.11/G7.12 (checklists en cierres) cuando el operador lo indique; G8.0–G8.2 ya hechos (local); el siguiente paso de código es G8.3 (approval + agreement, sin migrations esperadas) solo con confirmación explícita. Producción congelada: no push/deploy. QA 4 (rails secundarios) pendiente por datos. **No** iniciar G8/G9 sin instrucción explícita. QA manual Etapas 1–9 sigue acumulada.
 
 **Deploy:** la clave SSH del VPS tiene passphrase; si el ssh-agent no la tiene cargada, el deploy lo ejecuta el operador siguiendo `docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`.
 
