@@ -141,6 +141,19 @@ Discovery: [`V3_3_G8_COURTESY_DISCOVERY.md`](../audits/V3_3_G8_COURTESY_DISCOVER
 - [x] Conclusión: **extender** `GastroDiscount(COURTESY_ONLY)` + `GastroCourtesyCampaign` + `GastroDiscountClaim(COURTESY)`; **no** crear `CourtesyCoupon`
 - [x] **Decisiones D1–D5 aprobadas** (ver roadmap). D1: cortesía financiada con Courtesy Credit ⇒ NO elegible para settlement; no financiada ⇒ elegible. **Se implementa en G8.11; hoy los canjes de cortesía siguen siendo facturables**
 
+### G8.5 – G8.8 — Experiencia del cupón de cortesía (scanner, shortCode, Studio, emails)
+
+Cierre: [`V3_3_G8_5_G8_8_COURTESY_COUPON_EXPERIENCE_CLOSING.md`](../audits/V3_3_G8_5_G8_8_COURTESY_COUPON_EXPERIENCE_CLOSING.md)
+
+- [x] G8.5 scanner: cortesía identificada (`kind`) con beneficio real (nunca `0%`), shortCode en el resultado; aislamiento A/B, retenidos/rechazados/cancelados/usados, master QR — `a8a3b78`
+- [x] G8.6 shortCode: retry `P2002` (tx completa en cortesía), códigos legacy intactos — `5bf21d5`
+- [x] G8.7 Studio: cortesía y descuento comparten editor/renderer; `discountValue` de cortesía = beneficio; fix de ruta web/API (`descuentos` vs `discuentos`) — `3a51c87`
+- [x] G8.8 emails/notificaciones/métricas/cancelación — `bd77fce`: owner pendiente (sin QR) / aprobada (+ acuerdo CURRENT: valor por validación, moneda, canje, vigencia; **no persistido**) / rechazada (solo motivo ya guardado); mismo acuerdo en la aprobación de descuentos normales; email al destinatario con shortCode + vigencia + local; métricas `retained / available / delivered / used / cancelled`; owner cancela su solicitud `PENDING_REVIEW` (→ `CANCELLED`, claims `CANCELLED`, sin entrega, sin reactivación)
+- [x] Tests `test:gastro-courtesy-scanner`, `test:gastro-short-code-retry`, `test:gastro-courtesy-studio`, `test:gastro-courtesy-emails` + hardening/lifecycle/approval/delivery/isolation + regresión (agreements, courtesy credit, settlement operations, discount template) **PASS**; builds shared/api/web/scanner **PASS**; **sin migrations**
+- [ ] DB integration — **NO EJECUTADO** (Prisma en memoria)
+- [ ] QA browser G8.5–G8.8 (checklist en cierre) — post-deploy
+- Diferido: cancelar solicitud pendiente de **descuentos normales** (hoy solo cortesías); `GastroDiscountOperationalMetrics.claims` sigue contando todos los claims (incluye retenidos; desglosado con `retainedClaims`); no existe un estado distinto de `CANCELLED` para "retirada por el owner" (se distingue por la auditoría `pendingRequestWithdrawn`, sin inventar un estado nuevo); `sendQrEmail` admin y `audit-labels` quedan fuera de G8.8
+
 ### G8.3 + G8.4 — Aprobación, gate de acuerdo y entrega de cortesías
 
 Cierre: [`V3_3_G8_3_G8_4_COURTESY_APPROVAL_DELIVERY_CLOSING.md`](../audits/V3_3_G8_3_G8_4_COURTESY_APPROVAL_DELIVERY_CLOSING.md)
@@ -150,7 +163,7 @@ Cierre: [`V3_3_G8_3_G8_4_COURTESY_APPROVAL_DELIVERY_CLOSING.md`](../audits/V3_3_
 - [x] Tests `test:gastro-courtesy-approval` + `test:gastro-courtesy-delivery` + hardening/lifecycle/isolation + regresión (agreements, courtesy credit, settlement, scanner) **PASS**
 - [ ] DB integration — **NO EJECUTADO** (Prisma en memoria)
 - [ ] QA browser G8.3/G8.4 (checklist en cierre) — post-deploy
-- Diferido: notificaciones al owner pendiente/aprobada/rechazada y acuerdo en el email (G8.8); owner no puede cancelar solicitud pendiente; métricas de claims incluyen retenidos
+- Diferido (**resuelto en G8.8**): notificaciones al owner pendiente/aprobada/rechazada y acuerdo en el email; owner puede cancelar solicitud pendiente; métricas separan retenidos
 - Nota: `packages/shared/src/benefit-settlement-operations.assert.ts` aparece modificado (solo CRLF) y no es parte de este trabajo
 
 ### G8.1 + G8.2 — Hardening y lifecycle de cortesías
@@ -163,8 +176,8 @@ Cierre: [`V3_3_G8_1_G8_2_COURTESY_HARDENING_CLOSING.md`](../audits/V3_3_G8_1_G8_
 - [x] Hallazgos inciertos de G8.0 resueltos (PATCH legacy sombreado → guard defensivo; guard `publicEventId` confirmado y corregido)
 - [ ] DB integration — **NO EJECUTADO** (tests con Prisma falso)
 - [ ] QA browser G8.1/G8.2 (checklist en cierre) — post-deploy
-- [ ] G8.5–G8.13 — **NOT STARTED** (esperan confirmación)
-- Pendiente en G8: shortCode (G8.6), Studio `0%` (G8.7), elegibilidad de settlement D1 + reversa `DEBIT_COURTESY` (G8.11), typo de ruta admin `discuentos` (G8.7)
+- [ ] G8.9–G8.13 — **NOT STARTED** (esperan confirmación)
+- Pendiente en G8: elegibilidad de settlement D1 + reversa `DEBIT_COURTESY` (G8.11). (shortCode, Studio `0%` y typo de ruta `discuentos` ya resueltos en G8.6/G8.7)
 
 ---
 
