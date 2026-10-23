@@ -2487,6 +2487,8 @@ export interface GastroPortalDiscount {
   /** PUBLIC (default) or COURTESY_ONLY (hidden benefit delivered via individual claims). */
   visibility?: 'PUBLIC' | 'COURTESY_ONLY';
   courtesyCampaign?: { id: string; title: string; discountLabel: string | null } | null;
+  /** G8.9: per-campaign courtesy metrics (list). Null for PUBLIC discounts. */
+  courtesyMetrics?: import('@yo-te-invito/shared').GastroCourtesyCampaignMetrics | null;
   archivedAt?: string | null;
   hasPendingUpdate?: boolean;
   pendingUpdateSubmittedAt?: string | null;

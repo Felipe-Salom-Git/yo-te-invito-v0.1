@@ -3,14 +3,20 @@
 import Link from 'next/link';
 import {
   GASTRO_WEEKDAY_LABELS_ES,
-  canOwnerCancelPendingCourtesy,
+  isCourtesyClaimRetained,
   isCourtesyOnlyVisibility,
+  resolveCourtesyActions,
+  type CourtesyActor,
   type GastroDiscountSummaryResponse,
   type GastroWeekday,
 } from '@yo-te-invito/shared';
 import { Button } from '@/components';
 import { AdminGastroDiscountStatusBadge } from '@/components/admin/gastro/AdminGastroDiscountStatusBadge';
+import { GastroDiscountKindBadge } from '@/components/gastro/GastroDiscountKindBadge';
+import { GastroCourtesyStatusBadge } from '@/components/gastro/courtesy/GastroCourtesyStatusBadge';
+import { GastroCourtesyDetailPanel } from '@/components/gastro/courtesy/GastroCourtesyDetailPanel';
 import { formatGastroDiscountValidityRangeLabel } from '@/lib/gastro/discount-status-ui';
+import { courtesyClaimSourceLabel } from '@/lib/gastro/courtesy-portal';
 
 type Props = {
   summary: GastroDiscountSummaryResponse;
@@ -21,6 +27,10 @@ type Props = {
   /** G8.8: owner withdraws a PENDING courtesy request (before approval). */
   onCancelRequest?: () => void;
   statusLoading?: boolean;
+  /** G8.9: who is looking — courtesy actions depend on it (owner portal vs ADMIN). */
+  actor?: CourtesyActor;
+  rejectionReason?: string | null;
+  archivedAt?: string | null;
 };
 
 function formatDt(iso: string | null | undefined): string {
@@ -46,19 +56,32 @@ export function GastroDiscountDetailContent({
   onDeactivate,
   onCancelRequest,
   statusLoading,
+  actor = 'OWNER',
+  rejectionReason,
+  archivedAt,
 }: Props) {
   const { discount, metrics, claims, hasExistingClaims } = summary;
   // G8.2: courtesies are immutable after send and a cancelled campaign is terminal
   // (its claims were cancelled), so there is no "Editar" nor "Activar" for them.
   const isCourtesy = isCourtesyOnlyVisibility(discount.visibility);
-  const canToggleStatus = isCourtesy
-    ? ['ACTIVE', 'APPROVED'].includes(discount.status)
-    : ['ACTIVE', 'APPROVED', 'CANCELLED'].includes(discount.status);
+  const courtesyActions = isCourtesy
+    ? resolveCourtesyActions({
+        actor,
+        status: discount.status,
+        archivedAt,
+        validTo: discount.validTo,
+        createdByOrigin: summary.courtesy?.createdByOrigin,
+        pendingDeliveryClaims: summary.courtesy?.metrics.pendingDeliveryClaims,
+      })
+    : null;
+  const canToggleStatus = !isCourtesy && ['ACTIVE', 'APPROVED', 'CANCELLED'].includes(discount.status);
   const isActive = discount.status === 'ACTIVE';
-  const canCancelRequest = canOwnerCancelPendingCourtesy({
-    visibility: discount.visibility,
-    status: discount.status,
-  });
+  const showStudio = Boolean(qrStudioHref) && (courtesyActions ? courtesyActions.editDesign : true);
+  const ownerBlockedByOrigin =
+    isCourtesy &&
+    actor === 'OWNER' &&
+    summary.courtesy?.createdByOrigin === 'ADMIN' &&
+    ['ACTIVE', 'APPROVED'].includes(discount.status);
 
   const validityLabel =
     discount.validityMode === 'WEEKLY_RECURRING' && discount.validWeekday
@@ -71,14 +94,7 @@ export function GastroDiscountDetailContent({
 
   const metricCards = [
     { label: 'Emitidos', value: metrics.totalClaims },
-    // G8.8: retained courtesy claims are held until approval: not available, not delivered.
-    ...(metrics.retainedClaims
-      ? [{ label: 'Retenidos (pendiente de aprobación)', value: metrics.retainedClaims }]
-      : []),
     { label: 'Disponibles', value: metrics.availableClaims },
-    ...(isCourtesy && metrics.deliveredClaims !== undefined
-      ? [{ label: 'Entregados', value: metrics.deliveredClaims }]
-      : []),
     { label: 'Escaneados', value: metrics.usedClaims },
     { label: 'Vencidos', value: metrics.expiredClaims },
     { label: 'Cancelados', value: metrics.cancelledClaims },
@@ -92,18 +108,22 @@ export function GastroDiscountDetailContent({
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <h1 className="text-xl font-semibold text-text">
-              {discount.title ?? 'Descuento sin título'}
+              {summary.courtesy?.title ?? discount.title ?? 'Descuento sin título'}
             </h1>
             {discount.locationName ? (
               <p className="mt-1 text-sm text-text-muted">{discount.locationName}</p>
             ) : null}
             <div className="mt-2 flex flex-wrap items-center gap-2">
+              <GastroDiscountKindBadge visibility={discount.visibility} />
               {isCourtesy ? (
-                <span className="rounded-full bg-accent/15 px-2 py-0.5 text-xs font-medium text-accent">
-                  Cortesía
-                </span>
-              ) : null}
-              <AdminGastroDiscountStatusBadge status={discount.status} />
+                <GastroCourtesyStatusBadge
+                  status={discount.status}
+                  archivedAt={archivedAt}
+                  validTo={discount.validTo}
+                />
+              ) : (
+                <AdminGastroDiscountStatusBadge status={discount.status} />
+              )}
               <span className="text-sm text-text-muted">{validityLabel}</span>
             </div>
           </div>
@@ -115,30 +135,25 @@ export function GastroDiscountDetailContent({
                 </Button>
               </Link>
             ) : null}
-            {qrStudioHref ? (
+            {showStudio && qrStudioHref ? (
               <Link href={qrStudioHref}>
                 <Button variant="outline" type="button">
                   Editar diseño
                 </Button>
               </Link>
             ) : null}
-            {canCancelRequest && onCancelRequest ? (
-              <Button
-                variant="outline"
-                type="button"
-                disabled={statusLoading}
-                onClick={onCancelRequest}
-              >
+            {courtesyActions?.cancelRequest && onCancelRequest ? (
+              <Button variant="outline" type="button" disabled={statusLoading} onClick={onCancelRequest}>
                 Cancelar solicitud
               </Button>
             ) : null}
+            {courtesyActions?.cancelCampaign && actor === 'OWNER' && onDeactivate ? (
+              <Button variant="outline" type="button" disabled={statusLoading} onClick={onDeactivate}>
+                Cancelar cortesía
+              </Button>
+            ) : null}
             {canToggleStatus && onDeactivate && isActive ? (
-              <Button
-                variant="outline"
-                type="button"
-                disabled={statusLoading}
-                onClick={onDeactivate}
-              >
+              <Button variant="outline" type="button" disabled={statusLoading} onClick={onDeactivate}>
                 Desactivar
               </Button>
             ) : null}
@@ -149,8 +164,13 @@ export function GastroDiscountDetailContent({
             ) : null}
           </div>
         </div>
-        {discount.summary ? (
+        {discount.summary && !isCourtesy ? (
           <p className="mt-3 text-sm text-text-muted">{discount.summary}</p>
+        ) : null}
+        {ownerBlockedByOrigin ? (
+          <p className="mt-3 text-xs text-text-muted">
+            Esta cortesía fue creada por administración: solo administración puede cancelarla.
+          </p>
         ) : null}
       </header>
 
@@ -161,33 +181,45 @@ export function GastroDiscountDetailContent({
         </p>
       ) : null}
 
-      <section aria-label="Métricas del descuento">
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-text-muted">
-          Métricas
-        </h2>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {metricCards.map((card) => (
-            <div
-              key={card.label}
-              className={`rounded-lg border border-border bg-bg-muted/30 px-4 py-3 ${
-                card.label === 'Emails fallidos' && card.value > 0
-                  ? 'border-rose-500/40 bg-rose-500/5'
-                  : ''
-              }`}
-            >
-              <p className="text-xs text-text-muted">{card.label}</p>
-              <p className="mt-1 text-2xl font-semibold text-text">{card.value}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+      {isCourtesy ? (
+        <GastroCourtesyDetailPanel
+          courtesy={summary.courtesy}
+          rejectionReason={discount.status === 'REJECTED' ? rejectionReason : null}
+          includePendingDelivery={actor === 'ADMIN'}
+        />
+      ) : (
+        <section aria-label="Métricas del descuento">
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-text-muted">
+            Métricas
+          </h2>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {metricCards.map((card) => (
+              <div
+                key={card.label}
+                className={`rounded-lg border border-border bg-bg-muted/30 px-4 py-3 ${
+                  card.label === 'Emails fallidos' && card.value > 0
+                    ? 'border-rose-500/40 bg-rose-500/5'
+                    : ''
+                }`}
+              >
+                <p className="text-xs text-text-muted">{card.label}</p>
+                <p className="mt-1 text-2xl font-semibold text-text">{card.value}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
-      <section aria-label="Cupones emitidos">
+      <section aria-label={isCourtesy ? 'Destinatarios' : 'Cupones emitidos'}>
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-text-muted">
-          Cupones ({claims.length})
+          {isCourtesy ? 'Destinatarios' : 'Cupones'} ({claims.length})
         </h2>
         {claims.length === 0 ? (
-          <p className="text-sm text-text-muted">Todavía no hay cupones emitidos para este descuento.</p>
+          <p className="text-sm text-text-muted">
+            {isCourtesy
+              ? 'Esta cortesía no tiene destinatarios registrados.'
+              : 'Todavía no hay cupones emitidos para este descuento.'}
+          </p>
         ) : (
           <div className="space-y-3">
             {claims.map((claim) => (
@@ -203,14 +235,22 @@ export function GastroDiscountDetailContent({
                     ) : null}
                   </div>
                   <span className="rounded-full bg-bg px-2 py-0.5 text-xs text-text-muted">
-                    {claimStatusLabel(claim.status)}
+                    {isCourtesyClaimRetained({
+                      claimType: claim.type,
+                      claimStatus: claim.status,
+                      parentStatus: discount.status,
+                    })
+                      ? 'Retenido'
+                      : claimStatusLabel(claim.status)}
                   </span>
                 </div>
                 <dl className="mt-3 grid gap-1 text-xs text-text-muted sm:grid-cols-2">
                   <div>
                     <dt className="inline">Origen: </dt>
                     <dd className="inline">
-                      {claim.type === 'COURTESY' ? 'Cortesía' : 'Público'} · {claim.source}
+                      {claim.type === 'COURTESY'
+                        ? `Cortesía · ${courtesyClaimSourceLabel(claim.source)}`
+                        : `Público · ${claim.source}`}
                     </dd>
                   </div>
                   <div>

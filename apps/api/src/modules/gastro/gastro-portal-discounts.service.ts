@@ -35,6 +35,7 @@ import { AuditService } from '../audit/audit.service';
 import { ProfilesAuthorizationService } from '../../common/profiles-authorization.service';
 import { GastroOwnershipService } from './gastro-ownership.service';
 import { GastroDiscountMetricsService } from './gastro-discount-metrics.service';
+import { loadCourtesyMetricsByDiscount } from './gastro-discount-metrics.util';
 import { GastroLifecycleNotificationsService } from '../notifications/gastro-lifecycle-notifications.service';
 import type {
   GastroDiscountArchiveAction,
@@ -268,14 +269,22 @@ export class GastroPortalDiscountsService {
     const profile = await this.getOwnedProfile(tenantId, userId, profileId);
     const or: Prisma.GastroDiscountWhereInput[] = [{ gastroProfileId: profile.id }];
     if (profile.publicEventId) {
-      or.push({ eventId: profile.publicEventId });
+      // Legacy rows linked only by the local's public event; a row owned by another local
+      // never leaks into this list (G8.9.11).
+      or.push({ eventId: profile.publicEventId, gastroProfileId: null });
     }
     const rows = await this.prisma.gastroDiscount.findMany({
       where: { tenantId, OR: or },
       orderBy: { createdAt: 'desc' },
       include: { courtesyCampaign: { select: COURTESY_CAMPAIGN_SELECT } },
     });
-    return { data: rows.map((r) => this.mapDiscount(r)) };
+    const courtesyMetrics = await loadCourtesyMetricsByDiscount(this.prisma, tenantId, rows);
+    return {
+      data: rows.map((r) => ({
+        ...this.mapDiscount(r),
+        courtesyMetrics: courtesyMetrics.get(r.id) ?? null,
+      })),
+    };
   }
 
   async getMyDiscount(

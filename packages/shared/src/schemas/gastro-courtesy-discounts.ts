@@ -157,6 +157,29 @@ export const gastroCourtesySendResponseSchema = z.object({
   imputedValueCents: z.string().nullable().optional(),
 });
 
+/**
+ * G8.9 / G8.10 — Per-campaign courtesy metrics (owner portal + ADMIN).
+ * Same exclusive buckets as G8.8 (`computeGastroDiscountClaimMetrics`): used | cancelled |
+ * retained | expired | available. `deliveredClaims` ⊂ available (emailed and still usable);
+ * `pendingDeliveryClaims` = approved, usable and never emailed (what a redelivery would send).
+ * A retained claim is never available, delivered nor pending delivery.
+ * Audience counters describe the frozen recipient set (`claim.source` / `claim.userId`).
+ */
+export const gastroCourtesyCampaignMetricsSchema = z.object({
+  recipientCount: z.number().int().min(0),
+  manualRecipientCount: z.number().int().min(0),
+  followerRecipientCount: z.number().int().min(0),
+  registeredRecipientCount: z.number().int().min(0),
+  retainedClaims: z.number().int().min(0),
+  availableClaims: z.number().int().min(0),
+  deliveredClaims: z.number().int().min(0),
+  pendingDeliveryClaims: z.number().int().min(0),
+  usedClaims: z.number().int().min(0),
+  cancelledClaims: z.number().int().min(0),
+  expiredClaims: z.number().int().min(0),
+});
+export type GastroCourtesyCampaignMetrics = z.infer<typeof gastroCourtesyCampaignMetricsSchema>;
+
 export type GastroCourtesyRecipientsPreviewQuery = z.infer<
   typeof gastroCourtesyRecipientsPreviewQuerySchema
 >;

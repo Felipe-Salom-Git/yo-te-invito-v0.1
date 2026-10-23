@@ -17,6 +17,7 @@ import { GastroCourtesyDeliveryService } from '../../src/modules/gastro/gastro-c
 import { GastroDiscountClaimEmailService } from '../../src/modules/gastro/gastro-discount-claim-email.service';
 import { GastroDiscountVisualTemplateService } from '../../src/modules/gastro/gastro-discount-visual-template.service';
 import { GastroDiscountMetricsService } from '../../src/modules/gastro/gastro-discount-metrics.service';
+import { GastroPortalDiscountsService } from '../../src/modules/gastro/gastro-portal-discounts.service';
 import { GastroLifecycleNotificationsService } from '../../src/modules/notifications/gastro-lifecycle-notifications.service';
 import { GastroProfileMetricsService } from '../../src/modules/gastro/gastro-profile-metrics.service';
 import { AdminGastroService } from '../../src/modules/admin/admin-gastro.service';
@@ -174,6 +175,12 @@ export class FakeCourtesyDb {
         const row = this.discounts.find((d) => matches(d, where));
         return row ? this.discountWithIncludes(row) : null;
       },
+      /** G8.9: newest first (the services order lists by `createdAt desc`). */
+      findMany: async ({ where }: { where: Row }) =>
+        this.discounts
+          .filter((d) => matches(d, where))
+          .sort((a, b) => (b.createdAt as Date).getTime() - (a.createdAt as Date).getTime())
+          .map((d) => this.discountWithIncludes(d)),
       update: async ({ where, data }: { where: Row; data: Row }) => {
         const row = this.discounts.find((d) => d.id === where.id);
         if (!row) throw new Error('discount not found');
@@ -566,6 +573,38 @@ export class FakeCourtesyDb {
       scannerAccounts as never,
       {} as never,
       auditService as never,
+    );
+  }
+
+  /**
+   * G8.9 — the REAL owner portal discounts service; ownership (profile ↔ membership, ACTIVE)
+   * resolved from `memberships` like `GastroOwnershipService`.
+   */
+  buildPortalService(svc: ReturnType<FakeCourtesyDb['build']>) {
+    const operable = (userId: string, profileId: string) => {
+      const ok = this.memberships.some((m) => m.userId === userId && m.profileId === profileId);
+      const profile = this.profiles.find((p) => p.id === profileId && p.status === 'ACTIVE');
+      if (!ok || !profile) throw new ForbiddenException('not your local');
+      return profile;
+    };
+    const ownership = {
+      assertCanOperateProfile: async (_t: string, userId: string, profileId: string) =>
+        operable(userId, profileId),
+      getOperationalProfileById: async (_t: string, userId: string, profileId?: string | null) => {
+        const id =
+          profileId?.trim() || this.memberships.find((m) => m.userId === userId)?.profileId;
+        if (!id) throw new ForbiddenException('no local');
+        return operable(userId, id);
+      },
+    };
+    const audit = { logAction: async (a: Row) => void this.audits.push(a) };
+    return new GastroPortalDiscountsService(
+      this.prisma as never,
+      { hasGastroAccess: async () => true } as never,
+      ownership as never,
+      svc.metrics,
+      audit as never,
+      svc.lifecycle,
     );
   }
 

@@ -11,9 +11,13 @@ import {
   getGastroDiscountCalendarKey,
   gastroDiscountStartOfDay,
   type GastroDiscountOperationalMetricsResponse,
+  type GastroDiscountSummaryCourtesy,
   type GastroDiscountSummaryResponse,
   type GastroDiscountStatusUpdate,
+  GASTRO_COURTESY_ADMIN_ORIGIN_OWNER_BLOCKED_MESSAGE,
   GASTRO_COURTESY_CANCELLED_TERMINAL_MESSAGE,
+  canOwnerChangeCourtesyStatus,
+  resolveCourtesyBenefitLabel,
   courtesyStatusChangeBlocker,
   isCourtesyOnlyVisibility,
   isCourtesyPendingApproval,
@@ -27,6 +31,7 @@ import { AuditAction } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { cancelCourtesyClaimsForDiscount } from './gastro-courtesy-lifecycle.util';
 import {
+  computeCourtesyCampaignMetrics,
   computeGastroDiscountClaimMetrics,
   mapGastroDiscountSummaryClaim,
 } from './gastro-discount-metrics.util';
@@ -74,8 +79,10 @@ export class GastroDiscountMetricsService {
     claims: ReturnType<typeof mapGastroDiscountSummaryClaim>[],
     metrics: ReturnType<typeof computeGastroDiscountClaimMetrics>,
     validationCount?: number,
+    courtesy: GastroDiscountSummaryCourtesy | null = null,
   ): GastroDiscountSummaryResponse {
     return {
+      courtesy,
       discount: {
         id: row.id,
         title: row.displayTitle,
@@ -123,6 +130,7 @@ export class GastroDiscountMetricsService {
         id: true,
         gastroProfileId: true,
         status: true,
+        visibility: true,
         qrToken: true,
         qrGeneratedAt: true,
       },
@@ -265,7 +273,11 @@ export class GastroDiscountMetricsService {
       lastValidationAt: lastValidation?.validatedAt.toISOString() ?? null,
       hasQrToken: Boolean(row.qrToken),
       qrGeneratedAt: row.qrGeneratedAt?.toISOString() ?? null,
-      recentShortCodes: recentClaimCodes.map((c) => c.shortCode),
+      // G8.9: a courtesy claim's shortCode is redeemable by hand at the scanner, so codes of
+      // other recipients are never listed (validations below only show already-used ones).
+      recentShortCodes: isCourtesyOnlyVisibility(row.visibility)
+        ? []
+        : recentClaimCodes.map((c) => c.shortCode),
       activityByDay,
       recentValidations: recentValidationRows.map((v) => ({
         id: v.id,
@@ -288,6 +300,7 @@ export class GastroDiscountMetricsService {
       where: { id: discountId, tenantId },
       include: {
         gastroProfile: { select: { id: true, displayName: true } },
+        courtesyCampaign: true,
       },
     });
     if (!row) {
@@ -317,7 +330,26 @@ export class GastroDiscountMetricsService {
       });
     }
 
-    return this.mapDiscountSummary(row, mappedClaims, metrics, validationCount);
+    // G8.9: campaign block (benefit, vigencia, frozen audience, metrics). Legacy rows without
+    // a campaign keep `courtesy: null`.
+    const campaign = row.courtesyCampaign;
+    const courtesy: GastroDiscountSummaryCourtesy | null =
+      isCourtesyOnlyVisibility(row.visibility) && campaign
+        ? {
+            campaignId: campaign.id,
+            title: campaign.title,
+            benefitLabel: resolveCourtesyBenefitLabel(campaign, row.displayTitle),
+            description: campaign.description ?? null,
+            message: campaign.message ?? null,
+            validFrom: (campaign.validFrom ?? row.validFrom)?.toISOString() ?? null,
+            validTo: (campaign.validTo ?? row.validTo)?.toISOString() ?? null,
+            createdAt: campaign.createdAt?.toISOString() ?? null,
+            createdByOrigin: row.createdByOrigin === 'ADMIN' ? 'ADMIN' : 'GASTRO',
+            metrics: computeCourtesyCampaignMetrics(claims, row.status),
+          }
+        : null;
+
+    return this.mapDiscountSummary(row, mappedClaims, metrics, validationCount, courtesy);
   }
 
   private assertDiscountConfigurable(row: DiscountRow) {
@@ -384,6 +416,19 @@ export class GastroDiscountMetricsService {
       throw new NotFoundException({
         code: ErrorCode.NOT_FOUND,
         message: 'Discount not found',
+      });
+    }
+
+    // G8.9: an ADMIN-created courtesy (possibly funded with Courtesy Credit) is administered
+    // by ADMIN only; the owner cannot cancel it.
+    if (
+      actor.role !== 'ADMIN' &&
+      isCourtesyOnlyVisibility(row.visibility) &&
+      !canOwnerChangeCourtesyStatus(row.createdByOrigin)
+    ) {
+      throw new ForbiddenException({
+        code: ErrorCode.FORBIDDEN,
+        message: GASTRO_COURTESY_ADMIN_ORIGIN_OWNER_BLOCKED_MESSAGE,
       });
     }
 

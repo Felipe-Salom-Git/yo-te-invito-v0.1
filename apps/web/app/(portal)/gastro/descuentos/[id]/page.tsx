@@ -6,6 +6,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   canArchiveGastroDiscount,
   canUnarchiveGastroDiscount,
+  isCourtesyOnlyVisibility,
+  isCourtesyPendingApproval,
 } from '@yo-te-invito/shared';
 import { useRepositories } from '@/repositories/context';
 import { PageContainer, PageLoader, QueryError, useToast } from '@/components';
@@ -14,6 +16,7 @@ import { GastroDiscountOperationalMetricsPanel } from '@/components/gastro/Gastr
 import { useGastroActiveLocation } from '@/lib/gastro/GastroActiveLocationContext';
 import { gastroKeys } from '@/lib/query/keys';
 import { getErrorMessage } from '@/lib/errors';
+import { withCourtesyProfileQuery } from '@/lib/gastro/courtesy-scope';
 
 function profileQuery(profileId?: string) {
   return profileId ? `?profileId=${encodeURIComponent(profileId)}` : '';
@@ -57,20 +60,22 @@ export default function GastroDescuentoDetallePage() {
     queryClient.invalidateQueries({ queryKey: gastroKeys.discounts(discountProfileId) });
   };
 
+  const isCourtesy = isCourtesyOnlyVisibility(summaryQuery.data?.discount.visibility);
+
   const statusMutation = useMutation({
     mutationFn: (status: 'ACTIVE' | 'CANCELLED') =>
       repos.gastro.updateMyDiscountStatus(id, { status }),
     onError: (err) => addToast(getErrorMessage(err), 'error'),
     onSuccess: (_, status) => {
-      const wasPending = ['PENDING_REVIEW', 'COMMISSION_NEGOTIATION'].includes(
-        summaryQuery.data?.discount.status ?? '',
-      );
+      const wasPending = isCourtesyPendingApproval(summaryQuery.data?.discount.status);
       addToast(
         status === 'ACTIVE'
           ? 'Descuento activado'
           : wasPending
             ? 'Solicitud cancelada. No se enviará ningún QR.'
-            : 'Descuento desactivado',
+            : isCourtesy
+              ? 'Cortesía cancelada. Los QR no usados dejaron de ser válidos.'
+              : 'Descuento desactivado',
         'success',
       );
       invalidate();
@@ -102,10 +107,13 @@ export default function GastroDescuentoDetallePage() {
   return (
     <PageContainer>
       <Link
-        href={`/gastro/descuentos${profileQuery(discountProfileId)}`}
+        href={withCourtesyProfileQuery(
+          isCourtesy ? '/gastro/descuentos?tipo=cortesias' : '/gastro/descuentos',
+          discountProfileId,
+        )}
         className="mb-4 inline-block text-sm text-accent"
       >
-        ← Volver a descuentos
+        {isCourtesy ? '← Volver a cortesías' : '← Volver a descuentos'}
       </Link>
 
       {summaryQuery.isLoading ? <PageLoader message="Cargando detalle…" /> : null}
@@ -119,11 +127,23 @@ export default function GastroDescuentoDetallePage() {
       {summaryQuery.data ? (
         <GastroDiscountDetailContent
           summary={summaryQuery.data}
+          actor="OWNER"
+          rejectionReason={discount?.rejectionReason ?? null}
+          archivedAt={discount?.archivedAt ?? null}
           editHref={`/gastro/descuentos/${id}/editar${profileQuery(discountProfileId)}`}
           qrStudioHref={`/gastro/descuentos/${id}/qr-studio${profileQuery(discountProfileId)}`}
           statusLoading={statusMutation.isPending}
           onActivate={() => statusMutation.mutate('ACTIVE')}
-          onDeactivate={() => statusMutation.mutate('CANCELLED')}
+          onDeactivate={() => {
+            if (
+              !isCourtesy ||
+              window.confirm(
+                '¿Cancelar esta cortesía? Los QR que todavía no se usaron dejan de ser válidos y no se puede reactivar.',
+              )
+            ) {
+              statusMutation.mutate('CANCELLED');
+            }
+          }}
           onCancelRequest={() => {
             if (window.confirm('¿Cancelar esta solicitud? No se enviará ningún QR a los destinatarios.')) {
               statusMutation.mutate('CANCELLED');
@@ -132,9 +152,11 @@ export default function GastroDescuentoDetallePage() {
         />
       ) : null}
 
-      {operationalMetricsQuery.isLoading ? (
+      {/* G8.9.6: a courtesy shows its own campaign metrics above; the generic panel (QR general,
+          claims emitidos) does not apply to it. */}
+      {!isCourtesy && operationalMetricsQuery.isLoading ? (
         <p className="mt-8 text-sm text-text-muted">Cargando métricas…</p>
-      ) : operationalMetricsQuery.data ? (
+      ) : !isCourtesy && operationalMetricsQuery.data ? (
         <GastroDiscountOperationalMetricsPanel metrics={operationalMetricsQuery.data} />
       ) : null}
 

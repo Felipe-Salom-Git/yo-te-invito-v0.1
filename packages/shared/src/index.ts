@@ -116,6 +116,7 @@ export * from './benefit-settlement-admin';
 export * from './benefit-settlement-operations';
 export * from './benefit-settlement-history';
 export * from './gastro-courtesy-lifecycle';
+export * from './gastro-courtesy-presentation';
 export * from './benefit-settlement-reporting';
 export * from './benefit-settlement-integrity';
 export * from './schemas/benefit-settlements';

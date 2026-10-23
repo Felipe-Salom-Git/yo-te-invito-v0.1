@@ -74,7 +74,7 @@ export const PORTAL_NAV_BY_KEY: Record<PortalNavKey, PortalNavDefinition> = {
       { href: '/gastro/local', label: 'Mis locales' },
       { href: '/gastro/contenido', label: 'Contenido' },
       { href: '/gastro/descuentos', label: 'Descuentos' },
-      { href: '/gastro/descuentos/cortesia', label: 'Cortesías' },
+      { href: '/gastro/descuentos?tipo=cortesias', label: 'Cortesías' },
       { href: '/gastro/validaciones', label: 'Resumen descuentos' },
       { href: '/gastro/scanners', label: 'Scanners' },
       { href: '/gastro/valoraciones', label: 'Valoraciones' },

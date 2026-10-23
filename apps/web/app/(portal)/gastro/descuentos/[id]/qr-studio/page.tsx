@@ -5,13 +5,16 @@ import { useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import {
   buildGastroDiscountStudioPreviewContext,
+  courtesyDisplayStateLabel,
   isCourtesyOnlyVisibility,
+  resolveCourtesyActions,
 } from '@yo-te-invito/shared';
 import { useRepositories } from '@/repositories/context';
 import { PageContainer, PageLoader, QueryError, Breadcrumbs } from '@/components';
 import { GastroQrStudioClient } from '@/components/gastro/qr-studio/GastroQrStudioClient';
 import { useGastroActiveLocation } from '@/lib/gastro/GastroActiveLocationContext';
 import { gastroKeys } from '@/lib/query/keys';
+import { withCourtesyProfileQuery } from '@/lib/gastro/courtesy-scope';
 
 function profileQuery(profileId?: string) {
   return profileId ? `?profileId=${encodeURIComponent(profileId)}` : '';
@@ -70,11 +73,44 @@ export default function GastroDiscountQrStudioPage() {
     );
   }
 
+  // G8.9.8: a rejected / cancelled / expired / archived courtesy is never seen again by its
+  // recipients, so its design is not editable.
+  if (
+    isCourtesy &&
+    !resolveCourtesyActions({
+      actor: 'OWNER',
+      status: discount.status,
+      archivedAt: discount.archivedAt,
+      validTo: discount.validTo,
+      createdByOrigin: discount.createdByOrigin,
+    }).editDesign
+  ) {
+    return (
+      <PageContainer className="!max-w-7xl">
+        <p className="text-text-muted">
+          El diseño de esta cortesía ya no se puede editar (
+          {courtesyDisplayStateLabel(discount).toLowerCase()}).
+        </p>
+        <Link
+          href={`/gastro/descuentos/${id}${profileQuery(gastroProfileId)}`}
+          className="mt-4 inline-block text-sm text-accent hover:underline"
+        >
+          Volver a la cortesía
+        </Link>
+      </PageContainer>
+    );
+  }
+
   return (
     <PageContainer className="!max-w-7xl">
       <Breadcrumbs
         items={[
-          { href: `/gastro/descuentos${profileQuery(gastroProfileId)}`, label: 'Descuentos' },
+          isCourtesy
+            ? {
+                href: withCourtesyProfileQuery('/gastro/descuentos?tipo=cortesias', gastroProfileId),
+                label: 'Cortesías',
+              }
+            : { href: `/gastro/descuentos${profileQuery(gastroProfileId)}`, label: 'Descuentos' },
           {
             href: `/gastro/descuentos/${id}${profileQuery(gastroProfileId)}`,
             label: discount.title ?? 'Descuento',

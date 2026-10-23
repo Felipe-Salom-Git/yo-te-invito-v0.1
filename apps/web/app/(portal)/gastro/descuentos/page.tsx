@@ -2,24 +2,32 @@
 
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import {
-  GASTRO_WEEKDAY_LABELS_ES,
   classifyGastroDiscountLifecycle,
+  isCourtesyOnlyVisibility,
   type GastroDiscountLifecycleBucket,
-  type GastroWeekday,
 } from '@yo-te-invito/shared';
 import { useRepositories } from '@/repositories/context';
 import { PageContainer, SectionTitle } from '@/components';
 import { GastroLocationSelector } from '@/components/gastro/GastroLocationSelector';
+import { GastroDiscountListItem } from '@/components/gastro/GastroDiscountListItem';
+import { GastroCourtesyListItem } from '@/components/gastro/courtesy/GastroCourtesyListItem';
+import { GastroCourtesyEmptyState } from '@/components/gastro/courtesy/GastroCourtesyEmptyState';
 import { useGastroActiveLocation } from '@/lib/gastro/GastroActiveLocationContext';
 import { gastroKeys } from '@/lib/query/keys';
-import { formatGastroDiscountValidityRangeLabel, gastroDiscountPortalStatusLabel } from '@/lib/gastro/discount-status-ui';
 import {
   matchesVisibilityFilter,
+  resolveCourtesyScope,
   withCourtesyProfileQuery,
   type DiscountVisibilityFilter,
 } from '@/lib/gastro/courtesy-scope';
+import {
+  discountTypeParam,
+  parseDiscountTypeParam,
+  resolveCourtesyEmptyState,
+} from '@/lib/gastro/courtesy-portal';
 
 const VISIBILITY_FILTERS: Array<{ id: DiscountVisibilityFilter; label: string }> = [
   { id: 'ALL', label: 'Todos' },
@@ -36,15 +44,35 @@ const TABS: Array<{ id: GastroDiscountLifecycleBucket; label: string }> = [
 
 export default function GastroDescuentosPage() {
   const repos = useRepositories();
-  const { profileId } = useGastroActiveLocation();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const { profileId, locations, isLoading: locationsLoading } = useGastroActiveLocation();
   const [tab, setTab] = useState<GastroDiscountLifecycleBucket>('ACTIVE');
-  const [visibilityFilter, setVisibilityFilter] = useState<DiscountVisibilityFilter>('ALL');
+  const visibilityFilter = parseDiscountTypeParam(searchParams.get('tipo'));
+  const courtesyScope = resolveCourtesyScope(profileId, locations);
+
+  const setVisibilityFilter = (filter: DiscountVisibilityFilter) => {
+    const params = new URLSearchParams(searchParams.toString());
+    const value = discountTypeParam(filter);
+    if (value) params.set('tipo', value);
+    else params.delete('tipo');
+    const qs = params.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname);
+  };
+
+  // G8.9.11: keyed by the selected local and only fired once it is resolved, so a switch
+  // A → B never renders (nor reuses) A's cached list.
   const { data, isLoading } = useQuery({
     queryKey: gastroKeys.discounts(profileId),
     queryFn: () => repos.gastro.listMyDiscounts(profileId),
+    enabled: !!profileId,
   });
 
-  const allDiscounts = data?.data ?? [];
+  const allDiscounts = useMemo(
+    () => (data?.data ?? []).filter((d) => !d.gastroProfileId || d.gastroProfileId === profileId),
+    [data, profileId],
+  );
   const discounts = useMemo(
     () => allDiscounts.filter((d) => matchesVisibilityFilter(d.visibility, visibilityFilter)),
     [allDiscounts, visibilityFilter],
@@ -71,6 +99,9 @@ export default function GastroDescuentosPage() {
   }, [discounts]);
 
   const visible = grouped[tab];
+  const courtesyOnly = visibilityFilter === 'COURTESY_ONLY';
+  const createCourtesyHref = withCourtesyProfileQuery('/gastro/descuentos/cortesia', profileId);
+  const loading = locationsLoading || (!!profileId && isLoading);
 
   return (
     <PageContainer>
@@ -78,16 +109,18 @@ export default function GastroDescuentosPage() {
         <GastroLocationSelector />
       </div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <SectionTitle>Tickets de descuento</SectionTitle>
+        <SectionTitle>{courtesyOnly ? 'Cortesías del local' : 'Tickets de descuento'}</SectionTitle>
         <div className="flex flex-wrap gap-2">
+          {courtesyScope.ok ? (
+            <Link
+              href={createCourtesyHref}
+              className="rounded-lg border border-accent px-4 py-2 text-sm font-medium text-accent hover:bg-accent/10"
+            >
+              Crear cortesía
+            </Link>
+          ) : null}
           <Link
-            href={withCourtesyProfileQuery('/gastro/descuentos/cortesia', profileId)}
-            className="rounded-lg border border-accent px-4 py-2 text-sm font-medium text-accent hover:bg-accent/10"
-          >
-            Enviar cortesías
-          </Link>
-          <Link
-            href={`/gastro/descuentos/nuevo${profileId ? `?profileId=${encodeURIComponent(profileId)}` : ''}`}
+            href={withCourtesyProfileQuery('/gastro/descuentos/nuevo', profileId)}
             className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-bg hover:bg-accent-hover"
           >
             Nuevo ticket
@@ -95,7 +128,9 @@ export default function GastroDescuentosPage() {
         </div>
       </div>
       <p className="mb-4 text-sm text-text-muted">
-        Los tickets se envían a revisión. Administración coordinará la comisión antes de activarlos.
+        {courtesyOnly
+          ? 'Las cortesías son privadas y quedan pendientes de aprobación: los destinatarios reciben su QR recién cuando administración las aprueba.'
+          : 'Los tickets se envían a revisión. Administración coordinará la comisión antes de activarlos.'}
       </p>
       <div className="mb-3 flex flex-wrap gap-2" role="group" aria-label="Tipo">
         {VISIBILITY_FILTERS.map((f) => (
@@ -130,62 +165,41 @@ export default function GastroDescuentosPage() {
           </button>
         ))}
       </div>
-      {isLoading && <p className="text-text-muted">Cargando…</p>}
-      {!isLoading && visible.length === 0 && (
-        <p className="text-text-muted">No hay tickets en esta sección.</p>
+      {loading && <p className="text-text-muted">Cargando…</p>}
+      {!loading && !profileId && (
+        <p className="text-text-muted">Creá o seleccioná un local para ver sus tickets.</p>
       )}
+      {!loading && profileId && visible.length === 0 && courtesyOnly ? (
+        <GastroCourtesyEmptyState
+          createHref={createCourtesyHref}
+          state={resolveCourtesyEmptyState({
+            bucket: tab,
+            countsByBucket: {
+              ACTIVE: grouped.ACTIVE.length,
+              PENDING: grouped.PENDING.length,
+              FINISHED: grouped.FINISHED.length,
+              ARCHIVED: grouped.ARCHIVED.length,
+            },
+            canCreate: courtesyScope.ok,
+          })}
+        />
+      ) : null}
+      {!loading && profileId && visible.length === 0 && !courtesyOnly ? (
+        <p className="text-text-muted">No hay tickets en esta sección.</p>
+      ) : null}
       <ul className="space-y-3">
-        {visible.map((d) => (
-          <li key={d.id}>
-            <Link
-              href={`/gastro/descuentos/${d.id}${profileId ? `?profileId=${encodeURIComponent(profileId)}` : ''}`}
-              className="block rounded-lg border border-border p-4 transition hover:border-accent/50 hover:bg-bg-muted/30"
-            >
-            <div className="flex flex-wrap items-start justify-between gap-2">
-              <div>
-                <p className="font-medium">
-                  {d.title ?? d.code}
-                  {d.visibility === 'COURTESY_ONLY' ? (
-                    <span className="ml-2 rounded-full bg-accent/15 px-2 py-0.5 align-middle text-xs font-normal text-accent">
-                      Cortesía
-                    </span>
-                  ) : null}
-                </p>
-                <p className="text-sm text-text-muted">
-                  {d.visibility === 'COURTESY_ONLY' && d.courtesyCampaign?.discountLabel
-                    ? d.courtesyCampaign.discountLabel
-                    : d.summary}
-                </p>
-                {d.hasPendingUpdate && (
-                  <p className="mt-1 text-xs text-amber-300">Edición pendiente de revisión</p>
-                )}
-                {d.validityMode === 'WEEKLY_RECURRING' && d.validWeekday ? (
-                  <p className="mt-1 text-xs text-text-muted">
-                    Todos los {GASTRO_WEEKDAY_LABELS_ES[d.validWeekday as GastroWeekday]}
-                  </p>
-                ) : (
-                  (() => {
-                    const range = formatGastroDiscountValidityRangeLabel(
-                      d.validFrom,
-                      d.validTo,
-                      d.discountDate,
-                    );
-                    return range ? (
-                      <p className="mt-1 text-xs text-text-muted">Vigencia: {range}</p>
-                    ) : null;
-                  })()
-                )}
-              </div>
-              <span className="rounded-full bg-bg-muted px-2 py-0.5 text-xs text-text">
-                {gastroDiscountPortalStatusLabel({
-                  status: d.status,
-                  archivedAt: d.archivedAt,
-                })}
-              </span>
-            </div>
-            </Link>
-          </li>
-        ))}
+        {visible.map((d) => {
+          const href = withCourtesyProfileQuery(`/gastro/descuentos/${d.id}`, profileId);
+          return (
+            <li key={d.id}>
+              {isCourtesyOnlyVisibility(d.visibility) ? (
+                <GastroCourtesyListItem item={d} href={href} />
+              ) : (
+                <GastroDiscountListItem item={d} href={href} />
+              )}
+            </li>
+          );
+        })}
       </ul>
     </PageContainer>
   );

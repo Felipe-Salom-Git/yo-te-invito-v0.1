@@ -1,5 +1,7 @@
+import type { PrismaClient } from '@prisma/client';
 import { isCourtesyClaimRetained, isGastroDiscountExpired } from '@yo-te-invito/shared';
 import type {
+  GastroCourtesyCampaignMetrics,
   GastroDiscountSummaryClaim,
   GastroDiscountSummaryMetrics,
 } from '@yo-te-invito/shared';
@@ -20,7 +22,14 @@ type ClaimRow = {
   user?: { firstName: string; lastName: string } | null;
 };
 
-function isClaimExpired(row: ClaimRow): boolean {
+/** Fields the metric buckets read (a narrow `select` is enough). */
+export type ClaimMetricsRow = Pick<
+  ClaimRow,
+  'status' | 'type' | 'usedAt' | 'expiresAt' | 'emailSentAt' | 'emailSendError'
+> &
+  Partial<Pick<ClaimRow, 'source' | 'userId'>>;
+
+function isClaimExpired(row: ClaimMetricsRow): boolean {
   if (row.status === 'EXPIRED') return true;
   if (row.status === 'USED' || row.usedAt) return false;
   return isGastroDiscountExpired(row.expiresAt);
@@ -33,7 +42,7 @@ function isClaimExpired(row: ClaimRow): boolean {
  * A retained claim is never "available" nor "delivered": it is only frozen audience.
  */
 export function computeGastroDiscountClaimMetrics(
-  claims: ClaimRow[],
+  claims: ClaimMetricsRow[],
   opts: { parentStatus?: string | null } = {},
 ): GastroDiscountSummaryMetrics {
   let retainedClaims = 0;
@@ -95,6 +104,93 @@ export function computeGastroDiscountClaimMetrics(
     emailSentCount,
     emailFailedCount,
   };
+}
+
+/**
+ * G8.9 / G8.10 — Courtesy campaign metrics (owner list/detail + ADMIN list/review).
+ * Reuses the exclusive G8.8 buckets; adds the frozen audience breakdown and the claims a
+ * redelivery would target (approved parent, usable, never emailed). Retained claims are
+ * never available / delivered / pending delivery.
+ */
+export function computeCourtesyCampaignMetrics(
+  claims: ClaimMetricsRow[],
+  parentStatus: string | null | undefined,
+): GastroCourtesyCampaignMetrics {
+  const courtesyClaims = claims.filter((c) => c.type === 'COURTESY');
+  const buckets = computeGastroDiscountClaimMetrics(courtesyClaims, { parentStatus });
+  const parentApproved = parentStatus === 'ACTIVE' || parentStatus === 'APPROVED';
+  let manualRecipientCount = 0;
+  let followerRecipientCount = 0;
+  let registeredRecipientCount = 0;
+  let pendingDeliveryClaims = 0;
+  for (const claim of courtesyClaims) {
+    if (claim.source === 'FOLLOWERS') followerRecipientCount += 1;
+    else manualRecipientCount += 1;
+    if (claim.userId) registeredRecipientCount += 1;
+    if (
+      parentApproved &&
+      claim.status === 'ACTIVE' &&
+      !claim.usedAt &&
+      claim.emailSentAt == null &&
+      !isClaimExpired(claim)
+    ) {
+      pendingDeliveryClaims += 1;
+    }
+  }
+  return {
+    recipientCount: courtesyClaims.length,
+    manualRecipientCount,
+    followerRecipientCount,
+    registeredRecipientCount,
+    retainedClaims: buckets.retainedClaims ?? 0,
+    availableClaims: buckets.availableClaims,
+    deliveredClaims: buckets.deliveredClaims ?? 0,
+    pendingDeliveryClaims,
+    usedClaims: buckets.usedClaims,
+    cancelledClaims: buckets.cancelledClaims,
+    expiredClaims: buckets.expiredClaims,
+  };
+}
+
+/** Narrow claim `select` for courtesy metrics (no tokens, no emails). */
+export const COURTESY_METRICS_CLAIM_SELECT = {
+  discountId: true,
+  status: true,
+  type: true,
+  source: true,
+  userId: true,
+  usedAt: true,
+  expiresAt: true,
+  emailSentAt: true,
+  emailSendError: true,
+} as const;
+
+/**
+ * Batched courtesy metrics for a list (one claims query, no N+1). Only COURTESY_ONLY rows
+ * get an entry; everything is scoped by tenant + the given discount ids.
+ */
+export async function loadCourtesyMetricsByDiscount(
+  prisma: Pick<PrismaClient, 'gastroDiscountClaim'>,
+  tenantId: string,
+  discounts: Array<{ id: string; status: string; visibility?: string | null }>,
+): Promise<Map<string, GastroCourtesyCampaignMetrics>> {
+  const courtesies = discounts.filter((d) => d.visibility === 'COURTESY_ONLY');
+  const result = new Map<string, GastroCourtesyCampaignMetrics>();
+  if (courtesies.length === 0) return result;
+  const claims = await prisma.gastroDiscountClaim.findMany({
+    where: { tenantId, discountId: { in: courtesies.map((d) => d.id) }, type: 'COURTESY' },
+    select: COURTESY_METRICS_CLAIM_SELECT,
+  });
+  const byDiscount = new Map<string, ClaimMetricsRow[]>();
+  for (const claim of claims) {
+    const list = byDiscount.get(claim.discountId) ?? [];
+    list.push(claim);
+    byDiscount.set(claim.discountId, list);
+  }
+  for (const d of courtesies) {
+    result.set(d.id, computeCourtesyCampaignMetrics(byDiscount.get(d.id) ?? [], d.status));
+  }
+  return result;
 }
 
 export function mapGastroDiscountSummaryClaim(row: ClaimRow): GastroDiscountSummaryClaim {

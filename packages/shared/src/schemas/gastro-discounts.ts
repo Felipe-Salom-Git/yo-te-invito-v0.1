@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { isGastroDiscountDateRangeOrderValid } from '../gastro-discount-expiry';
 import { gastroDiscountQrPayloadV1Schema } from '../gastro-discount-qr';
+import { gastroCourtesyCampaignMetricsSchema } from './gastro-courtesy-discounts';
 
 export const gastroDiscountDateInputSchema = z.union([
   z.string().datetime(),
@@ -102,6 +103,8 @@ export const gastroDiscountResponseSchema = z.object({
     })
     .nullable()
     .optional(),
+  /** G8.9: per-campaign courtesy metrics (owner list). Null for PUBLIC discounts. */
+  courtesyMetrics: gastroCourtesyCampaignMetricsSchema.nullable().optional(),
   archivedAt: z.string().datetime().nullable().optional(),
   hasPendingUpdate: z.boolean().optional(),
   pendingUpdate: z

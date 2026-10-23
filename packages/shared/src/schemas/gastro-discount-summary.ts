@@ -9,6 +9,7 @@ import {
   gastroDiscountClaimStatusSchema,
   gastroDiscountClaimSourceSchema,
   gastroDiscountClaimTypeSchema,
+  gastroCourtesyCampaignMetricsSchema,
 } from './gastro-courtesy-discounts';
 
 export const gastroDiscountSummaryDiscountSchema = z.object({
@@ -65,11 +66,30 @@ export const gastroDiscountSummaryClaimSchema = z.object({
   emailSendError: z.string().nullable(),
 });
 
+/**
+ * G8.9: campaign block of a COURTESY_ONLY discount (owner detail + ADMIN review).
+ * `benefitLabel` is the real benefit (`resolveCourtesyBenefitLabel`), never "0%".
+ * Legacy rows without a campaign get `courtesy: null` (rendered gracefully).
+ */
+export const gastroDiscountSummaryCourtesySchema = z.object({
+  campaignId: z.string(),
+  title: z.string(),
+  benefitLabel: z.string(),
+  description: z.string().nullable(),
+  message: z.string().nullable(),
+  validFrom: z.string().datetime().nullable(),
+  validTo: z.string().datetime().nullable(),
+  createdAt: z.string().datetime().nullable(),
+  createdByOrigin: z.enum(['GASTRO', 'ADMIN']),
+  metrics: gastroCourtesyCampaignMetricsSchema,
+});
+
 export const gastroDiscountSummaryResponseSchema = z.object({
   discount: gastroDiscountSummaryDiscountSchema,
   metrics: gastroDiscountSummaryMetricsSchema,
   claims: z.array(gastroDiscountSummaryClaimSchema),
   hasExistingClaims: z.boolean(),
+  courtesy: gastroDiscountSummaryCourtesySchema.nullable().optional(),
 });
 
 export const gastroDiscountStatusUpdateSchema = z.object({
@@ -80,6 +100,7 @@ export type GastroDiscountSummaryDiscount = z.infer<typeof gastroDiscountSummary
 export type GastroDiscountSummaryMetrics = z.infer<typeof gastroDiscountSummaryMetricsSchema>;
 export type GastroDiscountSummaryClaim = z.infer<typeof gastroDiscountSummaryClaimSchema>;
 export type GastroDiscountSummaryResponse = z.infer<typeof gastroDiscountSummaryResponseSchema>;
+export type GastroDiscountSummaryCourtesy = z.infer<typeof gastroDiscountSummaryCourtesySchema>;
 export type GastroDiscountStatusUpdate = z.infer<typeof gastroDiscountStatusUpdateSchema>;
 
 export const gastroDiscountArchiveActionSchema = z.object({
