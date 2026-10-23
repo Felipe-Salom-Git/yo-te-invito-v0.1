@@ -1347,6 +1347,9 @@ export class AdminController {
     );
   }
 
+  // G8.7: canonical spelling is `descuentos`; the historical `discuentos` typo is kept as an
+  // alias so older clients keep working. (The web used `descuentos/.../visual-template` and got 404.)
+  @Get('gastronomicos/:profileId/descuentos')
   @Get('gastronomicos/:profileId/discuentos')
   @Get('gastronomicos/:profileId/discounts')
   @UseGuards(JwtOrDevAuthGuard, RolesGuard)
@@ -1376,6 +1379,7 @@ export class AdminController {
     );
   }
 
+  @Get('gastronomicos/:profileId/descuentos/:discountId/visual-template')
   @Get('gastronomicos/:profileId/discuentos/:discountId/visual-template')
   @UseGuards(JwtOrDevAuthGuard, RolesGuard)
   @RequireRole(Role.ADMIN)
@@ -1392,6 +1396,7 @@ export class AdminController {
     );
   }
 
+  @Put('gastronomicos/:profileId/descuentos/:discountId/visual-template')
   @Put('gastronomicos/:profileId/discuentos/:discountId/visual-template')
   @UseGuards(JwtOrDevAuthGuard, RolesGuard)
   @RequireRole(Role.ADMIN)
@@ -1411,6 +1416,7 @@ export class AdminController {
     );
   }
 
+  @Delete('gastronomicos/:profileId/descuentos/:discountId/visual-template')
   @Delete('gastronomicos/:profileId/discuentos/:discountId/visual-template')
   @UseGuards(JwtOrDevAuthGuard, RolesGuard)
   @RequireRole(Role.ADMIN)
@@ -1427,6 +1433,7 @@ export class AdminController {
     );
   }
 
+  @Get('gastronomicos/:profileId/descuentos/:discountId')
   @Get('gastronomicos/:profileId/discuentos/:discountId')
   @UseGuards(JwtOrDevAuthGuard, RolesGuard)
   @RequireRole(Role.ADMIN)
@@ -1441,6 +1448,7 @@ export class AdminController {
     );
   }
 
+  @Get('gastronomicos/:profileId/descuentos/:discountId/metrics')
   @Get('gastronomicos/:profileId/discuentos/:discountId/metrics')
   @UseGuards(JwtOrDevAuthGuard, RolesGuard)
   @RequireRole(Role.ADMIN)
@@ -1455,6 +1463,7 @@ export class AdminController {
     );
   }
 
+  @Get('gastronomicos/:profileId/descuentos/:discountId/operational-metrics')
   @Get('gastronomicos/:profileId/discuentos/:discountId/operational-metrics')
   @UseGuards(JwtOrDevAuthGuard, RolesGuard)
   @RequireRole(Role.ADMIN)
@@ -1470,6 +1479,7 @@ export class AdminController {
     );
   }
 
+  @Get('gastronomicos/:profileId/descuentos/:discountId/economic-traceability')
   @Get('gastronomicos/:profileId/discuentos/:discountId/economic-traceability')
   @UseGuards(JwtOrDevAuthGuard, RolesGuard)
   @RequireRole(Role.ADMIN)
@@ -1485,6 +1495,7 @@ export class AdminController {
     );
   }
 
+  @Get('gastronomicos/:profileId/descuentos/:discountId/economic-metrics')
   @Get('gastronomicos/:profileId/discuentos/:discountId/economic-metrics')
   @UseGuards(JwtOrDevAuthGuard, RolesGuard)
   @RequireRole(Role.ADMIN)
@@ -1500,6 +1511,7 @@ export class AdminController {
     );
   }
 
+  @Get('gastronomicos/:profileId/descuentos/:discountId/summary')
   @Get('gastronomicos/:profileId/discuentos/:discountId/summary')
   @UseGuards(JwtOrDevAuthGuard, RolesGuard)
   @RequireRole(Role.ADMIN)
@@ -1514,6 +1526,7 @@ export class AdminController {
     );
   }
 
+  @Patch('gastronomicos/:profileId/descuentos/:discountId/status')
   @Patch('gastronomicos/:profileId/discuentos/:discountId/status')
   @UseGuards(JwtOrDevAuthGuard, RolesGuard)
   @RequireRole(Role.ADMIN)
@@ -1531,6 +1544,7 @@ export class AdminController {
     );
   }
 
+  @Patch('gastronomicos/:profileId/descuentos/:discountId/publication')
   @Patch('gastronomicos/:profileId/discuentos/:discountId/publication')
   @UseGuards(JwtOrDevAuthGuard, RolesGuard)
   @RequireRole(Role.ADMIN)
@@ -1548,6 +1562,7 @@ export class AdminController {
     );
   }
 
+  @Post('gastronomicos/:profileId/descuentos/:discountId/mark-commission-negotiation')
   @Post('gastronomicos/:profileId/discuentos/:discountId/mark-commission-negotiation')
   @UseGuards(JwtOrDevAuthGuard, RolesGuard)
   @RequireRole(Role.ADMIN)
@@ -1567,6 +1582,7 @@ export class AdminController {
     );
   }
 
+  @Post('gastronomicos/:profileId/descuentos/:discountId/approve')
   @Post('gastronomicos/:profileId/discuentos/:discountId/approve')
   @UseGuards(JwtOrDevAuthGuard, RolesGuard)
   @RequireRole(Role.ADMIN)
@@ -1583,6 +1599,7 @@ export class AdminController {
     );
   }
 
+  @Post('gastronomicos/:profileId/descuentos/:discountId/reject')
   @Post('gastronomicos/:profileId/discuentos/:discountId/reject')
   @UseGuards(JwtOrDevAuthGuard, RolesGuard)
   @RequireRole(Role.ADMIN)
@@ -1602,6 +1619,7 @@ export class AdminController {
     );
   }
 
+  @Post('gastronomicos/:profileId/descuentos/:discountId/approve-edit')
   @Post('gastronomicos/:profileId/discuentos/:discountId/approve-edit')
   @UseGuards(JwtOrDevAuthGuard, RolesGuard)
   @RequireRole(Role.ADMIN)
@@ -1618,6 +1636,7 @@ export class AdminController {
     );
   }
 
+  @Post('gastronomicos/:profileId/descuentos/:discountId/reject-edit')
   @Post('gastronomicos/:profileId/discuentos/:discountId/reject-edit')
   @UseGuards(JwtOrDevAuthGuard, RolesGuard)
   @RequireRole(Role.ADMIN)
@@ -1637,6 +1656,7 @@ export class AdminController {
     );
   }
 
+  @Post('gastronomicos/:profileId/descuentos/:discountId/cancel')
   @Post('gastronomicos/:profileId/discuentos/:discountId/cancel')
   @UseGuards(JwtOrDevAuthGuard, RolesGuard)
   @RequireRole(Role.ADMIN)
@@ -1656,6 +1676,7 @@ export class AdminController {
     );
   }
 
+  @Post('gastronomicos/:profileId/descuentos/:discountId/send-qr-email')
   @Post('gastronomicos/:profileId/discuentos/:discountId/send-qr-email')
   @UseGuards(JwtOrDevAuthGuard, RolesGuard)
   @RequireRole(Role.ADMIN)

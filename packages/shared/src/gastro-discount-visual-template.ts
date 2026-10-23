@@ -1,6 +1,11 @@
 import {
   formatGastroDiscountDateAr,
 } from './gastro-discount-expiry';
+import {
+  GASTRO_COURTESY_ONLY_VISIBILITY,
+  isCourtesyOnlyVisibility,
+  resolveCourtesyBenefitLabel,
+} from './gastro-courtesy-lifecycle';
 import { GASTRO_WEEKDAY_LABELS_ES, type GastroWeekday } from './schemas/gastro-discounts';
 import {
   DISCOUNT_VISUAL_DEFAULT_QR_ZONE,
@@ -28,11 +33,108 @@ export type DiscountVisualRenderContext = {
   validTo?: string | Date | null;
   discountDate?: string | Date | null;
   shortCode?: string | null;
+  /**
+   * G8.7 — courtesy benefit text (`GastroCourtesyCampaign.discountLabel`). A courtesy
+   * `GastroDiscount` stores `value = 0`, so its benefit can never come from
+   * `discountValue`. Optional: public discounts leave it unset.
+   */
+  courtesyLabel?: string | null;
+  /** `GastroDiscount.visibility` when known; `COURTESY_ONLY` selects the courtesy benefit. */
+  visibility?: string | null;
 };
 
 export function formatDiscountVisualBenefit(type: 'PERCENT' | 'FIXED', value: number): string {
   if (type === 'PERCENT') return `${value}%`;
   return `$${value}`;
+}
+
+/**
+ * Benefit text rendered in the canonical `discountValue` binding.
+ *  - public discount → `formatDiscountVisualBenefit(type, value)` (unchanged)
+ *  - COURTESY_ONLY (or a context carrying a `courtesyLabel`) → the courtesy label, never "0%"
+ */
+export function resolveDiscountVisualBenefit(ctx: DiscountVisualRenderContext): string {
+  if (isCourtesyOnlyVisibility(ctx.visibility) || ctx.courtesyLabel?.trim()) {
+    return resolveCourtesyBenefitLabel({ discountLabel: ctx.courtesyLabel }, ctx.discountTitle);
+  }
+  return formatDiscountVisualBenefit(ctx.discountType, ctx.discountValue);
+}
+
+/**
+ * Render context of a recipient's coupon (`/me`, public claim view). The template belongs to
+ * the discount; the QR/shortCode injected at render time belong to the claim. A COURTESY claim
+ * resolves its benefit from the campaign label (the discount value is 0).
+ */
+export function buildGastroClaimVisualRenderContext(input: {
+  locationName: string;
+  title: string;
+  claimType?: string | null;
+  discountType?: 'PERCENT' | 'FIXED' | null;
+  discountValue?: number | null;
+  discountLabel?: string | null;
+  validityMode?: DiscountVisualRenderContext['validityMode'];
+  validWeekday?: GastroWeekday | null;
+  validFrom?: string | Date | null;
+  validTo?: string | Date | null;
+  discountDate?: string | Date | null;
+  shortCode?: string | null;
+}): DiscountVisualRenderContext {
+  const isCourtesy = input.claimType === 'COURTESY';
+  return {
+    gastroName: input.locationName,
+    discountTitle: input.title,
+    discountType: input.discountType ?? 'PERCENT',
+    discountValue: input.discountValue ?? 0,
+    validityMode: input.validityMode,
+    validWeekday: input.validWeekday ?? null,
+    validFrom: input.validFrom,
+    validTo: input.validTo,
+    discountDate: input.discountDate,
+    shortCode: input.shortCode,
+    visibility: isCourtesy ? GASTRO_COURTESY_ONLY_VISIBILITY : null,
+    courtesyLabel: isCourtesy ? input.discountLabel ?? null : null,
+  };
+}
+
+/** Studio preview context for a discount OR a courtesy (same editor, same renderer). */
+export function buildGastroDiscountStudioPreviewContext(
+  discount:
+    | {
+        gastroProfileName?: string | null;
+        title?: string | null;
+        type?: string | null;
+        value?: number | null;
+        visibility?: string | null;
+        courtesyCampaign?: { discountLabel?: string | null; title?: string | null } | null;
+        validityMode?: DiscountVisualRenderContext['validityMode'];
+        validWeekday?: GastroWeekday | null;
+        validFrom?: string | Date | null;
+        validTo?: string | Date | null;
+        discountDate?: string | Date | null;
+      }
+    | null
+    | undefined,
+): DiscountVisualRenderContext {
+  const base = DISCOUNT_VISUAL_STUDIO_PREVIEW_CONTEXT;
+  if (!discount) return base;
+  const isCourtesy = isCourtesyOnlyVisibility(discount.visibility);
+  return {
+    ...base,
+    gastroName: discount.gastroProfileName ?? base.gastroName,
+    discountTitle: discount.title ?? base.discountTitle,
+    discountType: (discount.type as 'PERCENT' | 'FIXED' | null) ?? 'PERCENT',
+    discountValue: discount.value ?? 20,
+    validityMode: discount.validityMode,
+    validWeekday: discount.validWeekday ?? null,
+    validFrom: discount.validFrom,
+    validTo: discount.validTo,
+    discountDate: discount.discountDate,
+    shortCode: 'ABC-123',
+    visibility: isCourtesy ? GASTRO_COURTESY_ONLY_VISIBILITY : null,
+    courtesyLabel: isCourtesy
+      ? resolveCourtesyBenefitLabel(discount.courtesyCampaign, discount.title)
+      : null,
+  };
 }
 
 /** Alias vertical-agnostic — misma regla PERCENT / FIXED. Gastro sigue usando `formatDiscountVisualBenefit`. */
@@ -62,7 +164,7 @@ export function resolveDiscountVisualField(
     case 'discountTitle':
       return ctx.discountTitle.trim() || 'Descuento';
     case 'discountValue':
-      return formatDiscountVisualBenefit(ctx.discountType, ctx.discountValue);
+      return resolveDiscountVisualBenefit(ctx);
     case 'discountValidity':
       return formatDiscountVisualValidity(ctx);
     case 'shortCode':

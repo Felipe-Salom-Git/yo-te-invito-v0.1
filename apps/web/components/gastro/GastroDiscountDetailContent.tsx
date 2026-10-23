@@ -103,7 +103,7 @@ export function GastroDiscountDetailContent({
             {qrStudioHref ? (
               <Link href={qrStudioHref}>
                 <Button variant="outline" type="button">
-                  Diseñar QR
+                  Editar diseño
                 </Button>
               </Link>
             ) : null}

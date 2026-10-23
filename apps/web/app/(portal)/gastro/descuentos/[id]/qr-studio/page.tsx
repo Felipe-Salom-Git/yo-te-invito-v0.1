@@ -4,8 +4,8 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import {
-  DISCOUNT_VISUAL_STUDIO_PREVIEW_CONTEXT,
-  type DiscountVisualRenderContext,
+  buildGastroDiscountStudioPreviewContext,
+  isCourtesyOnlyVisibility,
 } from '@yo-te-invito/shared';
 import { useRepositories } from '@/repositories/context';
 import { PageContainer, PageLoader, QueryError, Breadcrumbs } from '@/components';
@@ -32,19 +32,11 @@ export default function GastroDiscountQrStudioPage() {
   const discount = discountQuery.data;
   const gastroProfileId = discount?.gastroProfileId ?? profileId ?? '';
 
-  const previewCtx: DiscountVisualRenderContext = {
-    ...DISCOUNT_VISUAL_STUDIO_PREVIEW_CONTEXT,
-    gastroName: discount?.gastroProfileName ?? DISCOUNT_VISUAL_STUDIO_PREVIEW_CONTEXT.gastroName,
-    discountTitle: discount?.title ?? DISCOUNT_VISUAL_STUDIO_PREVIEW_CONTEXT.discountTitle,
-    discountType: (discount?.type as 'PERCENT' | 'FIXED') ?? 'PERCENT',
-    discountValue: discount?.value ?? 20,
-    validityMode: discount?.validityMode,
-    validWeekday: discount?.validWeekday ?? null,
-    validFrom: discount?.validFrom,
-    validTo: discount?.validTo,
-    discountDate: discount?.discountDate,
-    shortCode: 'ABC-123',
-  };
+  // Same editor for PUBLIC discounts and COURTESY_ONLY: a courtesy previews its campaign
+  // benefit label (never "0%") through the same canonical `discountValue` binding.
+  const previewCtx = buildGastroDiscountStudioPreviewContext(discount);
+  const isCourtesy = isCourtesyOnlyVisibility(discount?.visibility);
+  const subject = isCourtesy ? 'cortesía' : 'descuento';
 
   if (!id) {
     return (
@@ -65,7 +57,7 @@ export default function GastroDiscountQrStudioPage() {
   if (discountQuery.isError || !discount) {
     return (
       <PageContainer className="!max-w-7xl">
-        <QueryError message="No se pudo cargar el descuento." />
+        <QueryError message="No se pudo cargar el descuento o la cortesía." />
       </PageContainer>
     );
   }
@@ -91,12 +83,12 @@ export default function GastroDiscountQrStudioPage() {
         ]}
       />
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-semibold text-text">Diseñar QR</h1>
+        <h1 className="text-xl font-semibold text-text">Editar diseño de la {subject}</h1>
         <Link
           href={`/gastro/descuentos/${id}${profileQuery(gastroProfileId)}`}
           className="text-sm text-accent hover:underline"
         >
-          Volver al descuento
+          Volver a la {subject}
         </Link>
       </div>
       <GastroQrStudioClient

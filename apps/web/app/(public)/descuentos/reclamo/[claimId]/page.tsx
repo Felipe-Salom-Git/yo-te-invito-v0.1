@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
+import { buildGastroClaimVisualRenderContext } from '@yo-te-invito/shared';
 import { PageContainer } from '@/components';
 import { GastroDiscountVisualCoupon } from '@/components/gastro/GastroDiscountVisualCoupon';
 import { EmailInboxNotice } from '@/components/ux/EmailInboxNotice';
@@ -78,16 +79,18 @@ function ClaimContent() {
               ? (claim.visualTemplate as import('@yo-te-invito/shared').GastroDiscountVisualTemplateResponse)
               : null
           }
-          renderContext={{
-            gastroName: claim.locationName,
-            discountTitle: title,
-            discountType: claim.discountType ?? 'PERCENT',
-            discountValue: claim.discountValue ?? 0,
+          renderContext={buildGastroClaimVisualRenderContext({
+            locationName: claim.locationName,
+            title,
+            claimType: claim.type,
+            discountType: claim.discountType,
+            discountValue: claim.discountValue,
+            discountLabel: claim.discountLabel,
             validityMode: claim.validityMode,
             validWeekday: (claim.validWeekday as import('@yo-te-invito/shared').GastroWeekday | null) ?? null,
             validTo: claim.validTo ?? claim.discountDate,
             shortCode: claim.shortCode,
-          }}
+          })}
         />
 
         <Link

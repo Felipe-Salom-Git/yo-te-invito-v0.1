@@ -8,7 +8,11 @@ import { GastroDiscountVisualCoupon } from '@/components/gastro/GastroDiscountVi
 import { ActivityCouponQrCard } from '@/components/activities/ActivityCouponQrCard';
 import { formatGastroDiscountValidTo } from '@/lib/gastro/discount-status-ui';
 import { activityCouponsKeys } from '@/lib/query/keys';
-import type { ActivityCouponClaimView, MeGastroDiscountItem } from '@yo-te-invito/shared';
+import {
+  buildGastroClaimVisualRenderContext,
+  type ActivityCouponClaimView,
+  type MeGastroDiscountItem,
+} from '@yo-te-invito/shared';
 
 function DiscountCard({ item }: { item: MeGastroDiscountItem }) {
   const restaurantHref = item.locationSlug
@@ -29,16 +33,18 @@ function DiscountCard({ item }: { item: MeGastroDiscountItem }) {
         validTo={item.validTo}
         type={item.type}
         visualTemplate={item.visualTemplate}
-        renderContext={{
-          gastroName: item.locationName,
-          discountTitle: item.discountTitle ?? item.discountLabel ?? 'Descuento',
-          discountType: item.discountType ?? 'PERCENT',
-          discountValue: item.discountValue ?? 0,
+        renderContext={buildGastroClaimVisualRenderContext({
+          locationName: item.locationName,
+          title: item.discountTitle ?? item.discountLabel ?? 'Descuento',
+          claimType: item.type,
+          discountType: item.discountType,
+          discountValue: item.discountValue,
+          discountLabel: item.discountLabel,
           validityMode: item.validityMode,
           validWeekday: item.validWeekday ?? null,
           validTo: item.validTo,
           shortCode: item.shortCode,
-        }}
+        })}
       />
 
       <dl className="mx-auto grid max-w-sm gap-1 px-1 text-sm text-text-muted">

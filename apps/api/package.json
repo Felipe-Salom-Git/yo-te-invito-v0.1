@@ -71,6 +71,7 @@
     "test:gastro-courtesy-delivery": "tsx scripts/test-gastro-courtesy-delivery.util.ts",
     "test:gastro-courtesy-scanner": "tsx scripts/test-gastro-courtesy-scanner.util.ts",
     "test:gastro-short-code-retry": "tsx scripts/test-gastro-short-code-retry.util.ts",
+    "test:gastro-courtesy-studio": "tsx scripts/test-gastro-courtesy-studio.util.ts",
     "test:gastro-primary-subcategory-name": "tsx scripts/test-gastro-primary-subcategory-name.util.ts",
     "test:gastro-subcategory-selection": "tsx scripts/test-gastro-subcategory-selection.util.ts",
     "test:gastro-event-tags": "tsx scripts/test-gastro-event-tags.util.ts",

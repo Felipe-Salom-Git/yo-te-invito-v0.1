@@ -15,6 +15,7 @@ import { buildGastroDiscountQrPayload } from '@yo-te-invito/shared';
 import { GastroCourtesyDiscountsService } from '../../src/modules/gastro/gastro-courtesy-discounts.service';
 import { GastroCourtesyDeliveryService } from '../../src/modules/gastro/gastro-courtesy-delivery.service';
 import { GastroDiscountClaimEmailService } from '../../src/modules/gastro/gastro-discount-claim-email.service';
+import { GastroDiscountVisualTemplateService } from '../../src/modules/gastro/gastro-discount-visual-template.service';
 import { GastroDiscountMetricsService } from '../../src/modules/gastro/gastro-discount-metrics.service';
 import { AdminGastroService } from '../../src/modules/admin/admin-gastro.service';
 import { MeGastroDiscountsService } from '../../src/modules/me/me-gastro-discounts.service';
@@ -67,6 +68,8 @@ export class FakeCourtesyDb {
   campaigns: Row[] = [];
   claims: Row[] = [];
   validations: Row[] = [];
+  /** G8.7: `GastroDiscountTemplate` rows (Studio). */
+  visualTemplates: Row[] = [];
   audits: Row[] = [];
   /** gastroProfileIds that have a CURRENT commercial agreement. */
   agreements = new Set<string>();
@@ -90,7 +93,7 @@ export class FakeCourtesyDb {
       gastroProfile: this.profiles.find((p) => p.id === row.gastroProfileId) ?? null,
       event: { category: 'gastro', deletedAt: null },
       courtesyCampaign: this.campaigns.find((c) => c.discountId === row.id) ?? null,
-      visualTemplate: null,
+      visualTemplate: this.visualTemplates.find((t) => t.gastroDiscountId === row.id) ?? null,
     };
   }
 
@@ -236,6 +239,37 @@ export class FakeCourtesyDb {
       },
       count: async ({ where }: { where: Row }) =>
         this.claims.filter((c) => matches(c, where)).length,
+    },
+    gastroDiscountTemplate: {
+      findFirst: async ({ where }: { where: Row }) =>
+        this.visualTemplates.find((t) => matches(t, where)) ?? null,
+      create: async ({ data }: { data: Row }) => {
+        const row = {
+          id: this.id('tpl'),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          ...data,
+        };
+        this.visualTemplates.push(row);
+        return { ...row };
+      },
+      update: async ({ where, data }: { where: Row; data: Row }) => {
+        const row = this.visualTemplates.find((t) => t.id === where.id);
+        if (!row) throw new Error('template not found');
+        const { version, ...rest } = data;
+        Object.assign(row, rest, {
+          version:
+            typeof version === 'object' && version && 'increment' in version
+              ? (row.version as number) + (version as { increment: number }).increment
+              : version ?? row.version,
+          updatedAt: new Date(),
+        });
+        return { ...row };
+      },
+      delete: async ({ where }: { where: Row }) => {
+        this.visualTemplates = this.visualTemplates.filter((t) => t.id !== where.id);
+        return {};
+      },
     },
     gastroDiscountValidation: {
       create: async ({ data }: { data: Row }) => {
@@ -467,6 +501,23 @@ export class FakeCourtesyDb {
       scannerAccounts as never,
       {} as never,
       auditService as never,
+    );
+  }
+
+  /** G8.7 — the REAL Studio template service; ownership resolved from `memberships`. */
+  buildTemplateService() {
+    const ownership = {
+      assertCanOperateProfile: async (_t: string, userId: string, profileId: string) => {
+        if (!this.memberships.some((m) => m.userId === userId && m.profileId === profileId)) {
+          throw new ForbiddenException('not your local');
+        }
+      },
+    };
+    const audit = { logAction: async (a: Row) => void this.audits.push(a) };
+    return new GastroDiscountVisualTemplateService(
+      this.prisma as never,
+      ownership as never,
+      audit as never,
     );
   }
 
