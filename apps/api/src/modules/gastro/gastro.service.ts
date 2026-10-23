@@ -6,7 +6,11 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ProfilesAuthorizationService } from '../../common/profiles-authorization.service';
-import { ErrorCode } from '@yo-te-invito/shared';
+import {
+  ErrorCode,
+  GASTRO_COURTESY_EDIT_BLOCKED_MESSAGE,
+  isGenericDiscountEditBlocked,
+} from '@yo-te-invito/shared';
 
 type DiscountInput = {
   code: string;
@@ -170,6 +174,14 @@ export class GastroService {
       throw new NotFoundException({
         code: ErrorCode.NOT_FOUND,
         message: 'Discount not found',
+      });
+    }
+    // G8.2 defense in depth: this legacy handler is shadowed by the portal PATCH route
+    // (same path, declared first), but it must never be able to mutate a courtesy.
+    if (isGenericDiscountEditBlocked(existing.visibility)) {
+      throw new BadRequestException({
+        code: ErrorCode.GASTRO_COURTESY_IMMUTABLE,
+        message: GASTRO_COURTESY_EDIT_BLOCKED_MESSAGE,
       });
     }
     const scope = await this.assertGastroEvent(tenantId, userId, userRole, existing.eventId);

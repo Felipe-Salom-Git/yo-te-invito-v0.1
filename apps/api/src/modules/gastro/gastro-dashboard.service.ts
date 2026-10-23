@@ -143,8 +143,11 @@ export class GastroDashboardService {
       publishedContentCount,
       reviewSummary,
     ] = await Promise.all([
+      // G8.2: discount counters/alerts cover PUBLIC discounts only. One-shot courtesies
+      // (COURTESY_ONLY) are not "descuentos activos" and must not raise expiry/inactive alerts.
+      // Validation counters below intentionally still include courtesy redemptions.
       this.prisma.gastroDiscount.count({
-        where: { ...discountWhere, status: 'ACTIVE' },
+        where: { ...discountWhere, visibility: 'PUBLIC', status: 'ACTIVE' },
       }),
       this.prisma.gastroDiscountValidation.count({ where: validationWhere }),
       this.prisma.gastroDiscountValidation.count({
@@ -160,17 +163,24 @@ export class GastroDashboardService {
       }),
       this.prisma.gastroDiscount.count({
         where: {
-          ...discountWhere,
-          OR: [
-            { status: 'EXPIRED' },
-            { discountDate: { lt: now } },
-            { validTo: { lt: now } },
+          // AND (not a second `OR`) so the profile/event scope in discountWhere is preserved.
+          AND: [
+            discountWhere,
+            {
+              visibility: 'PUBLIC',
+              OR: [
+                { status: 'EXPIRED' },
+                { discountDate: { lt: now } },
+                { validTo: { lt: now } },
+              ],
+            },
           ],
         },
       }),
       this.prisma.gastroDiscount.count({
         where: {
           ...discountWhere,
+          visibility: 'PUBLIC',
           status: {
             in: ['PENDING_REVIEW', 'COMMISSION_NEGOTIATION', 'REJECTED', 'CANCELLED'],
           },

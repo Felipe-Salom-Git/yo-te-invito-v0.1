@@ -1,7 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { GASTRO_WEEKDAY_LABELS_ES, type GastroDiscountSummaryResponse, type GastroWeekday } from '@yo-te-invito/shared';
+import {
+  GASTRO_WEEKDAY_LABELS_ES,
+  isCourtesyOnlyVisibility,
+  type GastroDiscountSummaryResponse,
+  type GastroWeekday,
+} from '@yo-te-invito/shared';
 import { Button } from '@/components';
 import { AdminGastroDiscountStatusBadge } from '@/components/admin/gastro/AdminGastroDiscountStatusBadge';
 import { formatGastroDiscountValidityRangeLabel } from '@/lib/gastro/discount-status-ui';
@@ -39,7 +44,12 @@ export function GastroDiscountDetailContent({
   statusLoading,
 }: Props) {
   const { discount, metrics, claims, hasExistingClaims } = summary;
-  const canToggleStatus = ['ACTIVE', 'APPROVED', 'CANCELLED'].includes(discount.status);
+  // G8.2: courtesies are immutable after send and a cancelled campaign is terminal
+  // (its claims were cancelled), so there is no "Editar" nor "Activar" for them.
+  const isCourtesy = isCourtesyOnlyVisibility(discount.visibility);
+  const canToggleStatus = isCourtesy
+    ? ['ACTIVE', 'APPROVED'].includes(discount.status)
+    : ['ACTIVE', 'APPROVED', 'CANCELLED'].includes(discount.status);
   const isActive = discount.status === 'ACTIVE';
 
   const validityLabel =
@@ -73,12 +83,17 @@ export function GastroDiscountDetailContent({
               <p className="mt-1 text-sm text-text-muted">{discount.locationName}</p>
             ) : null}
             <div className="mt-2 flex flex-wrap items-center gap-2">
+              {isCourtesy ? (
+                <span className="rounded-full bg-accent/15 px-2 py-0.5 text-xs font-medium text-accent">
+                  Cortesía
+                </span>
+              ) : null}
               <AdminGastroDiscountStatusBadge status={discount.status} />
               <span className="text-sm text-text-muted">{validityLabel}</span>
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            {editHref ? (
+            {editHref && !isCourtesy ? (
               <Link href={editHref}>
                 <Button variant="outline" type="button">
                   Editar
@@ -114,7 +129,7 @@ export function GastroDiscountDetailContent({
         ) : null}
       </header>
 
-      {hasExistingClaims ? (
+      {hasExistingClaims && !isCourtesy ? (
         <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
           Este descuento ya tiene cupones emitidos. Los cambios afectarán futuras validaciones de
           cupones disponibles.

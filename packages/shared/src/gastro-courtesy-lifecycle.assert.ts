@@ -1,6 +1,13 @@
 import {
+  canIssueMasterQr,
+  COURTESY_CLAIM_STATUSES_CANCELLED_ON_CAMPAIGN_CANCEL,
+  courtesyStatusChangeBlocker,
   isCourtesyOnlyVisibility,
   isCourtesyValidityRangeValid,
+  isGenericDiscountEditBlocked,
+  isMasterQrRedeemable,
+  shouldGenerateMasterQr,
+  shouldNotifyDiscountExpired,
 } from './gastro-courtesy-lifecycle';
 import {
   gastroCourtesyRecipientsPreviewQuerySchema,
@@ -59,5 +66,52 @@ assert(isCourtesyOnlyVisibility('COURTESY_ONLY'), 'COURTESY_ONLY is courtesy');
 assert(!isCourtesyOnlyVisibility('PUBLIC'), 'PUBLIC is not courtesy');
 assert(!isCourtesyOnlyVisibility(null), 'null is not courtesy');
 assert(!isCourtesyOnlyVisibility(undefined), 'undefined is not courtesy');
+
+// --- G8.2: master QR ---
+assert(!canIssueMasterQr('COURTESY_ONLY'), 'courtesy can never issue a master QR');
+assert(canIssueMasterQr('PUBLIC'), 'public discount can issue a master QR');
+assert(canIssueMasterQr(undefined), 'unknown visibility (legacy rows) behaves as public');
+assert(
+  !shouldGenerateMasterQr({ visibility: 'COURTESY_ONLY', existingQrToken: null }),
+  'courtesy without token: do NOT generate one (reactivation/approval)',
+);
+assert(
+  !shouldGenerateMasterQr({ visibility: 'COURTESY_ONLY', existingQrToken: 'x' }),
+  'courtesy with legacy token: do not generate',
+);
+assert(
+  shouldGenerateMasterQr({ visibility: 'PUBLIC', existingQrToken: null }),
+  'public without token: generate',
+);
+assert(
+  !shouldGenerateMasterQr({ visibility: 'PUBLIC', existingQrToken: 'x' }),
+  'public with token: keep, do not regenerate',
+);
+assert(!isMasterQrRedeemable('COURTESY_ONLY'), 'scanner master path closed for courtesy');
+assert(isMasterQrRedeemable('PUBLIC'), 'scanner master path open for public');
+
+// --- G8.2: edit / status ---
+assert(isGenericDiscountEditBlocked('COURTESY_ONLY'), 'generic edit blocked for courtesy');
+assert(!isGenericDiscountEditBlocked('PUBLIC'), 'generic edit allowed for public');
+assert(
+  courtesyStatusChangeBlocker({ visibility: 'COURTESY_ONLY', currentStatus: 'CANCELLED', targetStatus: 'ACTIVE' }) ===
+    'CANCELLED_IS_TERMINAL',
+  'cancelled courtesy cannot be reactivated',
+);
+assert(
+  courtesyStatusChangeBlocker({ visibility: 'COURTESY_ONLY', currentStatus: 'ACTIVE', targetStatus: 'CANCELLED' }) === null,
+  'active courtesy can be cancelled',
+);
+assert(
+  courtesyStatusChangeBlocker({ visibility: 'PUBLIC', currentStatus: 'CANCELLED', targetStatus: 'ACTIVE' }) === null,
+  'public discount reactivation unchanged',
+);
+assert(
+  COURTESY_CLAIM_STATUSES_CANCELLED_ON_CAMPAIGN_CANCEL.length === 1 &&
+    COURTESY_CLAIM_STATUSES_CANCELLED_ON_CAMPAIGN_CANCEL[0] === 'ACTIVE',
+  'only ACTIVE claims are cancelled with the campaign (USED stays USED)',
+);
+assert(!shouldNotifyDiscountExpired('COURTESY_ONLY'), 'no expiry notice for courtesy');
+assert(shouldNotifyDiscountExpired('PUBLIC'), 'expiry notice kept for public discounts');
 
 console.log('gastro-courtesy-lifecycle assertions passed');

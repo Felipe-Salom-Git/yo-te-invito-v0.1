@@ -129,7 +129,7 @@ export class GastroProfileMetricsService {
         select: { viewedAt: true },
       }),
       this.prisma.gastroDiscount.count({
-        where: { tenantId, gastroProfileId: resolvedId, status: 'ACTIVE' },
+        where: { tenantId, gastroProfileId: resolvedId, status: 'ACTIVE', visibility: 'PUBLIC' },
       }),
       this.prisma.gastroDiscountClaim.count({
         where: { tenantId, discount: { gastroProfileId: resolvedId } },

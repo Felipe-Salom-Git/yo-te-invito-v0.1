@@ -15,7 +15,10 @@ import {
   canUnarchiveGastroDiscount,
   ErrorCode,
   hasMaterialDiscountChanges,
+  canIssueMasterQr,
+  GASTRO_COURTESY_EDIT_BLOCKED_MESSAGE,
   isCourtesyOnlyVisibility,
+  isGenericDiscountEditBlocked,
   parsePendingUpdate,
   shouldSubmitDiscountPendingEdit,
   snapshotFromPublishedRow,
@@ -115,9 +118,13 @@ export class GastroPortalDiscountsService {
       status: row.status as GastroDiscountResponse['status'],
       adminNotes: row.adminNotes,
       rejectionReason: row.rejectionReason,
-      qrToken: row.qrToken,
+      // G8.2: a courtesy has no discount-level (master) QR; never expose one, even if a
+      // legacy row somehow carries a token.
+      qrToken: canIssueMasterQr(row.visibility) ? row.qrToken : null,
       qrPayload:
-        row.qrToken && ['APPROVED', 'ACTIVE'].includes(row.status)
+        canIssueMasterQr(row.visibility) &&
+        row.qrToken &&
+        ['APPROVED', 'ACTIVE'].includes(row.status)
           ? buildGastroDiscountQrPayload(row.id, row.qrToken)
           : null,
       emailSentAt: row.emailSentAt?.toISOString() ?? null,
@@ -366,6 +373,14 @@ export class GastroPortalDiscountsService {
       userRole,
       id,
     );
+    // G8.2: courtesies are immutable after send (type/value/visibility/validity cannot drift
+    // from the campaign nor turn a courtesy into a public discount). Cancel + resend instead.
+    if (isGenericDiscountEditBlocked(existing.visibility)) {
+      throw new BadRequestException({
+        code: ErrorCode.GASTRO_COURTESY_IMMUTABLE,
+        message: GASTRO_COURTESY_EDIT_BLOCKED_MESSAGE,
+      });
+    }
     this.assertEditableStatus(existing.status);
     if (existing.archivedAt) {
       throw new BadRequestException({

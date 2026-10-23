@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import {
   gastroDiscountStatusSchema,
+  gastroDiscountVisibilitySchema,
   gastroDiscountValidityModeSchema,
   gastroWeekdaySchema,
 } from './gastro-discounts';
@@ -23,6 +24,8 @@ export const gastroDiscountSummaryDiscountSchema = z.object({
   discountDate: z.string().datetime().nullable(),
   locationId: z.string().nullable().optional(),
   locationName: z.string().nullable().optional(),
+  /** PUBLIC (default) or COURTESY_ONLY (G8). */
+  visibility: gastroDiscountVisibilitySchema.optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });

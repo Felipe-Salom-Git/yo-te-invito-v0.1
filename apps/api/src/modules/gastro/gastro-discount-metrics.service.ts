@@ -13,11 +13,16 @@ import {
   type GastroDiscountOperationalMetricsResponse,
   type GastroDiscountSummaryResponse,
   type GastroDiscountStatusUpdate,
+  GASTRO_COURTESY_CANCELLED_TERMINAL_MESSAGE,
+  courtesyStatusChangeBlocker,
+  isCourtesyOnlyVisibility,
   isGastroDiscountExpired,
+  shouldGenerateMasterQr,
 } from '@yo-te-invito/shared';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditAction } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
+import { cancelCourtesyClaimsForDiscount } from './gastro-courtesy-lifecycle.util';
 import {
   computeGastroDiscountClaimMetrics,
   mapGastroDiscountSummaryClaim,
@@ -48,6 +53,7 @@ type DiscountRow = {
   discountDate: Date | null;
   gastroProfileId: string | null;
   qrToken: string | null;
+  visibility?: string | null;
   createdAt: Date;
   updatedAt: Date;
   gastroProfile?: { id: string; displayName: string } | null;
@@ -82,6 +88,7 @@ export class GastroDiscountMetricsService {
         discountDate: row.discountDate?.toISOString() ?? null,
         locationId: row.gastroProfile?.id ?? row.gastroProfileId,
         locationName: row.gastroProfile?.displayName ?? null,
+        visibility: isCourtesyOnlyVisibility(row.visibility) ? 'COURTESY_ONLY' : 'PUBLIC',
         createdAt: row.createdAt.toISOString(),
         updatedAt: row.updatedAt.toISOString(),
       },
@@ -359,15 +366,34 @@ export class GastroDiscountMetricsService {
 
     const beforeStatus = row.status;
 
+    // G8.2: a cancelled courtesy is terminal (its claims were cancelled).
+    if (
+      courtesyStatusChangeBlocker({
+        visibility: row.visibility,
+        currentStatus: row.status,
+        targetStatus: body.status,
+      })
+    ) {
+      throw new BadRequestException({
+        code: ErrorCode.GASTRO_COURTESY_CANCELLED_TERMINAL,
+        message: GASTRO_COURTESY_CANCELLED_TERMINAL_MESSAGE,
+      });
+    }
+
     if (body.status === 'ACTIVE') {
       this.assertDiscountConfigurable(row);
-      const qrToken = row.qrToken ?? randomBytes(24).toString('hex');
+      // G8.2 (CRITICAL): a courtesy must NEVER obtain a discount-level (master) QR.
+      const mintMasterQr = shouldGenerateMasterQr({
+        visibility: row.visibility,
+        existingQrToken: row.qrToken,
+      });
       await this.prisma.gastroDiscount.update({
         where: { id: discountId },
         data: {
           status: 'ACTIVE',
-          qrToken,
-          ...(row.qrToken ? {} : { qrGeneratedAt: new Date() }),
+          ...(mintMasterQr
+            ? { qrToken: randomBytes(24).toString('hex'), qrGeneratedAt: new Date() }
+            : {}),
         },
       });
       await this.audit.logAction({
@@ -381,9 +407,16 @@ export class GastroDiscountMetricsService {
         after: { status: 'ACTIVE' },
       });
     } else {
-      await this.prisma.gastroDiscount.update({
-        where: { id: discountId },
-        data: { status: 'CANCELLED' },
+      // G8.2: cancelling a courtesy campaign also makes its ACTIVE claims unusable.
+      const isCourtesy = isCourtesyOnlyVisibility(row.visibility);
+      const cancelledClaims = await this.prisma.$transaction(async (tx) => {
+        await tx.gastroDiscount.update({
+          where: { id: discountId },
+          data: { status: 'CANCELLED' },
+        });
+        return isCourtesy
+          ? cancelCourtesyClaimsForDiscount(tx, tenantId, discountId)
+          : 0;
       });
       await this.audit.logAction({
         tenantId,
@@ -394,6 +427,7 @@ export class GastroDiscountMetricsService {
         entityId: discountId,
         before: { status: beforeStatus },
         after: { status: 'CANCELLED' },
+        ...(isCourtesy ? { metadata: { courtesy: true, cancelledClaims } } : {}),
       });
     }
 

@@ -10,6 +10,7 @@ import {
   type GastroDiscountScanStatus,
   ErrorCode,
   isGastroDiscountExpired,
+  isMasterQrRedeemable,
   isGastroDiscountNotYetActive,
   isGastroDiscountValidToday,
   getGastroWeekdayLabelEs,
@@ -506,6 +507,17 @@ export class ScannerGastroDiscountService {
         'Cupón válido',
         'Beneficio aplicado correctamente.',
         discountInfo,
+      );
+    }
+
+    // G8.2 (CRITICAL): a courtesy is redeemable ONLY through an individual claim. The
+    // discount-level (master) QR path creates unlimited claimless validations, so it is
+    // closed for COURTESY_ONLY even when a legacy row carries a `qrToken`.
+    if (!isMasterQrRedeemable(discount.visibility)) {
+      return this.response(
+        'INVALID',
+        'QR inválido',
+        'No encontramos un cupón asociado a este código.',
       );
     }
 

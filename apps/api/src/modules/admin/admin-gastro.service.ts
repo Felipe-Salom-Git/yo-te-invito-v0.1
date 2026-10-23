@@ -7,7 +7,9 @@ import { ProfileStatus, Prisma } from '@prisma/client';
 import { randomBytes } from 'crypto';
 import {
   buildGastroDiscountQrPayload,
+  canIssueMasterQr,
   ErrorCode,
+  isCourtesyOnlyVisibility,
   parsePendingUpdate,
   pendingUpdateToPublishedFields,
   parseRentalOpeningHours,
@@ -40,6 +42,7 @@ import { GastroFollowDiscountAlertsService } from '../notifications/gastro-follo
 import { GastroLifecycleNotificationsService } from '../notifications/gastro-lifecycle-notifications.service';
 import { BenefitCommercialAgreementsService } from '../benefit-agreements/benefit-commercial-agreements.service';
 import { adminDiscountMatchesRouteProfile } from './admin-gastro-discount-scope.util';
+import { cancelCourtesyClaimsForDiscount } from '../gastro/gastro-courtesy-lifecycle.util';
 
 function readUrls(value: unknown): string[] {
   if (value == null) return [];
@@ -650,6 +653,13 @@ export class AdminGastroService {
         displayImageUrls: urlsJson(body.displayImageUrls),
       },
     });
+    // G8.2: keep the campaign title (used by /me and the claim email) aligned with the discount.
+    if (isCourtesyOnlyVisibility(row.visibility)) {
+      await this.prisma.gastroCourtesyCampaign.updateMany({
+        where: { discountId, tenantId },
+        data: { title: body.title.trim() },
+      });
+    }
     return this.getDiscountDetail(tenantId, profileId, updated.id);
   }
 
@@ -842,6 +852,9 @@ export class AdminGastroService {
     }
     const published = snapshotFromPublishedRow(row);
     const fields = pendingUpdateToPublishedFields(pending);
+    // G8.2: a pending edit queued BEFORE courtesies became immutable must never change a
+    // courtesy's nature (type/value/validity), and its text is mirrored to the campaign.
+    const isCourtesy = isCourtesyOnlyVisibility(row.visibility);
     await this.prisma.$transaction(async (tx) => {
       await tx.gastroDiscount.update({
         where: { id: discountId },
@@ -852,18 +865,28 @@ export class AdminGastroService {
           displayDescription: fields.displayDescription,
           submittedImageUrls: urlsJson(fields.submittedImageUrls),
           displayImageUrls: urlsJson(fields.submittedImageUrls),
-          type: fields.type,
-          value: fields.value,
-          validityMode: fields.validityMode,
-          validWeekday: fields.validWeekday,
-          validFrom: fields.validFrom,
-          validTo: fields.validTo,
-          discountDate: fields.discountDate,
+          ...(isCourtesy
+            ? {}
+            : {
+                type: fields.type,
+                value: fields.value,
+                validityMode: fields.validityMode,
+                validWeekday: fields.validWeekday,
+                validFrom: fields.validFrom,
+                validTo: fields.validTo,
+                discountDate: fields.discountDate,
+              }),
           pendingUpdate: Prisma.DbNull,
           pendingUpdateSubmittedAt: null,
           pendingUpdateSubmittedByUserId: null,
         },
       });
+      if (isCourtesy && fields.displayTitle?.trim()) {
+        await tx.gastroCourtesyCampaign.updateMany({
+          where: { discountId, tenantId },
+          data: { title: fields.displayTitle.trim() },
+        });
+      }
     });
     await this.audit(
       tenantId,
@@ -1005,13 +1028,19 @@ export class AdminGastroService {
         message: 'Este ticket ya está cerrado',
       });
     }
-    await this.prisma.gastroDiscount.update({
-      where: { id: discountId },
-      data: {
-        status: 'CANCELLED',
-        rejectionReason: reason.trim(),
-        adminNotes: note?.trim() || row.adminNotes,
-      },
+    // G8.2: cancelling a courtesy campaign also makes its ACTIVE claims unusable (same tx).
+    const cancelledClaims = await this.prisma.$transaction(async (tx) => {
+      await tx.gastroDiscount.update({
+        where: { id: discountId },
+        data: {
+          status: 'CANCELLED',
+          rejectionReason: reason.trim(),
+          adminNotes: note?.trim() || row.adminNotes,
+        },
+      });
+      return isCourtesyOnlyVisibility(row.visibility)
+        ? cancelCourtesyClaimsForDiscount(tx, tenantId, discountId)
+        : 0;
     });
     await this.audit(
       tenantId,
@@ -1020,7 +1049,9 @@ export class AdminGastroService {
       'GASTRO_DISCOUNT_CANCELLED',
       discountId,
       { status: row.status },
-      { status: 'CANCELLED' },
+      isCourtesyOnlyVisibility(row.visibility)
+        ? { status: 'CANCELLED', courtesy: true, cancelledClaims }
+        : { status: 'CANCELLED' },
     );
     return this.getDiscountDetail(tenantId, profileId, discountId);
   }
@@ -1033,6 +1064,13 @@ export class AdminGastroService {
     discountId: string,
   ) {
     const row = await this.loadDiscount(tenantId, profileId, discountId);
+    if (!canIssueMasterQr(row.visibility)) {
+      throw new BadRequestException({
+        code: ErrorCode.VALIDATION_FAILED,
+        message:
+          'Las cortesías se entregan con un QR individual por destinatario; no tienen un QR general.',
+      });
+    }
     if (!['APPROVED', 'ACTIVE'].includes(row.status)) {
       throw new BadRequestException({
         code: ErrorCode.VALIDATION_FAILED,

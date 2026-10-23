@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
-import { isGastroDiscountDateExpired } from '@yo-te-invito/shared';
+import { isGastroDiscountDateExpired, shouldNotifyDiscountExpired } from '@yo-te-invito/shared';
 import { PrismaService } from '../../prisma/prisma.service';
 import { GastroLifecycleNotificationsService } from '../notifications/gastro-lifecycle-notifications.service';
 
@@ -43,6 +43,7 @@ export class GastroDiscountExpiryService {
         validityMode: true,
         validTo: true,
         discountDate: true,
+        visibility: true,
       },
     });
 
@@ -66,6 +67,8 @@ export class GastroDiscountExpiryService {
     });
 
     for (const row of expired) {
+      // G8.2: a one-shot courtesy expiring is expected; no "Descuento vencido" notice.
+      if (!shouldNotifyDiscountExpired(row.visibility)) continue;
       this.lifecycleNotifications.notifyDiscountExpired(
         row.tenantId,
         row.id,
