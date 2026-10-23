@@ -141,6 +141,18 @@ Discovery: [`V3_3_G8_COURTESY_DISCOVERY.md`](../audits/V3_3_G8_COURTESY_DISCOVER
 - [x] Conclusión: **extender** `GastroDiscount(COURTESY_ONLY)` + `GastroCourtesyCampaign` + `GastroDiscountClaim(COURTESY)`; **no** crear `CourtesyCoupon`
 - [x] **Decisiones D1–D5 aprobadas** (ver roadmap). D1: cortesía financiada con Courtesy Credit ⇒ NO elegible para settlement; no financiada ⇒ elegible. **Se implementa en G8.11; hoy los canjes de cortesía siguen siendo facturables**
 
+### G8.9 + G8.10 — Portal Gastro y Admin de cortesías
+
+Cierre: [`V3_3_G8_9_G8_10_COURTESY_PORTAL_ADMIN_CLOSING.md`](../audits/V3_3_G8_9_G8_10_COURTESY_PORTAL_ADMIN_CLOSING.md)
+
+- [x] G8.9 portal — `ffbded3`: listado por local (`/gastro/descuentos?tipo=cortesias`, nav "Cortesías") con campaña, beneficio real, estado humano, audiencia congelada, retenidos/disponibles/usados/cancelados, vigencia y alta; badges Cortesía/Descuento; acciones según visibility + lifecycle + `createdByOrigin`; formulario "Solicitar cortesía" (pendiente de aprobación, nada se entrega antes); detalle con panel de campaña + métricas G8.8; Studio solo pendiente/activa; empty states; cross-profile (query key por local, fallback legacy por `eventId` sin filas de otro local)
+- [x] G8.9 backend: `courtesyMetrics` en el listado (1 query batched), `courtesy` en el summary, owner **no** cancela cortesías creadas por ADMIN (403), operational metrics de cortesía sin `recentShortCodes`
+- [x] G8.10 admin — `2682cf6`: cola de pendientes con badge + local/campaña/beneficio/destinatarios/vigencia/origen; review con requester, audiencia, retenidos y panel de acuerdo G5 al lado; approve/reject/cancel/redeliver según lifecycle; métricas en listado + filtro Todos/Descuentos/Cortesías; `qrToken`/`qrPayload` nunca expuestos para cortesía; `sendQrEmail` sigue bloqueado para `COURTESY_ONLY`; audit labels de cortesía (mismas acciones/ids); summary/status admin scoped por local de la ruta; legacy ACTIVE sin historia → graceful
+- [x] Tests `test:gastro-courtesy-portal` (+ assert web) y `test:admin-gastro-courtesy` (75) + regresión courtesy/agreements/Studio/scanner/credit funding **PASS**; builds shared/api/web/scanner **PASS**; **sin migrations**
+- [ ] DB integration — **NO EJECUTADO** (Prisma en memoria, Postgres local apagado)
+- [ ] QA browser G8.9/G8.10 (checklist en cierre) — post-deploy
+- Diferido: cancelar solicitud pendiente de **descuentos normales**; enforcement backend de "Studio solo pendiente/activa" (hoy solo UI; no había restricción real); `admin/gastronomicos/[profileId]/descuentos/[discountId]/page.tsx` ya superaba 400 líneas (deuda preexistente, ~600); G8.11 accounting (D1)
+
 ### G8.5 – G8.8 — Experiencia del cupón de cortesía (scanner, shortCode, Studio, emails)
 
 Cierre: [`V3_3_G8_5_G8_8_COURTESY_COUPON_EXPERIENCE_CLOSING.md`](../audits/V3_3_G8_5_G8_8_COURTESY_COUPON_EXPERIENCE_CLOSING.md)
@@ -152,7 +164,7 @@ Cierre: [`V3_3_G8_5_G8_8_COURTESY_COUPON_EXPERIENCE_CLOSING.md`](../audits/V3_3_
 - [x] Tests `test:gastro-courtesy-scanner`, `test:gastro-short-code-retry`, `test:gastro-courtesy-studio`, `test:gastro-courtesy-emails` + hardening/lifecycle/approval/delivery/isolation + regresión (agreements, courtesy credit, settlement operations, discount template) **PASS**; builds shared/api/web/scanner **PASS**; **sin migrations**
 - [ ] DB integration — **NO EJECUTADO** (Prisma en memoria)
 - [ ] QA browser G8.5–G8.8 (checklist en cierre) — post-deploy
-- Diferido: cancelar solicitud pendiente de **descuentos normales** (hoy solo cortesías); `GastroDiscountOperationalMetrics.claims` sigue contando todos los claims (incluye retenidos; desglosado con `retainedClaims`); no existe un estado distinto de `CANCELLED` para "retirada por el owner" (se distingue por la auditoría `pendingRequestWithdrawn`, sin inventar un estado nuevo); `sendQrEmail` admin y `audit-labels` quedan fuera de G8.8
+- Diferido: cancelar solicitud pendiente de **descuentos normales** (hoy solo cortesías); `GastroDiscountOperationalMetrics.claims` sigue contando todos los claims (incluye retenidos; desglosado con `retainedClaims`); no existe un estado distinto de `CANCELLED` para "retirada por el owner" (se distingue por la auditoría `pendingRequestWithdrawn`, sin inventar un estado nuevo); `sendQrEmail` admin y `audit-labels` quedan fuera de G8.8 (**resueltos en G8.10**)
 
 ### G8.3 + G8.4 — Aprobación, gate de acuerdo y entrega de cortesías
 
@@ -176,7 +188,8 @@ Cierre: [`V3_3_G8_1_G8_2_COURTESY_HARDENING_CLOSING.md`](../audits/V3_3_G8_1_G8_
 - [x] Hallazgos inciertos de G8.0 resueltos (PATCH legacy sombreado → guard defensivo; guard `publicEventId` confirmado y corregido)
 - [ ] DB integration — **NO EJECUTADO** (tests con Prisma falso)
 - [ ] QA browser G8.1/G8.2 (checklist en cierre) — post-deploy
-- [ ] G8.9–G8.13 — **NOT STARTED** (esperan confirmación)
+- [x] G8.9 + G8.10 — completados (ver sección propia)
+- [ ] G8.11–G8.13 — **NOT STARTED** (esperan confirmación)
 - Pendiente en G8: elegibilidad de settlement D1 + reversa `DEBIT_COURTESY` (G8.11). (shortCode, Studio `0%` y typo de ruta `discuentos` ya resueltos en G8.6/G8.7)
 
 ---
