@@ -19,6 +19,9 @@ import { getErrorMessage } from '@/lib/errors';
 import type { GastroDashboardAlert } from '@/repositories/interfaces';
 import { ScannerPwaCta } from '@/components/portal/scanner/ScannerPwaCta';
 import { GastroProfileMetricsPanel } from '@/components/gastro/dashboard/GastroProfileMetricsPanel';
+import { useGastroActiveLocation } from '@/lib/gastro/GastroActiveLocationContext';
+import { gastroLocationStatusLabel } from '@/lib/gastro/gastro-location-status';
+import { withCourtesyProfileQuery } from '@/lib/gastro/courtesy-scope';
 
 const ALERT_COPY: Record<
   GastroDashboardAlert,
@@ -66,6 +69,7 @@ function displayNameFromSession(user: {
 
 export function GastroDashboardClient() {
   const { data: session, status } = useSession();
+  const { locations, profileId, activeLocation, isLoading: locationsLoading } = useGastroActiveLocation();
   const dashboardQuery = useGastroDashboard(status === 'authenticated');
   const metricsQuery = useGastroProfileMetrics(status === 'authenticated');
   const data = dashboardQuery.data;
@@ -78,7 +82,7 @@ export function GastroDashboardClient() {
     return 'Portal gastronómico';
   }, [session?.user, data?.profile.displayName]);
 
-  if (status === 'loading' || dashboardQuery.isLoading) {
+  if (status === 'loading' || locationsLoading || (profileId && dashboardQuery.isLoading)) {
     return (
       <PageContainer>
         <PageLoader message="Cargando dashboard…" />
@@ -93,6 +97,19 @@ export function GastroDashboardClient() {
         <Link href="/login" className="mt-2 inline-block text-accent hover:underline">
           Login
         </Link>
+      </PageContainer>
+    );
+  }
+
+  if (!locationsLoading && locations.length === 0) {
+    return (
+      <PageContainer>
+        <EmptyState
+          title="Todavía no tenés locales cargados"
+          description="Creá tu primer local para publicar la ficha, contenido y descuentos."
+          actionLabel="Crear mi primer local"
+          actionHref="/gastro/local/nuevo"
+        />
       </PageContainer>
     );
   }
@@ -130,9 +147,11 @@ export function GastroDashboardClient() {
           <GastroLocationSelector />
         </div>
         <p className="mt-2 text-sm text-text-muted">
-          {profile.status
-            ? `Perfil ${profile.status.toLowerCase()}`
-            : 'Sin perfil activo'}
+          {activeLocation
+            ? gastroLocationStatusLabel(activeLocation.status)
+            : profile.status
+              ? gastroLocationStatusLabel(profile.status)
+              : 'Sin perfil activo'}
           {profile.publishedContentCount > 0
             ? ` · ${profile.publishedContentCount} contenido(s) publicado(s)`
             : ' · Sin contenido publicado'}
@@ -182,7 +201,7 @@ export function GastroDashboardClient() {
                   className="flex flex-col gap-2 rounded-lg border border-border/50 bg-bg-muted/40 px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <span className="text-sm text-text">{copy.title}</span>
-                  <Link href={copy.href} className="text-sm font-medium text-accent hover:underline">
+                  <Link href={withCourtesyProfileQuery(copy.href, profileId)} className="text-sm font-medium text-accent hover:underline">
                     {copy.label} →
                   </Link>
                 </li>
@@ -195,7 +214,7 @@ export function GastroDashboardClient() {
       <ManagedPortalReviewAlerts
         enabled={status === 'authenticated'}
         heading="Novedades de valoraciones"
-        defaultHref="/gastro/valoraciones"
+        defaultHref={withCourtesyProfileQuery('/gastro/valoraciones', profileId)}
       />
 
       <section className="mt-8">
@@ -204,14 +223,14 @@ export function GastroDashboardClient() {
           {QUICK_LINKS.map((item) => (
             <Link
               key={item.href}
-              href={item.href}
+              href={withCourtesyProfileQuery(item.href, profileId)}
               className="rounded-lg border border-accent/40 bg-accent/5 px-4 py-2 text-sm font-medium text-accent hover:bg-accent/15"
             >
               {item.label}
             </Link>
           ))}
           <Link
-            href="/gastro/local"
+            href={withCourtesyProfileQuery('/gastro/local', profileId)}
             className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-text hover:border-accent/40"
           >
             Mi local
@@ -226,7 +245,7 @@ export function GastroDashboardClient() {
           <h2 className="text-sm font-semibold uppercase tracking-wide text-text-muted">
             Validaciones recientes
           </h2>
-          <Link href="/gastro/validaciones" className="text-sm text-accent hover:underline">
+          <Link href={withCourtesyProfileQuery('/gastro/validaciones', profileId)} className="text-sm text-accent hover:underline">
             Ver todo
           </Link>
         </div>

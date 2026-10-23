@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { createPortal } from 'react-dom';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { useFocusTrap, useReturnFocus } from '@/hooks/useOverlayA11y';
 import {
   getPortalNavDefinition,
@@ -19,16 +19,21 @@ const linkClass = `block rounded-lg px-3 py-2.5 text-base transition-colors ${na
 
 interface MobilePortalNavProps {
   portalKey: PortalNavKey;
+  /** When set, replaces the static definition (gastro keeps `profileId`). */
+  items?: PortalNavItem[];
   /** Optional link back to public discovery (e.g. `/me`). */
   showPublicHomeLink?: boolean;
 }
 
-export function MobilePortalNav({ portalKey, showPublicHomeLink }: MobilePortalNavProps) {
+export function MobilePortalNav({ portalKey, items: itemsOverride, showPublicHomeLink }: MobilePortalNavProps) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
-  const { title, items } = getPortalNavDefinition(portalKey);
+  const search = useSearchParams().toString();
+  const defined = getPortalNavDefinition(portalKey);
+  const title = defined.title;
+  const items = itemsOverride ?? defined.items;
 
-  const activeLabel = items.find((item) => isPortalNavItemActive(pathname, item.href))?.label;
+  const activeLabel = items.find((item) => isPortalNavItemActive(pathname, item.href, search))?.label;
 
   return (
     <>
@@ -133,7 +138,7 @@ function MobilePortalNavDrawer({
         <nav className="flex-1 overflow-y-auto overscroll-contain px-4 py-4" aria-label="Menú del portal">
           <ul className="space-y-1">
             {items.map((item) => {
-              const active = isPortalNavItemActive(pathname, item.href);
+              const active = isPortalNavItemActive(pathname, item.href, search);
               return (
                 <li key={item.href}>
                   <Link

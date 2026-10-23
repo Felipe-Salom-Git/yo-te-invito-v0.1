@@ -130,8 +130,22 @@ export function resolvePortalNavKeyFromPathname(pathname: string): PortalNavKey 
   return null;
 }
 
-export function isPortalNavItemActive(pathname: string, href: string): boolean {
-  if (pathname === href) return true;
-  if (PORTAL_INDEX_HREFS.has(href)) return false;
-  return pathname.startsWith(`${href}/`);
+export function isPortalNavItemActive(pathname: string, href: string, search = ''): boolean {
+  const qIndex = href.indexOf('?');
+  const path = qIndex === -1 ? href : href.slice(0, qIndex);
+  const hrefParams = new URLSearchParams(qIndex === -1 ? '' : href.slice(qIndex + 1));
+  const current = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search);
+
+  if (PORTAL_INDEX_HREFS.has(path)) return pathname === path;
+
+  const pathMatches = pathname === path || pathname.startsWith(`${path}/`);
+  if (!pathMatches) return false;
+
+  if (hrefParams.get('tipo') === 'cortesias') {
+    return pathname === path && current.get('tipo') === 'cortesias';
+  }
+  if (path === '/gastro/descuentos' && current.get('tipo') === 'cortesias' && pathname === path) {
+    return false;
+  }
+  return true;
 }

@@ -1,14 +1,9 @@
 'use client';
 
 import type { GastroLocationSummary } from '@yo-te-invito/shared';
+import { GASTRO_LOCATION_STATUS_LABEL } from '@/lib/gastro/gastro-location-status';
 
-const STATUS_LABEL: Record<GastroLocationSummary['status'], string> = {
-  DRAFT: 'Borrador',
-  PENDING: 'Pendiente de aprobación',
-  ACTIVE: 'Activo',
-  REJECTED: 'Rechazado',
-  SUSPENDED: 'Suspendido',
-};
+const STATUS_LABEL = GASTRO_LOCATION_STATUS_LABEL;
 
 const STATUS_CLASS: Record<GastroLocationSummary['status'], string> = {
   DRAFT: 'border-border bg-bg-muted/50 text-text-muted',
@@ -26,6 +21,7 @@ export function GastroLocationStatusBadge({
   return (
     <span
       className={`inline-block rounded-full border px-2.5 py-0.5 text-xs font-medium ${STATUS_CLASS[status]}`}
+      aria-label={`Estado: ${STATUS_LABEL[status]}`}
     >
       {STATUS_LABEL[status]}
     </span>

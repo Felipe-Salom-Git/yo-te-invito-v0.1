@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import {
   getPortalNavDefinition,
   isPortalNavItemActive,
@@ -10,6 +10,8 @@ import {
 } from '@/lib/navigation/portalNavConfig';
 import { MASTER_PORTAL_NAV_SECTIONS } from '@/lib/navigation/masterUser';
 import { navFocusRing } from '@/lib/navigation/navA11yClasses';
+import { useGastroActiveLocationOptional } from '@/lib/gastro/GastroActiveLocationContext';
+import { withCourtesyProfileQuery } from '@/lib/gastro/courtesy-scope';
 
 const linkBase = `block rounded px-3 py-2 text-sm transition-colors ${navFocusRing}`;
 
@@ -19,9 +21,9 @@ interface MasterPortalNavSectionsProps {
   onNavigate?: () => void;
 }
 
-function sectionHasActivePath(pathname: string, key: PortalNavKey): boolean {
+function sectionHasActivePath(pathname: string, key: PortalNavKey, search: string): boolean {
   const { items } = getPortalNavDefinition(key);
-  return items.some((item) => isPortalNavItemActive(pathname, item.href));
+  return items.some((item) => isPortalNavItemActive(pathname, item.href, search));
 }
 
 export function MasterPortalNavSections({
@@ -29,10 +31,12 @@ export function MasterPortalNavSections({
   onNavigate,
 }: MasterPortalNavSectionsProps) {
   const pathname = usePathname();
+  const search = useSearchParams().toString();
+  const gastroProfileId = useGastroActiveLocationOptional()?.profileId;
   const [openKeys, setOpenKeys] = useState<Set<PortalNavKey>>(() => {
     const initial = new Set<PortalNavKey>();
     for (const { key } of MASTER_PORTAL_NAV_SECTIONS) {
-      if (sectionHasActivePath(pathname, key)) initial.add(key);
+      if (sectionHasActivePath(pathname, key, '')) initial.add(key);
     }
     if (initial.size === 0) initial.add('me');
     return initial;
@@ -42,11 +46,11 @@ export function MasterPortalNavSections({
     setOpenKeys((prev) => {
       const next = new Set(prev);
       for (const { key } of MASTER_PORTAL_NAV_SECTIONS) {
-        if (sectionHasActivePath(pathname, key)) next.add(key);
+        if (sectionHasActivePath(pathname, key, search)) next.add(key);
       }
       return next;
     });
-  }, [pathname]);
+  }, [pathname, search]);
 
   const toggle = (key: PortalNavKey) => {
     setOpenKeys((prev) => {
@@ -65,7 +69,7 @@ export function MasterPortalNavSections({
       {MASTER_PORTAL_NAV_SECTIONS.map(({ key, label }) => {
         const { items } = getPortalNavDefinition(key);
         const isOpen = openKeys.has(key);
-        const sectionActive = sectionHasActivePath(pathname, key);
+        const sectionActive = sectionHasActivePath(pathname, key, search);
         const panelId = `master-portal-section-${key}`;
 
         return (
@@ -88,11 +92,15 @@ export function MasterPortalNavSections({
             {isOpen ? (
               <div id={panelId} className="space-y-0.5 px-1 pb-2 pt-0">
                 {items.map((item) => {
-                  const active = isPortalNavItemActive(pathname, item.href);
+                  const href =
+                    key === 'gastro'
+                      ? withCourtesyProfileQuery(item.href, gastroProfileId)
+                      : item.href;
+                  const active = isPortalNavItemActive(pathname, href, search);
                   return (
                     <Link
                       key={item.href}
-                      href={item.href}
+                      href={href}
                       className={`${linkClass} ${
                         active
                           ? 'bg-accent font-medium text-bg'

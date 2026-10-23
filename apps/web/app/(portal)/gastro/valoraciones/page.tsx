@@ -7,6 +7,7 @@ import { GastroLocationSelector } from '@/components/gastro/GastroLocationSelect
 import { ManagedReviewsCommentsPage } from '@/components/reviews/ManagedReviewsCommentsPage';
 import { ManagedPortalReviewAlerts } from '@/components/reviews/ManagedPortalReviewAlerts';
 import { useGastroActiveLocation } from '@/lib/gastro/GastroActiveLocationContext';
+import { withCourtesyProfileQuery } from '@/lib/gastro/courtesy-scope';
 
 export default function GastroValoracionesPage() {
   const { status } = useSession();
@@ -23,14 +24,16 @@ export default function GastroValoracionesPage() {
       <ManagedPortalReviewAlerts
         enabled={status === 'authenticated'}
         heading="Reseñas pendientes de atención"
-        defaultHref="/gastro/valoraciones"
+        defaultHref={withCourtesyProfileQuery('/gastro/valoraciones', profileId)}
       />
       {isLoading ? (
         <PageLoader message="Cargando local…" />
       ) : !profileId ? (
         <EmptyState
-          title="Sin locales"
-          description="Creá un local para recibir valoraciones por establecimiento."
+          title="Todavía no tenés locales cargados"
+          description="Creá tu primer local para recibir valoraciones por establecimiento."
+          actionLabel="Crear mi primer local"
+          actionHref="/gastro/local/nuevo"
         />
       ) : !activeLocation?.publicEventId ? (
         <EmptyState

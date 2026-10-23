@@ -1,6 +1,7 @@
 'use client';
 
 import { useGastroActiveLocation } from '@/lib/gastro/GastroActiveLocationContext';
+import { gastroLocationStatusLabel } from '@/lib/gastro/gastro-location-status';
 import { GastroLocationStatusBadge } from './GastroLocationStatusBadge';
 
 export function GastroLocationSelector({ className }: { className?: string }) {
@@ -39,7 +40,7 @@ export function GastroLocationSelector({ className }: { className?: string }) {
           <option key={loc.id} value={loc.id}>
             {loc.displayName}
             {loc.city ? ` — ${loc.city}` : ''}
-            {loc.status !== 'ACTIVE' ? ` (${loc.status})` : ''}
+            {loc.status !== 'ACTIVE' ? ` · ${gastroLocationStatusLabel(loc.status)}` : ''}
           </option>
         ))}
       </select>

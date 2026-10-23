@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { isPortalNavItemActive } from '@/lib/navigation/portalNavConfig';
 import { navFocusRing } from '@/lib/navigation/navA11yClasses';
 
@@ -20,6 +20,7 @@ export interface PortalSidebarProps {
  */
 export function PortalSidebar({ items, children }: PortalSidebarProps) {
   const pathname = usePathname();
+  const search = useSearchParams().toString();
 
   return (
     <div className="flex min-h-0 flex-1 flex-col md:flex-row md:gap-6">
@@ -29,7 +30,7 @@ export function PortalSidebar({ items, children }: PortalSidebarProps) {
           aria-label="Menú del portal"
         >
           {items.map(({ href, label }) => {
-            const active = isPortalNavItemActive(pathname, href);
+            const active = isPortalNavItemActive(pathname, href, search);
             return (
               <Link
                 key={href}

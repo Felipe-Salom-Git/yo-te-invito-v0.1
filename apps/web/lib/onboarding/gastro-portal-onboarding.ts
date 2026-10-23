@@ -4,6 +4,7 @@ import {
   buildOnboardingChecklistResult,
   type OnboardingChecklistItem,
 } from './onboarding-checklist.types';
+import { withCourtesyProfileQuery } from '@/lib/gastro/courtesy-scope';
 
 function hasLocationAndContact(local: GastroLocal | null | undefined): boolean {
   if (!local) return false;
@@ -19,6 +20,7 @@ export function getGastroPortalOnboarding(
 ) {
   const { profile, kpis } = dashboard;
   const hasLocal = Boolean(profile.id);
+  const scopedId = profile.id ?? undefined;
   const localHref = hasLocal
     ? `/gastro/local/editar?profileId=${encodeURIComponent(profile.id!)}`
     : '/gastro/local/nuevo';
@@ -41,19 +43,19 @@ export function getGastroPortalOnboarding(
       id: 'content',
       label: 'Contenido publicado',
       done: profile.publishedContentCount > 0,
-      href: '/gastro/contenido',
+      href: withCourtesyProfileQuery('/gastro/contenido', scopedId),
     },
     {
       id: 'discounts',
       label: 'Descuentos configurados',
       done: kpis.activeDiscounts > 0,
-      href: '/gastro/descuentos',
+      href: withCourtesyProfileQuery('/gastro/descuentos', scopedId),
     },
     {
       id: 'reviews',
       label: 'Ficha lista para valoraciones',
       done: Boolean(profile.publicEventId),
-      href: '/gastro/valoraciones',
+      href: withCourtesyProfileQuery('/gastro/valoraciones', scopedId),
     },
     {
       id: 'portal-legal',
@@ -67,7 +69,9 @@ export function getGastroPortalOnboarding(
     subtitle: hasLocal
       ? 'Completá la ficha del local, contenido y promociones desde este portal.'
       : 'Tu cuenta ya está lista. Creá tu primer local para publicar ficha, contenido y descuentos.',
-    primaryCtaHref: hasLocal ? '/gastro/contenido' : '/gastro/local/nuevo',
+    primaryCtaHref: hasLocal
+      ? withCourtesyProfileQuery('/gastro/contenido', scopedId)
+      : '/gastro/local/nuevo',
     primaryCtaLabel: hasLocal ? 'Completar perfil gastronómico' : 'Crear mi primer local',
   });
 }

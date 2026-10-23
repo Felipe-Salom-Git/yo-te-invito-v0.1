@@ -18,6 +18,7 @@ import { getErrorMessage } from '@/lib/errors';
 import type { GastroValidationListParams } from '@/repositories/interfaces';
 import { useGastroActiveLocation } from '@/lib/gastro/GastroActiveLocationContext';
 import { GastroLocationSelector } from '@/components/gastro/GastroLocationSelector';
+import { withCourtesyProfileQuery } from '@/lib/gastro/courtesy-scope';
 
 function formatValueLabel(type: string, value: number): string {
   if (type === 'PERCENT') return `${value}%`;
@@ -194,7 +195,7 @@ export function GastroValidationsContent() {
               >
                 <div>
                   <Link
-                    href="/gastro/descuentos"
+                    href={withCourtesyProfileQuery('/gastro/descuentos', profileId)}
                     className="font-medium text-accent hover:underline"
                   >
                     {v.discountTitle}
@@ -223,7 +224,7 @@ export function GastroValidationsContent() {
                   {new Date(v.validatedAt).toLocaleString('es-AR')}
                 </p>
                 <Link
-                  href="/gastro/descuentos"
+                  href={withCourtesyProfileQuery('/gastro/descuentos', profileId)}
                   className="mt-3 inline-block text-sm text-accent hover:underline"
                 >
                   Ver descuentos →

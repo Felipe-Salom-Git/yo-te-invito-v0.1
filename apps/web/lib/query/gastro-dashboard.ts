@@ -12,7 +12,7 @@ export function useGastroDashboard(enabled = true) {
   return useQuery({
     queryKey: gastroKeys.dashboard(profileId),
     queryFn: () => repos.gastro.getDashboard(profileId),
-    enabled,
+    enabled: enabled && !!profileId,
   });
 }
 
@@ -54,6 +54,6 @@ export function useGastroValidationsList(
         ...params,
         profileId: profileId ?? params?.profileId,
       }),
-    enabled,
+    enabled: enabled && !!profileId,
   });
 }
