@@ -1061,10 +1061,14 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
           {lastGastro && (
             <div className={`rounded-xl px-4 py-3 ${gastroStatusClass(lastGastro.status)}`}>
               <p className="text-xs font-normal uppercase opacity-80">
-                Descuento · {lastGastro.status}
+                {lastGastro.discount?.kind === 'COURTESY' ? 'Cortesía' : 'Descuento'} ·{' '}
+                {lastGastro.status}
               </p>
               <p className="mt-1 text-base font-semibold">{lastGastro.title}</p>
               <p className="mt-1 text-sm opacity-90">{lastGastro.message}</p>
+              {lastGastro.discount?.valueLabel ? (
+                <p className="mt-1 text-sm font-medium">{lastGastro.discount.valueLabel}</p>
+              ) : null}
             </div>
           )}
 

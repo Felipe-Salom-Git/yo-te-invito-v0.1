@@ -11,6 +11,8 @@ import {
   ErrorCode,
   isGastroDiscountExpired,
   isMasterQrRedeemable,
+  isCourtesyOnlyVisibility,
+  resolveCourtesyBenefitLabel,
   isGastroDiscountNotYetActive,
   isGastroDiscountValidToday,
   getGastroWeekdayLabelEs,
@@ -368,6 +370,7 @@ export class ScannerGastroDiscountService {
       include: {
         gastroProfile: { select: { displayName: true } },
         event: { select: { category: true, deletedAt: true } },
+        courtesyCampaign: { select: { discountLabel: true, title: true } },
       },
     });
 
@@ -381,12 +384,17 @@ export class ScannerGastroDiscountService {
 
     const localName = discount.gastroProfile?.displayName ?? undefined;
     const title = discountTitle(discount);
-    const valueLabel = formatValueLabel(discount.type, discount.value);
+    // G8.5: a courtesy has `value = 0`; its real benefit is the campaign's own text.
+    const isCourtesy = isCourtesyOnlyVisibility(discount.visibility);
+    const valueLabel = isCourtesy
+      ? resolveCourtesyBenefitLabel(discount.courtesyCampaign, title)
+      : formatValueLabel(discount.type, discount.value);
     const discountInfo = {
       id: discount.id,
       title,
       valueLabel,
       localName,
+      kind: isCourtesy ? ('COURTESY' as const) : ('DISCOUNT' as const),
     };
 
     if ((discount.event.category ?? '').toLowerCase() !== 'gastro') {

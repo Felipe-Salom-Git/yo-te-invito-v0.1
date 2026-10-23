@@ -24,6 +24,11 @@ export const gastroDiscountScanDiscountSchema = z.object({
   title: z.string(),
   valueLabel: z.string(),
   localName: z.string().optional(),
+  /**
+   * G8.5 — Distinguishes a courtesy (benefit text comes from the campaign, never "0%").
+   * Optional for backward compatibility with older scanner clients.
+   */
+  kind: z.enum(['DISCOUNT', 'COURTESY']).optional(),
 });
 
 export const validateGastroDiscountResponseSchema = z.object({

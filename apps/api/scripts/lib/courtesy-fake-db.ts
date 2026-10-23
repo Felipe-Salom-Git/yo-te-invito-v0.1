@@ -9,6 +9,7 @@
  *
  * NOT a replacement for DB integration tests (see docs: "DB integration: NO EJECUTADO").
  */
+import { ForbiddenException } from '@nestjs/common';
 import { buildGastroDiscountQrPayload } from '@yo-te-invito/shared';
 import { GastroCourtesyDiscountsService } from '../../src/modules/gastro/gastro-courtesy-discounts.service';
 import { GastroCourtesyDeliveryService } from '../../src/modules/gastro/gastro-courtesy-delivery.service';
@@ -420,6 +421,34 @@ export class FakeCourtesyDb {
     );
     const metrics = new GastroDiscountMetricsService(prisma, auditService as never);
     return { courtesy, admin, delivery, me, publicSvc, scanner, metrics, emailLog, alerts, lifecycle };
+  }
+
+  /**
+   * G8.5 — a real `ScannerGastroDiscountService` for a SCANNER account bound to one local
+   * (`ScannerAccount.parentProfileId`), using the REAL scope helper. Pass the returned
+   * `userId` + role 'SCANNER' to `validate`.
+   */
+  scannerFor(parentProfileId: string) {
+    const auditService = { logAction: async (a: Row) => void this.audits.push(a) };
+    const scannerAccounts = {
+      assertScannerCanAccessGastroDiscount: async (
+        tenantId: string,
+        _scannerUserId: string,
+        discountId: string,
+      ) => {
+        const d = this.discounts.find((x) => x.id === discountId && x.tenantId === tenantId);
+        if (!d || d.gastroProfileId !== parentProfileId) {
+          throw new ForbiddenException('scanner scope');
+        }
+      },
+    };
+    return new ScannerGastroDiscountService(
+      this.prisma as never,
+      {} as never,
+      scannerAccounts as never,
+      {} as never,
+      auditService as never,
+    );
   }
 
   qrFor(claim: Row): string {

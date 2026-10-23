@@ -185,6 +185,33 @@ export function isCourtesyClaimPendingDelivery(input: {
   );
 }
 
+// ---------------------------------------------------------------------------
+// G8.5 / G8.7 — Benefit label
+// ---------------------------------------------------------------------------
+
+export const GASTRO_COURTESY_DEFAULT_BENEFIT_LABEL = 'Cortesía';
+
+/** "0", "0%", "$0", "$ 0" → a courtesy must never present these as its benefit. */
+const ZERO_BENEFIT_PATTERN = /^\s*\$?\s*0+(?:[.,]0+)?\s*%?\s*$/;
+
+/**
+ * Human benefit text of a courtesy. A courtesy `GastroDiscount` stores `value = 0`, so
+ * `formatDiscountVisualBenefit(type, value)` would render "0%": the real benefit is the
+ * campaign's own `discountLabel` (e.g. "Postre de cortesía"). Falls back to the campaign
+ * title, then to the discount title, then to a neutral "Cortesía" — never to "0%".
+ */
+export function resolveCourtesyBenefitLabel(
+  campaign: { discountLabel?: string | null; title?: string | null } | null | undefined,
+  fallbackTitle?: string | null,
+): string {
+  const candidates = [campaign?.discountLabel, campaign?.title, fallbackTitle];
+  for (const raw of candidates) {
+    const text = raw?.trim();
+    if (text && !ZERO_BENEFIT_PATTERN.test(text)) return text;
+  }
+  return GASTRO_COURTESY_DEFAULT_BENEFIT_LABEL;
+}
+
 export const GASTRO_COURTESY_EXPIRED_AT_APPROVAL_MESSAGE =
   'La cortesía ya venció y no puede aprobarse. Rechazala para cerrar la solicitud.';
 
