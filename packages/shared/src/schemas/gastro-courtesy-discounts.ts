@@ -149,6 +149,9 @@ export const gastroCourtesySendResponseSchema = z.object({
     }),
   ),
   emailConfigured: z.boolean(),
+  /** G8.3: owner courtesies are born pending admin review (claims retained, nothing delivered). */
+  discountStatus: z.enum(['PENDING_REVIEW', 'ACTIVE']).optional(),
+  pendingApproval: z.boolean().optional(),
   fundedFromCourtesyCredit: z.boolean().optional(),
   ledgerEntryId: z.string().nullable().optional(),
   imputedValueCents: z.string().nullable().optional(),

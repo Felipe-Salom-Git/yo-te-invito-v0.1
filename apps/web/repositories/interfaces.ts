@@ -2876,6 +2876,9 @@ export interface AdminGastroDiscountListItem {
   reviewKind?: 'NEW' | 'EDIT';
   createdByOrigin?: 'GASTRO' | 'ADMIN';
   archivedAt?: string | null;
+  /** G8.3: COURTESY_ONLY rows are courtesies reviewed through the same queue. */
+  visibility?: 'PUBLIC' | 'COURTESY_ONLY';
+  courtesy?: import('@yo-te-invito/shared').AdminGastroCourtesySummary | null;
 }
 
 export interface AdminGastroDiscountDetail {
@@ -2907,6 +2910,17 @@ export interface AdminGastroDiscountDetail {
   updatedAt: string;
   createdByOrigin?: 'GASTRO' | 'ADMIN';
   archivedAt?: string | null;
+  visibility?: 'PUBLIC' | 'COURTESY_ONLY';
+  courtesy?: import('@yo-te-invito/shared').AdminGastroCourtesySummary | null;
+  profileName?: string | null;
+  /** Present on approve / redeliver of a courtesy. Delivery never blocks approval. */
+  courtesyDelivery?: {
+    attempted: number;
+    sent: number;
+    failed: number;
+    skippedAlreadySent: number;
+    emailConfigured: boolean;
+  } | null;
   hasPendingUpdate?: boolean;
   pendingUpdateSubmittedAt?: string | null;
   pendingUpdate?: {
@@ -3011,6 +3025,8 @@ export interface AdminGastroRepo {
     note?: string | null,
   ): Promise<AdminGastroDiscountDetail>;
   sendQrEmail(profileId: string, discountId: string): Promise<AdminGastroDiscountDetail>;
+  /** G8.4: retry delivery of an approved courtesy (only claims that never got an email). */
+  redeliverCourtesy(profileId: string, discountId: string): Promise<AdminGastroDiscountDetail>;
   archiveDiscount(
     profileId: string,
     discountId: string,

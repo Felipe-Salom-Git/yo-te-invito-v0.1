@@ -62,6 +62,13 @@ function build(opts: {
         return { id: 'camp-1', ...data };
       },
     },
+    gastroDiscountClaim: {
+      findUnique: async () => null,
+      create: async ({ data }: { data: Record<string, unknown> }) => {
+        created.claims.push(data);
+        return { id: `claim-${created.claims.length}`, ...data };
+      },
+    },
   };
 
   const prisma = {
@@ -88,13 +95,6 @@ function build(opts: {
     },
     user: { findFirst: async () => null },
     userGastroFollow: { findMany: async () => [], count: async () => 0 },
-    gastroDiscountClaim: {
-      findUnique: async () => null,
-      create: async ({ data }: { data: Record<string, unknown> }) => {
-        created.claims.push(data);
-        return { id: `claim-${created.claims.length}`, ...data };
-      },
-    },
     $transaction: async (fn: (t: typeof tx) => Promise<unknown>) => fn(tx),
   };
 
@@ -102,15 +102,17 @@ function build(opts: {
     prisma as never,
     { hasGastroAccess: async () => true } as never,
     { logAction: async () => undefined } as never,
-    {
-      buildQrPayload: () => 'qr',
-      sendClaimEmail: async () => {
-        sent += 1;
-        return { sent: true };
-      },
-    } as never,
     { isConfigured: () => true } as never,
     { debitForGastroCourtesyCampaign: async () => ({ entry: { id: 'e', amountCents: 1n } }) } as never,
+    // G8.3: CURRENT agreement is resolved for ADMIN-created courtesies.
+    { resolveApplicable: async () => ({ agreement: { id: 'agr-1' } }) } as never,
+    // G8.4: delivery is a separate step (only ADMIN-created courtesies deliver at creation).
+    {
+      deliverCampaign: async () => {
+        sent += 1;
+        return { attempted: 1, sent: 1, failed: 0, skippedAlreadySent: 0, emailConfigured: true, failures: [] };
+      },
+    } as never,
   );
 
   return { svc, created, lookups, sentCount: () => sent };

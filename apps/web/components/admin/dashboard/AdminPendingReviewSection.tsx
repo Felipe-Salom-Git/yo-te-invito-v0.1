@@ -33,6 +33,7 @@ const GASTRO_DISCOUNT_STATUS_LABEL: Record<string, string> = {
 function gastroPendingKindLabel(
   d: AdminDashboardPendingGastroDiscount,
 ): string {
+  if (d.visibility === 'COURTESY_ONLY') return 'Cortesía pendiente de aprobación';
   if (d.reviewKind === 'EDIT') return 'Edición pendiente';
   if (d.reviewKind === 'NEW') return 'Nuevo descuento pendiente';
   return GASTRO_DISCOUNT_STATUS_LABEL[d.status] ?? d.status;

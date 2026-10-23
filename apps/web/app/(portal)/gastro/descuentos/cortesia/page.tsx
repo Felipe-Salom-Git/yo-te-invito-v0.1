@@ -140,12 +140,20 @@ export default function GastroCourtesyDiscountsPage() {
       {result && (
         <div
           className={`mb-6 rounded-lg border px-4 py-3 text-sm ${
-            result.failedCount > 0 || result.sentCount === 0
-              ? 'border-amber-500/40 bg-amber-500/10 text-text'
-              : 'border-accent/40 bg-accent/10 text-text'
+            result.pendingApproval
+              ? 'border-accent/40 bg-accent/10 text-text'
+              : result.failedCount > 0 || result.sentCount === 0
+                ? 'border-amber-500/40 bg-amber-500/10 text-text'
+                : 'border-accent/40 bg-accent/10 text-text'
           }`}
         >
-          {!result.emailConfigured ? (
+          {result.pendingApproval ? (
+            <p>
+              Tu cortesía fue enviada a revisión ({result.createdCount} destinatario
+              {result.createdCount === 1 ? '' : 's'}). Los destinatarios la recibirán por email
+              cuando sea aprobada; hasta entonces no podrán usarla.
+            </p>
+          ) : !result.emailConfigured ? (
             <p className="font-medium text-amber-200">
               El servicio de email no está configurado en el servidor. Las cortesías se crearon pero
               no pudimos enviar los emails.

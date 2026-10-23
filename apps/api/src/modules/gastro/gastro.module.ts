@@ -23,6 +23,8 @@ import { GastroDiscountVisualTemplateService } from './gastro-discount-visual-te
 import { GastroProfileMetricsService } from './gastro-profile-metrics.service';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { CourtesyCreditLedgerModule } from '../courtesy-credit-ledger/courtesy-credit-ledger.module';
+import { BenefitAgreementsModule } from '../benefit-agreements/benefit-agreements.module';
+import { GastroCourtesyDeliveryService } from './gastro-courtesy-delivery.service';
 
 @Module({
   imports: [
@@ -33,6 +35,7 @@ import { CourtesyCreditLedgerModule } from '../courtesy-credit-ledger/courtesy-c
     ReviewsModule,
     NotificationsModule,
     CourtesyCreditLedgerModule,
+    BenefitAgreementsModule,
   ],
   controllers: [GastroController, GastroReviewsController],
   providers: [
@@ -46,6 +49,7 @@ import { CourtesyCreditLedgerModule } from '../courtesy-credit-ledger/courtesy-c
     GastroDashboardService,
     GastroPublicEventSyncService,
     GastroCourtesyDiscountsService,
+    GastroCourtesyDeliveryService,
     GastroDiscountClaimEmailService,
     GastroDiscountMetricsService,
     GastroDiscountExpiryService,
@@ -62,6 +66,7 @@ import { CourtesyCreditLedgerModule } from '../courtesy-credit-ledger/courtesy-c
     GastroDiscountExpiryService,
     GastroDiscountVisualTemplateService,
     GastroCourtesyDiscountsService,
+    GastroCourtesyDeliveryService,
     GastroProfileMetricsService,
   ],
 })

@@ -13,6 +13,7 @@ import { AdminGastroDiscountPublicationEditor } from '@/components/admin/gastro/
 import { AdminGastroDiscountQrPanel } from '@/components/admin/gastro/AdminGastroDiscountQrPanel';
 import { AdminGastroDiscountVisualPreview } from '@/components/admin/gastro/AdminGastroDiscountVisualPreview';
 import { AdminGastroPendingEditPanel } from '@/components/admin/gastro/AdminGastroPendingEditPanel';
+import { AdminGastroCourtesyReviewPanel } from '@/components/admin/gastro/AdminGastroCourtesyReviewPanel';
 import { GastroDiscountDetailContent } from '@/components/gastro/GastroDiscountDetailContent';
 import { GastroDiscountOperationalMetricsPanel } from '@/components/gastro/GastroDiscountOperationalMetricsPanel';
 import { AdminGastroDiscountCommercialContextPanel } from '@/components/admin/gastro/AdminGastroDiscountCommercialContextPanel';
@@ -101,8 +102,32 @@ export default function AdminGastroDiscountDetailPage() {
   const approve = useMutation({
     mutationFn: () => repos.adminGastro.approve(profileId, discountId),
     onError: (e) => addToast(getErrorMessage(e), 'error'),
-    onSuccess: () => {
-      addToast('Ticket aprobado', 'success');
+    onSuccess: (updated) => {
+      const delivery = updated.courtesyDelivery;
+      if (!delivery) {
+        addToast('Ticket aprobado', 'success');
+      } else if (delivery.failed > 0 || !delivery.emailConfigured) {
+        addToast(
+          `Cortesía aprobada. ${delivery.sent} entregada(s), ${delivery.failed} con error: podés reintentar la entrega.`,
+          'error',
+        );
+      } else {
+        addToast(`Cortesía aprobada y entregada a ${delivery.sent} destinatario(s)`, 'success');
+      }
+      invalidate();
+    },
+  });
+
+  const redeliver = useMutation({
+    mutationFn: () => repos.adminGastro.redeliverCourtesy(profileId, discountId),
+    onError: (e) => addToast(getErrorMessage(e), 'error'),
+    onSuccess: (updated) => {
+      const delivery = updated.courtesyDelivery;
+      if (delivery && delivery.failed > 0) {
+        addToast(`${delivery.sent} entregada(s), ${delivery.failed} siguen con error`, 'error');
+      } else {
+        addToast(`Entrega reintentada: ${delivery?.sent ?? 0} enviada(s)`, 'success');
+      }
       invalidate();
     },
   });
@@ -191,9 +216,11 @@ export default function AdminGastroDiscountDetailPage() {
   }
 
   const canonicalProfileId = item.profileId;
+  const isCourtesy = item.visibility === 'COURTESY_ONLY';
   const moderationPending =
     markNegotiation.isPending ||
     approve.isPending ||
+    redeliver.isPending ||
     reject.isPending ||
     cancel.isPending ||
     sendQr.isPending ||
@@ -211,7 +238,9 @@ export default function AdminGastroDiscountDetailPage() {
       </Link>
 
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <SectionTitle>{item.title ?? 'Ticket de descuento'}</SectionTitle>
+        <SectionTitle>
+          {item.title ?? (isCourtesy ? 'Cortesía' : 'Ticket de descuento')}
+        </SectionTitle>
         <AdminGastroDiscountStatusBadge status={item.status} />
       </div>
 
@@ -221,9 +250,19 @@ export default function AdminGastroDiscountDetailPage() {
         {item.hasPendingUpdate
           ? ' · Edición pendiente'
           : item.status === 'PENDING_REVIEW' || item.status === 'COMMISSION_NEGOTIATION'
-            ? ' · Nuevo descuento pendiente'
+            ? isCourtesy
+              ? ' · Cortesía pendiente de aprobación'
+              : ' · Nuevo descuento pendiente'
             : ''}
       </p>
+
+      {isCourtesy && (
+        <AdminGastroCourtesyReviewPanel
+          item={item}
+          hasCurrentAgreement={hasCurrentAgreement}
+          agreementLoading={agreementHistoryQuery.isLoading}
+        />
+      )}
 
       {item.hasPendingUpdate && item.pendingUpdate && (
         <AdminGastroPendingEditPanel
@@ -248,7 +287,7 @@ export default function AdminGastroDiscountDetailPage() {
         </p>
       )}
 
-      {(item.summary || item.detail || item.submittedImageUrls.length > 0) && (
+      {!isCourtesy && (item.summary || item.detail || item.submittedImageUrls.length > 0) && (
         <section className="mt-6 rounded-lg border border-border bg-bg-muted/50 p-4">
           <h3 className="text-sm font-semibold uppercase tracking-wide text-text-muted">
             Contenido enviado por el local
@@ -280,16 +319,21 @@ export default function AdminGastroDiscountDetailPage() {
         </p>
       )}
 
-      <AdminGastroDiscountQrPanel qrPayload={item.qrPayload} status={item.status} />
-      <AdminGastroDiscountVisualPreview
-        profileId={profileId}
-        discountId={discountId}
-        qrPayload={item.qrPayload ?? null}
-        gastroName={null}
-        discountTitle={item.title}
-        discountType={item.type}
-        discountValue={item.value}
-      />
+      {/* Courtesies have no master QR: each recipient owns an individual claim QR. */}
+      {!isCourtesy && (
+        <>
+          <AdminGastroDiscountQrPanel qrPayload={item.qrPayload} status={item.status} />
+          <AdminGastroDiscountVisualPreview
+            profileId={profileId}
+            discountId={discountId}
+            qrPayload={item.qrPayload ?? null}
+            gastroName={null}
+            discountTitle={item.title}
+            discountType={item.type}
+            discountValue={item.value}
+          />
+        </>
+      )}
 
       {summaryQuery.data ? (
         <div className="mt-8">
@@ -331,19 +375,45 @@ export default function AdminGastroDiscountDetailPage() {
         discountId={discountId}
       />
 
-      <div className="mt-8">
-        <AdminGastroDiscountPublicationEditor
-          profileId={canonicalProfileId}
-          discount={item}
-          onSaved={invalidate}
-        />
-      </div>
+      {!isCourtesy && (
+        <div className="mt-8">
+          <AdminGastroDiscountPublicationEditor
+            profileId={canonicalProfileId}
+            discount={item}
+            onSaved={invalidate}
+          />
+        </div>
+      )}
+
+      {isCourtesy &&
+        item.status === 'ACTIVE' &&
+        (item.courtesy?.pendingDeliveryCount ?? 0) > 0 && (
+          <div className="mt-6">
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={moderationPending}
+              onClick={() => {
+                if (
+                  window.confirm(
+                    `¿Reintentar la entrega a ${item.courtesy?.pendingDeliveryCount} destinatario(s) sin email enviado?`,
+                  )
+                ) {
+                  redeliver.mutate();
+                }
+              }}
+            >
+              Reintentar entrega
+            </Button>
+          </div>
+        )}
 
       {!['REJECTED', 'CANCELLED', 'EXPIRED'].includes(item.status) && (
         <>
           <div className="mt-8 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
-            Coordiná la comisión con el local antes de aprobar. Guardá la publicación con al menos
-            una imagen.
+            {isCourtesy
+              ? 'La cortesía requiere acuerdo comercial vigente del local. Al aprobar se entrega por email a los destinatarios ya definidos.'
+              : 'Coordiná la comisión con el local antes de aprobar. Guardá la publicación con al menos una imagen.'}
           </div>
           <Input
             label="Nota interna"
@@ -387,7 +457,15 @@ export default function AdminGastroDiscountDetailPage() {
                       );
                       return;
                     }
-                    if (window.confirm('¿Aprobar este ticket?')) approve.mutate();
+                    if (
+                      window.confirm(
+                        isCourtesy
+                          ? `¿Aprobar la cortesía y entregarla a ${item.courtesy?.recipientCount ?? 0} destinatario(s)?`
+                          : '¿Aprobar este ticket?',
+                      )
+                    ) {
+                      approve.mutate();
+                    }
                   }}
                 >
                   Aprobar
@@ -419,7 +497,7 @@ export default function AdminGastroDiscountDetailPage() {
             >
               Cancelar
             </Button>
-            {['APPROVED', 'ACTIVE'].includes(item.status) && (
+            {!isCourtesy && ['APPROVED', 'ACTIVE'].includes(item.status) && (
               <Button
                 type="button"
                 disabled={moderationPending}

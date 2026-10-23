@@ -80,6 +80,11 @@ export function AdminGastroDiscountsTable({ profileId, discounts }: Props) {
                   </td>
                   <td className="px-4 py-3">
                     <AdminGastroDiscountStatusBadge status={d.status} />
+                    {d.visibility === 'COURTESY_ONLY' && (
+                      <span className="ml-2 inline-flex rounded-full bg-violet-500/15 px-2 py-0.5 text-xs text-violet-300">
+                        Cortesía{d.courtesy ? ` · ${d.courtesy.recipientCount} dest.` : ''}
+                      </span>
+                    )}
                     {d.reviewKind === 'NEW' && !d.hasPendingUpdate && (
                       <span className="ml-2 inline-flex rounded-full bg-sky-500/15 px-2 py-0.5 text-xs text-sky-300">
                         Nuevo pendiente

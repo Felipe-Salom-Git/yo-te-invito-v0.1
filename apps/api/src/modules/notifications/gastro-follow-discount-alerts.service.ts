@@ -48,7 +48,8 @@ export class GastroFollowDiscountAlertsService {
     discountId: string,
   ): Promise<{ attempted: number; delivered: number; skipped?: string }> {
     const discount = await this.prisma.gastroDiscount.findFirst({
-      where: { id: discountId, tenantId, status: 'ACTIVE' },
+      // Courtesies are private (COURTESY_ONLY): followers are never alerted about them.
+      where: { id: discountId, tenantId, status: 'ACTIVE', visibility: 'PUBLIC' },
       select: {
         id: true,
         displayTitle: true,

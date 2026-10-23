@@ -4,6 +4,7 @@ import {
   mapDiscountVisualTemplateRow,
   type MeGastroDiscountItem,
   type MeGastroDiscountsResponse,
+  isClaimVisibleToRecipient,
   isGastroDiscountExpired,
   isGastroDiscountNotYetActive,
   isGastroDiscountValidToday,
@@ -78,6 +79,12 @@ export class MeGastroDiscountsService {
 
     const items: MeGastroDiscountItem[] = claims
       .filter((c) => c.discount.gastroProfile)
+      // G8.3: retained (pending approval) and rejected courtesy claims are never exposed to
+      // the recipient. Backend-side so no client can render them. Legacy ACTIVE courtesies
+      // and public claims keep their current visibility.
+      .filter((c) =>
+        isClaimVisibleToRecipient({ claimType: c.type, parentStatus: c.discount.status }),
+      )
       .map((claim) => {
         const d = claim.discount;
         const profile = d.gastroProfile!;

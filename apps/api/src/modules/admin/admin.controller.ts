@@ -1182,6 +1182,33 @@ export class AdminController {
     );
   }
 
+  /** G8.4: retry delivery of an approved courtesy (only claims that never got an email). */
+  @Post('gastro-discount-tickets/:discountId/courtesy/redeliver')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async redeliverGastroCourtesyTicket(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param('discountId') discountId: string,
+    @Query('profileId') profileId: string,
+  ) {
+    const resolvedProfileId =
+      profileId?.trim() ??
+      (await this.adminGastro.resolveProfileIdForDiscount(user.tenantId, discountId));
+    if (!resolvedProfileId) {
+      throw new NotFoundException({
+        code: ErrorCode.NOT_FOUND,
+        message: 'Discount not found',
+      });
+    }
+    return this.adminGastro.redeliverCourtesy(
+      user.tenantId,
+      user.id,
+      user.role,
+      resolvedProfileId,
+      discountId,
+    );
+  }
+
   @Post('gastro-discount-tickets/:discountId/cancel')
   @UseGuards(JwtOrDevAuthGuard, RolesGuard)
   @RequireRole(Role.ADMIN)

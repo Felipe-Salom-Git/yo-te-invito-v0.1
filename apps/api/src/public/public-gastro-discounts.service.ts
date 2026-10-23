@@ -7,6 +7,7 @@ import { randomBytes } from 'crypto';
 import {
   buildGastroDiscountQrPayload,
   ErrorCode,
+  isClaimVisibleToRecipient,
   isGastroDiscountExpired,
   mapDiscountVisualTemplateRow,
   isGastroDiscountValidToday,
@@ -353,7 +354,12 @@ export class PublicGastroDiscountsService {
       },
     });
     const profile = claim?.discount.gastroProfile;
-    if (!claim || !profile) {
+    // G8.3: a retained/rejected courtesy claim is not viewable even with its accessToken.
+    if (
+      !claim ||
+      !profile ||
+      !isClaimVisibleToRecipient({ claimType: claim.type, parentStatus: claim.discount.status })
+    ) {
       throw new NotFoundException({
         code: ErrorCode.NOT_FOUND,
         message: 'Claim not found',

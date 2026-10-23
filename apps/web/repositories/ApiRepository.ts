@@ -2516,6 +2516,12 @@ export class ApiRepository implements Repositories {
         {},
         { profileId },
       ),
+    redeliverCourtesy: async (profileId, discountId) =>
+      this.client.post<AdminGastroDiscountDetail>(
+        `/admin/gastro-discount-tickets/${encodeURIComponent(discountId)}/courtesy/redeliver`,
+        {},
+        { profileId },
+      ),
     archiveDiscount: async (profileId, discountId, archived) =>
       this.client.patch<AdminGastroDiscountDetail>(
         `/admin/gastro-discount-tickets/${encodeURIComponent(discountId)}/archive`,

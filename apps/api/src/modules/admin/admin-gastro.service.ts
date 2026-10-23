@@ -9,7 +9,11 @@ import {
   buildGastroDiscountQrPayload,
   canIssueMasterQr,
   ErrorCode,
+  GASTRO_COURTESY_AGREEMENT_REQUIRED_MESSAGE,
+  GASTRO_COURTESY_EXPIRED_AT_APPROVAL_MESSAGE,
+  COURTESY_PRE_APPROVAL_DISCOUNT_STATUSES,
   isCourtesyOnlyVisibility,
+  isGastroDiscountExpired,
   parsePendingUpdate,
   pendingUpdateToPublishedFields,
   parseRentalOpeningHours,
@@ -43,6 +47,7 @@ import { GastroLifecycleNotificationsService } from '../notifications/gastro-lif
 import { BenefitCommercialAgreementsService } from '../benefit-agreements/benefit-commercial-agreements.service';
 import { adminDiscountMatchesRouteProfile } from './admin-gastro-discount-scope.util';
 import { cancelCourtesyClaimsForDiscount } from '../gastro/gastro-courtesy-lifecycle.util';
+import { GastroCourtesyDeliveryService } from '../gastro/gastro-courtesy-delivery.service';
 
 function readUrls(value: unknown): string[] {
   if (value == null) return [];
@@ -81,6 +86,7 @@ export class AdminGastroService {
     private readonly gastroFollowAlerts: GastroFollowDiscountAlertsService,
     private readonly lifecycleNotifications: GastroLifecycleNotificationsService,
     private readonly benefitAgreements: BenefitCommercialAgreementsService,
+    private readonly courtesyDelivery: GastroCourtesyDeliveryService,
   ) {}
 
   private toProfileStatus(status: ProfileStatus) {
@@ -173,6 +179,16 @@ export class AdminGastroService {
     archivedAt?: Date | null;
     pendingUpdate?: unknown;
     pendingUpdateSubmittedAt?: Date | null;
+    visibility?: string | null;
+    courtesyCampaign?: {
+      id: string;
+      title: string;
+      discountLabel: string | null;
+      description?: string | null;
+      validFrom?: Date | null;
+      validTo?: Date | null;
+      _count?: { claims: number };
+    } | null;
     _count: { validations: number };
   }) {
     const pending = parsePendingUpdate(r.pendingUpdate);
@@ -197,6 +213,21 @@ export class AdminGastroService {
           : undefined,
       createdByOrigin: r.createdByOrigin === 'ADMIN' ? ('ADMIN' as const) : ('GASTRO' as const),
       archivedAt: r.archivedAt?.toISOString() ?? null,
+      visibility: isCourtesyOnlyVisibility(r.visibility)
+        ? ('COURTESY_ONLY' as const)
+        : ('PUBLIC' as const),
+      courtesy:
+        isCourtesyOnlyVisibility(r.visibility) && r.courtesyCampaign
+          ? {
+              campaignId: r.courtesyCampaign.id,
+              title: r.courtesyCampaign.title,
+              discountLabel: r.courtesyCampaign.discountLabel,
+              description: r.courtesyCampaign.description ?? null,
+              recipientCount: r.courtesyCampaign._count?.claims ?? 0,
+              validFrom: r.courtesyCampaign.validFrom?.toISOString() ?? null,
+              validTo: r.courtesyCampaign.validTo?.toISOString() ?? null,
+            }
+          : null,
     };
   }
 
@@ -221,6 +252,7 @@ export class AdminGastroService {
       orderBy: { createdAt: 'desc' },
       include: {
         gastroProfile: { select: { id: true, displayName: true } },
+        courtesyCampaign: { include: { _count: { select: { claims: true } } } },
         _count: { select: { validations: true } },
       },
     });
@@ -474,7 +506,10 @@ export class AdminGastroService {
         publicEventId: profile.publicEventId,
       }),
       orderBy: { createdAt: 'desc' },
-      include: { _count: { select: { validations: true } } },
+      include: {
+        courtesyCampaign: { include: { _count: { select: { claims: true } } } },
+        _count: { select: { validations: true } },
+      },
     });
 
     const orphanIds = rows
@@ -547,6 +582,40 @@ export class AdminGastroService {
     return row;
   }
 
+  /** G8.3: campaign context + recipient counts shown to ADMIN while reviewing a courtesy. */
+  private async loadCourtesySummary(tenantId: string, discountId: string) {
+    const campaign = await this.prisma.gastroCourtesyCampaign.findFirst({
+      where: { tenantId, discountId },
+    });
+    if (!campaign) return null;
+    const claimScope = { tenantId, discountId, type: 'COURTESY' as const };
+    const [recipientCount, usedCount, pendingDeliveryCount, deliveredCount] = await Promise.all([
+      this.prisma.gastroDiscountClaim.count({ where: claimScope }),
+      this.prisma.gastroDiscountClaim.count({
+        where: { ...claimScope, OR: [{ status: 'USED' }, { usedAt: { not: null } }] },
+      }),
+      this.prisma.gastroDiscountClaim.count({
+        where: { ...claimScope, status: 'ACTIVE', emailSentAt: null },
+      }),
+      this.prisma.gastroDiscountClaim.count({
+        where: { ...claimScope, emailSentAt: { not: null } },
+      }),
+    ]);
+    return {
+      campaignId: campaign.id,
+      title: campaign.title,
+      discountLabel: campaign.discountLabel,
+      description: campaign.description,
+      message: campaign.message,
+      recipientCount,
+      usedCount,
+      pendingDeliveryCount,
+      deliveredCount,
+      validFrom: campaign.validFrom?.toISOString() ?? null,
+      validTo: campaign.validTo?.toISOString() ?? null,
+    };
+  }
+
   async getDiscountDetail(tenantId: string, profileId: string, discountId: string) {
     const row = await this.loadDiscount(tenantId, profileId, discountId);
     const submitted = readUrls(row.submittedImageUrls);
@@ -558,9 +627,17 @@ export class AdminGastroService {
             where: { id: row.gastroProfileId },
           })
         : null);
+    const courtesy = isCourtesyOnlyVisibility(row.visibility)
+      ? await this.loadCourtesySummary(tenantId, row.id)
+      : null;
     return {
       id: row.id,
       profileId: row.gastroProfileId!,
+      profileName: gastroProfile?.displayName ?? null,
+      visibility: isCourtesyOnlyVisibility(row.visibility)
+        ? ('COURTESY_ONLY' as const)
+        : ('PUBLIC' as const),
+      courtesy,
       eventId: row.eventId,
       title: row.displayTitle,
       summary: row.summary,
@@ -745,6 +822,11 @@ export class AdminGastroService {
         message: 'Este ticket no puede aprobarse en su estado actual',
       });
     }
+    // G8.3/G8.4: a courtesy is approved through its own branch (no images, no master QR,
+    // no follower alert; claims are released and delivered).
+    if (isCourtesyOnlyVisibility(row.visibility)) {
+      return this.approveCourtesy(tenantId, adminUserId, adminRole, profileId, row);
+    }
     const display = readUrls(row.displayImageUrls);
     if (display.length === 0) {
       throw new BadRequestException({
@@ -792,6 +874,126 @@ export class AdminGastroService {
     return this.getDiscountDetail(tenantId, profileId, discountId);
   }
 
+  /**
+   * G8.3 + G8.4 — Approve a PENDING courtesy (created by a GASTRO OWNER).
+   *
+   * Gate: CURRENT BenefitCommercialAgreement for tenant + gastroProfileId (commercial gate
+   * only; nothing from the agreement is copied to the campaign/coupon). Then
+   * PENDING_REVIEW/COMMISSION_NEGOTIATION → ACTIVE atomically (single winner; a repeated
+   * approve fails and cannot re-deliver). The pre-created (retained) claims become usable;
+   * they are NOT recreated and the audience is NOT recalculated. Delivery runs after the
+   * status change and can never revert the approval. No master QR is generated and
+   * followers are not alerted.
+   */
+  private async approveCourtesy(
+    tenantId: string,
+    adminUserId: string,
+    adminRole: string,
+    profileId: string,
+    row: {
+      id: string;
+      status: string;
+      gastroProfileId: string | null;
+      displayTitle: string | null;
+      validTo: Date | null;
+    },
+  ) {
+    const discountId = row.id;
+    const resolvedProfileId = row.gastroProfileId ?? profileId;
+    const agreementCtx = await this.benefitAgreements.resolveApplicable(tenantId, {
+      vertical: 'GASTRO',
+      gastroProfileId: resolvedProfileId,
+    });
+    if (!agreementCtx.agreement) {
+      throw new BadRequestException({
+        code: ErrorCode.BENEFIT_AGREEMENT_NOT_FOUND,
+        message: GASTRO_COURTESY_AGREEMENT_REQUIRED_MESSAGE,
+      });
+    }
+    if (row.validTo && isGastroDiscountExpired(row.validTo)) {
+      throw new BadRequestException({
+        code: ErrorCode.GASTRO_COURTESY_EXPIRED_AT_APPROVAL,
+        message: GASTRO_COURTESY_EXPIRED_AT_APPROVAL_MESSAGE,
+      });
+    }
+
+    const activated = await this.prisma.gastroDiscount.updateMany({
+      where: {
+        id: discountId,
+        tenantId,
+        visibility: 'COURTESY_ONLY',
+        status: { in: [...COURTESY_PRE_APPROVAL_DISCOUNT_STATUSES] },
+      },
+      // Courtesies never get a discount-level (master) QR: qrToken is intentionally untouched.
+      data: { status: 'ACTIVE' },
+    });
+    if (activated.count === 0) {
+      throw new BadRequestException({
+        code: ErrorCode.VALIDATION_FAILED,
+        message: 'Esta cortesía ya fue procesada',
+      });
+    }
+
+    await this.audit(
+      tenantId,
+      adminUserId,
+      adminRole,
+      'GASTRO_DISCOUNT_APPROVED',
+      discountId,
+      { status: row.status },
+      { status: 'ACTIVE', courtesy: true, agreementId: agreementCtx.agreement.id },
+    );
+
+    // Delivery is best-effort and isolated: it never throws and never undoes the approval.
+    const courtesyDelivery = await this.courtesyDelivery.deliverCampaign(tenantId, discountId, {
+      actorId: adminUserId,
+      actorRole: adminRole,
+      trigger: 'APPROVAL',
+      webBaseUrl: process.env.WEB_BASE_URL,
+    });
+
+    this.lifecycleNotifications.notifyDiscountApproved(
+      tenantId,
+      discountId,
+      row.displayTitle ?? 'tu cortesía',
+      'create',
+    );
+
+    const detail = await this.getDiscountDetail(tenantId, profileId, discountId);
+    return { ...detail, courtesyDelivery };
+  }
+
+  /** G8.4: retry delivery of an APPROVED courtesy; only claims that never got an email. */
+  async redeliverCourtesy(
+    tenantId: string,
+    adminUserId: string,
+    adminRole: string,
+    profileId: string,
+    discountId: string,
+  ) {
+    const row = await this.loadDiscount(tenantId, profileId, discountId);
+    if (!isCourtesyOnlyVisibility(row.visibility)) {
+      throw new BadRequestException({
+        code: ErrorCode.VALIDATION_FAILED,
+        message: 'Solo las cortesías tienen entrega por claim',
+      });
+    }
+    if (!['ACTIVE', 'APPROVED'].includes(row.status)) {
+      throw new BadRequestException({
+        code: ErrorCode.VALIDATION_FAILED,
+        message: 'Solo una cortesía aprobada puede entregarse',
+      });
+    }
+    const courtesyDelivery = await this.courtesyDelivery.deliverCampaign(tenantId, discountId, {
+      actorId: adminUserId,
+      actorRole: adminRole,
+      trigger: 'REDELIVER',
+      webBaseUrl: process.env.WEB_BASE_URL,
+    });
+    const detail = await this.getDiscountDetail(tenantId, profileId, discountId);
+    return { ...detail, courtesyDelivery };
+  }
+
   async reject(
     tenantId: string,
     adminUserId: string,
@@ -808,13 +1010,20 @@ export class AdminGastroService {
         message: 'Este ticket ya está cerrado',
       });
     }
-    await this.prisma.gastroDiscount.update({
-      where: { id: discountId },
-      data: {
-        status: 'REJECTED',
-        rejectionReason: reason.trim(),
-        adminNotes: note?.trim() || row.adminNotes,
-      },
+    // G8.3.7: rejecting a courtesy makes every claim (retained or live) unusable in the same
+    // transaction. REJECTED is terminal (updateDiscountStatus refuses it), so there is no
+    // shortcut to re-activate it without a new request + review.
+    const isCourtesy = isCourtesyOnlyVisibility(row.visibility);
+    const cancelledClaims = await this.prisma.$transaction(async (tx) => {
+      await tx.gastroDiscount.update({
+        where: { id: discountId },
+        data: {
+          status: 'REJECTED',
+          rejectionReason: reason.trim(),
+          adminNotes: note?.trim() || row.adminNotes,
+        },
+      });
+      return isCourtesy ? cancelCourtesyClaimsForDiscount(tx, tenantId, discountId) : 0;
     });
     await this.audit(
       tenantId,
@@ -823,7 +1032,9 @@ export class AdminGastroService {
       'GASTRO_DISCOUNT_REJECTED',
       discountId,
       { status: row.status },
-      { status: 'REJECTED' },
+      isCourtesy
+        ? { status: 'REJECTED', courtesy: true, cancelledClaims }
+        : { status: 'REJECTED' },
     );
     this.lifecycleNotifications.notifyDiscountRejected(
       tenantId,

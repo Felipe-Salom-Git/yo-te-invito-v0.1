@@ -36,6 +36,8 @@ export const adminDashboardPendingGastroDiscountSchema = z.object({
   profileId: z.string().nullable(),
   profileName: z.string().nullable(),
   status: z.string(),
+  /** G8.3: courtesies are reviewed in the same queue. */
+  visibility: z.enum(['PUBLIC', 'COURTESY_ONLY']).optional(),
   createdAt: z.string().datetime(),
   reviewKind: z.enum(['NEW', 'EDIT']).optional(),
 });

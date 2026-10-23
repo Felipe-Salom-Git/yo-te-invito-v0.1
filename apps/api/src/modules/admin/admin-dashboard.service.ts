@@ -122,6 +122,7 @@ export class AdminDashboardService {
         take: PENDING_QUEUE_LIMIT,
         select: {
           id: true,
+          visibility: true,
           displayTitle: true,
           code: true,
           status: true,
@@ -168,6 +169,7 @@ export class AdminDashboardService {
         profileId: d.gastroProfileId ?? d.gastroProfile?.id ?? null,
         profileName: d.gastroProfile?.displayName ?? null,
         status: d.status,
+        visibility: d.visibility === 'COURTESY_ONLY' ? ('COURTESY_ONLY' as const) : ('PUBLIC' as const),
         createdAt: d.createdAt.toISOString(),
         reviewKind: d.pendingUpdateSubmittedAt ? ('EDIT' as const) : ('NEW' as const),
       })),

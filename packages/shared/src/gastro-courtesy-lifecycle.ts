@@ -97,3 +97,96 @@ export const COURTESY_CLAIM_STATUSES_CANCELLED_ON_CAMPAIGN_CANCEL = ['ACTIVE'] a
 export function shouldNotifyDiscountExpired(visibility: string | null | undefined): boolean {
   return !isCourtesyOnlyVisibility(visibility);
 }
+
+// ---------------------------------------------------------------------------
+// G8.3 / G8.4 — Approval + retained claims + delivery
+// ---------------------------------------------------------------------------
+
+/**
+ * Parent-discount statuses in which a courtesy has been REQUESTED but not yet approved.
+ * A courtesy created by a GASTRO OWNER is born in `PENDING_REVIEW` (reusing the existing
+ * `GastroDiscount` lifecycle; no new enum value).
+ */
+export const COURTESY_PRE_APPROVAL_DISCOUNT_STATUSES = [
+  'PENDING_REVIEW',
+  'COMMISSION_NEGOTIATION',
+] as const;
+
+export function isCourtesyPendingApproval(status: string | null | undefined): boolean {
+  return (
+    status != null &&
+    (COURTESY_PRE_APPROVAL_DISCOUNT_STATUSES as readonly string[]).includes(status)
+  );
+}
+
+/**
+ * Initial `GastroDiscount.status` of a new courtesy.
+ *  - ADMIN: no review step (but the commercial agreement gate still runs before creating).
+ *  - GASTRO owner: `PENDING_REVIEW` until an ADMIN approves it.
+ */
+export function initialCourtesyDiscountStatus(
+  actorRole: string,
+): 'ACTIVE' | 'PENDING_REVIEW' {
+  return actorRole === 'ADMIN' ? 'ACTIVE' : 'PENDING_REVIEW';
+}
+
+/**
+ * RETAINED CLAIM (Option A).
+ *
+ * A courtesy claim is "retained" while its parent campaign has not been approved: the
+ * recipient set is frozen (claim rows exist) but they are NOT usable. No schema change:
+ * the invariant is `claim usable ⇔ claim.status = ACTIVE ∧ parent redeemable`, which the
+ * scanner already enforces (`isParentDiscountRedeemable`). `/me` and the public claim view
+ * use the helper below so a retained claim is never exposed to the recipient.
+ */
+export function isCourtesyClaimRetained(input: {
+  claimType: string | null | undefined;
+  claimStatus: string | null | undefined;
+  parentStatus: string | null | undefined;
+}): boolean {
+  return (
+    input.claimType === 'COURTESY' &&
+    input.claimStatus === 'ACTIVE' &&
+    isCourtesyPendingApproval(input.parentStatus)
+  );
+}
+
+/**
+ * Whether a claim may be shown to its recipient (`/me/descuentos`, public claim view).
+ *
+ * Courtesy claims are hidden while pending approval and after a rejection (the recipient
+ * never received them). Everything else (including legacy ACTIVE courtesies and public
+ * claims of any parent status) keeps its current visibility.
+ */
+export function isClaimVisibleToRecipient(input: {
+  claimType: string | null | undefined;
+  parentStatus: string | null | undefined;
+}): boolean {
+  if (input.claimType !== 'COURTESY') return true;
+  if (isCourtesyPendingApproval(input.parentStatus)) return false;
+  if (input.parentStatus === 'REJECTED') return false;
+  return true;
+}
+
+/** Claim statuses cancelled when a pending courtesy is rejected (same set as cancel). */
+export const COURTESY_CLAIM_STATUSES_CANCELLED_ON_REJECT = ['ACTIVE'] as const;
+
+/**
+ * A claim still needs its delivery email: usable, never successfully sent.
+ * (Failures keep `emailSentAt = null`, so a retry only targets those.)
+ */
+export function isCourtesyClaimPendingDelivery(input: {
+  claimType: string | null | undefined;
+  claimStatus: string | null | undefined;
+  emailSentAt: Date | string | null | undefined;
+}): boolean {
+  return (
+    input.claimType === 'COURTESY' && input.claimStatus === 'ACTIVE' && input.emailSentAt == null
+  );
+}
+
+export const GASTRO_COURTESY_EXPIRED_AT_APPROVAL_MESSAGE =
+  'La cortesía ya venció y no puede aprobarse. Rechazala para cerrar la solicitud.';
+
+export const GASTRO_COURTESY_AGREEMENT_REQUIRED_MESSAGE =
+  'El local no tiene acuerdo comercial vigente. Creá o activá la tarifa del partner antes de aprobar o enviar la cortesía.';

@@ -1,5 +1,12 @@
 import {
   canIssueMasterQr,
+  COURTESY_CLAIM_STATUSES_CANCELLED_ON_REJECT,
+  COURTESY_PRE_APPROVAL_DISCOUNT_STATUSES,
+  initialCourtesyDiscountStatus,
+  isClaimVisibleToRecipient,
+  isCourtesyClaimPendingDelivery,
+  isCourtesyClaimRetained,
+  isCourtesyPendingApproval,
   COURTESY_CLAIM_STATUSES_CANCELLED_ON_CAMPAIGN_CANCEL,
   courtesyStatusChangeBlocker,
   isCourtesyOnlyVisibility,
@@ -113,5 +120,49 @@ assert(
 );
 assert(!shouldNotifyDiscountExpired('COURTESY_ONLY'), 'no expiry notice for courtesy');
 assert(shouldNotifyDiscountExpired('PUBLIC'), 'expiry notice kept for public discounts');
+
+// --- G8.3 / G8.4: approval, retained claims, delivery ---
+assert(initialCourtesyDiscountStatus('GASTRO_OWNER') === 'PENDING_REVIEW', 'owner courtesy is born PENDING_REVIEW');
+assert(initialCourtesyDiscountStatus('ADMIN') === 'ACTIVE', 'admin courtesy is born ACTIVE');
+assert(
+  COURTESY_PRE_APPROVAL_DISCOUNT_STATUSES.length === 2 &&
+    isCourtesyPendingApproval('PENDING_REVIEW') &&
+    isCourtesyPendingApproval('COMMISSION_NEGOTIATION') &&
+    !isCourtesyPendingApproval('ACTIVE') &&
+    !isCourtesyPendingApproval(null),
+  'pending-approval statuses',
+);
+assert(
+  isCourtesyClaimRetained({ claimType: 'COURTESY', claimStatus: 'ACTIVE', parentStatus: 'PENDING_REVIEW' }),
+  'ACTIVE courtesy claim of a pending parent is retained',
+);
+assert(
+  !isCourtesyClaimRetained({ claimType: 'COURTESY', claimStatus: 'ACTIVE', parentStatus: 'ACTIVE' }) &&
+    !isCourtesyClaimRetained({ claimType: 'PUBLIC_REQUEST', claimStatus: 'ACTIVE', parentStatus: 'PENDING_REVIEW' }) &&
+    !isCourtesyClaimRetained({ claimType: 'COURTESY', claimStatus: 'CANCELLED', parentStatus: 'PENDING_REVIEW' }),
+  'approved parent / public claim / cancelled claim are not retained',
+);
+assert(!isClaimVisibleToRecipient({ claimType: 'COURTESY', parentStatus: 'PENDING_REVIEW' }), 'retained courtesy claim hidden');
+assert(!isClaimVisibleToRecipient({ claimType: 'COURTESY', parentStatus: 'COMMISSION_NEGOTIATION' }), 'negotiating courtesy claim hidden');
+assert(!isClaimVisibleToRecipient({ claimType: 'COURTESY', parentStatus: 'REJECTED' }), 'rejected courtesy claim hidden');
+assert(isClaimVisibleToRecipient({ claimType: 'COURTESY', parentStatus: 'ACTIVE' }), 'active (legacy or approved) courtesy claim visible');
+assert(isClaimVisibleToRecipient({ claimType: 'COURTESY', parentStatus: 'CANCELLED' }), 'cancelled courtesy keeps history visible');
+assert(isClaimVisibleToRecipient({ claimType: 'COURTESY', parentStatus: 'EXPIRED' }), 'expired courtesy keeps history visible');
+assert(
+  isClaimVisibleToRecipient({ claimType: 'PUBLIC_REQUEST', parentStatus: 'PENDING_REVIEW' }) &&
+    isClaimVisibleToRecipient({ claimType: 'PUBLIC_REQUEST', parentStatus: 'REJECTED' }),
+  'public claims visibility unchanged',
+);
+assert(
+  COURTESY_CLAIM_STATUSES_CANCELLED_ON_REJECT.length === 1 && COURTESY_CLAIM_STATUSES_CANCELLED_ON_REJECT[0] === 'ACTIVE',
+  'reject cancels only ACTIVE claims',
+);
+assert(
+  isCourtesyClaimPendingDelivery({ claimType: 'COURTESY', claimStatus: 'ACTIVE', emailSentAt: null }) &&
+    !isCourtesyClaimPendingDelivery({ claimType: 'COURTESY', claimStatus: 'ACTIVE', emailSentAt: new Date() }) &&
+    !isCourtesyClaimPendingDelivery({ claimType: 'COURTESY', claimStatus: 'CANCELLED', emailSentAt: null }) &&
+    !isCourtesyClaimPendingDelivery({ claimType: 'COURTESY', claimStatus: 'USED', emailSentAt: null }),
+  'delivery targets only usable, never-delivered claims',
+);
 
 console.log('gastro-courtesy-lifecycle assertions passed');

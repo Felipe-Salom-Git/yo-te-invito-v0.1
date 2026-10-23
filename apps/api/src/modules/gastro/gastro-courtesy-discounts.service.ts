@@ -11,6 +11,8 @@ import {
   parseMoneyCentsString,
   type GastroCourtesyRecipientsPreviewQuery,
   type GastroCourtesySendBody,
+  GASTRO_COURTESY_AGREEMENT_REQUIRED_MESSAGE,
+  initialCourtesyDiscountStatus,
   isCourtesyValidityRangeValid,
   isGastroDiscountExpired,
   normalizeGastroDiscountExpiryDate,
@@ -19,8 +21,9 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { ProfilesAuthorizationService } from '../../common/profiles-authorization.service';
 import { AuditService } from '../audit/audit.service';
-import { GastroDiscountClaimEmailService } from './gastro-discount-claim-email.service';
 import { EmailService } from '../../email/email.service';
+import { BenefitCommercialAgreementsService } from '../benefit-agreements/benefit-commercial-agreements.service';
+import { GastroCourtesyDeliveryService } from './gastro-courtesy-delivery.service';
 import { allocateGastroClaimShortCode } from '../../common/gastro-claim-short-code.util';
 import { CourtesyCreditLedgerService } from '../courtesy-credit-ledger/courtesy-credit-ledger.service';
 
@@ -47,9 +50,10 @@ export class GastroCourtesyDiscountsService {
     private readonly prisma: PrismaService,
     private readonly profiles: ProfilesAuthorizationService,
     private readonly audit: AuditService,
-    private readonly claimEmail: GastroDiscountClaimEmailService,
     private readonly email: EmailService,
     private readonly courtesyLedger: CourtesyCreditLedgerService,
+    private readonly benefitAgreements: BenefitCommercialAgreementsService,
+    private readonly delivery: GastroCourtesyDeliveryService,
   ) {}
 
   private async assertCanManageProfile(
@@ -289,12 +293,23 @@ export class GastroCourtesyDiscountsService {
       }
     }
 
+    // G8.3.5: even an ADMIN-created courtesy (no review step) must have a CURRENT commercial
+    // agreement for the local before anything is created/delivered. No silent exception.
+    // Owner-created courtesies are gated at approval time instead.
+    if (userRole === 'ADMIN') {
+      await this.assertCurrentAgreement(tenantId, profile.id);
+    }
+
     const eventId = profile.publicEventId!;
     const imputedValueCents = body.funding
       ? parseMoneyCentsString(body.funding.imputedValueCents)
       : null;
 
-    const { discount, campaign, debitEntry } = await this.prisma.$transaction(
+    // G8.3.1: owner courtesies are born PENDING_REVIEW (claims retained until ADMIN approval).
+    // ADMIN courtesies are born ACTIVE. Reuses the existing GastroDiscount lifecycle.
+    const discountStatus = initialCourtesyDiscountStatus(userRole);
+
+    const { discount, campaign, debitEntry, createdClaims } = await this.prisma.$transaction(
       async (tx) => {
         const discount = await tx.gastroDiscount.create({
           data: {
@@ -311,8 +326,10 @@ export class GastroCourtesyDiscountsService {
             validFrom,
             validTo,
             discountDate: validTo,
-            status: 'ACTIVE',
+            status: discountStatus,
             visibility: 'COURTESY_ONLY',
+            // Courtesies never own a discount-level (master) QR.
+            qrToken: null,
             createdByOrigin: userRole === 'ADMIN' ? 'ADMIN' : 'GASTRO',
             createdByUserId: userId,
           },
@@ -333,6 +350,31 @@ export class GastroCourtesyDiscountsService {
           },
         });
 
+        // G8.3 (Option A): freeze the recipient set NOW by pre-creating one claim per
+        // recipient, in the same transaction as the campaign. While the parent discount is
+        // PENDING_REVIEW these claims are retained (not scannable / not visible / not mailed).
+        const createdClaims: Array<{ id: string; email: string }> = [];
+        for (const recipient of recipients) {
+          const claim = await tx.gastroDiscountClaim.create({
+            data: {
+              tenantId,
+              discountId: discount.id,
+              courtesyCampaignId: campaign.id,
+              email: recipient.email,
+              userId: recipient.userId,
+              recipientName: recipient.displayName,
+              qrToken: randomBytes(24).toString('hex'),
+              accessToken: randomBytes(32).toString('hex'),
+              shortCode: await allocateGastroClaimShortCode(tx),
+              type: 'COURTESY',
+              source: recipient.source,
+              status: 'ACTIVE',
+              expiresAt: validTo,
+            },
+          });
+          createdClaims.push({ id: claim.id, email: recipient.email });
+        }
+
         let debitEntry: { id: string; amountCents: bigint } | null = null;
         if (imputedValueCents != null) {
           const { entry } = await this.courtesyLedger.debitForGastroCourtesyCampaign(tx, {
@@ -346,10 +388,16 @@ export class GastroCourtesyDiscountsService {
           debitEntry = entry;
         }
 
-        return { discount, campaign, debitEntry };
+        return { discount, campaign, debitEntry, createdClaims };
       },
-      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+      {
+        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+        maxWait: 10_000,
+        timeout: 60_000,
+      },
     );
+
+    const pendingApproval = discountStatus === 'PENDING_REVIEW';
 
     await this.audit.logAction({
       tenantId,
@@ -360,7 +408,9 @@ export class GastroCourtesyDiscountsService {
       entityId: campaign.id,
       after: {
         discountId: discount.id,
+        status: discountStatus,
         recipientCount: recipients.length,
+        retainedClaims: pendingApproval ? createdClaims.length : 0,
         gastroProfileId: profile.id,
         fundedFromCourtesyCredit: debitEntry != null,
       },
@@ -383,107 +433,58 @@ export class GastroCourtesyDiscountsService {
       });
     }
 
-    let sentCount = 0;
-    let skippedCount = 0;
-    let createdCount = 0;
-    let failedCount = 0;
-    const failures: Array<{ email: string; reason: string }> = [];
     const emailConfigured = this.email.isConfigured();
     const requestedCount = recipients.length;
-
-    for (const recipient of recipients) {
-      const existing = await this.prisma.gastroDiscountClaim.findUnique({
-        where: {
-          courtesyCampaignId_email: {
-            courtesyCampaignId: campaign.id,
-            email: recipient.email,
-          },
-        },
-      });
-      if (existing) {
-        skippedCount += 1;
-        continue;
-      }
-
-      const qrToken = randomBytes(24).toString('hex');
-      const claim = await this.prisma.gastroDiscountClaim.create({
-        data: {
-          tenantId,
-          discountId: discount.id,
-          courtesyCampaignId: campaign.id,
-          email: recipient.email,
-          userId: recipient.userId,
-          recipientName: recipient.displayName,
-          qrToken,
-          accessToken: randomBytes(32).toString('hex'),
-          shortCode: await allocateGastroClaimShortCode(this.prisma),
-          type: 'COURTESY',
-          source: recipient.source,
-          status: 'ACTIVE',
-          expiresAt: validTo,
-        },
-      });
-
-      createdCount += 1;
-      const qrPayload = this.claimEmail.buildQrPayload(discount.id, qrToken);
-      const sendResult = await this.claimEmail.sendClaimEmail({
-        claimId: claim.id,
-        accessToken: claim.accessToken,
-        to: recipient.email,
-        kind: 'COURTESY',
-        recipientUserId: recipient.userId,
-        userName: recipient.displayName,
-        gastroName: profile.displayName,
-        discountTitle: body.title.trim(),
-        discountDescription: body.description ?? null,
-        discountLabel: body.discountLabel.trim(),
-        qrPayload,
-        qrCode: qrToken,
-        validTo: validTo.toISOString(),
-        courtesyMessage: body.message ?? null,
-        webBaseUrl,
-      });
-      if (sendResult.sent) {
-        sentCount += 1;
-      } else {
-        failedCount += 1;
-        failures.push({
-          email: recipient.email,
-          reason: sendResult.error ?? 'Failed to send email',
-        });
-      }
-    }
-
-    await this.audit.logAction({
-      tenantId,
-      actorId: userId,
-      actorRole: userRole,
-      action: 'GASTRO_DISCOUNT_COURTESY_SENT',
-      entityType: 'GastroCourtesyCampaign',
-      entityId: campaign.id,
-      metadata: {
-        sentCount,
-        skippedCount,
-        failedCount,
-        createdCount,
-        totalRecipients: recipients.length,
-        emailConfigured,
-      },
-    });
-
-    return {
+    const base = {
       campaignId: campaign.id,
       discountId: discount.id,
       requestedCount,
-      createdCount,
-      sentCount,
-      skippedCount,
-      failedCount,
-      failures,
+      createdCount: createdClaims.length,
+      skippedCount: 0,
       emailConfigured,
+      discountStatus,
+      pendingApproval,
       fundedFromCourtesyCredit: debitEntry != null,
       ledgerEntryId: debitEntry?.id ?? null,
       imputedValueCents: imputedValueCents != null ? imputedValueCents.toString() : null,
     };
+
+    if (pendingApproval) {
+      // G8.4: creation and delivery are two moments. Nothing is emailed until ADMIN approves.
+      return { ...base, sentCount: 0, failedCount: 0, failures: [] };
+    }
+
+    // ADMIN-created: already approved (agreement gate passed) → deliver now.
+    const delivery = await this.delivery.deliverCampaign(tenantId, discount.id, {
+      actorId: userId,
+      actorRole: userRole,
+      trigger: 'ADMIN_CREATE',
+      webBaseUrl,
+    });
+    return {
+      ...base,
+      emailConfigured: delivery.emailConfigured,
+      sentCount: delivery.sent,
+      failedCount: delivery.failed,
+      failures: delivery.failures,
+    };
+  }
+
+  /**
+   * CURRENT commercial agreement gate for the local (same resolver discounts use).
+   * Acts as a commercial gate only: nothing from the agreement is copied to the campaign.
+   */
+  private async assertCurrentAgreement(tenantId: string, gastroProfileId: string) {
+    const ctx = await this.benefitAgreements.resolveApplicable(tenantId, {
+      vertical: 'GASTRO',
+      gastroProfileId,
+    });
+    if (!ctx.agreement) {
+      throw new BadRequestException({
+        code: ErrorCode.BENEFIT_AGREEMENT_NOT_FOUND,
+        message: GASTRO_COURTESY_AGREEMENT_REQUIRED_MESSAGE,
+      });
+    }
+    return ctx.agreement;
   }
 }

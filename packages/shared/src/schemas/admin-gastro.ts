@@ -105,6 +105,22 @@ export const adminGastroLocationDetailSchema = adminGastroLocationListItemSchema
 });
 export type AdminGastroLocationDetail = z.infer<typeof adminGastroLocationDetailSchema>;
 
+/** G8.3: courtesy campaign context shown to ADMIN during review / in lists. */
+export const adminGastroCourtesySummarySchema = z.object({
+  campaignId: z.string(),
+  title: z.string(),
+  discountLabel: z.string().nullable(),
+  description: z.string().nullable().optional(),
+  message: z.string().nullable().optional(),
+  recipientCount: z.number().int().min(0),
+  usedCount: z.number().int().min(0).optional(),
+  pendingDeliveryCount: z.number().int().min(0).optional(),
+  deliveredCount: z.number().int().min(0).optional(),
+  validFrom: z.string().datetime().nullable().optional(),
+  validTo: z.string().datetime().nullable().optional(),
+});
+export type AdminGastroCourtesySummary = z.infer<typeof adminGastroCourtesySummarySchema>;
+
 export const adminGastroDiscountListItemSchema = z.object({
   id: z.string(),
   title: z.string().nullable(),
@@ -121,6 +137,9 @@ export const adminGastroDiscountListItemSchema = z.object({
   reviewKind: z.enum(['NEW', 'EDIT']).optional(),
   createdByOrigin: z.enum(['GASTRO', 'ADMIN']).optional(),
   archivedAt: z.string().datetime().nullable().optional(),
+  /** G8.3: COURTESY_ONLY rows are courtesies (reviewed through the same queue). */
+  visibility: z.enum(['PUBLIC', 'COURTESY_ONLY']).optional(),
+  courtesy: adminGastroCourtesySummarySchema.nullable().optional(),
 });
 export type AdminGastroDiscountListItem = z.infer<typeof adminGastroDiscountListItemSchema>;
 
@@ -182,6 +201,20 @@ export const adminGastroDiscountDetailSchema = z.object({
   updatedAt: z.string().datetime(),
   createdByOrigin: z.enum(['GASTRO', 'ADMIN']).optional(),
   archivedAt: z.string().datetime().nullable().optional(),
+  visibility: z.enum(['PUBLIC', 'COURTESY_ONLY']).optional(),
+  courtesy: adminGastroCourtesySummarySchema.nullable().optional(),
+  profileName: z.string().nullable().optional(),
+  /** Present on approve/reject/redeliver of a courtesy: how delivery went (never blocks approval). */
+  courtesyDelivery: z
+    .object({
+      attempted: z.number().int().min(0),
+      sent: z.number().int().min(0),
+      failed: z.number().int().min(0),
+      skippedAlreadySent: z.number().int().min(0),
+      emailConfigured: z.boolean(),
+    })
+    .nullable()
+    .optional(),
   hasPendingUpdate: z.boolean().optional(),
   pendingUpdateSubmittedAt: z.string().datetime().nullable().optional(),
   pendingUpdate: z

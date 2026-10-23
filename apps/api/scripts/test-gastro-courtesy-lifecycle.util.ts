@@ -405,6 +405,7 @@ async function adminTests() {
       { notifyFollowersOfNewActiveDiscount: async () => undefined } as never,
       { notifyDiscountApproved: () => undefined, notifyDiscountRejected: () => undefined } as never,
       {} as never,
+      {} as never,
     );
     const hack = svc as unknown as Record<string, unknown>;
     hack.resolveDiscountProfileId = async (_t: string, r: { gastroProfileId: string }) => r.gastroProfileId;
