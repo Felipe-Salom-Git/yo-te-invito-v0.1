@@ -8,6 +8,7 @@ import { getContentDetailHref } from '@/lib/home/contentRoutes';
 import {
   GASTRO_CARD_SUBCATEGORY_MAX_DESKTOP,
   GASTRO_CARD_SUBCATEGORY_MAX_MOBILE,
+  GASTRO_CARD_TAG_MAX_WITH_SUBCATEGORIES,
   getContentCardPresentation,
   getContentCardPlaceholderEmoji,
   getGastroCardVisibleSubcategoryChips,
@@ -183,30 +184,44 @@ export function ContentCard({ item, onClick, tenantId }: ContentCardProps) {
         <div className="mb-2 flex max-w-full flex-wrap gap-1.5">
           {subcategoryChips.length > 0 ? (
             <>
-              <ul className="flex max-w-full flex-wrap gap-1.5 sm:hidden" aria-label="Subcategorías">
-                {mobileChips.visible.map((name) => (
-                  <li key={name}>
-                    <span className="inline-block max-w-[9rem] truncate rounded border border-white/20 bg-black/45 px-2 py-0.5 text-[10px] font-medium text-white/90">
+              <ul className="flex max-w-full flex-nowrap gap-1.5 overflow-hidden sm:hidden" aria-label="Subcategorías">
+                {mobileChips.visible.map((name, index) => (
+                  <li key={name} className="min-w-0">
+                    <span
+                      className={`inline-block max-w-[8rem] truncate rounded px-2 py-0.5 text-[10px] font-medium text-white/90 ${
+                        index === 0
+                          ? 'border border-white/55 bg-black/60'
+                          : 'border border-dashed border-white/25 bg-black/35'
+                      }`}
+                      title={index === 0 ? `Principal: ${name}` : name}
+                    >
                       {name}
                     </span>
                   </li>
                 ))}
                 {mobileChips.hiddenCount > 0 ? (
-                  <li>
+                  <li className="shrink-0">
                     <span className="text-[10px] text-white/65">+{mobileChips.hiddenCount}</span>
                   </li>
                 ) : null}
               </ul>
-              <ul className="hidden max-w-full flex-wrap gap-1.5 sm:flex" aria-label="Subcategorías">
-                {desktopChips.visible.map((name) => (
-                  <li key={name}>
-                    <span className="inline-block max-w-[10rem] truncate rounded border border-white/20 bg-black/45 px-2 py-0.5 text-[10px] font-medium text-white/90">
+              <ul className="hidden max-w-full flex-nowrap gap-1.5 overflow-hidden sm:flex" aria-label="Subcategorías">
+                {desktopChips.visible.map((name, index) => (
+                  <li key={name} className="min-w-0">
+                    <span
+                      className={`inline-block max-w-[9rem] truncate rounded px-2 py-0.5 text-[10px] font-medium text-white/90 ${
+                        index === 0
+                          ? 'border border-white/55 bg-black/60'
+                          : 'border border-dashed border-white/25 bg-black/35'
+                      }`}
+                      title={index === 0 ? `Principal: ${name}` : name}
+                    >
                       {name}
                     </span>
                   </li>
                 ))}
                 {desktopChips.hiddenCount > 0 ? (
-                  <li>
+                  <li className="shrink-0">
                     <span className="text-[10px] text-white/65">+{desktopChips.hiddenCount}</span>
                   </li>
                 ) : null}
@@ -231,7 +246,11 @@ export function ContentCard({ item, onClick, tenantId }: ContentCardProps) {
           {item.title}
         </h3>
         {compactSummary ? (
-          <p className="mt-1.5 line-clamp-2 text-xs font-medium normal-case tracking-normal text-white/80">
+          <p
+            className={`mt-1.5 text-xs font-medium normal-case tracking-normal text-white/80 ${
+              isGastro && subcategoryChips.length > 0 ? 'line-clamp-1' : 'line-clamp-2'
+            }`}
+          >
             {compactSummary}
           </p>
         ) : null}
@@ -248,10 +267,15 @@ export function ContentCard({ item, onClick, tenantId }: ContentCardProps) {
         {showTagsInCompact && item.tags && item.tags.length > 0 ? (
           <ContentTagChips
             tags={item.tags}
-            maxVisible={CONTENT_CARD_MAX_VISIBLE_TAGS}
+            maxVisible={
+              isGastro && subcategoryChips.length > 0
+                ? GASTRO_CARD_TAG_MAX_WITH_SUBCATEGORIES
+                : CONTENT_CARD_MAX_VISIBLE_TAGS
+            }
             category={item.category}
             variant="muted"
-            className="mt-2 opacity-90"
+            linkable={false}
+            className="mt-2 max-w-full opacity-90"
           />
         ) : null}
       </div>

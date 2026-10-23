@@ -9,9 +9,11 @@ import {
 } from '@/lib/public/publicContentDates';
 import { RENTAL_PUBLIC_CTA_LOCAL } from '@/lib/rentals/publicCopy';
 
-/** Compact gastro card: show 2 chips on narrow, 3 on sm+. */
-export const GASTRO_CARD_SUBCATEGORY_MAX_MOBILE = 2;
-export const GASTRO_CARD_SUBCATEGORY_MAX_DESKTOP = 3;
+export {
+  GASTRO_CARD_SUBCATEGORY_MAX_MOBILE,
+  GASTRO_CARD_SUBCATEGORY_MAX_DESKTOP,
+  GASTRO_CARD_TAG_MAX_WITH_SUBCATEGORIES,
+} from './gastroCardChipLimits';
 
 /** Badge on public discovery cards (not section titles). */
 export const RENTAL_CARD_BADGE = 'Alquiler';
