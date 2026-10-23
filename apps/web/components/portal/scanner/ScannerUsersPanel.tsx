@@ -56,9 +56,11 @@ function StatusBadge({ account }: { account: ScannerAccountSummary }) {
 
 type Props = {
   portal: ScannerAccountsPortal;
+  /** When set, the list and the create form stay on this local. */
+  scopeProfileId?: string;
 };
 
-export function ScannerUsersPanel({ portal }: Props) {
+export function ScannerUsersPanel({ portal, scopeProfileId }: Props) {
   const copy = PORTAL_COPY[portal];
   const { addToast } = useToast();
   const listQuery = useScannerAccountsList(portal);
@@ -90,7 +92,14 @@ export function ScannerUsersPanel({ portal }: Props) {
     if (defaultParentId) setParentProfileId(defaultParentId);
   }, [sheetOpen, defaultParentId, parentProfileId]);
 
-  const items = listQuery.data?.data ?? [];
+  const items = (listQuery.data?.data ?? []).filter((account) =>
+    scopeProfileId ? account.parentProfileId === scopeProfileId : true,
+  );
+
+  const openCreate = () => {
+    if (scopeProfileId) setParentProfileId(scopeProfileId);
+    setSheetOpen(true);
+  };
 
   const resetForm = () => {
     setUsername('');
@@ -185,8 +194,8 @@ export function ScannerUsersPanel({ portal }: Props) {
             administrativo ni pueden modificar publicaciones.
           </p>
         </div>
-        <Button type="button" onClick={() => setSheetOpen(true)}>
-          Nuevo scanner
+        <Button type="button" onClick={openCreate}>
+          Crear scanner
         </Button>
       </div>
 
@@ -197,13 +206,60 @@ export function ScannerUsersPanel({ portal }: Props) {
       ) : listQuery.isError ? (
         <QueryError className="mt-8" message={getErrorMessage(listQuery.error)} />
       ) : items.length === 0 ? (
-        <EmptyState
-          className="mt-8"
-          title="Sin usuarios scanner"
-          description="Creá el primero para que tu equipo valide en puerta desde la app Scanner."
-        />
+        <div className="mt-8">
+          <EmptyState
+            title={
+              scopeProfileId
+                ? 'Este local no tiene usuarios scanner.'
+                : 'Todavía no hay usuarios scanner.'
+            }
+            description="Creá uno para que el equipo valide en la app Scanner, sin acceso al panel."
+          />
+          <div className="mt-4 flex justify-center">
+            <Button type="button" onClick={openCreate}>
+              Crear scanner
+            </Button>
+          </div>
+        </div>
       ) : (
-        <div className="mt-6 overflow-x-auto rounded-xl border border-border">
+        <>
+        <ul className="mt-6 space-y-3 md:hidden">
+          {items.map((account) => (
+            <li key={account.id} className="rounded-xl border border-border bg-bg p-4">
+              <p className="font-medium text-text">{account.username ?? account.email ?? '—'}</p>
+              <p className="mt-1 text-sm text-text-muted">
+                {[account.firstName, account.lastName].filter(Boolean).join(' ') || 'Sin nombre'}
+              </p>
+              <p className="mt-2 text-sm text-text">
+                {copy.parentLabel}: {account.parentDisplayName?.trim() || '—'}
+              </p>
+              <div className="mt-2">
+                <StatusBadge account={account} />
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  disabled={updateStatus.isPending}
+                  onClick={() => void handleToggle(account)}
+                >
+                  {account.isActive ? 'Desactivar' : 'Activar'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  disabled={resetPassword.isPending}
+                  onClick={() => void handleResetPassword(account)}
+                >
+                  Resetear clave
+                </Button>
+              </div>
+            </li>
+          ))}
+        </ul>
+        <div className="mt-6 hidden overflow-x-auto rounded-xl border border-border md:block">
           <table className="min-w-full text-left text-sm">
             <thead className="border-b border-border bg-bg-muted/50 text-xs uppercase text-text-muted">
               <tr>
@@ -257,6 +313,7 @@ export function ScannerUsersPanel({ portal }: Props) {
             </tbody>
           </table>
         </div>
+        </>
       )}
 
       <Modal
@@ -265,7 +322,7 @@ export function ScannerUsersPanel({ portal }: Props) {
           setSheetOpen(false);
           resetForm();
         }}
-        title="Nuevo usuario scanner"
+        title="Crear scanner"
         footer={
           <>
             <Button

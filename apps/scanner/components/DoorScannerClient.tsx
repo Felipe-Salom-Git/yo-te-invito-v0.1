@@ -37,6 +37,10 @@ import { OfflineConflictPanel } from '@/components/OfflineConflictPanel';
 import { ScannerOperationalMenu } from '@/components/ScannerOperationalMenu';
 import { ScanResultModal, type ScanResultModalData } from '@/components/ScanResultModal';
 import { ScannerTicketListPanel } from '@/components/ScannerTicketListPanel';
+import {
+  gastroScanToneClass,
+  presentGastroDiscountScan,
+} from '@/lib/scan/gastro-scan-presentation';
 
 const MAX_HISTORY = 20;
 const LS_LAST_EVENT = 'scanner:lastEventId';
@@ -62,12 +66,6 @@ type InputMode = 'camera' | 'manual';
 type ScanMode = 'idle' | 'scanning' | 'validating' | 'error';
 
 const SCAN_COOLDOWN_MS = 2500;
-
-function gastroStatusClass(status: ValidateGastroDiscountResponse['status']): string {
-  if (status === 'VALID') return 'bg-emerald-700 text-white';
-  if (status === 'ALREADY_USED' || status === 'LIMIT_REACHED' || status === 'NOT_VALID_TODAY') return 'bg-amber-700 text-white';
-  return 'bg-red-700 text-white';
-}
 
 function formatOccurrenceLabel(occ: ScannerEventOccurrence): string {
   return new Date(occ.startAt).toLocaleString('es-AR', {
@@ -635,12 +633,16 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
         <h1 className="text-xl font-bold text-white sm:text-2xl">
           {screen === 'setup' ? 'Scanner — Configuración' : 'Scanner — Puerta'}
         </h1>
-        <p className="mt-1 text-xs text-slate-400 sm:text-sm">
-          {userLabel} · {userEmail}
+        <p className="mt-1 text-xs text-slate-300 sm:text-sm">
+          Usuario scanner: {userLabel || userEmail}
         </p>
-        {targets?.parentDisplayName && (
-          <p className="mt-0.5 text-xs text-slate-500">Cuenta: {targets.parentDisplayName}</p>
-        )}
+        {userLabel && userEmail ? (
+          <p className="text-xs text-slate-500">{userEmail}</p>
+        ) : null}
+        {targets?.parentDisplayName ? (
+          <p className="text-xs text-slate-300">Local: {targets.parentDisplayName}</p>
+        ) : null}
+        <p className="text-xs text-emerald-400">Sesión activa</p>
       </div>
       <button
         type="button"
@@ -743,7 +745,7 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
               : 'border border-slate-600 text-slate-300'
           }`}
         >
-          Ingresar código manualmente
+          Ingresar código manual
         </button>
       </div>
 
@@ -1044,7 +1046,7 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
               disabled={!canGoToScan}
               className="h-12 rounded-xl border border-slate-500 text-base font-semibold text-white hover:bg-slate-800 disabled:opacity-40"
             >
-              Ingresar código manualmente
+              Ingresar código manual
             </button>
           </div>
           {!canGoToScan && (
@@ -1058,23 +1060,29 @@ export function DoorScannerClient({ userLabel, userEmail, onLogout }: DoorScanne
           {scanSummaryBlock}
           {scanControlsBlock}
 
-          {lastGastro && (
-            <div className={`rounded-xl px-4 py-3 ${gastroStatusClass(lastGastro.status)}`}>
-              <p className="text-xs font-normal uppercase opacity-80">
-                {lastGastro.discount?.kind === 'COURTESY' ? 'Cortesía' : 'Descuento'} ·{' '}
-                {lastGastro.status}
-              </p>
-              <p className="mt-1 text-base font-semibold">{lastGastro.title}</p>
-              <p className="mt-1 text-sm opacity-90">{lastGastro.message}</p>
-              {lastGastro.discount?.valueLabel ? (
-                <p className="mt-1 text-sm font-medium">{lastGastro.discount.valueLabel}</p>
-              ) : null}
-            </div>
-          )}
+          {lastGastro && <GastroScanResult result={lastGastro} />}
 
           {historyBlock}
         </div>
       )}
     </main>
+  );
+}
+
+function GastroScanResult({ result }: { result: ValidateGastroDiscountResponse }) {
+  const view = presentGastroDiscountScan(result);
+  return (
+    <div className={`rounded-xl px-4 py-3 ${gastroScanToneClass(view.tone)}`} role="status">
+      <p className="text-xs font-semibold uppercase tracking-wide opacity-90">
+        {view.kindLabel ? `${view.kindLabel} · ${view.statusLabel}` : view.statusLabel}
+      </p>
+      <p className="mt-1 text-base font-semibold">{view.headline}</p>
+      <p className="mt-1 text-sm opacity-90">{view.message}</p>
+      {view.benefit ? <p className="mt-1 text-sm font-medium">{view.benefit}</p> : null}
+      {view.shortCode ? (
+        <p className="mt-1 font-mono text-sm">Código {view.shortCode}</p>
+      ) : null}
+      {view.localName ? <p className="mt-1 text-sm">Local: {view.localName}</p> : null}
+    </div>
   );
 }
