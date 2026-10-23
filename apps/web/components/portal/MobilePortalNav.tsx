@@ -62,6 +62,7 @@ export function MobilePortalNav({ portalKey, items: itemsOverride, showPublicHom
         onClose={() => setOpen(false)}
         title={title}
         items={items}
+        search={search}
         showPublicHomeLink={showPublicHomeLink}
       />
     </>
@@ -73,12 +74,14 @@ function MobilePortalNavDrawer({
   onClose,
   title,
   items,
+  search,
   showPublicHomeLink,
 }: {
   isOpen: boolean;
   onClose: () => void;
   title: string;
   items: PortalNavItem[];
+  search: string;
   showPublicHomeLink?: boolean;
 }) {
   const pathname = usePathname();
