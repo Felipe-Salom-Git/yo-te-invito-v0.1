@@ -127,12 +127,21 @@ Cierre: [`V3_3_G7_12_SETTLEMENT_OPERATIONS_CLOSING.md`](../audits/V3_3_G7_12_SET
 - [x] G7.12.0–.11 detalle, pendientes, asignación por selección, transferencias parciales (también tras CLOSED), `proofUrl`, reversión con motivo, desglose BARTER, historial, estado derivado, contexto desde descuento, listado — `3570ccc`…`75c81ac`
 - [x] G7.12.12–.13 tests seguridad + económicos (`test:benefit-settlement-operations`) — `87d912f`
 - [x] Builds shared/api/web/scanner PASS; **sin migrations**
+- [x] `test:gastro-cross-profile-isolation` **PASS** (exit 0, 13 assertions; predicados cableados en admin/owner/scanner) — **G7.12 cerrada localmente**
 - [ ] DB integration settlements — **NO EJECUTADO** (sin PostgreSQL local)
 - [ ] Upload privado de comprobantes (URLs firmadas) — diferido
 - [ ] QA browser G7.12 (checklist en cierre)
 - [ ] Push / deploy G7.11 + G7.12 — **NO** hasta confirmación explícita
 
-**Roadmap posterior (docs only, NOT STARTED):** [`V3_3_G8_G9_ROADMAP.md`](./V3_3_G8_G9_ROADMAP.md) — G8 Courtesy Coupons · G9 UX complementaria.
+### G8.0 — Discovery Cortesías Gastro (docs only)
+
+Discovery: [`V3_3_G8_COURTESY_DISCOVERY.md`](../audits/V3_3_G8_COURTESY_DISCOVERY.md) · Roadmap: [`V3_3_G8_G9_ROADMAP.md`](./V3_3_G8_G9_ROADMAP.md)
+
+- [x] G8.0 auditoría: dominio, portal, `/me`, scanner, emails, agreement, accounting, Studio, shortCode, approval. **Sin código ni migrations**
+- [x] Conclusión: **extender** `GastroDiscount(COURTESY_ONLY)` + `GastroCourtesyCampaign` + `GastroDiscountClaim(COURTESY)`; **no** crear `CourtesyCoupon`
+- [ ] **Decisiones D1–D5 del operador** (canje facturable, quién financia, aprobación, largo shortCode, campo Studio) — ver roadmap
+- [ ] G8.1–G8.13 — **NOT STARTED** (esperan confirmación)
+- Hallazgos de riesgo a resolver en G8: canjes de cortesía **facturables** hoy (doble cargo/lazo de crédito si financiada), cortesías sin aprobación/agreement, master QR por reactivación, selector de local ignorado en `/gastro/descuentos/cortesia`, bug `coerce.boolean` en preview, typo de ruta admin `discuentos`
 
 ---
 

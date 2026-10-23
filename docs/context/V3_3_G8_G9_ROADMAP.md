@@ -1,11 +1,11 @@
-# V3.3 — Roadmap G8 / G9 (NO IMPLEMENTAR aún)
+# V3.3 — Roadmap G8 / G9
 
-**Estado:** roadmap only — discovery/implementación **bloqueados** hasta instrucción explícita.  
-**Precondición recomendada:** G7.10 cerrado en código (`docs/audits/V3_3_G7_10_QA_FIXES_CLOSING.md`); deploy + QA browser post-deploy a criterio del operador.
+**Estado:** G8.0 (discovery) **COMPLETADO** — [`V3_3_G8_COURTESY_DISCOVERY.md`](../audits/V3_3_G8_COURTESY_DISCOVERY.md). G8.1+ **bloqueado** hasta confirmación explícita del operador.
 
 ```text
-G8: NOT STARTED
-G9: NOT STARTED
+G8.0: DONE (docs only)
+G8.1+: NOT STARTED
+G9:    NOT STARTED
 ```
 
 ---
@@ -14,66 +14,61 @@ G9: NOT STARTED
 
 ```text
 ✅ G1–G7 — Expansión gastro + QA/hardening
-✅ G7.10 — QA fixes + onboarding refinement
-⏭ G8 — Courtesy Coupons (nueva etapa; empieza con discovery)
-⏭ G9 — UX complementaria gastro (polish; no contaminar G8)
+✅ G7.10 — QA fixes + onboarding (desplegado, R0)
+✅ G7.11 / G7.12 — Post-QA + Operación de Liquidaciones (local, sin push/deploy)
+✅ G8.0 — Discovery cortesías (docs)
+⏭ G8 — Cortesías: EXTENDER la arquitectura existente
+⏭ G9 — UX complementaria gastro (no contaminar G8)
 ```
 
 ---
 
-## G8 — Courtesy Coupons
+## G8 — Cortesías Gastro
 
-Nueva etapa funcional. **Antes de implementar:** discovery específico (G8.1).
+### Principio
 
-### Concepto
-
-Una cortesía es un cupón consumible que **no** se publica públicamente, pero internamente debe comportarse de forma equivalente a un descuento.
-
-**No confundir:**
+Una cortesía **no es una entidad nueva**: es `GastroDiscount(visibility = COURTESY_ONLY)` + `GastroCourtesyCampaign` + `GastroDiscountClaim(type = COURTESY)`. G8 **extiende** eso. **No** se crea `CourtesyCoupon`, ni segundo Studio, ni segundo scanner. `CourtesyGrant` es de tickets y no se mezcla.
 
 | Dominio | Rol |
 |---|---|
-| **Courtesy Coupon** | Beneficio/cupón para un usuario |
-| **CourtesyCreditLedgerEntry** | Contabilidad BARTER del partner |
+| **Courtesy Campaign** | Beneficio que un local regala a usuarios (descuento oculto + claims) |
+| **CourtesyCreditLedgerEntry** | Saldo BARTER del partner; solo puede **financiar** una campaña (`sourceCourtesyCampaignId`) |
 
-### Hipótesis de discovery (registrada 2026-10-22)
+### Decisiones pendientes del operador (ver discovery §10)
 
-Ya existe un flujo de cortesías Gastro (migration `20260615120000_gastro_courtesy_discount_claims`):
+| ID | Decisión | Recomendación | Bloquea |
+|---|---|---|---|
+| D1 | ¿Canje de cortesía facturable? A) sí (hoy) · B) nunca · C) solo no financiadas | C como mínimo | G8.11 |
+| D2 | ¿Owner puede financiar con su crédito? | Admin-only en G8 | G8.3 / G8.11 |
+| D3 | ¿Cortesía de owner requiere aprobación + agreement? | Sí; admin-origin auto-ACTIVE | G8.3 |
+| D4 | ShortCode: ¿mantener 6 o acortar? | Mantener 6 + retry P2002 + mostrar | G8.6 |
+| D5 | Studio: ¿campo `courtesyLabel` nuevo o mapear `discountLabel`? | Campo nuevo + render context | G8.7 |
 
-- `GastroCourtesyCampaign` (por `gastroProfileId`, `discountId` único)
-- `GastroDiscount.visibility = COURTESY_ONLY` (fuera de ficha/listados públicos)
-- `GastroDiscountClaim.type = COURTESY` + `courtesyCampaignId`
-- Portal `/gastro/descuentos/cortesia`, `POST /gastro/discounts/courtesy/send`, email `GASTRO_DISCOUNT_QR_COURTESY`
-- `CourtesyCreditLedgerEntry.sourceCourtesyCampaignId` (débito BARTER por campaña financiada, Etapa 9)
+### Slices (reconstruidos sobre el repo)
 
-El discovery debe partir de **extender esta arquitectura**, no de crear un dominio nuevo, salvo que la auditoría demuestre que no alcanza. `CourtesyGrant` es de tickets y no se mezcla.
+| ID | Tema | Schema |
+|---|---|---|
+| **G8.1** | Hardening + profile scope: selector de local en `/gastro/descuentos/cortesia`, fix `coerce.boolean` del preview, `validFrom<validTo`, guard `publicEventId`, `createdByOrigin/UserId`, exponer `visibility` + badge/filtro | NINGUNO |
+| **G8.2** | Aislamiento de lifecycle: nunca `qrToken` en `COURTESY_ONLY` (reactivación + scanner master), bloquear `type/value` y sincronizar campaña al editar, excluir de aviso "vencido"/contadores, cancelar campaña ⇒ claims `CANCELLED` | NINGUNO |
+| **G8.3** | Approval + agreement (Opción A): owner → `PENDING_REVIEW` + claims retenidos; reutiliza approve/reject + agreement gate; admin-origin auto-ACTIVE; sin retroactividad | NINGUNO (esperado) |
+| **G8.4** | Claims/entrega: entrega post-aprobación idempotente, reenvío, resumen robusto ante fallos parciales, `/me` oculta claims de padre inactivo | NINGUNO |
+| **G8.5** | Scanner: tests de aislamiento A/B (QR + shortCode), master token rechazado, indicar "Cortesía" en resultado | NINGUNO |
+| **G8.6** | ShortCode: retry P2002, largo 6 (D4), visible en card/email/`/me`, formato legacy | NINGUNO |
+| **G8.7** | Studio unificado descuento+cortesía: `courtesyLabel` (D5), render context, fin del `0%`, preset, acceso desde el flujo, fix typo ruta admin `discuentos` | NINGUNO |
+| **G8.8** | Emails/notificaciones: aprobada/rechazada (reutiliza `GASTRO_LIFECYCLE`), shortCode en email, `audit-labels`, `sendQrEmail` admin | NINGUNO |
+| **G8.9** | Portal Gastro: listado/detalle de campañas por local, métricas, cancelar/reenviar | NINGUNO |
+| **G8.10** | Admin: cola con badge/filtro, aprobar con agreement visible, detalle de campaña, panel QR sin `qrToken` | NINGUNO |
+| **G8.11** | Accounting (según D1): elegibilidad por `claim.type`, reversa de `DEBIT_COURTESY`, reporte; **auditar datos reales primero**; semántica G5/G6 solo con autorización | NINGUNO (esperado) |
+| **G8.12** | Tests: cross-profile, tenant, approval/agreement, economía financiada vs no | — |
+| **G8.13** | QA + docs + cierre | — |
 
-Numeración vigente (prompt operador): discovery = **G8.0**; los IDs de abajo son referencia histórica.
-
-### Slices planificados (alto nivel)
-
-| ID | Tema |
-|---|---|
-| G8.1 | Discovery Courtesy actual (`GastroCourtesy*`, claims, scanner, ledger, discounts) |
-| G8.2 | Dominio Courtesy Coupon por `GastroProfile` |
-| G8.3 | Lifecycle + approval (alineado a GastroDiscount donde corresponda) |
-| G8.4 | `BenefitCommercialAgreement` CURRENT al aprobar |
-| G8.5 | Claims + short codes |
-| G8.6 | Scanner isolation por local (A valida A, no B) |
-| G8.7 | Reusar QR Studio / template engine (no segundo Studio) |
-| G8.8 | Short code más corto (con análisis de colisiones + legacy) |
-| G8.9 | Código visible en cupón/email/Studio |
-| G8.10 | Email approval + contexto commercial agreement |
-| G8.11 | Portal GASTRO — Cortesías por local |
-| G8.12 | ADMIN — review / agreement / approve |
-| G8.13 | Accounting / settlements integration |
-| G8.14 | QA isolation / QR / scanner / accounting |
+**Dependencias:** G8.1 y G8.2 no dependen de D1–D5 (pueden ir primero). Si algún slice requiere migration → **detenerse antes de crearla**.
 
 ---
 
 ## G9 — UX complementaria gastro
 
-Mejoras pequeñas que **no** deben mezclarse con Courtesy Coupon.
+Mejoras pequeñas que **no** deben mezclarse con Cortesías.
 
 | ID | Tema |
 |---|---|
@@ -88,6 +83,6 @@ Mejoras pequeñas que **no** deben mezclarse con Courtesy Coupon.
 
 ## Reglas de arranque
 
-1. **No** abrir PRs de G8/G9 en el mismo slice que G7.10.
-2. G8 **debe** empezar con audit/discovery (G8.1), no con schema speculative.
-3. G9 puede correr en paralelo a G8 solo si no toca dominio Courtesy.
+1. G8.1+ solo con confirmación explícita; un commit por slice; sin push/deploy hasta ventana acordada.
+2. No duplicar dominios; no romper tenant ni `gastroProfile` isolation; no alterar semántica G5/G6 sin necesidad demostrada y autorización.
+3. G9 puede correr en paralelo a G8 solo si no toca dominio Cortesía.
