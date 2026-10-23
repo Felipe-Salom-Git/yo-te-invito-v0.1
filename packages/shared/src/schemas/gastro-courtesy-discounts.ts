@@ -55,6 +55,19 @@ export const meGastroDiscountsResponseSchema = z.object({
 export type MeGastroDiscountItem = z.infer<typeof meGastroDiscountItemSchema>;
 export type MeGastroDiscountsResponse = z.infer<typeof meGastroDiscountsResponseSchema>;
 
+/**
+ * Query-string boolean. NEVER use `z.coerce.boolean()` for query params:
+ * `Boolean("false") === true`, so `?sendToFollowers=false` would be read as `true`.
+ */
+export function parseQueryBoolean(value: unknown): unknown {
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'true' || normalized === '1') return true;
+    if (normalized === 'false' || normalized === '0' || normalized === '') return false;
+  }
+  return value;
+}
+
 export const gastroCourtesyRecipientsPreviewQuerySchema = z.object({
   gastroProfileId: z.string().min(1),
   manualEmails: z
@@ -72,7 +85,7 @@ export const gastroCourtesyRecipientsPreviewQuerySchema = z.object({
       z.array(z.string().email()).max(200).optional(),
     )
     .optional(),
-  sendToFollowers: z.coerce.boolean().optional(),
+  sendToFollowers: z.preprocess(parseQueryBoolean, z.boolean()).optional(),
 });
 
 export const gastroCourtesyFundingSchema = z

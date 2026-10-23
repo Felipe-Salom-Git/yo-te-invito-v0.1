@@ -55,6 +55,9 @@ export function initialStatusForDiscountOrigin(
   return origin === 'ADMIN' ? 'ACTIVE' : 'PENDING_REVIEW';
 }
 
+export const gastroDiscountVisibilitySchema = z.enum(['PUBLIC', 'COURTESY_ONLY']);
+export type GastroDiscountVisibility = z.infer<typeof gastroDiscountVisibilitySchema>;
+
 export const gastroDiscountResponseSchema = z.object({
   id: z.string(),
   tenantId: z.string(),
@@ -89,6 +92,16 @@ export const gastroDiscountResponseSchema = z.object({
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
   createdByOrigin: gastroDiscountOriginSchema.optional(),
+  /** PUBLIC (default) or COURTESY_ONLY (hidden benefit delivered via individual claims). */
+  visibility: gastroDiscountVisibilitySchema.optional(),
+  courtesyCampaign: z
+    .object({
+      id: z.string(),
+      title: z.string(),
+      discountLabel: z.string().nullable(),
+    })
+    .nullable()
+    .optional(),
   archivedAt: z.string().datetime().nullable().optional(),
   hasPendingUpdate: z.boolean().optional(),
   pendingUpdate: z

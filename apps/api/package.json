@@ -65,6 +65,7 @@
     "test:admin-gastro-discount-profile-scope": "tsx scripts/test-admin-gastro-discount-profile-scope.util.ts",
     "test:gastro-owner-discount-scope": "tsx scripts/test-gastro-owner-discount-scope.util.ts",
     "test:gastro-cross-profile-isolation": "tsx scripts/test-gastro-cross-profile-isolation.util.ts",
+    "test:gastro-courtesy-hardening": "tsx scripts/test-gastro-courtesy-hardening.util.ts",
     "test:gastro-primary-subcategory-name": "tsx scripts/test-gastro-primary-subcategory-name.util.ts",
     "test:gastro-subcategory-selection": "tsx scripts/test-gastro-subcategory-selection.util.ts",
     "test:gastro-event-tags": "tsx scripts/test-gastro-event-tags.util.ts",

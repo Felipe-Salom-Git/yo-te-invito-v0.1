@@ -15,6 +15,17 @@ import { GastroLocationSelector } from '@/components/gastro/GastroLocationSelect
 import { useGastroActiveLocation } from '@/lib/gastro/GastroActiveLocationContext';
 import { gastroKeys } from '@/lib/query/keys';
 import { formatGastroDiscountValidityRangeLabel, gastroDiscountPortalStatusLabel } from '@/lib/gastro/discount-status-ui';
+import {
+  matchesVisibilityFilter,
+  withCourtesyProfileQuery,
+  type DiscountVisibilityFilter,
+} from '@/lib/gastro/courtesy-scope';
+
+const VISIBILITY_FILTERS: Array<{ id: DiscountVisibilityFilter; label: string }> = [
+  { id: 'ALL', label: 'Todos' },
+  { id: 'PUBLIC', label: 'Descuentos' },
+  { id: 'COURTESY_ONLY', label: 'Cortesías' },
+];
 
 const TABS: Array<{ id: GastroDiscountLifecycleBucket; label: string }> = [
   { id: 'ACTIVE', label: 'Activos' },
@@ -27,12 +38,17 @@ export default function GastroDescuentosPage() {
   const repos = useRepositories();
   const { profileId } = useGastroActiveLocation();
   const [tab, setTab] = useState<GastroDiscountLifecycleBucket>('ACTIVE');
+  const [visibilityFilter, setVisibilityFilter] = useState<DiscountVisibilityFilter>('ALL');
   const { data, isLoading } = useQuery({
     queryKey: gastroKeys.discounts(profileId),
     queryFn: () => repos.gastro.listMyDiscounts(profileId),
   });
 
-  const discounts = data?.data ?? [];
+  const allDiscounts = data?.data ?? [];
+  const discounts = useMemo(
+    () => allDiscounts.filter((d) => matchesVisibilityFilter(d.visibility, visibilityFilter)),
+    [allDiscounts, visibilityFilter],
+  );
   const grouped = useMemo(() => {
     const buckets: Record<GastroDiscountLifecycleBucket, typeof discounts> = {
       ACTIVE: [],
@@ -65,7 +81,7 @@ export default function GastroDescuentosPage() {
         <SectionTitle>Tickets de descuento</SectionTitle>
         <div className="flex flex-wrap gap-2">
           <Link
-            href="/gastro/descuentos/cortesia"
+            href={withCourtesyProfileQuery('/gastro/descuentos/cortesia', profileId)}
             className="rounded-lg border border-accent px-4 py-2 text-sm font-medium text-accent hover:bg-accent/10"
           >
             Enviar cortesías
@@ -81,6 +97,23 @@ export default function GastroDescuentosPage() {
       <p className="mb-4 text-sm text-text-muted">
         Los tickets se envían a revisión. Administración coordinará la comisión antes de activarlos.
       </p>
+      <div className="mb-3 flex flex-wrap gap-2" role="group" aria-label="Tipo">
+        {VISIBILITY_FILTERS.map((f) => (
+          <button
+            key={f.id}
+            type="button"
+            onClick={() => setVisibilityFilter(f.id)}
+            aria-pressed={visibilityFilter === f.id}
+            className={`rounded-lg px-3 py-1 text-xs ${
+              visibilityFilter === f.id
+                ? 'bg-bg-muted text-text ring-1 ring-accent'
+                : 'border border-border text-text-muted hover:border-accent/50'
+            }`}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
       <div className="mb-4 flex flex-wrap gap-2">
         {TABS.map((t) => (
           <button
@@ -110,8 +143,19 @@ export default function GastroDescuentosPage() {
             >
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div>
-                <p className="font-medium">{d.title ?? d.code}</p>
-                <p className="text-sm text-text-muted">{d.summary}</p>
+                <p className="font-medium">
+                  {d.title ?? d.code}
+                  {d.visibility === 'COURTESY_ONLY' ? (
+                    <span className="ml-2 rounded-full bg-accent/15 px-2 py-0.5 align-middle text-xs font-normal text-accent">
+                      Cortesía
+                    </span>
+                  ) : null}
+                </p>
+                <p className="text-sm text-text-muted">
+                  {d.visibility === 'COURTESY_ONLY' && d.courtesyCampaign?.discountLabel
+                    ? d.courtesyCampaign.discountLabel
+                    : d.summary}
+                </p>
                 {d.hasPendingUpdate && (
                   <p className="mt-1 text-xs text-amber-300">Edición pendiente de revisión</p>
                 )}

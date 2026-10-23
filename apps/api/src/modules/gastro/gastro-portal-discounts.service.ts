@@ -15,6 +15,7 @@ import {
   canUnarchiveGastroDiscount,
   ErrorCode,
   hasMaterialDiscountChanges,
+  isCourtesyOnlyVisibility,
   parsePendingUpdate,
   shouldSubmitDiscountPendingEdit,
   snapshotFromPublishedRow,
@@ -42,6 +43,8 @@ import type {
 function pendingCode(): string {
   return `PND-${randomBytes(4).toString('hex').toUpperCase()}`;
 }
+
+const COURTESY_CAMPAIGN_SELECT = { id: true, title: true, discountLabel: true } as const;
 
 @Injectable()
 export class GastroPortalDiscountsService {
@@ -82,6 +85,8 @@ export class GastroPortalDiscountsService {
     createdAt: Date;
     updatedAt: Date;
     createdByOrigin?: string | null;
+    visibility?: string | null;
+    courtesyCampaign?: { id: string; title: string; discountLabel: string | null } | null;
     archivedAt?: Date | null;
     pendingUpdate?: unknown;
     pendingUpdateSubmittedAt?: Date | null;
@@ -125,6 +130,14 @@ export class GastroPortalDiscountsService {
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
       createdByOrigin: row.createdByOrigin === 'ADMIN' ? 'ADMIN' : 'GASTRO',
+      visibility: isCourtesyOnlyVisibility(row.visibility) ? 'COURTESY_ONLY' : 'PUBLIC',
+      courtesyCampaign: row.courtesyCampaign
+        ? {
+            id: row.courtesyCampaign.id,
+            title: row.courtesyCampaign.title,
+            discountLabel: row.courtesyCampaign.discountLabel,
+          }
+        : null,
       archivedAt: row.archivedAt?.toISOString() ?? null,
       hasPendingUpdate: parsePendingUpdate(row.pendingUpdate) != null,
       pendingUpdate: parsePendingUpdate(row.pendingUpdate),
@@ -202,6 +215,7 @@ export class GastroPortalDiscountsService {
     await this.assertGastroUser(tenantId, userId, userRole);
     const row = await this.prisma.gastroDiscount.findFirst({
       where: { id, tenantId },
+      include: { courtesyCampaign: { select: COURTESY_CAMPAIGN_SELECT } },
     });
     if (!row) {
       throw new NotFoundException({
@@ -252,6 +266,7 @@ export class GastroPortalDiscountsService {
     const rows = await this.prisma.gastroDiscount.findMany({
       where: { tenantId, OR: or },
       orderBy: { createdAt: 'desc' },
+      include: { courtesyCampaign: { select: COURTESY_CAMPAIGN_SELECT } },
     });
     return { data: rows.map((r) => this.mapDiscount(r)) };
   }

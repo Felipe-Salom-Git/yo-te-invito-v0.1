@@ -11,6 +11,7 @@ import {
   parseMoneyCentsString,
   type GastroCourtesyRecipientsPreviewQuery,
   type GastroCourtesySendBody,
+  isCourtesyValidityRangeValid,
   isGastroDiscountExpired,
   normalizeGastroDiscountExpiryDate,
   normalizeGastroDiscountValidFromDate,
@@ -65,6 +66,14 @@ export class GastroCourtesyDiscountsService {
         throw new NotFoundException({
           code: ErrorCode.NOT_FOUND,
           message: 'Local gastronómico no encontrado',
+        });
+      }
+      // Same precondition as the owner path: a courtesy needs the local's public event
+      // (GastroDiscount.eventId is required). Fail clearly instead of a Prisma 500.
+      if (!profile.publicEventId) {
+        throw new BadRequestException({
+          code: ErrorCode.VALIDATION_FAILED,
+          message: 'El local todavía no tiene ficha pública; configurala antes de enviar cortesías',
         });
       }
       return profile;
@@ -248,6 +257,13 @@ export class GastroCourtesyDiscountsService {
       });
     }
 
+    if (!isCourtesyValidityRangeValid(validFrom, validTo)) {
+      throw new BadRequestException({
+        code: ErrorCode.VALIDATION_FAILED,
+        message: 'La fecha de inicio no puede ser posterior al vencimiento',
+      });
+    }
+
     const { recipients } = await this.resolveRecipients(
       tenantId,
       body.gastroProfileId,
@@ -297,6 +313,8 @@ export class GastroCourtesyDiscountsService {
             discountDate: validTo,
             status: 'ACTIVE',
             visibility: 'COURTESY_ONLY',
+            createdByOrigin: userRole === 'ADMIN' ? 'ADMIN' : 'GASTRO',
+            createdByUserId: userId,
           },
         });
 

@@ -2484,6 +2484,9 @@ export interface GastroPortalDiscount {
   createdAt: string;
   updatedAt: string;
   createdByOrigin?: 'GASTRO' | 'ADMIN';
+  /** PUBLIC (default) or COURTESY_ONLY (hidden benefit delivered via individual claims). */
+  visibility?: 'PUBLIC' | 'COURTESY_ONLY';
+  courtesyCampaign?: { id: string; title: string; discountLabel: string | null } | null;
   archivedAt?: string | null;
   hasPendingUpdate?: boolean;
   pendingUpdateSubmittedAt?: string | null;

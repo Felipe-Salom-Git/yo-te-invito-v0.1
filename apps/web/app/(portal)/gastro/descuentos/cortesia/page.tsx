@@ -1,11 +1,13 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useRepositories } from '@/repositories/context';
 import { PageContainer, SectionTitle } from '@/components';
-import { gastroKeys } from '@/lib/query/keys';
+import { GastroLocationSelector } from '@/components/gastro/GastroLocationSelector';
+import { useGastroActiveLocation } from '@/lib/gastro/GastroActiveLocationContext';
+import { resolveCourtesyScope, withCourtesyProfileQuery } from '@/lib/gastro/courtesy-scope';
 
 function parseEmails(raw: string): string[] {
   return [...new Set(raw.split(/[,;\n]+/).map((e) => e.trim().toLowerCase()).filter(Boolean))];
@@ -13,11 +15,12 @@ function parseEmails(raw: string): string[] {
 
 export default function GastroCourtesyDiscountsPage() {
   const repos = useRepositories();
-  const { data: localData } = useQuery({
-    queryKey: gastroKeys.local(),
-    queryFn: () => repos.gastro.getMyLocal(),
-  });
-  const profile = localData;
+  // G8.1: the courtesy is always sent for the SELECTED local (?profileId=), never for the
+  // API's implicit default local.
+  const { profileId: activeProfileId, locations, activeLocation, isLoading } =
+    useGastroActiveLocation();
+  const scope = resolveCourtesyScope(activeProfileId, locations);
+  const gastroProfileId = scope.ok ? scope.profileId : undefined;
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -32,21 +35,28 @@ export default function GastroCourtesyDiscountsPage() {
 
   const manualEmails = useMemo(() => parseEmails(manualEmailsRaw), [manualEmailsRaw]);
 
+  // Switching local invalidates any previous result / error / confirmation.
+  useEffect(() => {
+    setResult(null);
+    setError(null);
+    setConfirmOpen(false);
+  }, [gastroProfileId]);
+
   const previewQuery = useQuery({
-    queryKey: ['gastro', 'courtesy-preview', profile?.id, manualEmails, sendToFollowers],
+    queryKey: ['gastro', 'courtesy-preview', gastroProfileId, manualEmails, sendToFollowers],
     queryFn: () =>
       repos.gastro.previewCourtesyRecipients({
-        gastroProfileId: profile!.id,
+        gastroProfileId: gastroProfileId!,
         manualEmails,
         sendToFollowers,
       }),
-    enabled: !!profile?.id && (manualEmails.length > 0 || sendToFollowers),
+    enabled: !!gastroProfileId && (manualEmails.length > 0 || sendToFollowers),
   });
 
   const sendMutation = useMutation({
     mutationFn: () =>
       repos.gastro.sendCourtesyDiscounts({
-        gastroProfileId: profile!.id,
+        gastroProfileId: gastroProfileId!,
         title: title.trim(),
         description: description.trim() || undefined,
         discountLabel: discountLabel.trim(),
@@ -69,10 +79,34 @@ export default function GastroCourtesyDiscountsPage() {
   const preview = previewQuery.data;
   const totalUnique = preview?.totalUnique ?? 0;
 
-  if (!profile) {
+  if (isLoading) {
     return (
       <PageContainer>
         <p className="text-text-muted">Cargando local…</p>
+      </PageContainer>
+    );
+  }
+
+  if (!scope.ok) {
+    return (
+      <PageContainer>
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+          <SectionTitle>Enviar cortesías</SectionTitle>
+          <Link
+            href={withCourtesyProfileQuery('/gastro/descuentos', activeProfileId)}
+            className="text-sm text-accent hover:underline"
+          >
+            ← Volver a descuentos
+          </Link>
+        </div>
+        <div className="mb-4 max-w-md">
+          <GastroLocationSelector />
+        </div>
+        <p className="text-sm text-amber-200">
+          {scope.reason === 'NOT_ACTIVE'
+            ? 'Este local todavía no está activo. Solo los locales activos pueden enviar cortesías.'
+            : 'No encontramos un local para enviar cortesías. Creá o seleccioná un local.'}
+        </p>
       </PageContainer>
     );
   }
@@ -81,9 +115,21 @@ export default function GastroCourtesyDiscountsPage() {
     <PageContainer>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <SectionTitle>Enviar cortesías</SectionTitle>
-        <Link href="/gastro/descuentos" className="text-sm text-accent hover:underline">
+        <Link
+          href={withCourtesyProfileQuery('/gastro/descuentos', gastroProfileId)}
+          className="text-sm text-accent hover:underline"
+        >
           ← Volver a descuentos
         </Link>
+      </div>
+
+      <div className="mb-6 max-w-md">
+        <GastroLocationSelector />
+        {activeLocation ? (
+          <p className="mt-2 text-xs text-text-muted">
+            La cortesía se enviará en nombre de <strong>{activeLocation.displayName}</strong>.
+          </p>
+        ) : null}
       </div>
 
       <p className="mb-6 text-sm text-text-muted">
