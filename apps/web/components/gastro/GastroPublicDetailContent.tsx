@@ -161,14 +161,16 @@ export function GastroPublicDetailContent({
               hasEditorialContent={hasEditorial}
             />
 
+            <GastroGallerySection images={galleryImages} />
+
             {location.subcategories && location.subcategories.length > 1 ? (
-              <section>
+              <section aria-label="Subcategorías">
                 <h2 className="text-lg font-semibold text-white">Tipos de cocina</h2>
                 <ul className="mt-3 flex flex-wrap gap-2">
                   {location.subcategories.map((s) => (
                     <li
                       key={s.id}
-                      className="rounded-full border border-white/20 bg-white/5 px-3 py-1 text-sm text-white/90"
+                      className="max-w-full truncate rounded-full border border-white/20 bg-white/5 px-3 py-1 text-sm text-white/90"
                     >
                       {s.isPrimary ? (
                         <span className="mr-1 text-[10px] font-bold uppercase tracking-wide text-accent">
@@ -182,30 +184,38 @@ export function GastroPublicDetailContent({
               </section>
             ) : null}
 
+            {location.tags && location.tags.length > 0 ? (
+              <section aria-label="Etiquetas">
+                <h2 className="text-lg font-semibold text-white">Etiquetas</h2>
+                <ContentTagChips tags={location.tags} category="gastro" className="mt-3" />
+              </section>
+            ) : null}
+
+            <GastroDiscountsSection discounts={discounts} />
+
             {hasEditorial ? (
               <GastroLocationEditorialSection
                 items={publishedContent}
                 locationName={location.displayName}
               />
             ) : null}
-
-            <GastroDiscountsSection discounts={discounts} />
-
-            {location.tags && location.tags.length > 0 ? (
-              <section>
-                <h2 className="text-lg font-semibold text-white">Etiquetas</h2>
-                <ContentTagChips tags={location.tags} category="gastro" className="mt-3" />
-              </section>
-            ) : null}
-
-            <GastroGallerySection images={galleryImages} />
           </div>
 
-          <aside className={`space-y-4 ${hasValidCoords ? '' : 'lg:sticky lg:top-8'}`}>
+          <aside className={`min-w-0 space-y-4 ${hasValidCoords ? '' : 'lg:sticky lg:top-8'}`}>
             <GastroPublicActionCard
               whatsAppHref={whatsAppHref}
               bookingUrl={location.bookingUrl}
               hasDiscounts={discounts.length > 0}
+            />
+            <PublicExternalLinksCard
+              title="Contacto"
+              className="border-white/10 bg-white/[0.02] opacity-95"
+              menuUrl={location.menuUrl}
+              websiteUrl={location.websiteUrl}
+              bookingUrl={whatsAppHref ? location.bookingUrl : null}
+              socialLinks={location.socialLinks}
+              contactPhone={location.contactPhone}
+              contactEmail={location.contactEmail}
             />
             <GastroLocationCard
               name={location.displayName}
@@ -217,6 +227,7 @@ export function GastroPublicDetailContent({
               hasLocation={hasLocation}
               onViewLocation={hasLocation ? onLocationModalOpen : undefined}
             />
+            <PublicRelatedLinksCard links={location.relatedLinks} />
             {hasValidCoords ? (
               <EventLocationSection
                 compact
@@ -228,17 +239,6 @@ export function GastroPublicDetailContent({
                 geoLng={location.geoLng}
               />
             ) : null}
-            <PublicExternalLinksCard
-              title="Menú, web y redes"
-              className="border-white/10 bg-white/[0.02] opacity-95"
-              menuUrl={location.menuUrl}
-              websiteUrl={location.websiteUrl}
-              bookingUrl={whatsAppHref ? location.bookingUrl : null}
-              socialLinks={location.socialLinks}
-              contactPhone={location.contactPhone}
-              contactEmail={location.contactEmail}
-            />
-            <PublicRelatedLinksCard links={location.relatedLinks} />
             <GastroLocationShareActions
               variant="card"
               displayName={location.displayName}

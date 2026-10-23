@@ -26,7 +26,7 @@ export function GastroLocationEditorialSection({
           if (!hasText && gallery.length === 0) return null;
 
           return (
-            <li key={item.id} className="space-y-3">
+            <li key={item.id} className="min-w-0 space-y-3">
               {item.title?.trim() ? (
                 <h3 className="text-base font-semibold text-white">{item.title.trim()}</h3>
               ) : null}

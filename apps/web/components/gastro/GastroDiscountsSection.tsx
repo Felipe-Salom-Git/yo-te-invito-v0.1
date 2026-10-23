@@ -62,7 +62,7 @@ export function GastroDiscountsSection({
                 {d.headerImageUrl ? (
                   <div className="relative h-36 w-full shrink-0 overflow-hidden rounded-lg border border-border sm:h-auto sm:w-40">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={d.headerImageUrl} alt="" className="h-full w-full object-cover" />
+                    <img src={d.headerImageUrl} alt={title} className="h-full w-full object-cover" />
                   </div>
                 ) : null}
                 <div className="min-w-0 flex-1">
