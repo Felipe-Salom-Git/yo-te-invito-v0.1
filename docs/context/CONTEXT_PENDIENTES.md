@@ -139,7 +139,21 @@ Discovery: [`V3_3_G8_COURTESY_DISCOVERY.md`](../audits/V3_3_G8_COURTESY_DISCOVER
 
 - [x] G8.0 auditoría: dominio, portal, `/me`, scanner, emails, agreement, accounting, Studio, shortCode, approval. **Sin código ni migrations**
 - [x] Conclusión: **extender** `GastroDiscount(COURTESY_ONLY)` + `GastroCourtesyCampaign` + `GastroDiscountClaim(COURTESY)`; **no** crear `CourtesyCoupon`
-- [x] **Decisiones D1–D5 aprobadas** (ver roadmap). D1: cortesía financiada con Courtesy Credit ⇒ NO elegible para settlement; no financiada ⇒ elegible. **Se implementa en G8.11; hoy los canjes de cortesía siguen siendo facturables**
+- [x] **Decisiones D1–D5 aprobadas** (ver roadmap). D1: cortesía financiada con Courtesy Credit ⇒ NO elegible para settlement; no financiada ⇒ elegible. **Implementada en G8.11**
+
+### G8.11 — Accounting de cortesías (D1)
+
+Discovery: [`V3_3_G8_11_COURTESY_ACCOUNTING_DISCOVERY.md`](../audits/V3_3_G8_11_COURTESY_ACCOUNTING_DISCOVERY.md) · Cierre: [`V3_3_G8_11_COURTESY_ACCOUNTING_CLOSING.md`](../audits/V3_3_G8_11_COURTESY_ACCOUNTING_CLOSING.md)
+
+- [x] **Regla:** cortesía financiada = **uso operativo, NO facturable** (sin CASH, sin BARTER, sin crédito nuevo); cortesía no financiada = **facturable**
+- [x] G8.11.0 audit — `a2b8786`: trazabilidad validation → discount → campaign → `DEBIT_COURTESY` con relaciones existentes; **sin migration**
+- [x] G8.11.1–G8.11.8 — `13c2992`: regla canónica `resolveGastroValidationSettlementEligibility` (shared), exclusión en el discovery (backend), `BENEFIT_SETTLEMENT_VALIDATION_FUNDED_COURTESY` en allocate + re-check en tx + guard en el ledger (`CREDIT_FROM_SETTLEMENT`), `fundedCourtesyExcludedCount` / `fundedCourtesyUsageCount`, snapshots intactos
+- [x] G8.11.9 — `c591f0a`: G6 `settlementBillability` + `courtesyFunding`; integridad WARNING `FUNDED_COURTESY_ALLOCATED` (legacy); copy UI "Cortesía financiada con crédito · No facturable"
+- [x] Tests `test:gastro-courtesy-accounting` (74) + regresión settlement/G6/ledger/funding/cortesías/cross-profile **PASS**; builds shared/api/web/scanner **PASS**
+- [x] **DB integration PASS** — PostgreSQL local (Docker, 111 migrations al día), servicios reales, tenant aislado borrado al final
+- [ ] Reversión de `DEBIT_COURTESY` al cancelar cortesía sin usos — **DEFERRED** (requiere `REVERSAL` positivo / semántica de ledger nueva; propuesta en discovery §6)
+- [ ] Auditar datos reales de producción (allocations legacy de cortesías financiadas → WARNING de integridad + `ADJUSTMENT` manual)
+- [ ] QA browser G8.11 (checklist en cierre)
 
 ### G8.9 + G8.10 — Portal Gastro y Admin de cortesías
 
@@ -151,7 +165,7 @@ Cierre: [`V3_3_G8_9_G8_10_COURTESY_PORTAL_ADMIN_CLOSING.md`](../audits/V3_3_G8_9
 - [x] Tests `test:gastro-courtesy-portal` (+ assert web) y `test:admin-gastro-courtesy` (75) + regresión courtesy/agreements/Studio/scanner/credit funding **PASS**; builds shared/api/web/scanner **PASS**; **sin migrations**
 - [ ] DB integration — **NO EJECUTADO** (Prisma en memoria, Postgres local apagado)
 - [ ] QA browser G8.9/G8.10 (checklist en cierre) — post-deploy
-- Diferido: cancelar solicitud pendiente de **descuentos normales**; enforcement backend de "Studio solo pendiente/activa" (hoy solo UI; no había restricción real); `admin/gastronomicos/[profileId]/descuentos/[discountId]/page.tsx` ya superaba 400 líneas (deuda preexistente, ~600); G8.11 accounting (D1)
+- Diferido: cancelar solicitud pendiente de **descuentos normales**; enforcement backend de "Studio solo pendiente/activa" (hoy solo UI; no había restricción real); `admin/gastronomicos/[profileId]/descuentos/[discountId]/page.tsx` ya superaba 400 líneas (deuda preexistente, ~600); G8.11 accounting (D1) — **resuelto en G8.11**
 
 ### G8.5 – G8.8 — Experiencia del cupón de cortesía (scanner, shortCode, Studio, emails)
 
@@ -189,8 +203,9 @@ Cierre: [`V3_3_G8_1_G8_2_COURTESY_HARDENING_CLOSING.md`](../audits/V3_3_G8_1_G8_
 - [ ] DB integration — **NO EJECUTADO** (tests con Prisma falso)
 - [ ] QA browser G8.1/G8.2 (checklist en cierre) — post-deploy
 - [x] G8.9 + G8.10 — completados (ver sección propia)
-- [ ] G8.11–G8.13 — **NOT STARTED** (esperan confirmación)
-- Pendiente en G8: elegibilidad de settlement D1 + reversa `DEBIT_COURTESY` (G8.11). (shortCode, Studio `0%` y typo de ruta `discuentos` ya resueltos en G8.6/G8.7)
+- [x] G8.11 — completado (ver sección propia)
+- [ ] G8.12–G8.13 — **NOT STARTED** (esperan confirmación)
+- Pendiente en G8: reversa `DEBIT_COURTESY` (**DEFERRED** en G8.11). (Elegibilidad D1 resuelta en G8.11; shortCode, Studio `0%` y typo de ruta `discuentos` ya resueltos en G8.6/G8.7)
 
 ---
 

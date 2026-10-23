@@ -1,6 +1,6 @@
 # Yo Te Invito — Next Chat Handoff
 
-**Actualizado:** 2026-10-22 · Rama: `feat/v1-s03-api-foundation` · HEAD: ver `git log -1`
+**Actualizado:** 2026-10-23 · Rama: `feat/v1-s03-api-foundation` · HEAD: ver `git log -1`
 
 Punto de entrada operativo para **V3.3**. Detalle completo: `AI_ENTRYPOINT.md`, `PROJECT_CONTEXT.md`, `CONTEXT_PENDIENTES.md`.
 
@@ -39,11 +39,12 @@ Punto de entrada operativo para **V3.3**. Detalle completo: `AI_ENTRYPOINT.md`, 
 | **G8.3 + G8.4 Cortesías — approval/agreement + entrega** | ✅ Local, **sin push/deploy, sin migrations** — [`V3_3_G8_3_G8_4_COURTESY_APPROVAL_DELIVERY_CLOSING.md`](../audits/V3_3_G8_3_G8_4_COURTESY_APPROVAL_DELIVERY_CLOSING.md). Owner ⇒ `PENDING_REVIEW` + claims retenidos (ACTIVE + padre pendiente, inutilizables por backend); ADMIN aprueba en la cola de descuentos con agreement CURRENT; entrega idempotente por claim (`emailSentAt`) + endpoint de reintento; reject cancela claims. Legacy ACTIVE intacto. DB integration NO ejecutada |
 | **G8.5–G8.8 Cortesías — scanner/shortCode/Studio/emails** | ✅ Local, **sin push/deploy, sin migrations** — commits `a8a3b78`, `5bf21d5`, `3a51c87`, `bd77fce` — [`V3_3_G8_5_G8_8_COURTESY_COUPON_EXPERIENCE_CLOSING.md`](../audits/V3_3_G8_5_G8_8_COURTESY_COUPON_EXPERIENCE_CLOSING.md). Scanner indica "Cortesía" y beneficio real (sin `0%`); shortCode con retry `P2002`; Studio unificado (sin `0%`, fix de ruta `descuentos`); emails owner pendiente/aprobada/rechazada + acuerdo CURRENT (no persistido) + shortCode al destinatario; métricas separan retenidos/disponibles/entregados/usados/cancelados; owner puede cancelar su solicitud `PENDING`. DB integration NO ejecutada |
 | **G8.9 + G8.10 Cortesías — portal Gastro + admin** | ✅ Local, **sin push/deploy, sin migrations** — commits `ffbded3`, `2682cf6` — [`V3_3_G8_9_G8_10_COURTESY_PORTAL_ADMIN_CLOSING.md`](../audits/V3_3_G8_9_G8_10_COURTESY_PORTAL_ADMIN_CLOSING.md). Portal: listado por local (`?tipo=cortesias`) con estados humanos, métricas G8.8, audiencia congelada, solicitud "pendiente de aprobación", detalle, Studio con gate de lifecycle, empty states; owner no cancela cortesías creadas por ADMIN. Admin: cola con badge/contexto, review con requester + panel de acuerdo G5, acciones por lifecycle, métricas + filtro en listado, sin master QR, audit labels, summary/status scoped por local. DB integration NO ejecutada |
-| **G8.11+ / G9 UX** | ⏸ [`V3_3_G8_G9_ROADMAP.md`](./V3_3_G8_G9_ROADMAP.md) · **NOT STARTED** (esperan confirmación) |
+| **G8.11 Cortesías — accounting D1** | ✅ Local, **sin push/deploy, sin migrations** — commits `a2b8786`, `13c2992`, `c591f0a` — [`V3_3_G8_11_COURTESY_ACCOUNTING_CLOSING.md`](../audits/V3_3_G8_11_COURTESY_ACCOUNTING_CLOSING.md). **Funded courtesy = operational usage, NOT billable usage; non-funded courtesy = billable.** Regla única `resolveGastroValidationSettlementEligibility`; exclusión backend; `BENEFIT_SETTLEMENT_VALIDATION_FUNDED_COURTESY`; ledger nunca acredita cortesía financiada; G6 `settlementBillability`; WARNING `FUNDED_COURTESY_ALLOCATED`. Reversa `DEBIT_COURTESY` **DEFERRED**. **DB integration PASS** (Postgres local Docker) |
+| **G8.12+ / G9 UX** | ⏸ [`V3_3_G8_G9_ROADMAP.md`](./V3_3_G8_G9_ROADMAP.md) · **NOT STARTED** (esperan confirmación) |
 
 **Checklist V3.3:** `docs/dev/Yo_Te_Invito_Checklist_V3_3_Funcional_Operativa.md`
 
-**Próximo paso V3.3:** push/deploy G7.11 + G7.12 (ventana conjunta) + QA browser G7.11/G7.12 (checklists en cierres) cuando el operador lo indique; G8.0–G8.10 ya hechos (local); el siguiente paso de código es G8.11 (accounting D1) solo con confirmación explícita. Producción congelada: no push/deploy. QA 4 (rails secundarios) pendiente por datos. **No** iniciar G8/G9 sin instrucción explícita. QA manual Etapas 1–9 sigue acumulada.
+**Próximo paso V3.3:** push/deploy G7.11 + G7.12 (ventana conjunta) + QA browser G7.11/G7.12 (checklists en cierres) cuando el operador lo indique; G8.0–G8.11 ya hechos (local); el siguiente paso de código es G8.12 (tests cross-profile/tenant/economía) solo con confirmación explícita. Producción congelada: no push/deploy. QA 4 (rails secundarios) pendiente por datos. **No** iniciar G8/G9 sin instrucción explícita. QA manual Etapas 1–9 sigue acumulada.
 
 **Deploy:** la clave SSH del VPS tiene passphrase; si el ssh-agent no la tiene cargada, el deploy lo ejecuta el operador siguiendo `docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`.
 
@@ -136,7 +137,7 @@ b920553 fix(v3.3): harden benefit settlement accounting
 | **Logical validation ref** | Sin FK Prisma; hardening deep delete + integrity orphan/partner mismatch. |
 | **CLOSED ≠ PAID** | `settlement.status=CLOSED` congela usages; transfers CASH siguen; `cashCollectionStatus` independiente. |
 | **Ledger** | Append-only; balance = `SUM(entries)`; BARTER → `CREDIT_FROM_SETTLEMENT` exactly once (`sourceAllocationId @unique`). |
-| **Gastro funding** | ADMIN only; `1 funded campaign → 1 DEBIT_COURTESY`; GASTRO_OWNER cortesía histórica sin debit. |
+| **Gastro funding** | ADMIN only; `1 funded campaign → 1 DEBIT_COURTESY`; GASTRO_OWNER cortesía histórica sin debit. **G8.11 (D1):** validations de cortesía financiada = uso operativo, **no** facturable (sin allocation, sin CASH/BARTER, sin crédito nuevo); no financiada = facturable. |
 | **Activity** | Agreement/settlement/CASH/BARTER/crédito visible; **consumo cortesía diferido**. |
 | **Proof storage** | `proofUrl` preparado; upload **diferido** (GCS público no apto para comprobantes). |
 
@@ -424,6 +425,7 @@ pnpm --filter api run test:discount-visual-render
 pnpm --filter api run test:scanner-manual-short-code
 pnpm --filter api run test:gastro-courtesy-portal
 pnpm --filter api run test:admin-gastro-courtesy
+pnpm --filter api run test:gastro-courtesy-accounting   # incluye escenarios en PostgreSQL real (NOT RUN si no hay DB)
 ```
 
 `test:activity-coupon-scan` PASS = dispatch/unit scope, **≠** DB integration.  

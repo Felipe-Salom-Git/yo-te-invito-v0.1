@@ -1,6 +1,6 @@
 # V3.3 — Roadmap G8 / G9
 
-**Estado:** G8.0 (discovery), G8.1–G8.10 **COMPLETADOS** (local, sin push/deploy, sin migrations) — [`V3_3_G8_COURTESY_DISCOVERY.md`](../audits/V3_3_G8_COURTESY_DISCOVERY.md) · [`V3_3_G8_1_G8_2_COURTESY_HARDENING_CLOSING.md`](../audits/V3_3_G8_1_G8_2_COURTESY_HARDENING_CLOSING.md) · [`V3_3_G8_3_G8_4_COURTESY_APPROVAL_DELIVERY_CLOSING.md`](../audits/V3_3_G8_3_G8_4_COURTESY_APPROVAL_DELIVERY_CLOSING.md) · [`V3_3_G8_5_G8_8_COURTESY_COUPON_EXPERIENCE_CLOSING.md`](../audits/V3_3_G8_5_G8_8_COURTESY_COUPON_EXPERIENCE_CLOSING.md) · [`V3_3_G8_9_G8_10_COURTESY_PORTAL_ADMIN_CLOSING.md`](../audits/V3_3_G8_9_G8_10_COURTESY_PORTAL_ADMIN_CLOSING.md). G8.11+ **bloqueado** hasta confirmación explícita del operador.
+**Estado:** G8.0 (discovery), G8.1–G8.10 **COMPLETADOS** (local, sin push/deploy, sin migrations) — [`V3_3_G8_COURTESY_DISCOVERY.md`](../audits/V3_3_G8_COURTESY_DISCOVERY.md) · [`V3_3_G8_1_G8_2_COURTESY_HARDENING_CLOSING.md`](../audits/V3_3_G8_1_G8_2_COURTESY_HARDENING_CLOSING.md) · [`V3_3_G8_3_G8_4_COURTESY_APPROVAL_DELIVERY_CLOSING.md`](../audits/V3_3_G8_3_G8_4_COURTESY_APPROVAL_DELIVERY_CLOSING.md) · [`V3_3_G8_5_G8_8_COURTESY_COUPON_EXPERIENCE_CLOSING.md`](../audits/V3_3_G8_5_G8_8_COURTESY_COUPON_EXPERIENCE_CLOSING.md) · [`V3_3_G8_9_G8_10_COURTESY_PORTAL_ADMIN_CLOSING.md`](../audits/V3_3_G8_9_G8_10_COURTESY_PORTAL_ADMIN_CLOSING.md) · [`V3_3_G8_11_COURTESY_ACCOUNTING_CLOSING.md`](../audits/V3_3_G8_11_COURTESY_ACCOUNTING_CLOSING.md). G8.12+ **bloqueado** hasta confirmación explícita del operador.
 
 ```text
 G8.0: DONE (docs only)
@@ -14,7 +14,8 @@ G8.7: DONE (3a51c87) Studio
 G8.8: DONE (bd77fce) notificaciones/emails/metricas/cancel
 G8.9: DONE (ffbded3) portal Gastro de cortesías
 G8.10: DONE (2682cf6) admin de cortesías
-G8.11+: NOT STARTED
+G8.11: DONE (a2b8786, 13c2992, c591f0a) accounting D1 — funded = operativo NO facturable; reversa DEBIT_COURTESY DEFERRED
+G8.12+: NOT STARTED
 G9:    NOT STARTED
 ```
 
@@ -48,7 +49,7 @@ Una cortesía **no es una entidad nueva**: es `GastroDiscount(visibility = COURT
 
 | ID | Decisión aprobada | Se implementa en |
 |---|---|---|
-| D1 | Cortesía **financiada con Courtesy Credit** (`DEBIT_COURTESY` + `sourceCourtesyCampaignId`) ⇒ **NO elegible** para settlement (ni CASH, ni BARTER, ni genera crédito). Cortesía **no financiada** ⇒ puede ser elegible según acuerdo y allocations normales. **Hoy NO implementado** (los canjes de cortesía siguen siendo facturables): no introducir comportamiento contrario antes de G8.11 | G8.11 |
+| D1 | Cortesía **financiada con Courtesy Credit** (`DEBIT_COURTESY` + `sourceCourtesyCampaignId`) ⇒ **NO elegible** para settlement (ni CASH, ni BARTER, ni genera crédito). Cortesía **no financiada** ⇒ puede ser elegible según acuerdo y allocations normales. **Implementado en G8.11** (funded = uso operativo, NOT billable usage) | G8.11 ✅ |
 | D2 | GASTRO_OWNER **no** gasta Courtesy Credit; solo ADMIN financia. No ampliar permisos del ledger | vigente (test) |
 | D3 | Cortesía de owner: `PENDING_REVIEW` → claims retenidos/no utilizables → ADMIN review → agreement CURRENT → approve → activar/entregar. ADMIN puede crear `ACTIVE`. Campañas legacy `ACTIVE` **no** se invalidan | G8.3 |
 | D4 | ShortCode: 6 caracteres, alfabeto actual, unicidad global; luego retry `P2002` (tope razonable); compatibilidad legacy | G8.6 |
@@ -68,7 +69,7 @@ Una cortesía **no es una entidad nueva**: es `GastroDiscount(visibility = COURT
 | ✅ **G8.8** (`bd77fce`) | Emails/notificaciones: aprobada/rechazada (reutiliza `GASTRO_LIFECYCLE`), shortCode en email, `audit-labels`, `sendQrEmail` admin | NINGUNO |
 | ✅ **G8.9** (`ffbded3`) | Portal Gastro: listado/detalle por local, estados humanos, acciones por lifecycle/origen, solicitud "pendiente de aprobación", audiencia congelada, métricas, Studio con gate, empty states, cross-profile | NINGUNO |
 | ✅ **G8.10** (`2682cf6`) | Admin: cola con badge + contexto de cortesía, review (requester/audiencia/retenidos) + panel de acuerdo G5, approve/reject/cancel/redeliver por lifecycle, filtro + métricas en listado, sin `qrToken`, `sendQrEmail` bloqueado, audit labels, scoping summary/status | NINGUNO |
-| **G8.11** | Accounting (según D1): elegibilidad por `claim.type`, reversa de `DEBIT_COURTESY`, reporte; **auditar datos reales primero**; semántica G5/G6 solo con autorización | NINGUNO (esperado) |
+| ✅ **G8.11** (`a2b8786`, `13c2992`, `c591f0a`) | Accounting D1: regla canónica por funding (validation → discount → campaign → `DEBIT_COURTESY`), exclusión backend + guard allocate/ledger, G6 operativo vs facturable, WARNING legacy; reversa `DEBIT_COURTESY` **DEFERRED**; DB integration **PASS** (local); datos de producción no auditados | NINGUNO |
 | **G8.12** | Tests: cross-profile, tenant, approval/agreement, economía financiada vs no | — |
 | **G8.13** | QA + docs + cierre | — |
 
