@@ -25,6 +25,7 @@ import type { EventSummary, PublicGastroLocation } from '@/repositories/interfac
 import { formatPublicRatingLabel } from '@/lib/reviews/ratingDisplay';
 import type { PublicGastroLocationDiscount } from '@/repositories/interfaces';
 import { ContentTagChips } from '@/components/content-tags/ContentTagChips';
+import { GastroLocationShareActions } from '@/components/share/GastroLocationShareActions';
 
 export type GastroPublicDetailContentProps = {
   location: PublicGastroLocation;
@@ -238,6 +239,11 @@ export function GastroPublicDetailContent({
               contactEmail={location.contactEmail}
             />
             <PublicRelatedLinksCard links={location.relatedLinks} />
+            <GastroLocationShareActions
+              variant="card"
+              displayName={location.displayName}
+              profileId={location.id}
+            />
             {!hasLocation &&
             !whatsAppHref &&
             !location.menuUrl &&

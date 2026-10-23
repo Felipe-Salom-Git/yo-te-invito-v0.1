@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { useGastroActiveLocation } from '@/lib/gastro/GastroActiveLocationContext';
 import { GastroLocationStatusBadge } from './GastroLocationStatusBadge';
+import { GastroLocationShareActions } from '@/components/share/GastroLocationShareActions';
+import { canShareGastroLocation } from '@/lib/share/gastroLocationShare';
 import { Button } from '@/components';
 
 function locationSubtitle(city: string | null, province: string | null, address: string | null) {
@@ -59,20 +61,23 @@ export function GastroLocationsList({ onPreview }: Props) {
                 <GastroLocationStatusBadge status={loc.status} />
               </div>
             </div>
-            <div className="flex shrink-0 flex-wrap gap-2">
+            <div className="flex shrink-0 flex-wrap items-center gap-3">
               <button
                 type="button"
                 onClick={() => onPreview(loc.id)}
-                className="text-sm font-medium text-accent hover:underline"
+                className="text-sm font-medium text-accent hover:underline focus:outline-none focus:ring-2 focus:ring-accent"
               >
                 Ver ficha
               </button>
               <Link
                 href={`/gastro/local/editar?profileId=${encodeURIComponent(loc.id)}`}
-                className="text-sm font-medium text-accent hover:underline"
+                className="text-sm font-medium text-accent hover:underline focus:outline-none focus:ring-2 focus:ring-accent"
               >
                 Editar
               </Link>
+              {canShareGastroLocation(loc.status) ? (
+                <GastroLocationShareActions displayName={loc.displayName} profileId={loc.id} />
+              ) : null}
             </div>
           </li>
         ))}
