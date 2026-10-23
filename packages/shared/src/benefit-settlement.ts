@@ -59,7 +59,10 @@ export function benefitSettlementPeriodBounds(periodKey: string): { start: Date;
   };
 }
 
-/** Gastro: claim-based successful validation only (master QR excluded). */
+/**
+ * Gastro claim-level precondition (master QR excluded). The full settlement rule (scope + courtesy
+ * funding) is `resolveGastroValidationSettlementEligibility` in `gastro-courtesy-accounting`.
+ */
 export function isGastroValidationEligibleForSettlement(validation: {
   claimId: string | null;
 }): boolean {

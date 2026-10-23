@@ -53,6 +53,7 @@ export class BenefitSettlementPendingValidationsService {
     return {
       settlementId: row.id,
       missingAgreementCount: discovery.missingAgreements.length,
+      fundedCourtesyExcludedCount: discovery.fundedCourtesyExcluded.length,
       data: discovery.priced.map((v) => {
         const detail = details.get(v.validationId);
         return {

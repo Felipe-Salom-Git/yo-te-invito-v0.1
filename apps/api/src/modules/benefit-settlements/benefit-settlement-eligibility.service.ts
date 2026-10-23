@@ -1,16 +1,55 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import type { BenefitCommercialAgreement, BenefitValidationSource, Prisma } from '@prisma/client';
 import {
+  ErrorCode,
   benefitAgreementCalendarKeyFromInstant,
   benefitSettlementPeriodBounds,
   compareSettlementValidationOrder,
   isActivityValidationEligibleForSettlement,
-  isGastroValidationEligibleForSettlement,
+  isGastroCourtesyFundedByCredit,
+  resolveGastroValidationSettlementEligibility,
   resolveSettlementAgreementForValidation,
   type BenefitSettlementMissingAgreement,
   type BenefitVertical,
 } from '@yo-te-invito/shared';
 import { PrismaService } from '../../prisma/prisma.service';
+
+/** G8.11 — validation → discount → courtesyCampaign → DEBIT_COURTESY (existing relations only). */
+export const GASTRO_SETTLEMENT_VALIDATION_SELECT = {
+  id: true,
+  claimId: true,
+  validatedAt: true,
+  discount: {
+    select: {
+      tenantId: true,
+      gastroProfileId: true,
+      visibility: true,
+      courtesyCampaign: {
+        select: {
+          id: true,
+          courtesyCreditDebit: { select: { id: true, type: true } },
+        },
+      },
+    },
+  },
+} satisfies Prisma.GastroDiscountValidationSelect;
+
+type GastroValidationReader = {
+  gastroDiscountValidation: {
+    findMany(args: {
+      where: Prisma.GastroDiscountValidationWhereInput;
+      select: typeof GASTRO_SETTLEMENT_VALIDATION_SELECT;
+    }): Promise<
+      Array<Prisma.GastroDiscountValidationGetPayload<{ select: typeof GASTRO_SETTLEMENT_VALIDATION_SELECT }>>
+    >;
+  };
+};
+
+export type FundedCourtesyExclusion = {
+  validationId: string;
+  validatedAt: Date;
+  courtesyCampaignId: string;
+};
 
 export type PricedEligibleValidation = {
   validationSource: BenefitValidationSource;
@@ -25,7 +64,17 @@ export type PricedEligibleValidation = {
 export type EligibleValidationDiscovery = {
   priced: PricedEligibleValidation[];
   missingAgreements: BenefitSettlementMissingAgreement[];
+  /** Not billable (D1): never priced, never allocatable, never counted as pending. */
+  fundedCourtesyExcluded: FundedCourtesyExclusion[];
 };
+
+export function fundedCourtesyAllocationError(validationIds: string[]): BadRequestException {
+  return new BadRequestException({
+    code: ErrorCode.BENEFIT_SETTLEMENT_VALIDATION_FUNDED_COURTESY,
+    message: `${validationIds.length} selected validation(s) belong to a courtesy funded with courtesy credit (not billable)`,
+    fundedValidationIds: validationIds,
+  });
+}
 
 @Injectable()
 export class BenefitSettlementEligibilityService {
@@ -72,15 +121,30 @@ export class BenefitSettlementEligibilityService {
           gastroProfileId,
         },
       },
+      select: GASTRO_SETTLEMENT_VALIDATION_SELECT,
       orderBy: [{ validatedAt: 'asc' }, { id: 'asc' }],
     });
 
     const priced: PricedEligibleValidation[] = [];
     const missingAgreements: BenefitSettlementMissingAgreement[] = [];
+    const fundedCourtesyExcluded: FundedCourtesyExclusion[] = [];
 
     for (const row of rows) {
-      if (!isGastroValidationEligibleForSettlement(row)) continue;
-      if (excludeValidationIds?.has(row.id)) continue;
+      const eligibility = resolveGastroValidationSettlementEligibility(row, {
+        tenantId,
+        gastroProfileId,
+        alreadyAllocated: excludeValidationIds?.has(row.id) ?? false,
+      });
+      if (!eligibility.eligible) {
+        if (eligibility.reason === 'FUNDED_COURTESY') {
+          fundedCourtesyExcluded.push({
+            validationId: row.id,
+            validatedAt: row.validatedAt,
+            courtesyCampaignId: row.discount.courtesyCampaign!.id,
+          });
+        }
+        continue;
+      }
 
       const agreement = resolveSettlementAgreementForValidation(agreements, row.validatedAt);
       if (!agreement) {
@@ -104,7 +168,26 @@ export class BenefitSettlementEligibilityService {
     }
 
     priced.sort(compareSettlementValidationOrder);
-    return { priced, missingAgreements };
+    return { priced, missingAgreements, fundedCourtesyExcluded };
+  }
+
+  /**
+   * G8.11.3 — defense in depth: re-read the funding context (inside the allocation transaction)
+   * and reject any credit-funded courtesy validation, whatever the selection path was.
+   */
+  async assertNoFundedCourtesyValidations(
+    client: GastroValidationReader,
+    validationIds: string[],
+  ): Promise<void> {
+    if (validationIds.length === 0) return;
+    const rows = await client.gastroDiscountValidation.findMany({
+      where: { id: { in: validationIds } },
+      select: GASTRO_SETTLEMENT_VALIDATION_SELECT,
+    });
+    const funded = rows.filter((row) => isGastroCourtesyFundedByCredit(row.discount)).map((r) => r.id);
+    if (funded.length > 0) {
+      throw fundedCourtesyAllocationError(funded);
+    }
   }
 
   private async discoverActivity(
@@ -157,7 +240,7 @@ export class BenefitSettlementEligibilityService {
     }
 
     priced.sort(compareSettlementValidationOrder);
-    return { priced, missingAgreements };
+    return { priced, missingAgreements, fundedCourtesyExcluded: [] };
   }
 
   private async loadPartnerAgreements(

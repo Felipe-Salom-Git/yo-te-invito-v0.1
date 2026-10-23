@@ -35,6 +35,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import {
   BenefitSettlementEligibilityService,
+  fundedCourtesyAllocationError,
   type PricedEligibleValidation,
 } from './benefit-settlement-eligibility.service';
 import { CourtesyCreditLedgerService } from '../courtesy-credit-ledger/courtesy-credit-ledger.service';
@@ -226,6 +227,14 @@ export class BenefitSettlementsService {
     );
     this.assertNoMissingAgreements(discovery.missingAgreements);
 
+    if (body.validationIds?.length) {
+      const fundedIds = new Set(discovery.fundedCourtesyExcluded.map((f) => f.validationId));
+      const requestedFunded = body.validationIds.filter((vid) => fundedIds.has(vid));
+      if (requestedFunded.length > 0) {
+        throw fundedCourtesyAllocationError(requestedFunded);
+      }
+    }
+
     const selection = selectPendingUsagesForAllocation(discovery.priced, body);
     if (!selection.ok) {
       throw new BadRequestException(
@@ -260,6 +269,13 @@ export class BenefitSettlementsService {
               code: ErrorCode.BENEFIT_SETTLEMENT_ALREADY_CLOSED,
               message: 'Cannot allocate on a closed settlement',
             });
+          }
+
+          if (row.vertical === 'GASTRO') {
+            await this.eligibility.assertNoFundedCourtesyValidations(
+              tx,
+              selected.map((usage) => usage.validationId),
+            );
           }
 
           const created: BenefitSettlementUsageAllocation[] = [];
@@ -516,6 +532,7 @@ export class BenefitSettlementsService {
       ),
       cashCollectionStatus: deriveCashCollectionStatus(cashDueCents, cashReceivedCents),
       transferCount: activeTransferCount,
+      fundedCourtesyUsageCount: discovery.fundedCourtesyExcluded.length,
       ...(barterAllocations.length > 0
         ? {
             barterCreditPreviewCents: moneyCentsToString(barterCreditPreview),

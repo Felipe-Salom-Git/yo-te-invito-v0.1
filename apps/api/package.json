@@ -75,6 +75,7 @@
     "test:gastro-courtesy-emails": "tsx scripts/test-gastro-courtesy-emails.util.ts",
     "test:gastro-courtesy-portal": "tsx scripts/test-gastro-courtesy-portal.util.ts && tsx ../web/lib/gastro/courtesy-portal.assert.ts",
     "test:admin-gastro-courtesy": "tsx scripts/test-admin-gastro-courtesy.util.ts",
+    "test:gastro-courtesy-accounting": "tsx scripts/test-gastro-courtesy-accounting.util.ts",
     "test:gastro-primary-subcategory-name": "tsx scripts/test-gastro-primary-subcategory-name.util.ts",
     "test:gastro-subcategory-selection": "tsx scripts/test-gastro-subcategory-selection.util.ts",
     "test:gastro-event-tags": "tsx scripts/test-gastro-event-tags.util.ts",

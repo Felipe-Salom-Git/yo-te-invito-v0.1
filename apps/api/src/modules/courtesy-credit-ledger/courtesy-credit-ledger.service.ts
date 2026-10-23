@@ -14,6 +14,7 @@ import {
   computeBarterCreditFromAllocation,
   computeCourtesyCreditBalanceCents,
   computeCreditConsumedCents,
+  isGastroCourtesyFundedByCredit,
   moneyCentsToString,
   parseSignedMoneyCentsString,
   signedMoneyCentsToString,
@@ -113,6 +114,8 @@ export class CourtesyCreditLedgerService {
     if (existing) {
       return { entry: existing, created: false };
     }
+
+    await this.assertAllocationNotFundedCourtesy(tx, params.allocation);
 
     const creditAmountCents = computeBarterCreditFromAllocation({
       baseAmountCents: params.allocation.baseAmountCents,
@@ -459,6 +462,33 @@ export class CourtesyCreditLedgerService {
     }
 
     return { created, skipped, errors };
+  }
+
+  /** G8.11 (D1) — a credit-funded courtesy can never generate new credit (no circular credit). */
+  private async assertAllocationNotFundedCourtesy(
+    tx: Tx,
+    allocation: BenefitSettlementUsageAllocation,
+  ): Promise<void> {
+    if (allocation.validationSource !== 'GASTRO_DISCOUNT_VALIDATION') return;
+    const validation = await tx.gastroDiscountValidation.findFirst({
+      where: { id: allocation.validationId },
+      select: {
+        discount: {
+          select: {
+            courtesyCampaign: {
+              select: { id: true, courtesyCreditDebit: { select: { id: true, type: true } } },
+            },
+          },
+        },
+      },
+    });
+    if (validation && isGastroCourtesyFundedByCredit(validation.discount)) {
+      throw new BadRequestException({
+        code: ErrorCode.BENEFIT_SETTLEMENT_VALIDATION_FUNDED_COURTESY,
+        message: 'Credit-funded courtesy usage cannot materialize courtesy credit',
+        fundedValidationIds: [allocation.validationId],
+      });
+    }
   }
 
   private partnerWhereClause(

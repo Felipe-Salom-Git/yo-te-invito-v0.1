@@ -105,6 +105,8 @@ export const benefitSettlementSummarySchema = z.object({
   barterCreditPreviewCents: moneyCentsStringSchema.optional(),
   barterCreditExpectedCents: moneyCentsStringSchema.optional(),
   barterCreditMaterializedCents: moneyCentsStringSchema.optional(),
+  /** G8.11 — credit-funded courtesy validations in the period (operational usage, NOT billable). */
+  fundedCourtesyUsageCount: z.number().int().min(0).optional(),
 });
 
 export type BenefitSettlementSummary = z.infer<typeof benefitSettlementSummarySchema>;
@@ -177,6 +179,8 @@ export const benefitSettlementPendingValidationsResponseSchema = z.object({
   data: z.array(benefitSettlementPendingValidationSchema),
   /** Eligible validations without applicable agreement (not allocatable until fixed). */
   missingAgreementCount: z.number().int().min(0),
+  /** G8.11 — validations of credit-funded courtesies in the period: operational, NOT billable. */
+  fundedCourtesyExcludedCount: z.number().int().min(0),
 });
 
 export type BenefitSettlementPendingValidationsResponse = z.infer<
