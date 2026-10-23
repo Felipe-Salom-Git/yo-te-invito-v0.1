@@ -26,6 +26,7 @@ import { GastroOwnershipService } from '../modules/gastro/gastro-ownership.servi
 import { AuditService } from '../modules/audit/audit.service';
 import { Role } from '@yo-te-invito/shared';
 import { gastroOwnerDiscountMatchesAuthorizedProfile } from './gastro-owner-discount-scope.util';
+import { formatGastroClaimShortCodeForDisplay } from '../common/gastro-claim-short-code.util';
 
 function formatValueLabel(type: string, value: number): string {
   if (type === 'PERCENT') return `${value}%`;
@@ -389,7 +390,7 @@ export class ScannerGastroDiscountService {
     const valueLabel = isCourtesy
       ? resolveCourtesyBenefitLabel(discount.courtesyCampaign, title)
       : formatValueLabel(discount.type, discount.value);
-    const discountInfo = {
+    const discountInfo: NonNullable<ValidateGastroDiscountResponse['discount']> = {
       id: discount.id,
       title,
       valueLabel,
@@ -413,6 +414,9 @@ export class ScannerGastroDiscountService {
     });
 
     if (claim) {
+      // G8.6: expose only the scanned claim's own short code (support / manual cross-check).
+      discountInfo.shortCode = formatGastroClaimShortCodeForDisplay(claim.shortCode);
+
       if (this.isClaimUsed(claim)) {
         return this.response(
           'ALREADY_USED',

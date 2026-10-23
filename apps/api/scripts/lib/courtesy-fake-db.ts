@@ -10,6 +10,7 @@
  * NOT a replacement for DB integration tests (see docs: "DB integration: NO EJECUTADO").
  */
 import { ForbiddenException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { buildGastroDiscountQrPayload } from '@yo-te-invito/shared';
 import { GastroCourtesyDiscountsService } from '../../src/modules/gastro/gastro-courtesy-discounts.service';
 import { GastroCourtesyDeliveryService } from '../../src/modules/gastro/gastro-courtesy-delivery.service';
@@ -72,6 +73,8 @@ export class FakeCourtesyDb {
   txCount = 0;
   /** Set to make the Nth claim creation fail (to prove the owner create is atomic). */
   failClaimCreateAt: number | null = null;
+  /** G8.6: queued P2002 faults consumed by the next claim creations (FIFO). */
+  claimCreateFaults: Array<{ target: string[] | string }> = [];
   private seq = 0;
   private claimCreates = 0;
 
@@ -174,6 +177,22 @@ export class FakeCourtesyDb {
         this.claimCreates += 1;
         if (this.failClaimCreateAt != null && this.claimCreates === this.failClaimCreateAt) {
           throw new Error('simulated claim create failure');
+        }
+        const fault = this.claimCreateFaults.shift();
+        if (fault) {
+          throw new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+            code: 'P2002',
+            clientVersion: 'test',
+            meta: { target: fault.target },
+          });
+        }
+        // Real constraint: shortCode is globally @unique.
+        if (this.claims.some((c) => c.shortCode === data.shortCode)) {
+          throw new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+            code: 'P2002',
+            clientVersion: 'test',
+            meta: { target: ['shortCode'] },
+          });
         }
         const dup = this.claims.find(
           (c) => c.discountId === data.discountId && c.email === data.email,

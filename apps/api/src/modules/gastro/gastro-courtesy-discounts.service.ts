@@ -24,7 +24,10 @@ import { AuditService } from '../audit/audit.service';
 import { EmailService } from '../../email/email.service';
 import { BenefitCommercialAgreementsService } from '../benefit-agreements/benefit-commercial-agreements.service';
 import { GastroCourtesyDeliveryService } from './gastro-courtesy-delivery.service';
-import { allocateGastroClaimShortCode } from '../../common/gastro-claim-short-code.util';
+import {
+  allocateGastroClaimShortCode,
+  retryOnShortCodeCollision,
+} from '../../common/gastro-claim-short-code.util';
 import { CourtesyCreditLedgerService } from '../courtesy-credit-ledger/courtesy-credit-ledger.service';
 
 const MAX_RECIPIENTS = 200;
@@ -309,92 +312,96 @@ export class GastroCourtesyDiscountsService {
     // ADMIN courtesies are born ACTIVE. Reuses the existing GastroDiscount lifecycle.
     const discountStatus = initialCourtesyDiscountStatus(userRole);
 
-    const { discount, campaign, debitEntry, createdClaims } = await this.prisma.$transaction(
-      async (tx) => {
-        const discount = await tx.gastroDiscount.create({
-          data: {
-            tenantId,
-            eventId,
-            gastroProfileId: profile.id,
-            code: pendingCode(),
-            type: 'PERCENT',
-            value: 0,
-            displayTitle: body.title.trim(),
-            summary: body.description?.trim() ?? body.discountLabel.trim(),
-            detail: body.description?.trim() ?? body.discountLabel.trim(),
-            displayDescription: body.description?.trim() ?? body.discountLabel.trim(),
-            validFrom,
-            validTo,
-            discountDate: validTo,
-            status: discountStatus,
-            visibility: 'COURTESY_ONLY',
-            // Courtesies never own a discount-level (master) QR.
-            qrToken: null,
-            createdByOrigin: userRole === 'ADMIN' ? 'ADMIN' : 'GASTRO',
-            createdByUserId: userId,
-          },
-        });
-
-        const campaign = await tx.gastroCourtesyCampaign.create({
-          data: {
-            tenantId,
-            gastroProfileId: profile.id,
-            discountId: discount.id,
-            title: body.title.trim(),
-            description: body.description?.trim() ?? null,
-            discountLabel: body.discountLabel.trim(),
-            message: body.message?.trim() ?? null,
-            validFrom,
-            validTo,
-            createdByUserId: userId,
-          },
-        });
-
-        // G8.3 (Option A): freeze the recipient set NOW by pre-creating one claim per
-        // recipient, in the same transaction as the campaign. While the parent discount is
-        // PENDING_REVIEW these claims are retained (not scannable / not visible / not mailed).
-        const createdClaims: Array<{ id: string; email: string }> = [];
-        for (const recipient of recipients) {
-          const claim = await tx.gastroDiscountClaim.create({
+    // G8.6: a shortCode P2002 aborts the whole (Postgres) transaction, so the retry wraps it;
+    // the rolled-back attempt leaves nothing behind and the next one draws fresh codes.
+    const { discount, campaign, debitEntry, createdClaims } = await retryOnShortCodeCollision(() =>
+      this.prisma.$transaction(
+        async (tx) => {
+          const discount = await tx.gastroDiscount.create({
             data: {
               tenantId,
-              discountId: discount.id,
-              courtesyCampaignId: campaign.id,
-              email: recipient.email,
-              userId: recipient.userId,
-              recipientName: recipient.displayName,
-              qrToken: randomBytes(24).toString('hex'),
-              accessToken: randomBytes(32).toString('hex'),
-              shortCode: await allocateGastroClaimShortCode(tx),
-              type: 'COURTESY',
-              source: recipient.source,
-              status: 'ACTIVE',
-              expiresAt: validTo,
+              eventId,
+              gastroProfileId: profile.id,
+              code: pendingCode(),
+              type: 'PERCENT',
+              value: 0,
+              displayTitle: body.title.trim(),
+              summary: body.description?.trim() ?? body.discountLabel.trim(),
+              detail: body.description?.trim() ?? body.discountLabel.trim(),
+              displayDescription: body.description?.trim() ?? body.discountLabel.trim(),
+              validFrom,
+              validTo,
+              discountDate: validTo,
+              status: discountStatus,
+              visibility: 'COURTESY_ONLY',
+              // Courtesies never own a discount-level (master) QR.
+              qrToken: null,
+              createdByOrigin: userRole === 'ADMIN' ? 'ADMIN' : 'GASTRO',
+              createdByUserId: userId,
             },
           });
-          createdClaims.push({ id: claim.id, email: recipient.email });
-        }
 
-        let debitEntry: { id: string; amountCents: bigint } | null = null;
-        if (imputedValueCents != null) {
-          const { entry } = await this.courtesyLedger.debitForGastroCourtesyCampaign(tx, {
-            tenantId,
-            gastroProfileId: profile.id,
-            campaignId: campaign.id,
-            imputedValueCents,
-            currency: 'ARS',
-            actorId: userId,
+          const campaign = await tx.gastroCourtesyCampaign.create({
+            data: {
+              tenantId,
+              gastroProfileId: profile.id,
+              discountId: discount.id,
+              title: body.title.trim(),
+              description: body.description?.trim() ?? null,
+              discountLabel: body.discountLabel.trim(),
+              message: body.message?.trim() ?? null,
+              validFrom,
+              validTo,
+              createdByUserId: userId,
+            },
           });
-          debitEntry = entry;
-        }
 
-        return { discount, campaign, debitEntry, createdClaims };
-      },
-      {
-        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
-        maxWait: 10_000,
-        timeout: 60_000,
-      },
+          // G8.3 (Option A): freeze the recipient set NOW by pre-creating one claim per
+          // recipient, in the same transaction as the campaign. While the parent discount is
+          // PENDING_REVIEW these claims are retained (not scannable / not visible / not mailed).
+          const createdClaims: Array<{ id: string; email: string }> = [];
+          for (const recipient of recipients) {
+            const claim = await tx.gastroDiscountClaim.create({
+              data: {
+                tenantId,
+                discountId: discount.id,
+                courtesyCampaignId: campaign.id,
+                email: recipient.email,
+                userId: recipient.userId,
+                recipientName: recipient.displayName,
+                qrToken: randomBytes(24).toString('hex'),
+                accessToken: randomBytes(32).toString('hex'),
+                shortCode: await allocateGastroClaimShortCode(tx),
+                type: 'COURTESY',
+                source: recipient.source,
+                status: 'ACTIVE',
+                expiresAt: validTo,
+              },
+            });
+            createdClaims.push({ id: claim.id, email: recipient.email });
+          }
+
+          let debitEntry: { id: string; amountCents: bigint } | null = null;
+          if (imputedValueCents != null) {
+            const { entry } = await this.courtesyLedger.debitForGastroCourtesyCampaign(tx, {
+              tenantId,
+              gastroProfileId: profile.id,
+              campaignId: campaign.id,
+              imputedValueCents,
+              currency: 'ARS',
+              actorId: userId,
+            });
+            debitEntry = entry;
+          }
+
+          return { discount, campaign, debitEntry, createdClaims };
+        },
+        {
+          isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+          maxWait: 10_000,
+          timeout: 60_000,
+        },
+      ),
     );
 
     const pendingApproval = discountStatus === 'PENDING_REVIEW';

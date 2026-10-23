@@ -29,6 +29,11 @@ export const gastroDiscountScanDiscountSchema = z.object({
    * Optional for backward compatibility with older scanner clients.
    */
   kind: z.enum(['DISCOUNT', 'COURTESY']).optional(),
+  /**
+   * G8.6 — display short code (`ABC-123`) of the claim that was just scanned. Only ever the
+   * scanned claim's own code (never another claim's); absent for master-QR validations.
+   */
+  shortCode: z.string().optional(),
 });
 
 export const validateGastroDiscountResponseSchema = z.object({

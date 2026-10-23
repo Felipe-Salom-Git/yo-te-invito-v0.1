@@ -19,7 +19,10 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../modules/audit/audit.service';
 import { GastroDiscountClaimEmailService } from '../modules/gastro/gastro-discount-claim-email.service';
-import { allocateGastroClaimShortCode } from '../common/gastro-claim-short-code.util';
+import {
+  allocateGastroClaimShortCode,
+  retryOnShortCodeCollision,
+} from '../common/gastro-claim-short-code.util';
 
 const PUBLIC_STATUSES = ['APPROVED', 'ACTIVE'] as const;
 
@@ -310,21 +313,24 @@ export class PublicGastroDiscountsService {
       });
     }
 
-    const claim = await this.prisma.gastroDiscountClaim.create({
-      data: {
-        tenantId,
-        discountId,
-        email: normalizedEmail,
-        userId: userId ?? null,
-        qrToken: randomBytes(24).toString('hex'),
-        accessToken: randomBytes(32).toString('hex'),
-        shortCode: await allocateGastroClaimShortCode(this.prisma),
-        type: 'PUBLIC_REQUEST',
-        source: 'WEB',
-        status: 'ACTIVE',
-        expiresAt,
-      },
-    });
+    // G8.6: same generator as courtesies; a P2002 on shortCode alone draws a new code.
+    const claim = await retryOnShortCodeCollision(async () =>
+      this.prisma.gastroDiscountClaim.create({
+        data: {
+          tenantId,
+          discountId,
+          email: normalizedEmail,
+          userId: userId ?? null,
+          qrToken: randomBytes(24).toString('hex'),
+          accessToken: randomBytes(32).toString('hex'),
+          shortCode: await allocateGastroClaimShortCode(this.prisma),
+          type: 'PUBLIC_REQUEST',
+          source: 'WEB',
+          status: 'ACTIVE',
+          expiresAt,
+        },
+      }),
+    );
 
     await this.audit.logAction({
       tenantId,
