@@ -162,7 +162,7 @@ export function AdminGastroLocationFormClient({ mode, profileId }: Props) {
 
       <header className="mb-6">
         <SectionTitle>
-          {isCreate ? 'Nuevo local gastronómico' : `Editar: ${location?.displayName}`}
+          {isCreate ? 'Crear local' : `Editar: ${location?.displayName}`}
         </SectionTitle>
         <p className="mt-1 max-w-2xl text-sm text-text-muted">
           {isCreate

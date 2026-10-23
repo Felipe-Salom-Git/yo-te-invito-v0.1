@@ -205,6 +205,28 @@ export default function AdminGastroLocationDetailPage() {
             </div>
           ) : null}
 
+          <nav className="mt-6 flex flex-wrap gap-2" aria-label="Secciones del local">
+            <a href="#metricas" className="rounded-lg border border-border px-3 py-1.5 text-sm text-text hover:border-accent focus:outline-none focus:ring-2 focus:ring-accent">
+              Métricas
+            </a>
+            <a href="#publicaciones" className="rounded-lg border border-border px-3 py-1.5 text-sm text-text hover:border-accent focus:outline-none focus:ring-2 focus:ring-accent">
+              Publicaciones
+            </a>
+            <a href="#descuentos" className="rounded-lg border border-border px-3 py-1.5 text-sm text-text hover:border-accent focus:outline-none focus:ring-2 focus:ring-accent">
+              Descuentos
+            </a>
+            <button
+              type="button"
+              className="rounded-lg border border-border px-3 py-1.5 text-sm text-text hover:border-accent focus:outline-none focus:ring-2 focus:ring-accent"
+              onClick={() => {
+                setVisibilityFilter('COURTESY_ONLY');
+                document.getElementById('descuentos')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }}
+            >
+              Cortesías
+            </button>
+          </nav>
+
           <div className="mt-6 grid gap-4 rounded-lg border border-border bg-bg-muted p-4 sm:grid-cols-2 lg:grid-cols-3">
             <Info label="Teléfono" value={location.contactPhone} />
             <Info label="Email contacto" value={location.contactEmail} />
@@ -271,15 +293,21 @@ export default function AdminGastroLocationDetailPage() {
             </div>
           </div>
 
-          {metricsQuery.isLoading ? (
-            <p className="mt-8 text-sm text-text-muted">Cargando métricas del local…</p>
-          ) : metricsQuery.data ? (
-            <GastroProfileMetricsPanel metrics={metricsQuery.data} />
-          ) : null}
+          <div id="metricas" className="scroll-mt-24">
+            {metricsQuery.isLoading ? (
+              <p className="mt-8 text-sm text-text-muted">Cargando métricas del local…</p>
+            ) : metricsQuery.data ? (
+              <GastroProfileMetricsPanel metrics={metricsQuery.data} />
+            ) : (
+              <p className="mt-8 text-sm text-text-muted">Todavía no hay métricas para este local.</p>
+            )}
+          </div>
 
-          <AdminGastroContentPanel profileId={profileId} />
+          <div id="publicaciones" className="scroll-mt-24">
+            <AdminGastroContentPanel profileId={profileId} />
+          </div>
 
-          <div className="mt-10 flex flex-wrap items-center justify-between gap-3">
+          <div id="descuentos" className="mt-10 flex scroll-mt-24 flex-wrap items-center justify-between gap-3">
             <h2 className="text-lg font-semibold text-text">Descuentos y cortesías</h2>
             {location.status === 'active' && (
               <Link

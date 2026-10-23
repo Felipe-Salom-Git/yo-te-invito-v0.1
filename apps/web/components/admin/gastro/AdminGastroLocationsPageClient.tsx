@@ -105,7 +105,7 @@ export function AdminGastroLocationsPageClient() {
         </div>
         <Link href="/admin/gastronomicos/nuevo" className="shrink-0">
           <Button type="button" size="sm">
-            Nuevo local gastronómico
+            Crear local
           </Button>
         </Link>
       </header>
@@ -146,7 +146,7 @@ export function AdminGastroLocationsPageClient() {
           <EmptyState
             title="Sin locales gastronómicos"
             description="Todavía no hay locales cargados. Creá el primero desde el botón de arriba."
-            actionLabel="Nuevo local gastronómico"
+            actionLabel="Crear local"
             actionHref="/admin/gastronomicos/nuevo"
           />
         ) : showEmptyFiltered ? (
