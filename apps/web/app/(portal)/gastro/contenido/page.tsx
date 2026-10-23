@@ -214,7 +214,7 @@ export default function GastroContenidoPage() {
 
       <div className="mt-6">
         <Button onClick={() => setShowCreate(!showCreate)} variant="outline">
-          {showCreate ? 'Cancelar' : 'Nueva publicación'}
+          {showCreate ? 'Cancelar' : 'Crear publicación'}
         </Button>
         {showCreate ? (
           <div className="mt-4 space-y-4 rounded-lg border border-border bg-bg-muted p-4">
@@ -253,7 +253,7 @@ export default function GastroContenidoPage() {
                 onClick={handleCreate}
                 disabled={createMutation.isPending || uploading}
               >
-                Crear
+                Crear publicación
               </Button>
               <Button variant="outline" onClick={resetCreate}>
                 Cancelar
@@ -345,7 +345,11 @@ export default function GastroContenidoPage() {
                         {gallery.map((url) => (
                           <li key={url} className="h-20 w-20 overflow-hidden rounded border border-border">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={url} alt="" className="h-full w-full object-cover" />
+                            <img
+                              src={url}
+                              alt={c.title?.trim() || 'Imagen de la publicación'}
+                              className="h-full w-full object-cover"
+                            />
                           </li>
                         ))}
                       </ul>
@@ -390,8 +394,16 @@ export default function GastroContenidoPage() {
         </ul>
       )}
 
-      {content.length === 0 && !contentLoading && !contentError && !showCreate ? (
-        <p className="mt-6 text-text-muted">Sin publicaciones aún. Creá una con el botón arriba.</p>
+      {content.length === 0 && !contentLoading && !contentError && !showCreate && local ? (
+        <div className="mt-6 rounded-xl border border-dashed border-border bg-bg-muted/40 px-6 py-10 text-center">
+          <p className="font-medium text-text">Este local todavía no tiene publicaciones.</p>
+          <p className="mt-1 text-sm text-text-muted">
+            Una publicación con título, texto o galería es lo que ve la ficha pública.
+          </p>
+          <Button className="mt-4" type="button" onClick={() => setShowCreate(true)}>
+            Crear publicación
+          </Button>
+        </div>
       ) : null}
     </PageContainer>
   );

@@ -93,7 +93,7 @@ assert(
 // G8.9.10 — Empty states
 const none = { ACTIVE: 0, PENDING: 0, FINISHED: 0, ARCHIVED: 0 };
 const zero = resolveCourtesyEmptyState({ bucket: 'ACTIVE', countsByBucket: none, canCreate: true });
-assert(zero.title === 'Todavía no creaste cortesías para este local.' && zero.showCreate, '0 cortesías → CTA');
+assert(zero.title === 'Todavía no solicitaste cortesías para este local.' && zero.showCreate, '0 cortesías → CTA');
 const zeroInactive = resolveCourtesyEmptyState({ bucket: 'ACTIVE', countsByBucket: none, canCreate: false });
 assert(!zeroInactive.showCreate, 'inactive local → no create CTA');
 const onlyPending = resolveCourtesyEmptyState({

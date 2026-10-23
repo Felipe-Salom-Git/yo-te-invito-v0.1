@@ -45,7 +45,7 @@ export function GastroLocationsList({ onPreview }: Props) {
         <h2 className="text-lg font-semibold text-text">Mis locales</h2>
         <Link href="/gastro/local/nuevo">
           <Button type="button" variant="secondary">
-            Nuevo local / propuesta
+            Crear local
           </Button>
         </Link>
       </div>

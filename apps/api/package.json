@@ -76,6 +76,8 @@
     "test:gastro-courtesy-portal": "tsx scripts/test-gastro-courtesy-portal.util.ts && tsx ../web/lib/gastro/courtesy-portal.assert.ts",
     "test:gastro-location-share": "tsx ../web/lib/share/gastroLocationShare.assert.ts",
     "test:gastro-active-profile": "tsx ../web/lib/gastro/resolve-active-profile-id.assert.ts",
+    "test:gastro-card-chips": "tsx ../web/lib/home/gastroCardChipLimits.assert.ts",
+    "test:gastro-empty-states": "tsx ../web/lib/gastro/discount-empty.assert.ts && tsx ../web/lib/gastro/courtesy-portal.assert.ts",
     "test:admin-gastro-courtesy": "tsx scripts/test-admin-gastro-courtesy.util.ts",
     "test:gastro-courtesy-accounting": "tsx scripts/test-gastro-courtesy-accounting.util.ts",
     "test:gastro-primary-subcategory-name": "tsx scripts/test-gastro-primary-subcategory-name.util.ts",

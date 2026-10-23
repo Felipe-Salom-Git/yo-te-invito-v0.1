@@ -133,7 +133,7 @@ export function resolveCourtesyEmptyState(input: {
   const total = Object.values(input.countsByBucket).reduce((a, b) => a + b, 0);
   if (total === 0) {
     return {
-      title: 'Todavía no creaste cortesías para este local.',
+      title: 'Todavía no solicitaste cortesías para este local.',
       description: input.canCreate
         ? 'Elegí destinatarios y enviá la solicitud: administración la revisa antes de entregarla.'
         : 'Solo un local activo puede solicitar cortesías.',

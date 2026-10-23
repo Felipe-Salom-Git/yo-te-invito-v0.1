@@ -235,7 +235,7 @@ export class GastroLocalService {
       throw new ConflictException({
         code: 'CONFLICT',
         message:
-          'Ya tenés locales configurados. Usá «Nuevo local» para agregar otra propuesta.',
+          'Ya tenés locales configurados. Usá «Crear local» para agregar otra propuesta.',
       });
     }
 

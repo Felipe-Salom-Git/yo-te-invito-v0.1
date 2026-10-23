@@ -103,7 +103,7 @@ export default function GastroLocalNuevoPage() {
       <Link href="/gastro/local" className="mb-4 inline-block text-sm text-accent">
         ← Volver a mis locales
       </Link>
-      <SectionTitle>Nuevo local / propuesta</SectionTitle>
+      <SectionTitle>Crear local</SectionTitle>
       <p className="mb-6 text-sm text-text-muted">
         Podés cargar todo desde cero o reutilizar ubicación y contactos de un local existente. Los
         datos copiados quedan en esta propuesta y no modifican el original.

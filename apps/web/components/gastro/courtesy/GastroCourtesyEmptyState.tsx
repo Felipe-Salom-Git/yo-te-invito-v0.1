@@ -20,7 +20,7 @@ export function GastroCourtesyEmptyState({
           href={createHref}
           className="mt-4 inline-block rounded-lg bg-accent px-4 py-2 text-sm font-medium text-bg hover:bg-accent-hover"
         >
-          Crear cortesía
+          Solicitar cortesía
         </Link>
       ) : null}
     </div>

@@ -28,6 +28,7 @@ import {
   parseDiscountTypeParam,
   resolveCourtesyEmptyState,
 } from '@/lib/gastro/courtesy-portal';
+import { resolvePublicDiscountEmptyState } from '@/lib/gastro/discount-empty';
 
 const VISIBILITY_FILTERS: Array<{ id: DiscountVisibilityFilter; label: string }> = [
   { id: 'ALL', label: 'Todos' },
@@ -116,14 +117,14 @@ export default function GastroDescuentosPage() {
               href={createCourtesyHref}
               className="rounded-lg border border-accent px-4 py-2 text-sm font-medium text-accent hover:bg-accent/10"
             >
-              Crear cortesía
+              Solicitar cortesía
             </Link>
           ) : null}
           <Link
             href={withCourtesyProfileQuery('/gastro/descuentos/nuevo', profileId)}
             className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-bg hover:bg-accent-hover"
           >
-            Nuevo ticket
+            Crear descuento
           </Link>
         </div>
       </div>
@@ -185,7 +186,18 @@ export default function GastroDescuentosPage() {
         />
       ) : null}
       {!loading && profileId && visible.length === 0 && !courtesyOnly ? (
-        <p className="text-text-muted">No hay tickets en esta sección.</p>
+        <DiscountEmpty
+          createHref={withCourtesyProfileQuery('/gastro/descuentos/nuevo', profileId)}
+          state={resolvePublicDiscountEmptyState({
+            bucket: tab,
+            countsByBucket: {
+              ACTIVE: grouped.ACTIVE.length,
+              PENDING: grouped.PENDING.length,
+              FINISHED: grouped.FINISHED.length,
+              ARCHIVED: grouped.ARCHIVED.length,
+            },
+          })}
+        />
       ) : null}
       <ul className="space-y-3">
         {visible.map((d) => {
@@ -202,5 +214,28 @@ export default function GastroDescuentosPage() {
         })}
       </ul>
     </PageContainer>
+  );
+}
+
+function DiscountEmpty({
+  state,
+  createHref,
+}: {
+  state: { title: string; description?: string; showCreate: boolean };
+  createHref: string;
+}) {
+  return (
+    <div className="rounded-lg border border-dashed border-border p-6 text-center">
+      <p className="font-medium text-text">{state.title}</p>
+      {state.description ? <p className="mt-1 text-sm text-text-muted">{state.description}</p> : null}
+      {state.showCreate ? (
+        <Link
+          href={createHref}
+          className="mt-4 inline-block rounded-lg bg-accent px-4 py-2 text-sm font-medium text-bg hover:bg-accent-hover"
+        >
+          Crear descuento
+        </Link>
+      ) : null}
+    </div>
   );
 }
