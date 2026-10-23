@@ -1,4 +1,5 @@
 import type { AuditAction } from '@prisma/client';
+import { resolveCourtesyAuditActionLabel } from '@yo-te-invito/shared';
 
 const ACTION_LABELS: Record<string, string> = {
   EVENT_APPROVED: 'Evento aprobado',
@@ -63,8 +64,13 @@ export function buildAuditLogSummary(
   entityType: string,
   before: unknown,
   after: unknown,
+  metadata?: unknown,
 ): string {
-  const label = ACTION_LABELS[action] ?? action.replace(/_/g, ' ').toLowerCase();
+  // G8.10.7: courtesy rows reuse GASTRO_DISCOUNT_* actions; label them as courtesies.
+  const label =
+    resolveCourtesyAuditActionLabel({ action, entityType, before, after, metadata }) ??
+    ACTION_LABELS[action] ??
+    action.replace(/_/g, ' ').toLowerCase();
   const reason = pickReason(after);
   if (reason) {
     const short = reason.length > 120 ? `${reason.slice(0, 117)}…` : reason;

@@ -40,6 +40,18 @@ export const adminDashboardPendingGastroDiscountSchema = z.object({
   visibility: z.enum(['PUBLIC', 'COURTESY_ONLY']).optional(),
   createdAt: z.string().datetime(),
   reviewKind: z.enum(['NEW', 'EDIT']).optional(),
+  createdByOrigin: z.enum(['GASTRO', 'ADMIN']).optional(),
+  /** G8.10: campaign context of a pending courtesy (benefit, recipients, vigencia). */
+  courtesy: z
+    .object({
+      title: z.string(),
+      benefitLabel: z.string(),
+      recipientCount: z.number().int().min(0),
+      validFrom: z.string().datetime().nullable(),
+      validTo: z.string().datetime().nullable(),
+    })
+    .nullable()
+    .optional(),
 });
 export type AdminDashboardPendingGastroDiscount = z.infer<
   typeof adminDashboardPendingGastroDiscountSchema

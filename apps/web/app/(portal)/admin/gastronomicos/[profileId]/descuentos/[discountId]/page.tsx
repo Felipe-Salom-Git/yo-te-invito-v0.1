@@ -23,6 +23,7 @@ import { buildDiscountSettlementHref } from '@/lib/admin/settlement-generate-con
 import {
   canArchiveGastroDiscount,
   canUnarchiveGastroDiscount,
+  resolveCourtesyActions,
 } from '@yo-te-invito/shared';
 
 export default function AdminGastroDiscountDetailPage() {
@@ -137,7 +138,12 @@ export default function AdminGastroDiscountDetailPage() {
       repos.adminGastro.reject(profileId, discountId, rejectReason, note || null),
     onError: (e) => addToast(getErrorMessage(e), 'error'),
     onSuccess: () => {
-      addToast('Ticket rechazado', 'success');
+      addToast(
+        item?.visibility === 'COURTESY_ONLY'
+          ? 'Cortesía rechazada: cupones cancelados y local notificado'
+          : 'Ticket rechazado',
+        'success',
+      );
       invalidate();
     },
   });
@@ -147,7 +153,7 @@ export default function AdminGastroDiscountDetailPage() {
       repos.adminGastro.cancel(profileId, discountId, rejectReason, note || null),
     onError: (e) => addToast(getErrorMessage(e), 'error'),
     onSuccess: () => {
-      addToast('Ticket cancelado', 'success');
+      addToast(item?.visibility === 'COURTESY_ONLY' ? 'Cortesía cancelada' : 'Ticket cancelado', 'success');
       invalidate();
     },
   });
@@ -217,6 +223,20 @@ export default function AdminGastroDiscountDetailPage() {
 
   const canonicalProfileId = item.profileId;
   const isCourtesy = item.visibility === 'COURTESY_ONLY';
+  const pendingDeliveryCount =
+    item.courtesy?.metrics?.pendingDeliveryClaims ?? item.courtesy?.pendingDeliveryCount ?? 0;
+  // G8.10.3: courtesy actions follow its lifecycle (approve/reject only while pending, etc.).
+  const courtesyActions = isCourtesy
+    ? resolveCourtesyActions({
+        actor: 'ADMIN',
+        status: item.status,
+        archivedAt: item.archivedAt,
+        validTo: item.courtesy?.validTo ?? item.validTo,
+        createdByOrigin: item.createdByOrigin,
+        pendingDeliveryClaims: pendingDeliveryCount,
+      })
+    : null;
+  const subject = isCourtesy ? 'cortesía' : 'ticket';
   const moderationPending =
     markNegotiation.isPending ||
     approve.isPending ||
@@ -257,11 +277,15 @@ export default function AdminGastroDiscountDetailPage() {
       </p>
 
       {isCourtesy && (
-        <AdminGastroCourtesyReviewPanel
-          item={item}
-          hasCurrentAgreement={hasCurrentAgreement}
-          agreementLoading={agreementHistoryQuery.isLoading}
-        />
+        <>
+          <AdminGastroCourtesyReviewPanel
+            item={item}
+            hasCurrentAgreement={hasCurrentAgreement}
+            agreementLoading={agreementHistoryQuery.isLoading}
+          />
+          {/* G8.10.4: the existing G5 agreement panel, next to the review (same endpoint). */}
+          <AdminGastroDiscountCommercialContextPanel profileId={canonicalProfileId} />
+        </>
       )}
 
       {item.hasPendingUpdate && item.pendingUpdate && (
@@ -339,6 +363,9 @@ export default function AdminGastroDiscountDetailPage() {
         <div className="mt-8">
           <GastroDiscountDetailContent
             summary={summaryQuery.data}
+            actor="ADMIN"
+            archivedAt={item.archivedAt ?? null}
+            rejectionReason={item.rejectionReason}
             statusLoading={statusMutation.isPending}
             onActivate={() => statusMutation.mutate('ACTIVE')}
             onDeactivate={() => statusMutation.mutate('CANCELLED')}
@@ -351,10 +378,13 @@ export default function AdminGastroDiscountDetailPage() {
       {operationalMetricsQuery.isLoading ? (
         <p className="mt-8 text-sm text-text-muted">Cargando métricas operativas…</p>
       ) : operationalMetricsQuery.data ? (
-        <GastroDiscountOperationalMetricsPanel metrics={operationalMetricsQuery.data} />
+        <GastroDiscountOperationalMetricsPanel
+          metrics={operationalMetricsQuery.data}
+          isCourtesy={isCourtesy}
+        />
       ) : null}
 
-      <AdminGastroDiscountCommercialContextPanel profileId={canonicalProfileId} />
+      {!isCourtesy && <AdminGastroDiscountCommercialContextPanel profileId={canonicalProfileId} />}
       <div className="mt-3 flex flex-wrap items-center gap-3">
         <Link
           href={buildDiscountSettlementHref({
@@ -385,28 +415,31 @@ export default function AdminGastroDiscountDetailPage() {
         </div>
       )}
 
-      {isCourtesy &&
-        item.status === 'ACTIVE' &&
-        (item.courtesy?.pendingDeliveryCount ?? 0) > 0 && (
-          <div className="mt-6">
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={moderationPending}
-              onClick={() => {
-                if (
-                  window.confirm(
-                    `¿Reintentar la entrega a ${item.courtesy?.pendingDeliveryCount} destinatario(s) sin email enviado?`,
-                  )
-                ) {
-                  redeliver.mutate();
-                }
-              }}
-            >
-              Reintentar entrega
-            </Button>
-          </div>
-        )}
+      {courtesyActions?.redeliver && (
+        <div className="mt-6 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
+          <p className="text-sm text-text">
+            {pendingDeliveryCount} destinatario(s) todavía no recibieron su email. El reintento
+            solo envía a quienes no tienen envío registrado.
+          </p>
+          <Button
+            type="button"
+            variant="secondary"
+            className="mt-2"
+            disabled={moderationPending}
+            onClick={() => {
+              if (
+                window.confirm(
+                  `¿Reintentar la entrega a ${pendingDeliveryCount} destinatario(s) sin email enviado?`,
+                )
+              ) {
+                redeliver.mutate();
+              }
+            }}
+          >
+            Reintentar entrega
+          </Button>
+        </div>
+      )}
 
       {!['REJECTED', 'CANCELLED', 'EXPIRED'].includes(item.status) && (
         <>
@@ -428,7 +461,7 @@ export default function AdminGastroDiscountDetailPage() {
             className="mt-2"
           />
           <div className="mt-6 flex flex-wrap gap-2">
-            {item.status === 'PENDING_REVIEW' && (
+            {(courtesyActions ? courtesyActions.markNegotiation : item.status === 'PENDING_REVIEW') && (
               <Button
                 type="button"
                 variant="secondary"
@@ -440,7 +473,9 @@ export default function AdminGastroDiscountDetailPage() {
                 Marcar en coordinación
               </Button>
             )}
-            {['PENDING_REVIEW', 'COMMISSION_NEGOTIATION'].includes(item.status) && (
+            {(courtesyActions
+              ? courtesyActions.approve
+              : ['PENDING_REVIEW', 'COMMISSION_NEGOTIATION'].includes(item.status)) && (
               <div className="flex flex-col gap-1">
                 <Button
                   type="button"
@@ -477,25 +512,43 @@ export default function AdminGastroDiscountDetailPage() {
                 ) : null}
               </div>
             )}
+            {(!courtesyActions || courtesyActions.reject) && (
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={moderationPending || !rejectReason.trim()}
+                onClick={() => {
+                  if (
+                    window.confirm(
+                      isCourtesy
+                        ? '¿Rechazar esta cortesía? Los cupones retenidos se cancelan, nadie recibe nada y se notifica al local.'
+                        : '¿Rechazar este ticket?',
+                    )
+                  ) {
+                    reject.mutate();
+                  }
+                }}
+              >
+                Rechazar
+              </Button>
+            )}
             <Button
               type="button"
               variant="secondary"
               disabled={moderationPending || !rejectReason.trim()}
               onClick={() => {
-                if (window.confirm('¿Rechazar este ticket?')) reject.mutate();
+                if (
+                  window.confirm(
+                    isCourtesy
+                      ? '¿Cancelar esta cortesía? Los QR no usados dejan de ser válidos y no se puede reactivar.'
+                      : '¿Cancelar este ticket?',
+                  )
+                ) {
+                  cancel.mutate();
+                }
               }}
             >
-              Rechazar
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={moderationPending || !rejectReason.trim()}
-              onClick={() => {
-                if (window.confirm('¿Cancelar este ticket?')) cancel.mutate();
-              }}
-            >
-              Cancelar
+              Cancelar {subject}
             </Button>
             {!isCourtesy && ['APPROVED', 'ACTIVE'].includes(item.status) && (
               <Button

@@ -81,6 +81,63 @@ export function canOwnerChangeCourtesyStatus(createdByOrigin: string | null | un
 export const GASTRO_COURTESY_ADMIN_ORIGIN_OWNER_BLOCKED_MESSAGE =
   'Esta cortesía fue creada por administración. Solo administración puede cancelarla.';
 
+// ---------------------------------------------------------------------------
+// G8.10.7 — Audit labels (same AuditLog rows / actions; only the human label changes)
+// ---------------------------------------------------------------------------
+
+/**
+ * Courtesy operations reuse the `GASTRO_DISCOUNT_*` audit actions (entity stays
+ * `GastroDiscount` + canonical id). These labels avoid calling them "descuento".
+ */
+export const GASTRO_COURTESY_AUDIT_ACTION_LABELS: Record<string, string> = {
+  GASTRO_DISCOUNT_COURTESY_CREATED: 'Cortesía gastro solicitada',
+  GASTRO_DISCOUNT_COURTESY_SENT: 'Entrega de cortesía gastro',
+  BENEFIT_CREDIT_DEBITED_FOR_COURTESY: 'Crédito de canje debitado por cortesía',
+  GASTRO_DISCOUNT_COMMISSION_NEGOTIATION: 'Cortesía gastro en coordinación',
+  GASTRO_DISCOUNT_APPROVED: 'Cortesía gastro aprobada',
+  GASTRO_DISCOUNT_REJECTED: 'Cortesía gastro rechazada',
+  GASTRO_DISCOUNT_CANCELLED: 'Cortesía gastro cancelada',
+  GASTRO_DISCOUNT_ACTIVATED: 'Cortesía gastro activada',
+  GASTRO_DISCOUNT_ARCHIVED: 'Cortesía gastro archivada',
+  GASTRO_DISCOUNT_UNARCHIVED: 'Cortesía gastro restaurada del archivo',
+  GASTRO_DISCOUNT_EDIT_APPROVED: 'Edición de cortesía gastro aprobada',
+  GASTRO_DISCOUNT_EDIT_REJECTED: 'Edición de cortesía gastro rechazada',
+};
+
+const COURTESY_WITHDRAWN_LABEL = 'Solicitud de cortesía retirada por el local';
+
+function readFlag(value: unknown, key: string): boolean {
+  return Boolean(value && typeof value === 'object' && (value as Record<string, unknown>)[key] === true);
+}
+
+export type AuditEntryRef = {
+  action: string;
+  entityType?: string | null;
+  before?: unknown;
+  after?: unknown;
+  metadata?: unknown;
+};
+
+/** True when the audit row is about a courtesy (flag written by the courtesy flows). */
+export function isCourtesyAuditEntry(entry: AuditEntryRef): boolean {
+  if (entry.action.startsWith('GASTRO_DISCOUNT_COURTESY_')) return true;
+  if (entry.action === 'BENEFIT_CREDIT_DEBITED_FOR_COURTESY') return true;
+  if (entry.entityType === 'GastroCourtesyCampaign') return true;
+  return readFlag(entry.after, 'courtesy') || readFlag(entry.metadata, 'courtesy');
+}
+
+/** Courtesy-aware label, or null when the entry is not a courtesy (use the generic one). */
+export function resolveCourtesyAuditActionLabel(entry: AuditEntryRef): string | null {
+  if (!isCourtesyAuditEntry(entry)) return null;
+  if (
+    entry.action === 'GASTRO_DISCOUNT_CANCELLED' &&
+    readFlag(entry.metadata, 'pendingRequestWithdrawn')
+  ) {
+    return COURTESY_WITHDRAWN_LABEL;
+  }
+  return GASTRO_COURTESY_AUDIT_ACTION_LABELS[entry.action] ?? null;
+}
+
 export type CourtesyActor = 'OWNER' | 'ADMIN';
 
 export type CourtesyActions = {

@@ -7,6 +7,7 @@ import type {
   AdminDashboardPendingGastroDiscount,
 } from '@/repositories/interfaces';
 import { EmptyState } from '@/components';
+import { GastroDiscountKindBadge } from '@/components/gastro/GastroDiscountKindBadge';
 import { AdminPendingEventsQueue } from './AdminPendingEventsQueue';
 
 type PendingTab = 'approval' | 'drafts' | 'gastro';
@@ -23,6 +24,10 @@ function formatDate(iso: string): string {
     dateStyle: 'short',
     timeStyle: 'short',
   });
+}
+
+function formatDay(iso: string): string {
+  return new Date(iso).toLocaleDateString('es-AR');
 }
 
 const GASTRO_DISCOUNT_STATUS_LABEL: Record<string, string> = {
@@ -67,8 +72,8 @@ function GastroDiscountsPendingList({
   if (items.length === 0) {
     return (
       <EmptyState
-        title="Sin descuentos pendientes"
-        description="Los descuentos en revisión o negociación de comisión van a aparecer acá."
+        title="Sin descuentos ni cortesías pendientes"
+        description="Los descuentos y cortesías en revisión o negociación de comisión van a aparecer acá."
       />
     );
   }
@@ -81,11 +86,22 @@ function GastroDiscountsPendingList({
           className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between"
         >
           <div className="min-w-0">
-            <p className="truncate font-medium text-text">{d.title}</p>
+            <p className="flex flex-wrap items-center gap-2 font-medium text-text">
+              <span className="truncate">{d.courtesy?.title ?? d.title}</span>
+              <GastroDiscountKindBadge visibility={d.visibility} />
+            </p>
             <p className="mt-1 text-xs text-text-muted">
               {d.profileName ?? 'Local gastro'} · {gastroPendingKindLabel(d)} · Creado{' '}
               {formatDate(d.createdAt)}
             </p>
+            {d.courtesy ? (
+              <p className="mt-1 text-xs text-text-muted">
+                {d.courtesy.benefitLabel} · {d.courtesy.recipientCount} destinatario
+                {d.courtesy.recipientCount === 1 ? '' : 's'}
+                {d.courtesy.validTo ? ` · hasta ${formatDay(d.courtesy.validTo)}` : ''} ·{' '}
+                {d.createdByOrigin === 'ADMIN' ? 'Origen: Admin' : 'Origen: local'}
+              </p>
+            ) : null}
           </div>
           {d.profileId ? (
             <Link

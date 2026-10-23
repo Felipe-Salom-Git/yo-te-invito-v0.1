@@ -38,7 +38,7 @@ export function AdminAuditTable({ logs }: AdminAuditTableProps) {
                 {formatDt(log.createdAt)}
               </td>
               <td className="px-4 py-3">
-                <AdminAuditActionBadge action={log.action} />
+                <AdminAuditActionBadge action={log.action} entry={log} />
               </td>
               <td className="max-w-xs px-4 py-3 text-text">
                 {log.summary ?? '—'}

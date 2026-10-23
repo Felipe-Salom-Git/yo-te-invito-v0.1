@@ -5,6 +5,7 @@ import {
   gastroWeekdaySchema,
 } from './gastro-discounts';
 import { gastroDiscountQrPayloadV1Schema } from '../gastro-discount-qr';
+import { gastroCourtesyCampaignMetricsSchema } from './gastro-courtesy-discounts';
 import {
   gastroLocalCreateSchema,
   gastroLocalUpdateSchema,
@@ -118,6 +119,14 @@ export const adminGastroCourtesySummarySchema = z.object({
   deliveredCount: z.number().int().min(0).optional(),
   validFrom: z.string().datetime().nullable().optional(),
   validTo: z.string().datetime().nullable().optional(),
+  /** G8.10: G8.8 buckets + frozen audience (retained never counted as delivered). */
+  metrics: gastroCourtesyCampaignMetricsSchema.optional(),
+  /** G8.10: who requested the campaign; null on legacy rows without that record. */
+  createdBy: z
+    .object({ id: z.string(), name: z.string().nullable(), email: z.string().nullable() })
+    .nullable()
+    .optional(),
+  createdAt: z.string().datetime().nullable().optional(),
 });
 export type AdminGastroCourtesySummary = z.infer<typeof adminGastroCourtesySummarySchema>;
 

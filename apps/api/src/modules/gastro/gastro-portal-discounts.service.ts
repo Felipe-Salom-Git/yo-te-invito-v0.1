@@ -582,7 +582,11 @@ export class GastroPortalDiscountsService {
         entityType: 'GastroDiscount',
         entityId: id,
         before: { archivedAt: null, status: row.status },
-        after: { archivedAt: updated.archivedAt?.toISOString(), status: row.status },
+        after: {
+          archivedAt: updated.archivedAt?.toISOString(),
+          status: row.status,
+          ...(isCourtesyOnlyVisibility(row.visibility) ? { courtesy: true } : {}),
+        },
       });
       return this.mapDiscount(updated);
     }
@@ -604,7 +608,11 @@ export class GastroPortalDiscountsService {
       entityType: 'GastroDiscount',
       entityId: id,
       before: { archivedAt: row.archivedAt?.toISOString(), status: row.status },
-      after: { archivedAt: null, status: row.status },
+      after: {
+        archivedAt: null,
+        status: row.status,
+        ...(isCourtesyOnlyVisibility(row.visibility) ? { courtesy: true } : {}),
+      },
     });
     return this.mapDiscount(updated);
   }

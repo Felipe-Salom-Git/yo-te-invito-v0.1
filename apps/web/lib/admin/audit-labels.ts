@@ -1,4 +1,8 @@
-import type { AuditActionValue } from '@yo-te-invito/shared';
+import {
+  resolveCourtesyAuditActionLabel,
+  type AuditActionValue,
+  type AuditEntryRef,
+} from '@yo-te-invito/shared';
 
 /** Spanish labels for audit actions (operations UI). */
 export const AUDIT_ACTION_LABELS: Record<AuditActionValue | string, string> = {
@@ -27,6 +31,8 @@ export const AUDIT_ACTION_LABELS: Record<AuditActionValue | string, string> = {
   GASTRO_DISCOUNT_CANCELLED: 'Descuento gastro cancelado',
   GASTRO_DISCOUNT_ACTIVATED: 'Descuento gastro activado',
   GASTRO_DISCOUNT_QR_EMAIL_SENT: 'QR descuento enviado',
+  GASTRO_DISCOUNT_COURTESY_CREATED: 'Cortesía gastro solicitada',
+  GASTRO_DISCOUNT_COURTESY_SENT: 'Entrega de cortesía gastro',
   ACTIVITY_COUPON_CREATED: 'Cupón de Actividades creado',
   ACTIVITY_COUPON_UPDATED: 'Cupón de Actividades actualizado',
   ACTIVITY_COUPON_APPROVED: 'Cupón de Actividades aprobado',
@@ -63,11 +69,20 @@ export const AUDIT_ENTITY_TYPE_OPTIONS = [
   { value: 'ReviewDisputeRequest', label: 'Disputa de reseña' },
   { value: 'Ticket', label: 'Ticket' },
   { value: 'Order', label: 'Orden' },
-  { value: 'GastroDiscount', label: 'Descuento gastro' },
+  { value: 'GastroDiscount', label: 'Descuento / cortesía gastro' },
+  { value: 'GastroCourtesyCampaign', label: 'Campaña de cortesía gastro' },
   { value: 'ActivityCoupon', label: 'Cupón de Actividades' },
   { value: 'ActivityCouponClaim', label: 'Reclamo cupón de Actividades' },
 ];
 
-export function getAuditActionLabel(action: string): string {
-  return AUDIT_ACTION_LABELS[action] ?? action.replace(/_/g, ' ');
+/** G8.10.7: courtesy rows reuse GASTRO_DISCOUNT_* actions; label them as courtesies. */
+export function getAuditActionLabel(
+  action: string,
+  entry?: Omit<AuditEntryRef, 'action'>,
+): string {
+  return (
+    (entry ? resolveCourtesyAuditActionLabel({ action, ...entry }) : null) ??
+    AUDIT_ACTION_LABELS[action] ??
+    action.replace(/_/g, ' ')
+  );
 }

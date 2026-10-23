@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ProfileStatus } from '@prisma/client';
-import type { AdminDashboardResponse } from '@yo-te-invito/shared';
+import { resolveCourtesyBenefitLabel, type AdminDashboardResponse } from '@yo-te-invito/shared';
 import { PrismaService } from '../../prisma/prisma.service';
 
 const OPEN_DISPUTE_STATUSES = ['PENDING', 'IN_REVIEW'] as const;
@@ -129,7 +129,19 @@ export class AdminDashboardService {
           createdAt: true,
           pendingUpdateSubmittedAt: true,
           gastroProfileId: true,
+          createdByOrigin: true,
+          validFrom: true,
+          validTo: true,
           gastroProfile: { select: { id: true, displayName: true } },
+          courtesyCampaign: {
+            select: {
+              title: true,
+              discountLabel: true,
+              validFrom: true,
+              validTo: true,
+              _count: { select: { claims: true } },
+            },
+          },
         },
       }),
     ]);
@@ -172,6 +184,17 @@ export class AdminDashboardService {
         visibility: d.visibility === 'COURTESY_ONLY' ? ('COURTESY_ONLY' as const) : ('PUBLIC' as const),
         createdAt: d.createdAt.toISOString(),
         reviewKind: d.pendingUpdateSubmittedAt ? ('EDIT' as const) : ('NEW' as const),
+        createdByOrigin: d.createdByOrigin === 'ADMIN' ? ('ADMIN' as const) : ('GASTRO' as const),
+        courtesy:
+          d.visibility === 'COURTESY_ONLY' && d.courtesyCampaign
+            ? {
+                title: d.courtesyCampaign.title,
+                benefitLabel: resolveCourtesyBenefitLabel(d.courtesyCampaign, d.displayTitle),
+                recipientCount: d.courtesyCampaign._count.claims,
+                validFrom: (d.courtesyCampaign.validFrom ?? d.validFrom)?.toISOString() ?? null,
+                validTo: (d.courtesyCampaign.validTo ?? d.validTo)?.toISOString() ?? null,
+              }
+            : null,
       })),
     };
   }

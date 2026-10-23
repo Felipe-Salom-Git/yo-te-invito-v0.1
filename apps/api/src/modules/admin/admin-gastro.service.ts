@@ -31,7 +31,13 @@ import {
   type AdminGastroDiscountMetrics,
   type AdminGastroDiscountPublication,
   type AdminGastroLocationsListQuery,
+  type GastroCourtesyCampaignMetrics,
 } from '@yo-te-invito/shared';
+import {
+  COURTESY_METRICS_CLAIM_SELECT,
+  computeCourtesyCampaignMetrics,
+  loadCourtesyMetricsByDiscount,
+} from '../gastro/gastro-discount-metrics.util';
 import {
   readGastroGallery,
   readGastroOpeningHoursFields,
@@ -105,7 +111,9 @@ export class AdminGastroService {
   ): Prisma.GastroDiscountWhereInput {
     const or: Prisma.GastroDiscountWhereInput[] = [{ gastroProfileId: profile.id }];
     if (profile.publicEventId) {
-      or.push({ eventId: profile.publicEventId });
+      // Legacy rows linked only by the public event; a row owned by another local never
+      // shows up under this one (G8.10.11).
+      or.push({ eventId: profile.publicEventId, gastroProfileId: null });
     }
     return { tenantId, OR: or };
   }
@@ -165,7 +173,8 @@ export class AdminGastroService {
     return profile?.id ?? null;
   }
 
-  private mapDiscountListItem(r: {
+  private mapDiscountListItem(
+    r: {
     id: string;
     displayTitle: string | null;
     summary: string | null;
@@ -191,7 +200,9 @@ export class AdminGastroService {
       _count?: { claims: number };
     } | null;
     _count: { validations: number };
-  }) {
+    },
+    courtesyMetrics?: GastroCourtesyCampaignMetrics,
+  ) {
     const pending = parsePendingUpdate(r.pendingUpdate);
     const hasPendingUpdate = pending != null || r.pendingUpdateSubmittedAt != null;
     return {
@@ -224,9 +235,10 @@ export class AdminGastroService {
               title: r.courtesyCampaign.title,
               discountLabel: r.courtesyCampaign.discountLabel,
               description: r.courtesyCampaign.description ?? null,
-              recipientCount: r.courtesyCampaign._count?.claims ?? 0,
+              recipientCount: courtesyMetrics?.recipientCount ?? r.courtesyCampaign._count?.claims ?? 0,
               validFrom: r.courtesyCampaign.validFrom?.toISOString() ?? null,
               validTo: r.courtesyCampaign.validTo?.toISOString() ?? null,
+              ...(courtesyMetrics ? { metrics: courtesyMetrics } : {}),
             }
           : null,
     };
@@ -270,6 +282,7 @@ export class AdminGastroService {
       profileName: string;
     }> = [];
 
+    const courtesyMetrics = await loadCourtesyMetricsByDiscount(this.prisma, tenantId, rows);
     for (const r of rows) {
       const profileId = await this.resolveDiscountProfileId(tenantId, r);
       if (!profileId) continue;
@@ -283,7 +296,7 @@ export class AdminGastroService {
         )?.displayName ??
         'Local';
       data.push({
-        ...this.mapDiscountListItem(r),
+        ...this.mapDiscountListItem(r, courtesyMetrics.get(r.id)),
         profileId,
         profileName,
       });
@@ -523,8 +536,9 @@ export class AdminGastroService {
       });
     }
 
+    const courtesyMetrics = await loadCourtesyMetricsByDiscount(this.prisma, tenantId, rows);
     return {
-      data: rows.map((r) => this.mapDiscountListItem(r)),
+      data: rows.map((r) => this.mapDiscountListItem(r, courtesyMetrics.get(r.id))),
     };
   }
 
@@ -584,37 +598,60 @@ export class AdminGastroService {
   }
 
   /** G8.3: campaign context + recipient counts shown to ADMIN while reviewing a courtesy. */
-  private async loadCourtesySummary(tenantId: string, discountId: string) {
+  private async loadCourtesySummary(
+    tenantId: string,
+    row: { id: string; status: string; createdByUserId?: string | null },
+  ) {
+    const discountId = row.id;
     const campaign = await this.prisma.gastroCourtesyCampaign.findFirst({
       where: { tenantId, discountId },
     });
     if (!campaign) return null;
-    const claimScope = { tenantId, discountId, type: 'COURTESY' as const };
-    const [recipientCount, usedCount, pendingDeliveryCount, deliveredCount] = await Promise.all([
-      this.prisma.gastroDiscountClaim.count({ where: claimScope }),
-      this.prisma.gastroDiscountClaim.count({
-        where: { ...claimScope, OR: [{ status: 'USED' }, { usedAt: { not: null } }] },
-      }),
-      this.prisma.gastroDiscountClaim.count({
-        where: { ...claimScope, status: 'ACTIVE', emailSentAt: null },
-      }),
-      this.prisma.gastroDiscountClaim.count({
-        where: { ...claimScope, emailSentAt: { not: null } },
-      }),
-    ]);
+    const claims = await this.prisma.gastroDiscountClaim.findMany({
+      where: { tenantId, discountId, type: 'COURTESY' },
+      select: COURTESY_METRICS_CLAIM_SELECT,
+    });
+    const metrics = computeCourtesyCampaignMetrics(claims, row.status);
+    // G8.10.2 / G8.10.10: requester; legacy rows may not have it → null (shown gracefully).
+    const creatorId = campaign.createdByUserId ?? row.createdByUserId ?? null;
+    const creator = creatorId
+      ? await this.prisma.user.findFirst({
+          where: { id: creatorId, tenantId },
+          select: { id: true, firstName: true, lastName: true, email: true },
+        })
+      : null;
     return {
       campaignId: campaign.id,
       title: campaign.title,
       discountLabel: campaign.discountLabel,
       description: campaign.description,
       message: campaign.message,
-      recipientCount,
-      usedCount,
-      pendingDeliveryCount,
-      deliveredCount,
+      recipientCount: metrics.recipientCount,
+      usedCount: metrics.usedClaims,
+      pendingDeliveryCount: metrics.pendingDeliveryClaims,
+      // Emails actually sent (a later use/cancel keeps it delivered); retained is never sent.
+      deliveredCount: claims.filter((c) => c.emailSentAt != null).length,
       validFrom: campaign.validFrom?.toISOString() ?? null,
       validTo: campaign.validTo?.toISOString() ?? null,
+      metrics,
+      createdBy: creator
+        ? {
+            id: creator.id,
+            name: `${creator.firstName ?? ''} ${creator.lastName ?? ''}`.trim() || null,
+            email: creator.email ?? null,
+          }
+        : null,
+      createdAt: campaign.createdAt?.toISOString() ?? null,
     };
+  }
+
+  /**
+   * G8.10.11: canonical guard for nested/flat admin routes — the discount must belong to the
+   * route local (tenant-scoped). Returns the canonical profileId or throws 404.
+   */
+  async assertDiscountInProfile(tenantId: string, profileId: string, discountId: string) {
+    const row = await this.loadDiscount(tenantId, profileId, discountId);
+    return row.gastroProfileId ?? profileId;
   }
 
   async getDiscountDetail(tenantId: string, profileId: string, discountId: string) {
@@ -628,9 +665,8 @@ export class AdminGastroService {
             where: { id: row.gastroProfileId },
           })
         : null);
-    const courtesy = isCourtesyOnlyVisibility(row.visibility)
-      ? await this.loadCourtesySummary(tenantId, row.id)
-      : null;
+    const isCourtesy = isCourtesyOnlyVisibility(row.visibility);
+    const courtesy = isCourtesy ? await this.loadCourtesySummary(tenantId, row) : null;
     return {
       id: row.id,
       profileId: row.gastroProfileId!,
@@ -655,9 +691,10 @@ export class AdminGastroService {
       displayImageUrls: display.length > 0 ? display : submitted,
       adminNotes: row.adminNotes,
       rejectionReason: row.rejectionReason,
-      qrToken: row.qrToken,
+      // G8.2 / G8.10.6: a courtesy has no master QR; never expose one (even a legacy token).
+      qrToken: isCourtesy ? null : row.qrToken,
       qrPayload:
-        row.qrToken && ['APPROVED', 'ACTIVE'].includes(row.status)
+        !isCourtesy && row.qrToken && ['APPROVED', 'ACTIVE'].includes(row.status)
           ? buildGastroDiscountQrPayload(row.id, row.qrToken)
           : null,
       emailSentAt: row.emailSentAt?.toISOString() ?? null,
@@ -781,7 +818,13 @@ export class AdminGastroService {
     entityId: string,
     before: unknown,
     after: unknown,
+    opts: { courtesy?: boolean } = {},
   ) {
+    // G8.10.7: same action / entity / canonical id; the flag only drives the courtesy label.
+    const afterData =
+      opts.courtesy && after && typeof after === 'object'
+        ? { ...(after as object), courtesy: true }
+        : after;
     await this.prisma.auditLog.create({
       data: {
         tenantId,
@@ -791,7 +834,7 @@ export class AdminGastroService {
         entityType: 'GastroDiscount',
         entityId,
         before: before as object,
-        after: after as object,
+        after: afterData as object,
       },
     });
   }
@@ -826,6 +869,7 @@ export class AdminGastroService {
       discountId,
       { status: row.status },
       { status: 'COMMISSION_NEGOTIATION' },
+      { courtesy: isCourtesyOnlyVisibility(row.visibility) },
     );
     return this.getDiscountDetail(tenantId, profileId, discountId);
   }
@@ -1222,6 +1266,7 @@ export class AdminGastroService {
         discountId,
         { archivedAt: null },
         { archivedAt: true },
+        { courtesy: isCourtesyOnlyVisibility(row.visibility) },
       );
     } else {
       if (!canUnarchiveGastroDiscount(input)) {
@@ -1242,6 +1287,7 @@ export class AdminGastroService {
         discountId,
         { archivedAt: row.archivedAt?.toISOString() },
         { archivedAt: null },
+        { courtesy: isCourtesyOnlyVisibility(row.visibility) },
       );
     }
     return this.getDiscountDetail(tenantId, profileId, discountId);

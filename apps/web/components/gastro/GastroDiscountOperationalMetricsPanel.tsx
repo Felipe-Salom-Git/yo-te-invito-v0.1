@@ -5,9 +5,11 @@ import { ProducerKpiCard } from '@/components/producer/dashboard/ProducerKpiCard
 
 type Props = {
   metrics: GastroDiscountOperationalMetricsResponse;
+  /** G8.10: courtesies have no master QR and their claims are the recipients. */
+  isCourtesy?: boolean;
 };
 
-export function GastroDiscountOperationalMetricsPanel({ metrics }: Props) {
+export function GastroDiscountOperationalMetricsPanel({ metrics, isCourtesy = false }: Props) {
   const maxDay = Math.max(
     1,
     ...metrics.activityByDay.map((d) => Math.max(d.claims, d.validations)),
@@ -16,13 +18,13 @@ export function GastroDiscountOperationalMetricsPanel({ metrics }: Props) {
   return (
     <section className="mt-8">
       <h2 className="text-sm font-semibold uppercase tracking-wide text-text-muted">
-        Métricas del descuento
+        {isCourtesy ? 'Actividad de la cortesía' : 'Métricas del descuento'}
       </h2>
       <p className="mt-1 text-xs text-text-muted">
         Claims y validaciones · timezone {metrics.timezone}
       </p>
       <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <ProducerKpiCard label="Claims emitidos" value={metrics.claims} />
+        <ProducerKpiCard label={isCourtesy ? 'Destinatarios' : 'Claims emitidos'} value={metrics.claims} />
         {metrics.retainedClaims ? (
           <ProducerKpiCard
             label="Retenidos (pendiente de aprobación)"
@@ -42,16 +44,23 @@ export function GastroDiscountOperationalMetricsPanel({ metrics }: Props) {
               : '—'}
           </p>
         </div>
-        <div className="text-sm">
-          <p className="text-text-muted">QR generado</p>
-          <p className="mt-0.5 font-medium text-text">
-            {metrics.hasQrToken
-              ? metrics.qrGeneratedAt
-                ? new Date(metrics.qrGeneratedAt).toLocaleString('es-AR')
-                : 'Sí'
-              : 'No'}
-          </p>
-        </div>
+        {isCourtesy ? (
+          <div className="text-sm">
+            <p className="text-text-muted">QR</p>
+            <p className="mt-0.5 font-medium text-text">Individual por destinatario</p>
+          </div>
+        ) : (
+          <div className="text-sm">
+            <p className="text-text-muted">QR generado</p>
+            <p className="mt-0.5 font-medium text-text">
+              {metrics.hasQrToken
+                ? metrics.qrGeneratedAt
+                  ? new Date(metrics.qrGeneratedAt).toLocaleString('es-AR')
+                  : 'Sí'
+                : 'No'}
+            </p>
+          </div>
+        )}
       </div>
       {metrics.activityByDay.length > 0 ? (
         <div className="mt-6 rounded-xl border border-border bg-bg-muted/40 p-4">

@@ -1,10 +1,13 @@
 import { getAuditActionLabel } from '@/lib/admin/audit-labels';
+import type { AuditEntryRef } from '@yo-te-invito/shared';
 
 type AdminAuditActionBadgeProps = {
   action: string;
+  /** G8.10.7: full row so courtesy operations get a courtesy label (same action id). */
+  entry?: Omit<AuditEntryRef, 'action'>;
 };
 
-export function AdminAuditActionBadge({ action }: AdminAuditActionBadgeProps) {
+export function AdminAuditActionBadge({ action, entry }: AdminAuditActionBadgeProps) {
   const isEvent = action.startsWith('EVENT_');
   const isReview =
     action.startsWith('REVIEW_') || action.includes('DISPUTE');
@@ -23,7 +26,7 @@ export function AdminAuditActionBadge({ action }: AdminAuditActionBadgeProps) {
       className={`inline-flex max-w-full rounded px-2 py-0.5 text-xs font-medium ${style}`}
       title={action}
     >
-      {getAuditActionLabel(action)}
+      {getAuditActionLabel(action, entry)}
     </span>
   );
 }

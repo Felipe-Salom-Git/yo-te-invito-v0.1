@@ -107,12 +107,20 @@ export class FakeCourtesyDb {
   }
 
   private discountWithIncludes(row: Row): Row {
+    const campaign = this.campaigns.find((c) => c.discountId === row.id) ?? null;
     return {
       ...row,
       gastroProfile: this.profiles.find((p) => p.id === row.gastroProfileId) ?? null,
       event: { category: 'gastro', deletedAt: null },
-      courtesyCampaign: this.campaigns.find((c) => c.discountId === row.id) ?? null,
+      courtesyCampaign: campaign
+        ? {
+            ...campaign,
+            _count: { claims: this.claims.filter((c) => c.courtesyCampaignId === campaign.id).length },
+          }
+        : null,
       visualTemplate: this.visualTemplates.find((t) => t.gastroDiscountId === row.id) ?? null,
+      // G8.10: list includes (`_count: { validations }`).
+      _count: { validations: this.validations.filter((v) => v.discountId === row.id).length },
     };
   }
 

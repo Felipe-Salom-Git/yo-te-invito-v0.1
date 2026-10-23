@@ -20,7 +20,7 @@ export function AdminAuditMobileCard({ log }: AdminAuditMobileCardProps) {
     <article className="rounded-xl border border-border/80 bg-bg-muted/40 p-4">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <time className="text-xs text-text-muted">{formatDt(log.createdAt)}</time>
-        <AdminAuditActionBadge action={log.action} />
+        <AdminAuditActionBadge action={log.action} entry={log} />
       </div>
       <p className="mt-2 text-sm text-text">{log.summary ?? log.action}</p>
       <dl className="mt-3 space-y-1 text-xs text-text-muted">

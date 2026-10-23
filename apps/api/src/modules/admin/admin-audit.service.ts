@@ -77,7 +77,7 @@ export class AdminAuditService {
         createdAt: r.createdAt.toISOString(),
         actorEmail: user?.email ?? null,
         actorDisplayName: displayName,
-        summary: buildAuditLogSummary(r.action, r.entityType, r.before, r.after),
+        summary: buildAuditLogSummary(r.action, r.entityType, r.before, r.after, r.metadata),
       };
     });
 

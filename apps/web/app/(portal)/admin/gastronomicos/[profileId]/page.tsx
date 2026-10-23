@@ -21,6 +21,16 @@ import { AdminGastroDiscountsTable } from '@/components/admin/gastro/AdminGastro
 import { AdminGastroHardDeleteActions } from '@/components/admin/gastro/AdminGastroHardDeleteActions';
 import { AdminGastroContentPanel } from '@/components/admin/gastro/AdminGastroContentPanel';
 import { GastroProfileMetricsPanel } from '@/components/gastro/dashboard/GastroProfileMetricsPanel';
+import {
+  matchesVisibilityFilter,
+  type DiscountVisibilityFilter,
+} from '@/lib/gastro/courtesy-scope';
+
+const VISIBILITY_FILTERS: Array<{ id: DiscountVisibilityFilter; label: string }> = [
+  { id: 'ALL', label: 'Todos' },
+  { id: 'PUBLIC', label: 'Descuentos' },
+  { id: 'COURTESY_ONLY', label: 'Cortesías' },
+];
 
 const TABS: Array<{ id: GastroDiscountLifecycleBucket; label: string }> = [
   { id: 'ACTIVE', label: 'Activos' },
@@ -35,6 +45,7 @@ export default function AdminGastroLocationDetailPage() {
   const repos = useRepositories();
   const { addToast } = useToast();
   const [tabOverride, setTabOverride] = useState<GastroDiscountLifecycleBucket | null>(null);
+  const [visibilityFilter, setVisibilityFilter] = useState<DiscountVisibilityFilter>('ALL');
   const approveMutation = useAdminApproveGastroProfileMutation();
   const rejectMutation = useAdminRejectGastroProfileMutation();
   const moderationBusy = approveMutation.isPending || rejectMutation.isPending;
@@ -62,6 +73,7 @@ export default function AdminGastroLocationDetailPage() {
         ARCHIVED: [],
       };
     for (const d of discountsData?.data ?? []) {
+      if (!matchesVisibilityFilter(d.visibility, visibilityFilter)) continue;
       const bucket = classifyGastroDiscountLifecycle({
         status: d.status,
         archivedAt: d.archivedAt,
@@ -73,7 +85,10 @@ export default function AdminGastroLocationDetailPage() {
       buckets[bucket].push(d);
     }
     return buckets;
-  }, [discountsData]);
+  }, [discountsData, visibilityFilter]);
+  const courtesyCount = (discountsData?.data ?? []).filter(
+    (d) => d.visibility === 'COURTESY_ONLY',
+  ).length;
 
   const pendingCount = grouped.PENDING.length;
   const tab: GastroDiscountLifecycleBucket =
@@ -265,7 +280,7 @@ export default function AdminGastroLocationDetailPage() {
           <AdminGastroContentPanel profileId={profileId} />
 
           <div className="mt-10 flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-lg font-semibold text-text">Tickets de descuento</h2>
+            <h2 className="text-lg font-semibold text-text">Descuentos y cortesías</h2>
             {location.status === 'active' && (
               <Link
                 href={`/admin/gastronomicos/${profileId}/descuentos/nuevo`}
@@ -284,7 +299,25 @@ export default function AdminGastroLocationDetailPage() {
             Expandí una fila para ver métricas. Usá &quot;Revisar y publicar&quot; para curar
             imágenes y moderar.
           </p>
-          <div className="mt-4 flex flex-wrap gap-2">
+          <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Tipo">
+            {VISIBILITY_FILTERS.map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => setVisibilityFilter(f.id)}
+                aria-pressed={visibilityFilter === f.id}
+                className={`rounded-lg px-3 py-1 text-xs ${
+                  visibilityFilter === f.id
+                    ? 'bg-bg-muted text-text ring-1 ring-accent'
+                    : 'border border-border text-text-muted hover:border-accent/50'
+                }`}
+              >
+                {f.label}
+                {f.id === 'COURTESY_ONLY' ? ` (${courtesyCount})` : ''}
+              </button>
+            ))}
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
             {TABS.map((t) => (
               <button
                 key={t.id}

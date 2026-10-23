@@ -3,7 +3,14 @@
 import { Fragment, useState } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import { GASTRO_WEEKDAY_LABELS_ES, type GastroWeekday } from '@yo-te-invito/shared';
+import {
+  GASTRO_WEEKDAY_LABELS_ES,
+  resolveCourtesyBenefitLabel,
+  type GastroWeekday,
+} from '@yo-te-invito/shared';
+import { GastroDiscountKindBadge } from '@/components/gastro/GastroDiscountKindBadge';
+import { GastroCourtesyStatusBadge } from '@/components/gastro/courtesy/GastroCourtesyStatusBadge';
+import { formatCourtesyAudience } from '@/lib/gastro/courtesy-portal';
 import { useRepositories } from '@/repositories/context';
 import { adminGastroKeys } from '@/lib/query/keys';
 import type { AdminGastroDiscountListItem } from '@/repositories/interfaces';
@@ -29,7 +36,7 @@ export function AdminGastroDiscountsTable({ profileId, discounts }: Props) {
   });
 
   if (discounts.length === 0) {
-    return <p className="text-text-muted">Este local no tiene tickets de descuento.</p>;
+    return <p className="text-text-muted">No hay descuentos ni cortesías en esta sección.</p>;
   }
 
   return (
@@ -47,6 +54,7 @@ export function AdminGastroDiscountsTable({ profileId, discounts }: Props) {
         <tbody>
           {discounts.map((d) => {
             const expanded = expandedId === d.id;
+            const isCourtesy = d.visibility === 'COURTESY_ONLY';
             const isPending =
               PENDING_STATUSES.includes(d.status as (typeof PENDING_STATUSES)[number]) ||
               Boolean(d.hasPendingUpdate);
@@ -61,9 +69,13 @@ export function AdminGastroDiscountsTable({ profileId, discounts }: Props) {
                       className="font-medium text-text hover:text-accent"
                       onClick={() => setExpandedId(expanded ? null : d.id)}
                     >
-                      {d.title ?? 'Sin título'}
+                      {(isCourtesy ? d.courtesy?.title : null) ?? d.title ?? 'Sin título'}
                     </button>
-                    {d.summary && (
+                    {isCourtesy ? (
+                      <p className="mt-0.5 max-w-xs truncate text-xs text-text-muted">
+                        {resolveCourtesyBenefitLabel(d.courtesy, d.title)}
+                      </p>
+                    ) : d.summary && (
                       <p className="mt-0.5 max-w-xs truncate text-xs text-text-muted">
                         {d.summary}
                       </p>
@@ -79,12 +91,25 @@ export function AdminGastroDiscountsTable({ profileId, discounts }: Props) {
                         ) ?? '—'}
                   </td>
                   <td className="px-4 py-3">
-                    <AdminGastroDiscountStatusBadge status={d.status} />
-                    {d.visibility === 'COURTESY_ONLY' && (
-                      <span className="ml-2 inline-flex rounded-full bg-violet-500/15 px-2 py-0.5 text-xs text-violet-300">
-                        Cortesía{d.courtesy ? ` · ${d.courtesy.recipientCount} dest.` : ''}
-                      </span>
+                    <GastroDiscountKindBadge visibility={d.visibility} />{' '}
+                    {isCourtesy ? (
+                      <GastroCourtesyStatusBadge
+                        status={d.status}
+                        archivedAt={d.archivedAt}
+                        validTo={d.courtesy?.validTo ?? d.validTo}
+                      />
+                    ) : (
+                      <AdminGastroDiscountStatusBadge status={d.status} />
                     )}
+                    {isCourtesy && d.courtesy?.metrics ? (
+                      <p className="mt-1 text-xs text-text-muted">
+                        {formatCourtesyAudience(d.courtesy.metrics)} · Retenidos{' '}
+                        {d.courtesy.metrics.retainedClaims} · Disponibles{' '}
+                        {d.courtesy.metrics.availableClaims} · Entregados{' '}
+                        {d.courtesy.metrics.deliveredClaims} · Usados {d.courtesy.metrics.usedClaims} ·
+                        Cancelados {d.courtesy.metrics.cancelledClaims}
+                      </p>
+                    ) : null}
                     {d.reviewKind === 'NEW' && !d.hasPendingUpdate && (
                       <span className="ml-2 inline-flex rounded-full bg-sky-500/15 px-2 py-0.5 text-xs text-sky-300">
                         Nuevo pendiente
@@ -112,7 +137,7 @@ export function AdminGastroDiscountsTable({ profileId, discounts }: Props) {
                       href={`/admin/gastronomicos/${profileId}/descuentos/${d.id}`}
                       className="text-accent hover:underline"
                     >
-                      Revisar y publicar →
+                      {isCourtesy ? 'Revisar cortesía →' : 'Revisar y publicar →'}
                     </Link>
                   </td>
                 </tr>
@@ -122,7 +147,10 @@ export function AdminGastroDiscountsTable({ profileId, discounts }: Props) {
                       {metricsQuery.isLoading ? (
                         <p className="text-sm text-text-muted">Cargando métricas…</p>
                       ) : metricsQuery.data ? (
-                        <GastroDiscountOperationalMetricsPanel metrics={metricsQuery.data} />
+                        <GastroDiscountOperationalMetricsPanel
+                          metrics={metricsQuery.data}
+                          isCourtesy={isCourtesy}
+                        />
                       ) : null}
                     </td>
                   </tr>

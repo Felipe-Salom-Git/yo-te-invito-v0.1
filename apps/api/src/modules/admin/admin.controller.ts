@@ -967,7 +967,12 @@ export class AdminController {
   async getGastroDiscountTicketSummary(
     @CurrentUser() user: { tenantId: string },
     @Param('discountId') discountId: string,
+    @Query('profileId') profileId?: string,
   ) {
+    // G8.10.11: when the UI scopes by local, a discount of another local is a 404.
+    if (profileId?.trim()) {
+      await this.adminGastro.assertDiscountInProfile(user.tenantId, profileId.trim(), discountId);
+    }
     return this.gastroDiscountMetrics.buildSummaryForDiscount(user.tenantId, discountId, true);
   }
 
@@ -978,7 +983,11 @@ export class AdminController {
     @CurrentUser() user: { id: string; tenantId: string; role: string },
     @Param('discountId') discountId: string,
     @Body(new ZodValidationPipe(gastroDiscountStatusUpdateSchema)) body: GastroDiscountStatusUpdate,
+    @Query('profileId') profileId?: string,
   ) {
+    if (profileId?.trim()) {
+      await this.adminGastro.assertDiscountInProfile(user.tenantId, profileId.trim(), discountId);
+    }
     return this.gastroDiscountMetrics.updateDiscountStatus(
       user.tenantId,
       discountId,
@@ -1519,6 +1528,12 @@ export class AdminController {
     @CurrentUser() user: { tenantId: string },
     @Param(new ZodValidationPipe(adminGastroDiscountIdParamsSchema)) params: AdminGastroDiscountIdParams,
   ) {
+    // G8.10.11: route local A + discount of local B → 404 (was returned unscoped).
+    await this.adminGastro.assertDiscountInProfile(
+      user.tenantId,
+      params.profileId,
+      params.discountId,
+    );
     return this.gastroDiscountMetrics.buildSummaryForDiscount(
       user.tenantId,
       params.discountId,
