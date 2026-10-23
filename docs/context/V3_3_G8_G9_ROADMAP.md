@@ -1,6 +1,6 @@
 # V3.3 — Roadmap G8 / G9
 
-**Estado:** **G8 COMPLETE** (local, sin push/deploy, sin migrations nuevas). Cierre: [`V3_3_G8_COURTESIES_CLOSING.md`](../audits/V3_3_G8_COURTESIES_CLOSING.md) · readiness [`V3_3_G8_RELEASE_READINESS.md`](../audits/V3_3_G8_RELEASE_READINESS.md) · QA [`V3_3_G8_MANUAL_QA_CHECKLIST.md`](../audits/V3_3_G8_MANUAL_QA_CHECKLIST.md). Slices: [`V3_3_G8_COURTESY_DISCOVERY.md`](../audits/V3_3_G8_COURTESY_DISCOVERY.md) · [`V3_3_G8_1_G8_2_COURTESY_HARDENING_CLOSING.md`](../audits/V3_3_G8_1_G8_2_COURTESY_HARDENING_CLOSING.md) · [`V3_3_G8_3_G8_4_COURTESY_APPROVAL_DELIVERY_CLOSING.md`](../audits/V3_3_G8_3_G8_4_COURTESY_APPROVAL_DELIVERY_CLOSING.md) · [`V3_3_G8_5_G8_8_COURTESY_COUPON_EXPERIENCE_CLOSING.md`](../audits/V3_3_G8_5_G8_8_COURTESY_COUPON_EXPERIENCE_CLOSING.md) · [`V3_3_G8_9_G8_10_COURTESY_PORTAL_ADMIN_CLOSING.md`](../audits/V3_3_G8_9_G8_10_COURTESY_PORTAL_ADMIN_CLOSING.md) · [`V3_3_G8_11_COURTESY_ACCOUNTING_CLOSING.md`](../audits/V3_3_G8_11_COURTESY_ACCOUNTING_CLOSING.md). **G9 NOT STARTED** — solo con confirmación explícita del operador.
+**Estado:** **G8 COMPLETE** y **G9 COMPLETE** (local, sin push/deploy, sin migrations nuevas). Cierre G8: [`V3_3_G8_COURTESIES_CLOSING.md`](../audits/V3_3_G8_COURTESIES_CLOSING.md) · readiness [`V3_3_G8_RELEASE_READINESS.md`](../audits/V3_3_G8_RELEASE_READINESS.md) · QA [`V3_3_G8_MANUAL_QA_CHECKLIST.md`](../audits/V3_3_G8_MANUAL_QA_CHECKLIST.md). Cierre G9: [`V3_3_G9_UX_CLOSING.md`](../audits/V3_3_G9_UX_CLOSING.md) · discovery [`V3_3_G9_UX_DISCOVERY.md`](../audits/V3_3_G9_UX_DISCOVERY.md). Slices G8: [`V3_3_G8_COURTESY_DISCOVERY.md`](../audits/V3_3_G8_COURTESY_DISCOVERY.md) · [`V3_3_G8_1_G8_2_COURTESY_HARDENING_CLOSING.md`](../audits/V3_3_G8_1_G8_2_COURTESY_HARDENING_CLOSING.md) · [`V3_3_G8_3_G8_4_COURTESY_APPROVAL_DELIVERY_CLOSING.md`](../audits/V3_3_G8_3_G8_4_COURTESY_APPROVAL_DELIVERY_CLOSING.md) · [`V3_3_G8_5_G8_8_COURTESY_COUPON_EXPERIENCE_CLOSING.md`](../audits/V3_3_G8_5_G8_8_COURTESY_COUPON_EXPERIENCE_CLOSING.md) · [`V3_3_G8_9_G8_10_COURTESY_PORTAL_ADMIN_CLOSING.md`](../audits/V3_3_G8_9_G8_10_COURTESY_PORTAL_ADMIN_CLOSING.md) · [`V3_3_G8_11_COURTESY_ACCOUNTING_CLOSING.md`](../audits/V3_3_G8_11_COURTESY_ACCOUNTING_CLOSING.md).
 
 ```text
 G8.0: DONE (docs only)
@@ -18,7 +18,7 @@ G8.11: DONE (a2b8786, 13c2992, c591f0a) accounting D1 — funded = operativo NO 
 G8.12: DONE (regresión, sin commit de código) — suites exit 0; DB integration PARTIAL (accounting A–H en Postgres; lifecycle/scanner/portal solo Prisma falso)
 G8.13: DONE (docs) — cierre global, readiness, checklist QA
 G8:    COMPLETE
-G9:    NOT STARTED
+G9:    COMPLETE (local, sin push/deploy)
 ```
 
 ---
@@ -31,7 +31,7 @@ G9:    NOT STARTED
 ✅ G7.11 / G7.12 — Post-QA + Operación de Liquidaciones (local, sin push/deploy)
 ✅ G8.0 — Discovery cortesías (docs)
 ✅ G8.1–G8.13 — Cortesías: arquitectura existente extendida. **G8 COMPLETE** (local)
-⏭ G9 — UX complementaria gastro (no contaminar cortesías; solo con confirmación)
+✅ G9 — UX final gastro (local, sin push/deploy)
 ```
 
 ---
@@ -79,18 +79,22 @@ Una cortesía **no es una entidad nueva**: es `GastroDiscount(visibility = COURT
 
 ---
 
-## G9 — UX complementaria gastro
+## G9 — UX final gastro — **COMPLETE** (local)
 
-Mejoras pequeñas que **no** deben mezclarse con Cortesías.
+Sin dominio nuevo. Accounting y lifecycle de cortesías no se modificaron. Detalle: [`V3_3_G9_UX_CLOSING.md`](../audits/V3_3_G9_UX_CLOSING.md).
 
-| ID | Tema |
-|---|---|
-| G9.1 | Share local WhatsApp (URL pública canónica) |
-| G9.2 | Share general (Web Share API + fallback) |
-| G9.3 | Polish mini map / location (post G7.10.7) |
-| G9.4 | Scanner UX listado (username / local / status) |
-| G9.5 | Cards taxonomy UX (chips overflow) |
-| G9.6 | QA / polish final UX gastro |
+| ID | Tema | Estado |
+|---|---|---|
+| G9.0 | Discovery | ✅ |
+| G9.1–G9.2 | Compartir local: Web Share, WhatsApp, copiar enlace público | ✅ |
+| G9.3 | Ficha pública (orden, sidebar, mapa compacto) | ✅ |
+| G9.4 | Multi-local: 0/1/N, estados humanos, `profileId` persistido | ✅ |
+| G9.5 | Cards: 2 chips + overflow, tags aparte | ✅ |
+| G9.6 / G9.9 | Empty states y labels de acción | ✅ |
+| G9.7 | Scanner: resultado con estados reales, listado por local | ✅ |
+| G9.8 | Admin: anclas del local. Detalle ~607 líneas **DEFER** | ✅ |
+| G9.10 / G9.11 | Mobile del listado scanner, a11y puntual | ✅ |
+| G9.12–G9.14 | Regresión, builds, docs | ✅ |
 
 ---
 

@@ -169,7 +169,9 @@ Cierre: [`V3_3_G8_COURTESIES_CLOSING.md`](../audits/V3_3_G8_COURTESIES_CLOSING.m
 - [ ] Concurrencia de funding / crédito / overpayment — sin script
 - [ ] QA manual post-deploy (checklist G8 + G7.11 + G7.12)
 - [ ] Push / deploy acumulado G7.11 + G7.12 + G8 — **NO** hasta confirmación explícita
-- [ ] G9 — **NOT STARTED**
+- [x] G9 — **COMPLETE** local (sin push/deploy). Cierre: [`V3_3_G9_UX_CLOSING.md`](../audits/V3_3_G9_UX_CLOSING.md). Discovery [`V3_3_G9_UX_DISCOVERY.md`](../audits/V3_3_G9_UX_DISCOVERY.md)
+- [ ] QA manual global G7.11 + G7.12 + G8 + G9 — después del cierre local, no antes
+- [ ] Push / deploy acumulado — **NO** hasta confirmación explícita
 
 ### G8.9 + G8.10 — Portal Gastro y Admin de cortesías
 
