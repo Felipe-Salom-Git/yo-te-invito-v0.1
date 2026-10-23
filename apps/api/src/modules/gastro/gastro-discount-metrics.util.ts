@@ -1,4 +1,4 @@
-import { isGastroDiscountExpired } from '@yo-te-invito/shared';
+import { isCourtesyClaimRetained, isGastroDiscountExpired } from '@yo-te-invito/shared';
 import type {
   GastroDiscountSummaryClaim,
   GastroDiscountSummaryMetrics,
@@ -26,9 +26,18 @@ function isClaimExpired(row: ClaimRow): boolean {
   return isGastroDiscountExpired(row.expiresAt);
 }
 
+/**
+ * Claim buckets (G8.8). Mutually exclusive per claim:
+ *   used | cancelled | expired | retained (courtesy held until approval) | available (usable now)
+ * `deliveredClaims` is a subset of `availableClaims` (courtesy, emailed, still ACTIVE).
+ * A retained claim is never "available" nor "delivered": it is only frozen audience.
+ */
 export function computeGastroDiscountClaimMetrics(
   claims: ClaimRow[],
+  opts: { parentStatus?: string | null } = {},
 ): GastroDiscountSummaryMetrics {
+  let retainedClaims = 0;
+  let deliveredClaims = 0;
   let availableClaims = 0;
   let usedClaims = 0;
   let expiredClaims = 0;
@@ -53,18 +62,31 @@ export function computeGastroDiscountClaimMetrics(
       cancelledClaims += 1;
       continue;
     }
+    if (
+      isCourtesyClaimRetained({
+        claimType: claim.type,
+        claimStatus: claim.status,
+        parentStatus: opts.parentStatus,
+      })
+    ) {
+      retainedClaims += 1;
+      continue;
+    }
     if (claim.status === 'EXPIRED' || isClaimExpired(claim)) {
       expiredClaims += 1;
       continue;
     }
     if (claim.status === 'ACTIVE') {
       availableClaims += 1;
+      if (claim.type === 'COURTESY' && claim.emailSentAt) deliveredClaims += 1;
     }
   }
 
   return {
     totalClaims: claims.length,
     availableClaims,
+    retainedClaims,
+    deliveredClaims,
     usedClaims,
     expiredClaims,
     cancelledClaims,

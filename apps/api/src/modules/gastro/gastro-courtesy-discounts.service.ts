@@ -24,6 +24,7 @@ import { AuditService } from '../audit/audit.service';
 import { EmailService } from '../../email/email.service';
 import { BenefitCommercialAgreementsService } from '../benefit-agreements/benefit-commercial-agreements.service';
 import { GastroCourtesyDeliveryService } from './gastro-courtesy-delivery.service';
+import { GastroLifecycleNotificationsService } from '../notifications/gastro-lifecycle-notifications.service';
 import {
   allocateGastroClaimShortCode,
   retryOnShortCodeCollision,
@@ -57,6 +58,7 @@ export class GastroCourtesyDiscountsService {
     private readonly courtesyLedger: CourtesyCreditLedgerService,
     private readonly benefitAgreements: BenefitCommercialAgreementsService,
     private readonly delivery: GastroCourtesyDeliveryService,
+    private readonly lifecycleNotifications: GastroLifecycleNotificationsService,
   ) {}
 
   private async assertCanManageProfile(
@@ -299,8 +301,10 @@ export class GastroCourtesyDiscountsService {
     // G8.3.5: even an ADMIN-created courtesy (no review step) must have a CURRENT commercial
     // agreement for the local before anything is created/delivered. No silent exception.
     // Owner-created courtesies are gated at approval time instead.
+    let adminAgreement: Awaited<ReturnType<GastroCourtesyDiscountsService['assertCurrentAgreement']>> | null =
+      null;
     if (userRole === 'ADMIN') {
-      await this.assertCurrentAgreement(tenantId, profile.id);
+      adminAgreement = await this.assertCurrentAgreement(tenantId, profile.id);
     }
 
     const eventId = profile.publicEventId!;
@@ -458,6 +462,13 @@ export class GastroCourtesyDiscountsService {
 
     if (pendingApproval) {
       // G8.4: creation and delivery are two moments. Nothing is emailed until ADMIN approves.
+      // G8.8: the owner gets a "request received / pending approval" notice (no QR yet).
+      this.lifecycleNotifications.notifyDiscountPending(
+        tenantId,
+        discount.id,
+        body.title.trim(),
+        'create',
+      );
       return { ...base, sentCount: 0, failedCount: 0, failures: [] };
     }
 
@@ -468,6 +479,14 @@ export class GastroCourtesyDiscountsService {
       trigger: 'ADMIN_CREATE',
       webBaseUrl,
     });
+    // G8.8: same owner-facing semantics as an admin-created discount (CURRENT agreement shown).
+    this.lifecycleNotifications.notifyDiscountApproved(
+      tenantId,
+      discount.id,
+      body.title.trim(),
+      'create',
+      { agreement: adminAgreement },
+    );
     return {
       ...base,
       emailConfigured: delivery.emailConfigured,

@@ -23,6 +23,12 @@ export function GastroDiscountOperationalMetricsPanel({ metrics }: Props) {
       </p>
       <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <ProducerKpiCard label="Claims emitidos" value={metrics.claims} />
+        {metrics.retainedClaims ? (
+          <ProducerKpiCard
+            label="Retenidos (pendiente de aprobación)"
+            value={metrics.retainedClaims}
+          />
+        ) : null}
         <ProducerKpiCard label="Disponibles" value={metrics.availableClaims} />
         <ProducerKpiCard label="Usados" value={metrics.usageCount} />
         <ProducerKpiCard label="Validaciones QR" value={metrics.validations} />

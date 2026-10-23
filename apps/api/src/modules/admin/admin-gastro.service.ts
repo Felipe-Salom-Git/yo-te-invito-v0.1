@@ -12,6 +12,7 @@ import {
   GASTRO_COURTESY_AGREEMENT_REQUIRED_MESSAGE,
   GASTRO_COURTESY_EXPIRED_AT_APPROVAL_MESSAGE,
   COURTESY_PRE_APPROVAL_DISCOUNT_STATUSES,
+  isCourtesyPendingApproval,
   isCourtesyOnlyVisibility,
   isGastroDiscountExpired,
   parsePendingUpdate,
@@ -679,8 +680,14 @@ export class AdminGastroService {
     discountId: string,
   ): Promise<AdminGastroDiscountMetrics> {
     const row = await this.loadDiscount(tenantId, profileId, discountId);
-    const [validationCount, redeemedClaimsCount, totalClaimsCount, lastValidation] =
-      await Promise.all([
+    const [
+      validationCount,
+      redeemedClaimsCount,
+      totalClaimsCount,
+      cancelledClaimsCount,
+      retainedClaimsCount,
+      lastValidation,
+    ] = await Promise.all([
       this.prisma.gastroDiscountValidation.count({ where: { discountId } }),
       this.prisma.gastroDiscountClaim.count({
         where: {
@@ -689,6 +696,15 @@ export class AdminGastroService {
         },
       }),
       this.prisma.gastroDiscountClaim.count({ where: { discountId } }),
+      this.prisma.gastroDiscountClaim.count({
+        where: { discountId, status: 'CANCELLED', usedAt: null },
+      }),
+      // G8.8: courtesy claims retained while the parent is pending approval.
+      isCourtesyPendingApproval(row.status)
+        ? this.prisma.gastroDiscountClaim.count({
+            where: { discountId, type: 'COURTESY', status: 'ACTIVE', usedAt: null },
+          })
+        : Promise.resolve(0),
       this.prisma.gastroDiscountValidation.findFirst({
         where: { discountId },
         orderBy: { validatedAt: 'desc' },
@@ -699,7 +715,13 @@ export class AdminGastroService {
       validationCount,
       redeemedClaimsCount,
       totalClaimsCount,
-      availableClaimsCount: Math.max(0, totalClaimsCount - redeemedClaimsCount),
+      // G8.8: available excludes used, cancelled and retained (pending approval) claims.
+      availableClaimsCount: Math.max(
+        0,
+        totalClaimsCount - redeemedClaimsCount - cancelledClaimsCount - retainedClaimsCount,
+      ),
+      retainedClaimsCount,
+      cancelledClaimsCount,
       status: row.status,
       discountDate: row.discountDate?.toISOString() ?? null,
       emailSentAt: row.emailSentAt?.toISOString() ?? null,
@@ -870,6 +892,7 @@ export class AdminGastroService {
       discountId,
       row.displayTitle ?? 'tu descuento',
       'create',
+      { agreement: agreementCtx.agreement },
     );
     return this.getDiscountDetail(tenantId, profileId, discountId);
   }
@@ -957,6 +980,7 @@ export class AdminGastroService {
       discountId,
       row.displayTitle ?? 'tu cortesía',
       'create',
+      { agreement: agreementCtx.agreement },
     );
 
     const detail = await this.getDiscountDetail(tenantId, profileId, discountId);
@@ -1435,11 +1459,18 @@ export class AdminGastroService {
       { status: created.status, gastroProfileId: profile.id, origin: 'ADMIN' },
     );
     void this.gastroFollowAlerts.notifyFollowersOfNewActiveDiscount(tenantId, created.id);
+    // G8.8: show the CURRENT agreement (if any) in the owner email. Informational only: this
+    // path never gated on an agreement and still does not.
+    const onBehalfAgreement = await this.benefitAgreements
+      .resolveApplicable(tenantId, { vertical: 'GASTRO', gastroProfileId: profile.id })
+      .then((ctx) => ctx.agreement)
+      .catch(() => null);
     this.lifecycleNotifications.notifyDiscountApproved(
       tenantId,
       created.id,
       created.displayTitle ?? body.title,
       'create',
+      { agreement: onBehalfAgreement },
     );
     return this.getDiscountDetail(tenantId, profileId, created.id);
   }

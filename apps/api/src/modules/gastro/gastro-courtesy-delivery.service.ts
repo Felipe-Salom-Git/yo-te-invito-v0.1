@@ -130,6 +130,8 @@ export class GastroCourtesyDeliveryService {
           // Individual claim QR only. NEVER the discount-level (master) token.
           qrPayload: this.claimEmail.buildQrPayload(discount.id, claim.qrToken),
           qrCode: claim.qrToken,
+          shortCode: claim.shortCode,
+          validFrom: (campaign.validFrom ?? discount.validFrom)?.toISOString() ?? null,
           validTo: expiresAt ? expiresAt.toISOString() : null,
           courtesyMessage: campaign.message ?? null,
           webBaseUrl: opts.webBaseUrl,

@@ -3,6 +3,7 @@ import {
   buildGastroDiscountQrPayload,
   GASTRO_DISCOUNT_TIMEZONE,
 } from '@yo-te-invito/shared';
+import { formatGastroClaimShortCodeForDisplay } from '../../common/gastro-claim-short-code.util';
 import { EmailService } from '../../email/email.service';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -32,6 +33,9 @@ export type SendGastroDiscountClaimEmailInput = {
   discountLabel?: string | null;
   qrPayload: string;
   qrCode: string;
+  /** G8.8: human-friendly code (6 chars), shown next to the QR for manual entry. */
+  shortCode?: string | null;
+  validFrom?: string | null;
   validTo?: string | null;
   conditions?: string | null;
   courtesyMessage?: string | null;
@@ -97,6 +101,10 @@ export class GastroDiscountClaimEmailService {
           discountLabel: input.discountLabel ?? input.discountTitle,
           qrImageUrl: qrImageUrl(input.qrPayload),
           qrCode: input.qrCode,
+          shortCode: input.shortCode
+            ? formatGastroClaimShortCodeForDisplay(input.shortCode)
+            : '',
+          validFrom: formatValidToLabel(input.validFrom),
           validTo: validToLabel,
           conditions:
             input.conditions ??

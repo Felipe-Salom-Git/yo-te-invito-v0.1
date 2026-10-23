@@ -37,6 +37,18 @@ export function AdminGastroDiscountMetricsPanel({ metrics, isLoading }: Props) {
             }
           />
         ) : null}
+        {metrics.retainedClaimsCount ? (
+          <Metric
+            label="Retenidos (pendiente de aprobacion)"
+            value={String(metrics.retainedClaimsCount)}
+          />
+        ) : null}
+        {metrics.availableClaimsCount !== undefined ? (
+          <Metric label="Disponibles" value={String(metrics.availableClaimsCount)} />
+        ) : null}
+        {metrics.cancelledClaimsCount ? (
+          <Metric label="Cancelados" value={String(metrics.cancelledClaimsCount)} />
+        ) : null}
         <Metric
           label="Fecha del descuento"
           value={

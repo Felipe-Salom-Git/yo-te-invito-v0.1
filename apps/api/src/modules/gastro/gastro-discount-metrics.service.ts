@@ -16,6 +16,9 @@ import {
   GASTRO_COURTESY_CANCELLED_TERMINAL_MESSAGE,
   courtesyStatusChangeBlocker,
   isCourtesyOnlyVisibility,
+  isCourtesyPendingApproval,
+  canOwnerCancelPendingCourtesy,
+  COURTESY_PRE_APPROVAL_DISCOUNT_STATUSES,
   isGastroDiscountExpired,
   shouldGenerateMasterQr,
 } from '@yo-te-invito/shared';
@@ -161,6 +164,9 @@ export class GastroDiscountMetricsService {
       recentValidationRows,
       claimsLast30,
       validationsLast30,
+      activeClaimsCount,
+      cancelledClaimsCount,
+      retainedClaimsCount,
     ] = await Promise.all([
       this.prisma.gastroDiscountClaim.count({
         where: { tenantId, discountId },
@@ -205,6 +211,25 @@ export class GastroDiscountMetricsService {
         where: { discountId, validatedAt: { gte: start30At } },
         select: { validatedAt: true },
       }),
+      // G8.8: usable/open claims (ACTIVE and never used); retained ones are subtracted below.
+      this.prisma.gastroDiscountClaim.count({
+        where: { tenantId, discountId, status: 'ACTIVE', usedAt: null },
+      }),
+      this.prisma.gastroDiscountClaim.count({
+        where: { tenantId, discountId, status: 'CANCELLED', usedAt: null },
+      }),
+      // Retained = courtesy claims frozen at request time while the parent awaits approval.
+      isCourtesyPendingApproval(row.status)
+        ? this.prisma.gastroDiscountClaim.count({
+            where: {
+              tenantId,
+              discountId,
+              type: 'COURTESY',
+              status: 'ACTIVE',
+              usedAt: null,
+            },
+          })
+        : Promise.resolve(0),
     ]);
 
     const byDay = new Map<string, { claims: number; validations: number }>();
@@ -233,7 +258,10 @@ export class GastroDiscountMetricsService {
       claims,
       validations,
       usageCount,
-      availableClaims: Math.max(0, claims - usageCount),
+      // G8.8: retained (pending approval), used and cancelled claims are NOT available.
+      availableClaims: Math.max(0, activeClaimsCount - retainedClaimsCount),
+      retainedClaims: retainedClaimsCount,
+      cancelledClaims: cancelledClaimsCount,
       lastValidationAt: lastValidation?.validatedAt.toISOString() ?? null,
       hasQrToken: Boolean(row.qrToken),
       qrGeneratedAt: row.qrGeneratedAt?.toISOString() ?? null,
@@ -278,7 +306,9 @@ export class GastroDiscountMetricsService {
     });
 
     const mappedClaims = claims.map((c) => mapGastroDiscountSummaryClaim(c));
-    const metrics = computeGastroDiscountClaimMetrics(claims);
+    const metrics = computeGastroDiscountClaimMetrics(claims, {
+      parentStatus: row.status,
+    });
 
     let validationCount: number | undefined;
     if (includeValidationCount) {
@@ -357,7 +387,17 @@ export class GastroDiscountMetricsService {
       });
     }
 
-    if (['REJECTED', 'EXPIRED', 'PENDING_REVIEW', 'COMMISSION_NEGOTIATION'].includes(row.status)) {
+    // G8.8: the only transition allowed from a pre-approval status is the owner (or admin)
+    // withdrawing a PENDING courtesy request: PENDING → CANCELLED. Activating a pending
+    // request is still reserved to the approval flow.
+    const withdrawsPendingCourtesy =
+      body.status === 'CANCELLED' &&
+      canOwnerCancelPendingCourtesy({ visibility: row.visibility, status: row.status });
+
+    if (
+      !withdrawsPendingCourtesy &&
+      ['REJECTED', 'EXPIRED', 'PENDING_REVIEW', 'COMMISSION_NEGOTIATION'].includes(row.status)
+    ) {
       throw new BadRequestException({
         code: ErrorCode.VALIDATION_FAILED,
         message: 'Este descuento no puede activarse o desactivarse en su estado actual',
@@ -410,10 +450,29 @@ export class GastroDiscountMetricsService {
       // G8.2: cancelling a courtesy campaign also makes its ACTIVE claims unusable.
       const isCourtesy = isCourtesyOnlyVisibility(row.visibility);
       const cancelledClaims = await this.prisma.$transaction(async (tx) => {
-        await tx.gastroDiscount.update({
-          where: { id: discountId },
-          data: { status: 'CANCELLED' },
-        });
+        if (withdrawsPendingCourtesy) {
+          // Single winner against a concurrent approval: only a still-pending row is cancelled.
+          const withdrawn = await tx.gastroDiscount.updateMany({
+            where: {
+              id: discountId,
+              tenantId,
+              visibility: 'COURTESY_ONLY',
+              status: { in: [...COURTESY_PRE_APPROVAL_DISCOUNT_STATUSES] },
+            },
+            data: { status: 'CANCELLED' },
+          });
+          if (withdrawn.count === 0) {
+            throw new BadRequestException({
+              code: ErrorCode.VALIDATION_FAILED,
+              message: 'Esta cortesía ya fue procesada',
+            });
+          }
+        } else {
+          await tx.gastroDiscount.update({
+            where: { id: discountId },
+            data: { status: 'CANCELLED' },
+          });
+        }
         return isCourtesy
           ? cancelCourtesyClaimsForDiscount(tx, tenantId, discountId)
           : 0;
@@ -427,7 +486,15 @@ export class GastroDiscountMetricsService {
         entityId: discountId,
         before: { status: beforeStatus },
         after: { status: 'CANCELLED' },
-        ...(isCourtesy ? { metadata: { courtesy: true, cancelledClaims } } : {}),
+        ...(isCourtesy
+          ? {
+              metadata: {
+                courtesy: true,
+                cancelledClaims,
+                ...(withdrawsPendingCourtesy ? { pendingRequestWithdrawn: true } : {}),
+              },
+            }
+          : {}),
       });
     }
 

@@ -19,6 +19,8 @@ function renderGastroDiscountQrEmail(
   const discountDescription = getString(variables, 'discountDescription');
   const qrImageUrl = getString(variables, 'qrImageUrl');
   const qrCode = getString(variables, 'qrCode');
+  const shortCode = getString(variables, 'shortCode');
+  const validFrom = getString(variables, 'validFrom');
   const validTo = getString(variables, 'validTo');
   const conditions = getString(
     variables,
@@ -36,9 +38,10 @@ function renderGastroDiscountQrEmail(
     <p style="margin:0 0 8px;"><strong>${escapeHtml(gastroName)}</strong></p>
     <p style="margin:0 0 12px;">Beneficio: <strong>${escapeHtml(discountLabel)}</strong></p>
     ${discountDescription ? `<p style="margin:0 0 12px;color:#9ca3af;">${escapeHtml(discountDescription)}</p>` : ''}
-    ${validTo ? `<p style="margin:0 0 12px;">Válido hasta: <strong>${escapeHtml(validTo)}</strong></p>` : ''}
+    ${validTo ? `<p style="margin:0 0 12px;">${validFrom ? 'Vigencia' : 'Válido hasta'}: <strong>${escapeHtml(validFrom ? `Del ${validFrom} al ${validTo}` : validTo)}</strong></p>` : ''}
     <p style="margin:0 0 12px;font-size:14px;color:#e5e7eb;">Presentá este QR en el local para aplicar el beneficio.</p>
     ${qrImageUrl ? `<p style="text-align:center;margin:20px 0;"><img src="${escapeHtml(qrImageUrl)}" alt="Código QR" width="280" height="280" style="border:1px solid #1f2937;border-radius:8px;" /></p>` : ''}
+    ${shortCode ? `<p style="margin:0 0 12px;text-align:center;"><span style="font-size:13px;color:#9ca3af;">Código para ingresar manualmente</span><br /><span style="display:inline-block;margin-top:4px;padding:8px 16px;border:1px dashed #22c55e;border-radius:8px;font-family:monospace;font-size:26px;font-weight:700;letter-spacing:4px;color:#22c55e;">${escapeHtml(shortCode)}</span></p>` : ''}
     ${qrCode ? `<p style="margin:0 0 12px;font-family:monospace;font-size:14px;word-break:break-all;color:#22c55e;">Código alternativo: ${escapeHtml(qrCode)}</p>` : ''}
     ${claimUrl ? `<p style="margin:0 0 12px;font-size:13px;color:#9ca3af;">Si no ves el QR, abrí este enlace para verlo:<br /><a href="${escapeHtml(claimUrl)}" style="color:#22c55e;word-break:break-all;">${escapeHtml(claimUrl)}</a></p>` : ''}
     <p style="margin:0 0 12px;font-size:13px;color:#9ca3af;">${escapeHtml(conditions)}</p>
@@ -61,7 +64,8 @@ function renderGastroDiscountQrEmail(
     '',
     `${gastroName} — ${discountLabel}`,
     discountDescription,
-    validTo ? `Válido hasta: ${validTo}` : '',
+    validTo ? (validFrom ? `Vigencia: del ${validFrom} al ${validTo}` : `Válido hasta: ${validTo}`) : '',
+    shortCode ? `Código para ingresar manualmente: ${shortCode}` : '',
     'Presentá este QR en el local para aplicar el beneficio.',
     qrCode ? `Código: ${qrCode}` : '',
     claimUrl ? `Si no ves el QR, abrí este enlace: ${claimUrl}` : '',

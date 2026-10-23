@@ -241,6 +241,9 @@ export const adminGastroDiscountMetricsSchema = z.object({
   redeemedClaimsCount: z.number().int().min(0).optional(),
   totalClaimsCount: z.number().int().min(0).optional(),
   availableClaimsCount: z.number().int().min(0).optional(),
+  /** G8.8: courtesy claims frozen but not usable yet (parent pending approval). */
+  retainedClaimsCount: z.number().int().min(0).optional(),
+  cancelledClaimsCount: z.number().int().min(0).optional(),
   status: gastroDiscountStatusSchema,
   discountDate: z.string().datetime().nullable(),
   emailSentAt: z.string().datetime().nullable(),

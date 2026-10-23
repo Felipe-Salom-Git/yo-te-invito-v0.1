@@ -2943,6 +2943,9 @@ export interface AdminGastroDiscountMetrics {
   redeemedClaimsCount?: number;
   totalClaimsCount?: number;
   availableClaimsCount?: number;
+  /** G8.8: courtesy claims retained while the parent awaits approval. */
+  retainedClaimsCount?: number;
+  cancelledClaimsCount?: number;
   status: GastroDiscountStatus;
   discountDate: string | null;
   emailSentAt: string | null;

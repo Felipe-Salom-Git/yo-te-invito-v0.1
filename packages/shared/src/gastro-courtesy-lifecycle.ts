@@ -186,6 +186,24 @@ export function isCourtesyClaimPendingDelivery(input: {
 }
 
 // ---------------------------------------------------------------------------
+// G8.8 — Owner cancels a pending request
+// ---------------------------------------------------------------------------
+
+/**
+ * The owner may withdraw a courtesy request while it is still awaiting approval
+ * (`PENDING_REVIEW` / `COMMISSION_NEGOTIATION`). It is a plain cancellation
+ * (`CANCELLED`, distinct from an ADMIN `REJECTED`): retained claims are cancelled in the same
+ * transaction, nothing is delivered, and `CANCELLED` stays terminal (no reactivation).
+ * Scoped to COURTESY_ONLY on purpose: normal discounts keep their current lifecycle.
+ */
+export function canOwnerCancelPendingCourtesy(input: {
+  visibility: string | null | undefined;
+  status: string | null | undefined;
+}): boolean {
+  return isCourtesyOnlyVisibility(input.visibility) && isCourtesyPendingApproval(input.status);
+}
+
+// ---------------------------------------------------------------------------
 // G8.5 / G8.7 — Benefit label
 // ---------------------------------------------------------------------------
 

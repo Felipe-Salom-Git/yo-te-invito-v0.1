@@ -113,6 +113,8 @@ function build(opts: {
         return { attempted: 1, sent: 1, failed: 0, skippedAlreadySent: 0, emailConfigured: true, failures: [] };
       },
     } as never,
+    // G8.8: owner-facing lifecycle notifications (not under test here).
+    { notifyDiscountPending: () => undefined, notifyDiscountApproved: () => undefined } as never,
   );
 
   return { svc, created, lookups, sentCount: () => sent };

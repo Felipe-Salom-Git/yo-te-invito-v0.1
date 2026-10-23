@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import {
   GASTRO_WEEKDAY_LABELS_ES,
+  canOwnerCancelPendingCourtesy,
   isCourtesyOnlyVisibility,
   type GastroDiscountSummaryResponse,
   type GastroWeekday,
@@ -17,6 +18,8 @@ type Props = {
   qrStudioHref?: string;
   onActivate?: () => void;
   onDeactivate?: () => void;
+  /** G8.8: owner withdraws a PENDING courtesy request (before approval). */
+  onCancelRequest?: () => void;
   statusLoading?: boolean;
 };
 
@@ -41,6 +44,7 @@ export function GastroDiscountDetailContent({
   qrStudioHref,
   onActivate,
   onDeactivate,
+  onCancelRequest,
   statusLoading,
 }: Props) {
   const { discount, metrics, claims, hasExistingClaims } = summary;
@@ -51,6 +55,10 @@ export function GastroDiscountDetailContent({
     ? ['ACTIVE', 'APPROVED'].includes(discount.status)
     : ['ACTIVE', 'APPROVED', 'CANCELLED'].includes(discount.status);
   const isActive = discount.status === 'ACTIVE';
+  const canCancelRequest = canOwnerCancelPendingCourtesy({
+    visibility: discount.visibility,
+    status: discount.status,
+  });
 
   const validityLabel =
     discount.validityMode === 'WEEKLY_RECURRING' && discount.validWeekday
@@ -63,7 +71,14 @@ export function GastroDiscountDetailContent({
 
   const metricCards = [
     { label: 'Emitidos', value: metrics.totalClaims },
+    // G8.8: retained courtesy claims are held until approval: not available, not delivered.
+    ...(metrics.retainedClaims
+      ? [{ label: 'Retenidos (pendiente de aprobación)', value: metrics.retainedClaims }]
+      : []),
     { label: 'Disponibles', value: metrics.availableClaims },
+    ...(isCourtesy && metrics.deliveredClaims !== undefined
+      ? [{ label: 'Entregados', value: metrics.deliveredClaims }]
+      : []),
     { label: 'Escaneados', value: metrics.usedClaims },
     { label: 'Vencidos', value: metrics.expiredClaims },
     { label: 'Cancelados', value: metrics.cancelledClaims },
@@ -106,6 +121,16 @@ export function GastroDiscountDetailContent({
                   Editar diseño
                 </Button>
               </Link>
+            ) : null}
+            {canCancelRequest && onCancelRequest ? (
+              <Button
+                variant="outline"
+                type="button"
+                disabled={statusLoading}
+                onClick={onCancelRequest}
+              >
+                Cancelar solicitud
+              </Button>
             ) : null}
             {canToggleStatus && onDeactivate && isActive ? (
               <Button

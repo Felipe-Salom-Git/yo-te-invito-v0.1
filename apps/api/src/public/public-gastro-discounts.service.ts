@@ -273,6 +273,7 @@ export class PublicGastroDiscountsService {
       id: string;
       accessToken: string;
       qrToken: string;
+      shortCode?: string | null;
       emailSentAt: Date | null;
     }) => {
       const qrPayload = this.claimEmail.buildQrPayload(discount.id, claim.qrToken);
@@ -287,6 +288,7 @@ export class PublicGastroDiscountsService {
         discountDescription: discount.summary ?? discount.detail,
         qrPayload,
         qrCode: claim.qrToken,
+        shortCode: claim.shortCode ?? null,
         validTo: expiresAt?.toISOString() ?? null,
         webBaseUrl,
       });

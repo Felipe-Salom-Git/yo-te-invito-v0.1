@@ -62,7 +62,17 @@ export default function GastroDescuentoDetallePage() {
       repos.gastro.updateMyDiscountStatus(id, { status }),
     onError: (err) => addToast(getErrorMessage(err), 'error'),
     onSuccess: (_, status) => {
-      addToast(status === 'ACTIVE' ? 'Descuento activado' : 'Descuento desactivado', 'success');
+      const wasPending = ['PENDING_REVIEW', 'COMMISSION_NEGOTIATION'].includes(
+        summaryQuery.data?.discount.status ?? '',
+      );
+      addToast(
+        status === 'ACTIVE'
+          ? 'Descuento activado'
+          : wasPending
+            ? 'Solicitud cancelada. No se enviará ningún QR.'
+            : 'Descuento desactivado',
+        'success',
+      );
       invalidate();
     },
   });
@@ -114,6 +124,11 @@ export default function GastroDescuentoDetallePage() {
           statusLoading={statusMutation.isPending}
           onActivate={() => statusMutation.mutate('ACTIVE')}
           onDeactivate={() => statusMutation.mutate('CANCELLED')}
+          onCancelRequest={() => {
+            if (window.confirm('¿Cancelar esta solicitud? No se enviará ningún QR a los destinatarios.')) {
+              statusMutation.mutate('CANCELLED');
+            }
+          }}
         />
       ) : null}
 

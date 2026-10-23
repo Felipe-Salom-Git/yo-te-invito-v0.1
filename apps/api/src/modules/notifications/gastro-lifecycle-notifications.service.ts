@@ -6,7 +6,14 @@ import {
   shouldSendPushForKind,
 } from '../me/user-portal-preferences.util';
 import { getAppUrl, getDefaultSupportEmail } from '../../email/templates/email-template.util';
+import { isCourtesyOnlyVisibility } from '@yo-te-invito/shared';
 import { UserNotificationsService } from './user-notifications.service';
+import {
+  buildDiscountLifecycleContent,
+  type DiscountLifecycleEvent,
+  type LifecycleAgreement,
+  type LifecycleDetail,
+} from './gastro-lifecycle-email-content';
 import {
   gastroDiscountNotificationReferenceKey,
   gastroProfileNotificationReferenceKey,
@@ -37,13 +44,26 @@ export class GastroLifecycleNotificationsService {
     });
   }
 
+  /**
+   * `opts.agreement` is the CURRENT BenefitCommercialAgreement resolved by the caller at
+   * approval time (G8.8). It is only rendered in the email; never persisted on the discount.
+   */
   notifyDiscountApproved(
     tenantId: string,
     discountId: string,
     title: string,
     aspect: GastroDiscountNotifyAspect,
+    opts?: { agreement?: LifecycleAgreement | null },
   ): void {
-    void this.dispatchDiscount(tenantId, discountId, title, 'approved', aspect).catch((err) => {
+    void this.dispatchDiscount(
+      tenantId,
+      discountId,
+      title,
+      'approved',
+      aspect,
+      undefined,
+      opts?.agreement ?? null,
+    ).catch((err) => {
       this.logger.error(`notifyDiscountApproved failed discount=${discountId}`, err);
     });
   }
@@ -92,72 +112,53 @@ export class GastroLifecycleNotificationsService {
     );
   }
 
-  private copyForDiscount(
-    event: 'pending' | 'approved' | 'rejected' | 'expired',
-    title: string,
-    aspect: GastroDiscountNotifyAspect,
-    reason?: string,
-  ): { title: string; body: string } {
-    const name = title.trim() || 'tu descuento';
-    if (event === 'pending') {
-      return aspect === 'edit'
-        ? {
-            title: 'Edición enviada a revisión',
-            body: `Los cambios de «${name}» están en revisión. La versión publicada sigue activa.`,
-          }
-        : {
-            title: 'Descuento enviado a revisión',
-            body: `«${name}» fue enviado a revisión. Te avisamos cuando administración lo apruebe o rechace.`,
-          };
-    }
-    if (event === 'approved') {
-      return aspect === 'edit'
-        ? {
-            title: 'Edición de descuento aprobada',
-            body: `Los cambios de «${name}» ya están publicados.`,
-          }
-        : {
-            title: 'Descuento aprobado',
-            body: `«${name}» fue aprobado y ya puede mostrarse y canjearse.`,
-          };
-    }
-    if (event === 'rejected') {
-      const extra = reason?.trim() ? ` Motivo: ${reason.trim()}` : '';
-      return aspect === 'edit'
-        ? {
-            title: 'Edición de descuento rechazada',
-            body: `Los cambios de «${name}» fueron rechazados. Sigue publicada la versión anterior.${extra}`,
-          }
-        : {
-            title: 'Descuento rechazado',
-            body: `«${name}» fue rechazado.${extra}`,
-          };
-    }
-    return {
-      title: 'Descuento vencido',
-      body: `«${name}» venció. Queda en tu historial; no se borran claims ni métricas.`,
-    };
-  }
-
   private async dispatchDiscount(
     tenantId: string,
     discountId: string,
     discountTitle: string,
-    event: 'pending' | 'approved' | 'rejected' | 'expired',
+    event: DiscountLifecycleEvent,
     aspect: GastroDiscountNotifyAspect,
     reason?: string,
+    agreement?: LifecycleAgreement | null,
   ): Promise<void> {
     const discount = await this.prisma.gastroDiscount.findFirst({
       where: { id: discountId, tenantId },
-      select: { gastroProfileId: true, displayTitle: true },
+      include: {
+        courtesyCampaign: true,
+        gastroProfile: { select: { displayName: true } },
+      },
     });
     if (!discount?.gastroProfileId) return;
-    const copy = this.copyForDiscount(
+    const isCourtesy = isCourtesyOnlyVisibility(discount.visibility);
+    const recipientCount = isCourtesy
+      ? await this.prisma.gastroDiscountClaim.count({
+          where: { tenantId, discountId, type: 'COURTESY' },
+        })
+      : null;
+    const title =
+      discountTitle ||
+      discount.courtesyCampaign?.title ||
+      discount.displayTitle ||
+      (isCourtesy ? 'tu cortesía' : 'tu descuento');
+    const content = buildDiscountLifecycleContent({
       event,
-      discountTitle || discount.displayTitle || 'tu descuento',
       aspect,
-      reason,
-    );
+      isCourtesy,
+      title,
+      localName: discount.gastroProfile?.displayName ?? null,
+      courtesyLabel: discount.courtesyCampaign?.discountLabel ?? null,
+      discountType: discount.type === 'FIXED' ? 'FIXED' : 'PERCENT',
+      discountValue: discount.value != null ? Number(discount.value) : null,
+      recipientCount,
+      validityMode: discount.validityMode,
+      validWeekday: discount.validWeekday,
+      validFrom: discount.courtesyCampaign?.validFrom ?? discount.validFrom,
+      validTo: discount.courtesyCampaign?.validTo ?? discount.validTo,
+      discountDate: discount.discountDate,
+      // Only an already-persisted reason; never invented.
+      reason: reason ?? discount.rejectionReason ?? null,
+      agreement,
+    });
     const kind = notificationKindForDiscountEvent(event);
     const referenceKey = gastroDiscountNotificationReferenceKey(event, discountId, aspect);
     const href = `/gastro/descuentos/${discountId}`;
@@ -166,12 +167,12 @@ export class GastroLifecycleNotificationsService {
       profileId: discount.gastroProfileId,
       kind,
       referenceKey,
-      title: copy.title,
-      body: copy.body,
+      title: content.title,
+      body: content.body,
       href,
+      details: content.details,
     });
   }
-
   private async dispatchProfile(
     tenantId: string,
     profileId: string,
@@ -211,6 +212,7 @@ export class GastroLifecycleNotificationsService {
     title: string;
     body: string;
     href: string;
+    details?: LifecycleDetail[];
   }): Promise<void> {
     const memberships = await this.prisma.userGastroMembership.findMany({
       where: { tenantId: input.tenantId, profileId: input.profileId, status: 'ACTIVE' },
@@ -253,6 +255,7 @@ export class GastroLifecycleNotificationsService {
                 subject: input.title,
                 previewText: input.body,
                 body: input.body,
+                details: input.details ?? [],
                 ctaLabel: 'Ver en el portal',
                 ctaUrl: `${appUrl}${input.href}`,
                 supportEmail: getDefaultSupportEmail(),

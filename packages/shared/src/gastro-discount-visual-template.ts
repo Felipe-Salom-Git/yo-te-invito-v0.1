@@ -140,7 +140,12 @@ export function buildGastroDiscountStudioPreviewContext(
 /** Alias vertical-agnostic — misma regla PERCENT / FIXED. Gastro sigue usando `formatDiscountVisualBenefit`. */
 export const formatCouponVisualBenefit = formatDiscountVisualBenefit;
 
-export function formatDiscountVisualValidity(ctx: DiscountVisualRenderContext): string {
+export function formatDiscountVisualValidity(
+  ctx: Pick<
+    DiscountVisualRenderContext,
+    'validityMode' | 'validWeekday' | 'validFrom' | 'validTo' | 'discountDate'
+  >,
+): string {
   if (ctx.validityMode === 'WEEKLY_RECURRING' && ctx.validWeekday) {
     const day = GASTRO_WEEKDAY_LABELS_ES[ctx.validWeekday] ?? ctx.validWeekday;
     const until = formatGastroDiscountDateAr(ctx.validTo);

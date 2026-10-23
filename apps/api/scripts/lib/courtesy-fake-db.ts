@@ -17,6 +17,8 @@ import { GastroCourtesyDeliveryService } from '../../src/modules/gastro/gastro-c
 import { GastroDiscountClaimEmailService } from '../../src/modules/gastro/gastro-discount-claim-email.service';
 import { GastroDiscountVisualTemplateService } from '../../src/modules/gastro/gastro-discount-visual-template.service';
 import { GastroDiscountMetricsService } from '../../src/modules/gastro/gastro-discount-metrics.service';
+import { GastroLifecycleNotificationsService } from '../../src/modules/notifications/gastro-lifecycle-notifications.service';
+import { GastroProfileMetricsService } from '../../src/modules/gastro/gastro-profile-metrics.service';
 import { AdminGastroService } from '../../src/modules/admin/admin-gastro.service';
 import { MeGastroDiscountsService } from '../../src/modules/me/me-gastro-discounts.service';
 import { PublicGastroDiscountsService } from '../../src/public/public-gastro-discounts.service';
@@ -36,6 +38,10 @@ function matches(row: Row, where: Row | undefined): boolean {
       if (!(cond as Row[]).some((c) => matches(row, c))) return false;
       continue;
     }
+    if (key === 'NOT') {
+      if (matches(row, cond as Row)) return false;
+      continue;
+    }
     if (key === 'AND') {
       if (!(cond as Row[]).every((c) => matches(row, c))) return false;
       continue;
@@ -47,6 +53,10 @@ function matches(row: Row, where: Row | undefined): boolean {
       const c = cond as Row;
       if ('in' in c) {
         if (!(c.in as unknown[]).includes(value)) return false;
+      } else if ('gte' in c) {
+        const a = value instanceof Date ? value.getTime() : (value as number);
+        const b = c.gte instanceof Date ? c.gte.getTime() : (c.gte as number);
+        if (!(a >= b)) return false;
       } else if ('not' in c) {
         if (c.not === null ? value == null : value === c.not) return false;
       } else if (!matches(value ?? {}, c)) {
@@ -73,6 +83,14 @@ export class FakeCourtesyDb {
   audits: Row[] = [];
   /** gastroProfileIds that have a CURRENT commercial agreement. */
   agreements = new Set<string>();
+  /** G8.8: the CURRENT agreement returned for profiles in `agreements` (overridable). */
+  agreementTerms: Row = {
+    unitPriceCents: '500000',
+    currency: 'ARS',
+    barterMultiplier: '2.0000',
+    validFrom: '2026-01-01',
+    validTo: null,
+  };
   txCount = 0;
   /** Set to make the Nth claim creation fail (to prove the owner create is atomic). */
   failClaimCreateAt: number | null = null;
@@ -114,6 +132,8 @@ export class FakeCourtesyDb {
         this.profiles.find((p) => matches(p, where)) ?? null,
     },
     userGastroMembership: {
+      findMany: async ({ where }: { where: Row }) =>
+        this.memberships.filter((m) => matches(m, where)),
       findFirst: async ({ where }: { where: Row }) => {
         const m = this.memberships.find(
           (x) => x.userId === where.userId && x.profileId === where.profileId,
@@ -160,6 +180,8 @@ export class FakeCourtesyDb {
         Object.assign(row, data);
         return { ...row };
       },
+      count: async ({ where }: { where: Row }) =>
+        this.discounts.filter((d) => matches(d, where)).length,
       updateMany: async ({ where, data }: { where: Row; data: Row }) => {
         const rows = this.discounts.filter((d) => matches(d, where));
         rows.forEach((r) => Object.assign(r, data));
@@ -237,8 +259,13 @@ export class FakeCourtesyDb {
         rows.forEach((r) => Object.assign(r, data));
         return { count: rows.length };
       },
+      // Matches against the claim + its `discount` include so relation filters work.
       count: async ({ where }: { where: Row }) =>
-        this.claims.filter((c) => matches(c, where)).length,
+        this.claims.filter((c) => matches(this.claimWithIncludes(c), where)).length,
+    },
+    gastroProfileView: {
+      count: async () => 0,
+      findMany: async () => [] as Row[],
     },
     gastroDiscountTemplate: {
       findFirst: async ({ where }: { where: Row }) =>
@@ -272,6 +299,17 @@ export class FakeCourtesyDb {
       },
     },
     gastroDiscountValidation: {
+      count: async ({ where }: { where: Row }) =>
+        this.validations.filter((v) => matches(v, where)).length,
+      findFirst: async ({ where }: { where: Row }) =>
+        this.validations.find((v) => matches(v, where)) ?? null,
+      findMany: async ({ where }: { where: Row }) =>
+        this.validations
+          .filter((v) => matches(v, where))
+          .map((v) => ({
+            ...v,
+            claim: this.claims.find((c) => c.id === v.claimId) ?? null,
+          })),
       create: async ({ data }: { data: Row }) => {
         const row = { id: this.id('val'), validatedAt: new Date(), ...data };
         this.validations.push(row);
@@ -404,7 +442,21 @@ export class FakeCourtesyDb {
   build(opts: { emailConfigured?: boolean; failEmailFor?: string[] } = {}) {
     const emailLog: Array<{ templateId: string; to: string; variables: Row }> = [];
     const alerts: string[] = [];
-    const lifecycle = { approved: [] as string[], rejected: [] as string[] };
+    // G8.8: the REAL lifecycle notifications service; only the delivery sink is captured.
+    const notifications: Row[] = [];
+    const userNotifications = {
+      deliver: async (input: Row) => {
+        notifications.push(input);
+      },
+    };
+    const lifecycle = new GastroLifecycleNotificationsService(
+      this.prisma as never,
+      userNotifications as never,
+    );
+    /** Notifications are fire-and-forget: let their (all-microtask) work settle. */
+    const flush = async () => {
+      for (let i = 0; i < 5; i++) await new Promise((r) => setImmediate(r));
+    };
     const failEmailFor = new Set(opts.failEmailFor ?? []);
     const emailConfigured = opts.emailConfigured ?? true;
     const emailService = {
@@ -435,7 +487,7 @@ export class FakeCourtesyDb {
       resolveApplicable: async (_t: string, q: { gastroProfileId?: string }) => ({
         agreement:
           q.gastroProfileId && this.agreements.has(q.gastroProfileId)
-            ? { id: `agr-${q.gastroProfileId}` }
+            ? { id: `agr-${q.gastroProfileId}`, ...this.agreementTerms }
             : null,
       }),
     };
@@ -447,6 +499,7 @@ export class FakeCourtesyDb {
       { debitForGastroCourtesyCampaign: async () => ({ entry: { id: 'led-1', amountCents: 1n } }) } as never,
       agreements as never,
       delivery,
+      lifecycle,
     );
     const admin = new AdminGastroService(
       prisma,
@@ -456,10 +509,7 @@ export class FakeCourtesyDb {
           alerts.push(id);
         },
       } as never,
-      {
-        notifyDiscountApproved: (_t: string, id: string) => lifecycle.approved.push(id),
-        notifyDiscountRejected: (_t: string, id: string) => lifecycle.rejected.push(id),
-      } as never,
+      lifecycle,
       agreements as never,
       delivery,
     );
@@ -473,7 +523,22 @@ export class FakeCourtesyDb {
       auditService as never,
     );
     const metrics = new GastroDiscountMetricsService(prisma, auditService as never);
-    return { courtesy, admin, delivery, me, publicSvc, scanner, metrics, emailLog, alerts, lifecycle };
+    const profileMetrics = new GastroProfileMetricsService(prisma, {} as never, {} as never);
+    return {
+      courtesy,
+      admin,
+      delivery,
+      me,
+      publicSvc,
+      scanner,
+      metrics,
+      profileMetrics,
+      emailLog,
+      alerts,
+      notifications,
+      lifecycle,
+      flush,
+    };
   }
 
   /**

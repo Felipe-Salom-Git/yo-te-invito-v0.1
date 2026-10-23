@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import {
+  COURTESY_PRE_APPROVAL_DISCOUNT_STATUSES,
   GASTRO_DISCOUNT_TIMEZONE,
   getGastroDiscountCalendarKey,
   gastroDiscountStartOfDay,
@@ -131,8 +132,17 @@ export class GastroProfileMetricsService {
       this.prisma.gastroDiscount.count({
         where: { tenantId, gastroProfileId: resolvedId, status: 'ACTIVE', visibility: 'PUBLIC' },
       }),
+      // G8.8: claims of courtesies still awaiting approval are retained audience, not claims.
       this.prisma.gastroDiscountClaim.count({
-        where: { tenantId, discount: { gastroProfileId: resolvedId } },
+        where: {
+          tenantId,
+          discount: { gastroProfileId: resolvedId },
+          NOT: {
+            type: 'COURTESY',
+            status: 'ACTIVE',
+            discount: { status: { in: [...COURTESY_PRE_APPROVAL_DISCOUNT_STATUSES] } },
+          },
+        },
       }),
       this.prisma.gastroDiscountValidation.count({
         where: { discount: { tenantId, gastroProfileId: resolvedId } },

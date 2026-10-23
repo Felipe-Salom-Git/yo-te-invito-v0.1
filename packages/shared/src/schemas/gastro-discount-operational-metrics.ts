@@ -38,7 +38,11 @@ export const gastroDiscountOperationalMetricsResponseSchema = z.object({
   validations: z.number().int().min(0),
   /** Claims marked used / redeemed (operational usage). */
   usageCount: z.number().int().min(0),
+  /** Usable now: excludes used, cancelled and retained (pending approval) claims. */
   availableClaims: z.number().int().min(0),
+  /** G8.8: courtesy claims retained while the parent is pending approval. */
+  retainedClaims: z.number().int().min(0).optional(),
+  cancelledClaims: z.number().int().min(0).optional(),
   lastValidationAt: z.string().datetime().nullable(),
   hasQrToken: z.boolean(),
   qrGeneratedAt: z.string().datetime().nullable(),

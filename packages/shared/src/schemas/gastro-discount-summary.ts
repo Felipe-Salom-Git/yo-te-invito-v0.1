@@ -32,7 +32,15 @@ export const gastroDiscountSummaryDiscountSchema = z.object({
 
 export const gastroDiscountSummaryMetricsSchema = z.object({
   totalClaims: z.number().int().min(0),
+  /**
+   * Usable now: ACTIVE claims whose parent is not awaiting approval. A retained courtesy
+   * claim (G8.8) is NOT available: see `retainedClaims`.
+   */
   availableClaims: z.number().int().min(0),
+  /** G8.8: courtesy claims frozen at request time, held until ADMIN approves (not delivered). */
+  retainedClaims: z.number().int().min(0).optional(),
+  /** G8.8: courtesy claims already delivered by email and still ACTIVE (not used / cancelled). */
+  deliveredClaims: z.number().int().min(0).optional(),
   usedClaims: z.number().int().min(0),
   expiredClaims: z.number().int().min(0),
   cancelledClaims: z.number().int().min(0),
