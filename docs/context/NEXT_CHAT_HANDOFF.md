@@ -40,11 +40,12 @@ Punto de entrada operativo para **V3.3**. Detalle completo: `AI_ENTRYPOINT.md`, 
 | **G8.5–G8.8 Cortesías — scanner/shortCode/Studio/emails** | ✅ Local, **sin push/deploy, sin migrations** — commits `a8a3b78`, `5bf21d5`, `3a51c87`, `bd77fce` — [`V3_3_G8_5_G8_8_COURTESY_COUPON_EXPERIENCE_CLOSING.md`](../audits/V3_3_G8_5_G8_8_COURTESY_COUPON_EXPERIENCE_CLOSING.md). Scanner indica "Cortesía" y beneficio real (sin `0%`); shortCode con retry `P2002`; Studio unificado (sin `0%`, fix de ruta `descuentos`); emails owner pendiente/aprobada/rechazada + acuerdo CURRENT (no persistido) + shortCode al destinatario; métricas separan retenidos/disponibles/entregados/usados/cancelados; owner puede cancelar su solicitud `PENDING`. DB integration NO ejecutada |
 | **G8.9 + G8.10 Cortesías — portal Gastro + admin** | ✅ Local, **sin push/deploy, sin migrations** — commits `ffbded3`, `2682cf6` — [`V3_3_G8_9_G8_10_COURTESY_PORTAL_ADMIN_CLOSING.md`](../audits/V3_3_G8_9_G8_10_COURTESY_PORTAL_ADMIN_CLOSING.md). Portal: listado por local (`?tipo=cortesias`) con estados humanos, métricas G8.8, audiencia congelada, solicitud "pendiente de aprobación", detalle, Studio con gate de lifecycle, empty states; owner no cancela cortesías creadas por ADMIN. Admin: cola con badge/contexto, review con requester + panel de acuerdo G5, acciones por lifecycle, métricas + filtro en listado, sin master QR, audit labels, summary/status scoped por local. DB integration NO ejecutada |
 | **G8.11 Cortesías — accounting D1** | ✅ Local, **sin push/deploy, sin migrations** — commits `a2b8786`, `13c2992`, `c591f0a` — [`V3_3_G8_11_COURTESY_ACCOUNTING_CLOSING.md`](../audits/V3_3_G8_11_COURTESY_ACCOUNTING_CLOSING.md). **Funded courtesy = operational usage, NOT billable usage; non-funded courtesy = billable.** Regla única `resolveGastroValidationSettlementEligibility`; exclusión backend; `BENEFIT_SETTLEMENT_VALIDATION_FUNDED_COURTESY`; ledger nunca acredita cortesía financiada; G6 `settlementBillability`; WARNING `FUNDED_COURTESY_ALLOCATED`. Reversa `DEBIT_COURTESY` **DEFERRED**. **DB integration PASS** (Postgres local Docker) |
-| **G8.12+ / G9 UX** | ⏸ [`V3_3_G8_G9_ROADMAP.md`](./V3_3_G8_G9_ROADMAP.md) · **NOT STARTED** (esperan confirmación) |
+| **G8.12 + G8.13 Cortesías — regresión y cierre** | ✅ **G8 COMPLETE** (local, sin push/deploy, sin migrations) — [`V3_3_G8_COURTESIES_CLOSING.md`](../audits/V3_3_G8_COURTESIES_CLOSING.md) · [`V3_3_G8_RELEASE_READINESS.md`](../audits/V3_3_G8_RELEASE_READINESS.md) · [`V3_3_G8_MANUAL_QA_CHECKLIST.md`](../audits/V3_3_G8_MANUAL_QA_CHECKLIST.md). Regresión exit 0. DB integration **PARTIAL** (accounting A–H en Postgres; lifecycle/scanner/portal/emails solo Prisma falso). Builds PASS. Web `tsc` suelto PREEXISTING (`vitest`). QA manual pendiente |
+| **G9 UX** | ⏸ [`V3_3_G8_G9_ROADMAP.md`](./V3_3_G8_G9_ROADMAP.md) · **NOT STARTED** |
 
 **Checklist V3.3:** `docs/dev/Yo_Te_Invito_Checklist_V3_3_Funcional_Operativa.md`
 
-**Próximo paso V3.3:** push/deploy G7.11 + G7.12 (ventana conjunta) + QA browser G7.11/G7.12 (checklists en cierres) cuando el operador lo indique; G8.0–G8.11 ya hechos (local); el siguiente paso de código es G8.12 (tests cross-profile/tenant/economía) solo con confirmación explícita. Producción congelada: no push/deploy. QA 4 (rails secundarios) pendiente por datos. **No** iniciar G8/G9 sin instrucción explícita. QA manual Etapas 1–9 sigue acumulada.
+**Próximo paso V3.3:** cuando el operador lo indique, push/deploy acumulado de G7.11 + G7.12 + G8.0–G8.13 (cero migrations nuevas; orden en el cierre G8 §8, comandos solo del runbook) y después el QA manual ([`V3_3_G8_MANUAL_QA_CHECKLIST.md`](../audits/V3_3_G8_MANUAL_QA_CHECKLIST.md) + checklists G7.11/G7.12). **G8 COMPLETE** en código. Producción congelada: no push/deploy hasta esa instrucción. QA 4 (rails secundarios) pendiente por datos. **No** iniciar G9 sin instrucción explícita. QA manual Etapas 1–9 sigue acumulada.
 
 **Deploy:** la clave SSH del VPS tiene passphrase; si el ssh-agent no la tiene cargada, el deploy lo ejecuta el operador siguiendo `docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`.
 
@@ -87,21 +88,7 @@ User → Next.js → ApiRepository → NestJS Controller → Service → Prisma 
 | Procesos | systemd: `yti-web` (:3000), `yti-api` (:3001), `yti-scanner` (:3002) |
 | Dominios | `yoteinvito.club`, `api.yoteinvito.club`, `scanner.yoteinvito.club` |
 
-**Migraciones prod:** solo `npx prisma migrate deploy`. Incluye Etapa 3 + Etapa 5 + Etapa 6 + Etapa 7:
-- `20260831120000_gastro_claim_short_code` (pgcrypto idempotente)
-- `20260831130000_user_scanner_username`
-- `20260831140000_gastro_discount_v3_lifecycle` (**no aplicada localmente** — PostgreSQL/Docker no disponible)
-- `20260831150000_gastro_discount_visual_template` (**no aplicada localmente** — PostgreSQL/Docker no disponible)
-- `20260831160000_activity_coupon_domain` (**no aplicada localmente** — PostgreSQL/Docker no disponible)
-- `20260831170000_activity_coupon_claimed_notification` (**no aplicada localmente** — PostgreSQL/Docker no disponible)
-- `20260831180000_user_marketing_preference` (**no aplicada localmente**)
-- `20260831190000_admin_campaign_domain` (**no aplicada localmente**)
-- `20260831200000_admin_operational_digest_log` (**no aplicada localmente**)
-- `20260901120000_benefit_commercial_agreements` (**no aplicada localmente**)
-- `20260901140000_benefit_settlement_domain` (**no aplicada localmente**)
-- `20260901160000_benefit_settlement_transfers` (**no aplicada localmente**)
-- `20260901180000_courtesy_credit_ledger` (**no aplicada localmente**)
-- `20260901200000_gastro_courtesy_credit_funding` (**no aplicada localmente**)
+**Migraciones:** solo `npx prisma migrate deploy` en producción. El repo tiene **111**. Producción (deploy G7.10, 2026-10-22) ya reportó 111 encontradas y ninguna pendiente. Local (G8.12, Docker `yo-te-invito-postgres`, `localhost:5433`): `prisma migrate status` → 111 encontradas, schema up to date. **G7.11–G8.13 agregan cero migrations.** Las de Etapa 3–9 y G3/G4 forman parte de esas 111 (ya no están “sin aplicar” en el Postgres local).
 
 Runbook: `docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`.
 
@@ -435,5 +422,7 @@ pnpm --filter api run test:gastro-courtesy-accounting   # incluye escenarios en 
 
 ## 21. Próximo paso recomendado
 
-1. **V3.3 — cierre global + QA manual acumulada** (Etapas 1–9). **No** iniciar otra etapa funcional automáticamente.
-2. Migración DB + Redis/SMTP/concurrency smokes cuando PostgreSQL esté disponible.
+1. **Push/deploy acumulado** G7.11 + G7.12 + G8.0–G8.13 cuando el operador lo pida. Cero migrations nuevas. Orden y comandos: `V3_3_G8_COURTESIES_CLOSING.md` §8 (solo el runbook). **No** pushear ni desplegar desde el agente.
+2. **QA manual** post-deploy: `V3_3_G8_MANUAL_QA_CHECKLIST.md` + checklists G7.11/G7.12. Etapas 1–9 siguen acumuladas.
+3. **G9** solo con instrucción explícita. G8 ya está cerrado en código.
+4. PostgreSQL local ya está al día (111). Lo que sigue sin script es concurrencia de funding/crédito/overpayment y un escenario seed de settlements G7.12. No marcarlos PASS.

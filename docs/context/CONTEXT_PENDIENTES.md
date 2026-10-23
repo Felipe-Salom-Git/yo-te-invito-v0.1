@@ -128,7 +128,7 @@ Cierre: [`V3_3_G7_12_SETTLEMENT_OPERATIONS_CLOSING.md`](../audits/V3_3_G7_12_SET
 - [x] G7.12.12–.13 tests seguridad + económicos (`test:benefit-settlement-operations`) — `87d912f`
 - [x] Builds shared/api/web/scanner PASS; **sin migrations**
 - [x] `test:gastro-cross-profile-isolation` **PASS** (exit 0, 13 assertions; predicados cableados en admin/owner/scanner) — **G7.12 cerrada localmente**
-- [ ] DB integration settlements — **NO EJECUTADO** (sin PostgreSQL local)
+- [ ] DB integration settlements (script dedicado de G7.12) — en G8.12 la conexión a Postgres **sí** está (111 migrations al día), pero el script sigue sin escenario seed → **NO EJECUTADO**. La elegibilidad, el allocate y el cruce de local de cortesías sí corrieron en DB real vía `test:gastro-courtesy-accounting`
 - [ ] Upload privado de comprobantes (URLs firmadas) — diferido
 - [ ] QA browser G7.12 (checklist en cierre)
 - [ ] Push / deploy G7.11 + G7.12 — **NO** hasta confirmación explícita
@@ -154,6 +154,22 @@ Discovery: [`V3_3_G8_11_COURTESY_ACCOUNTING_DISCOVERY.md`](../audits/V3_3_G8_11_
 - [ ] Reversión de `DEBIT_COURTESY` al cancelar cortesía sin usos — **DEFERRED** (requiere `REVERSAL` positivo / semántica de ledger nueva; propuesta en discovery §6)
 - [ ] Auditar datos reales de producción (allocations legacy de cortesías financiadas → WARNING de integridad + `ADJUSTMENT` manual)
 - [ ] QA browser G8.11 (checklist en cierre)
+
+### G8.12 + G8.13 — Regresión y cierre — **G8 COMPLETE**
+
+Cierre: [`V3_3_G8_COURTESIES_CLOSING.md`](../audits/V3_3_G8_COURTESIES_CLOSING.md) · Readiness: [`V3_3_G8_RELEASE_READINESS.md`](../audits/V3_3_G8_RELEASE_READINESS.md) · QA: [`V3_3_G8_MANUAL_QA_CHECKLIST.md`](../audits/V3_3_G8_MANUAL_QA_CHECKLIST.md)
+
+- [x] G8.12 regresión (multi-local, lifecycle, approval, agreement, delivery, scanner, shortCode, Studio, emails, portal, admin, accounting, G6, G7.12) — **exit 0**. Sin bug BLOCKER/REGRESSION. Sin commit de código
+- [x] Builds shared / api / web / scanner **PASS**. Web `tsc --noEmit` **PREEXISTING** (`vitest` en `subcategoryRailThreshold.test.ts`)
+- [x] Schema local: 111 migrations, up to date. G7.11–G8.13 = **cero** migrations
+- [x] DB real: escenarios A–H de accounting (funding, elegibilidad, guard, CASH/BARTER, cierre, reporting, snapshot, cross-profile)
+- [x] G8.13 docs de cierre, readiness y checklist. Contextos actualizados. **G8 COMPLETE**
+- [ ] DB integration de lifecycle, scanner, portal, emails, Studio y shortCode contra filas reales — **no existe E2E**; cubierto solo por Prisma falso. No marcar PASS
+- [ ] Escenario seed de `test:benefit-settlement-operations` y escritura DB de `test:benefit-commercial-agreements` (faltan partners seed)
+- [ ] Concurrencia de funding / crédito / overpayment — sin script
+- [ ] QA manual post-deploy (checklist G8 + G7.11 + G7.12)
+- [ ] Push / deploy acumulado G7.11 + G7.12 + G8 — **NO** hasta confirmación explícita
+- [ ] G9 — **NOT STARTED**
 
 ### G8.9 + G8.10 — Portal Gastro y Admin de cortesías
 
@@ -204,8 +220,8 @@ Cierre: [`V3_3_G8_1_G8_2_COURTESY_HARDENING_CLOSING.md`](../audits/V3_3_G8_1_G8_
 - [ ] QA browser G8.1/G8.2 (checklist en cierre) — post-deploy
 - [x] G8.9 + G8.10 — completados (ver sección propia)
 - [x] G8.11 — completado (ver sección propia)
-- [ ] G8.12–G8.13 — **NOT STARTED** (esperan confirmación)
-- Pendiente en G8: reversa `DEBIT_COURTESY` (**DEFERRED** en G8.11). (Elegibilidad D1 resuelta en G8.11; shortCode, Studio `0%` y typo de ruta `discuentos` ya resueltos en G8.6/G8.7)
+- [x] G8.12 + G8.13 — **G8 COMPLETE** (ver sección propia). Sin push/deploy
+- Pendiente (deferred, no blocker): reversa `DEBIT_COURTESY`; cancelar pendientes de descuentos normales; Studio lifecycle también en backend; página admin de detalle en 607 líneas; auditar allocations legacy en producción; QA manual; rails secundarios por falta de datos. (Elegibilidad D1 resuelta en G8.11; shortCode, Studio `0%` y typo de ruta `discuentos` ya resueltos en G8.6/G8.7)
 
 ---
 

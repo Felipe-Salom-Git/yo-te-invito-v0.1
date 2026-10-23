@@ -1,6 +1,6 @@
 # V3.3 — Roadmap G8 / G9
 
-**Estado:** G8.0 (discovery), G8.1–G8.10 **COMPLETADOS** (local, sin push/deploy, sin migrations) — [`V3_3_G8_COURTESY_DISCOVERY.md`](../audits/V3_3_G8_COURTESY_DISCOVERY.md) · [`V3_3_G8_1_G8_2_COURTESY_HARDENING_CLOSING.md`](../audits/V3_3_G8_1_G8_2_COURTESY_HARDENING_CLOSING.md) · [`V3_3_G8_3_G8_4_COURTESY_APPROVAL_DELIVERY_CLOSING.md`](../audits/V3_3_G8_3_G8_4_COURTESY_APPROVAL_DELIVERY_CLOSING.md) · [`V3_3_G8_5_G8_8_COURTESY_COUPON_EXPERIENCE_CLOSING.md`](../audits/V3_3_G8_5_G8_8_COURTESY_COUPON_EXPERIENCE_CLOSING.md) · [`V3_3_G8_9_G8_10_COURTESY_PORTAL_ADMIN_CLOSING.md`](../audits/V3_3_G8_9_G8_10_COURTESY_PORTAL_ADMIN_CLOSING.md) · [`V3_3_G8_11_COURTESY_ACCOUNTING_CLOSING.md`](../audits/V3_3_G8_11_COURTESY_ACCOUNTING_CLOSING.md). G8.12+ **bloqueado** hasta confirmación explícita del operador.
+**Estado:** **G8 COMPLETE** (local, sin push/deploy, sin migrations nuevas). Cierre: [`V3_3_G8_COURTESIES_CLOSING.md`](../audits/V3_3_G8_COURTESIES_CLOSING.md) · readiness [`V3_3_G8_RELEASE_READINESS.md`](../audits/V3_3_G8_RELEASE_READINESS.md) · QA [`V3_3_G8_MANUAL_QA_CHECKLIST.md`](../audits/V3_3_G8_MANUAL_QA_CHECKLIST.md). Slices: [`V3_3_G8_COURTESY_DISCOVERY.md`](../audits/V3_3_G8_COURTESY_DISCOVERY.md) · [`V3_3_G8_1_G8_2_COURTESY_HARDENING_CLOSING.md`](../audits/V3_3_G8_1_G8_2_COURTESY_HARDENING_CLOSING.md) · [`V3_3_G8_3_G8_4_COURTESY_APPROVAL_DELIVERY_CLOSING.md`](../audits/V3_3_G8_3_G8_4_COURTESY_APPROVAL_DELIVERY_CLOSING.md) · [`V3_3_G8_5_G8_8_COURTESY_COUPON_EXPERIENCE_CLOSING.md`](../audits/V3_3_G8_5_G8_8_COURTESY_COUPON_EXPERIENCE_CLOSING.md) · [`V3_3_G8_9_G8_10_COURTESY_PORTAL_ADMIN_CLOSING.md`](../audits/V3_3_G8_9_G8_10_COURTESY_PORTAL_ADMIN_CLOSING.md) · [`V3_3_G8_11_COURTESY_ACCOUNTING_CLOSING.md`](../audits/V3_3_G8_11_COURTESY_ACCOUNTING_CLOSING.md). **G9 NOT STARTED** — solo con confirmación explícita del operador.
 
 ```text
 G8.0: DONE (docs only)
@@ -15,7 +15,9 @@ G8.8: DONE (bd77fce) notificaciones/emails/metricas/cancel
 G8.9: DONE (ffbded3) portal Gastro de cortesías
 G8.10: DONE (2682cf6) admin de cortesías
 G8.11: DONE (a2b8786, 13c2992, c591f0a) accounting D1 — funded = operativo NO facturable; reversa DEBIT_COURTESY DEFERRED
-G8.12+: NOT STARTED
+G8.12: DONE (regresión, sin commit de código) — suites exit 0; DB integration PARTIAL (accounting A–H en Postgres; lifecycle/scanner/portal solo Prisma falso)
+G8.13: DONE (docs) — cierre global, readiness, checklist QA
+G8:    COMPLETE
 G9:    NOT STARTED
 ```
 
@@ -28,8 +30,8 @@ G9:    NOT STARTED
 ✅ G7.10 — QA fixes + onboarding (desplegado, R0)
 ✅ G7.11 / G7.12 — Post-QA + Operación de Liquidaciones (local, sin push/deploy)
 ✅ G8.0 — Discovery cortesías (docs)
-⏭ G8 — Cortesías: EXTENDER la arquitectura existente
-⏭ G9 — UX complementaria gastro (no contaminar G8)
+✅ G8.1–G8.13 — Cortesías: arquitectura existente extendida. **G8 COMPLETE** (local)
+⏭ G9 — UX complementaria gastro (no contaminar cortesías; solo con confirmación)
 ```
 
 ---
@@ -70,8 +72,8 @@ Una cortesía **no es una entidad nueva**: es `GastroDiscount(visibility = COURT
 | ✅ **G8.9** (`ffbded3`) | Portal Gastro: listado/detalle por local, estados humanos, acciones por lifecycle/origen, solicitud "pendiente de aprobación", audiencia congelada, métricas, Studio con gate, empty states, cross-profile | NINGUNO |
 | ✅ **G8.10** (`2682cf6`) | Admin: cola con badge + contexto de cortesía, review (requester/audiencia/retenidos) + panel de acuerdo G5, approve/reject/cancel/redeliver por lifecycle, filtro + métricas en listado, sin `qrToken`, `sendQrEmail` bloqueado, audit labels, scoping summary/status | NINGUNO |
 | ✅ **G8.11** (`a2b8786`, `13c2992`, `c591f0a`) | Accounting D1: regla canónica por funding (validation → discount → campaign → `DEBIT_COURTESY`), exclusión backend + guard allocate/ledger, G6 operativo vs facturable, WARNING legacy; reversa `DEBIT_COURTESY` **DEFERRED**; DB integration **PASS** (local); datos de producción no auditados | NINGUNO |
-| **G8.12** | Tests: cross-profile, tenant, approval/agreement, economía financiada vs no | — |
-| **G8.13** | QA + docs + cierre | — |
+| ✅ **G8.12** | Regresión de extremo a extremo. Sin bug de código. DB de lifecycle/scanner/portal sigue en Prisma falso; accounting A–H en PostgreSQL real | NINGUNO |
+| ✅ **G8.13** | Cierre, readiness, checklist QA manual, contextos. G8 COMPLETE | NINGUNO |
 
 **Dependencias:** G8.3 usa D2/D3; G8.6 usa D4; G8.7 usa D5; G8.11 usa D1. Si algún slice requiere migration → **detenerse antes de crearla**.
 
