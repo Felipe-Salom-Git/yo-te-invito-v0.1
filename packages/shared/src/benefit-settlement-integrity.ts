@@ -210,6 +210,22 @@ export function checkOrphanAllocation(params: {
   };
 }
 
+/** G8.11 — legacy allocation (pre-D1) of a credit-funded courtesy: never rewritten, flagged for ADMIN. */
+export function checkFundedCourtesyAllocation(params: {
+  allocationId: string;
+  fundedByCourtesyCredit: boolean;
+}): BenefitIntegrityIssue | null {
+  if (!params.fundedByCourtesyCredit) return null;
+  return {
+    code: 'FUNDED_COURTESY_ALLOCATED',
+    severity: 'WARNING',
+    message:
+      'Allocation de una cortesía financiada con crédito (no facturable). Revisar y corregir con un ajuste manual.',
+    entityType: 'BenefitSettlementUsageAllocation',
+    entityId: params.allocationId,
+  };
+}
+
 export function checkPartnerMismatchAllocation(params: {
   allocationId: string;
   settlementVertical: 'GASTRO' | 'ACTIVITY';

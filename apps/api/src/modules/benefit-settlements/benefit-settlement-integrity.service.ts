@@ -9,9 +9,11 @@ import {
   checkCashOverpayment,
   checkClosedWithPendingUsages,
   checkCurrencyMismatch,
+  checkFundedCourtesyAllocation,
   checkNegativeCourtesyBalance,
   checkOrphanAllocation,
   checkPartnerMismatchAllocation,
+  isGastroCourtesyFundedByCredit,
   runBarterCreditDriftCheck,
 } from '@yo-te-invito/shared';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -215,7 +217,14 @@ export class BenefitSettlementIntegrityService {
             where: { id: { in: gastroIds } },
             select: {
               id: true,
-              discount: { select: { gastroProfileId: true } },
+              discount: {
+                select: {
+                  gastroProfileId: true,
+                  courtesyCampaign: {
+                    select: { id: true, courtesyCreditDebit: { select: { id: true, type: true } } },
+                  },
+                },
+              },
             },
           })
         : Promise.resolve([]),
@@ -233,6 +242,10 @@ export class BenefitSettlementIntegrityService {
     const gastroMap = new Map(
       gastroRows.map((v) => [v.id, v.discount.gastroProfileId] as const),
     );
+    const fundedGastroIds = new Set<string>();
+    for (const v of gastroRows) {
+      if (isGastroCourtesyFundedByCredit(v.discount)) fundedGastroIds.add(v.id);
+    }
     const activityMap = new Map(
       activityRows.map((v) => [v.id, v.coupon.excursionOperatorId] as const),
     );
@@ -256,6 +269,11 @@ export class BenefitSettlementIntegrityService {
           validationExcursionOperatorId: null,
         });
         if (mismatch) issues.push(mismatch);
+        const fundedCourtesy = checkFundedCourtesyAllocation({
+          allocationId: allocation.id,
+          fundedByCourtesyCredit: fundedGastroIds.has(allocation.validationId),
+        });
+        if (fundedCourtesy) issues.push(fundedCourtesy);
       } else if (allocation.validationSource === 'ACTIVITY_COUPON_VALIDATION') {
         const partnerId = activityMap.get(allocation.validationId);
         const orphan = checkOrphanAllocation({

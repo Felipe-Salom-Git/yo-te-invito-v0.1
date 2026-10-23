@@ -13,6 +13,7 @@ import { BenefitSettlementsService } from '../../src/modules/benefit-settlements
 import { BenefitSettlementPendingValidationsService } from '../../src/modules/benefit-settlements/benefit-settlement-pending-validations.service';
 import { BenefitSettlementIntegrityService } from '../../src/modules/benefit-settlements/benefit-settlement-integrity.service';
 import { GastroDiscountEconomicReportingService } from '../../src/modules/benefit-settlements/gastro-discount-economic-reporting.service';
+import { BenefitSettlementReportingService } from '../../src/modules/benefit-settlements/benefit-settlement-reporting.service';
 
 const hex = (n: number) => randomBytes(n).toString('hex');
 
@@ -20,13 +21,16 @@ export function buildServices(prisma: PrismaService) {
   const audit = { logAction: async () => undefined } as unknown as AuditService;
   const ledger = new CourtesyCreditLedgerService(prisma, audit);
   const eligibility = new BenefitSettlementEligibilityService(prisma);
+  const settlements = new BenefitSettlementsService(prisma, audit, eligibility, ledger);
+  const integrity = new BenefitSettlementIntegrityService(prisma);
   return {
     ledger,
     eligibility,
-    settlements: new BenefitSettlementsService(prisma, audit, eligibility, ledger),
+    settlements,
+    integrity,
     pending: new BenefitSettlementPendingValidationsService(prisma, eligibility),
-    integrity: new BenefitSettlementIntegrityService(prisma),
     economic: new GastroDiscountEconomicReportingService(prisma, ledger),
+    reporting: new BenefitSettlementReportingService(prisma, settlements, integrity, ledger),
   };
 }
 

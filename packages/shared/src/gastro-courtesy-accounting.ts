@@ -82,7 +82,20 @@ export function resolveGastroValidationSettlementEligibility(
 }
 
 /** Per-discount billability (G6): funded courtesy = operational usage, NOT billable usage. */
-export type GastroDiscountSettlementBillability = 'BILLABLE' | 'FUNDED_COURTESY_NOT_BILLABLE';
+export const GASTRO_DISCOUNT_SETTLEMENT_BILLABILITIES = [
+  'BILLABLE',
+  'FUNDED_COURTESY_NOT_BILLABLE',
+] as const;
+export type GastroDiscountSettlementBillability =
+  (typeof GASTRO_DISCOUNT_SETTLEMENT_BILLABILITIES)[number];
+
+export const FUNDED_COURTESY_NOT_BILLABLE_LABEL = 'Cortesía financiada con crédito · No facturable';
+
+export function describeFundedCourtesyUsage(count: number): string {
+  return count === 1
+    ? '1 uso de cortesía financiada con crédito: uso operativo, no facturable (no se asigna a CASH ni BARTER).'
+    : `${count} usos de cortesías financiadas con crédito: uso operativo, no facturable (no se asignan a CASH ni BARTER).`;
+}
 
 export function resolveGastroDiscountSettlementBillability(
   discount: Pick<GastroSettlementValidationContext['discount'], 'courtesyCampaign'>,

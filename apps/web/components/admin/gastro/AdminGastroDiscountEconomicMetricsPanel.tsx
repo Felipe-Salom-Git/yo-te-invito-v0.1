@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import {
+  FUNDED_COURTESY_NOT_BILLABLE_LABEL,
   formatBenefitMoneyCents,
   type GastroDiscountEconomicMetricsResponse,
 } from '@yo-te-invito/shared';
@@ -67,11 +68,33 @@ function EconomicBody({
         CASH y crédito BARTER no se suman como un único “total cobrado”.
       </Hint>
 
+      {metrics.settlementBillability === 'FUNDED_COURTESY_NOT_BILLABLE' ? (
+        <div className="mt-4 rounded-lg border border-border bg-bg p-3 text-sm">
+          <p className="font-medium text-text">{FUNDED_COURTESY_NOT_BILLABLE_LABEL}</p>
+          <p className="mt-1 text-text-muted">
+            Las validaciones de esta cortesía son uso operativo: no entran en liquidaciones, no
+            generan CASH, BARTER ni crédito nuevo.
+            {metrics.courtesyFunding ? (
+              <>
+                {' '}
+                Financiada con{' '}
+                <Money cents={metrics.courtesyFunding.imputedValueCents} currency={metrics.currency} />{' '}
+                de saldo de canje del local (un único débito).
+              </>
+            ) : null}
+          </p>
+        </div>
+      ) : null}
+
       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 text-sm">
         <div>
           <p className="text-text-muted">Validaciones (con claim)</p>
           <p className="mt-0.5 font-medium text-text">{metrics.validatedUsageCount}</p>
-          <Hint>EXACT — validaciones del descuento</Hint>
+          <Hint>
+            {metrics.settlementBillability === 'FUNDED_COURTESY_NOT_BILLABLE'
+              ? 'EXACT — uso operativo, no facturable'
+              : 'EXACT — validaciones del descuento'}
+          </Hint>
         </div>
         <div>
           <p className="text-text-muted">Usos liquidados</p>

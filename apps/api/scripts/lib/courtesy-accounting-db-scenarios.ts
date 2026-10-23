@@ -180,6 +180,33 @@ async function runScenarios(prisma: PrismaService, seed: Seed, check: Check) {
   await svc.settlements.refresh(tenantId, actor, s3.id);
   check((await countEntries('CREDIT_FROM_SETTLEMENT')) === creditsBeforeRetry, 'G8.11.11: settlement retry/refresh generates no credit');
 
+  // ── G8.11.9 — reporting: validated operational usage vs billable usage ──
+  const fMetrics = await svc.economic.getEconomicMetrics(tenantId, profileA, f.discountId);
+  check(
+    fMetrics.settlementBillability === 'FUNDED_COURTESY_NOT_BILLABLE' &&
+      fMetrics.validatedUsageCount === 10 &&
+      fMetrics.allocatedUsageCount === 0,
+    'G6: funded courtesy = 10 operational validations, 0 billable allocations',
+  );
+  check(
+    fMetrics.courtesyFunding?.imputedValueCents === '4000000' &&
+      fMetrics.courtesyFunding.campaignId === f.campaignId &&
+      fMetrics.cash.baseAmountCents === '0' &&
+      fMetrics.barter.creditGeneratedCents === '0',
+    'G6: funded courtesy exposes its exact debit ($40.000), no CASH base, no credit',
+  );
+  const c1Metrics = await svc.economic.getEconomicMetrics(tenantId, profileA, c1.discountId);
+  check(
+    c1Metrics.settlementBillability === 'BILLABLE' &&
+      c1Metrics.courtesyFunding === null &&
+      c1Metrics.cash.baseAmountCents === '5000000',
+    'G6: non-funded courtesy stays BILLABLE with CASH base $50.000',
+  );
+  const monthly = await svc.reporting.getMonthly(tenantId, { periodKey: '2026-09', vertical: 'GASTRO', gastroProfileId: profileA });
+  check(monthly.kpis.usageCount === 5 && monthly.kpis.baseGeneratedCents === '2500000', 'reporting: funded courtesy not counted as usage/base');
+  const s4Integrity = await svc.integrity.evaluateSettlement(tenantId, s4.id);
+  check(!s4Integrity.issues.some((i) => i.code === 'FUNDED_COURTESY_ALLOCATED'), 'integrity: no funded courtesy allocated after G8.11');
+
   // ── Last line: legacy BARTER allocation of a funded courtesy can never materialize credit ──
   const legacy = await prisma.benefitSettlementUsageAllocation.create({
     data: {
@@ -205,6 +232,13 @@ async function runScenarios(prisma: PrismaService, seed: Seed, check: Check) {
     ),
   );
   check(codeOf(e5) === FUNDED && (await balanceA()) === 8000000n, 'G8.11.5: ledger refuses credit for funded courtesy allocation');
+  const legacyIntegrity = await svc.integrity.evaluateSettlement(tenantId, s4.id);
+  check(
+    legacyIntegrity.issues.some((i) => i.code === 'FUNDED_COURTESY_ALLOCATED' && i.entityId === legacy.id),
+    'integrity: legacy funded courtesy allocation flagged (FUNDED_COURTESY_ALLOCATED)',
+  );
+  const s2Integrity = await svc.integrity.evaluateSettlement(tenantId, s2.id);
+  check(!s2Integrity.issues.some((i) => i.code === 'FUNDED_COURTESY_ALLOCATED'), 'integrity: non-funded courtesy allocations not flagged');
 
   // ── Caso G — agreement replaced: historical allocations unchanged; new usage uses new rate ──
   await prisma.benefitCommercialAgreement.update({ where: { id: agreementA.id }, data: { validTo: new Date('2026-10-01T02:59:59.000Z') } });

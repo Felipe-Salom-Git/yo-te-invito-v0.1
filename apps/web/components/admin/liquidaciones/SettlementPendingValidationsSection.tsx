@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from 'react';
 import {
+  FUNDED_COURTESY_NOT_BILLABLE_LABEL,
+  describeFundedCourtesyUsage,
   formatBarterMultiplierLabel,
   formatBenefitMoneyCents,
   groupPendingValidationsByBenefit,
@@ -112,6 +114,12 @@ export function SettlementPendingValidationsSection({ settlementId, focusBenefit
         <p className="mt-2 rounded border border-amber-500/40 bg-amber-500/10 p-2 text-sm">
           {data.missingAgreementCount} validación(es) sin acuerdo comercial aplicable — no se pueden
           asignar hasta cargar el acuerdo.
+        </p>
+      ) : null}
+      {data.fundedCourtesyExcludedCount > 0 ? (
+        <p className="mt-2 rounded border border-border bg-bg-muted/40 p-2 text-sm text-text-muted">
+          <span className="font-medium text-text">{FUNDED_COURTESY_NOT_BILLABLE_LABEL}.</span>{' '}
+          {describeFundedCourtesyUsage(data.fundedCourtesyExcludedCount)}
         </p>
       ) : null}
       {groups.length === 0 ? (

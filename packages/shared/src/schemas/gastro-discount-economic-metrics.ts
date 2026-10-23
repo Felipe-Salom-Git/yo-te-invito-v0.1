@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { GASTRO_DISCOUNT_SETTLEMENT_BILLABILITIES } from '../gastro-courtesy-accounting';
 import { moneyCentsStringSchema } from '../money/benefit-money';
 import { benefitSettlementAllocationDtoSchema } from './benefit-settlements';
 
@@ -82,6 +83,16 @@ export const gastroDiscountEconomicMetricsResponseSchema = z.object({
   validatedUsageCount: z.number().int().min(0),
   /** Allocations linked via validationSource+validationId (EXACT). */
   allocatedUsageCount: z.number().int().min(0),
+  /** G8.11 — funded courtesy validations are operational usage, NOT billable usage. */
+  settlementBillability: z.enum(GASTRO_DISCOUNT_SETTLEMENT_BILLABILITIES),
+  /** G8.11 — DEBIT_COURTESY of this courtesy campaign (EXACT via sourceCourtesyCampaignId). */
+  courtesyFunding: z
+    .object({
+      campaignId: z.string(),
+      ledgerEntryId: z.string(),
+      imputedValueCents: moneyCentsStringSchema,
+    })
+    .nullable(),
   cash: z.object({
     usageCount: z.number().int().min(0),
     baseAmountCents: moneyCentsStringSchema,

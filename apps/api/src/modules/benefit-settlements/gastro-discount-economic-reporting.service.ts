@@ -8,7 +8,9 @@ import {
   computeCashDueCents,
   computeCashOutstandingCents,
   computeCashReceivedCents,
+  isGastroCourtesyFundedByCredit,
   moneyCentsToString,
+  resolveGastroDiscountSettlementBillability,
   sumMoneyCentsBigInt,
   type GastroDiscountEconomicAllocationRow,
   type GastroDiscountEconomicMetricsResponse,
@@ -154,12 +156,26 @@ export class GastroDiscountEconomicReportingService {
     const currency =
       allocations[0]?.currency ?? partnerBalance.currency ?? 'ARS';
 
+    const courtesy = await this.loadCourtesyFunding(tenantId, discountId);
+
     return {
       discountId,
       gastroProfileId,
       currency,
       validatedUsageCount: validations.length,
       allocatedUsageCount: allocations.length,
+      settlementBillability: resolveGastroDiscountSettlementBillability(courtesy),
+      courtesyFunding:
+        courtesy.courtesyCampaign?.courtesyCreditDebit &&
+        isGastroCourtesyFundedByCredit(courtesy)
+          ? {
+              campaignId: courtesy.courtesyCampaign.id,
+              ledgerEntryId: courtesy.courtesyCampaign.courtesyCreditDebit.id,
+              imputedValueCents: moneyCentsToString(
+                -courtesy.courtesyCampaign.courtesyCreditDebit.amountCents,
+              ),
+            }
+          : null,
       cash: {
         usageCount: cashRows.length,
         baseAmountCents: cashBase,
@@ -188,6 +204,21 @@ export class GastroDiscountEconomicReportingService {
       },
       allocations: allocationsWithCredit,
     };
+  }
+
+  private async loadCourtesyFunding(tenantId: string, discountId: string) {
+    const row = await this.prisma.gastroDiscount.findFirst({
+      where: { id: discountId, tenantId },
+      select: {
+        courtesyCampaign: {
+          select: {
+            id: true,
+            courtesyCreditDebit: { select: { id: true, type: true, amountCents: true } },
+          },
+        },
+      },
+    });
+    return { courtesyCampaign: row?.courtesyCampaign ?? null };
   }
 
   private async assertDiscountScope(

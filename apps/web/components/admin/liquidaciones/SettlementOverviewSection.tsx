@@ -55,6 +55,12 @@ export function SettlementOverviewSection({ settlement, audit, agreementHref }: 
             label="Pendientes de asignar"
             value={`${summary.pendingUsageCount} · ${formatBenefitMoneyCents(summary.pendingBaseAmountCents)}`}
           />
+          {summary.fundedCourtesyUsageCount ? (
+            <Row
+              label="Cortesías financiadas con crédito (no facturables)"
+              value={String(summary.fundedCourtesyUsageCount)}
+            />
+          ) : null}
         </dl>
         <div className="mt-3 border-t border-border/60 pt-3 text-sm">
           <p className="text-text-muted">Acuerdo(s) aplicados en asignaciones</p>

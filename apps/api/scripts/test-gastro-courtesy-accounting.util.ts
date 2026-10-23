@@ -11,6 +11,8 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   ErrorCode,
+  checkFundedCourtesyAllocation,
+  describeFundedCourtesyUsage,
   isGastroCourtesyFundedByCredit,
   mapBenefitSettlementErrorMessage,
   resolveGastroDiscountSettlementBillability,
@@ -117,10 +119,35 @@ check(
   'FUNDED_COURTESY error has a human message',
 );
 
+// G8.11.9 — reporting helpers
+{
+  const issue = checkFundedCourtesyAllocation({ allocationId: 'al-1', fundedByCourtesyCredit: true });
+  check(
+    issue?.code === 'FUNDED_COURTESY_ALLOCATED' && issue.severity === 'WARNING' && issue.entityId === 'al-1',
+    'integrity flags a (legacy) allocation of a funded courtesy',
+  );
+  check(
+    checkFundedCourtesyAllocation({ allocationId: 'al-2', fundedByCourtesyCredit: false }) === null,
+    'integrity ignores billable allocations',
+  );
+  check(
+    describeFundedCourtesyUsage(3).startsWith('3 usos') && describeFundedCourtesyUsage(1).startsWith('1 uso '),
+    'funded courtesy copy: operational usage, not billable',
+  );
+}
+
 // ───────────── 2) Static guards ─────────────
 const SRC = join(__dirname, '..', 'src');
 const read = (rel: string) => readFileSync(join(SRC, rel), 'utf8');
 {
+  const g6Schema = readFileSync(
+    join(__dirname, '..', '..', '..', 'packages', 'shared', 'src', 'schemas', 'gastro-discount-economic-metrics.ts'),
+    'utf8',
+  );
+  check(
+    !/cashTransferredByCourtesy|barterConsumedByCourtesy/.test(g6Schema),
+    'G6 semantics kept: no invented cashTransferredByCourtesy / barterConsumedByCourtesy',
+  );
   const eligibility = read('modules/benefit-settlements/benefit-settlement-eligibility.service.ts');
   check(
     eligibility.includes('resolveGastroValidationSettlementEligibility(row'),
