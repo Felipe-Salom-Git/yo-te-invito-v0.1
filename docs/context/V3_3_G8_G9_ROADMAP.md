@@ -1,12 +1,14 @@
 # V3.3 — Roadmap G8 / G9
 
-**Estado:** G8.0 (discovery), G8.1 y G8.2 **COMPLETADOS** (local, sin push/deploy, sin migrations) — [`V3_3_G8_COURTESY_DISCOVERY.md`](../audits/V3_3_G8_COURTESY_DISCOVERY.md) · [`V3_3_G8_1_G8_2_COURTESY_HARDENING_CLOSING.md`](../audits/V3_3_G8_1_G8_2_COURTESY_HARDENING_CLOSING.md). G8.3+ **bloqueado** hasta confirmación explícita del operador.
+**Estado:** G8.0 (discovery), G8.1, G8.2, G8.3 y G8.4 **COMPLETADOS** (local, sin push/deploy, sin migrations) — [`V3_3_G8_COURTESY_DISCOVERY.md`](../audits/V3_3_G8_COURTESY_DISCOVERY.md) · [`V3_3_G8_1_G8_2_COURTESY_HARDENING_CLOSING.md`](../audits/V3_3_G8_1_G8_2_COURTESY_HARDENING_CLOSING.md) · [`V3_3_G8_3_G8_4_COURTESY_APPROVAL_DELIVERY_CLOSING.md`](../audits/V3_3_G8_3_G8_4_COURTESY_APPROVAL_DELIVERY_CLOSING.md). G8.5+ **bloqueado** hasta confirmación explícita del operador.
 
 ```text
 G8.0: DONE (docs only)
 G8.1: DONE (9c87348)
 G8.2: DONE (d2143f7)
-G8.3+: NOT STARTED
+G8.3: DONE (approval + agreement gate)
+G8.4: DONE (delivery post-approval)
+G8.5+: NOT STARTED
 G9:    NOT STARTED
 ```
 
@@ -52,8 +54,8 @@ Una cortesía **no es una entidad nueva**: es `GastroDiscount(visibility = COURT
 |---|---|---|
 | ✅ **G8.1** | Hardening + profile scope: selector de local en `/gastro/descuentos/cortesia`, fix `coerce.boolean` del preview, `validFrom<validTo`, guard `publicEventId`, `createdByOrigin/UserId`, exponer `visibility` + badge/filtro — `9c87348` | NINGUNO |
 | ✅ **G8.2** | Aislamiento de lifecycle: nunca `qrToken` en `COURTESY_ONLY` (reactivación + scanner master), cancelada = terminal, cortesía inmutable tras el envío, cancelar campaña ⇒ claims `CANCELLED`, sin aviso "vencido"/contadores — `d2143f7` | NINGUNO |
-| **G8.3** | Approval + agreement (Opción A): owner → `PENDING_REVIEW` + claims retenidos; reutiliza approve/reject + agreement gate; admin-origin auto-ACTIVE; sin retroactividad | NINGUNO (esperado) |
-| **G8.4** | Claims/entrega: entrega post-aprobación idempotente, reenvío, resumen robusto ante fallos parciales, `/me` oculta claims de padre inactivo | NINGUNO |
+| ✅ **G8.3** | Approval + agreement (Opción A): owner → `PENDING_REVIEW` + claims retenidos; reutiliza approve/reject + agreement gate; admin-origin auto-ACTIVE; sin retroactividad | NINGUNO (esperado) |
+| ✅ **G8.4** | Claims/entrega: entrega post-aprobación idempotente, reenvío, resumen robusto ante fallos parciales, `/me` oculta claims de padre inactivo | NINGUNO |
 | **G8.5** | Scanner: tests de aislamiento A/B (QR + shortCode), indicar "Cortesía" en resultado y reemplazar el `valueLabel` `0%` por el beneficio real (master token ya cerrado en G8.2) | NINGUNO |
 | **G8.6** | ShortCode: retry P2002, largo 6 (D4), visible en card/email/`/me`, formato legacy | NINGUNO |
 | **G8.7** | Studio unificado descuento+cortesía: `courtesyLabel` (D5), render context, fin del `0%`, preset, acceso desde el flujo, fix typo ruta admin `discuentos` | NINGUNO |

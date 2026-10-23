@@ -141,6 +141,18 @@ Discovery: [`V3_3_G8_COURTESY_DISCOVERY.md`](../audits/V3_3_G8_COURTESY_DISCOVER
 - [x] Conclusión: **extender** `GastroDiscount(COURTESY_ONLY)` + `GastroCourtesyCampaign` + `GastroDiscountClaim(COURTESY)`; **no** crear `CourtesyCoupon`
 - [x] **Decisiones D1–D5 aprobadas** (ver roadmap). D1: cortesía financiada con Courtesy Credit ⇒ NO elegible para settlement; no financiada ⇒ elegible. **Se implementa en G8.11; hoy los canjes de cortesía siguen siendo facturables**
 
+### G8.3 + G8.4 — Aprobación, gate de acuerdo y entrega de cortesías
+
+Cierre: [`V3_3_G8_3_G8_4_COURTESY_APPROVAL_DELIVERY_CLOSING.md`](../audits/V3_3_G8_3_G8_4_COURTESY_APPROVAL_DELIVERY_CLOSING.md)
+
+- [x] G8.3 owner ⇒ `PENDING_REVIEW` + claims retenidos (sin migration); ADMIN approve/reject en la cola existente; approve exige agreement CURRENT; admin-origin valida agreement y nace ACTIVE; reject cancela claims; legacy ACTIVE intacto
+- [x] G8.4 entrega con plantilla `GASTRO_DISCOUNT_QR_COURTESY` y QR individual, idempotente, resiliente a fallos de email, `POST .../courtesy/redeliver`; `/me` y vista pública ocultan claims retenidos
+- [x] Tests `test:gastro-courtesy-approval` + `test:gastro-courtesy-delivery` + hardening/lifecycle/isolation + regresión (agreements, courtesy credit, settlement, scanner) **PASS**
+- [ ] DB integration — **NO EJECUTADO** (Prisma en memoria)
+- [ ] QA browser G8.3/G8.4 (checklist en cierre) — post-deploy
+- Diferido: notificaciones al owner pendiente/aprobada/rechazada y acuerdo en el email (G8.8); owner no puede cancelar solicitud pendiente; métricas de claims incluyen retenidos
+- Nota: `packages/shared/src/benefit-settlement-operations.assert.ts` aparece modificado (solo CRLF) y no es parte de este trabajo
+
 ### G8.1 + G8.2 — Hardening y lifecycle de cortesías
 
 Cierre: [`V3_3_G8_1_G8_2_COURTESY_HARDENING_CLOSING.md`](../audits/V3_3_G8_1_G8_2_COURTESY_HARDENING_CLOSING.md)
@@ -151,8 +163,8 @@ Cierre: [`V3_3_G8_1_G8_2_COURTESY_HARDENING_CLOSING.md`](../audits/V3_3_G8_1_G8_
 - [x] Hallazgos inciertos de G8.0 resueltos (PATCH legacy sombreado → guard defensivo; guard `publicEventId` confirmado y corregido)
 - [ ] DB integration — **NO EJECUTADO** (tests con Prisma falso)
 - [ ] QA browser G8.1/G8.2 (checklist en cierre) — post-deploy
-- [ ] G8.3–G8.13 — **NOT STARTED** (esperan confirmación)
-- Pendiente en G8: aprobación/agreement (G8.3), shortCode (G8.6), Studio `0%` (G8.7), elegibilidad de settlement D1 + reversa `DEBIT_COURTESY` (G8.11), typo de ruta admin `discuentos` (G8.7)
+- [ ] G8.5–G8.13 — **NOT STARTED** (esperan confirmación)
+- Pendiente en G8: shortCode (G8.6), Studio `0%` (G8.7), elegibilidad de settlement D1 + reversa `DEBIT_COURTESY` (G8.11), typo de ruta admin `discuentos` (G8.7)
 
 ---
 
