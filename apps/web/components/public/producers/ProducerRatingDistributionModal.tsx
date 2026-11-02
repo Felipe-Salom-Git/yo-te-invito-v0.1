@@ -1,6 +1,7 @@
 'use client';
 
 import type { ProducerReviewsSummary } from '@/repositories/interfaces';
+import { PUBLIC_MODAL_PANEL_CLASS, PUBLIC_MODAL_VIEWPORT_CLASS } from '@/lib/ui/publicModalLayout';
 
 type Props = {
   open: boolean;
@@ -20,13 +21,13 @@ export function ProducerRatingDistributionModal({ open, onClose, distribution, t
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+      className={`fixed inset-0 z-50 bg-black/70 ${PUBLIC_MODAL_VIEWPORT_CLASS}`}
       role="dialog"
       aria-modal
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-xl border border-border bg-bg p-6 shadow-xl"
+        className={`w-full max-w-md ${PUBLIC_MODAL_PANEL_CLASS} overflow-y-auto rounded-xl border border-border bg-bg p-6 shadow-xl`}
         onClick={(e) => e.stopPropagation()}
       >
         <h3 className="text-lg font-semibold text-text">Distribución de puntajes</h3>

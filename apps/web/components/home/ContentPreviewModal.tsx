@@ -22,6 +22,7 @@ import { ContentTagChips } from '@/components/content-tags/ContentTagChips';
 import { ContentPreviewExpanded } from './ContentPreviewExpanded';
 import { PublicShareButton } from '@/components/share/PublicShareButton';
 import { publicShareKindForCategory } from '@/lib/share/publicShare';
+import { PUBLIC_MODAL_PANEL_CLASS, PUBLIC_MODAL_VIEWPORT_CLASS } from '@/lib/ui/publicModalLayout';
 
 export interface ContentPreviewModalProps {
   isOpen: boolean;
@@ -69,7 +70,7 @@ export function ContentPreviewModal({
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 z-50 flex items-center justify-center p-4"
+        className={`fixed inset-0 z-50 ${PUBLIC_MODAL_VIEWPORT_CLASS}`}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -90,7 +91,7 @@ export function ContentPreviewModal({
 
         {/* Modal panel */}
         <motion.div
-          className={`relative z-10 flex max-h-[min(90vh,100dvh)] w-full flex-col overflow-hidden rounded-2xl bg-bg-muted shadow-2xl transition-all duration-300 ${item && isExpanded ? 'max-w-5xl' : 'max-w-2xl'}`}
+          className={`relative z-10 flex ${PUBLIC_MODAL_PANEL_CLASS} w-full flex-col overflow-hidden rounded-2xl bg-bg-muted shadow-2xl transition-all duration-300 ${item && isExpanded ? 'max-w-5xl' : 'max-w-2xl'}`}
           initial={{ opacity: 0, scale: 0.97, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.97, y: 16 }}
@@ -180,7 +181,7 @@ function ContentPreviewContent({
       </button>
 
       {/* Hero — stronger gradient overlay, cinematic feel */}
-      <div className="relative h-52 w-full overflow-hidden sm:h-60">
+      <div className="relative h-52 w-full shrink-0 overflow-hidden sm:h-60">
         {item.coverImageUrl ? (
           <motion.img
             src={item.coverImageUrl}
@@ -217,7 +218,7 @@ function ContentPreviewContent({
       </div>
 
       {/* Main content — scrollable */}
-      <div className="flex flex-1 flex-col overflow-y-auto p-5 sm:p-6">
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-5 sm:p-6">
         {/* Title */}
         <h2
           id="preview-title"

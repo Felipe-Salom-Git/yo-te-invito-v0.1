@@ -7,6 +7,7 @@ import {
   formatPublicLocationDisplay,
   hasPublicLocationForMapLink,
 } from '@/lib/maps';
+import { PUBLIC_MODAL_PANEL_CLASS, PUBLIC_MODAL_VIEWPORT_CLASS } from '@/lib/ui/publicModalLayout';
 
 export interface EventLocationModalProps {
   isOpen: boolean;
@@ -64,7 +65,7 @@ export function EventLocationModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className={`fixed inset-0 z-50 ${PUBLIC_MODAL_VIEWPORT_CLASS}`}
       aria-modal="true"
       role="dialog"
       aria-labelledby="location-modal-title"
@@ -75,7 +76,7 @@ export function EventLocationModal({
         aria-hidden="true"
       />
       <div
-        className="relative z-10 w-full max-w-lg rounded-2xl border border-border bg-bg-muted p-6 shadow-2xl"
+        className={`relative z-10 w-full max-w-lg ${PUBLIC_MODAL_PANEL_CLASS} overflow-y-auto rounded-2xl border border-border bg-bg-muted p-6 shadow-2xl`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4">

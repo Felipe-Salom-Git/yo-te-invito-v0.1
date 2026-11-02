@@ -17,25 +17,68 @@
   --color-border: #262626;
   --radius: 0.375rem;
   --font-sans: system-ui, -apple-system, sans-serif;
+  /* Public navbar height (`h-14` → `sm:h-16` → `md:h-[4.5rem]`) */
+  --public-navbar-height: 3.5rem;
+}
+
+@media (min-width: 640px) {
+  :root {
+    --public-navbar-height: 4rem;
+  }
+}
+
+@media (min-width: 768px) {
+  :root {
+    --public-navbar-height: 4.5rem;
+  }
 }
 
 html {
-  /* Sticky navbar (`h-14` → `md:h-[4.5rem]`) — anchor/focus no queda bajo la barra */
-  scroll-padding-top: 3.5rem;
+  /* Sticky navbar — anchor/focus no queda bajo la barra */
+  scroll-padding-top: var(--public-navbar-height);
   /* V3.1 Etapa 13 — dark only; ignore OS light mode */
   color-scheme: dark only;
   background-color: #0a0a0a;
 }
 
-@media (min-width: 640px) {
-  html {
-    scroll-padding-top: 4rem;
+/*
+ * G12.1-B — Public detail modals / sheets.
+ * EN: on mobile the panel starts below the navbar + safe area and grows downwards (never
+ * centered, so tall content cannot push the title/share above the screen). Desktop stays centered.
+ * ES: en mobile el panel arranca debajo del navbar + safe area y crece hacia abajo.
+ */
+@layer components {
+  .public-modal-viewport {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: calc(env(safe-area-inset-top, 0px) + var(--public-navbar-height) + 0.5rem) 0.75rem
+      calc(env(safe-area-inset-bottom, 0px) + 0.75rem);
   }
-}
 
-@media (min-width: 768px) {
-  html {
-    scroll-padding-top: 4.5rem;
+  .public-modal-panel {
+    max-height: calc(
+      100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) -
+        var(--public-navbar-height) - 1.25rem
+    );
+    max-height: calc(
+      100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) -
+        var(--public-navbar-height) - 1.25rem
+    );
+  }
+
+  @media (min-width: 640px) {
+    .public-modal-viewport {
+      align-items: center;
+      padding: 1rem;
+    }
+
+    .public-modal-panel {
+      max-height: min(90vh, calc(100vh - 2rem));
+      max-height: min(90vh, calc(100dvh - 2rem));
+    }
   }
 }
 

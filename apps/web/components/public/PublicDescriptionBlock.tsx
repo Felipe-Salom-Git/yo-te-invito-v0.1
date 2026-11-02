@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { PUBLIC_MODAL_PANEL_CLASS, PUBLIC_MODAL_VIEWPORT_CLASS } from '@/lib/ui/publicModalLayout';
 
 const DEFAULT_PREVIEW_MAX_HEIGHT_PX = 260;
 
@@ -84,7 +85,7 @@ export function PublicDescriptionBlock({
 
       {modalOpen && (
         <div
-          className="fixed inset-0 z-[70] flex items-center justify-center p-4"
+          className={`fixed inset-0 z-[70] ${PUBLIC_MODAL_VIEWPORT_CLASS}`}
           role="dialog"
           aria-modal="true"
           aria-labelledby="public-description-modal-title"
@@ -95,7 +96,7 @@ export function PublicDescriptionBlock({
             onClick={() => setModalOpen(false)}
             aria-label="Cerrar"
           />
-          <div className="relative z-10 flex max-h-[min(90vh,100dvh)] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-white/10 bg-bg shadow-2xl">
+          <div className={`relative z-10 flex ${PUBLIC_MODAL_PANEL_CLASS} w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-white/10 bg-bg shadow-2xl`}>
             <div className="flex items-start justify-between gap-4 border-b border-white/10 px-5 py-4">
               <h3 id="public-description-modal-title" className="text-lg font-semibold text-white">
                 {title}
@@ -109,7 +110,7 @@ export function PublicDescriptionBlock({
                 ×
               </button>
             </div>
-            <div className="overflow-y-auto px-5 py-4">
+            <div className="min-h-0 overflow-y-auto px-5 py-4">
               <p className="whitespace-pre-wrap text-sm leading-relaxed text-white/85 sm:text-base">
                 {text}
               </p>

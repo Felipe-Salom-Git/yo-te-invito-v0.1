@@ -8,6 +8,7 @@ import {
   shiftMonthKey,
   useEventsCalendarMonth,
 } from '@/lib/query/useEventDiscovery';
+import { PUBLIC_MODAL_PANEL_CLASS, PUBLIC_MODAL_VIEWPORT_CLASS } from '@/lib/ui/publicModalLayout';
 import { EventCalendarEventPopover } from './EventCalendarEventPopover';
 
 const DAY_CELL_HEIGHT = 'h-[92px]';
@@ -90,13 +91,13 @@ export function EventCalendarModal({
 
   return (
     <div
-      className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 p-4"
+      className={`fixed inset-0 z-[70] bg-black/80 ${PUBLIC_MODAL_VIEWPORT_CLASS}`}
       role="dialog"
       aria-modal="true"
       onClick={onClose}
     >
       <div
-        className="relative flex h-[min(780px,90dvh)] w-full max-w-[1100px] flex-col overflow-hidden rounded-xl border border-white/15 bg-black shadow-2xl"
+        className={`relative flex h-[min(780px,90dvh)] ${PUBLIC_MODAL_PANEL_CLASS} w-full max-w-[1100px] flex-col overflow-hidden rounded-xl border border-white/15 bg-black shadow-2xl`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3 sm:px-6">

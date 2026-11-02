@@ -1,6 +1,7 @@
 'use client';
 
 import { ReactNode, useEffect } from 'react';
+import { PUBLIC_MODAL_PANEL_CLASS, PUBLIC_MODAL_VIEWPORT_CLASS } from '@/lib/ui/publicModalLayout';
 
 interface ModalProps {
   isOpen: boolean;
@@ -35,7 +36,7 @@ export function Modal({ isOpen, onClose, title, children, footer, size = 'md' }:
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className={`fixed inset-0 z-50 ${PUBLIC_MODAL_VIEWPORT_CLASS}`}
       aria-modal="true"
       role="dialog"
     >
@@ -45,7 +46,7 @@ export function Modal({ isOpen, onClose, title, children, footer, size = 'md' }:
         aria-hidden="true"
       />
       <div
-        className={`relative z-10 w-full ${SIZE_CLASS[size]} max-h-[min(90vh,100dvh)] overflow-y-auto rounded-lg border border-border bg-bg-muted p-4 shadow-xl`}
+        className={`relative z-10 w-full ${SIZE_CLASS[size]} ${PUBLIC_MODAL_PANEL_CLASS} overflow-y-auto rounded-lg border border-border bg-bg-muted p-4 shadow-xl`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between gap-4">
