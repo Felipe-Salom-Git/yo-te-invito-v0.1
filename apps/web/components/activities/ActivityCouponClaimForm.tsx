@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import { useRepositories } from '@/repositories/context';
 import { useTenant } from '@/hooks/useTenant';
+import { isQrPreparingVisible } from '@/lib/ux/qrPreparing';
+import { QrPreparingOverlay } from '@/components/ux/QrPreparingOverlay';
 
 const TENANT_FALLBACK = 'tenant-demo';
 
@@ -33,6 +35,8 @@ export function ActivityCouponClaimForm({ couponId }: { couponId: string }) {
     onError: (err: Error) => setError(err.message || 'No se pudo reclamar el cupón'),
   });
 
+  const preparing = isQrPreparingVisible(claimMutation, { keepOnSuccess: true });
+
   return (
     <form
       className="rounded-xl border border-accent/40 bg-accent/5 p-5"
@@ -44,9 +48,11 @@ export function ActivityCouponClaimForm({ couponId }: { couponId: string }) {
           setError('Ingresá tu email');
           return;
         }
+        if (preparing) return;
         claimMutation.mutate();
       }}
     >
+      <QrPreparingOverlay open={preparing} />
       <h2 className="text-lg font-semibold text-text">Reclamar cupón</h2>
       <p className="mt-1 text-sm text-text-muted">
         {isLoggedIn
@@ -60,15 +66,16 @@ export function ActivityCouponClaimForm({ couponId }: { couponId: string }) {
           placeholder="email@ejemplo.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          disabled={preparing}
         />
       )}
       {error ? <p className="mt-2 text-sm text-red-400">{error}</p> : null}
       <button
         type="submit"
-        disabled={claimMutation.isPending}
+        disabled={preparing}
         className="mt-4 rounded bg-accent px-4 py-2 text-sm font-medium text-bg hover:bg-accent-hover disabled:opacity-50"
       >
-        {claimMutation.isPending ? 'Reclamando…' : 'Reclamar'}
+        {preparing ? 'Reclamando…' : 'Reclamar'}
       </button>
     </form>
   );

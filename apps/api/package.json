@@ -99,6 +99,7 @@
     "test:rating-face-icons": "tsx ../web/lib/reviews/ratingDisplay.assert.ts",
     "test:web-qr-short-code": "tsx ../web/lib/gastro/claim-short-code.assert.ts",
     "test:gastro-scanners-grouped": "tsx ../web/lib/scanner/groupScannerAccounts.assert.ts",
+    "test:qr-preparing-overlay": "tsx ../web/lib/ux/qrPreparing.assert.ts",
     "test:home-covers": "tsx --tsconfig ../web/tsconfig.json ../web/lib/home/homeCovers.assert.ts",
     "test:public-share": "tsx --tsconfig ../web/tsconfig.json ../web/lib/share/publicShare.assert.ts && tsx ../web/lib/share/gastroLocationShare.assert.ts",
     "test:gastro-scan-presentation": "tsx ../scanner/lib/scan/gastro-scan-presentation.assert.ts",

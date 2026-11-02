@@ -7,6 +7,8 @@ import { useMutation } from '@tanstack/react-query';
 import { useRepositories } from '@/repositories/context';
 import { useTenant } from '@/hooks/useTenant';
 import { POST_QR_EMAIL_NOTICE_BODY } from '@/lib/ux/email-inbox-notices';
+import { isQrPreparingVisible, QR_PREPARING_MODE } from '@/lib/ux/qrPreparing';
+import { QrPreparingOverlay } from '@/components/ux/QrPreparingOverlay';
 
 const TENANT_FALLBACK = 'tenant-demo';
 
@@ -48,6 +50,8 @@ export function GastroDiscountClaimForm({
     },
   });
 
+  const preparing = isQrPreparingVisible(claimMutation, { keepOnSuccess: true });
+
   if (!claimable) {
     return (
       <p className="rounded-lg border border-border bg-bg-muted px-4 py-3 text-sm text-text-muted">
@@ -67,9 +71,11 @@ export function GastroDiscountClaimForm({
           setError('Ingresá tu email');
           return;
         }
+        if (preparing) return;
         claimMutation.mutate();
       }}
     >
+      <QrPreparingOverlay open={preparing} mode={QR_PREPARING_MODE.CREATE_AND_SEND} />
       <h2 className="text-lg font-semibold text-text">Solicitar descuento</h2>
       <p className="mt-1 text-sm text-text-muted">
         {isLoggedIn
@@ -90,7 +96,7 @@ export function GastroDiscountClaimForm({
             onChange={(e) => setEmail(e.target.value)}
             className="mt-1 w-full rounded-lg border border-border bg-bg px-3 py-2 text-text"
             placeholder="tu@email.com"
-            disabled={claimMutation.isPending}
+            disabled={preparing}
           />
         </>
       )}
@@ -99,10 +105,10 @@ export function GastroDiscountClaimForm({
 
       <button
         type="submit"
-        disabled={claimMutation.isPending}
+        disabled={preparing}
         className="mt-4 w-full rounded-lg bg-accent px-4 py-3 text-sm font-semibold text-bg transition hover:opacity-90 disabled:opacity-60"
       >
-        {claimMutation.isPending
+        {preparing
           ? 'Enviando…'
           : isLoggedIn
             ? 'Enviar QR a mi email'

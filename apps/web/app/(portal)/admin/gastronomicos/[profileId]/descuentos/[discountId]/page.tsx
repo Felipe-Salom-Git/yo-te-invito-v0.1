@@ -20,6 +20,8 @@ import { AdminGastroDiscountAgreementPanel } from '@/components/admin/gastro/Adm
 import { AdminGastroDiscountEconomicSummaryPanel } from '@/components/admin/gastro/AdminGastroDiscountEconomicSummaryPanel';
 import { useAdminBenefitAgreementDiscountHistory } from '@/lib/query/benefit-agreements';
 import { buildDiscountSettlementHref } from '@/lib/admin/settlement-generate-context';
+import { QR_PREPARING_MODE } from '@/lib/ux/qrPreparing';
+import { QrPreparingOverlay } from '@/components/ux/QrPreparingOverlay';
 import {
   canArchiveGastroDiscount,
   canUnarchiveGastroDiscount,
@@ -607,6 +609,10 @@ export default function AdminGastroDiscountDetailPage() {
           )}
         </div>
       )}
+      <QrPreparingOverlay
+        open={sendQr.isPending || redeliver.isPending || (isCourtesy && approve.isPending)}
+        mode={QR_PREPARING_MODE.CREATE_AND_SEND}
+      />
     </PageContainer>
   );
 }

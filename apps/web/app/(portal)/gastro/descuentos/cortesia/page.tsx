@@ -15,6 +15,8 @@ import {
 import { useGastroActiveLocation } from '@/lib/gastro/GastroActiveLocationContext';
 import { resolveCourtesyScope, withCourtesyProfileQuery } from '@/lib/gastro/courtesy-scope';
 import { gastroKeys } from '@/lib/query/keys';
+import { QR_PREPARING_MODE } from '@/lib/ux/qrPreparing';
+import { QrPreparingOverlay } from '@/components/ux/QrPreparingOverlay';
 
 function parseEmails(raw: string): string[] {
   return [...new Set(raw.split(/[,;\n]+/).map((e) => e.trim().toLowerCase()).filter(Boolean))];
@@ -301,9 +303,12 @@ export default function GastroCourtesyDiscountsPage() {
           localName={activeLocation?.displayName}
           pending={sendMutation.isPending}
           onCancel={() => setConfirmOpen(false)}
-          onConfirm={() => sendMutation.mutate()}
+          onConfirm={() => {
+            if (!sendMutation.isPending) sendMutation.mutate();
+          }}
         />
       )}
+      <QrPreparingOverlay open={sendMutation.isPending} mode={QR_PREPARING_MODE.CREATE_AND_SEND} />
     </PageContainer>
   );
 }

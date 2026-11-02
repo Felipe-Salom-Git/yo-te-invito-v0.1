@@ -8,6 +8,8 @@ import { formatBenefitMoneyCents } from '@yo-te-invito/shared';
 import { useRepositories } from '@/repositories/context';
 import { adminGastroKeys } from '@/lib/query/keys';
 import { PageContainer, SectionTitle } from '@/components';
+import { QR_PREPARING_MODE } from '@/lib/ux/qrPreparing';
+import { QrPreparingOverlay } from '@/components/ux/QrPreparingOverlay';
 
 function parseEmails(raw: string): string[] {
   return [...new Set(raw.split(/[,;\n]+/).map((e) => e.trim().toLowerCase()).filter(Boolean))];
@@ -129,7 +131,7 @@ export default function AdminGastroCourtesyFundingPage() {
         className="flex max-w-xl flex-col gap-4"
         onSubmit={(e) => {
           e.preventDefault();
-          sendMutation.mutate();
+          if (!sendMutation.isPending) sendMutation.mutate();
         }}
       >
         <label className="flex flex-col gap-1 text-sm">
@@ -200,6 +202,7 @@ export default function AdminGastroCourtesyFundingPage() {
           {sendMutation.isPending ? 'Creando…' : 'Crear cortesía financiada'}
         </button>
       </form>
+      <QrPreparingOverlay open={sendMutation.isPending} mode={QR_PREPARING_MODE.CREATE_AND_SEND} />
     </PageContainer>
   );
 }

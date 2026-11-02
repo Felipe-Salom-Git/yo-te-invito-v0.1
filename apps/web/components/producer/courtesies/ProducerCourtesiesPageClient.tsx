@@ -16,6 +16,7 @@ import {
 import { getErrorMessage } from '@/lib/errors';
 import { courtesyKeys, ticketTypesKeys } from '@/lib/query/keys';
 import { mapCourtesyApiMessage } from '@/lib/producer/courtesy.utils';
+import { QrPreparingOverlay } from '@/components/ux/QrPreparingOverlay';
 import type { CreateCourtesyBody } from '@yo-te-invito/shared';
 import { ProducerCourtesiesHelp } from './ProducerCourtesiesHelp';
 import { ProducerCourtesyCreateForm } from './ProducerCourtesyCreateForm';
@@ -176,7 +177,9 @@ export function ProducerCourtesiesPageClient({ eventId }: Props) {
             eventId={eventId}
             ticketTypes={ticketTypes}
             isSubmitting={createMut.isPending}
-            onSubmit={(body) => createMut.mutate(body)}
+            onSubmit={(body) => {
+              if (!createMut.isPending) createMut.mutate(body);
+            }}
             onCancel={grants.length > 0 ? () => setShowForm(false) : undefined}
           />
         ) : (
@@ -187,6 +190,7 @@ export function ProducerCourtesiesPageClient({ eventId }: Props) {
           </div>
         )}
       </div>
+      <QrPreparingOverlay open={createMut.isPending} message="Generando las entradas con QR…" />
     </PageContainer>
   );
 }

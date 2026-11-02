@@ -23,6 +23,7 @@ import { getErrorMessage } from '@/lib/errors';
 import { anyElementHitsQr, clampQrZone } from '@/lib/producer/ticket-studio-qr-rules';
 import { StudioColorField } from '@/components/producer/ticket-studio/StudioColorField';
 import { useGcsImageUpload } from '@/lib/upload/use-gcs-image-upload';
+import { QrPreparingOverlay } from '@/components/ux/QrPreparingOverlay';
 import { GastroQrStudioCanvas, type GastroQrStudioState } from './GastroQrStudioCanvas';
 
 const REQUIRED_FIELD_KEYS = new Set<string>(DISCOUNT_VISUAL_REQUIRED_FIELD_KEYS);
@@ -174,6 +175,7 @@ export function GastroQrStudioClient({ discountId, gastroProfileId, previewCtx }
 
   return (
     <div className="w-full min-w-0 space-y-3">
+      <QrPreparingOverlay open={saveMut.isPending} message="Guardando el diseño de tu QR…" />
       <p className="rounded-lg border border-border bg-bg-muted/40 px-3 py-2 text-xs text-text-muted md:hidden">
         En el celular podés previsualizar, aplicar un preset y guardar. El arrastre de capas es más
         cómodo en tablet o escritorio.
