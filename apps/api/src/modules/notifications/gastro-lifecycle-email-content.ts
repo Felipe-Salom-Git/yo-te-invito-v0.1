@@ -12,10 +12,10 @@ import type { GastroDiscountNotifyAspect } from './gastro-lifecycle-notification
  * G8.8 — Pure content for the owner-facing Gastro discount / courtesy lifecycle messages.
  *
  * One builder serves normal discounts AND courtesies so both speak the same commercial
- * language (same agreement lines, same wording for status/validity). The agreement is NEVER
- * persisted on the discount/campaign: callers resolve the CURRENT
- * `BenefitCommercialAgreement` at approval time and pass it in; settlement allocations keep
- * owning the economic snapshot.
+ * language (same contract lines, same wording for status/validity). The contract is NEVER
+ * persisted on the discount/campaign: callers resolve the CURRENT agreement OF THE DISCOUNT
+ * (G10.B) at approval time and pass it in; settlement allocations keep owning the economic
+ * snapshot.
  */
 
 export type LifecycleDetail = { label: string; value: string };
@@ -87,8 +87,8 @@ export function formatAgreementVigency(
 }
 
 /**
- * Commercial agreement lines (same for discounts and courtesies).
- * unitPriceCents is the value recognised per validated use.
+ * Commercial contract lines (same for discounts and courtesies). G10.B: always the contract of
+ * THIS discount/courtesy; unitPriceCents is the value recognised per validation.
  */
 export function buildAgreementDetails(
   agreement: LifecycleAgreement | null | undefined,
@@ -96,13 +96,31 @@ export function buildAgreementDetails(
   if (!agreement) return [];
   return [
     {
-      label: 'Valor reconocido por uso',
+      label: 'Valor por validación',
       value: formatBenefitMoneyCents(agreement.unitPriceCents, agreement.currency || 'ARS'),
     },
     { label: 'Moneda', value: agreement.currency || 'ARS' },
     { label: 'Multiplicador de canje', value: formatBarterMultiplier(agreement.barterMultiplier) },
-    { label: 'Vigencia del acuerdo', value: formatAgreementVigency(agreement) },
+    { label: 'Vigencia del contrato', value: formatAgreementVigency(agreement) },
   ];
+}
+
+export const FUNDED_COURTESY_BILLING_DETAIL: LifecycleDetail = {
+  label: 'Facturación',
+  value: 'Cortesía financiada con canje: no facturable',
+};
+
+/** Funded courtesy → "not billable" line and never a contract; otherwise its own contract. */
+function commercialDetails(ctx: DiscountLifecycleContext): LifecycleDetail[] {
+  if (ctx.fundedCourtesy) return [FUNDED_COURTESY_BILLING_DETAIL];
+  return buildAgreementDetails(ctx.agreement);
+}
+
+function contractSentence(ctx: DiscountLifecycleContext): string {
+  if (ctx.fundedCourtesy || !ctx.agreement) return '';
+  return ctx.isCourtesy
+    ? ' Abajo están las condiciones del contrato comercial de esta cortesía.'
+    : ' Abajo están las condiciones del contrato comercial de este descuento.';
 }
 
 function validityLabel(ctx: DiscountLifecycleContext): string {
@@ -198,8 +216,8 @@ export function buildDiscountLifecycleContent(
         title: 'Cortesía aprobada',
         body:
           `Tu cortesía «${name}»${local} fue aprobada y se entrega a ` +
-          `${recipientsPhrase(ctx.recipientCount)}.`,
-        details: [...baseDetails(ctx, 'Aprobada'), ...buildAgreementDetails(ctx.agreement)],
+          `${recipientsPhrase(ctx.recipientCount)}.${contractSentence(ctx)}`,
+        details: [...baseDetails(ctx, 'Aprobada'), ...commercialDetails(ctx)],
       };
     }
     const details = baseDetails(ctx, 'Rechazada');
@@ -222,8 +240,8 @@ export function buildDiscountLifecycleContent(
   if (ctx.event === 'approved') {
     return {
       title: 'Descuento aprobado',
-      body: `«${name}» fue aprobado y ya puede mostrarse y canjearse.`,
-      details: [...baseDetails(ctx, 'Aprobado'), ...buildAgreementDetails(ctx.agreement)],
+      body: `«${name}» fue aprobado y ya puede mostrarse y canjearse.${contractSentence(ctx)}`,
+      details: [...baseDetails(ctx, 'Aprobado'), ...commercialDetails(ctx)],
     };
   }
   return {

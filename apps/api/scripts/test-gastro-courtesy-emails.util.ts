@@ -73,7 +73,7 @@ function unit() {
   });
   check(
     rows.map((r) => r.label).join('|') ===
-      'Valor reconocido por uso|Moneda|Multiplicador de canje|Vigencia del acuerdo',
+      'Valor por validación|Moneda|Multiplicador de canje|Vigencia del contrato',
     'agreement lines: valor / moneda / canje / vigencia',
   );
   check(rows[3]!.value === '01/01/2026 – 31/12/2026', 'agreement vigency is a calendar range');
@@ -110,7 +110,7 @@ async function ownerPending() {
   check(Boolean(d['Vigencia']) && d['Vigencia']!.includes('2027'), 'shows the vigencia');
   const html = renderLifecycle(n);
   check(!/qrserver|Código QR|<img/i.test(html.html), 'pending email contains NO QR');
-  check(!/Valor reconocido/.test(html.text), 'pending email shows no commercial agreement');
+  check(!/Valor por validación/.test(html.text), 'pending email shows no commercial agreement');
   check(db.claims.every((c) => c.emailSentAt == null) && svc.emailLog.length === 0, 'no recipient email yet');
 }
 
@@ -134,13 +134,13 @@ async function ownerApprovedAndAgreement() {
   check(d['Destinatarios'] === '3', 'approved: recipient count');
   check(d['Estado'] === 'Aprobada', 'approved: estado');
   check(Boolean(d['Vigencia']), 'approved: vigencia');
-  check(/\$\s?5\.000/.test(d['Valor reconocido por uso'] ?? ''), `agreement: valor por validación (${d['Valor reconocido por uso']})`);
+  check(/\$\s?5\.000/.test(d['Valor por validación'] ?? ''), `agreement: valor por validación (${d['Valor por validación']})`);
   check(d['Moneda'] === 'ARS', 'agreement: moneda');
   check(d['Multiplicador de canje'] === '2x', 'agreement: multiplicador de canje');
-  check(d['Vigencia del acuerdo'] === 'Desde 01/01/2026, sin fecha de fin', 'agreement: vigencia del acuerdo');
+  check(d['Vigencia del contrato'] === 'Desde 01/01/2026, sin fecha de fin', 'agreement: vigencia del acuerdo');
   const html = renderLifecycle(n);
   check(
-    html.html.includes('Valor reconocido por uso') && html.html.includes('Multiplicador de canje'),
+    html.html.includes('Valor por validación') && html.html.includes('Multiplicador de canje'),
     'agreement lines rendered in the email HTML',
   );
   check(html.text.includes('Moneda: ARS') && html.text.includes('Multiplicador de canje: 2x'), 'agreement lines in plain text');
@@ -175,7 +175,7 @@ async function ownerRejected() {
   check(n.kind === 'GASTRO_DISCOUNT_REJECTED_BY_ADMIN' || /rechazad/i.test(n.title), 'rejection notification');
   check(/No cumple las bases/.test(n.body), 'rejection body carries the stored reason');
   check(labels(n)['Motivo'] === 'No cumple las bases' && labels(n)['Estado'] === 'Rechazada', 'details: motivo + estado');
-  check(!/Valor reconocido/.test(renderLifecycle(n).text), 'rejected shows no agreement');
+  check(!/Valor por validación/.test(renderLifecycle(n).text), 'rejected shows no agreement');
   check(svc.emailLog.length === 0, 'rejected: no recipient email');
 
   // Without an explicit reason, only an already-persisted rejectionReason is shown.
@@ -234,13 +234,39 @@ async function normalDiscountApprovalAgreement() {
   check(/aprobad/i.test(n.title), 'discount approval notification');
   check(d['Descuento'] === '20% en pizzas' && d['Beneficio'] === '20%', 'discount: name + benefit');
   check(
-    /\$\s?5\.000/.test(d['Valor reconocido por uso'] ?? '') &&
+    /\$\s?5\.000/.test(d['Valor por validación'] ?? '') &&
       d['Moneda'] === 'ARS' &&
       d['Multiplicador de canje'] === '2x' &&
-      Boolean(d['Vigencia del acuerdo']),
+      Boolean(d['Vigencia del contrato']),
     'discount approval renders the same agreement lines as a courtesy',
   );
+  check(/contrato comercial de este descuento/.test(n.body), 'G10.B copy: "contrato comercial de este descuento"');
+  check(!/del local/.test(n.body), 'G10.B copy: never "contrato del local"');
   check(!/unitPriceCents/.test(JSON.stringify(db.discounts)), 'discount does not persist the agreement either');
+}
+
+function fundedCourtesyCopy() {
+  console.log('\n=== G10.B: funded courtesy is not billable (no contract lines) ===\n');
+  const funded = buildDiscountLifecycleContent({
+    event: 'approved',
+    aspect: 'create',
+    isCourtesy: true,
+    title: 'Cena',
+    recipientCount: 2,
+    fundedCourtesy: true,
+    agreement: { unitPriceCents: '1', currency: 'ARS', barterMultiplier: '1', validFrom: '2026-01-01', validTo: null },
+  });
+  const d = Object.fromEntries(funded.details.map((x) => [x.label, x.value]));
+  check(d['Facturación'] === 'Cortesía financiada con canje: no facturable', 'funded: "no facturable" line');
+  check(!('Valor por validación' in d) && !/contrato/.test(funded.body), 'funded: no contract shown');
+  const nonFunded = buildDiscountLifecycleContent({
+    event: 'approved',
+    aspect: 'create',
+    isCourtesy: true,
+    title: 'Cena',
+    agreement: { unitPriceCents: '500000', currency: 'ARS', barterMultiplier: '2', validFrom: '2026-01-01', validTo: null },
+  });
+  check(/contrato comercial de esta cortesía/.test(nonFunded.body), 'non-funded courtesy: its own contract named in the body');
 }
 
 async function recipientDelivery() {
@@ -406,14 +432,25 @@ async function ownerCancelPending() {
 }
 
 async function adminCreatedCourtesy() {
-  console.log('\n=== ADMIN-created courtesy: owner informed with the agreement ===\n');
+  console.log('\n=== ADMIN-created courtesy: owner informed with ITS contract ===\n');
   const { db, svc } = world();
-  db.agreements.add('prof-a');
   await svc.courtesy.sendCourtesy(TENANT, 'admin', 'ADMIN', adminSendBody());
   await svc.flush();
   const n = svc.notifications.at(-1);
-  check(Boolean(n) && /aprobad/i.test(n!.title) && labels(n!)['Multiplicador de canje'] === '2x', 'admin-created courtesy notifies the owner with the CURRENT agreement');
+  check(
+    Boolean(n) && /aprobad/i.test(n!.title) && labels(n!)['Multiplicador de canje'] === '2x' && db.agreementRows.length === 1,
+    'admin-created courtesy notifies the owner with the contract created for it',
+  );
   check(svc.emailLog.length === 3 && svc.emailLog.every((m) => Boolean(m.variables.shortCode)), 'recipients emailed with shortCode');
+
+  const f = world();
+  await f.svc.courtesy.sendCourtesy(TENANT, 'admin', 'ADMIN', sendBody({ funding: { source: 'COURTESY_CREDIT', imputedValueCents: '100000' } }));
+  await f.svc.flush();
+  const fn = f.svc.notifications.at(-1);
+  check(
+    Boolean(fn) && labels(fn!)['Facturación'] === 'Cortesía financiada con canje: no facturable' && !('Valor por validación' in labels(fn!)),
+    'funded ADMIN courtesy email: "no facturable", no contract',
+  );
 }
 
 async function main() {
@@ -422,6 +459,7 @@ async function main() {
   await ownerApprovedAndAgreement();
   await ownerRejected();
   await normalDiscountApprovalAgreement();
+  fundedCourtesyCopy();
   await recipientDelivery();
   await metrics();
   await ownerCancelPending();

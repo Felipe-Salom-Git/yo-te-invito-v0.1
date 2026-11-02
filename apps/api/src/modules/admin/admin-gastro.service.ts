@@ -1012,7 +1012,7 @@ export class AdminGastroService {
       discountId,
       row.displayTitle ?? 'tu cortesía',
       'create',
-      { agreement: gate.agreement },
+      { agreement: gate.agreement, fundedCourtesy: !gate.billable },
     );
 
     const detail = await this.getDiscountDetail(tenantId, profileId, discountId);

@@ -187,8 +187,9 @@ Discovery: [`V3_3_G10_DISCOUNT_COMMERCIAL_ACCOUNTING_DISCOVERY.md`](../audits/V3
 - [x] Decisiones D-G10-1…D-G10-10 **cerradas** por el operador (2026-11-02)
 - [x] G10.A0 Pre-flight read-only en producción — PASS WITH WARNINGS (6 perfiles sin agreement legacy → sin cobertura, fail-closed; 11 validaciones pendientes; 0 settlements GASTRO con allocations; 0 cortesías financiadas)
 - [x] G10.A Schema + agreements por descuento + backfill + pricing — **local**, commits `83d61ab`…`5996b0a`. Cierre: [`V3_3_G10_A_DISCOUNT_AGREEMENTS_CLOSING.md`](../audits/V3_3_G10_A_DISCOUNT_AGREEMENTS_CLOSING.md). Migration `20261102120000_benefit_agreement_discount_scope` aplicada **solo en local**. DB integration PASS. Builds PASS
-- [ ] Producción: `migrate deploy` + backfill (`--dry-run` → `--confirm`) — **NO** ejecutado; solo junto con G10.B
-- [ ] G10.B Approval por descuento + UI de contrato (cierra gaps transitorios de G10.A: UI G5 de contrato del local ahora 400; gates de approval aún sobre legacy del local)
+- [x] G10.B Approval por descuento + UI de contrato — **local**, commits `af110bb`…(B5). Cierre: [`V3_3_G10_B_DISCOUNT_AGREEMENT_APPROVAL_UI_CLOSING.md`](../audits/V3_3_G10_B_DISCOUNT_AGREEMENT_APPROVAL_UI_CLOSING.md). Gate único `GastroDiscountAgreementGateService` (discount → CURRENT del descuento; financiada sin lookup) en approve / approveCourtesy / reactivación / `sendQrEmail`; on-behalf y cortesía ADMIN no financiada crean descuento + contrato en una tx (D-G10-4); UI "Contrato comercial" en el detalle del descuento (crear / cambiar / cerrar / historial / legacy read-only / alerta); `/admin/liquidaciones/acuerdos` por descuento (filtros, badge Legacy, alta Local → Descuento); panel G5 del local eliminado; emails "contrato comercial de este descuento". Sin migrations nuevas. DB integration PASS. Builds PASS
+- [ ] **G10.A + G10.B form an atomic release unit**: desplegar juntas (`migrate deploy` → restart → backfill dry-run → confirm → verificación). Producción: **NO** ejecutado
+- [ ] QA manual G10.B post-deploy (checklist §9 del cierre G10.B)
 - [ ] G10.C Métricas económicas por descuento (ADMIN + GASTRO read-only)
 - [ ] G10.D Pagos exactos CASH / CANJE
 - [ ] G10.E Reporting, regresión, DB integration, readiness, deploy QA
