@@ -21,7 +21,16 @@ export interface CategoryGatewayOption {
   /** Editorial tile image (object-cover) */
   imageSrc: string;
   imageAlt: string;
+  /** CSS `object-position` — portrait covers are cropped to landscape tiles on desktop. */
+  imagePosition?: string;
 }
+
+/** G11.2 — official home covers (`apps/web/public/home/covers`). */
+export const HOME_COVER_IMAGES = {
+  event: '/home/covers/eventos.jpg',
+  excursion: '/home/covers/actividades.jpg',
+  rental: RENTAL_GATEWAY_IMAGE,
+} as const;
 
 /** Configurable location line — accent suffix in UI */
 export const CATEGORY_GATEWAY_LOCATION = 'BARILOCHE';
@@ -36,9 +45,9 @@ export const CATEGORY_GATEWAY_OPTIONS: CategoryGatewayOption[] = [
     id: 'event',
     title: 'EVENTOS',
     description: 'SHOWS, FIESTAS, RECITALES Y EXPERIENCIAS EN VIVO.',
-    imageSrc:
-      'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?auto=format&fit=crop&w=800&q=80',
-    imageAlt: 'Concierto en vivo con luces de escenario',
+    imageSrc: HOME_COVER_IMAGES.event,
+    imageAlt: 'Público frente a un escenario al atardecer, con montañas y lago de fondo',
+    imagePosition: '50% 62%',
   },
   {
     id: 'gastro',
@@ -54,16 +63,27 @@ export const CATEGORY_GATEWAY_OPTIONS: CategoryGatewayOption[] = [
     description: RENTAL_GATEWAY_DESCRIPTION,
     imageSrc: RENTAL_GATEWAY_IMAGE,
     imageAlt: RENTAL_GATEWAY_IMAGE_ALT,
+    imagePosition: '50% 45%',
   },
   {
     id: 'excursion',
     title: EXCURSION_PUBLIC_GATEWAY_TITLE,
     description: EXCURSION_PUBLIC_GATEWAY_DESCRIPTION,
-    imageSrc:
-      'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=800&q=80',
-    imageAlt: 'Montañas y lago, paisaje de aventura',
+    imageSrc: HOME_COVER_IMAGES.excursion,
+    imageAlt: 'Catamarán en el lago y tirolesa entre los bosques de Bariloche',
+    imagePosition: '50% 50%',
   },
 ];
+
+/** Official cover (src + framing) for events / activities / rentals; null for other categories. */
+export function getCategoryCoverImage(
+  category: CategoryGatewayId,
+): { src: string; position: string } | null {
+  if (!(category in HOME_COVER_IMAGES)) return null;
+  const option = CATEGORY_GATEWAY_OPTIONS.find((o) => o.id === category);
+  if (!option) return null;
+  return { src: option.imageSrc, position: option.imagePosition ?? '50% 50%' };
+}
 
 export const CATEGORY_QUERY_PARAM = 'category';
 

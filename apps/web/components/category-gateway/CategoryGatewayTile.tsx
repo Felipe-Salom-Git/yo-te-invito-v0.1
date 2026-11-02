@@ -45,6 +45,7 @@ export function CategoryGatewayTile({
       <motion.img
         src={option.imageSrc}
         alt={option.imageAlt}
+        style={option.imagePosition ? { objectPosition: option.imagePosition } : undefined}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 1.2, ease: [0.25, 0.1, 0.25, 1] }}

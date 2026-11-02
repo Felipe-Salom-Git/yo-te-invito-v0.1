@@ -20,11 +20,10 @@ export const RENTAL_DETAIL_CTA_BUTTON = 'Consultar disponibilidad';
 export const RENTAL_GATEWAY_DESCRIPTION =
   'ALQUILER DE AUTOS, BICIS, KAYAKS, ROPA DE INVIERNO Y EQUIPOS TURÍSTICOS.';
 
-/** Kayaks / aventura en lago — no casas ni hoteles. */
-export const RENTAL_GATEWAY_IMAGE =
-  'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=800&q=80';
+/** G11.2 official cover — bikes, kayaks, car and ski gear (no houses or hotels). */
+export const RENTAL_GATEWAY_IMAGE = '/home/covers/rentals.jpg';
 
-export const RENTAL_GATEWAY_IMAGE_ALT = 'Kayaks y equipos de aventura en el lago';
+export const RENTAL_GATEWAY_IMAGE_ALT = 'Bicicletas, kayaks, auto y esquí junto al lago y la montaña';
 
 export const RENTAL_RELATED_SECTION_TITLE = 'Más equipos y movilidad';
 

@@ -40,7 +40,13 @@ Defined in `categoryGatewayConfig.ts`:
 
 ## Images
 
-Curated Unsplash URLs in config (`imageSrc`). Rentals tile uses kayaks/aventura (no alojamiento). Bottom gradient overlay for text contrast.
+G11.2: **Eventos, Actividades and Rentals** use the official covers in
+`apps/web/public/home/covers/` (`eventos.jpg`, `actividades.jpg`, `rentals.jpg`, portrait 765×1024),
+referenced through `HOME_COVER_IMAGES`. Each option sets `imagePosition` (CSS `object-position`)
+so the portrait source frames well in landscape desktop tiles. Gastronomía still uses its curated
+Unsplash URL. The same covers (via `getCategoryCoverImage`) back the empty hero of the category
+landing (`CategoryHeroBanner`). Bottom gradient overlay keeps the text legible.
+Assert: `pnpm --filter api run test:home-covers`.
 
 ## Dependencies
 

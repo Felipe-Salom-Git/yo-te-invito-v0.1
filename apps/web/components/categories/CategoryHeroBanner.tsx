@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { CategoryGatewayId } from '@/lib/home/categoryGatewayConfig';
+import { getCategoryCoverImage, type CategoryGatewayId } from '@/lib/home/categoryGatewayConfig';
 import { CATEGORY_LANDING_META } from '@/lib/categories/categoryLandingConfig';
 import type {
   CategoryBannerResolvedItem,
@@ -142,9 +142,24 @@ function HeroCTAs({ model }: { model: HeroViewModel }) {
 
 function CategoryHeroEmpty({ category }: { category: CategoryGatewayId }) {
   const meta = CATEGORY_LANDING_META[category];
+  const cover = getCategoryCoverImage(category);
   return (
     <section className={HERO_HEIGHT}>
-      <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/25 via-black to-black" />
+      {cover ? (
+        <>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={cover.src}
+            alt=""
+            className="absolute inset-0 h-full w-full object-cover"
+            style={{ objectPosition: cover.position }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-black/25" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/30 to-transparent" />
+        </>
+      ) : (
+        <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/25 via-black to-black" />
+      )}
       <div className={`relative flex h-full flex-col justify-end ${HERO_CONTENT_PAD}`}>
         <Link
           href="/"

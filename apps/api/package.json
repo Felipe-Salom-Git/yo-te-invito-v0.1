@@ -98,6 +98,7 @@
     "test:public-gallery-swipe": "tsx ../web/lib/ui/gallerySwipe.assert.ts",
     "test:rating-face-icons": "tsx ../web/lib/reviews/ratingDisplay.assert.ts",
     "test:web-qr-short-code": "tsx ../web/lib/gastro/claim-short-code.assert.ts",
+    "test:home-covers": "tsx --tsconfig ../web/tsconfig.json ../web/lib/home/homeCovers.assert.ts",
     "test:public-share": "tsx --tsconfig ../web/tsconfig.json ../web/lib/share/publicShare.assert.ts && tsx ../web/lib/share/gastroLocationShare.assert.ts",
     "test:gastro-scan-presentation": "tsx ../scanner/lib/scan/gastro-scan-presentation.assert.ts",
     "test:admin-gastro-courtesy": "tsx scripts/test-admin-gastro-courtesy.util.ts",
