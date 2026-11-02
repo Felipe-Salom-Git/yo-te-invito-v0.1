@@ -198,6 +198,26 @@ Discovery: [`V3_3_G10_DISCOUNT_COMMERCIAL_ACCOUNTING_DISCOVERY.md`](../audits/V3
 - [ ] Post-deploy operativo: cargar el contrato de los 5 descuentos ACTIVE/APPROVED sin cobertura (A0); no se inventan precios
 - [ ] Deuda (no bloquea): fixtures de smokes HTTP `test:door-scan` / legales (scope `ScannerAccount`, dev user ADMIN), assert previo de `test:auth-resend-verification`, pantalla ADMIN de cortesía no financiada, upload privado de comprobantes
 
+> **2026-11-02 (operador):** G10 + G11.1 + G11.2 **cerrados y desplegados**.
+
+### G11 — Visual / UX post-G10
+
+- [x] G11.1 + G11.2 — **COMPLETE** y desplegado (según operador). Cierre: [`V3_3_G11_VISUAL_UX_CLOSING.md`](../audits/V3_3_G11_VISUAL_UX_CLOSING.md)
+- [ ] QA manual G11 (lista en el cierre)
+
+### G12.1 — QR loading UX, ficha mobile, denunciar valoraciones, vistas por local
+
+Cierre: [`V3_3_G12_1_UX_REVIEWS_METRICS_CLOSING.md`](../audits/V3_3_G12_1_UX_REVIEWS_METRICS_CLOSING.md) · local, **sin push / sin deploy**
+
+- [x] 12.1-A `f004f47` — `QrPreparingOverlay` en claims, cortesías, envío admin y QR Studio
+- [x] 12.1-B `8e58196` — modales públicos bajo navbar / safe area en mobile (`public-modal-viewport` / `public-modal-panel`)
+- [x] 12.1-C `dff5c4a` — «Denunciar» valoración gastro por local (mismo `ReviewDisputeRequest` + `/admin/review-disputes`); migration aditiva `20261102150000_review_dispute_gastro_scope` aplicada **solo en local**
+- [x] 12.1-D `797299f` — `viewCount` por local (`GastroProfileView`) en `/gastro/local`
+- [x] 12.1-E — regresión 33 suites PASS, builds shared/api/web/scanner PASS
+- [ ] Push + deploy G12.1 — incluye `prisma migrate deploy` (1 migration aditiva, sin backfill); `shared` build antes de la API
+- [ ] QA manual G12.1 post-deploy (lista en el cierre)
+- [ ] `smoke:reviews` HTTP con credenciales — NO EJECUTADO
+
 ### G8.9 + G8.10 — Portal Gastro y Admin de cortesías
 
 Cierre: [`V3_3_G8_9_G8_10_COURTESY_PORTAL_ADMIN_CLOSING.md`](../audits/V3_3_G8_9_G8_10_COURTESY_PORTAL_ADMIN_CLOSING.md)
