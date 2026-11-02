@@ -5,5 +5,5 @@ import { useGastroActiveLocation } from '@/lib/gastro/GastroActiveLocationContex
 
 export default function GastroScannersPage() {
   const { profileId } = useGastroActiveLocation();
-  return <ScannerUsersPanel portal="gastro" scopeProfileId={profileId} />;
+  return <ScannerUsersPanel portal="gastro" groupByProfile activeProfileId={profileId} />;
 }

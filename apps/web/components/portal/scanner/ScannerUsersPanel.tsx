@@ -22,6 +22,9 @@ import { getErrorMessage } from '@/lib/errors';
 import type { ScannerAccountsPortal } from '@/repositories/interfaces';
 import type { ScannerAccountSummary } from '@yo-te-invito/shared';
 import { ScannerPwaCta } from '@/components/portal/scanner/ScannerPwaCta';
+import { groupScannerAccountsByProfile } from '@/lib/scanner/groupScannerAccounts';
+import { ScannerAccountsList } from './ScannerAccountsList';
+import { ScannerAccountGroups } from './ScannerAccountGroups';
 
 const PORTAL_COPY: Record<
   ScannerAccountsPortal,
@@ -39,28 +42,15 @@ const PORTAL_COPY: Record<
   },
 };
 
-function StatusBadge({ account }: { account: ScannerAccountSummary }) {
-  const active = account.isActive && account.userStatus === 'ACTIVE';
-  return (
-    <span
-      className={`inline-block rounded-full border px-2.5 py-0.5 text-xs font-medium ${
-        active
-          ? 'border-accent-muted bg-accent-surface/70 text-accent-soft'
-          : 'border-border bg-zinc-500/15 text-zinc-400'
-      }`}
-    >
-      {active ? 'Activo' : 'Inactivo'}
-    </span>
-  );
-}
-
 type Props = {
   portal: ScannerAccountsPortal;
-  /** When set, the list and the create form stay on this local. */
-  scopeProfileId?: string;
+  /** Gastro: list every scanner of the account, one section per location. */
+  groupByProfile?: boolean;
+  /** Highlighted location in grouped mode (dashboard's active local); never a filter. */
+  activeProfileId?: string;
 };
 
-export function ScannerUsersPanel({ portal, scopeProfileId }: Props) {
+export function ScannerUsersPanel({ portal, groupByProfile = false, activeProfileId }: Props) {
   const copy = PORTAL_COPY[portal];
   const { addToast } = useToast();
   const listQuery = useScannerAccountsList(portal);
@@ -92,12 +82,14 @@ export function ScannerUsersPanel({ portal, scopeProfileId }: Props) {
     if (defaultParentId) setParentProfileId(defaultParentId);
   }, [sheetOpen, defaultParentId, parentProfileId]);
 
-  const items = (listQuery.data?.data ?? []).filter((account) =>
-    scopeProfileId ? account.parentProfileId === scopeProfileId : true,
+  const items = listQuery.data?.data ?? [];
+  const groups = useMemo(
+    () => (groupByProfile ? groupScannerAccountsByProfile(items, parentOptions) : []),
+    [groupByProfile, items, parentOptions],
   );
 
-  const openCreate = () => {
-    if (scopeProfileId) setParentProfileId(scopeProfileId);
+  const openCreate = (profileId?: string) => {
+    if (profileId) setParentProfileId(profileId);
     setSheetOpen(true);
   };
 
@@ -194,126 +186,50 @@ export function ScannerUsersPanel({ portal, scopeProfileId }: Props) {
             administrativo ni pueden modificar publicaciones.
           </p>
         </div>
-        <Button type="button" onClick={openCreate}>
-          Crear scanner
-        </Button>
+        {groupByProfile && groups.length === 0 ? null : (
+          <Button type="button" onClick={() => openCreate(activeProfileId)}>
+            Crear scanner
+          </Button>
+        )}
       </div>
 
-      {listQuery.isLoading ? (
+      {listQuery.isLoading || (groupByProfile && parentProfilesQuery.isLoading) ? (
         <div className="mt-8">
           <PageLoader />
         </div>
       ) : listQuery.isError ? (
         <QueryError className="mt-8" message={getErrorMessage(listQuery.error)} />
+      ) : groupByProfile ? (
+        <ScannerAccountGroups
+          groups={groups}
+          activeProfileId={activeProfileId}
+          togglePending={updateStatus.isPending}
+          resetPending={resetPassword.isPending}
+          onCreate={openCreate}
+          onToggle={(account) => void handleToggle(account)}
+          onResetPassword={(account) => void handleResetPassword(account)}
+        />
       ) : items.length === 0 ? (
         <div className="mt-8">
           <EmptyState
-            title={
-              scopeProfileId
-                ? 'Este local no tiene usuarios scanner.'
-                : 'Todavía no hay usuarios scanner.'
-            }
+            title="Todavía no hay usuarios scanner."
             description="Creá uno para que el equipo valide en la app Scanner, sin acceso al panel."
           />
           <div className="mt-4 flex justify-center">
-            <Button type="button" onClick={openCreate}>
+            <Button type="button" onClick={() => openCreate()}>
               Crear scanner
             </Button>
           </div>
         </div>
       ) : (
-        <>
-        <ul className="mt-6 space-y-3 md:hidden">
-          {items.map((account) => (
-            <li key={account.id} className="rounded-xl border border-border bg-bg p-4">
-              <p className="font-medium text-text">{account.username ?? account.email ?? '—'}</p>
-              <p className="mt-1 text-sm text-text-muted">
-                {[account.firstName, account.lastName].filter(Boolean).join(' ') || 'Sin nombre'}
-              </p>
-              <p className="mt-2 text-sm text-text">
-                {copy.parentLabel}: {account.parentDisplayName?.trim() || '—'}
-              </p>
-              <div className="mt-2">
-                <StatusBadge account={account} />
-              </div>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  disabled={updateStatus.isPending}
-                  onClick={() => void handleToggle(account)}
-                >
-                  {account.isActive ? 'Desactivar' : 'Activar'}
-                </Button>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  disabled={resetPassword.isPending}
-                  onClick={() => void handleResetPassword(account)}
-                >
-                  Resetear clave
-                </Button>
-              </div>
-            </li>
-          ))}
-        </ul>
-        <div className="mt-6 hidden overflow-x-auto rounded-xl border border-border md:block">
-          <table className="min-w-full text-left text-sm">
-            <thead className="border-b border-border bg-bg-muted/50 text-xs uppercase text-text-muted">
-              <tr>
-                <th className="px-4 py-3 font-medium">Scanner</th>
-                <th className="px-4 py-3 font-medium">{copy.parentLabel}</th>
-                <th className="px-4 py-3 font-medium">Estado</th>
-                <th className="px-4 py-3 font-medium text-right">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {items.map((account) => (
-                <tr key={account.id} className="bg-bg">
-                  <td className="px-4 py-3 text-text">
-                    <div className="font-medium">
-                      {account.username ?? account.email ?? '—'}
-                    </div>
-                    <div className="mt-0.5 text-xs text-text-muted">
-                      {[account.firstName, account.lastName].filter(Boolean).join(' ') || 'Sin nombre'}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-text">
-                    {account.parentDisplayName?.trim() || '—'}
-                  </td>
-                  <td className="px-4 py-3">
-                    <StatusBadge account={account} />
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex flex-wrap justify-end gap-2">
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        size="sm"
-                        disabled={updateStatus.isPending}
-                        onClick={() => void handleToggle(account)}
-                      >
-                        {account.isActive ? 'Desactivar' : 'Activar'}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        size="sm"
-                        disabled={resetPassword.isPending}
-                        onClick={() => void handleResetPassword(account)}
-                      >
-                        Resetear clave
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        </>
+        <ScannerAccountsList
+          items={items}
+          parentLabel={copy.parentLabel}
+          togglePending={updateStatus.isPending}
+          resetPending={resetPassword.isPending}
+          onToggle={(account) => void handleToggle(account)}
+          onResetPassword={(account) => void handleResetPassword(account)}
+        />
       )}
 
       <Modal
