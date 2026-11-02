@@ -1,9 +1,37 @@
 'use client';
 
+import { useState } from 'react';
 import type { PublicGastroContentItem } from '@/repositories/interfaces';
 import { RentalDescriptionBlock } from '@/components/rentals/RentalDescriptionBlock';
 import { gastroContentGalleryFromItem } from '@/lib/gastro/gastro-content-gallery';
 import { RentalGalleryThumbnails } from '@/components/rentals/RentalGalleryThumbnails';
+import { ImageGalleryLightbox } from '@/components/ui/ImageGalleryLightbox';
+
+/** Single publication image: full width, opens the shared lightbox on tap. */
+function PublicationSingleImage({ id, url, alt }: { id: string; url: string; alt: string }) {
+  const [isOpen, setIsOpen] = useState(false);
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setIsOpen(true)}
+        className="block w-full max-w-xl overflow-hidden rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        aria-label={`Ampliar imagen: ${alt}`}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={url} alt={alt} className="aspect-[4/3] w-full object-cover" />
+      </button>
+      {isOpen && (
+        <ImageGalleryLightbox
+          images={[{ id, url, alt }]}
+          index={0}
+          onIndexChange={() => undefined}
+          onClose={() => setIsOpen(false)}
+        />
+      )}
+    </>
+  );
+}
 
 type GastroLocationEditorialSectionProps = {
   items: PublicGastroContentItem[];
@@ -40,11 +68,10 @@ export function GastroLocationEditorialSection({
               {gallery.length > 0 ? (
                 <div className="mt-2">
                   {gallery.length === 1 ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={gallery[0]}
-                      alt={item.title ?? 'Imagen de la publicación'}
-                      className="aspect-[4/3] w-full max-w-xl rounded-xl object-cover"
+                    <PublicationSingleImage
+                      id={`${item.id}-0`}
+                      url={gallery[0]!}
+                      alt={item.title?.trim() || 'Imagen de la publicación'}
                     />
                   ) : (
                     <RentalGalleryThumbnails

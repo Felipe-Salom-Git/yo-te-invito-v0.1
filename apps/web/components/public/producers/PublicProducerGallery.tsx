@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import type { ProducerGalleryItem } from '@/repositories/interfaces';
+import { ImageGalleryLightbox } from '@/components/ui/ImageGalleryLightbox';
 
 type Props = {
   items: ProducerGalleryItem[];
@@ -9,12 +10,13 @@ type Props = {
 };
 
 export function PublicProducerGallery({ items, coverImageUrl }: Props) {
+  const [active, setActive] = useState<number | null>(null);
+  const close = useCallback(() => setActive(null), []);
+
   const cover = coverImageUrl?.trim();
   const gallery = items.filter((g) => g.url.trim() && g.url.trim() !== cover);
 
   if (gallery.length === 0) return null;
-
-  const [active, setActive] = useState<number | null>(null);
 
   return (
     <section className="mt-10">
@@ -36,21 +38,14 @@ export function PublicProducerGallery({ items, coverImageUrl }: Props) {
         ))}
       </div>
 
-      {active !== null && gallery[active] ? (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
-          role="dialog"
-          aria-modal
-          onClick={() => setActive(null)}
-        >
-          <img
-            src={gallery[active].url}
-            alt=""
-            className="max-h-[90vh] max-w-full rounded-lg object-contain"
-            onClick={(e) => e.stopPropagation()}
-          />
-        </div>
-      ) : null}
+      {active !== null && (
+        <ImageGalleryLightbox
+          images={gallery}
+          index={active}
+          onIndexChange={setActive}
+          onClose={close}
+        />
+      )}
     </section>
   );
 }
