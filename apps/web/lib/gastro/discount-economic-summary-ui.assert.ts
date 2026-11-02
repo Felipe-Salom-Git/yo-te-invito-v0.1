@@ -95,7 +95,7 @@ const view = ['DiscountEconomicSummaryView', 'DiscountEconomicContractBlock', 'D
   .map((f) => read(`components/gastro/economic-summary/${f}.tsx`))
   .join('\n');
 const adminPanel = read('components/admin/gastro/AdminGastroDiscountEconomicSummaryPanel.tsx');
-assert(!/Registrar pago|Revertir|useMutation/.test(view + adminPanel), 'UI: no register/reverse payment or mutation (G10.D)');
+assert(!/Registrar pago|Revertir|useMutation/.test(view + adminPanel), 'UI: shared view stays read-only; G10.D writes live only in ADMIN slot components');
 assert(!/creditConsumed/.test(view), 'UI: never shows credit consumed per discount');
 assert(!/(agreement|tarifa|acuerdo) del local/i.test(view + adminPanel), 'UI: no "agreement/tarifa del local" copy');
 assert(/isAdmin \? <th className="px-3 py-2">Comprobante<\/th>/.test(view), 'UI: proof column only for ADMIN payload');
@@ -108,6 +108,7 @@ const gastroPanel = read('components/gastro/GastroDiscountEconomicSummaryPanel.t
 assert(gastroPanel.includes('getMyDiscountEconomicSummary') && gastroPanel.includes('gastroTitle'), 'GASTRO: panel reads its own endpoint, titled "Contrato y liquidaciones"');
 assert(!/missingContractAction|settlementHref|#contrato-comercial|\/admin\//.test(gastroPanel), 'GASTRO: no contract edit action nor admin settlement links');
 assert(!/useMutation/.test(gastroPanel), 'GASTRO: no mutations');
+assert(!/settleValidationsSlot|paymentsAside|paymentRowAction/.test(gastroPanel), 'GASTRO: never receives the ADMIN G10.D action slots');
 const gastroPage = read('app/(portal)/gastro/descuentos/[id]/page.tsx');
 assert(gastroPage.includes('<GastroDiscountEconomicSummaryPanel discountId={id} />'), 'GASTRO page: economic summary rendered in the discount detail');
 const repo = read('repositories/ApiRepository.ts');

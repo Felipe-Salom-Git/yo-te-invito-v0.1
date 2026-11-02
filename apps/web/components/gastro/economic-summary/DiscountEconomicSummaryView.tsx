@@ -16,13 +16,21 @@ type Props = {
   title: string;
   missingContractAction?: ReactNode;
   settlementHref?: (settlementId: string) => string;
+  /** G10.D — ADMIN-only write actions (the GASTRO portal never passes them). */
+  settleValidationsSlot?: ReactNode;
 };
 
 /**
- * G10.C — per-discount economic summary (read-only), ADMIN and GASTRO.
+ * G10.C — per-discount economic summary, ADMIN and GASTRO.
  * The ADMIN/GASTRO difference comes from the payload (`audience`), never from hidden UI only.
  */
-export function DiscountEconomicSummaryView({ summary, title, missingContractAction, settlementHref }: Props) {
+export function DiscountEconomicSummaryView({
+  summary,
+  title,
+  missingContractAction,
+  settlementHref,
+  settleValidationsSlot,
+}: Props) {
   return (
     <section
       id="metricas-economicas"
@@ -35,6 +43,7 @@ export function DiscountEconomicSummaryView({ summary, title, missingContractAct
       </Hint>
       <DiscountEconomicContractBlock summary={summary} missingContractAction={missingContractAction} />
       <DiscountEconomicValidationsBlock summary={summary} />
+      {settleValidationsSlot}
       <DiscountEconomicCashBlock summary={summary} />
       <DiscountEconomicBarterBlock summary={summary} />
       <DiscountEconomicSettlementsTable summary={summary} settlementHref={settlementHref} />

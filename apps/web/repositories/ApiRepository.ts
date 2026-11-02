@@ -2462,6 +2462,10 @@ export class ApiRepository implements Repositories {
       this.client.get<import('@yo-te-invito/shared').GastroDiscountEconomicSummaryAdmin>(
         `/admin/gastronomicos/${encodeURIComponent(profileId)}/descuentos/${encodeURIComponent(discountId)}/economic-summary`,
       ),
+    getDiscountPendingValidations: async (profileId, discountId) =>
+      this.client.get<import('@yo-te-invito/shared').GastroDiscountPendingValidationsResponse>(
+        `/admin/gastronomicos/${encodeURIComponent(profileId)}/descuentos/${encodeURIComponent(discountId)}/pending-validations`,
+      ),
     getDiscountSummary: async (profileId, discountId) =>
 
       this.client.get<import('@yo-te-invito/shared').GastroDiscountSummaryResponse>(

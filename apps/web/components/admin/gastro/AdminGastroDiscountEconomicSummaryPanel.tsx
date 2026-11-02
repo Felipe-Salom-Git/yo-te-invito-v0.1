@@ -5,10 +5,11 @@ import { useRepositories } from '@/repositories/context';
 import { adminGastroKeys } from '@/lib/query/keys';
 import { ECONOMIC_SUMMARY_COPY } from '@/lib/gastro/discount-economic-summary-ui';
 import { DiscountEconomicSummaryView } from '@/components/gastro/economic-summary/DiscountEconomicSummaryView';
+import { AdminDiscountSettleValidationsSection } from './AdminDiscountSettleValidationsSection';
 
 /**
- * G10.C4 — "Métricas económicas" of ONE discount (replaces the G6 panel).
- * Read-only: registering / reversing CASH and assigning usages arrive in G10.D.
+ * G10.C4 / G10.D — "Métricas económicas" of ONE discount (replaces the G6 panel).
+ * ADMIN actions: assign validations to CASH / CANJE (allocation), register / reverse CASH payments.
  */
 export function AdminGastroDiscountEconomicSummaryPanel({
   profileId,
@@ -45,6 +46,7 @@ export function AdminGastroDiscountEconomicSummaryPanel({
         </a>
       }
       settlementHref={(settlementId) => `/admin/liquidaciones/${encodeURIComponent(settlementId)}`}
+      settleValidationsSlot={<AdminDiscountSettleValidationsSection profileId={profileId} discountId={discountId} />}
     />
   );
 }

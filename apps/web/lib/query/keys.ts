@@ -529,6 +529,9 @@ export const adminGastroKeys = {
   economicSummaries: () => [...adminGastroKeys.all, 'economic-summary'] as const,
   economicSummary: (profileId: string, discountId: string) =>
     [...adminGastroKeys.all, 'economic-summary', profileId, discountId] as const,
+  discountPendingValidationsAll: () => [...adminGastroKeys.all, 'discount-pending-validations'] as const,
+  discountPendingValidations: (profileId: string, discountId: string) =>
+    [...adminGastroKeys.all, 'discount-pending-validations', profileId, discountId] as const,
   discountSummary: (profileId: string, discountId: string) =>
     [...adminGastroKeys.all, 'discount-summary', profileId, discountId] as const,
   discountVisualTemplate: (profileId: string, discountId: string) =>

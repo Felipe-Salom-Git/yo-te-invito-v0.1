@@ -2989,6 +2989,10 @@ export interface AdminGastroRepo {
     profileId: string,
     discountId: string,
   ): Promise<import('@yo-te-invito/shared').GastroDiscountEconomicSummaryAdmin>;
+  getDiscountPendingValidations(
+    profileId: string,
+    discountId: string,
+  ): Promise<import('@yo-te-invito/shared').GastroDiscountPendingValidationsResponse>;
   getDiscountSummary(
     profileId: string,
     discountId: string,

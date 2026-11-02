@@ -3,6 +3,7 @@ import { useRepositories } from '@/repositories/context';
 import {
   adminBenefitSettlementsKeys,
   adminCourtesyCreditLedgerKeys,
+  adminGastroKeys,
 } from '@/lib/query/keys';
 import type {
   AllocateBenefitSettlementUsagesBody,
@@ -71,6 +72,8 @@ function invalidateSettlementQueries(queryClient: ReturnType<typeof useQueryClie
     queryClient.invalidateQueries({ queryKey: adminBenefitSettlementsKeys.transfers(id) });
   }
   queryClient.invalidateQueries({ queryKey: adminCourtesyCreditLedgerKeys.all });
+  queryClient.invalidateQueries({ queryKey: adminGastroKeys.economicSummaries() });
+  queryClient.invalidateQueries({ queryKey: adminGastroKeys.discountPendingValidationsAll() });
 }
 
 export function useGenerateAdminBenefitSettlement() {
