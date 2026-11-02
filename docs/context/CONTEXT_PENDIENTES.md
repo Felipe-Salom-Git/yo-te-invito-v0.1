@@ -231,6 +231,19 @@ Cierre: [`V3_3_G12_2_GASTRO_PROMOTIONAL_EVENTS_CLOSING.md`](../audits/V3_3_G12_2
 - [ ] QA manual G12.2 post-deploy (lista en el cierre)
 - [ ] Decisión operador: habilitar Eventos al público (`event` sigue «comingSoon»; hasta entonces solo roles preview ven el catálogo)
 
+### G12.3 + G12.4 — Ficha mobile bajo navbar + selector moderno de ubicación para eventos
+
+Cierre: [`V3_3_G12_4_EVENT_LOCATION_PICKER_CLOSING.md`](../audits/V3_3_G12_4_EVENT_LOCATION_PICKER_CLOSING.md) · local, **sin push / sin deploy, sin migrations**
+
+- [x] G12.3 `9cfd88b` — hero público con min-height (`publicHeroLayout`), contenido mobile bajo la navbar
+- [x] 12.4-A `92364ee` — validación por campo compartida + errores inline en `EventLocationFields`; perfil gastro sin errores en Provincia, ciudad obligatoria
+- [x] 12.4-B `ad27d4c` — evento gastro «Usar ubicación del local» / «Usar otra ubicación» (selector moderno, pin propio, switch sin mezclar coordenadas)
+- [x] 12.4-C `6b1ed19` — productora new / edit con reglas modernas, precarga lat / lng, legacy compatible
+- [x] 12.4-D `1f71cc6` — compatibilidad + HTTP 10/10
+- [x] 12.4-E — 18 suites + DB, QA mobile 320–430, builds shared/api/web/scanner PASS
+- [ ] Push + deploy G12.3 + G12.4 (sin migrations) cuando el operador lo indique
+- [ ] QA manual G12.4 post-deploy (lista en el cierre)
+
 ### G8.9 + G8.10 — Portal Gastro y Admin de cortesías
 
 Cierre: [`V3_3_G8_9_G8_10_COURTESY_PORTAL_ADMIN_CLOSING.md`](../audits/V3_3_G8_9_G8_10_COURTESY_PORTAL_ADMIN_CLOSING.md)

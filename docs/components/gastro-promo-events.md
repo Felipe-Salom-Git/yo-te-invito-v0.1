@@ -43,6 +43,19 @@ rule as producers).
 (`GastroPromoEventsPanel` + `GastroPromoEventForm`), `?tab=eventos`. Images upload with the gastro
 GCS scope (`entityId` = local). Logic: `apps/web/lib/gastro/gastroPromoEvents.ts`.
 
+## Location (G12.4)
+
+- Form radio: **«Usar ubicación del local»** (default, no map, shows the local's name / address / city /
+  province) or **«Usar otra ubicación»** («Nombre del lugar (opcional)» + `EventLocationFields`, the same
+  modern picker as the gastro profile and producer events — Georef + `/geo/resolve-address` + pin).
+- Payload: local → `{ useLocalLocation: true }` (API copies `venueAddress` / `city` / `province` /
+  `geoLat` / `geoLng` from the local); custom → `{ useLocalLocation: false, venueName, venueAddress, city,
+  province, geoLat, geoLng, googlePlaceId }` (Zod: province + city + address required, pin both or none).
+- Switching mode discards the other mode's values; coordinates are never mixed. Response exposes
+  `usesLocalLocation` (`venueMatchesLocal`), `geoLat`, `geoLng`, `googlePlaceId`.
+- G12.2 clients without the flag: create without address = local; update without the flag = partial patch.
+- Helpers: `apps/api/src/modules/gastro/gastro-promo-event-venue.util.ts`, `apps/web/lib/gastro/gastroPromoEvents.ts`.
+
 ## Public
 
 - Discovery: same queries as any `event` (`/public/events`, search, calendar, trending). Visible only
@@ -67,4 +80,4 @@ Dashboard «Revisar» → `/admin/eventos?view=pending&origin=gastro`. Approve /
 the local's members with `/gastro/contenido?profileId=…&tab=eventos`.
 
 Tests: `test:gastro-promo-event-ownership`, `test:gastro-promo-events`, `test:gastro-promo-event-admin`,
-`test:g12-gastro-promo-events-db` (PostgreSQL, rolled back).
+`test:g12-gastro-promo-events-db` (PostgreSQL, rolled back), `test:event-location`.
