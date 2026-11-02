@@ -102,6 +102,7 @@
     "test:qr-preparing-overlay": "tsx ../web/lib/ux/qrPreparing.assert.ts",
     "test:public-modal-top-offset": "tsx ../web/lib/ui/publicModalLayout.assert.ts",
     "test:gastro-review-report": "tsx scripts/test-gastro-review-report.util.ts && tsx ../web/lib/reviews/reviewReport.assert.ts",
+    "test:gastro-local-view-count": "tsx scripts/test-gastro-local-view-count.util.ts && tsx ../web/lib/gastro/gastroLocationViews.assert.ts",
     "test:home-covers": "tsx --tsconfig ../web/tsconfig.json ../web/lib/home/homeCovers.assert.ts",
     "test:public-share": "tsx --tsconfig ../web/tsconfig.json ../web/lib/share/publicShare.assert.ts && tsx ../web/lib/share/gastroLocationShare.assert.ts",
     "test:gastro-scan-presentation": "tsx ../scanner/lib/scan/gastro-scan-presentation.assert.ts",

@@ -5,7 +5,17 @@ import { useGastroActiveLocation } from '@/lib/gastro/GastroActiveLocationContex
 import { GastroLocationStatusBadge } from './GastroLocationStatusBadge';
 import { GastroLocationShareActions } from '@/components/share/GastroLocationShareActions';
 import { canShareGastroLocation } from '@/lib/share/gastroLocationShare';
+import { formatGastroLocationViews } from '@/lib/gastro/gastroLocationViews';
 import { Button } from '@/components';
+
+function EyeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden>
+      <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" strokeLinejoin="round" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
 
 function locationSubtitle(city: string | null, province: string | null, address: string | null) {
   const parts = [city, province].filter(Boolean);
@@ -57,8 +67,15 @@ export function GastroLocationsList({ onPreview }: Props) {
               <p className="mt-1 text-sm text-text-muted">
                 {locationSubtitle(loc.city, loc.province, loc.address)}
               </p>
-              <div className="mt-2">
+              <div className="mt-2 flex flex-wrap items-center gap-3">
                 <GastroLocationStatusBadge status={loc.status} />
+                <span
+                  className="inline-flex items-center gap-1.5 text-xs text-text-muted"
+                  title="Visualizaciones de la ficha pública de este local"
+                >
+                  <EyeIcon />
+                  {formatGastroLocationViews(loc.viewCount)}
+                </span>
               </div>
             </div>
             <div className="flex shrink-0 flex-wrap items-center gap-3">

@@ -29,6 +29,7 @@ import {
 } from './gastro-profile-fields.util';
 import { GastroPublicEventSyncService } from './gastro-public-event-sync.service';
 import { GastroOwnershipService } from './gastro-ownership.service';
+import { mapViewCountsByProfile } from './gastro-location-view-counts.util';
 import { readEntitySocialLinks, writeEntitySocialLinks } from '../../common/entity-social-links.util';
 import {
   normalizeRelatedLinksForWrite,
@@ -96,6 +97,7 @@ export class GastroLocalService {
 
   private toSummary(
     row: GastroProfile & { subcategory?: { name: string } | null },
+    viewCount: number,
   ): GastroLocationSummary {
     return {
       id: row.id,
@@ -107,6 +109,7 @@ export class GastroLocalService {
       publicEventId: row.publicEventId,
       subcategoryName: row.subcategory?.name ?? null,
       updatedAt: row.updatedAt.toISOString(),
+      viewCount,
     };
   }
 
@@ -200,7 +203,16 @@ export class GastroLocalService {
   ): Promise<GastroLocationsListResponse> {
     await this.assertGastroUser(tenantId, userId, userRole);
     const profiles = await this.ownership.listManagedProfiles(tenantId, userId);
-    return { data: profiles.map((p) => this.toSummary(p)) };
+    const profileIds = profiles.map((p) => p.id);
+    const groups = profileIds.length
+      ? await this.prisma.gastroProfileView.groupBy({
+          by: ['gastroProfileId'],
+          where: { tenantId, gastroProfileId: { in: profileIds } },
+          _count: { _all: true },
+        })
+      : [];
+    const viewCounts = mapViewCountsByProfile(profileIds, groups);
+    return { data: profiles.map((p) => this.toSummary(p, viewCounts.get(p.id) ?? 0)) };
   }
 
   async getMyLocal(

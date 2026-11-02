@@ -100,6 +100,8 @@ export const gastroLocationSummarySchema = z.object({
   publicEventId: z.string().nullable(),
   subcategoryName: z.string().nullable().optional(),
   updatedAt: z.string().datetime(),
+  /** G12.1-D — total public page views of THIS local (GastroProfileView rows), never owner-wide. */
+  viewCount: z.number().int().nonnegative(),
 });
 export type GastroLocationSummary = z.infer<typeof gastroLocationSummarySchema>;
 
