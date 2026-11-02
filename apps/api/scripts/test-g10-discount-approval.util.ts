@@ -171,6 +171,20 @@ async function main() {
     );
     const listed = await svc.agreements.list(tenantId, { scope: 'PROFILE_LEGACY', vigency: 'ALL', page: 1, pageSize: 50 });
     check(listed.data.some((a) => a.id === legacyRow.id && a.scope === 'PROFILE_LEGACY'), 'legacy row stays visible in the listing');
+
+    console.log('\n=== B4 agreements listing by discount ===\n');
+    const byDiscount = await svc.agreements.list(tenantId, { vertical: 'GASTRO', gastroProfileId: profileA, gastroDiscountId: A.discountId, vigency: 'ALL', page: 1, pageSize: 50 });
+    check(
+      byDiscount.data.length === 1 && byDiscount.data[0]!.id === agrA.id && byDiscount.data[0]!.discountStatus === 'ACTIVE' && Boolean(byDiscount.data[0]!.discountTitle !== undefined),
+      'filter Local + Descuento → only that discount (with discount status)',
+    );
+    const discountScope = await svc.agreements.list(tenantId, { vertical: 'GASTRO', gastroProfileId: profileA, scope: 'DISCOUNT', vigency: 'CURRENT', page: 1, pageSize: 50 });
+    check(
+      discountScope.data.length > 0 && discountScope.data.every((a) => a.scope === 'DISCOUNT' && a.gastroProfileId === profileA && a.vigency === 'CURRENT'),
+      'scope DISCOUNT + CURRENT never returns legacy rows nor other locals',
+    );
+    const legacyOnly = await svc.agreements.list(tenantId, { scope: 'PROFILE_LEGACY', vigency: 'ALL', page: 1, pageSize: 50 });
+    check(legacyOnly.data.every((a) => a.scope === 'PROFILE_LEGACY' && a.discountStatus === null), 'legacy rows carry no discount status');
   });
 
   if (result === 'NOT_RUN') {

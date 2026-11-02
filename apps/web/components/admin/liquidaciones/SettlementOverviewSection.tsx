@@ -78,7 +78,7 @@ export function SettlementOverviewSection({ settlement, audit, agreementHref }: 
             <p className="mt-1 text-text-muted">Sin asignaciones todavía.</p>
           )}
           <Link href={agreementHref} className="mt-1 inline-block text-accent hover:underline">
-            Ver acuerdo comercial del partner
+            Ver contratos comerciales
           </Link>
         </div>
       </div>

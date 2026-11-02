@@ -87,6 +87,16 @@ export function useAdminGastroLocationDetail(profileId: string, enabled = true) 
   });
 }
 
+/** G10.B — discounts of ONE local (agreements: Local → Descuento selector). */
+export function useAdminGastroLocationDiscounts(profileId: string, enabled = true) {
+  const repos = useRepositories();
+  return useQuery({
+    queryKey: adminGastroKeys.discounts(profileId),
+    queryFn: () => repos.adminGastro.listLocationDiscounts(profileId),
+    enabled: enabled && !!profileId,
+  });
+}
+
 export function useAdminGastroLocationMetrics(profileId: string, enabled = true) {
   const repos = useRepositories();
   return useQuery({

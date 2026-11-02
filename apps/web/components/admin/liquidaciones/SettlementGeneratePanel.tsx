@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { mapBenefitSettlementErrorMessage } from '@yo-te-invito/shared';
 import { Button } from '@/components';
-import { AdminGastroDiscountCommercialContextPanel } from '@/components/admin/gastro/AdminGastroDiscountCommercialContextPanel';
+import { AdminGastroProfileDiscountAgreementsSummary } from '@/components/admin/gastro/AdminGastroProfileDiscountAgreementsSummary';
 import { useGenerateAdminBenefitSettlement } from '@/lib/query/benefit-settlements';
 import { resolveSettlementPartnerOptions } from '@/lib/admin/settlement-partner-options';
 import {
@@ -163,7 +163,10 @@ export function SettlementGeneratePanel({
       </div>
 
       {genVertical === 'GASTRO' && genPartnerId ? (
-        <AdminGastroDiscountCommercialContextPanel profileId={genPartnerId} allowManage={false} />
+        <AdminGastroProfileDiscountAgreementsSummary
+          profileId={genPartnerId}
+          fromDiscountId={context.locked ? context.fromDiscountId : null}
+        />
       ) : null}
     </div>
   );

@@ -10,7 +10,7 @@ import {
 
 export type AgreementRow = BenefitCommercialAgreement & {
   gastroProfile?: { displayName: string } | null;
-  gastroDiscount?: { displayTitle: string | null } | null;
+  gastroDiscount?: { displayTitle: string | null; status?: string } | null;
   excursionOperator?: { name: string } | null;
 };
 
@@ -32,6 +32,7 @@ export function agreementRowToDto(row: AgreementRow, todayKey: string): BenefitC
     derivedFromAgreementId: row.derivedFromAgreementId,
     partnerDisplayName: row.gastroProfile?.displayName ?? row.excursionOperator?.name ?? null,
     discountTitle: row.gastroDiscount?.displayTitle ?? null,
+    discountStatus: row.gastroDiscount?.status ?? null,
     unitPriceCents: moneyCentsToString(row.unitPriceCents),
     barterMultiplier: row.barterMultiplier.toString(),
     currency: row.currency,

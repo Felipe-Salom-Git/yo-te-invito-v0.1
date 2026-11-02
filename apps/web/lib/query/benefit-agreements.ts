@@ -9,18 +9,24 @@ import type {
   UpdateBenefitCommercialAgreementNotesBody,
 } from '@yo-te-invito/shared';
 
-export function useAdminBenefitAgreementsList(query?: {
-  vertical?: string;
-  vigency?: string;
-  gastroProfileId?: string;
-  excursionOperatorId?: string;
-  page?: number;
-}) {
+export function useAdminBenefitAgreementsList(
+  query?: {
+    vertical?: string;
+    vigency?: string;
+    gastroProfileId?: string;
+    gastroDiscountId?: string;
+    excursionOperatorId?: string;
+    scope?: string;
+    page?: number;
+  },
+  enabled = true,
+) {
   const repos = useRepositories();
   const filtersKey = JSON.stringify(query ?? {});
   return useQuery({
     queryKey: adminBenefitAgreementsKeys.list(filtersKey),
     queryFn: () => repos.adminBenefitAgreements.list(query),
+    enabled,
   });
 }
 

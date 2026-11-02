@@ -3,49 +3,40 @@
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import {
-  Badge,
-  Button,
-  EmptyState,
-  PageContainer,
-  SectionTitle,
-} from '@/components';
+import { Button, EmptyState, PageContainer, SectionTitle } from '@/components';
 import { LiquidacionesSubnav } from '@/components/admin/liquidaciones/LiquidacionesSubnav';
-import {
-  useAdminBenefitAgreementsList,
-  useCloseAdminBenefitAgreement,
-  useReplaceAdminBenefitAgreement,
-} from '@/lib/query/benefit-agreements';
-import {
-  BENEFIT_AGREEMENT_VIGENCY_LABEL,
-  BENEFIT_VERTICAL_LABEL,
-} from '@/lib/admin/benefit-agreement-labels';
-import { formatBenefitMoneyCents } from '@yo-te-invito/shared';
+import { BenefitAgreementsFilters } from '@/components/admin/agreements/BenefitAgreementsFilters';
+import { BenefitAgreementsTable } from '@/components/admin/agreements/BenefitAgreementsTable';
+import { useAdminBenefitAgreementsList } from '@/lib/query/benefit-agreements';
+import { useAgreementPartnerCatalog } from '@/lib/admin/use-agreement-partner-catalog';
+import { buildAgreementsListQuery, type AgreementListFilters } from '@/lib/admin/benefit-agreement-list';
+
+function initialFilters(params: URLSearchParams | null): AgreementListFilters {
+  const vertical = params?.get('vertical');
+  return {
+    vertical: vertical === 'GASTRO' || vertical === 'ACTIVITY' ? vertical : '',
+    // `partnerId` kept for links created before G10.B.
+    partnerId: params?.get('gastroProfileId') ?? params?.get('excursionOperatorId') ?? params?.get('partnerId') ?? '',
+    gastroDiscountId: params?.get('gastroDiscountId') ?? '',
+    vigency: 'ALL',
+    scope: '',
+  };
+}
 
 export default function AdminBenefitAgreementsPage() {
   const searchParams = useSearchParams();
-  const [vertical, setVertical] = useState<string>(searchParams.get('vertical') ?? '');
-  const [partnerId, setPartnerId] = useState<string>(searchParams.get('partnerId') ?? '');
-  const [vigency, setVigency] = useState<string>('ALL');
-  const query = useMemo(
-    () => ({
-      ...(vertical ? { vertical } : {}),
-      ...(vigency !== 'ALL' ? { vigency } : {}),
-    }),
-    [vertical, vigency],
-  );
+  const [filters, setFilters] = useState<AgreementListFilters>(() => initialFilters(searchParams));
+  const query = useMemo(() => buildAgreementsListQuery(filters), [filters]);
   const { data, isLoading, isError } = useAdminBenefitAgreementsList(query);
-  const closeMutation = useCloseAdminBenefitAgreement();
-  const replaceMutation = useReplaceAdminBenefitAgreement();
-
-  const rows = useMemo(() => {
-    const all = data?.data ?? [];
-    if (!partnerId) return all;
-    return all.filter(
-      (row) =>
-        row.gastroProfileId === partnerId || row.excursionOperatorId === partnerId,
-    );
-  }, [data, partnerId]);
+  const catalog = useAgreementPartnerCatalog(filters.vertical, filters.partnerId, 'benefit-agreements-list');
+  const rows = data?.data ?? [];
+  const newHref = `/admin/liquidaciones/acuerdos/nuevo${
+    filters.vertical === 'GASTRO' && filters.partnerId
+      ? `?gastroProfileId=${encodeURIComponent(filters.partnerId)}${
+          filters.gastroDiscountId ? `&gastroDiscountId=${encodeURIComponent(filters.gastroDiscountId)}` : ''
+        }`
+      : ''
+  }`;
 
   return (
     <PageContainer>
@@ -54,138 +45,47 @@ export default function AdminBenefitAgreementsPage() {
         <div>
           <SectionTitle>Acuerdos comerciales</SectionTitle>
           <p className="mt-2 max-w-2xl text-sm text-text-muted">
-            Tarifas por uso validado para locales gastronómicos y operadores de excursiones. Los
-            términos económicos son inmutables: para cambiar precio o multiplicador de canje, cerrá
-            o reemplazá el acuerdo.
+            Gastronómico: cada descuento tiene su propio contrato (valor por validación y
+            multiplicador de canje). Los contratos del local previos a G10 quedan visibles como
+            legacy, solo lectura. Activity: contrato por operador. Los términos económicos son
+            inmutables: para cambiarlos se cierra o reemplaza el contrato.
           </p>
         </div>
-        <Link href="/admin/liquidaciones/acuerdos/nuevo">
-          <Button>Nuevo acuerdo</Button>
+        <Link href={newHref}>
+          <Button>Nuevo contrato</Button>
         </Link>
       </div>
 
-      <div className="mt-6 flex flex-wrap gap-3">
-        <label className="text-sm text-text-muted">
-          Vertical
-          <select
-            className="ml-2 rounded border border-border bg-bg px-2 py-1 text-text"
-            value={vertical}
-            onChange={(e) => setVertical(e.target.value)}
-          >
-            <option value="">Todas</option>
-            <option value="GASTRO">Gastronómico</option>
-            <option value="ACTIVITY">Activity</option>
-          </select>
-        </label>
-        <label className="text-sm text-text-muted">
-          Vigencia
-          <select
-            className="ml-2 rounded border border-border bg-bg px-2 py-1 text-text"
-            value={vigency}
-            onChange={(e) => setVigency(e.target.value)}
-          >
-            <option value="ALL">Todas</option>
-            <option value="CURRENT">Vigentes</option>
-            <option value="PAST">Históricos</option>
-            <option value="FUTURE">Futuros</option>
-          </select>
-        </label>
-      </div>
+      <BenefitAgreementsFilters
+        value={filters}
+        onChange={setFilters}
+        partnerOptions={catalog.partnerOptions}
+        discountOptions={catalog.discountOptions}
+      />
 
       {isLoading ? (
         <p className="mt-6 text-text-muted">Cargando…</p>
       ) : isError ? (
         <p className="mt-6 text-sm text-red-400">No se pudieron cargar los acuerdos.</p>
-      ) : !rows.length ? (
+      ) : rows.length === 0 ? (
         <EmptyState
           className="mt-8"
-          title={partnerId ? 'El partner no tiene acuerdo comercial vigente' : 'Sin acuerdos'}
+          title={filters.gastroDiscountId ? 'Este descuento no tiene contratos' : 'Sin acuerdos'}
           description={
-            partnerId
-              ? 'Creá un acuerdo o quitá el filtro de partner.'
-              : 'Creá el primer acuerdo comercial para un partner.'
+            filters.gastroDiscountId
+              ? 'Creá el contrato del descuento o quitá el filtro.'
+              : 'Creá un contrato para un descuento (Gastronómico) o un operador (Activity).'
           }
         />
       ) : (
-        <ul className="mt-6 space-y-3">
-          {rows.map((row) => (
-            <li
-              key={row.id}
-              className="rounded-lg border border-border bg-bg-muted p-4"
-            >
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="font-medium text-text">
-                  {row.partnerDisplayName ?? 'Partner'}
-                </span>
-                <Badge>{BENEFIT_VERTICAL_LABEL[row.vertical]}</Badge>
-                <Badge>{BENEFIT_AGREEMENT_VIGENCY_LABEL[row.vigency]}</Badge>
-              </div>
-              <p className="mt-2 text-sm text-text-muted">
-                {formatBenefitMoneyCents(row.unitPriceCents)} / uso · canje ×{row.barterMultiplier}{' '}
-                · {row.validFrom}
-                {row.validTo ? ` → ${row.validTo}` : ' → abierto'}
-              </p>
-              {row.notes ? (
-                <p className="mt-1 text-sm text-text-muted">Notas: {row.notes}</p>
-              ) : null}
-              <Link
-                href={`/admin/liquidaciones?vertical=${row.vertical}${
-                  row.gastroProfileId
-                    ? `&partnerId=${row.gastroProfileId}`
-                    : row.excursionOperatorId
-                      ? `&partnerId=${row.excursionOperatorId}`
-                      : ''
-                }`}
-                className="mt-2 inline-block text-sm text-accent hover:underline"
-              >
-                Ver liquidaciones
-              </Link>
-              {row.isOpen ? (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    disabled={closeMutation.isPending}
-                    onClick={() => {
-                      const validTo = window.prompt('Cerrar acuerdo — fecha fin (YYYY-MM-DD):');
-                      if (!validTo) return;
-                      closeMutation.mutate({ id: row.id, body: { validTo } });
-                    }}
-                  >
-                    Cerrar
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    disabled={replaceMutation.isPending}
-                    onClick={() => {
-                      const effectiveFrom = window.prompt(
-                        'Reemplazar — vigencia nueva desde (YYYY-MM-DD):',
-                      );
-                      const pesos = window.prompt('Nuevo precio por uso (pesos ARS, sin centavos):');
-                      const multiplier = window.prompt('Multiplicador canje (ej. 2):', '2');
-                      if (!effectiveFrom || !pesos || !multiplier) return;
-                      const unitPriceCents = (
-                        BigInt(pesos.replace(/\D/g, '') || '0') * BigInt(100)
-                      ).toString();
-                      replaceMutation.mutate({
-                        id: row.id,
-                        body: {
-                          effectiveFrom,
-                          unitPriceCents,
-                          barterMultiplier: multiplier,
-                          currency: 'ARS',
-                        },
-                      });
-                    }}
-                  >
-                    Reemplazar tarifa
-                  </Button>
-                </div>
-              ) : null}
-            </li>
-          ))}
-        </ul>
+        <>
+          <BenefitAgreementsTable rows={rows} />
+          {data && data.total > rows.length ? (
+            <p className="mt-2 text-xs text-text-muted">
+              Mostrando {rows.length} de {data.total}. Usá los filtros para acotar.
+            </p>
+          ) : null}
+        </>
       )}
     </PageContainer>
   );

@@ -51,6 +51,7 @@
     "test:g10-discount-pricing": "tsx scripts/test-g10-discount-pricing.util.ts",
     "test:g10-discount-approval": "tsx scripts/test-g10-discount-approval.util.ts",
     "test:g10-discount-activation": "tsx scripts/test-g10-discount-activation.util.ts",
+    "test:g10-discount-agreement-ui": "tsx ../web/lib/admin/discount-agreement-ui.assert.ts",
     "benefit-agreements:backfill-discount-scope": "tsx scripts/benefit-agreements-backfill-discount-scope.ts",
     "test:g5-agreement-allocation-snapshots": "tsx scripts/test-g5-agreement-allocation-snapshots.util.ts",
     "test:g6-discount-economic-traceability": "tsx scripts/test-g6-discount-economic-traceability.util.ts",

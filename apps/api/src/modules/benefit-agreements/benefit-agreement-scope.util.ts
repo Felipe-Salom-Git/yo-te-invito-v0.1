@@ -17,7 +17,7 @@ export type AgreementScopeKey =
 
 export const AGREEMENT_DISPLAY_INCLUDE = {
   gastroProfile: { select: { displayName: true } },
-  gastroDiscount: { select: { displayTitle: true } },
+  gastroDiscount: { select: { displayTitle: true, status: true } },
   excursionOperator: { select: { name: true } },
 } satisfies Prisma.BenefitCommercialAgreementInclude;
 

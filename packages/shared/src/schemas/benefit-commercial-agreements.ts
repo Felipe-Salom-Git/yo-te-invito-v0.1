@@ -212,6 +212,8 @@ export const benefitCommercialAgreementDtoSchema = z.object({
   derivedFromAgreementId: z.string().nullable(),
   partnerDisplayName: z.string().nullable(),
   discountTitle: z.string().nullable(),
+  /** G10.B — lifecycle status of the discount (DISCOUNT scope only). */
+  discountStatus: z.string().nullable(),
   unitPriceCents: moneyCentsStringSchema,
   barterMultiplier: z.string(),
   currency: z.string(),

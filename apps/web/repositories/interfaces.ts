@@ -3380,7 +3380,9 @@ export interface AdminBenefitAgreementsRepo {
     vertical?: string;
     vigency?: string;
     gastroProfileId?: string;
+    gastroDiscountId?: string;
     excursionOperatorId?: string;
+    scope?: string;
     page?: number;
     pageSize?: number;
   }): Promise<import('@yo-te-invito/shared').BenefitCommercialAgreementsListResponse>;
