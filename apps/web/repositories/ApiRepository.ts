@@ -291,6 +291,7 @@ export class ApiRepository implements Repositories {
           ...(query.excludeGeneralPublications !== undefined
             ? { excludeGeneralPublications: query.excludeGeneralPublications }
             : {}),
+          ...(query.gastroProfileId ? { gastroProfileId: query.gastroProfileId } : {}),
         },
       );
       return raw;

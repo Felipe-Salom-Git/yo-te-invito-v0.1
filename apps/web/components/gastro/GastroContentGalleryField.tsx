@@ -14,6 +14,11 @@ export type GastroContentGalleryFieldProps = {
   onUploadingChange?: (uploading: boolean) => void;
   disabled?: boolean;
   className?: string;
+  /** Copy / limit overrides (e.g. promo events); defaults = GastroContent post. */
+  title?: string;
+  maxImages?: number;
+  uploaderLabel?: string;
+  uploaderHint?: string;
 };
 
 /**
@@ -27,6 +32,10 @@ export function GastroContentGalleryField({
   onUploadingChange,
   disabled = false,
   className = '',
+  title = 'Galería de la publicación',
+  maxImages = GASTRO_CONTENT_GALLERY_MAX,
+  uploaderLabel,
+  uploaderHint,
 }: GastroContentGalleryFieldProps) {
   const uploadConfig: GcsImageUploadConfig | undefined = gastroProfileId
     ? { scope: 'gastro', entityId: gastroProfileId }
@@ -34,9 +43,9 @@ export function GastroContentGalleryField({
 
   return (
     <div className={className.trim() || undefined}>
-      <p className="mb-2 text-sm font-medium text-text-muted">Galería de la publicación</p>
+      <p className="mb-2 text-sm font-medium text-text-muted">{title}</p>
       <p className="mb-3 text-xs text-text-muted">
-        Hasta {GASTRO_CONTENT_GALLERY_MAX} imágenes. La primera es la portada. Quitar una imagen no
+        Hasta {maxImages} imágenes. La primera es la portada. Quitar una imagen no
         borra el archivo del storage.
       </p>
       <fieldset disabled={disabled} className="min-w-0">
@@ -44,15 +53,17 @@ export function GastroContentGalleryField({
           galleryOnly
           uploadConfig={uploadConfig}
           onUploadingChange={onUploadingChange}
+          galleryLabel={uploaderLabel}
+          galleryUsageHint={uploaderHint}
           value={{
             headerImageUrl: value[0] ?? '',
-            galleryImageUrls: value.slice(0, GASTRO_CONTENT_GALLERY_MAX),
+            galleryImageUrls: value.slice(0, maxImages),
           }}
           onChange={(next) => {
             const urls = next.galleryImageUrls
               .map((u) => u.trim())
               .filter(Boolean)
-              .slice(0, GASTRO_CONTENT_GALLERY_MAX);
+              .slice(0, maxImages);
             onChange(urls);
           }}
         />

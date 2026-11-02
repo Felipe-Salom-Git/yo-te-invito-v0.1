@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { GASTRO_PROMO_EVENT_GALLERY_MAX } from '@yo-te-invito/shared';
 import { Button, Input } from '@/components';
 import { SubcategorySelect } from '@/components/forms/SubcategorySelect';
 import { ContentTagSelector } from '@/components/content-tags/ContentTagSelector';
@@ -67,16 +68,16 @@ export function GastroPromoEventForm({ initial, local, mode, pending, onSubmit, 
           className={TEXTAREA_CLASS}
         />
       </div>
-      <div>
-        <p className="mb-1 text-sm font-medium text-text">Imágenes</p>
-        <p className="mb-2 text-xs text-text-muted">La primera imagen es la portada del evento.</p>
-        <GastroContentGalleryField
-          value={form.galleryUrls}
-          onChange={(urls) => set('galleryUrls', urls)}
-          gastroProfileId={local.id}
-          onUploadingChange={setUploading}
-        />
-      </div>
+      <GastroContentGalleryField
+        title="Imágenes del evento"
+        maxImages={GASTRO_PROMO_EVENT_GALLERY_MAX}
+        uploaderLabel="Imágenes"
+        uploaderHint="La primera imagen es la portada del evento; el resto se muestra en la galería de la ficha."
+        value={form.galleryUrls}
+        onChange={(urls) => set('galleryUrls', urls)}
+        gastroProfileId={local.id}
+        onUploadingChange={setUploading}
+      />
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className="mb-1.5 block text-sm font-medium text-text" htmlFor="promo-event-start">

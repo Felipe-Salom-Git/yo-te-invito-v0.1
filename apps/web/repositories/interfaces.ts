@@ -32,6 +32,8 @@ export interface EventsListQuery {
   minValidReviews?: number;
   hasTicketing?: boolean;
   excludeGeneralPublications?: boolean;
+  /** G12.2 — promotional events of one gastro local. */
+  gastroProfileId?: string;
   /** When true, use GET /admin/events (all events for approval queue) */
   forAdmin?: boolean;
 }

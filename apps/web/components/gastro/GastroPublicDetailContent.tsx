@@ -7,6 +7,7 @@ import { buildGastroGalleryImages, buildGastroWhatsAppHref } from '@/lib/gastro/
 import { hasPublicLocationForMapLink } from '@/lib/maps';
 import { GastroPublicHero } from './GastroPublicHero';
 import { GastroDiscountsSection } from './GastroDiscountsSection';
+import { GastroLocalEventsSection } from './GastroLocalEventsSection';
 import { PublicExternalLinksCard } from '@/components/public/PublicExternalLinksCard';
 import { PublicRelatedLinksCard } from '@/components/public/PublicRelatedLinksCard';
 import { GastroLocationEditorialSection } from './GastroLocationEditorialSection';
@@ -203,6 +204,8 @@ export function GastroPublicDetailContent({
             ) : null}
 
             <GastroDiscountsSection discounts={discounts} />
+
+            <GastroLocalEventsSection locationId={location.id} tenantId={tenantId} />
 
             {hasEditorial ? (
               <GastroLocationEditorialSection

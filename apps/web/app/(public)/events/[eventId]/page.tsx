@@ -32,6 +32,7 @@ import { EventMobileStickyCta } from '@/components/events/EventMobileStickyCta';
 import { EventEngagementRow } from '@/components/events/EventEngagementRow';
 import { EventProducerCard } from '@/components/events/EventProducerCard';
 import { EventPublicityInfoCard } from '@/components/events/detail/EventPublicityInfoCard';
+import { EventGallerySection } from '@/components/events/detail/EventGallerySection';
 import { EventSectionCard } from '@/components/events/detail/EventSectionCard';
 import { useToast } from '@/components';
 import { ContentTagChips } from '@/components/content-tags/ContentTagChips';
@@ -315,6 +316,8 @@ export default function EventDetailPage() {
                 </p>
               </section>
             )}
+
+            <EventGallerySection media={event.media} coverImageUrl={event.coverImageUrl} />
 
             {event.tags && event.tags.length > 0 ? (
               <section>

@@ -49,6 +49,51 @@ export function formatGastroPromoEventWhen(startAt: string): { date: string; tim
   return { date, time, label: `${date} · ${time}` };
 }
 
+export type GastroLocalEventCard = {
+  id: string;
+  title: string;
+  href: string;
+  imageUrl: string | null;
+  date: string;
+  time: string;
+  excerpt: string | null;
+};
+
+const EXCERPT_MAX = 140;
+
+/**
+ * G12.2-D — compact cards for the «Eventos» block of /gastronomicos/:id. Only events organized by
+ * THIS local (defensive, on top of the API `gastroProfileId` filter), soonest first.
+ */
+export function toGastroLocalEventCards(
+  locationId: string,
+  events: Array<{
+    id: string;
+    title: string;
+    startAt: string;
+    coverImageUrl?: string | null;
+    description?: string | null;
+    gastroOrganizer?: { id: string } | null;
+  }>,
+): GastroLocalEventCard[] {
+  return events
+    .filter((e) => e.gastroOrganizer?.id === locationId)
+    .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime())
+    .map((e) => {
+      const when = formatGastroPromoEventWhen(e.startAt);
+      const text = e.description?.trim() || null;
+      return {
+        id: e.id,
+        title: e.title,
+        href: gastroPromoEventPublicHref(e.id),
+        imageUrl: e.coverImageUrl ?? null,
+        date: when.date,
+        time: when.time,
+        excerpt: text && text.length > EXCERPT_MAX ? `${text.slice(0, EXCERPT_MAX - 1).trimEnd()}…` : text,
+      };
+    });
+}
+
 export type GastroPromoEventFormState = {
   title: string;
   description: string;

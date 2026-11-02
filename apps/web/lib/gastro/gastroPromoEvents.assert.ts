@@ -11,8 +11,12 @@ import {
   gastroPromoEventPublicHref,
   gastroPromoEventToForm,
   resolveGastroContentTab,
+  toGastroLocalEventCards,
 } from './gastroPromoEvents';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { getPlaceHeroCtaLabel } from '@/lib/home/contentRoutes';
+import { buildEventGalleryImages } from '@/lib/events/eventGallery';
 
 function assert(cond: unknown, msg: string): asserts cond {
   if (!cond) throw new Error(`FAIL: ${msg}`);
@@ -80,5 +84,31 @@ assert(roundTrip.atLocal && roundTrip.tagIds.join() === 't1', 'edit form: venue 
 assert(getPlaceHeroCtaLabel('event', { isGeneralPublication: true }) === 'Más información', 'publicity event CTA = Más información');
 assert(getPlaceHeroCtaLabel('event', { isGeneralPublication: false }) === 'Comprar entradas', 'ticketed event CTA unchanged');
 assert(getPlaceHeroCtaLabel('gastro', { isGeneralPublication: true }) === 'Reservar', 'other categories unchanged');
+
+// G12.2-D — compact event cards on /gastronomicos/:id.
+const cards = toGastroLocalEventCards('gp-a', [
+  { id: 'late', title: 'Tarde', startAt: '2026-12-20T21:00:00.000Z', gastroOrganizer: { id: 'gp-a' }, description: 'x'.repeat(300) },
+  { id: 'other-local', title: 'Otro local del mismo dueño', startAt: '2026-12-01T21:00:00.000Z', gastroOrganizer: { id: 'gp-b' } },
+  { id: 'producer', title: 'Productora', startAt: '2026-12-02T21:00:00.000Z', gastroOrganizer: null },
+  { id: 'soon', title: 'Pronto', startAt: '2026-12-05T21:00:00.000Z', gastroOrganizer: { id: 'gp-a' }, coverImageUrl: 'https://cdn.test/a.jpg' },
+]);
+assert(cards.map((c) => c.id).join() === 'soon,late', 'local A → only local A events, soonest first');
+assert(cards[0]!.href === '/events/soon' && cards[0]!.imageUrl === 'https://cdn.test/a.jpg', 'card links to the public event detail');
+assert(Boolean(cards[0]!.date) && Boolean(cards[0]!.time), 'card shows date and time');
+assert(cards[1]!.excerpt!.length <= 140 && cards[1]!.excerpt!.endsWith('…'), 'long description → short excerpt');
+
+const gallery = buildEventGalleryImages(
+  [
+    { id: 'm2', type: 'IMAGE', url: 'https://cdn.test/b.jpg', sortOrder: 1 },
+    { id: 'm1', type: 'IMAGE', url: 'https://cdn.test/a.jpg', sortOrder: 0 },
+    { id: 'v', type: 'VIDEO', url: 'https://cdn.test/v.mp4', sortOrder: 2 },
+  ],
+  'https://cdn.test/a.jpg',
+);
+assert(gallery.map((g) => g.id).join() === 'm2', 'event gallery: images only, cover not repeated');
+
+const detailSrc = readFileSync(resolve(process.cwd(), '../web/components/gastro/GastroPublicDetailContent.tsx'), 'utf8');
+const order = ['<GastroDiscountsSection', '<GastroLocalEventsSection', '<GastroLocationEditorialSection'].map((s) => detailSrc.indexOf(s));
+assert(order.every((i) => i > 0) && order[0]! < order[1]! && order[1]! < order[2]!, 'ficha order: Descuentos → Eventos → Publicaciones');
 
 console.log('OK: gastro promo event form');

@@ -29,6 +29,9 @@ export type RentalProductImagesFormProps = {
   uploadConfig?: GcsImageUploadConfig;
   /** Notifies parent while GCS uploads are in progress (disable save). */
   onUploadingChange?: (uploading: boolean) => void;
+  /** Overrides the gallery label / usage hint (e.g. gastro promo events). */
+  galleryLabel?: string;
+  galleryUsageHint?: string;
 };
 
 const IMAGE_ACCEPT_LEGACY = 'image/*';
@@ -39,6 +42,8 @@ export function RentalProductImagesForm({
   galleryOnly = false,
   uploadConfig,
   onUploadingChange,
+  galleryLabel,
+  galleryUsageHint,
 }: RentalProductImagesFormProps) {
   const { addToast } = useToast();
   const [galleryUrlDraft, setGalleryUrlDraft] = useState('');
@@ -178,15 +183,17 @@ export function RentalProductImagesForm({
 
       <div className={galleryOnly ? '' : 'mt-6'}>
         <label className="mb-1.5 block text-sm font-medium text-text">
-          {galleryOnly ? 'Imágenes del ticket' : 'Galería'}
+          {galleryLabel ?? (galleryOnly ? 'Imágenes del ticket' : 'Galería')}
         </label>
         <ImageUploadHint
           variant="gallery"
           options={{
             gcs: gcsMode,
-            usageOverride: galleryOnly
-              ? 'Podés subir varias imágenes del ticket. Administración elegirá cuáles publicar.'
-              : undefined,
+            usageOverride:
+              galleryUsageHint ??
+              (galleryOnly
+                ? 'Podés subir varias imágenes del ticket. Administración elegirá cuáles publicar.'
+                : undefined),
           }}
           className="mb-3"
         />

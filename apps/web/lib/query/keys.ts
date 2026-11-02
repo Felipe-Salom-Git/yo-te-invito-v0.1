@@ -473,6 +473,8 @@ export const publicGastroKeys = {
     [...publicGastroKeys.all, 'by-event', eventId, tenantId] as const,
   discounts: (locationId: string, tenantId: string) =>
     [...publicGastroKeys.all, 'discounts', locationId, tenantId] as const,
+  promoEvents: (locationId: string, tenantId: string) =>
+    [...publicGastroKeys.all, 'promo-events', locationId, tenantId] as const,
 };
 
 export const hotelKeys = {
