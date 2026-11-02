@@ -4,20 +4,18 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
-import type { BenefitCommercialAgreement, Prisma } from '@prisma/client';
 import {
   ErrorCode,
   benefitAgreementCalendarKeyFromInstant,
+  benefitAgreementMatchesDiscountProfile,
   benefitAgreementPreviousCalendarDay,
   benefitAgreementRangesOverlap,
-  classifyBenefitAgreementVigency,
   gastroDiscountEndOfDay,
   gastroDiscountStartOfDay,
-  moneyCentsToString,
+  isBenefitAgreementReadOnly,
   parseMoneyCentsString,
-  resolveBenefitAgreementAtDate,
-  resolveBenefitAgreementScope,
   type BenefitCommercialAgreementDto,
   type BenefitCommercialAgreementPartnerHistoryQuery,
   type BenefitCommercialAgreementPartnerHistoryResponse,
@@ -31,13 +29,31 @@ import {
 } from '@yo-te-invito/shared';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
+import {
+  AGREEMENT_DISPLAY_INCLUDE,
+  agreementScopeKeyFromRow,
+  agreementScopeWhere,
+  legacyReadOnlyError,
+  lockAgreementScope,
+  mapAgreementWriteConflict,
+  type AgreementScopeKey,
+} from './benefit-agreement-scope.util';
+import {
+  agreementAuditSnapshot,
+  agreementRowToDto,
+  parseAgreementDateKey,
+  pickApplicableAgreement,
+  todayAgreementKey,
+  type AgreementRow,
+} from './benefit-agreement-dto.util';
 
-type AgreementRow = BenefitCommercialAgreement & {
-  gastroProfile?: { displayName: string } | null;
-  gastroDiscount?: { displayTitle: string | null } | null;
-  excursionOperator?: { name: string } | null;
-};
+type Actor = { id: string; role: string };
 
+/**
+ * Commercial agreements (Etapa 9 + G10).
+ * G10: GASTRO agreements are discount-scoped; legacy profile-scoped rows are read-only history
+ * and never resolved for new pricing. ACTIVITY (operator-scoped) is unchanged.
+ */
 @Injectable()
 export class BenefitCommercialAgreementsService {
   constructor(
@@ -52,140 +68,105 @@ export class BenefitCommercialAgreementsService {
       this.prisma.benefitCommercialAgreement.count({ where }),
       this.prisma.benefitCommercialAgreement.findMany({
         where,
-        include: {
-          gastroProfile: { select: { displayName: true } },
-          excursionOperator: { select: { name: true } },
-        },
+        include: AGREEMENT_DISPLAY_INCLUDE,
         orderBy: [{ validFrom: 'desc' }, { createdAt: 'desc' }],
         skip,
         take: query.pageSize,
       }),
     ]);
-    const todayKey = benefitAgreementCalendarKeyFromInstant(new Date());
+    const todayKey = todayAgreementKey();
     return {
       total,
       page: query.page,
       pageSize: query.pageSize,
-      data: rows.map((row) => this.toDto(row, todayKey)),
+      data: rows.map((row) => agreementRowToDto(row, todayKey)),
     };
   }
 
   async get(tenantId: string, id: string): Promise<BenefitCommercialAgreementDto> {
-    return this.toDto(await this.require(tenantId, id), benefitAgreementCalendarKeyFromInstant(new Date()));
+    return agreementRowToDto(await this.require(tenantId, id), todayAgreementKey());
   }
 
+  /**
+   * Partner history. GASTRO = legacy profile-scoped rows only (read-only, pre-G10);
+   * discount history lives in `BenefitDiscountAgreementHistoryService`.
+   */
   async partnerHistory(
     tenantId: string,
     query: BenefitCommercialAgreementPartnerHistoryQuery,
   ): Promise<BenefitCommercialAgreementPartnerHistoryResponse> {
-    const where = this.partnerWhere(tenantId, query.vertical, query.gastroProfileId, query.excursionOperatorId);
-    const rows = await this.prisma.benefitCommercialAgreement.findMany({
-      where,
-      include: {
-        gastroProfile: { select: { displayName: true } },
-        excursionOperator: { select: { name: true } },
-      },
-      orderBy: [{ validFrom: 'desc' }, { createdAt: 'desc' }],
-    });
-    const todayKey = benefitAgreementCalendarKeyFromInstant(new Date());
-    const dtos = rows.map((row) => this.toDto(row, todayKey));
-    const current = this.pickApplicableFromRows(rows, todayKey, new Date());
+    const key: AgreementScopeKey =
+      query.vertical === 'GASTRO'
+        ? { scope: 'PROFILE_LEGACY', gastroProfileId: query.gastroProfileId! }
+        : { scope: 'OPERATOR', excursionOperatorId: query.excursionOperatorId! };
+    const rows = await this.findScopeRows(tenantId, key);
+    const todayKey = todayAgreementKey();
     return {
       vertical: query.vertical,
       gastroProfileId: query.gastroProfileId ?? null,
       excursionOperatorId: query.excursionOperatorId ?? null,
       partnerDisplayName:
         rows[0]?.gastroProfile?.displayName ?? rows[0]?.excursionOperator?.name ?? null,
-      current,
-      history: dtos,
+      current: pickApplicableAgreement(rows, todayKey, new Date()),
+      history: rows.map((row) => agreementRowToDto(row, todayKey)),
     };
   }
 
   /**
-   * Canonical resolution of the commercial agreement applicable to a partner on a date.
-   * Uses inclusive AR calendar vigency — not "latest created".
+   * Canonical resolution of the agreement applicable on a date (inclusive AR calendar vigency).
+   * GASTRO + gastroDiscountId → only that discount's agreements (never legacy rows).
+   * GASTRO + gastroProfileId only → legacy profile row (transitional approval gate until G10.B).
    */
   async resolveApplicable(
     tenantId: string,
     query: BenefitCommercialAgreementResolveQuery,
   ): Promise<BenefitCommercialAgreementResolveResponse> {
-    const onDateKey =
-      query.onDate ?? benefitAgreementCalendarKeyFromInstant(new Date());
-    const [y, m, d] = this.parseDateKey(onDateKey);
-    const onInstant = gastroDiscountStartOfDay(y, m, d);
-
-    const rows = await this.prisma.benefitCommercialAgreement.findMany({
-      where: this.partnerWhere(
-        tenantId,
-        query.vertical,
-        query.gastroProfileId,
-        query.excursionOperatorId,
-      ),
-      include: {
-        gastroProfile: { select: { displayName: true } },
-        excursionOperator: { select: { name: true } },
-      },
-    });
-
-    const todayKey = benefitAgreementCalendarKeyFromInstant(new Date());
-    const agreement = this.pickApplicableFromRows(rows, todayKey, onInstant);
-
+    const onDateKey = query.onDate ?? todayAgreementKey();
+    const onInstant = gastroDiscountStartOfDay(...parseAgreementDateKey(onDateKey));
+    const key = await this.resolveQueryScope(tenantId, query);
+    const rows = key ? await this.findScopeRows(tenantId, key) : [];
     return {
       vertical: query.vertical,
-      gastroProfileId: query.gastroProfileId ?? null,
-      gastroDiscountId: null,
+      gastroProfileId: key && key.scope !== 'OPERATOR' ? key.gastroProfileId : query.gastroProfileId ?? null,
+      gastroDiscountId: query.gastroDiscountId ?? null,
       excursionOperatorId: query.excursionOperatorId ?? null,
       onDate: onDateKey,
-      agreement,
+      agreement: pickApplicableAgreement(rows, todayAgreementKey(), onInstant),
     };
-  }
-
-  private pickApplicableFromRows(
-    rows: AgreementRow[],
-    todayKey: string,
-    onInstant: Date,
-  ): BenefitCommercialAgreementDto | null {
-    const likes = rows.map((row) => ({
-      id: row.id,
-      validFromKey: benefitAgreementCalendarKeyFromInstant(row.validFrom),
-      validToKey: row.validTo ? benefitAgreementCalendarKeyFromInstant(row.validTo) : null,
-    }));
-    const match = resolveBenefitAgreementAtDate(likes, onInstant);
-    if (!match) return null;
-    const row = rows.find((r) => r.id === match.id);
-    return row ? this.toDto(row, todayKey) : null;
   }
 
   async create(
     tenantId: string,
-    actor: { id: string; role: string },
+    actor: Actor,
     body: CreateBenefitCommercialAgreementBody,
   ): Promise<BenefitCommercialAgreementDto> {
-    await this.assertPartnerEligible(tenantId, body);
-    const validFrom = gastroDiscountStartOfDay(...this.parseDateKey(body.validFrom));
-    const validFromKey = body.validFrom;
-    await this.assertNoOverlap(tenantId, body.vertical, body.gastroProfileId, body.excursionOperatorId, {
-      validFromKey,
-      validToKey: null,
-    });
-    const row = await this.prisma.benefitCommercialAgreement.create({
-      data: {
-        tenantId,
-        vertical: body.vertical,
-        gastroProfileId: body.gastroProfileId ?? null,
-        excursionOperatorId: body.excursionOperatorId ?? null,
-        unitPriceCents: parseMoneyCentsString(body.unitPriceCents),
-        barterMultiplier: new Decimal(body.barterMultiplier),
-        currency: body.currency,
-        validFrom,
-        notes: body.notes ?? null,
-        createdByUserId: actor.id,
-      },
-      include: {
-        gastroProfile: { select: { displayName: true } },
-        excursionOperator: { select: { name: true } },
-      },
-    });
+    const key = await this.assertCreateScopeEligible(tenantId, body);
+    const validFrom = gastroDiscountStartOfDay(...parseAgreementDateKey(body.validFrom));
+    const row = await this.prisma
+      .$transaction(
+        async (tx) => {
+          await lockAgreementScope(tx, tenantId, key);
+          await this.assertNoOverlap(tx, tenantId, key, { validFromKey: body.validFrom, validToKey: null });
+          return tx.benefitCommercialAgreement.create({
+            data: {
+              tenantId,
+              vertical: body.vertical,
+              gastroProfileId: body.gastroProfileId ?? null,
+              gastroDiscountId: body.gastroDiscountId ?? null,
+              excursionOperatorId: body.excursionOperatorId ?? null,
+              unitPriceCents: parseMoneyCentsString(body.unitPriceCents),
+              barterMultiplier: new Decimal(body.barterMultiplier),
+              currency: body.currency,
+              validFrom,
+              notes: body.notes ?? null,
+              createdByUserId: actor.id,
+            },
+            include: AGREEMENT_DISPLAY_INCLUDE,
+          });
+        },
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+      )
+      .catch(mapAgreementWriteConflict);
     await this.audit.logAction({
       tenantId,
       actorId: actor.id,
@@ -193,18 +174,18 @@ export class BenefitCommercialAgreementsService {
       action: 'BENEFIT_AGREEMENT_CREATED',
       entityType: 'BenefitCommercialAgreement',
       entityId: row.id,
-      after: this.auditSnapshot(row),
+      after: agreementAuditSnapshot(row),
     });
-    return this.toDto(row, benefitAgreementCalendarKeyFromInstant(new Date()));
+    return agreementRowToDto(row, todayAgreementKey());
   }
 
   async close(
     tenantId: string,
-    actor: { id: string; role: string },
+    actor: Actor,
     id: string,
     body: CloseBenefitCommercialAgreementBody,
   ): Promise<BenefitCommercialAgreementDto> {
-    const row = await this.require(tenantId, id);
+    const row = await this.requireWritable(tenantId, id);
     if (row.validTo != null) {
       throw new ConflictException({
         code: ErrorCode.BENEFIT_AGREEMENT_ALREADY_CLOSED,
@@ -218,14 +199,11 @@ export class BenefitCommercialAgreementsService {
         message: 'validTo cannot be before validFrom',
       });
     }
-    const validTo = gastroDiscountEndOfDay(...this.parseDateKey(body.validTo));
+    const validTo = gastroDiscountEndOfDay(...parseAgreementDateKey(body.validTo));
     const updated = await this.prisma.benefitCommercialAgreement.update({
       where: { id: row.id },
       data: { validTo },
-      include: {
-        gastroProfile: { select: { displayName: true } },
-        excursionOperator: { select: { name: true } },
-      },
+      include: AGREEMENT_DISPLAY_INCLUDE,
     });
     await this.audit.logAction({
       tenantId,
@@ -234,76 +212,76 @@ export class BenefitCommercialAgreementsService {
       action: 'BENEFIT_AGREEMENT_CLOSED',
       entityType: 'BenefitCommercialAgreement',
       entityId: updated.id,
-      before: this.auditSnapshot(row),
-      after: this.auditSnapshot(updated),
+      before: agreementAuditSnapshot(row),
+      after: agreementAuditSnapshot(updated),
     });
-    return this.toDto(updated, benefitAgreementCalendarKeyFromInstant(new Date()));
+    return agreementRowToDto(updated, todayAgreementKey());
   }
 
   async replace(
     tenantId: string,
-    actor: { id: string; role: string },
+    actor: Actor,
     id: string,
     body: ReplaceBenefitCommercialAgreementBody,
   ): Promise<{ closed: BenefitCommercialAgreementDto; created: BenefitCommercialAgreementDto }> {
-    const row = await this.require(tenantId, id);
-    if (row.validTo != null) {
-      throw new ConflictException({
-        code: ErrorCode.BENEFIT_AGREEMENT_ALREADY_CLOSED,
-        message: 'Cannot replace a closed agreement; create a new one instead',
-      });
-    }
-    const currentFromKey = benefitAgreementCalendarKeyFromInstant(row.validFrom);
-    if (body.effectiveFrom <= currentFromKey) {
-      throw new BadRequestException({
-        code: ErrorCode.BENEFIT_AGREEMENT_INVALID_EFFECTIVE_DATE,
-        message: 'effectiveFrom must be after the current agreement validFrom',
-      });
-    }
-    const closeToKey = benefitAgreementPreviousCalendarDay(body.effectiveFrom);
-    const closeTo = gastroDiscountEndOfDay(...this.parseDateKey(closeToKey));
-    const newFrom = gastroDiscountStartOfDay(...this.parseDateKey(body.effectiveFrom));
+    const row = await this.requireWritable(tenantId, id);
+    const key = agreementScopeKeyFromRow(row);
+    const closeTo = gastroDiscountEndOfDay(
+      ...parseAgreementDateKey(benefitAgreementPreviousCalendarDay(body.effectiveFrom)),
+    );
+    const newFrom = gastroDiscountStartOfDay(...parseAgreementDateKey(body.effectiveFrom));
 
-    const result = await this.prisma.$transaction(async (tx) => {
-      const closed = await tx.benefitCommercialAgreement.update({
-        where: { id: row.id },
-        data: { validTo: closeTo },
-        include: {
-          gastroProfile: { select: { displayName: true } },
-          excursionOperator: { select: { name: true } },
+    const result = await this.prisma
+      .$transaction(
+        async (tx) => {
+          await lockAgreementScope(tx, tenantId, key);
+          const fresh = await tx.benefitCommercialAgreement.findFirstOrThrow({ where: { id: row.id, tenantId } });
+          if (fresh.validTo != null) {
+            throw new ConflictException({
+              code: ErrorCode.BENEFIT_AGREEMENT_ALREADY_CLOSED,
+              message: 'Cannot replace a closed agreement; create a new one instead',
+            });
+          }
+          if (body.effectiveFrom <= benefitAgreementCalendarKeyFromInstant(fresh.validFrom)) {
+            throw new BadRequestException({
+              code: ErrorCode.BENEFIT_AGREEMENT_INVALID_EFFECTIVE_DATE,
+              message: 'effectiveFrom must be after the current agreement validFrom',
+            });
+          }
+          const closed = await tx.benefitCommercialAgreement.update({
+            where: { id: row.id },
+            data: { validTo: closeTo },
+            include: AGREEMENT_DISPLAY_INCLUDE,
+          });
+          await this.assertNoOverlap(
+            tx,
+            tenantId,
+            key,
+            { validFromKey: body.effectiveFrom, validToKey: null },
+            row.id,
+          );
+          const created = await tx.benefitCommercialAgreement.create({
+            data: {
+              tenantId,
+              vertical: row.vertical,
+              gastroProfileId: row.gastroProfileId,
+              gastroDiscountId: row.gastroDiscountId,
+              excursionOperatorId: row.excursionOperatorId,
+              unitPriceCents: parseMoneyCentsString(body.unitPriceCents),
+              barterMultiplier: new Decimal(body.barterMultiplier),
+              currency: body.currency,
+              validFrom: newFrom,
+              notes: body.notes ?? null,
+              createdByUserId: actor.id,
+            },
+            include: AGREEMENT_DISPLAY_INCLUDE,
+          });
+          return { closed, created };
         },
-      });
-      await this.assertNoOverlap(
-        tenantId,
-        row.vertical,
-        row.gastroProfileId ?? undefined,
-        row.excursionOperatorId ?? undefined,
-        { validFromKey: body.effectiveFrom, validToKey: null },
-        tx,
-        row.id,
-      );
-      const created = await tx.benefitCommercialAgreement.create({
-        data: {
-          tenantId,
-          vertical: row.vertical,
-          gastroProfileId: row.gastroProfileId,
-          excursionOperatorId: row.excursionOperatorId,
-          unitPriceCents: parseMoneyCentsString(body.unitPriceCents),
-          barterMultiplier: new Decimal(body.barterMultiplier),
-          currency: body.currency,
-          validFrom: newFrom,
-          notes: body.notes ?? null,
-          createdByUserId: actor.id,
-        },
-        include: {
-          gastroProfile: { select: { displayName: true } },
-          excursionOperator: { select: { name: true } },
-        },
-      });
-      return { closed, created };
-    });
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+      )
+      .catch(mapAgreementWriteConflict);
 
-    const todayKey = benefitAgreementCalendarKeyFromInstant(new Date());
     await this.audit.logAction({
       tenantId,
       actorId: actor.id,
@@ -312,29 +290,27 @@ export class BenefitCommercialAgreementsService {
       entityType: 'BenefitCommercialAgreement',
       entityId: result.created.id,
       metadata: { replacedAgreementId: row.id },
-      before: this.auditSnapshot(row),
-      after: this.auditSnapshot(result.created),
+      before: agreementAuditSnapshot(row),
+      after: agreementAuditSnapshot(result.created),
     });
+    const todayKey = todayAgreementKey();
     return {
-      closed: this.toDto(result.closed, todayKey),
-      created: this.toDto(result.created, todayKey),
+      closed: agreementRowToDto(result.closed, todayKey),
+      created: agreementRowToDto(result.created, todayKey),
     };
   }
 
   async updateNotes(
     tenantId: string,
-    actor: { id: string; role: string },
+    actor: Actor,
     id: string,
     body: UpdateBenefitCommercialAgreementNotesBody,
   ): Promise<BenefitCommercialAgreementDto> {
-    const row = await this.require(tenantId, id);
+    const row = await this.requireWritable(tenantId, id);
     const updated = await this.prisma.benefitCommercialAgreement.update({
       where: { id: row.id },
       data: { notes: body.notes },
-      include: {
-        gastroProfile: { select: { displayName: true } },
-        excursionOperator: { select: { name: true } },
-      },
+      include: AGREEMENT_DISPLAY_INCLUDE,
     });
     await this.audit.logAction({
       tenantId,
@@ -346,15 +322,58 @@ export class BenefitCommercialAgreementsService {
       before: { notes: row.notes },
       after: { notes: updated.notes },
     });
-    return this.toDto(updated, benefitAgreementCalendarKeyFromInstant(new Date()));
+    return agreementRowToDto(updated, todayAgreementKey());
+  }
+
+  private findScopeRows(tenantId: string, key: AgreementScopeKey): Promise<AgreementRow[]> {
+    return this.prisma.benefitCommercialAgreement.findMany({
+      where: agreementScopeWhere(tenantId, key),
+      include: AGREEMENT_DISPLAY_INCLUDE,
+      orderBy: [{ validFrom: 'desc' }, { createdAt: 'desc' }],
+    });
+  }
+
+  /** Discount scope requires the discount to belong to the tenant (and to `gastroProfileId` if given). */
+  private async resolveQueryScope(
+    tenantId: string,
+    query: BenefitCommercialAgreementResolveQuery,
+  ): Promise<AgreementScopeKey | null> {
+    if (query.vertical === 'ACTIVITY') {
+      return { scope: 'OPERATOR', excursionOperatorId: query.excursionOperatorId! };
+    }
+    if (!query.gastroDiscountId) {
+      return { scope: 'PROFILE_LEGACY', gastroProfileId: query.gastroProfileId! };
+    }
+    const discount = await this.prisma.gastroDiscount.findFirst({
+      where: { id: query.gastroDiscountId, tenantId },
+      select: { gastroProfileId: true },
+    });
+    if (!discount) {
+      throw new NotFoundException({
+        code: ErrorCode.BENEFIT_AGREEMENT_PARTNER_INVALID,
+        message: 'Gastro discount not found for tenant',
+      });
+    }
+    if (query.gastroProfileId && query.gastroProfileId !== discount.gastroProfileId) {
+      throw new BadRequestException({
+        code: ErrorCode.BENEFIT_AGREEMENT_PARTNER_INVALID,
+        message: 'Discount does not belong to this gastro profile',
+      });
+    }
+    if (!discount.gastroProfileId) return null;
+    return {
+      scope: 'DISCOUNT',
+      gastroProfileId: discount.gastroProfileId,
+      gastroDiscountId: query.gastroDiscountId,
+    };
   }
 
   private buildListWhere(
     tenantId: string,
     query: BenefitCommercialAgreementsListQuery,
   ): Prisma.BenefitCommercialAgreementWhereInput {
-    const todayKey = benefitAgreementCalendarKeyFromInstant(new Date());
-    const [y, m, d] = this.parseDateKey(todayKey);
+    const todayKey = todayAgreementKey();
+    const [y, m, d] = parseAgreementDateKey(todayKey);
     const todayStart = gastroDiscountStartOfDay(y, m, d);
     const todayEnd = gastroDiscountEndOfDay(y, m, d);
     let vigencyWhere: Prisma.BenefitCommercialAgreementWhereInput = {};
@@ -368,35 +387,29 @@ export class BenefitCommercialAgreementsService {
     } else if (query.vigency === 'PAST') {
       vigencyWhere = { validTo: { lt: todayStart } };
     }
+    const scopeWhere: Prisma.BenefitCommercialAgreementWhereInput =
+      query.scope === 'DISCOUNT'
+        ? { vertical: 'GASTRO', gastroDiscountId: { not: null } }
+        : query.scope === 'PROFILE_LEGACY'
+          ? { vertical: 'GASTRO', gastroDiscountId: null }
+          : query.scope === 'OPERATOR'
+            ? { vertical: 'ACTIVITY' }
+            : {};
     return {
       tenantId,
       ...vigencyWhere,
+      AND: [scopeWhere],
       ...(query.vertical ? { vertical: query.vertical } : {}),
       ...(query.gastroProfileId ? { gastroProfileId: query.gastroProfileId } : {}),
+      ...(query.gastroDiscountId ? { gastroDiscountId: query.gastroDiscountId } : {}),
       ...(query.excursionOperatorId ? { excursionOperatorId: query.excursionOperatorId } : {}),
-    };
-  }
-
-  private partnerWhere(
-    tenantId: string,
-    vertical: CreateBenefitCommercialAgreementBody['vertical'],
-    gastroProfileId?: string,
-    excursionOperatorId?: string,
-  ): Prisma.BenefitCommercialAgreementWhereInput {
-    return {
-      tenantId,
-      vertical,
-      ...(vertical === 'GASTRO' ? { gastroProfileId } : { excursionOperatorId }),
     };
   }
 
   private async require(tenantId: string, id: string): Promise<AgreementRow> {
     const row = await this.prisma.benefitCommercialAgreement.findFirst({
       where: { id, tenantId },
-      include: {
-        gastroProfile: { select: { displayName: true } },
-        excursionOperator: { select: { name: true } },
-      },
+      include: AGREEMENT_DISPLAY_INCLUDE,
     });
     if (!row) {
       throw new NotFoundException({
@@ -407,13 +420,41 @@ export class BenefitCommercialAgreementsService {
     return row;
   }
 
-  private async assertPartnerEligible(
+  /** D-G10-10 — legacy profile-scoped rows cannot be closed, replaced or edited. */
+  private async requireWritable(tenantId: string, id: string): Promise<AgreementRow> {
+    const row = await this.require(tenantId, id);
+    if (isBenefitAgreementReadOnly(row)) throw legacyReadOnlyError();
+    return row;
+  }
+
+  /**
+   * GASTRO: discount in tenant + discount.gastroProfileId == supplied profile (no cross-profile)
+   * + profile ACTIVE. ACTIVITY: operator active (unchanged).
+   */
+  private async assertCreateScopeEligible(
     tenantId: string,
     body: CreateBenefitCommercialAgreementBody,
-  ): Promise<void> {
+  ): Promise<AgreementScopeKey> {
     if (body.vertical === 'GASTRO') {
+      const discount = await this.prisma.gastroDiscount.findFirst({
+        where: { id: body.gastroDiscountId, tenantId },
+        select: { gastroProfileId: true },
+      });
+      if (!discount) {
+        throw new BadRequestException({
+          code: ErrorCode.BENEFIT_AGREEMENT_PARTNER_INVALID,
+          message: 'Gastro discount not found for tenant',
+        });
+      }
+      if (!benefitAgreementMatchesDiscountProfile(body.gastroProfileId, discount.gastroProfileId)) {
+        throw new BadRequestException({
+          code: ErrorCode.BENEFIT_AGREEMENT_PARTNER_INVALID,
+          message: 'Discount does not belong to this gastro profile',
+        });
+      }
       const profile = await this.prisma.gastroProfile.findFirst({
         where: { id: body.gastroProfileId, tenantId },
+        select: { status: true },
       });
       if (!profile) {
         throw new BadRequestException({
@@ -427,7 +468,11 @@ export class BenefitCommercialAgreementsService {
           message: 'Gastro profile must be ACTIVE to create a new agreement',
         });
       }
-      return;
+      return {
+        scope: 'DISCOUNT',
+        gastroProfileId: body.gastroProfileId!,
+        gastroDiscountId: body.gastroDiscountId!,
+      };
     }
     const operator = await this.prisma.excursionOperator.findFirst({
       where: { id: body.excursionOperatorId, tenantId, deletedAt: null },
@@ -444,81 +489,33 @@ export class BenefitCommercialAgreementsService {
         message: 'Excursion operator must be active to create a new agreement',
       });
     }
+    return { scope: 'OPERATOR', excursionOperatorId: body.excursionOperatorId! };
   }
 
+  /** Runs inside the scope-locked Serializable transaction (never outside). */
   private async assertNoOverlap(
+    tx: Prisma.TransactionClient,
     tenantId: string,
-    vertical: CreateBenefitCommercialAgreementBody['vertical'],
-    gastroProfileId: string | undefined,
-    excursionOperatorId: string | undefined,
+    key: AgreementScopeKey,
     candidate: { validFromKey: string; validToKey: string | null },
-    tx: Prisma.TransactionClient = this.prisma,
     excludeId?: string,
   ): Promise<void> {
     const existing = await tx.benefitCommercialAgreement.findMany({
       where: {
-        tenantId,
-        vertical,
-        ...(vertical === 'GASTRO' ? { gastroProfileId } : { excursionOperatorId }),
+        ...agreementScopeWhere(tenantId, key),
         ...(excludeId ? { NOT: { id: excludeId } } : {}),
       },
+      select: { validFrom: true, validTo: true },
     });
     for (const row of existing) {
       const fromKey = benefitAgreementCalendarKeyFromInstant(row.validFrom);
       const toKey = row.validTo ? benefitAgreementCalendarKeyFromInstant(row.validTo) : null;
-      if (
-        benefitAgreementRangesOverlap(fromKey, toKey, candidate.validFromKey, candidate.validToKey)
-      ) {
+      if (benefitAgreementRangesOverlap(fromKey, toKey, candidate.validFromKey, candidate.validToKey)) {
         throw new ConflictException({
           code: ErrorCode.BENEFIT_AGREEMENT_OVERLAP,
-          message: 'Agreement date range overlaps an existing agreement for this partner',
+          message: 'Agreement date range overlaps an existing agreement for this scope',
         });
       }
     }
-  }
-
-  private parseDateKey(key: string): [number, number, number] {
-    const [y, m, d] = key.split('-').map((p) => parseInt(p, 10));
-    return [y, m, d];
-  }
-
-  private toDto(row: AgreementRow, todayKey: string): BenefitCommercialAgreementDto {
-    const validFromKey = benefitAgreementCalendarKeyFromInstant(row.validFrom);
-    const validToKey = row.validTo ? benefitAgreementCalendarKeyFromInstant(row.validTo) : null;
-    return {
-      id: row.id,
-      tenantId: row.tenantId,
-      vertical: row.vertical,
-      gastroProfileId: row.gastroProfileId,
-      gastroDiscountId: row.gastroDiscountId,
-      excursionOperatorId: row.excursionOperatorId,
-      scope: resolveBenefitAgreementScope(row),
-      derivedFromAgreementId: row.derivedFromAgreementId,
-      partnerDisplayName: row.gastroProfile?.displayName ?? row.excursionOperator?.name ?? null,
-      discountTitle: row.gastroDiscount?.displayTitle ?? null,
-      unitPriceCents: moneyCentsToString(row.unitPriceCents),
-      barterMultiplier: row.barterMultiplier.toString(),
-      currency: row.currency,
-      validFrom: validFromKey,
-      validTo: validToKey,
-      vigency: classifyBenefitAgreementVigency(validFromKey, validToKey, todayKey),
-      isOpen: row.validTo == null,
-      notes: row.notes,
-      createdByUserId: row.createdByUserId,
-      createdAt: row.createdAt.toISOString(),
-      updatedAt: row.updatedAt.toISOString(),
-    };
-  }
-
-  private auditSnapshot(row: BenefitCommercialAgreement) {
-    return {
-      vertical: row.vertical,
-      gastroProfileId: row.gastroProfileId,
-      excursionOperatorId: row.excursionOperatorId,
-      unitPriceCents: moneyCentsToString(row.unitPriceCents),
-      barterMultiplier: row.barterMultiplier.toString(),
-      validFrom: benefitAgreementCalendarKeyFromInstant(row.validFrom),
-      validTo: row.validTo ? benefitAgreementCalendarKeyFromInstant(row.validTo) : null,
-    };
   }
 }

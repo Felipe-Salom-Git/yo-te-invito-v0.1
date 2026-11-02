@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import {
   Role,
+  benefitCommercialAgreementDiscountHistoryQuerySchema,
   benefitCommercialAgreementPartnerHistoryQuerySchema,
   benefitCommercialAgreementResolveQuerySchema,
   benefitCommercialAgreementsListQuerySchema,
@@ -8,6 +9,7 @@ import {
   createBenefitCommercialAgreementBodySchema,
   replaceBenefitCommercialAgreementBodySchema,
   updateBenefitCommercialAgreementNotesBodySchema,
+  type BenefitCommercialAgreementDiscountHistoryQuery,
   type BenefitCommercialAgreementPartnerHistoryQuery,
   type BenefitCommercialAgreementResolveQuery,
   type BenefitCommercialAgreementsListQuery,
@@ -22,12 +24,16 @@ import { RequireRole } from '../../common/decorators/require-role.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { BenefitCommercialAgreementsService } from './benefit-commercial-agreements.service';
+import { BenefitDiscountAgreementHistoryService } from './benefit-discount-agreement-history.service';
 
 @Controller('admin/benefit-agreements')
 @UseGuards(JwtOrDevAuthGuard, RolesGuard)
 @RequireRole(Role.ADMIN)
 export class AdminBenefitAgreementsController {
-  constructor(private readonly agreements: BenefitCommercialAgreementsService) {}
+  constructor(
+    private readonly agreements: BenefitCommercialAgreementsService,
+    private readonly discountAgreements: BenefitDiscountAgreementHistoryService,
+  ) {}
 
   @Get()
   list(
@@ -45,6 +51,15 @@ export class AdminBenefitAgreementsController {
     query: BenefitCommercialAgreementPartnerHistoryQuery,
   ) {
     return this.agreements.partnerHistory(user.tenantId, query);
+  }
+
+  @Get('discount-history')
+  discountHistory(
+    @CurrentUser() user: { tenantId: string },
+    @Query(new ZodValidationPipe(benefitCommercialAgreementDiscountHistoryQuerySchema))
+    query: BenefitCommercialAgreementDiscountHistoryQuery,
+  ) {
+    return this.discountAgreements.discountHistory(user.tenantId, query.gastroDiscountId);
   }
 
   @Get('resolve')
