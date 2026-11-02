@@ -1,6 +1,6 @@
 # Yo Te Invito — Next Chat Handoff
 
-**Actualizado:** 2026-11-02 · Rama: `feat/v1-s03-api-foundation` · HEAD: ver `git log -1`
+**Actualizado:** 2026-11-02 (G10.E, G10 COMPLETE en código) · Rama: `feat/v1-s03-api-foundation` · HEAD: ver `git log -1`
 
 Punto de entrada operativo para **V3.3**. Detalle completo: `AI_ENTRYPOINT.md`, `PROJECT_CONTEXT.md`, `CONTEXT_PENDIENTES.md`.
 
@@ -48,10 +48,13 @@ Punto de entrada operativo para **V3.3**. Detalle completo: `AI_ENTRYPOINT.md`, 
 | **G10.B Approval + UI de contrato por descuento** | ✅ **Local**, sin push/deploy, **sin migrations nuevas** — commits `af110bb`…(B5) — [`V3_3_G10_B_DISCOUNT_AGREEMENT_APPROVAL_UI_CLOSING.md`](../audits/V3_3_G10_B_DISCOUNT_AGREEMENT_APPROVAL_UI_CLOSING.md). Todo camino a ACTIVE (approve, approveCourtesy, on-behalf, cortesía ADMIN, reactivación, `sendQrEmail`) exige el contrato CURRENT **del descuento** (`GastroDiscountAgreementGateService`); financiada sin contrato (D-G10-3); on-behalf / cortesía ADMIN no financiada crean descuento + contrato atómicamente (D-G10-4). UI: sección "Contrato comercial" en el detalle del descuento; `/admin/liquidaciones/acuerdos` por descuento con legacy read-only; panel G5 del local eliminado. **G10.A + G10.B form an atomic release unit** |
 | **G10.C Resumen económico por descuento** | ✅ **Local**, sin push/deploy, **sin migrations nuevas** — commits `41539e4`…(C5) — [`V3_3_G10_C_DISCOUNT_ECONOMIC_SUMMARY_CLOSING.md`](../audits/V3_3_G10_C_DISCOUNT_ECONOMIC_SUMMARY_CLOSING.md). `GastroDiscountEconomicSummaryService` único (ADMIN completo / GASTRO redactado por schema). Endpoints `GET /admin/gastronomicos/:profileId/descuentos/:discountId/economic-summary` y `GET /gastro/discounts/:id/economic-summary`. CASH generado/pagado EXACT; pendiente `SETTLEMENT_LEVEL` con transfers sin descuento (nunca prorratea); CANJE base + crédito del ledger; legacy `PARTNER_LEVEL_LEGACY`. UI "Métricas económicas" (reemplaza G6) + portal "Contrato y liquidaciones". DB integration PASS (A–I). **G10.A + G10.B + G10.C todavía NO desplegados** |
 | **G10.D Pagos exactos CASH / CANJE por descuento** | ✅ **Local**, sin push/deploy, **sin migrations nuevas** — commits `1553f26`…(D5) — [`V3_3_G10_D_EXACT_DISCOUNT_PAYMENTS_CLOSING.md`](../audits/V3_3_G10_D_EXACT_DISCOUNT_PAYMENTS_CLOSING.md). CASH = allocation CASH (deuda) + transfer atribuida (`gastroDiscountId` obligatorio en GASTRO; ACTIVITY sin cambios). Guards descuento + settlement en Serializable + `FOR UPDATE` con retry (concurrencia: una PASS, una sobrepago). CANJE = allocation BARTER (sin "pago CANJE"). `allocate` aislado por `gastroDiscountId`; lista `…/descuentos/:discountId/pending-validations`. UI "Liquidar validaciones" + "Registrar pago" / "Revertir pago" (modal). Liquidación: EXACT vs legacy SETTLEMENT_LEVEL. Integridad `DISCOUNT_CASH_OVERPAYMENT` / `TRANSFER_DISCOUNT_SCOPE_MISMATCH`. DB integration PASS. **Release recomendado A+B+C+D juntos; NO desplegado** |
+| **G10.E Release readiness + regresión + ensayo + runbook** | ✅ **G10 COMPLETE** (local, sin push/deploy, sin migrations nuevas) — commits `307b1af`, `af6c010`, `ab92be7`, `89ccd38` + cierre — [`V3_3_G10_CLOSING.md`](../audits/V3_3_G10_CLOSING.md). E1: CLI `benefit-settlements:audit-integrity` corregida (estaba rota) y con todos los chequeos G10; audit de liquidación con atribución. E2: 102 suites, 97 PASS, 0 regresiones G10 ([regresión](../audits/V3_3_G10_E2_REGRESSION.md)). E3: ensayo pre-G10 → `migrate deploy` → backfill dry/confirm/dry → integridad, PASS ([ensayo](../audits/V3_3_G10_E3_DB_REHEARSAL.md)). E4: [readiness](../audits/V3_3_G10_RELEASE_READINESS.md) + [runbook de producción](../runbooks/V3_3_G10_PRODUCTION_DEPLOY.md). E5: [checklist QA](../audits/V3_3_G10_MANUAL_QA_CHECKLIST.md). **Unidad única A+B+C+D, no desplegar parcial** |
 
 **Checklist V3.3:** `docs/dev/Yo_Te_Invito_Checklist_V3_3_Funcional_Operativa.md`
 
-**Próximo paso V3.3:** cuando el operador lo indique, push/deploy acumulado de G7.11 + G7.12 + G8 + G9 (cero migrations nuevas; orden en el cierre G8 §8, comandos solo del runbook) y después el QA manual ([`V3_3_G8_MANUAL_QA_CHECKLIST.md`](../audits/V3_3_G8_MANUAL_QA_CHECKLIST.md) + checklists G7.11/G7.12 + recorrido UX de [`V3_3_G9_UX_CLOSING.md`](../audits/V3_3_G9_UX_CLOSING.md)). **G8 COMPLETE** y **G9 COMPLETE** en código. Producción congelada: no push/deploy hasta esa instrucción. QA 4 (rails secundarios) pendiente por datos. QA manual Etapas 1–9 sigue acumulada.
+**Próximo paso V3.3 (G10):** cuando el operador lo indique, push de la rama y deploy de **G10.A+B+C+D juntos** siguiendo exactamente [`docs/runbooks/V3_3_G10_PRODUCTION_DEPLOY.md`](../runbooks/V3_3_G10_PRODUCTION_DEPLOY.md) (backup GCS, `shared` build antes de la API, `migrate deploy`, restart, backfill dry-run → comparar con A0 → `--confirm` → dry-run 0, integridad, smoke) y después el QA manual de [`V3_3_G10_MANUAL_QA_CHECKLIST.md`](../audits/V3_3_G10_MANUAL_QA_CHECKLIST.md). G7.11–G9 ya están en producción.
+
+**Histórico (G7.11–G9, ya desplegado):** push/deploy acumulado de G7.11 + G7.12 + G8 + G9 (cero migrations nuevas; orden en el cierre G8 §8, comandos solo del runbook) y después el QA manual ([`V3_3_G8_MANUAL_QA_CHECKLIST.md`](../audits/V3_3_G8_MANUAL_QA_CHECKLIST.md) + checklists G7.11/G7.12 + recorrido UX de [`V3_3_G9_UX_CLOSING.md`](../audits/V3_3_G9_UX_CLOSING.md)). **G8 COMPLETE** y **G9 COMPLETE** en código. Producción congelada: no push/deploy hasta esa instrucción. QA 4 (rails secundarios) pendiente por datos. QA manual Etapas 1–9 sigue acumulada.
 
 **Deploy:** la clave SSH del VPS tiene passphrase; si el ssh-agent no la tiene cargada, el deploy lo ejecuta el operador siguiendo `docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`.
 
@@ -367,7 +370,7 @@ Código slices 0–11 cerrado. Hotfixes 2026-08: `15f2776`, `b8dc571`, `ff6f8e0`
 1. **QA manual / integración global V3.3** — Etapas 1–9 acumuladas (incl. liquidaciones: agreements, CASH/BARTER, transfers, ledger, funding, reporting, integrity).
 2. **Migración deploy + smoke DB** — `prisma migrate deploy` (acumula Etapa 3–9 incl. `20260901120000`…`20260901200000`). **NO EJECUTADO** — P1001 `localhost:5433`.
 3. **Redis integration** — worker `campaign-emails` end-to-end **NO EJECUTADO**.
-4. **Scanner DB integration** — `test:gastro-discount-scan` y Activity vs PostgreSQL **NO EJECUTADO**. `test:activity-coupon-scan` PASS = dispatch/unit, no integración DB.
+4. **Scanner DB integration** — `test:gastro-discount-scan` **PASS** contra PostgreSQL + HTTP desde G10.E2 (API con `DEV_AUTH_ENABLED=true`, `API_URL`; fixture corregido). Activity vs PostgreSQL sigue **NO EJECUTADO**; `test:activity-coupon-scan` PASS = dispatch/unit. `test:door-scan` (tickets) sigue con fixture sin `ScannerAccount`.
 5. **SMTP live smoke** — campaña masiva real **NO EJECUTADO** (a propósito).
 6. **QA prod V3.2** — cache, roles, auth resend, horarios.
 7. Deploy VPS si commits V3.2/V3.3 no están en prod.
@@ -422,13 +425,14 @@ pnpm --filter api run test:gastro-courtesy-accounting   # incluye escenarios en 
 ```
 
 `test:activity-coupon-scan` PASS = dispatch/unit scope, **≠** DB integration.  
-`test:gastro-discount-scan` — **NO EJECUTADO** (PostgreSQL no disponible). No marcar PASS.
+`test:gastro-discount-scan` — smoke HTTP: requiere la API levantada con `DEV_AUTH_ENABLED=true` (`API_URL=http://localhost:<port>`); PASS en G10.E2 (VALID / ALREADY_USED / INVALID / INACTIVE).  
+`pnpm --filter api run benefit-settlements:audit-integrity` — integridad read-only de todos los tenants (exit 2 si hay ERROR).
 
 ---
 
 ## 21. Próximo paso recomendado
 
-0. **G10** (contrato comercial por descuento + pagos exactos): G10.A, G10.B, G10.C y G10.D cerradas en local. Siguiente: **G10.E** (reporting opcional por descuento, regresión, DB integration, readiness/runbook, QA). **G10.A + G10.B + G10.C + G10.D todavía NO desplegados**; release recomendado **A+B+C+D juntos** (D exige `gastroDiscountId` en transfers GASTRO nuevas; liberarla junto con A–C evita transfers GASTRO sin atribución en producción, que hoy no tiene settlements GASTRO con allocations) cuando el operador lo indique, con el orden `migrate deploy` → restart → backfill `--dry-run` → `--confirm` → dry-run de verificación (0 copias) + integridad `agreementScopeIssues = []`. Rollback solo antes de la primera allocation/transfer por descuento (`scripts/ops/g10-a1-rollback.sql`).
+0. **G10 COMPLETE en código** (G10.0 → G10.E, [`V3_3_G10_CLOSING.md`](../audits/V3_3_G10_CLOSING.md)). **Todavía NO desplegado.** Release = **A+B+C+D juntos** (una sola unidad) cuando el operador lo indique, con el runbook [`V3_3_G10_PRODUCTION_DEPLOY.md`](../runbooks/V3_3_G10_PRODUCTION_DEPLOY.md): 19 pasos, `shared` build antes de la API, STOP si el dry-run difiere del A0, integridad con `pnpm --filter api run benefit-settlements:audit-integrity` (corregida en E1) + `scripts/ops/g10-e4-post-backfill-verify-readonly.sql`. Rollback de código solo antes del backfill `--confirm`; después, forward-fix only (no hay rollback destructivo prometido). Post-deploy: QA manual + contrato de los 5 descuentos sin cobertura.
 1. **Push/deploy acumulado** G7.11 + G7.12 + G8.0–G8.13 cuando el operador lo pida. Cero migrations nuevas. Orden y comandos: `V3_3_G8_COURTESIES_CLOSING.md` §8 (solo el runbook). **No** pushear ni desplegar desde el agente.
 2. **QA manual** post-deploy: `V3_3_G8_MANUAL_QA_CHECKLIST.md` + checklists G7.11/G7.12. Etapas 1–9 siguen acumuladas.
 3. **G9** solo con instrucción explícita. G8 ya está cerrado en código.
