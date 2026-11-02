@@ -2,6 +2,7 @@
 
 import { Logo } from '@/components/brand/Logo';
 import { TicketQrImage } from '@/components/tickets/TicketQrImage';
+import { ManualShortCodeBlock } from '@/components/ux/ManualShortCodeBlock';
 import { isValidActivityCouponQrPayload } from '@yo-te-invito/shared';
 
 const STATUS_LABELS: Record<string, string> = {
@@ -58,9 +59,6 @@ export function ActivityCouponQrCard({
         {validToLabel ? (
           <p className="mt-3 text-xs text-text-muted">Vence {validToLabel}</p>
         ) : null}
-        {shortCodeDisplay ? (
-          <p className="mt-3 font-mono text-lg tracking-widest text-text">{shortCodeDisplay}</p>
-        ) : null}
         <div className="mt-5 flex justify-center">
           {blocked || !qrOk ? (
             <p className="text-sm text-text-muted">QR no disponible</p>
@@ -68,6 +66,9 @@ export function ActivityCouponQrCard({
             <TicketQrImage qrPayload={qrPayload} sizePx={280} alt="Código QR del cupón" />
           )}
         </div>
+        {shortCodeDisplay ? (
+          <ManualShortCodeBlock code={shortCodeDisplay} muted={blocked} className="mt-4" />
+        ) : null}
       </div>
     </article>
   );

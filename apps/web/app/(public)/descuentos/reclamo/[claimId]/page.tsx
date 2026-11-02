@@ -9,6 +9,7 @@ import { GastroDiscountVisualCoupon } from '@/components/gastro/GastroDiscountVi
 import { EmailInboxNotice } from '@/components/ux/EmailInboxNotice';
 import { useGastroDiscountClaim } from '@/lib/query/useGastroPublishedDiscounts';
 import { resolveGastroDiscountDisplayStatus } from '@/lib/gastro/discount-status-ui';
+import { formatGastroClaimShortCodeDisplay } from '@/lib/gastro/claim-short-code';
 
 function ClaimContent() {
   const params = useParams();
@@ -55,6 +56,7 @@ function ClaimContent() {
     claim.usedAt,
   );
   const title = claim.discountTitle?.trim() || claim.discountLabel?.trim() || 'Tu descuento';
+  const shortCodeDisplay = formatGastroClaimShortCodeDisplay(claim.shortCode);
 
   return (
     <PageContainer>
@@ -71,6 +73,7 @@ function ClaimContent() {
           discountDescription={claim.discountSummary}
           discountLabel={claim.discountLabel}
           qrPayload={claim.qrPayload}
+          shortCodeDisplay={shortCodeDisplay}
           status={status}
           validTo={validTo}
           type={claim.type}
@@ -89,7 +92,7 @@ function ClaimContent() {
             validityMode: claim.validityMode,
             validWeekday: (claim.validWeekday as import('@yo-te-invito/shared').GastroWeekday | null) ?? null,
             validTo: claim.validTo ?? claim.discountDate,
-            shortCode: claim.shortCode,
+            shortCode: shortCodeDisplay,
           })}
         />
 

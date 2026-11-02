@@ -6,6 +6,7 @@ import type {
   GastroDiscountClaimType,
   GastroDiscountVisualTemplateResponse,
 } from '@yo-te-invito/shared';
+import { ManualShortCodeBlock } from '@/components/ux/ManualShortCodeBlock';
 import { GastroDiscountQrCard } from './GastroDiscountQrCard';
 import { DiscountTemplateRenderer } from './DiscountTemplateRenderer';
 import { VisualRenderErrorBoundary } from './VisualRenderErrorBoundary';
@@ -17,6 +18,8 @@ type Props = {
   discountLabel?: string | null;
   qrPayload: string;
   qrCode?: string;
+  /** Display short code (`XXX-XXX`) of the claim, for manual entry. */
+  shortCodeDisplay?: string | null;
   status: GastroDiscountClaimStatus;
   validTo?: string | null;
   type?: GastroDiscountClaimType;
@@ -34,6 +37,7 @@ export function GastroDiscountVisualCoupon(props: Props) {
       discountLabel={props.discountLabel}
       qrPayload={props.qrPayload}
       qrCode={props.qrCode}
+      shortCodeDisplay={props.shortCodeDisplay}
       status={props.status}
       validTo={props.validTo}
       type={props.type}
@@ -72,6 +76,14 @@ export function GastroDiscountVisualCoupon(props: Props) {
           blocked={props.status !== 'ACTIVE'}
           className={props.className}
         />
+        {/* The printed template already carries the shortCode layer (canonical, mandatory). */}
+        {props.shortCodeDisplay ? (
+          <ManualShortCodeBlock
+            code={props.shortCodeDisplay}
+            muted={props.status !== 'ACTIVE'}
+            className="mt-4 print:hidden"
+          />
+        ) : null}
       </VisualRenderErrorBoundary>
       {printBtn}
     </div>

@@ -91,9 +91,25 @@ Body: { "qrPayload": "yti:gastro-discount:v1:…", "deviceId?": "…" }
 - Entradas: flujo `/scanner/scan` + offline (sin cambios)
 - Descuentos: solo online → `POST /scanner/gastro-discounts/validate`
 
+## Código corto en la web (G11.1)
+
+El `shortCode` del claim se muestra bajo el QR en todas las vistas web del cupón, con el mismo
+texto y formato que el email («Código para ingresar manualmente», `XXX-XXX`):
+
+- `ManualShortCodeBlock` (`apps/web/components/ux`) — usado por `GastroDiscountQrCard`
+  (fallback), `GastroDiscountVisualCoupon` (debajo del template de Studio, `print:hidden`
+  porque el template ya imprime su capa `shortCode`) y `ActivityCouponQrCard`.
+- Formato: `formatGastroClaimShortCodeDisplay` (`apps/web/lib/gastro/claim-short-code.ts`);
+  el mismo valor formateado alimenta la capa `shortCode` del template.
+- Superficies: `/descuentos/reclamo/[claimId]` (con `accessToken`), `/me/descuentos`
+  (gastro + Actividades), `/excursiones/cupones/reclamo/[claimId]`. Cortesías usan las mismas.
+- Solo presentación: el código ya venía en las respuestas del dueño del claim; no se expone
+  en ninguna vista nueva. Cupón usado/vencido/cancelado → código visible pero atenuado.
+
 ## Tests
 
 ```bash
+pnpm --filter api run test:web-qr-short-code
 pnpm --filter api run test:gastro-discount-qr
 pnpm --filter api run test:gastro-discount-scan   # API en :3001 + DEV_AUTH
 ```

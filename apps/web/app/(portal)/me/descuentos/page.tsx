@@ -7,6 +7,7 @@ import { PageContainer, SectionTitle } from '@/components';
 import { GastroDiscountVisualCoupon } from '@/components/gastro/GastroDiscountVisualCoupon';
 import { ActivityCouponQrCard } from '@/components/activities/ActivityCouponQrCard';
 import { formatGastroDiscountValidTo } from '@/lib/gastro/discount-status-ui';
+import { formatGastroClaimShortCodeDisplay } from '@/lib/gastro/claim-short-code';
 import { activityCouponsKeys } from '@/lib/query/keys';
 import {
   buildGastroClaimVisualRenderContext,
@@ -19,6 +20,7 @@ function DiscountCard({ item }: { item: MeGastroDiscountItem }) {
     ? `/gastronomicos/${item.locationId}`
     : `/gastronomicos/${item.locationId}`;
   const validToLabel = formatGastroDiscountValidTo(item.validTo);
+  const shortCodeDisplay = formatGastroClaimShortCodeDisplay(item.shortCode);
 
   return (
     <li className="space-y-4">
@@ -29,6 +31,7 @@ function DiscountCard({ item }: { item: MeGastroDiscountItem }) {
         discountLabel={item.discountLabel}
         qrPayload={item.qrPayload}
         qrCode={item.qrCode}
+        shortCodeDisplay={shortCodeDisplay}
         status={item.status}
         validTo={item.validTo}
         type={item.type}
@@ -43,7 +46,7 @@ function DiscountCard({ item }: { item: MeGastroDiscountItem }) {
           validityMode: item.validityMode,
           validWeekday: item.validWeekday ?? null,
           validTo: item.validTo,
-          shortCode: item.shortCode,
+          shortCode: shortCodeDisplay,
         })}
       />
 

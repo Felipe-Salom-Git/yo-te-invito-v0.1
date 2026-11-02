@@ -3,6 +3,7 @@
 import type { GastroDiscountClaimStatus, GastroDiscountClaimType } from '@yo-te-invito/shared';
 import { Logo } from '@/components/brand/Logo';
 import { TicketQrImage } from '@/components/tickets/TicketQrImage';
+import { ManualShortCodeBlock } from '@/components/ux/ManualShortCodeBlock';
 import { isValidGastroDiscountQrPayload } from '@/lib/gastro/discount-qr';
 import {
   formatGastroDiscountValidTo,
@@ -19,6 +20,8 @@ export type GastroDiscountQrCardProps = {
   discountLabel?: string | null;
   qrPayload: string;
   qrCode?: string;
+  /** Display short code (`XXX-XXX`) for manual entry; omitted for legacy claims. */
+  shortCodeDisplay?: string | null;
   status: GastroDiscountClaimStatus;
   validTo?: string | null;
   type?: GastroDiscountClaimType;
@@ -32,6 +35,7 @@ export function GastroDiscountQrCard({
   discountLabel,
   qrPayload,
   qrCode,
+  shortCodeDisplay,
   status,
   validTo,
   type,
@@ -103,6 +107,10 @@ export function GastroDiscountQrCard({
             </div>
           )}
         </div>
+
+        {shortCodeDisplay ? (
+          <ManualShortCodeBlock code={shortCodeDisplay} muted={blocked} className="mt-4" />
+        ) : null}
 
         {status === 'USED' ? (
           <p className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-center text-sm text-amber-200">
