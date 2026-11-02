@@ -18,6 +18,7 @@ import {
   eventDetailToFormData,
   validateProducerEventForm,
   validateProducerEventSubmit,
+  isLocationValueChanged,
 } from '@/lib/producer/producer-event-form.utils';
 import type { ProducerEventWizardStep } from '@/lib/producer/producer-event-wizard';
 import {
@@ -55,6 +56,7 @@ export function ProducerEventEditForm({ eventId, eventData }: Props) {
   const [location, setLocation] = useState<LocationValue>(() =>
     locationValueFromEventFields(eventData),
   );
+  const initialLocation = useMemo(() => locationValueFromEventFields(eventData), [eventData]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [subcategoryId, setSubcategoryId] = useState(eventData.subcategoryId ?? '');
@@ -125,6 +127,7 @@ export function ProducerEventEditForm({ eventId, eventData }: Props) {
       const v = validateProducerEventWizardStep2(form, location, {
         dateMode,
         draftOccurrences,
+        strictLocation: isLocationValueChanged(location, initialLocation),
       });
       if (!v.ok) {
         setErrors(v.errors);
@@ -150,7 +153,9 @@ export function ProducerEventEditForm({ eventId, eventData }: Props) {
       scrollToErrors();
       return;
     }
-    const validated = validateProducerEventSubmit(form, location);
+    const validated = validateProducerEventSubmit(form, location, {
+      strictLocation: isLocationValueChanged(location, initialLocation),
+    });
     if (!validated.ok) {
       setErrors(validated.errors);
       scrollToErrors();

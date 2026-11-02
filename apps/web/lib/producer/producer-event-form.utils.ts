@@ -2,10 +2,13 @@ import type { ZodError } from 'zod';
 import { PUBLIC_SUMMARY_MAX_LENGTH } from '@yo-te-invito/shared';
 import { eventFormSchema, type EventFormData } from '@/lib/schemas/event';
 import {
+  MODERN_LOCATION_REQUIREMENTS,
   eventFieldsFromLocationValue,
+  validateLocationFields,
   validatePresencialEventLocation,
-  type LocationValue,
-} from '@/components/location';
+  type LocationFieldErrors,
+} from '@/components/location/location.utils';
+import type { LocationValue } from '@/components/location/location.types';
 import type { ProducerEventMode } from '@/lib/producer/event-mode';
 import { EVENT_STATUS_LABELS } from '@/lib/domainLabels';
 
@@ -15,9 +18,11 @@ export const PRODUCER_EVENT_FIELD_LABELS: Record<string, string> = {
   description: 'Descripción',
   startAt: 'Fecha de inicio',
   endAt: 'Fecha de fin',
+  province: 'Provincia',
   city: 'Ciudad',
   venueName: 'Nombre del lugar',
   venueAddress: 'Dirección',
+  locationMap: 'Mapa / pin',
   coverImageUrl: 'Imagen de portada',
   capacityTotal: 'Capacidad',
   status: 'Estado',
@@ -52,20 +57,85 @@ export function validateProducerEventForm(
   return { ok: true, data: parsed.data };
 }
 
+/** Flat error keys used by the producer form for each location field. */
+export const PRODUCER_LOCATION_ERROR_KEYS = {
+  province: 'province',
+  city: 'city',
+  address: 'venueAddress',
+  map: 'locationMap',
+} as const;
+
+export function producerLocationFieldErrors(errors: Record<string, string>): LocationFieldErrors {
+  return {
+    province: errors[PRODUCER_LOCATION_ERROR_KEYS.province],
+    city: errors[PRODUCER_LOCATION_ERROR_KEYS.city],
+    address: errors[PRODUCER_LOCATION_ERROR_KEYS.address],
+    map: errors[PRODUCER_LOCATION_ERROR_KEYS.map],
+  };
+}
+
+export function isLocationValueChanged(a: LocationValue, b: LocationValue): boolean {
+  return (
+    a.province.trim() !== b.province.trim() ||
+    a.city.trim() !== b.city.trim() ||
+    a.address.trim() !== b.address.trim() ||
+    (a.lat ?? null) !== (b.lat ?? null) ||
+    (a.lng ?? null) !== (b.lng ?? null)
+  );
+}
+
+function hasAnyLocationInput(location: LocationValue): boolean {
+  return Boolean(
+    location.province.trim() || location.city.trim() || location.address.trim() || location.lat != null,
+  );
+}
+
+/**
+ * G12.4 — Producer event location with the modern picker rules (province + city + address, per field).
+ * - `strict` (new events / edited location): full minimum once any field is used or when publishing.
+ * - not strict (legacy event, location untouched): previous presencial rule when publishing, so old
+ *   events with text-only locations keep opening and saving.
+ * Drafts may still omit the location entirely.
+ */
+export function validateProducerEventLocation(
+  location: LocationValue,
+  venueName: string | null | undefined,
+  opts: { publishing: boolean; strict: boolean },
+): Record<string, string> {
+  const errors: Record<string, string> = {};
+  if (opts.strict && (opts.publishing || hasAnyLocationInput(location))) {
+    const fields = validateLocationFields(location, MODERN_LOCATION_REQUIREMENTS);
+    for (const [field, key] of Object.entries(PRODUCER_LOCATION_ERROR_KEYS)) {
+      const message = fields[field as keyof LocationFieldErrors];
+      if (message) errors[key] = message;
+    }
+    return errors;
+  }
+  const map = validateLocationFields(location, {}).map;
+  if (map) errors[PRODUCER_LOCATION_ERROR_KEYS.map] = map;
+  if (opts.publishing) {
+    const legacy = validatePresencialEventLocation(location, venueName);
+    if (legacy) errors[PRODUCER_LOCATION_ERROR_KEYS.address] = legacy;
+  }
+  return errors;
+}
+
 /** Location check when publishing (pending/approved). Drafts may omit location. */
 export function validateProducerEventSubmit(
   form: EventFormData,
   location: LocationValue,
+  options: { strictLocation?: boolean } = {},
 ): { ok: true } | { ok: false; errors: Record<string, string> } {
   const validated = validateProducerEventForm(form);
   if (!validated.ok) return validated;
 
   const status = mapProducerFormStatusToApi(validated.data.status);
-  if (status === 'PENDING' || status === 'APPROVED') {
-    const locErr = validatePresencialEventLocation(location, validated.data.venueName);
-    if (locErr) {
-      return { ok: false, errors: { venueAddress: locErr } };
-    }
+  const locationErrors = validateProducerEventLocation(location, validated.data.venueName, {
+    publishing: status === 'PENDING' || status === 'APPROVED',
+    strict: options.strictLocation ?? true,
+  });
+  if (Object.keys(locationErrors).length > 0) {
+    return { ok: false, errors: locationErrors };
   }
   return { ok: true };
 }

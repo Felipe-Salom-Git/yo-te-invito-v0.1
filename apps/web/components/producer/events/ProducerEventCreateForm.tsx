@@ -22,6 +22,7 @@ import {
   computeEventFormCompleteness,
   DEFAULT_EVENT_FORM,
   validateProducerEventForm,
+  validateProducerEventLocation,
 } from '@/lib/producer/producer-event-form.utils';
 import type { ProducerEventWizardStep } from '@/lib/producer/producer-event-wizard';
 import {
@@ -199,6 +200,16 @@ export function ProducerEventCreateForm({ mode }: { mode: ProducerEventMode }) {
     const validated = validateProducerEventForm(form);
     if (!validated.ok) {
       setErrors(validated.errors);
+      scrollToErrors();
+      return;
+    }
+    const locationErrors = validateProducerEventLocation(location, validated.data.venueName, {
+      publishing: false,
+      strict: true,
+    });
+    if (Object.keys(locationErrors).length > 0) {
+      setErrors(locationErrors);
+      setStep(2);
       scrollToErrors();
       return;
     }

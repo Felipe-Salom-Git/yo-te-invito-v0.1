@@ -1,7 +1,7 @@
 import type { EventFormData } from '@/lib/schemas/event';
 import type { LocationValue } from '@/components/location';
 import { PUBLIC_SUMMARY_MAX_LENGTH } from '@yo-te-invito/shared';
-import { zodErrorsToFieldMap } from './producer-event-form.utils';
+import { validateProducerEventLocation, zodErrorsToFieldMap } from './producer-event-form.utils';
 import { eventFormSchema } from '@/lib/schemas/event';
 import {
   validateOccurrenceDrafts,
@@ -34,16 +34,25 @@ export function validateProducerEventWizardStep1(
 export function validateProducerEventWizardStep2(
   form: EventFormData,
   location: LocationValue,
-  options?: { dateMode?: EventDateMode; draftOccurrences?: OccurrenceDraft[] },
+  options?: {
+    dateMode?: EventDateMode;
+    draftOccurrences?: OccurrenceDraft[];
+    /** G12.4 — false only for legacy events whose location was not touched. */
+    strictLocation?: boolean;
+  },
 ): { ok: true } | { ok: false; errors: Record<string, string> } {
   const dateMode = options?.dateMode ?? 'simple';
+  const locationErrors = validateProducerEventLocation(location, form.venueName, {
+    publishing: false,
+    strict: options?.strictLocation ?? true,
+  });
+  if (Object.keys(locationErrors).length > 0) return { ok: false, errors: locationErrors };
 
   if (dateMode === 'multi') {
     const v = validateOccurrenceDrafts(options?.draftOccurrences ?? []);
     if (!v.ok) {
       return { ok: false, errors: { occurrences: v.message } };
     }
-    void location;
     return { ok: true };
   }
 
@@ -63,6 +72,5 @@ export function validateProducerEventWizardStep2(
   if (!form.startAt) {
     return { ok: false, errors: { startAt: 'La fecha de inicio es obligatoria.' } };
   }
-  void location;
   return { ok: true };
 }

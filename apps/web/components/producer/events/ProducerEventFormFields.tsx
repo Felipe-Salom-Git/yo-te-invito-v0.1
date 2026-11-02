@@ -11,6 +11,7 @@ import {
 import type { EventFormData } from '@/lib/schemas/event';
 import type { ProducerEventMode } from '@/lib/producer/event-mode';
 import {
+  producerLocationFieldErrors,
   statusHintForProducerForm,
   type EventFormCompletenessItem,
 } from '@/lib/producer/producer-event-form.utils';
@@ -300,13 +301,13 @@ export function ProducerEventFormFields({
           error={errors.venueName}
           placeholder="Ej: Estadio GEBA, Club XYZ"
         />
-        <EventLocationFields value={location} onChange={onLocationChange} geoContext="EVENT" />
-        {errors.city ? (
-          <p className="text-sm text-red-400">{errors.city}</p>
-        ) : null}
-        {errors.venueAddress ? (
-          <p className="text-sm text-red-400">{errors.venueAddress}</p>
-        ) : null}
+        <EventLocationFields
+          value={location}
+          onChange={onLocationChange}
+          geoContext="EVENT"
+          required
+          errors={producerLocationFieldErrors(errors)}
+        />
       </FormSection>
       ) : null}
 
