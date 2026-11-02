@@ -437,6 +437,7 @@ model GastroProfile {
   benefitCommercialAgreements BenefitCommercialAgreement[]
   benefitSettlements          BenefitSettlement[]
   courtesyCreditLedgerEntries CourtesyCreditLedgerEntry[]
+  reviewDisputeRequests       ReviewDisputeRequest[]
 
   @@index([tenantId])
   @@index([tenantId, status])
@@ -2613,11 +2614,14 @@ model Review {
   @@index([moderatedByUserId])
 }
 
+/// Exactly one owner scope (DB CHECK): producer event disputes → producerProfileId; gastro local
+/// disputes (G12.1-C) → gastroProfileId (the local whose publicEventId holds the review).
 model ReviewDisputeRequest {
   id                String                 @id @default(cuid())
   tenantId          String
   reviewId          String
-  producerProfileId String
+  producerProfileId String?
+  gastroProfileId   String?
   eventId           String
   requestedByUserId String
   reasonType        ReviewDisputeReasonType
@@ -2632,13 +2636,15 @@ model ReviewDisputeRequest {
 
   tenant          Tenant          @relation(fields: [tenantId], references: [id])
   review          Review          @relation(fields: [reviewId], references: [id], onDelete: Cascade)
-  producerProfile ProducerProfile @relation(fields: [producerProfileId], references: [id], onDelete: Cascade)
+  producerProfile ProducerProfile? @relation(fields: [producerProfileId], references: [id], onDelete: Cascade)
+  gastroProfile   GastroProfile?   @relation(fields: [gastroProfileId], references: [id], onDelete: Cascade)
   event           Event           @relation(fields: [eventId], references: [id], onDelete: Cascade)
   requestedBy     User            @relation("ReviewDisputeRequester", fields: [requestedByUserId], references: [id], onDelete: Restrict)
   resolvedBy      User?           @relation("ReviewDisputeResolver", fields: [resolvedByUserId], references: [id], onDelete: SetNull)
   inboxItem       InboxItem?      @relation(fields: [inboxItemId], references: [id], onDelete: SetNull)
 
   @@index([tenantId, producerProfileId])
+  @@index([tenantId, gastroProfileId])
   @@index([tenantId, reviewId])
   @@index([tenantId, status])
 }

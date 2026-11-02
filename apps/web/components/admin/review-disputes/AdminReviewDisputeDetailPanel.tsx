@@ -8,6 +8,7 @@ import { adminReviewDisputesKeys } from '@/lib/query/keys';
 import { Button, useToast } from '@/components';
 import { getErrorMessage } from '@/lib/errors';
 import { formatPublicRatingLabel } from '@/lib/reviews/ratingDisplay';
+import { reviewDisputeOwnerLabel } from '@/lib/reviews/reviewReport';
 import type { ReviewDisputeDetail } from '@/repositories/interfaces';
 import { ReviewPublicStatusBadge } from '@/components/producer/comments/ReviewPublicStatusBadge';
 import { AdminReviewDisputeStatusBadge } from './AdminReviewDisputeStatusBadge';
@@ -196,8 +197,10 @@ export function AdminReviewDisputeDetailPanel({ dispute, filtersKey, onClose }: 
 
         <dl className="mt-5 grid gap-4 text-sm sm:grid-cols-2">
           <div>
-            <dt className="text-xs uppercase tracking-wide text-text-muted">Productora</dt>
-            <dd className="mt-1 text-white">{dispute.producerDisplayName ?? '—'}</dd>
+            <dt className="text-xs uppercase tracking-wide text-text-muted">
+              {reviewDisputeOwnerLabel(dispute).kind}
+            </dt>
+            <dd className="mt-1 text-white">{reviewDisputeOwnerLabel(dispute).name}</dd>
           </div>
           <div>
             <dt className="text-xs uppercase tracking-wide text-text-muted">Entidad reseñada</dt>
@@ -235,7 +238,9 @@ export function AdminReviewDisputeDetailPanel({ dispute, filtersKey, onClose }: 
             </dd>
           </div>
           <div className="sm:col-span-2">
-            <dt className="text-xs uppercase tracking-wide text-text-muted">Mensaje de la productora</dt>
+            <dt className="text-xs uppercase tracking-wide text-text-muted">
+              Mensaje {dispute.ownerType === 'GASTRO' ? 'del local' : 'de la productora'}
+            </dt>
             <dd className="mt-1 whitespace-pre-wrap text-text-muted">{dispute.message}</dd>
           </div>
         </dl>

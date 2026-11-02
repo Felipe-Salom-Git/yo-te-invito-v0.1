@@ -37,6 +37,7 @@ import {
   hotelReviewsKeys,
   producerReviewsKeys,
 } from '@/lib/query/keys';
+import { canReportManagedReview } from '@/lib/reviews/reviewReport';
 
 export type ManagedReviewsScope = 'producer' | 'gastro' | 'hotel';
 
@@ -53,7 +54,7 @@ const COPY: Record<
   gastro: {
     title: 'Valoraciones de clientes',
     subtitle:
-      'Respondé públicamente a las opiniones del local activo. Cada local tiene su reputación independiente.',
+      'Respondé públicamente a las opiniones del local activo o denunciá las que no correspondan. Cada local tiene su reputación independiente.',
     eventLabel: 'Local',
   },
   hotel: {
@@ -259,6 +260,13 @@ export function ManagedReviewsCommentsPage({
       : scope === 'gastro'
         ? repos.gastroReviews.reply.bind(repos.gastroReviews)
         : repos.hotelReviews.reply.bind(repos.hotelReviews);
+
+  const disputeFn =
+    scope === 'producer'
+      ? repos.producerReviews.createDispute.bind(repos.producerReviews)
+      : scope === 'gastro'
+        ? repos.gastroReviews.createDispute.bind(repos.gastroReviews)
+        : undefined;
 
   const replyAuthorLabel =
     scope === 'producer'
@@ -515,11 +523,11 @@ export function ManagedReviewsCommentsPage({
                 <ManagedReviewCard
                   review={r}
                   scope={scope}
-                  allowDisputes={scope === 'producer'}
+                  allowDisputes={canReportManagedReview(scope)}
                   replyFn={replyFn}
+                  disputeFn={disputeFn}
                   invalidateQueryKey={listQueryKey}
                   summaryQueryKey={summaryKey}
-                  filtersKey={filtersKey}
                   replyAuthorLabel={replyAuthorLabel}
                 />
               </li>

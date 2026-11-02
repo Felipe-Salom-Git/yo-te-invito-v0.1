@@ -1976,12 +1976,15 @@ export class ApiRepository implements Repositories {
     },
   };
 
-  gastroReviews: import('./interfaces').ManagedVenueReviewsRepo = {
+  gastroReviews: import('./interfaces').GastroReviewsRepo = {
     reply: async (reviewId, payload) => {
       return this.client.post(
         `/gastro/reviews/${encodeURIComponent(reviewId)}/reply`,
         payload,
       );
+    },
+    createDispute: async (reviewId, payload) => {
+      return this.client.post(`/gastro/reviews/${encodeURIComponent(reviewId)}/dispute`, payload);
     },
     getSummary: async (params) => {
       return this.client.get('/gastro/reviews/summary', {

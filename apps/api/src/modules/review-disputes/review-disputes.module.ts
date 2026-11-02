@@ -7,13 +7,20 @@ import { ProfilesAuthorizationService } from '../../common/profiles-authorizatio
 import { ProducerRolesGuard } from '../../common/guards/producer-roles.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { ReviewDisputesService } from './review-disputes.service';
+import { GastroReviewDisputesService } from './gastro-review-disputes.service';
 import { ProducerReviewsController } from './producer-reviews.controller';
 import { AdminReviewDisputesController } from './admin-review-disputes.controller';
 
 @Module({
   imports: [AuthModule, ReviewsModule, AuditModule, NotificationsModule],
   controllers: [ProducerReviewsController, AdminReviewDisputesController],
-  providers: [ReviewDisputesService, ProfilesAuthorizationService, ProducerRolesGuard, RolesGuard],
-  exports: [ReviewDisputesService],
+  providers: [
+    ReviewDisputesService,
+    GastroReviewDisputesService,
+    ProfilesAuthorizationService,
+    ProducerRolesGuard,
+    RolesGuard,
+  ],
+  exports: [ReviewDisputesService, GastroReviewDisputesService],
 })
 export class ReviewDisputesModule {}

@@ -756,7 +756,10 @@ export type ProducerManagedReviewListItem = import('@yo-te-invito/shared').Produ
 export interface ReviewDisputeDetail {
   id: string;
   reviewId: string;
-  producerProfileId: string;
+  /** G12.1-C — producer event or gastro local (exactly one owner id is set). */
+  ownerType: import('@yo-te-invito/shared').ReviewDisputeOwnerType;
+  producerProfileId: string | null;
+  gastroProfileId: string | null;
   eventId: string;
   eventTitle: string;
   eventCategory: import('@yo-te-invito/shared').PublicReviewCategory;
@@ -774,8 +777,11 @@ export interface ReviewDisputeDetail {
   createdAt: string;
   updatedAt: string;
   resolvedAt: string | null;
-  producerDisplayName?: string;
+  producerDisplayName?: string | null;
+  gastroDisplayName?: string | null;
 }
+
+export type CreateReviewDisputePayload = { reasonType: ReviewDisputeReasonType; message: string };
 
 export interface ManagedVenueReviewsRepo {
   reply(reviewId: string, body: { body: string }): Promise<{ ok: true }>;
@@ -799,11 +805,13 @@ export interface ManagedVenueReviewsRepo {
 }
 
 export interface ProducerReviewsRepo extends ManagedVenueReviewsRepo {
-  createDispute(
-    reviewId: string,
-    payload: { reasonType: ReviewDisputeReasonType; message: string },
-  ): Promise<ReviewDisputeDetail>;
+  createDispute(reviewId: string, payload: CreateReviewDisputePayload): Promise<ReviewDisputeDetail>;
   getDispute(id: string): Promise<ReviewDisputeDetail>;
+}
+
+/** G12.1-C — gastro portal can report («Denunciar») reviews of its locals. */
+export interface GastroReviewsRepo extends ManagedVenueReviewsRepo {
+  createDispute(reviewId: string, payload: CreateReviewDisputePayload): Promise<ReviewDisputeDetail>;
 }
 
 export type AdminReviewsReportResponse = import('@yo-te-invito/shared').AdminReviewsReportResponse;
@@ -3537,7 +3545,7 @@ export interface Repositories {
   producers: ProducersRepo;
   commercialReviews: CommercialReviewsRepo;
   producerReviews: ProducerReviewsRepo;
-  gastroReviews: ManagedVenueReviewsRepo;
+  gastroReviews: GastroReviewsRepo;
   hotelReviews: ManagedVenueReviewsRepo;
   adminReviews: AdminReviewsRepo;
   adminReviewDisputes: AdminReviewDisputesRepo;

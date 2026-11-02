@@ -2,6 +2,7 @@
 
 import type { ReviewDisputeDetail } from '@/repositories/interfaces';
 import { formatPublicRatingLabel } from '@/lib/reviews/ratingDisplay';
+import { reviewDisputeOwnerLabel } from '@/lib/reviews/reviewReport';
 import { AdminReviewDisputeStatusBadge } from './AdminReviewDisputeStatusBadge';
 import {
   EVENT_CATEGORY_LABELS,
@@ -21,7 +22,7 @@ export function AdminReviewDisputeTable({ disputes, selectedId, onSelect }: Prop
       <table className="w-full min-w-[720px] text-left text-sm">
         <thead>
           <tr className="border-b border-border text-xs uppercase tracking-wide text-text-muted">
-            <th className="py-2 pr-3">Productora</th>
+            <th className="py-2 pr-3">Productora / local</th>
             <th className="py-2 pr-3">Entidad</th>
             <th className="py-2 pr-3">Autor</th>
             <th className="py-2 pr-3">Puntaje</th>
@@ -40,7 +41,8 @@ export function AdminReviewDisputeTable({ disputes, selectedId, onSelect }: Prop
               }`}
             >
               <td className="max-w-[140px] truncate py-3 pr-3 text-text">
-                {d.producerDisplayName ?? '—'}
+                {reviewDisputeOwnerLabel(d).name}
+                <span className="block text-xs text-text-muted">{reviewDisputeOwnerLabel(d).kind}</span>
               </td>
               <td className="py-3 pr-3">
                 <p className="max-w-[180px] truncate font-medium text-text">{d.eventTitle}</p>

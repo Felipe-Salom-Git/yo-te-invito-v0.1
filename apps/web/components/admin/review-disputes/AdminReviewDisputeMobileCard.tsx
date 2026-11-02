@@ -2,6 +2,7 @@
 
 import type { ReviewDisputeDetail } from '@/repositories/interfaces';
 import { formatPublicRatingLabel } from '@/lib/reviews/ratingDisplay';
+import { reviewDisputeOwnerLabel } from '@/lib/reviews/reviewReport';
 import { AdminReviewDisputeStatusBadge } from './AdminReviewDisputeStatusBadge';
 import {
   EVENT_CATEGORY_LABELS,
@@ -27,7 +28,12 @@ export function AdminReviewDisputeMobileCard({ dispute, selected, onSelect }: Pr
       }`}
     >
       <div className="flex flex-wrap items-start justify-between gap-2">
-        <p className="font-medium text-white">{dispute.producerDisplayName ?? 'Productora'}</p>
+        <p className="font-medium text-white">
+          {reviewDisputeOwnerLabel(dispute).name}
+          <span className="ml-2 text-xs font-normal text-text-muted">
+            {reviewDisputeOwnerLabel(dispute).kind}
+          </span>
+        </p>
         <AdminReviewDisputeStatusBadge status={dispute.status} />
       </div>
       <p className="mt-1 text-sm text-accent">{dispute.eventTitle}</p>

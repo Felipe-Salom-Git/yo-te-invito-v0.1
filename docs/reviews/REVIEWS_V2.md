@@ -40,6 +40,7 @@ Evolución del sistema de valoraciones públicas y comerciales privadas.
 | GET | `/hotel/reviews`, `/hotel/reviews/summary` | Listado portal hotel |
 | POST | `/admin/reviews/:id/reply` | Réplica plataforma (`PLATFORM_ADMIN`) |
 | POST | `/producer/reviews/:id/dispute` | Disputa (sin cambios de ruta) |
+| POST | `/gastro/reviews/:id/dispute` | G12.1-C — «Denunciar» valoración de un local (`GASTRO_OWNER` del local o `ADMIN`) |
 | POST | `/admin/reviews/:id/hide` | Ocultar directo (admin) |
 | POST | `/admin/reviews/:id/restore` | Restaurar |
 
@@ -48,6 +49,13 @@ Evolución del sistema de valoraciones públicas y comerciales privadas.
 - Al crear disputa → review `IN_REVIEW`.
 - Aceptar → `HIDDEN` + ocultar público + recalcular promedios.
 - Rechazar → `REPORT_REJECTED` (sigue visible).
+- **G12.1-C — owner de la disputa:** `ReviewDisputeRequest` tiene exactamente un owner (CHECK DB):
+  `producerProfileId` (evento de productora) **o** `gastroProfileId` (local cuyo `publicEventId` es el
+  evento de la review). Migration `20261102150000_review_dispute_gastro_scope` (aditiva). Mismo
+  transaction helper (`review-dispute-records.ts` → `createDisputeRecord`), misma cola admin.
+- **Quién denuncia:** productora dueña del evento / owner del local (membership ACTIVE sobre ese
+  `publicEventId`) / `ADMIN`. El autor de la review y otros usuarios **no** (sin acción en la ficha
+  pública). Duplicado: una disputa abierta (`PENDING`/`IN_REVIEW`) por review y owner → 409.
 
 ### Cola admin (`/admin/review-disputes`)
 
@@ -107,7 +115,10 @@ pnpm --filter api exec prisma generate
 - Resumen: promedio, distribución 1–10, `unansweredCount`, `openDisputeCount` (API)
 - Filtros: respuesta (`replyFilter`), disputa (`OPEN`, etc.), estado público, orden `highest`/`lowest`
 - UI: `ManagedReviewsCommentsPage` + `ManagedReviewCard`; modales `ReviewReplyModal` / `ReviewDisputeModal`
-- Gastro/hotel: mismo shell sin disputas ni filtros productor; gastro: `/gastro/valoraciones` + `ManagedPortalReviewAlerts` (KPI `unansweredCount` en dashboard)
+- Gastro/hotel: mismo shell sin filtros productor; gastro: `/gastro/valoraciones` + `ManagedPortalReviewAlerts` (KPI `unansweredCount` en dashboard)
+- G12.1-C: acción **«Denunciar»** (antes «Solicitar revisión») en productora **y gastro** (por local activo);
+  `ReviewDisputeModal` recibe `createDisputeFn` según portal. Hotel sigue sin disputas.
+  Admin: columna «Productora / local» (`reviewDisputeOwnerLabel`). Tests: `test:gastro-review-report`.
 
 ## Bloque Reviews V2 — cerrado (smoke)
 

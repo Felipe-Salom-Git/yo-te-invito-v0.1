@@ -137,10 +137,16 @@ export const createReviewDisputeSchema = z.object({
 });
 export type CreateReviewDisputeInput = z.infer<typeof createReviewDisputeSchema>;
 
+/** G12.1-C — owner of the disputed review: producer event or gastro local (exactly one). */
+export const reviewDisputeOwnerTypeSchema = z.enum(['PRODUCER', 'GASTRO']);
+export type ReviewDisputeOwnerType = z.infer<typeof reviewDisputeOwnerTypeSchema>;
+
 export const reviewDisputeResponseSchema = z.object({
   id: z.string(),
   reviewId: z.string(),
-  producerProfileId: z.string(),
+  ownerType: reviewDisputeOwnerTypeSchema,
+  producerProfileId: z.string().nullable(),
+  gastroProfileId: z.string().nullable(),
   eventId: z.string(),
   eventTitle: z.string(),
   eventCategory: publicReviewCategorySchema,
@@ -176,6 +182,8 @@ export const adminReviewDisputeActionSchema = z.object({
 export type AdminReviewDisputeActionInput = z.infer<typeof adminReviewDisputeActionSchema>;
 
 export const adminReviewDisputeListItemSchema = reviewDisputeResponseSchema.extend({
-  producerDisplayName: z.string(),
+  /** Productora (PRODUCER) or local name (GASTRO). */
+  producerDisplayName: z.string().nullable(),
+  gastroDisplayName: z.string().nullable(),
 });
 export type AdminReviewDisputeListItem = z.infer<typeof adminReviewDisputeListItemSchema>;

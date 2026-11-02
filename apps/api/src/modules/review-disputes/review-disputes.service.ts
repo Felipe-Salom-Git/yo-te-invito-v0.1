@@ -20,7 +20,6 @@ import {
   type ProducerManagedReviewListQuery,
   type ProducerManagedReviewListResponse,
   type ProducerManagedReviewSummary,
-  type ReviewPublicStatus,
   type ReviewDisputeResponse,
 } from '@yo-te-invito/shared';
 import {
@@ -28,82 +27,14 @@ import {
   readAspectRatings,
   readOverallRating,
 } from '../reviews/review-public.util';
-
-const OPEN_DISPUTE_STATUSES: ReviewDisputeStatus[] = ['PENDING', 'IN_REVIEW'];
-
-function reviewUserName(row: {
-  guestName: string | null;
-  user: { firstName: string; lastName: string } | null;
-}): string {
-  if (row.user) {
-    return `${row.user.firstName} ${row.user.lastName}`.trim() || 'Usuario';
-  }
-  return row.guestName?.trim() || 'Invitado';
-}
-
-function mapDispute(row: {
-  id: string;
-  reviewId: string;
-  producerProfileId: string;
-  eventId: string;
-  reasonType: string;
-  message: string;
-  status: string;
-  adminNote: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-  resolvedAt: Date | null;
-  review: {
-    score: number;
-    overallRating?: number | null;
-    comment: string | null;
-    guestName: string | null;
-    status?: string;
-    hiddenFromPublic?: boolean;
-    officialReply?: string | null;
-    user: { firstName: string; lastName: string } | null;
-  };
-  event: { title: string; category?: string | null };
-}): ReviewDisputeResponse {
-  const overall = readOverallRating({
-    overallRating: row.review.overallRating ?? null,
-    score: row.review.score,
-  });
-  return {
-    id: row.id,
-    reviewId: row.reviewId,
-    producerProfileId: row.producerProfileId,
-    eventId: row.eventId,
-    eventTitle: row.event.title,
-    eventCategory: eventCategoryToReviewCategory(row.event.category),
-    reasonType: row.reasonType as ReviewDisputeResponse['reasonType'],
-    message: row.message,
-    status: row.status as ReviewDisputeResponse['status'],
-    adminNote: row.adminNote,
-    reviewScore: row.review.score,
-    reviewOverallRating: overall,
-    reviewComment: row.review.comment,
-    reviewUserDisplayName: reviewUserName(row.review),
-    reviewPublicStatus: (row.review.status ?? 'VISIBLE') as ReviewPublicStatus,
-    reviewHiddenFromPublic: row.review.hiddenFromPublic ?? false,
-    hasOfficialReply: Boolean(row.review.officialReply?.trim()),
-    createdAt: row.createdAt.toISOString(),
-    updatedAt: row.updatedAt.toISOString(),
-    resolvedAt: row.resolvedAt?.toISOString() ?? null,
-  };
-}
-
-const DISPUTE_REVIEW_INCLUDE = {
-  review: {
-    include: { user: { select: { firstName: true, lastName: true } } },
-  },
-  event: { select: { title: true, category: true, producerId: true } },
-} as const;
-
-const DISPUTE_ADMIN_INCLUDE = {
-  ...DISPUTE_REVIEW_INCLUDE,
-  producerProfile: { select: { displayName: true } },
-} as const;
+import {
+  DISPUTE_ADMIN_INCLUDE,
+  DISPUTE_REVIEW_INCLUDE,
+  OPEN_DISPUTE_STATUSES,
+  createDisputeRecord,
+  mapDispute,
+  reviewUserName,
+} from './review-dispute-records';
 
 @Injectable()
 export class ReviewDisputesService {
@@ -390,45 +321,12 @@ export class ReviewDisputesService {
       });
     }
 
-    const dispute = await this.prisma.$transaction(async (tx) => {
-      await tx.review.update({
-        where: { id: reviewId },
-        data: { status: 'IN_REVIEW' },
-      });
-
-      const inbox = await tx.inboxItem.create({
-        data: {
-          tenantId,
-          kind: 'REVIEW_DISPUTE_REQUEST',
-          status: 'PENDING',
-          createdByUserId: userId,
-          assigneeRole: 'ADMIN',
-          title: `Revisión valoración · ${review.event.title}`,
-          summary: body.message.slice(0, 500),
-          payload: {
-            reviewId,
-            reasonType: body.reasonType,
-            message: body.message,
-            eventId: review.eventId,
-            producerProfileId,
-          } as object,
-        },
-      });
-
-      return tx.reviewDisputeRequest.create({
-        data: {
-          tenantId,
-          reviewId,
-          producerProfileId,
-          eventId: review.eventId,
-          requestedByUserId: userId,
-          reasonType: body.reasonType,
-          message: body.message,
-          status: 'PENDING',
-          inboxItemId: inbox.id,
-        },
-        include: DISPUTE_REVIEW_INCLUDE,
-      });
+    const dispute = await createDisputeRecord(this.prisma, {
+      tenantId,
+      userId,
+      review: { id: reviewId, eventId: review.eventId, eventTitle: review.event.title },
+      owner: { producerProfileId },
+      body,
     });
 
     this.reviewNotifications.notifyDisputeCreated(
@@ -490,6 +388,7 @@ export class ReviewDisputesService {
       where.OR = [
         { event: { title: { contains: q, mode: 'insensitive' } } },
         { producerProfile: { displayName: { contains: q, mode: 'insensitive' } } },
+        { gastroProfile: { displayName: { contains: q, mode: 'insensitive' } } },
         { message: { contains: q, mode: 'insensitive' } },
       ];
     }
@@ -506,7 +405,8 @@ export class ReviewDisputesService {
     return {
       disputes: rows.map((row) => ({
         ...mapDispute(row),
-        producerDisplayName: row.producerProfile.displayName,
+        producerDisplayName: row.producerProfile?.displayName ?? null,
+        gastroDisplayName: row.gastroProfile?.displayName ?? null,
       })),
       page: query.page,
       total,
@@ -523,7 +423,8 @@ export class ReviewDisputesService {
     }
     return {
       ...mapDispute(row),
-      producerDisplayName: row.producerProfile.displayName,
+      producerDisplayName: row.producerProfile?.displayName ?? null,
+      gastroDisplayName: row.gastroProfile?.displayName ?? null,
     };
   }
 
@@ -534,7 +435,6 @@ export class ReviewDisputesService {
         review: true,
         inboxItem: true,
         event: { select: { title: true } },
-        producerProfile: { select: { displayName: true } },
       },
     });
     if (!row) {
@@ -873,7 +773,8 @@ export class ReviewDisputesService {
     tenantId: string,
     scope: { eventIds: string[]; events: Array<{ id: string; title: string }> },
     query: ProducerManagedReviewListQuery,
-    disputeProducerProfileId: string | null,
+    /** Which disputes belong to this portal; null = portal without disputes (hotel). */
+    disputeScope: 'GASTRO' | null,
   ): Promise<ProducerManagedReviewListResponse> {
     let eventIds = scope.eventIds;
     if (query.eventId) {
@@ -891,9 +792,9 @@ export class ReviewDisputesService {
     }
 
     const latestDisputeByReview = new Map<string, { id: string; status: string; reasonType: string; adminNote: string | null; createdAt: Date }>();
-    if (disputeProducerProfileId) {
+    if (disputeScope === 'GASTRO') {
       const disputes = await this.prisma.reviewDisputeRequest.findMany({
-        where: { tenantId, producerProfileId: disputeProducerProfileId },
+        where: { tenantId, gastroProfileId: { not: null }, eventId: { in: eventIds } },
         orderBy: { createdAt: 'desc' },
       });
       for (const d of disputes) {
@@ -941,7 +842,7 @@ export class ReviewDisputesService {
       where.AND = andParts;
     }
 
-    if (query.disputeStatus && query.disputeStatus !== 'ALL' && disputeProducerProfileId) {
+    if (query.disputeStatus && query.disputeStatus !== 'ALL' && disputeScope) {
       const allReviews = await this.prisma.review.findMany({
         where,
         select: { id: true },
@@ -1056,7 +957,7 @@ export class ReviewDisputesService {
     query: ProducerManagedReviewListQuery,
   ): Promise<ProducerManagedReviewListResponse> {
     const scope = await this.gastroPublicEventScope(tenantId, userId, userRole);
-    return this.listManagedReviewsForEvents(tenantId, scope, query, null);
+    return this.listManagedReviewsForEvents(tenantId, scope, query, 'GASTRO');
   }
 
   async getHotelSummary(

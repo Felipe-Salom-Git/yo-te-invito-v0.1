@@ -1,9 +1,11 @@
 import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { Role } from '@yo-te-invito/shared';
 import {
+  createReviewDisputeSchema,
   producerManagedReviewListQuerySchema,
   producerManagedReviewSummaryQuerySchema,
   reviewReplyBodySchema,
+  type CreateReviewDisputeInput,
   type ProducerManagedReviewListQuery,
   type ProducerManagedReviewSummaryQuery,
   type ReviewReplyBody,
@@ -14,6 +16,7 @@ import { RequireRole } from '../../common/decorators/require-role.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { ReviewDisputesService } from '../review-disputes/review-disputes.service';
+import { GastroReviewDisputesService } from '../review-disputes/gastro-review-disputes.service';
 import { PublicReviewsService } from '../reviews/public-reviews.service';
 
 @Controller('gastro')
@@ -22,6 +25,7 @@ import { PublicReviewsService } from '../reviews/public-reviews.service';
 export class GastroReviewsController {
   constructor(
     private readonly reviewDisputes: ReviewDisputesService,
+    private readonly gastroReviewDisputes: GastroReviewDisputesService,
     private readonly publicReviews: PublicReviewsService,
   ) {}
 
@@ -56,6 +60,22 @@ export class GastroReviewsController {
       reviewId,
       body,
       'GASTRO_OWNER',
+    );
+  }
+
+  /** G12.1-C — report a review of a managed local (same admin queue as producer disputes). */
+  @Post('reviews/:reviewId/dispute')
+  createDispute(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param('reviewId') reviewId: string,
+    @Body(new ZodValidationPipe(createReviewDisputeSchema)) body: CreateReviewDisputeInput,
+  ) {
+    return this.gastroReviewDisputes.createDispute(
+      user.tenantId,
+      user.id,
+      user.role,
+      reviewId,
+      body,
     );
   }
 }

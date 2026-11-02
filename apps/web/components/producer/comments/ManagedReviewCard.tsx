@@ -17,6 +17,8 @@ import { ReviewDisputeStatusBadge } from './ReviewDisputeStatusBadge';
 import { ReviewDisputeModal } from './ReviewDisputeModal';
 import { formatPublicRatingLabel } from '@/lib/reviews/ratingDisplay';
 import { ReviewPublicStatusBadge } from './ReviewPublicStatusBadge';
+import { REVIEW_REPORT_ACTION_LABEL } from '@/lib/reviews/reviewReport';
+import type { CreateReviewDisputePayload } from '@/repositories/interfaces';
 
 const OPEN: ReviewDisputeStatus[] = ['PENDING', 'IN_REVIEW'];
 
@@ -45,8 +47,9 @@ type Props = {
   review: ProducerManagedReviewListItem;
   scope: ManagedReviewsScope;
   allowDisputes: boolean;
-  filtersKey: string;
   replyFn: (reviewId: string, body: { body: string }) => Promise<{ ok: true }>;
+  /** Required when `allowDisputes` (producer / gastro endpoint). */
+  disputeFn?: (reviewId: string, payload: CreateReviewDisputePayload) => Promise<unknown>;
   invalidateQueryKey: QueryKey;
   summaryQueryKey: QueryKey;
   replyAuthorLabel: string;
@@ -56,8 +59,8 @@ export function ManagedReviewCard({
   review,
   scope,
   allowDisputes,
-  filtersKey,
   replyFn,
+  disputeFn,
   invalidateQueryKey,
   summaryQueryKey,
   replyAuthorLabel,
@@ -189,12 +192,12 @@ export function ManagedReviewCard({
             onClick={() => setDisputeModalOpen(true)}
             className="w-full rounded-full border border-accent-muted bg-accent-surface/70 px-4 py-2 text-sm font-medium text-accent-soft hover:bg-accent-surface sm:w-auto"
           >
-            Solicitar revisión
+            {REVIEW_REPORT_ACTION_LABEL}
           </button>
         ) : null}
         {allowDisputes && hasOpenDispute ? (
           <p className="text-xs text-amber-200/90 sm:self-center">
-            Ya hay una solicitud abierta — no podés crear otra hasta que administración la resuelva.
+            Ya hay una denuncia abierta — no podés crear otra hasta que administración la resuelva.
           </p>
         ) : null}
         {allowDisputes && review.dispute ? (
@@ -218,12 +221,14 @@ export function ManagedReviewCard({
         ) : null}
       </footer>
 
-      {allowDisputes ? (
+      {allowDisputes && disputeFn ? (
         <ReviewDisputeModal
           reviewId={review.id}
           open={disputeModalOpen}
           onClose={() => setDisputeModalOpen(false)}
-          filtersKey={filtersKey}
+          createDisputeFn={disputeFn}
+          invalidateQueryKey={invalidateQueryKey}
+          summaryQueryKey={summaryQueryKey}
         />
       ) : null}
       <ReviewReplyModal
