@@ -21,6 +21,7 @@ import {
   FUTURE_TO,
   FakeCourtesyDb,
   TENANT,
+  adminSendBody,
   errorOf,
   makeChecker,
   sendBody,
@@ -408,7 +409,7 @@ async function adminCreatedCourtesy() {
   console.log('\n=== ADMIN-created courtesy: owner informed with the agreement ===\n');
   const { db, svc } = world();
   db.agreements.add('prof-a');
-  await svc.courtesy.sendCourtesy(TENANT, 'admin', 'ADMIN', sendBody());
+  await svc.courtesy.sendCourtesy(TENANT, 'admin', 'ADMIN', adminSendBody());
   await svc.flush();
   const n = svc.notifications.at(-1);
   check(Boolean(n) && /aprobad/i.test(n!.title) && labels(n!)['Multiplicador de canje'] === '2x', 'admin-created courtesy notifies the owner with the CURRENT agreement');

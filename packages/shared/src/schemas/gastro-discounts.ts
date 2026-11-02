@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { isGastroDiscountDateRangeOrderValid } from '../gastro-discount-expiry';
 import { gastroDiscountQrPayloadV1Schema } from '../gastro-discount-qr';
 import { gastroCourtesyCampaignMetricsSchema } from './gastro-courtesy-discounts';
+import { gastroDiscountAgreementTermsSchema } from './benefit-commercial-agreements';
 
 export const gastroDiscountDateInputSchema = z.union([
   z.string().datetime(),
@@ -182,6 +183,15 @@ export const gastroDiscountCreateSchema = z
     }
   });
 export type GastroDiscountCreateInput = z.infer<typeof gastroDiscountCreateSchema>;
+
+/**
+ * G10.B (D-G10-4) — ADMIN on-behalf create: the discount is born ACTIVE, so its own contract
+ * terms travel in the same body and are created atomically with it.
+ */
+export const adminGastroDiscountCreateSchema = gastroDiscountCreateSchema.and(
+  z.object({ agreement: gastroDiscountAgreementTermsSchema }),
+);
+export type AdminGastroDiscountCreateInput = z.infer<typeof adminGastroDiscountCreateSchema>;
 
 export const gastroDiscountUpdateSchema = z
   .object({

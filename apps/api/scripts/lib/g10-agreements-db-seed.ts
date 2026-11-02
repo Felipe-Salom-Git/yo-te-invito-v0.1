@@ -22,6 +22,7 @@ export function buildG10Services(prisma: PrismaService) {
   const ledger = new CourtesyCreditLedgerService(prisma, audit);
   const eligibility = new BenefitSettlementEligibilityService(prisma);
   return {
+    audit,
     agreements: new BenefitCommercialAgreementsService(prisma, audit),
     discountHistory: new BenefitDiscountAgreementHistoryService(prisma),
     ledger,

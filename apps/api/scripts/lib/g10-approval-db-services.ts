@@ -13,7 +13,7 @@ export function buildG10ApprovalServices(
   opts: { gate?: GastroDiscountAgreementGateService } = {},
 ) {
   const base = buildG10Services(prisma);
-  const gate = opts.gate ?? new GastroDiscountAgreementGateService(prisma, base.agreements);
+  const gate = opts.gate ?? new GastroDiscountAgreementGateService(prisma, base.audit, base.agreements);
   const approvedNotifications: Array<{ discountId: string; agreementId: string | null }> = [];
   const admin = new AdminGastroService(
     prisma,

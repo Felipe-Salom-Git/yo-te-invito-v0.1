@@ -104,8 +104,12 @@ function build(opts: {
     { logAction: async () => undefined } as never,
     { isConfigured: () => true } as never,
     { debitForGastroCourtesyCampaign: async () => ({ entry: { id: 'e', amountCents: 1n } }) } as never,
-    // G8.3: CURRENT agreement is resolved for ADMIN-created courtesies.
-    { resolveApplicable: async () => ({ agreement: { id: 'agr-1' } }) } as never,
+    // G10.B: ADMIN non-funded courtesies create their own contract (gate stubbed here).
+    {
+      assertInitialTermsCurrent: () => undefined,
+      createInitialInTx: async () => ({ id: 'agr-1' }),
+      recordInitial: async () => ({ id: 'agr-1' }),
+    } as never,
     // G8.4: delivery is a separate step (only ADMIN-created courtesies deliver at creation).
     {
       deliverCampaign: async () => {
@@ -186,7 +190,12 @@ async function main() {
   }
   {
     const { svc, created } = build({ profiles: [PROFILE_A] });
-    await svc.sendCourtesy(TENANT, 'admin-1', 'ADMIN', body());
+    await svc.sendCourtesy(
+      TENANT,
+      'admin-1',
+      'ADMIN',
+      body({ agreement: { unitPriceCents: '500000', barterMultiplier: '2', currency: 'ARS', validFrom: '2026-01-01' } }),
+    );
     const d = created.discounts[0]!;
     check(d.createdByOrigin === 'ADMIN' && d.createdByUserId === 'admin-1', 'admin courtesy → origin ADMIN + createdByUserId');
   }

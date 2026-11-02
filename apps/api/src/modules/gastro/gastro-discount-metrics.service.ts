@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import {
+  buildDiscountAgreementGateMetadata,
   ErrorCode,
   GASTRO_DISCOUNT_TIMEZONE,
   getGastroDiscountCalendarKey,
@@ -29,6 +30,7 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditAction } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
+import { GastroDiscountAgreementGateService } from '../benefit-agreements/gastro-discount-agreement-gate.service';
 import { cancelCourtesyClaimsForDiscount } from './gastro-courtesy-lifecycle.util';
 import {
   computeCourtesyCampaignMetrics,
@@ -72,6 +74,7 @@ export class GastroDiscountMetricsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly agreementGate: GastroDiscountAgreementGateService,
   ) {}
 
   private mapDiscountSummary(
@@ -467,6 +470,12 @@ export class GastroDiscountMetricsService {
 
     if (body.status === 'ACTIVE') {
       this.assertDiscountConfigurable(row);
+      // G10.B2 (D-G10-5): reactivation needs the discount's own CURRENT contract when billable
+      // (funded courtesy: no gate). Owner and ADMIN alike; never the local's legacy row.
+      const activationGate =
+        beforeStatus !== 'ACTIVE'
+          ? await this.agreementGate.assertActivatable(tenantId, discountId)
+          : null;
       // G8.2 (CRITICAL): a courtesy must NEVER obtain a discount-level (master) QR.
       const mintMasterQr = shouldGenerateMasterQr({
         visibility: row.visibility,
@@ -490,6 +499,9 @@ export class GastroDiscountMetricsService {
         entityId: discountId,
         before: { status: beforeStatus },
         after: { status: 'ACTIVE' },
+        ...(activationGate
+          ? { metadata: buildDiscountAgreementGateMetadata(discountId, activationGate) }
+          : {}),
       });
     } else {
       // G8.2: cancelling a courtesy campaign also makes its ACTIVE claims unusable.

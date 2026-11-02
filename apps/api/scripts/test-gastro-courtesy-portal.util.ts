@@ -19,6 +19,7 @@ import {
   FUTURE_TO,
   FakeCourtesyDb,
   TENANT,
+  adminSendBody,
   errorOf,
   makeChecker,
   sendBody,
@@ -271,7 +272,7 @@ async function adminOrigin() {
   console.log('\n=== OWNER vs ADMIN-created courtesy ===\n');
   const { db, portal, svc } = world();
   db.agreements.add('prof-a');
-  await svc.courtesy.sendCourtesy(TENANT, 'admin', 'ADMIN', sendBody());
+  await svc.courtesy.sendCourtesy(TENANT, 'admin', 'ADMIN', adminSendBody());
   const d0 = db.discounts[0]!;
   check(d0.status === 'ACTIVE' && d0.createdByOrigin === 'ADMIN', 'admin-created courtesy is ACTIVE');
   const e = await errorOf(() =>

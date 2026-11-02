@@ -87,8 +87,8 @@ import {
   type GastroDiscountStatusUpdate,
   gastroDiscountArchiveActionSchema,
   type GastroDiscountArchiveAction,
-  gastroDiscountCreateSchema,
-  type GastroDiscountCreateInput,
+  adminGastroDiscountCreateSchema,
+  type AdminGastroDiscountCreateInput,
   upsertGastroDiscountVisualTemplateDtoSchema,
   type UpsertGastroDiscountVisualTemplateDto,
   adminDeepDeleteEntityTypeSchema,
@@ -1377,7 +1377,7 @@ export class AdminController {
   async createGastroLocationDiscount(
     @CurrentUser() user: { id: string; tenantId: string; role: string },
     @Param(new ZodValidationPipe(adminGastroProfileIdParamsSchema)) params: AdminGastroProfileIdParams,
-    @Body(new ZodValidationPipe(gastroDiscountCreateSchema)) body: GastroDiscountCreateInput,
+    @Body(new ZodValidationPipe(adminGastroDiscountCreateSchema)) body: AdminGastroDiscountCreateInput,
   ) {
     return this.adminGastro.createDiscountOnBehalf(
       user.tenantId,

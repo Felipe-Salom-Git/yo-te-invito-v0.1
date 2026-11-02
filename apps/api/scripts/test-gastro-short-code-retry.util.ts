@@ -18,7 +18,15 @@ import {
   isShortCodeUniqueViolation,
   retryOnShortCodeCollision,
 } from '../src/common/gastro-claim-short-code.util';
-import { FakeCourtesyDb, FUTURE_TO, TENANT, errorOf, makeChecker, sendBody } from './lib/courtesy-fake-db';
+import {
+  FakeCourtesyDb,
+  FUTURE_TO,
+  TENANT,
+  adminSendBody,
+  errorOf,
+  makeChecker,
+  sendBody,
+} from './lib/courtesy-fake-db';
 
 const { check, state } = makeChecker();
 
@@ -182,7 +190,7 @@ async function courtesyCreate() {
   // Same generator serves ADMIN courtesies (delivered right away).
   const d = world();
   d.db.claimCreateFaults.push({ target: ['shortCode'] });
-  await d.svc.courtesy.sendCourtesy(TENANT, 'admin', 'ADMIN', sendBody());
+  await d.svc.courtesy.sendCourtesy(TENANT, 'admin', 'ADMIN', adminSendBody());
   check(d.db.claims.length === 3 && d.svc.emailLog.length === 3, 'admin courtesy also retries and then delivers once per claim');
 }
 
@@ -235,7 +243,7 @@ async function exposure() {
   console.log('\n=== shortCode is available where it will be rendered (no foreign claims) ===\n');
   const { db, svc } = world();
   db.addUser('u-a', 'a@example.com');
-  await svc.courtesy.sendCourtesy(TENANT, 'admin', 'ADMIN', sendBody());
+  await svc.courtesy.sendCourtesy(TENANT, 'admin', 'ADMIN', adminSendBody());
   const mine = db.claims.find((c) => c.email === 'a@example.com')!;
   const me = await svc.me.listForUser(TENANT, 'u-a');
   check(me.data.length === 1 && me.data[0]!.shortCode === mine.shortCode, '/me exposes the user\'s own shortCode');

@@ -184,6 +184,14 @@ export class GastroService {
         message: GASTRO_COURTESY_EDIT_BLOCKED_MESSAGE,
       });
     }
+    // G10.B2 defense in depth: this legacy handler never activates; activation goes through the
+    // status route, which enforces the discount's own CURRENT contract.
+    if (patch.status === 'ACTIVE' && existing.status !== 'ACTIVE') {
+      throw new BadRequestException({
+        code: ErrorCode.VALIDATION_FAILED,
+        message: 'Activá el descuento desde su acción de estado (requiere contrato comercial vigente)',
+      });
+    }
     const scope = await this.assertGastroEvent(tenantId, userId, userRole, existing.eventId);
     if (
       userRole !== 'ADMIN' &&

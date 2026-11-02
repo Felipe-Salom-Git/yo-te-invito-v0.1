@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { gastroDiscountQrPayloadV1Schema } from '../gastro-discount-qr';
 import { moneyCentsStringSchema } from '../money/benefit-money';
+import { gastroDiscountAgreementTermsSchema } from './benefit-commercial-agreements';
 import { gastroDiscountVisualTemplateResponseSchema } from './gastro-discount-visual-template.schema';
 
 export const gastroDiscountClaimTypeSchema = z.enum(['PUBLIC_REQUEST', 'COURTESY']);
@@ -114,6 +115,11 @@ export const gastroCourtesySendBodySchema = z.object({
   sendToFollowers: z.boolean().default(false),
   message: z.string().max(1000).optional(),
   funding: gastroCourtesyFundingSchema.optional(),
+  /**
+   * G10.B (D-G10-4) — ADMIN non-funded courtesy only: its own contract, created atomically.
+   * Rejected for owners (approval flow) and for funded courtesies (not billable, D1).
+   */
+  agreement: gastroDiscountAgreementTermsSchema.optional(),
 });
 
 export const adminGastroCourtesyFundSendBodySchema = gastroCourtesySendBodySchema.extend({

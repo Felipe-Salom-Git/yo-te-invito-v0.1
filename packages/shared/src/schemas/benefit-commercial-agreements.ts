@@ -66,6 +66,32 @@ export type CreateBenefitCommercialAgreementBody = z.infer<
   typeof createBenefitCommercialAgreementBodySchema
 >;
 
+/**
+ * G10.B (D-G10-4) — terms of the discount's first contract, created in the SAME transaction as an
+ * ADMIN-created ACTIVE discount (on-behalf or non-funded courtesy). Scope comes from the discount.
+ */
+export const gastroDiscountAgreementTermsSchema = z
+  .object({
+    unitPriceCents: benefitUnitPriceCentsInputSchema,
+    barterMultiplier: barterMultiplierInputSchema,
+    currency: z.literal('ARS').default('ARS'),
+    validFrom: calendarDateSchema,
+    validTo: calendarDateSchema.optional(),
+    notes: z.string().trim().max(2000).optional(),
+  })
+  .strict()
+  .superRefine((val, ctx) => {
+    if (val.validTo && val.validTo < val.validFrom) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'validTo cannot be before validFrom',
+        path: ['validTo'],
+      });
+    }
+  });
+
+export type GastroDiscountAgreementTerms = z.infer<typeof gastroDiscountAgreementTermsSchema>;
+
 export const closeBenefitCommercialAgreementBodySchema = z
   .object({
     validTo: calendarDateSchema,

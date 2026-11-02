@@ -10,7 +10,7 @@
  */
 import { ForbiddenException } from '@nestjs/common';
 import { buildGastroDiscountQrPayload } from '@yo-te-invito/shared';
-import { FakeCourtesyDb, TENANT, errorOf, makeChecker, sendBody } from './lib/courtesy-fake-db';
+import { FakeCourtesyDb, TENANT, adminSendBody, errorOf, makeChecker, sendBody } from './lib/courtesy-fake-db';
 
 const { check, state } = makeChecker();
 
@@ -34,7 +34,7 @@ const scan = (
 async function activeCourtesy() {
   console.log('\n=== ACTIVE courtesy: QR + manual shortCode, same local ===\n');
   const { db, svc, scannerA } = world();
-  await svc.courtesy.sendCourtesy(TENANT, 'admin', 'ADMIN', sendBody());
+  await svc.courtesy.sendCourtesy(TENANT, 'admin', 'ADMIN', adminSendBody());
   const [a, b] = db.claims;
   check(db.discounts[0]!.status === 'ACTIVE', 'admin courtesy is ACTIVE');
 
@@ -63,7 +63,7 @@ async function activeCourtesy() {
 async function usedBlocksSecond() {
   console.log('\n=== USED: second validation blocked (QR and shortCode) ===\n');
   const { db, svc, scannerA } = world();
-  await svc.courtesy.sendCourtesy(TENANT, 'admin', 'ADMIN', sendBody());
+  await svc.courtesy.sendCourtesy(TENANT, 'admin', 'ADMIN', adminSendBody());
   const c = db.claims[0]!;
   check((await scan(scannerA, db.qrFor(c))).status === 'VALID', 'first QR scan VALID');
   check((await scan(scannerA, db.qrFor(c))).status === 'ALREADY_USED', 'second QR scan → ALREADY_USED');
@@ -99,7 +99,7 @@ async function pendingRejectedCancelled() {
 
   // Cancelled claim.
   const w2 = world();
-  await w2.svc.courtesy.sendCourtesy(TENANT, 'admin', 'ADMIN', sendBody());
+  await w2.svc.courtesy.sendCourtesy(TENANT, 'admin', 'ADMIN', adminSendBody());
   const claim = w2.db.claims[0]!;
   claim.status = 'CANCELLED';
   const cq = await scan(w2.scannerA, w2.db.qrFor(claim));
@@ -109,7 +109,7 @@ async function pendingRejectedCancelled() {
 
   // Cancelled campaign (parent + claims).
   const w3 = world();
-  await w3.svc.courtesy.sendCourtesy(TENANT, 'admin', 'ADMIN', sendBody());
+  await w3.svc.courtesy.sendCourtesy(TENANT, 'admin', 'ADMIN', adminSendBody());
   await w3.svc.admin.cancel(TENANT, 'admin', 'ADMIN', 'prof-a', w3.db.discounts[0]!.id, 'cierre');
   const after = await scan(w3.scannerA, w3.db.qrFor(w3.db.claims[0]!));
   check(after.status !== 'VALID', `cancelled campaign: claim never VALID (got ${after.status})`);
@@ -126,7 +126,7 @@ async function pendingRejectedCancelled() {
 async function crossProfile() {
   console.log('\n=== Cross-profile: Scanner A vs courtesy of Local B ===\n');
   const { db, svc, scannerA, scannerB } = world();
-  await svc.courtesy.sendCourtesy(TENANT, 'admin', 'ADMIN', sendBody({ gastroProfileId: 'prof-b' }));
+  await svc.courtesy.sendCourtesy(TENANT, 'admin', 'ADMIN', adminSendBody({ gastroProfileId: 'prof-b' }));
   const claim = db.claims[0]!;
   check(db.discounts[0]!.gastroProfileId === 'prof-b', 'courtesy belongs to Local B');
 
@@ -146,7 +146,7 @@ async function crossProfile() {
 async function tenantAndUnknown() {
   console.log('\n=== Unknown / other-tenant shortCode ===\n');
   const { db, svc, scannerA } = world();
-  await svc.courtesy.sendCourtesy(TENANT, 'admin', 'ADMIN', sendBody());
+  await svc.courtesy.sendCourtesy(TENANT, 'admin', 'ADMIN', adminSendBody());
   const claim = db.claims[0]!;
   const unknown = await scan(scannerA, 'ZZZZZZ');
   check(unknown.status === 'INVALID', 'unknown shortCode → INVALID');
@@ -159,7 +159,7 @@ async function tenantAndUnknown() {
 async function masterQr() {
   console.log('\n=== Master QR on COURTESY_ONLY ===\n');
   const { db, svc, scannerA } = world();
-  await svc.courtesy.sendCourtesy(TENANT, 'admin', 'ADMIN', sendBody());
+  await svc.courtesy.sendCourtesy(TENANT, 'admin', 'ADMIN', adminSendBody());
   const d = db.discounts[0]!;
   d.qrToken = 'a'.repeat(48); // legacy row carrying a discount-level token
   const master = await scan(scannerA, buildGastroDiscountQrPayload(d.id, d.qrToken));

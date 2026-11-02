@@ -128,7 +128,9 @@ function buildMetrics(row: ReturnType<typeof discountRow>) {
       calls.audits.push(a);
     },
   };
-  const svc = new GastroDiscountMetricsService(prisma as never, audit as never);
+  // G10.B: reactivation gate stubbed as "this discount has its own CURRENT contract".
+  const gate = { assertActivatable: async () => ({ billable: true, agreement: { id: 'agr-1' } }) };
+  const svc = new GastroDiscountMetricsService(prisma as never, audit as never, gate as never);
   (svc as unknown as { buildSummaryForDiscount: () => Promise<unknown> }).buildSummaryForDiscount =
     async () => ({ ok: true });
   return { svc, calls };

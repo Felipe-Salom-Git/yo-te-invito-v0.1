@@ -49,6 +49,8 @@ export type DiscountLifecycleContext = {
   reason?: string | null;
   /** CURRENT agreement resolved at approval time. Only rendered on `approved` (create). */
   agreement?: LifecycleAgreement | null;
+  /** Courtesy funded with barter credit: not billable, never shows a contract. */
+  fundedCourtesy?: boolean;
 };
 
 export type DiscountLifecycleContent = {

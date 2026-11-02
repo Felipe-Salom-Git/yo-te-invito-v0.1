@@ -27,7 +27,7 @@ import {
   isGastroProfileEligibleForAdminDiscountCreate,
   normalizeGastroDiscountExpiryDate,
   normalizeGastroDiscountValidFromDate,
-  type GastroDiscountCreateInput,
+  type AdminGastroDiscountCreateInput,
   type GastroWeekday,
   type AdminGastroDiscountMetrics,
   type AdminGastroDiscountPublication,
@@ -1359,6 +1359,9 @@ export class AdminGastroService {
         message: 'El local no tiene email de contacto configurado',
       });
     }
+    // G10.B2 (D-G10-5): the legacy APPROVED → ACTIVE step needs the discount's own CURRENT contract.
+    const activationGate =
+      row.status !== 'ACTIVE' ? await this.agreementGate.assertActivatable(tenantId, discountId) : null;
 
     const payload = buildGastroDiscountQrPayload(row.id, row.qrToken);
     const now = new Date();
@@ -1396,6 +1399,9 @@ export class AdminGastroService {
       discountId,
       { status: row.status },
       { status: 'ACTIVE', emailSentAt: emailSentAt?.toISOString() ?? null },
+      activationGate
+        ? { metadata: buildDiscountAgreementGateMetadata(discountId, activationGate) }
+        : {},
     );
 
     if (row.status !== 'ACTIVE') {
@@ -1410,7 +1416,7 @@ export class AdminGastroService {
     adminUserId: string,
     adminRole: string,
     profileId: string,
-    body: GastroDiscountCreateInput,
+    body: AdminGastroDiscountCreateInput,
   ) {
     const profile = await this.assertProfile(tenantId, profileId);
     if (!isGastroProfileEligibleForAdminDiscountCreate(profile.status)) {
@@ -1460,29 +1466,47 @@ export class AdminGastroService {
         validWeekday: null,
       };
     }
-    const created = await this.prisma.gastroDiscount.create({
-      data: {
+    // G10.B2 (D-G10-4): discount + its own contract + ACTIVE in ONE transaction. If the contract
+    // fails, no orphan ACTIVE discount remains.
+    this.agreementGate.assertInitialTermsCurrent(body.agreement);
+    const { created, agreementRow } = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.gastroDiscount.create({
+        data: {
+          tenantId,
+          eventId: profile.publicEventId!,
+          gastroProfileId: profile.id,
+          code: `ADM-${randomBytes(4).toString('hex').toUpperCase()}`,
+          type: 'PERCENT',
+          value: 0,
+          displayTitle: body.title.trim(),
+          summary: body.summary.trim(),
+          detail: body.detail.trim(),
+          displayDescription: body.summary.trim(),
+          validityMode,
+          ...dateFields,
+          status: initialStatusForDiscountOrigin('ADMIN'),
+          createdByOrigin: 'ADMIN',
+          createdByUserId: adminUserId,
+          qrToken,
+          qrGeneratedAt: new Date(),
+          submittedImageUrls: images,
+          displayImageUrls: images,
+        },
+      });
+      const agreementRow = await this.agreementGate.createInitialInTx(tx, {
         tenantId,
-        eventId: profile.publicEventId,
+        actorId: adminUserId,
         gastroProfileId: profile.id,
-        code: `ADM-${randomBytes(4).toString('hex').toUpperCase()}`,
-        type: 'PERCENT',
-        value: 0,
-        displayTitle: body.title.trim(),
-        summary: body.summary.trim(),
-        detail: body.detail.trim(),
-        displayDescription: body.summary.trim(),
-        validityMode,
-        ...dateFields,
-        status: initialStatusForDiscountOrigin('ADMIN'),
-        createdByOrigin: 'ADMIN',
-        createdByUserId: adminUserId,
-        qrToken,
-        qrGeneratedAt: new Date(),
-        submittedImageUrls: images,
-        displayImageUrls: images,
-      },
+        gastroDiscountId: created.id,
+        terms: body.agreement,
+      });
+      return { created, agreementRow };
     });
+    const agreement = await this.agreementGate.recordInitial(
+      tenantId,
+      { id: adminUserId, role: adminRole },
+      agreementRow,
+    );
     await this.audit(
       tenantId,
       adminUserId,
@@ -1491,20 +1515,17 @@ export class AdminGastroService {
       created.id,
       {},
       { status: created.status, gastroProfileId: profile.id, origin: 'ADMIN' },
+      {
+        metadata: buildDiscountAgreementGateMetadata(created.id, { billable: true, agreement }),
+      },
     );
     void this.gastroFollowAlerts.notifyFollowersOfNewActiveDiscount(tenantId, created.id);
-    // G8.8: show the CURRENT agreement (if any) in the owner email. Informational only: this
-    // path never gated on an agreement and still does not.
-    const onBehalfAgreement = await this.agreementGate
-      .resolve(tenantId, created.id)
-      .then((gate) => gate.agreement)
-      .catch(() => null);
     this.lifecycleNotifications.notifyDiscountApproved(
       tenantId,
       created.id,
       created.displayTitle ?? body.title,
       'create',
-      { agreement: onBehalfAgreement },
+      { agreement },
     );
     return this.getDiscountDetail(tenantId, profileId, created.id);
   }

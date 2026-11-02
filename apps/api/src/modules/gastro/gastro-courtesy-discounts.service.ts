@@ -7,11 +7,14 @@ import {
 import { Prisma } from '@prisma/client';
 import { randomBytes } from 'crypto';
 import {
+  buildDiscountAgreementGateMetadata,
   ErrorCode,
   parseMoneyCentsString,
   type GastroCourtesyRecipientsPreviewQuery,
   type GastroCourtesySendBody,
+  type GastroDiscountAgreementTerms,
   GASTRO_COURTESY_AGREEMENT_REQUIRED_MESSAGE,
+  GASTRO_COURTESY_FUNDED_AGREEMENT_FORBIDDEN_MESSAGE,
   initialCourtesyDiscountStatus,
   isCourtesyValidityRangeValid,
   isGastroDiscountExpired,
@@ -22,7 +25,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { ProfilesAuthorizationService } from '../../common/profiles-authorization.service';
 import { AuditService } from '../audit/audit.service';
 import { EmailService } from '../../email/email.service';
-import { BenefitCommercialAgreementsService } from '../benefit-agreements/benefit-commercial-agreements.service';
+import { GastroDiscountAgreementGateService } from '../benefit-agreements/gastro-discount-agreement-gate.service';
 import { GastroCourtesyDeliveryService } from './gastro-courtesy-delivery.service';
 import { GastroLifecycleNotificationsService } from '../notifications/gastro-lifecycle-notifications.service';
 import {
@@ -56,7 +59,7 @@ export class GastroCourtesyDiscountsService {
     private readonly audit: AuditService,
     private readonly email: EmailService,
     private readonly courtesyLedger: CourtesyCreditLedgerService,
-    private readonly benefitAgreements: BenefitCommercialAgreementsService,
+    private readonly agreementGate: GastroDiscountAgreementGateService,
     private readonly delivery: GastroCourtesyDeliveryService,
     private readonly lifecycleNotifications: GastroLifecycleNotificationsService,
   ) {}
@@ -298,14 +301,10 @@ export class GastroCourtesyDiscountsService {
       }
     }
 
-    // G8.3.5: even an ADMIN-created courtesy (no review step) must have a CURRENT commercial
-    // agreement for the local before anything is created/delivered. No silent exception.
-    // Owner-created courtesies are gated at approval time instead.
-    let adminAgreement: Awaited<ReturnType<GastroCourtesyDiscountsService['assertCurrentAgreement']>> | null =
-      null;
-    if (userRole === 'ADMIN') {
-      adminAgreement = await this.assertCurrentAgreement(tenantId, profile.id);
-    }
+    // G10.B2: an ADMIN courtesy is born ACTIVE. Funded → not billable, no contract (D-G10-3).
+    // Non-funded → its OWN contract, created atomically with it (D-G10-4). Owner courtesies are
+    // gated at approval time and never carry commercial terms.
+    const initialTerms = this.resolveInitialAgreementTerms(userRole, body);
 
     const eventId = profile.publicEventId!;
     const imputedValueCents = body.funding
@@ -318,7 +317,7 @@ export class GastroCourtesyDiscountsService {
 
     // G8.6: a shortCode P2002 aborts the whole (Postgres) transaction, so the retry wraps it;
     // the rolled-back attempt leaves nothing behind and the next one draws fresh codes.
-    const { discount, campaign, debitEntry, createdClaims } = await retryOnShortCodeCollision(() =>
+    const { discount, campaign, debitEntry, createdClaims, agreementRow } = await retryOnShortCodeCollision(() =>
       this.prisma.$transaction(
         async (tx) => {
           const discount = await tx.gastroDiscount.create({
@@ -360,6 +359,16 @@ export class GastroCourtesyDiscountsService {
             },
           });
 
+          const agreementRow = initialTerms
+            ? await this.agreementGate.createInitialInTx(tx, {
+                tenantId,
+                actorId: userId,
+                gastroProfileId: profile.id,
+                gastroDiscountId: discount.id,
+                terms: initialTerms,
+              })
+            : null;
+
           // G8.3 (Option A): freeze the recipient set NOW by pre-creating one claim per
           // recipient, in the same transaction as the campaign. While the parent discount is
           // PENDING_REVIEW these claims are retained (not scannable / not visible / not mailed).
@@ -398,7 +407,7 @@ export class GastroCourtesyDiscountsService {
             debitEntry = entry;
           }
 
-          return { discount, campaign, debitEntry, createdClaims };
+          return { discount, campaign, debitEntry, createdClaims, agreementRow };
         },
         {
           isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
@@ -409,6 +418,9 @@ export class GastroCourtesyDiscountsService {
     );
 
     const pendingApproval = discountStatus === 'PENDING_REVIEW';
+    const adminAgreement = agreementRow
+      ? await this.agreementGate.recordInitial(tenantId, { id: userId, role: userRole }, agreementRow)
+      : null;
 
     await this.audit.logAction({
       tenantId,
@@ -425,6 +437,14 @@ export class GastroCourtesyDiscountsService {
         gastroProfileId: profile.id,
         fundedFromCourtesyCredit: debitEntry != null,
       },
+      ...(userRole === 'ADMIN'
+        ? {
+            metadata: buildDiscountAgreementGateMetadata(discount.id, {
+              billable: debitEntry == null,
+              agreement: adminAgreement,
+            }),
+          }
+        : {}),
     });
 
     if (debitEntry) {
@@ -472,20 +492,21 @@ export class GastroCourtesyDiscountsService {
       return { ...base, sentCount: 0, failedCount: 0, failures: [] };
     }
 
-    // ADMIN-created: already approved (agreement gate passed) → deliver now.
+    // ADMIN-created: born ACTIVE (own contract created, or funded = not billable) → deliver now.
     const delivery = await this.delivery.deliverCampaign(tenantId, discount.id, {
       actorId: userId,
       actorRole: userRole,
       trigger: 'ADMIN_CREATE',
       webBaseUrl,
     });
-    // G8.8: same owner-facing semantics as an admin-created discount (CURRENT agreement shown).
+    // G8.8: same owner-facing semantics as an admin-created discount (its own contract shown;
+    // a funded courtesy shows "not billable" instead of a contract).
     this.lifecycleNotifications.notifyDiscountApproved(
       tenantId,
       discount.id,
       body.title.trim(),
       'create',
-      { agreement: adminAgreement },
+      { agreement: adminAgreement, fundedCourtesy: debitEntry != null },
     );
     return {
       ...base,
@@ -496,21 +517,36 @@ export class GastroCourtesyDiscountsService {
     };
   }
 
-  /**
-   * CURRENT commercial agreement gate for the local (same resolver discounts use).
-   * Acts as a commercial gate only: nothing from the agreement is copied to the campaign.
-   */
-  private async assertCurrentAgreement(tenantId: string, gastroProfileId: string) {
-    const ctx = await this.benefitAgreements.resolveApplicable(tenantId, {
-      vertical: 'GASTRO',
-      gastroProfileId,
-    });
-    if (!ctx.agreement) {
+  /** Validated before any write; the contract itself is created inside the courtesy transaction. */
+  private resolveInitialAgreementTerms(
+    userRole: string,
+    body: GastroCourtesySendBody,
+  ): GastroDiscountAgreementTerms | null {
+    if (userRole !== 'ADMIN') {
+      if (body.agreement) {
+        throw new ForbiddenException({
+          code: ErrorCode.FORBIDDEN,
+          message: 'Solo administración define el contrato comercial de una cortesía',
+        });
+      }
+      return null;
+    }
+    if (body.funding) {
+      if (body.agreement) {
+        throw new BadRequestException({
+          code: ErrorCode.VALIDATION_FAILED,
+          message: GASTRO_COURTESY_FUNDED_AGREEMENT_FORBIDDEN_MESSAGE,
+        });
+      }
+      return null;
+    }
+    if (!body.agreement) {
       throw new BadRequestException({
         code: ErrorCode.BENEFIT_AGREEMENT_NOT_FOUND,
         message: GASTRO_COURTESY_AGREEMENT_REQUIRED_MESSAGE,
       });
     }
-    return ctx.agreement;
+    this.agreementGate.assertInitialTermsCurrent(body.agreement);
+    return body.agreement;
   }
 }

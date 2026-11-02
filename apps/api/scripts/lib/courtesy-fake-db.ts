@@ -85,6 +85,8 @@ export class FakeCourtesyDb {
   audits: Row[] = [];
   /** Discount ids (or profile ids = every discount of that local) with their own CURRENT contract. */
   agreements = new Set<string>();
+  /** G10.B: discount-scoped contracts created atomically by ADMIN flows (real gate, fake table). */
+  agreementRows: Row[] = [];
   /** G8.8: the CURRENT agreement returned for profiles in `agreements` (overridable). */
   agreementTerms: Row = {
     unitPriceCents: '500000',
@@ -338,6 +340,20 @@ export class FakeCourtesyDb {
         return data;
       },
     },
+    benefitCommercialAgreement: {
+      create: async ({ data }: { data: Row }) => {
+        const row = {
+          id: this.id('agr'),
+          excursionOperatorId: null,
+          derivedFromAgreementId: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          ...data,
+        };
+        this.agreementRows.push(row);
+        return { ...row, gastroProfile: null, gastroDiscount: null, excursionOperator: null };
+      },
+    },
   };
 
   get prisma() {
@@ -352,6 +368,7 @@ export class FakeCourtesyDb {
           campaigns: self.campaigns.map((r) => ({ ...r })),
           claims: self.claims.map((r) => ({ ...r })),
           validations: self.validations.map((r) => ({ ...r })),
+          agreementRows: self.agreementRows.map((r) => ({ ...r })),
         };
         try {
           return await fn(self.prisma);
@@ -360,6 +377,7 @@ export class FakeCourtesyDb {
           self.campaigns = snap.campaigns;
           self.claims = snap.claims;
           self.validations = snap.validations;
+          self.agreementRows = snap.agreementRows;
           throw e;
         }
       },
@@ -513,6 +531,20 @@ export class FakeCourtesyDb {
                 : null,
           };
         }
+        const own = this.agreementRows.find((a) => a.gastroDiscountId === q.gastroDiscountId);
+        if (own) {
+          return {
+            agreement: {
+              id: own.id,
+              scope: 'DISCOUNT',
+              unitPriceCents: String(own.unitPriceCents),
+              currency: own.currency,
+              barterMultiplier: String(own.barterMultiplier),
+              validFrom: this.agreementTerms.validFrom,
+              validTo: null,
+            },
+          };
+        }
         const discount = this.discounts.find((d) => d.id === q.gastroDiscountId);
         const key = !discount
           ? null
@@ -526,14 +558,18 @@ export class FakeCourtesyDb {
         };
       },
     };
-    const agreementGate = new GastroDiscountAgreementGateService(prisma, agreements as never);
+    const agreementGate = new GastroDiscountAgreementGateService(
+      prisma,
+      auditService as never,
+      agreements as never,
+    );
     const courtesy = new GastroCourtesyDiscountsService(
       prisma,
       { hasGastroAccess: async () => true } as never,
       auditService as never,
       emailService as never,
       { debitForGastroCourtesyCampaign: async () => ({ entry: { id: 'led-1', amountCents: 1n } }) } as never,
-      agreements as never,
+      agreementGate,
       delivery,
       lifecycle,
     );
@@ -558,7 +594,7 @@ export class FakeCourtesyDb {
       {} as never,
       auditService as never,
     );
-    const metrics = new GastroDiscountMetricsService(prisma, auditService as never);
+    const metrics = new GastroDiscountMetricsService(prisma, auditService as never, agreementGate);
     const profileMetrics = new GastroProfileMetricsService(prisma, {} as never, {} as never);
     return {
       courtesy,
@@ -670,6 +706,19 @@ export function sendBody(over: Record<string, unknown> = {}) {
     sendToFollowers: false,
     ...over,
   } as never;
+}
+
+/** G10.B: contract terms an ADMIN non-funded courtesy must carry (CURRENT today). */
+export const ADMIN_COURTESY_AGREEMENT = {
+  unitPriceCents: '500000',
+  barterMultiplier: '2',
+  currency: 'ARS',
+  validFrom: '2026-01-01',
+};
+
+/** ADMIN-created non-funded courtesy body (D-G10-4: own contract created atomically). */
+export function adminSendBody(over: Record<string, unknown> = {}) {
+  return sendBody({ agreement: ADMIN_COURTESY_AGREEMENT, ...over });
 }
 
 export async function errorOf(fn: () => Promise<unknown>): Promise<Error | null> {

@@ -53,7 +53,7 @@ export class GastroLifecycleNotificationsService {
     discountId: string,
     title: string,
     aspect: GastroDiscountNotifyAspect,
-    opts?: { agreement?: LifecycleAgreement | null },
+    opts?: { agreement?: LifecycleAgreement | null; fundedCourtesy?: boolean },
   ): void {
     void this.dispatchDiscount(
       tenantId,
@@ -63,6 +63,7 @@ export class GastroLifecycleNotificationsService {
       aspect,
       undefined,
       opts?.agreement ?? null,
+      opts?.fundedCourtesy ?? false,
     ).catch((err) => {
       this.logger.error(`notifyDiscountApproved failed discount=${discountId}`, err);
     });
@@ -120,6 +121,7 @@ export class GastroLifecycleNotificationsService {
     aspect: GastroDiscountNotifyAspect,
     reason?: string,
     agreement?: LifecycleAgreement | null,
+    fundedCourtesy = false,
   ): Promise<void> {
     const discount = await this.prisma.gastroDiscount.findFirst({
       where: { id: discountId, tenantId },
@@ -158,6 +160,7 @@ export class GastroLifecycleNotificationsService {
       // Only an already-persisted reason; never invented.
       reason: reason ?? discount.rejectionReason ?? null,
       agreement,
+      fundedCourtesy,
     });
     const kind = notificationKindForDiscountEvent(event);
     const referenceKey = gastroDiscountNotificationReferenceKey(event, discountId, aspect);

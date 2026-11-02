@@ -15,6 +15,7 @@ import {
   TENANT,
   errorOf,
   makeChecker,
+  adminSendBody,
   sendBody,
 } from './lib/courtesy-fake-db';
 
@@ -228,7 +229,7 @@ async function isolation() {
   const d = db.discounts[0]!;
   await svc.admin.approve(TENANT, 'admin', 'ADMIN', 'prof-a', d.id);
   // Local B has its own approved courtesy for overlapping emails.
-  await svc.courtesy.sendCourtesy(TENANT, 'admin', 'ADMIN', sendBody({ gastroProfileId: 'prof-b' }));
+  await svc.courtesy.sendCourtesy(TENANT, 'admin', 'ADMIN', adminSendBody({ gastroProfileId: 'prof-b' }));
   const dB = db.discounts.find((x) => x.gastroProfileId === 'prof-b')!;
   const claimsA = db.claims.filter((c) => c.discountId === d.id);
   const claimsB = db.claims.filter((c) => c.discountId === dB.id);

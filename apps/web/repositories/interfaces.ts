@@ -3037,9 +3037,12 @@ export interface AdminGastroRepo {
     discountId: string,
     archived: boolean,
   ): Promise<AdminGastroDiscountDetail>;
+  /** G10.B (D-G10-4): born ACTIVE together with its own commercial contract. */
   createDiscount(
     profileId: string,
-    payload: GastroDiscountCreatePayload,
+    payload: GastroDiscountCreatePayload & {
+      agreement: import('@yo-te-invito/shared').GastroDiscountAgreementTerms;
+    },
   ): Promise<AdminGastroDiscountDetail>;
   getDiscountVisualTemplate(
     profileId: string,

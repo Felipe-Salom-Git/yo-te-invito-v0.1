@@ -11,8 +11,10 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { ErrorCode } from '@yo-te-invito/shared';
 import {
+  ADMIN_COURTESY_AGREEMENT,
   FakeCourtesyDb,
   TENANT,
+  adminSendBody,
   codeOf,
   errorOf,
   makeChecker,
@@ -165,22 +167,64 @@ async function agreementGate() {
 }
 
 async function adminCreate() {
-  console.log('\n=== ADMIN-created courtesy: no review step, agreement still required ===\n');
+  console.log('\n=== ADMIN-created courtesy: no review step, own contract (D-G10-3/4) ===\n');
   {
     const { db, svc } = world();
+    // The local's agreement (fixture) is irrelevant: a non-funded ADMIN courtesy needs its OWN terms.
+    db.agreements.add('prof-a');
     const err = await errorOf(() => svc.courtesy.sendCourtesy(TENANT, 'admin-1', 'ADMIN', sendBody()));
-    check(err instanceof BadRequestException && codeOf(err) === ErrorCode.BENEFIT_AGREEMENT_NOT_FOUND, 'ADMIN create without CURRENT agreement → blocked');
+    check(err instanceof BadRequestException && codeOf(err) === ErrorCode.BENEFIT_AGREEMENT_NOT_FOUND, 'ADMIN non-funded create without contract terms → blocked');
     check(db.discounts.length === 0 && db.claims.length === 0 && svc.emailLog.length === 0, 'nothing created / delivered (no silent exception)');
   }
   {
     const { db, svc } = world();
-    db.agreements.add('prof-a');
-    const res = await svc.courtesy.sendCourtesy(TENANT, 'admin-1', 'ADMIN', sendBody());
+    const res = await svc.courtesy.sendCourtesy(TENANT, 'admin-1', 'ADMIN', adminSendBody());
     const d = db.discounts[0]!;
-    check(d.status === 'ACTIVE' && d.createdByOrigin === 'ADMIN', 'ADMIN create + agreement → ACTIVE (no PENDING_REVIEW)');
+    check(d.status === 'ACTIVE' && d.createdByOrigin === 'ADMIN', 'ADMIN create + own contract → ACTIVE (no PENDING_REVIEW)');
+    check(
+      db.agreementRows.length === 1 && db.agreementRows[0]!.gastroDiscountId === d.id && db.agreementRows[0]!.gastroProfileId === 'prof-a',
+      'contract created for THIS courtesy (discount-scoped)',
+    );
     check(d.qrToken === null, 'admin courtesy has no master QR');
     check(res.pendingApproval === false && res.sentCount === 3, 'ADMIN create delivers right away (3 emails)');
     check(db.claims.length === 3 && db.claims.every((c) => c.emailSentAt != null), 'claims created and marked delivered');
+  }
+  {
+    const { db, svc } = world();
+    db.failClaimCreateAt = 2;
+    const err = await errorOf(() => svc.courtesy.sendCourtesy(TENANT, 'admin-1', 'ADMIN', adminSendBody()));
+    check(err !== null && db.discounts.length === 0 && db.agreementRows.length === 0, 'failure mid-create → no courtesy and no orphan contract (atomic)');
+  }
+  {
+    const { db, svc } = world();
+    const notCurrent = await errorOf(() =>
+      svc.courtesy.sendCourtesy(TENANT, 'admin-1', 'ADMIN', adminSendBody({ agreement: { ...ADMIN_COURTESY_AGREEMENT, validFrom: '2099-01-01' } })),
+    );
+    check(codeOf(notCurrent) === ErrorCode.BENEFIT_AGREEMENT_INVALID_EFFECTIVE_DATE && db.discounts.length === 0, 'future contract cannot back an ACTIVE courtesy');
+  }
+  {
+    const { db, svc } = world();
+    const res = await svc.courtesy.sendCourtesy(
+      TENANT,
+      'admin-1',
+      'ADMIN',
+      sendBody({ funding: { source: 'COURTESY_CREDIT', imputedValueCents: '100000' } }),
+    );
+    check(res.fundedFromCourtesyCredit === true && db.agreementRows.length === 0, 'funded courtesy → created without contract (D-G10-3)');
+    const both = await errorOf(() =>
+      svc.courtesy.sendCourtesy(
+        TENANT,
+        'admin-1',
+        'ADMIN',
+        adminSendBody({ funding: { source: 'COURTESY_CREDIT', imputedValueCents: '100000' } }),
+      ),
+    );
+    check(codeOf(both) === ErrorCode.VALIDATION_FAILED, 'funded courtesy + contract terms → rejected (not billable)');
+  }
+  {
+    const { db, svc } = world();
+    const owner = await errorOf(() => svc.courtesy.sendCourtesy(TENANT, 'owner-a', 'GASTRO_OWNER', adminSendBody()));
+    check(codeOf(owner) === ErrorCode.FORBIDDEN && db.discounts.length === 0, 'owner cannot attach commercial terms');
   }
 }
 
