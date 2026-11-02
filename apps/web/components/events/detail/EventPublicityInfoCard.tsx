@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import type { EventGastroOrganizer } from '@yo-te-invito/shared';
 import { EventSectionCard } from './EventSectionCard';
 import { getProducerPublicPath } from '@/lib/producer/public-path';
 
@@ -15,9 +16,11 @@ type ProducerContact = {
 
 type Props = {
   producer?: ProducerContact | null;
+  /** G12.2 — promotional event of a gastro local. */
+  gastroOrganizer?: EventGastroOrganizer | null;
 };
 
-export function EventPublicityInfoCard({ producer }: Props) {
+export function EventPublicityInfoCard({ producer, gastroOrganizer }: Props) {
   const phone = producer?.whatsapp?.trim() || producer?.primaryPhone?.trim();
   const email = producer?.primaryEmail?.trim();
 
@@ -27,12 +30,25 @@ export function EventPublicityInfoCard({ producer }: Props) {
         Este evento fue publicado solo como difusión. No tiene venta de entradas desde Yo Te
         Invito.
       </p>
-      {producer ? (
+      {gastroOrganizer ? (
+        <p className="mt-3 text-sm text-text-muted">
+          Organiza <span className="font-medium text-text">{gastroOrganizer.displayName}</span>.
+          Consultá horarios, reservas y contacto en la ficha del local.
+        </p>
+      ) : producer ? (
         <p className="mt-3 text-sm text-text-muted">
           Podés ver más información en el perfil de la productora.
         </p>
       ) : null}
       <div className="mt-4 flex flex-wrap gap-2">
+        {gastroOrganizer ? (
+          <Link
+            href={`/gastronomicos/${gastroOrganizer.id}`}
+            className="inline-flex rounded-full border border-accent-muted bg-accent-surface/80 px-4 py-2 text-sm font-medium text-accent-soft hover:bg-accent-surface"
+          >
+            Ver ficha del local
+          </Link>
+        ) : null}
         {producer ? (
           <Link
             href={getProducerPublicPath(producer)}

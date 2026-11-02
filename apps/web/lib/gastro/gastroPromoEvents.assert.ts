@@ -12,6 +12,7 @@ import {
   gastroPromoEventToForm,
   resolveGastroContentTab,
 } from './gastroPromoEvents';
+import { getPlaceHeroCtaLabel } from '@/lib/home/contentRoutes';
 
 function assert(cond: unknown, msg: string): asserts cond {
   if (!cond) throw new Error(`FAIL: ${msg}`);
@@ -74,5 +75,10 @@ const roundTrip = gastroPromoEventToForm(
   { displayName: 'Local A', address: 'Calle 1' },
 );
 assert(roundTrip.atLocal && roundTrip.tagIds.join() === 't1', 'edit form: venue = local detected, tags kept');
+
+// G12.2-C — event detail hero CTA: no «Comprar entradas» on events without ticketing.
+assert(getPlaceHeroCtaLabel('event', { isGeneralPublication: true }) === 'Más información', 'publicity event CTA = Más información');
+assert(getPlaceHeroCtaLabel('event', { isGeneralPublication: false }) === 'Comprar entradas', 'ticketed event CTA unchanged');
+assert(getPlaceHeroCtaLabel('gastro', { isGeneralPublication: true }) === 'Reservar', 'other categories unchanged');
 
 console.log('OK: gastro promo event form');

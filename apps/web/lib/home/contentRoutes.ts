@@ -73,7 +73,13 @@ export function getPrimaryCtaLabel(category?: string): string {
 }
 
 /** CTA label for place/event detail hero (primary action) */
-export function getPlaceHeroCtaLabel(category?: string): string {
+export function getPlaceHeroCtaLabel(
+  category?: string,
+  options?: { isGeneralPublication?: boolean },
+): string {
+  if (options?.isGeneralPublication && (!category || category === 'event')) {
+    return 'Más información';
+  }
   switch (category) {
     case 'gastro':
       return 'Reservar';

@@ -249,7 +249,9 @@ export default function EventDetailPage() {
 
   const sharePath = getContentDetailHref({ id: eventId, category: event.category });
 
-  const primaryCtaLabel = getPlaceHeroCtaLabel(event.category);
+  const primaryCtaLabel = getPlaceHeroCtaLabel(event.category, {
+    isGeneralPublication: event.isGeneralPublication,
+  });
   const fromPrice =
     event.fromPrice != null
       ? event.fromPrice
@@ -381,7 +383,10 @@ export default function EventDetailPage() {
               </div>
             ) : null}
             {event.isGeneralPublication ? (
-              <EventPublicityInfoCard producer={event.producer} />
+              <EventPublicityInfoCard
+                producer={event.producer}
+                gastroOrganizer={event.gastroOrganizer}
+              />
             ) : null}
             {showTicketingSoon ? (
               <EventSectionCard title="Entradas">

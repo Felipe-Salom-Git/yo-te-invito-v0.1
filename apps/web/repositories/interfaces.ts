@@ -619,8 +619,10 @@ export interface EventSummary {
   subcategories?: Array<{ id: string; name: string; isPrimary?: boolean }>;
   /** Public list: minimum ticket price (major units). Null when not applicable. */
   fromPrice?: number | null;
-  /** Public list: producer display name. Null when no active profile. */
+  /** Public list: producer display name (or the local's name for gastro promo events). */
   producerName?: string | null;
+  /** G12.2 — organizer local of a gastro promotional event. */
+  gastroOrganizer?: import('@yo-te-invito/shared').EventGastroOrganizer | null;
   tags?: ContentTagPublic[];
 }
 

@@ -35,6 +35,7 @@ import { TRENDING_PRISMA_ORDER_BY } from '../common/utils/event-trending.util';
 import { cityWhereInput } from '../common/utils/city-filter.util';
 import {
   loadPublicFromPriceByEventId,
+  mapPublicGastroOrganizer,
   resolvePublicProducerName,
   type PublicFromPriceCandidate,
 } from '../common/utils/public-event-summary.util';
@@ -82,6 +83,11 @@ export class PublicEventsService {
         { category: contains },
         {
           producerProfile: {
+            is: { status: 'ACTIVE', displayName: contains },
+          },
+        },
+        {
+          gastroProfile: {
             is: { status: 'ACTIVE', displayName: contains },
           },
         },
@@ -136,6 +142,9 @@ export class PublicEventsService {
   }
 
   private applyPublicListFilters(base: Prisma.EventWhereInput, query: EventsListQuery): void {
+    if (query.gastroProfileId) {
+      base.gastroProfileId = query.gastroProfileId;
+    }
     if (query.excludeGeneralPublications === true) {
       base.isGeneralPublication = false;
     }
@@ -197,6 +206,7 @@ export class PublicEventsService {
         where: { status: 'ACTIVE' },
         select: { displayName: true },
       },
+      gastroProfile: { select: { id: true, displayName: true, logoUrl: true } },
       ticketTypes: {
         where: { deletedAt: null, status: 'ACTIVE' },
         select: { id: true },
@@ -233,6 +243,7 @@ export class PublicEventsService {
         subcategory: { id: string; name: string };
       }>;
       producerProfile: { displayName: string } | null;
+      gastroProfile?: { id: string; displayName: string; logoUrl: string | null } | null;
       ticketTypes: Array<{ id: string }>;
       eventTags: Array<{
         tag: { id: string; name: string; slug: string; isActive: boolean };
@@ -275,7 +286,9 @@ export class PublicEventsService {
       isTicketingEnabled: e.isTicketingEnabled,
       isGeneralPublication: e.isGeneralPublication,
       hasTicketing: this.mapHasTicketing(e),
-      producerName: resolvePublicProducerName(e.producerProfile),
+      producerName:
+        resolvePublicProducerName(e.producerProfile) ?? resolvePublicProducerName(e.gastroProfile),
+      gastroOrganizer: mapPublicGastroOrganizer(e.gastroProfile),
       fromPrice: null,
       tags: mapEventTagsPublic(e.eventTags),
     };
@@ -829,6 +842,7 @@ export class PublicEventsService {
             whatsapp: true,
           },
         },
+        gastroProfile: { select: { id: true, displayName: true, logoUrl: true } },
       },
     });
 
@@ -839,7 +853,9 @@ export class PublicEventsService {
       });
     }
 
-    const producerName = resolvePublicProducerName(event.producerProfile);
+    const producerName =
+      resolvePublicProducerName(event.producerProfile) ??
+      resolvePublicProducerName(event.gastroProfile);
     const fromPriceMap = await loadPublicFromPriceByEventId(this.prisma, [
       {
         id: event.id,
@@ -931,6 +947,7 @@ export class PublicEventsService {
           }
         : null,
       producerName,
+      gastroOrganizer: mapPublicGastroOrganizer(event.gastroProfile),
       fromPrice: fromPriceMap.get(event.id) ?? null,
     };
 

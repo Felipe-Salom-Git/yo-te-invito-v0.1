@@ -27,6 +27,10 @@ export function publicParentEntitiesActiveWhere(): Prisma.EventWhereInput {
           { gastroProfilePublic: { status: 'ACTIVE' } },
         ],
       },
+      // G12.2 — gastro promotional events follow their local (hidden while it is not ACTIVE).
+      {
+        OR: [{ gastroProfileId: null }, { gastroProfile: { status: 'ACTIVE' } }],
+      },
     ],
   };
 }

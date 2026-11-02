@@ -14,6 +14,14 @@ export function resolvePublicProducerName(
   return name ? name : null;
 }
 
+/** G12.2 — organizer local of a gastro promotional event (public card / detail). */
+export function mapPublicGastroOrganizer(
+  profile: { id: string; displayName: string; logoUrl?: string | null } | null | undefined,
+): { id: string; displayName: string; logoUrl: string | null } | null {
+  if (!profile) return null;
+  return { id: profile.id, displayName: profile.displayName, logoUrl: profile.logoUrl ?? null };
+}
+
 export type TicketTypeRowForPublicPrice = {
   eventId: string;
   price: Prisma.Decimal;

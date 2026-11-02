@@ -8,6 +8,7 @@ import { eventOccurrenceResponseSchema } from './event-occurrences';
 import { excursionSchedulePublicSchema } from './excursion-schedule';
 import { relatedLinksPublicSchema } from './related-links';
 import { rentalOpeningHoursSchema } from './opening-hours';
+import { eventGastroOrganizerSchema } from './gastro-promo-events';
 
 /** Optional Google Places id and province for location-backed entities (Maps 5). */
 const googlePlaceIdOptional = z.string().max(255).nullable().optional();
@@ -54,6 +55,8 @@ export const eventsListQuerySchema = z
     minValidReviews: z.coerce.number().int().min(0).max(100).optional(),
     hasTicketing: z.coerce.boolean().optional(),
     excludeGeneralPublications: z.coerce.boolean().optional(),
+    /** G12.2 — promotional events of one gastro local (public local page). */
+    gastroProfileId: z.string().min(1).optional(),
   })
   .refine(
     (data) => {
@@ -111,8 +114,10 @@ export const eventSummarySchema = z.object({
   subcategories: z.array(eventSubcategoryPublicSchema).optional(),
   /** Minimum purchasable ticket price (major units, e.g. ARS). Null when not on sale. */
   fromPrice: z.number().nullable().optional(),
-  /** Active producer profile display name — never email. */
+  /** Active producer profile display name — never email. G12.2: the local's name for gastro promo events. */
   producerName: z.string().nullable().optional(),
+  /** G12.2 — organizer local of a gastro promotional event (null otherwise). */
+  gastroOrganizer: eventGastroOrganizerSchema.nullable().optional(),
   status: z.enum(['DRAFT', 'PENDING', 'APPROVED', 'PAUSED', 'CANCELLED']).optional(),
   tags: z.array(contentTagPublicSchema).optional(),
   /** Excursion schedule hints for discovery cards (V3.1 Etapa 12). */
