@@ -898,12 +898,18 @@ enum BenefitVertical {
 }
 
 /// Commercial fee per validated benefit usage (Gastro / Activity). Immutable economic terms after create.
+/// G10: GASTRO agreements are discount-scoped (`gastroDiscountId`); GASTRO rows with
+/// `gastroDiscountId = null` are legacy profile-scoped (read-only history). CHECK constraint
+/// `BenefitCommercialAgreement_discount_scope_check` lives in SQL only.
 model BenefitCommercialAgreement {
   id                  String          @id @default(cuid())
   tenantId            String
   vertical            BenefitVertical
   gastroProfileId     String?
+  gastroDiscountId    String?
   excursionOperatorId String?
+  /// Backfill lineage: legacy profile agreement this discount-scoped copy was derived from.
+  derivedFromAgreementId String?
   unitPriceCents      BigInt
   barterMultiplier    Decimal         @db.Decimal(8, 4)
   currency            String          @default("ARS")
@@ -916,13 +922,18 @@ model BenefitCommercialAgreement {
 
   tenant            Tenant             @relation(fields: [tenantId], references: [id])
   gastroProfile     GastroProfile?     @relation(fields: [gastroProfileId], references: [id], onDelete: Restrict)
+  gastroDiscount    GastroDiscount?    @relation("GastroDiscountCommercialAgreements", fields: [gastroDiscountId], references: [id], onDelete: Restrict)
   excursionOperator ExcursionOperator? @relation(fields: [excursionOperatorId], references: [id], onDelete: Restrict)
+  derivedFromAgreement BenefitCommercialAgreement? @relation("BenefitAgreementDerivation", fields: [derivedFromAgreementId], references: [id], onDelete: Restrict)
+  derivedAgreements BenefitCommercialAgreement[] @relation("BenefitAgreementDerivation")
   createdBy         User?              @relation("BenefitAgreementCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
   settlementAllocations BenefitSettlementUsageAllocation[]
 
   @@index([tenantId, vertical, gastroProfileId])
   @@index([tenantId, vertical, excursionOperatorId])
   @@index([tenantId, validFrom, validTo])
+  @@index([tenantId, vertical, gastroDiscountId])
+  @@index([gastroDiscountId, validFrom])
 }
 
 enum BenefitSettlementStatus {
@@ -998,6 +1009,8 @@ model BenefitSettlementTransfer {
   id                 String    @id @default(cuid())
   tenantId           String
   settlementId       String
+  /// G10: EXACT attribution of a CASH transfer to one discount (null = legacy SETTLEMENT_LEVEL).
+  gastroDiscountId   String?
   amountCents        BigInt
   currency           String    @default("ARS")
   transferredAt      DateTime
@@ -1012,11 +1025,14 @@ model BenefitSettlementTransfer {
 
   tenant       Tenant            @relation(fields: [tenantId], references: [id])
   settlement   BenefitSettlement @relation(fields: [settlementId], references: [id], onDelete: Restrict)
+  gastroDiscount GastroDiscount? @relation("GastroDiscountSettlementTransfers", fields: [gastroDiscountId], references: [id], onDelete: Restrict)
   registeredBy User?             @relation("BenefitSettlementTransferRegistrar", fields: [registeredByUserId], references: [id], onDelete: SetNull)
   reversedBy   User?             @relation("BenefitSettlementTransferReverser", fields: [reversedByUserId], references: [id], onDelete: SetNull)
 
   @@index([tenantId, settlementId])
   @@index([settlementId, reversedAt])
+  @@index([settlementId, gastroDiscountId])
+  @@index([tenantId, gastroDiscountId])
 }
 
 enum CourtesyCreditLedgerEntryType {
@@ -2701,6 +2717,8 @@ model GastroDiscount {
   claims        GastroDiscountClaim[]
   courtesyCampaign GastroCourtesyCampaign?
   visualTemplate   GastroDiscountTemplate?
+  commercialAgreements BenefitCommercialAgreement[] @relation("GastroDiscountCommercialAgreements")
+  settlementTransfers  BenefitSettlementTransfer[]  @relation("GastroDiscountSettlementTransfers")
 
   @@unique([eventId, code])
   @@index([tenantId, eventId])
