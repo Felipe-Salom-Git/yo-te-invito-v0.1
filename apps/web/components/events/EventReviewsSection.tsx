@@ -76,7 +76,6 @@ export function EventReviewsSection({
   canSubmitReview = true,
 }: EventReviewsSectionProps) {
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const [formOpen, setFormOpen] = useState(false);
   const filtersActive = hasActivePublicReviewFilters(filters);
   const showFilters = (summary.validReviewCount > 0 || total > 0) && !isError;
   const emptyVariant = resolveEmptyVariant(
@@ -152,24 +151,14 @@ export function EventReviewsSection({
       ) : null}
 
       {!hideForm && !isError ? (
-        <div className="mt-8 border-t border-border/60 pt-8">
-          {formOpen ? (
-            <ReviewForm
-              entityType={entityType}
-              entityId={eventId}
-              onSubmit={onSubmitReview}
-              isSubmitting={isSubmittingReview}
-              canSubmit={canSubmitReview}
-            />
-          ) : (
-            <button
-              type="button"
-              onClick={() => setFormOpen(true)}
-              className="rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-bg transition hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-bg"
-            >
-              Valorar
-            </button>
-          )}
+        <div className="mt-8">
+          <ReviewForm
+            entityType={entityType}
+            entityId={eventId}
+            onSubmit={onSubmitReview}
+            isSubmitting={isSubmittingReview}
+            canSubmit={canSubmitReview}
+          />
         </div>
       ) : null}
     </section>

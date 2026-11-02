@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import type { EntityType } from '@/lib/schemas/review';
 import { getReviewSchema, getDimensionLabels } from '@/lib/schemas/review';
 import { PUBLIC_RATING_STARS_MAX } from '@/lib/reviews/ratingDisplay';
@@ -19,6 +19,8 @@ export interface ReviewFormProps {
   isSubmitting?: boolean;
   /** When false, shows hint to sign in (public reviews require account). */
   canSubmit?: boolean;
+  /** Starts expanded (default collapsed, like the reviews list). */
+  defaultOpen?: boolean;
 }
 
 function avgScores(nums: number[]): number {
@@ -34,13 +36,33 @@ export function ReviewForm({
   onSubmit,
   isSubmitting = false,
   canSubmit = true,
+  defaultOpen = false,
 }: ReviewFormProps) {
+  const [open, setOpen] = useState(defaultOpen);
+  const panelId = useId();
+  const panelRef = useRef<HTMLDivElement>(null);
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  const userToggled = useRef(false);
   const [comment, setComment] = useState('');
   const [scores, setScores] = useState<Record<string, number>>({});
   const [error, setError] = useState<string | null>(null);
 
   const schema = getReviewSchema(entityType);
   const labels = getDimensionLabels(entityType);
+
+  useEffect(() => {
+    if (!userToggled.current) return;
+    if (open) {
+      panelRef.current?.querySelector<HTMLElement>('button, textarea')?.focus();
+    } else {
+      toggleRef.current?.focus();
+    }
+  }, [open]);
+
+  const toggle = () => {
+    userToggled.current = true;
+    setOpen((v) => !v);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,56 +97,71 @@ export function ReviewForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-xl border border-border bg-bg-muted/50 overflow-hidden"
+      className="overflow-hidden rounded-xl border border-border/80 bg-bg-muted/30"
     >
-      <div className="p-6 sm:p-8">
-        <h3 className="text-lg font-semibold text-white">Escribir valoración</h3>
-        <p className="mt-1.5 text-sm text-text-muted">
+      <div className="p-5 sm:p-6">
+        <h3 className="text-lg font-semibold text-white sm:text-xl">Valorar</h3>
+        <p className="mt-1 text-sm text-text-muted">
           Valorá cada aspecto del 1 al {PUBLIC_RATING_STARS_MAX}. Solo usuarios registrados pueden publicar.
         </p>
-
-        <div className="mt-6 grid gap-6 sm:grid-cols-2">
-          {Object.entries(labels).map(([key, label]) => (
-            <RatingInput
-              key={key}
-              value={scores[key] ?? DEFAULT_INTERNAL_SCORE}
-              onChange={(v) => setScores((p) => ({ ...p, [key]: v }))}
-              label={label}
-              scale="visual"
-            />
-          ))}
-        </div>
-
-        <div className="mt-6">
-          <label
-            htmlFor="review-comment"
-            className="block text-sm font-medium text-text-muted"
-          >
-            Comentario
-          </label>
-          <textarea
-            id="review-comment"
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            rows={4}
-            maxLength={2000}
-            required
-            className="mt-2 w-full resize-y rounded-lg border border-border bg-bg px-4 py-3 text-text placeholder:text-text-muted/60 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
-            placeholder="Contá tu experiencia (mínimo 10 caracteres)."
-          />
-        </div>
-
-        {error && <p className="mt-4 text-sm text-red-400">{error}</p>}
+        <button
+          ref={toggleRef}
+          type="button"
+          onClick={toggle}
+          aria-expanded={open}
+          aria-controls={panelId}
+          className="mt-4 text-sm font-medium text-accent hover:underline focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-bg-muted"
+        >
+          {open ? 'Ocultar' : 'Escribir valoración'}
+        </button>
       </div>
 
-      <div className="border-t border-border bg-bg-muted/30 px-6 py-4 sm:px-8">
-        <button
-          type="submit"
-          disabled={isSubmitting || !canSubmit}
-          className="w-full rounded-lg bg-accent px-5 py-3 font-semibold text-bg shadow-accent-glow transition-all hover:bg-accent-hover disabled:opacity-60 disabled:cursor-not-allowed sm:w-auto sm:min-w-[180px]"
-        >
-          {isSubmitting ? 'Enviando…' : 'Publicar valoración'}
-        </button>
+      <div id={panelId} ref={panelRef} hidden={!open}>
+        <div className="border-t border-border/60 p-5 sm:p-6">
+          <div className="grid gap-6 sm:grid-cols-2">
+            {Object.entries(labels).map(([key, label]) => (
+              <RatingInput
+                key={key}
+                value={scores[key] ?? DEFAULT_INTERNAL_SCORE}
+                onChange={(v) => setScores((p) => ({ ...p, [key]: v }))}
+                label={label}
+                scale="visual"
+              />
+            ))}
+          </div>
+
+          <div className="mt-6">
+            <label htmlFor={`${panelId}-comment`} className="block text-sm font-medium text-text-muted">
+              Comentario
+            </label>
+            <textarea
+              id={`${panelId}-comment`}
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              rows={4}
+              maxLength={2000}
+              required
+              className="mt-2 w-full resize-y rounded-lg border border-border bg-bg px-4 py-3 text-text placeholder:text-text-muted/60 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+              placeholder="Contá tu experiencia (mínimo 10 caracteres)."
+            />
+          </div>
+
+          {error && (
+            <p className="mt-4 text-sm text-red-400" role="alert">
+              {error}
+            </p>
+          )}
+        </div>
+
+        <div className="border-t border-border bg-bg-muted/30 px-5 py-4 sm:px-6">
+          <button
+            type="submit"
+            disabled={isSubmitting || !canSubmit}
+            className="w-full rounded-lg bg-accent px-5 py-3 font-semibold text-bg shadow-accent-glow transition-all hover:bg-accent-hover disabled:opacity-60 disabled:cursor-not-allowed sm:w-auto sm:min-w-[180px]"
+          >
+            {isSubmitting ? 'Enviando…' : 'Publicar valoración'}
+          </button>
+        </div>
       </div>
     </form>
   );

@@ -13,6 +13,15 @@ Evolución del sistema de valoraciones públicas y comerciales privadas.
 - Ranking interno: `ReviewRankingService` (bayesiano + bonus volumen); **no expuesto** en API pública de detalle.
 - Reputación autor: `ReviewReputationService` → tiers `NEW` … `LOW_RELIABILITY`.
 
+### UI de carga (G11.2)
+
+- `ReviewForm` es **desplegable**, alineado con `ReviewSummary`: cabecera «Valorar» + toggle
+  «Escribir valoración» / «Ocultar» (`aria-expanded` / `aria-controls`). Arranca cerrado
+  (`defaultOpen` opcional). Al abrir, el foco va al primer control; al cerrar, vuelve al toggle.
+- Submit sin cambios: las fichas remontan el form con `key={reviewFormKey}` tras publicar, así que
+  queda cerrado de nuevo y el toast confirma el envío. Los errores de validación usan `role="alert"`.
+- Mismo componente en gastro, hoteles, eventos, places, actividades y rentals.
+
 ### Endpoints API
 
 | Método | Ruta | Uso |
