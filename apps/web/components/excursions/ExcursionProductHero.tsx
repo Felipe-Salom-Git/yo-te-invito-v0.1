@@ -2,6 +2,7 @@
 
 import { getCategoryLabel } from '@/lib/home/contentRoutes';
 import { getRentalHeroSummaryText } from '@/lib/rentals/rentalSummary';
+import { PUBLIC_DETAIL_HERO_CONTENT_CLASS, PUBLIC_DETAIL_HERO_SECTION_CLASS } from '@/lib/ui/publicHeroLayout';
 
 type ExcursionProductHeroProps = {
   coverImageUrl?: string | null;
@@ -31,7 +32,7 @@ export function ExcursionProductHero({
   const operator = operatorName?.trim() ?? null;
 
   return (
-    <section className="relative h-[40vh] min-h-[280px] overflow-hidden bg-black md:h-[50vh] md:min-h-[400px]">
+    <section className={PUBLIC_DETAIL_HERO_SECTION_CLASS}>
       {coverImageUrl ? (
         <img
           src={coverImageUrl}
@@ -48,7 +49,7 @@ export function ExcursionProductHero({
       <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/60 to-transparent" />
       <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/30 to-transparent" />
 
-      <div className="relative flex h-full flex-col justify-end px-4 pb-12 pt-16 sm:px-6 md:px-10 md:pb-16 lg:px-16">
+      <div className={PUBLIC_DETAIL_HERO_CONTENT_CLASS}>
         <h1 className="text-3xl font-bold leading-tight text-white drop-shadow-lg sm:text-4xl md:text-5xl">
           {title}
         </h1>

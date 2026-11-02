@@ -1,6 +1,7 @@
 'use client';
 
 import { getCategoryLabel } from '@/lib/home/contentRoutes';
+import { PUBLIC_DETAIL_HERO_CONTENT_CLASS, PUBLIC_DETAIL_HERO_SECTION_CLASS } from '@/lib/ui/publicHeroLayout';
 
 type GastroLocationHeroProps = {
   coverImageUrl?: string | null;
@@ -45,7 +46,7 @@ export function GastroLocationHero({
   if (locationLabel) chips.push(locationLabel);
 
   return (
-    <section className="relative h-[40vh] min-h-[280px] overflow-hidden bg-black md:h-[50vh] md:min-h-[400px]">
+    <section className={PUBLIC_DETAIL_HERO_SECTION_CLASS}>
       {coverImageUrl ? (
         <img
           src={coverImageUrl}
@@ -62,7 +63,7 @@ export function GastroLocationHero({
       <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/60 to-transparent" />
       <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/30 to-transparent" />
 
-      <div className="relative flex h-full flex-col justify-end px-4 pb-12 pt-16 sm:px-6 md:px-10 md:pb-16 lg:px-16">
+      <div className={PUBLIC_DETAIL_HERO_CONTENT_CLASS}>
         {logoUrl?.trim() && (
           <div className="mb-4 h-14 w-14 overflow-hidden rounded-full border-2 border-white/30 bg-bg-muted shadow-lg sm:h-16 sm:w-16">
             <img src={logoUrl} alt="" className="h-full w-full object-cover" />

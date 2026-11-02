@@ -5,6 +5,10 @@ import {
   getContentCardPlaceholderEmoji,
 } from '@/lib/home/contentCardPresentation';
 import { getRentalHeroSummaryText } from '@/lib/rentals/rentalSummary';
+import {
+  PUBLIC_RENTAL_HERO_CONTENT_CLASS,
+  PUBLIC_RENTAL_HERO_SECTION_CLASS,
+} from '@/lib/ui/publicHeroLayout';
 
 type RentalProductHeroProps = {
   coverImageUrl?: string | null;
@@ -35,7 +39,7 @@ export function RentalProductHero({
   if (localName?.trim()) chips.push(localName.trim());
 
   return (
-    <section className="relative h-[34vh] min-h-[220px] max-h-[360px] overflow-hidden bg-black sm:h-[40vh] sm:min-h-[260px] sm:max-h-none md:h-[50vh] md:min-h-[400px]">
+    <section className={PUBLIC_RENTAL_HERO_SECTION_CLASS}>
       {coverImageUrl ? (
         <img
           src={coverImageUrl}
@@ -52,7 +56,7 @@ export function RentalProductHero({
       <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/80 to-black/20" />
       <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent md:from-black/70 md:via-black/30" />
 
-      <div className="relative flex h-full flex-col justify-end px-4 pb-8 pt-14 sm:px-6 sm:pb-10 sm:pt-16 md:px-10 md:pb-16 lg:px-16">
+      <div className={PUBLIC_RENTAL_HERO_CONTENT_CLASS}>
         <h1 className="text-2xl font-bold leading-[1.15] text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.85)] sm:text-3xl sm:leading-tight md:text-4xl lg:text-5xl">
           {title}
         </h1>
