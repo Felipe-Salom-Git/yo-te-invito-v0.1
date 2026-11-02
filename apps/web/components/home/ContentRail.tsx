@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { HORIZONTAL_SCROLL_RAIL_CLASS } from '@/lib/ui/horizontalScrollClasses';
 import { motion } from 'framer-motion';
 import type { EventSummary } from '@/repositories/interfaces';
 import { CategorySectionHeading } from '@/components/categories/CategorySectionHeading';
+import { RailScrollArrows } from '@/components/ui/RailScrollArrows';
+import { useHorizontalRailScroll } from '@/hooks/useHorizontalRailScroll';
 import { ContentCard, type ContentCardItem } from './ContentCard';
 import { ContentCardSkeleton } from './ContentCardSkeleton';
 
@@ -41,7 +42,8 @@ export function ContentRail({
 }: ContentRailProps) {
   const isCategoryHeading = headingVariant === 'category';
   const railPad = isCategoryHeading ? 'px-4 sm:px-6' : 'px-4 sm:px-6 lg:px-8';
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const { scrollRef, canScrollLeft, canScrollRight, updateScrollState, scrollByDirection } =
+    useHorizontalRailScroll(400, [items.length, isLoading]);
 
   const railHeading = isCategoryHeading ? (
     <CategorySectionHeading title={title} subtitle={subtitle} />
@@ -52,36 +54,6 @@ export function ContentRail({
       {subtitle ? <p className="mt-2 text-sm text-text-muted">{subtitle}</p> : null}
     </div>
   );
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(false);
-
-  const updateScrollState = () => {
-    const el = scrollRef.current;
-    if (!el) return;
-    setCanScrollLeft(el.scrollLeft > 0);
-    setCanScrollRight(
-      el.scrollLeft < el.scrollWidth - el.clientWidth - 1
-    );
-  };
-
-  const scroll = (dir: 'left' | 'right') => {
-    const el = scrollRef.current;
-    if (!el) return;
-    el.scrollBy({
-      left: dir === 'left' ? -400 : 400,
-      behavior: 'smooth',
-    });
-    setTimeout(updateScrollState, 350);
-  };
-
-  useEffect(() => {
-    updateScrollState();
-    const el = scrollRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver(updateScrollState);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [items.length, isLoading]);
 
   if (items.length === 0 && !isLoading) {
     if (emptyMessage) {
@@ -143,26 +115,13 @@ export function ContentRail({
         />
 
         {/* Scroll arrows — aligned with rail padding, z-50 above cards */}
-        <div className={`pointer-events-none absolute inset-y-0 left-0 right-0 z-50 hidden items-center justify-between md:flex ${railPad}`}>
-          <button
-            type="button"
-            onClick={() => scroll('left')}
-            disabled={!canScrollLeft}
-            className="pointer-events-auto flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border/80 bg-bg/95 text-text-muted shadow-xl backdrop-blur-sm transition-all duration-200 hover:scale-110 hover:border-accent/50 hover:bg-bg hover:text-accent focus:outline-none focus:ring-2 focus:ring-accent/60 disabled:pointer-events-none disabled:opacity-0 sm:h-12 sm:w-12"
-            aria-label={`Scroll ${title} left`}
-          >
-            <span className="text-xl">←</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => scroll('right')}
-            disabled={!canScrollRight}
-            className="pointer-events-auto flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border/80 bg-bg/95 text-text-muted shadow-xl backdrop-blur-sm transition-all duration-200 hover:scale-110 hover:border-accent/50 hover:bg-bg hover:text-accent focus:outline-none focus:ring-2 focus:ring-accent/60 disabled:pointer-events-none disabled:opacity-0 sm:h-12 sm:w-12"
-            aria-label={`Scroll ${title} right`}
-          >
-            <span className="text-xl">→</span>
-          </button>
-        </div>
+        <RailScrollArrows
+          label={title}
+          canScrollLeft={canScrollLeft}
+          canScrollRight={canScrollRight}
+          onScroll={scrollByDirection}
+          paddingClassName={railPad}
+        />
 
         {/* Cards row — extra side padding to reduce edge overlap with arrows */}
         <div

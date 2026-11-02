@@ -1,10 +1,13 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
 import { HORIZONTAL_SCROLL_RAIL_CLASS } from '@/lib/ui/horizontalScrollClasses';
 import type { PublicGastroDiscountListItem } from '@/repositories/interfaces';
 import { CategorySectionHeading } from '@/components/categories/CategorySectionHeading';
+import { RailScrollArrows } from '@/components/ui/RailScrollArrows';
+import { useHorizontalRailScroll } from '@/hooks/useHorizontalRailScroll';
 import { GastroDiscountPublicCard } from './GastroDiscountPublicCard';
+
+const RAIL_PAD = 'px-4 sm:px-6';
 
 export function GastroDiscountsRail({
   title,
@@ -17,35 +20,18 @@ export function GastroDiscountsRail({
   discounts: PublicGastroDiscountListItem[];
   isLoading?: boolean;
 }) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [canLeft, setCanLeft] = useState(false);
-  const [canRight, setCanRight] = useState(false);
-
-  const updateScroll = () => {
-    const el = scrollRef.current;
-    if (!el) return;
-    setCanLeft(el.scrollLeft > 0);
-    setCanRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 1);
-  };
-
-  useEffect(() => {
-    updateScroll();
-    const el = scrollRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver(updateScroll);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [discounts.length, isLoading]);
+  const { scrollRef, canScrollLeft, canScrollRight, updateScrollState, scrollByDirection } =
+    useHorizontalRailScroll(500, [discounts.length, isLoading]);
 
   if (!isLoading && discounts.length === 0) return null;
 
   return (
     <section className="mt-10">
-      <div className="mb-3 px-4 sm:px-6">
+      <div className={`mb-3 ${RAIL_PAD}`}>
         <CategorySectionHeading title={title} subtitle={subtitle} />
       </div>
       {isLoading ? (
-        <div className="flex gap-3 overflow-hidden px-4 sm:px-6">
+        <div className={`flex gap-3 overflow-hidden ${RAIL_PAD}`}>
           {Array.from({ length: 3 }).map((_, i) => (
             <div
               key={i}
@@ -55,10 +41,17 @@ export function GastroDiscountsRail({
         </div>
       ) : (
         <div className="relative">
+          <RailScrollArrows
+            label={title}
+            canScrollLeft={canScrollLeft}
+            canScrollRight={canScrollRight}
+            onScroll={scrollByDirection}
+            paddingClassName={RAIL_PAD}
+          />
           <div
             ref={scrollRef}
-            onScroll={updateScroll}
-            className={`${HORIZONTAL_SCROLL_RAIL_CLASS} gap-3 px-4 pb-2 sm:px-6`}
+            onScroll={updateScrollState}
+            className={`${HORIZONTAL_SCROLL_RAIL_CLASS} gap-3 pb-2 ${RAIL_PAD}`}
           >
             {discounts.map((d) => (
               <GastroDiscountPublicCard key={d.id} discount={d} />
