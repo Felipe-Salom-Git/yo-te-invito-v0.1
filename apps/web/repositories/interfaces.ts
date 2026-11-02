@@ -2794,6 +2794,9 @@ export interface GastroRepo {
   getMyDiscountOperationalMetrics(
     id: string,
   ): Promise<import('@yo-te-invito/shared').GastroDiscountOperationalMetricsResponse>;
+  getMyDiscountEconomicSummary(
+    id: string,
+  ): Promise<import('@yo-te-invito/shared').GastroDiscountEconomicSummaryGastro>;
   updateMyDiscountStatus(
     id: string,
     body: import('@yo-te-invito/shared').GastroDiscountStatusUpdate,

@@ -500,6 +500,8 @@ export const gastroKeys = {
   discountSummary: (id: string) => [...gastroKeys.all, 'discount-summary', id] as const,
   discountOperationalMetrics: (id: string) =>
     [...gastroKeys.all, 'discount-operational-metrics', id] as const,
+  discountEconomicSummary: (id: string) =>
+    [...gastroKeys.all, 'discount-economic-summary', id] as const,
   discountVisualTemplate: (id: string) =>
     [...gastroKeys.all, 'discount-visual-template', id] as const,
   content: (eventId: string) => [...gastroKeys.all, 'content', eventId] as const,

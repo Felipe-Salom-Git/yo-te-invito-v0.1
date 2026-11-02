@@ -13,6 +13,7 @@ import { useRepositories } from '@/repositories/context';
 import { PageContainer, PageLoader, QueryError, useToast } from '@/components';
 import { GastroDiscountDetailContent } from '@/components/gastro/GastroDiscountDetailContent';
 import { GastroDiscountOperationalMetricsPanel } from '@/components/gastro/GastroDiscountOperationalMetricsPanel';
+import { GastroDiscountEconomicSummaryPanel } from '@/components/gastro/GastroDiscountEconomicSummaryPanel';
 import { useGastroActiveLocation } from '@/lib/gastro/GastroActiveLocationContext';
 import { gastroKeys } from '@/lib/query/keys';
 import { getErrorMessage } from '@/lib/errors';
@@ -159,6 +160,8 @@ export default function GastroDescuentoDetallePage() {
       ) : !isCourtesy && operationalMetricsQuery.data ? (
         <GastroDiscountOperationalMetricsPanel metrics={operationalMetricsQuery.data} />
       ) : null}
+
+      {summaryQuery.data ? <GastroDiscountEconomicSummaryPanel discountId={id} /> : null}
 
       {discount?.hasPendingUpdate && (
         <p className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm">

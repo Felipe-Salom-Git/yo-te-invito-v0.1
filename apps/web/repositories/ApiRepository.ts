@@ -2291,6 +2291,10 @@ export class ApiRepository implements Repositories {
       this.client.get<import('@yo-te-invito/shared').GastroDiscountOperationalMetricsResponse>(
         `/gastro/discounts/${encodeURIComponent(id)}/operational-metrics`,
       ),
+    getMyDiscountEconomicSummary: async (id) =>
+      this.client.get<import('@yo-te-invito/shared').GastroDiscountEconomicSummaryGastro>(
+        `/gastro/discounts/${encodeURIComponent(id)}/economic-summary`,
+      ),
     updateMyDiscountStatus: async (id, body) =>
 
       this.client.patch<GastroPortalDiscount>(

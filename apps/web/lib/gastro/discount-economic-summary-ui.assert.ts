@@ -103,4 +103,14 @@ assert(adminPanel.includes('#contrato-comercial'), 'ADMIN: missing contract link
 const adminPage = read('app/(portal)/admin/gastronomicos/[profileId]/descuentos/[discountId]/page.tsx');
 assert(adminPage.includes('AdminGastroDiscountEconomicSummaryPanel') && !adminPage.includes('EconomicMetricsPanel'), 'ADMIN page: G6 panel replaced by the economic summary');
 
+// ── C5: GASTRO portal — read-only, no contract edit, no admin links ──
+const gastroPanel = read('components/gastro/GastroDiscountEconomicSummaryPanel.tsx');
+assert(gastroPanel.includes('getMyDiscountEconomicSummary') && gastroPanel.includes('gastroTitle'), 'GASTRO: panel reads its own endpoint, titled "Contrato y liquidaciones"');
+assert(!/missingContractAction|settlementHref|#contrato-comercial|\/admin\//.test(gastroPanel), 'GASTRO: no contract edit action nor admin settlement links');
+assert(!/useMutation/.test(gastroPanel), 'GASTRO: no mutations');
+const gastroPage = read('app/(portal)/gastro/descuentos/[id]/page.tsx');
+assert(gastroPage.includes('<GastroDiscountEconomicSummaryPanel discountId={id} />'), 'GASTRO page: economic summary rendered in the discount detail');
+const repo = read('repositories/ApiRepository.ts');
+assert(repo.includes('`/gastro/discounts/${encodeURIComponent(id)}/economic-summary`'), 'GASTRO repo: GET /gastro/discounts/:id/economic-summary (no profileId)');
+
 console.log('\nAll G10.C economic summary UI checks passed.');
