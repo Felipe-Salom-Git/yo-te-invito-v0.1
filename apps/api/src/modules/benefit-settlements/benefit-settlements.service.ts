@@ -18,12 +18,16 @@ import {
   computeCashReceivedCents,
   deriveBenefitSettlementStatus,
   deriveCashCollectionStatus,
+  groupMissingAgreementsByBenefit,
   moneyCentsToString,
   resolveSettlementCloseBlocker,
   roundBarterCreditCents,
   selectPendingUsagesForAllocation,
+  selectedValidationsMissingAgreement,
   sumMoneyCentsBigInt,
   type AllocateBenefitSettlementResponse,
+  type BenefitSettlementMissingAgreement,
+  type BenefitVertical,
   type AllocateBenefitSettlementUsagesBody,
   type BenefitSettlementAllocationDto,
   type BenefitSettlementDto,
@@ -130,7 +134,7 @@ export class BenefitSettlementsService {
       body.periodKey,
       allocatedIds,
     );
-    this.assertNoMissingAgreements(discovery.missingAgreements);
+    this.assertMissingAgreementsAllowed(body.vertical, discovery.missingAgreements);
 
     const row = await this.prisma.benefitSettlement.create({
       data: {
@@ -186,7 +190,7 @@ export class BenefitSettlementsService {
       row.periodKey,
       allocatedIds,
     );
-    this.assertNoMissingAgreements(discovery.missingAgreements);
+    this.assertMissingAgreementsAllowed(row.vertical, discovery.missingAgreements);
 
     await this.audit.logAction({
       tenantId,
@@ -225,13 +229,22 @@ export class BenefitSettlementsService {
       row.periodKey,
       allocatedIds,
     );
-    this.assertNoMissingAgreements(discovery.missingAgreements);
+    this.assertMissingAgreementsAllowed(row.vertical, discovery.missingAgreements);
 
     if (body.validationIds?.length) {
       const fundedIds = new Set(discovery.fundedCourtesyExcluded.map((f) => f.validationId));
       const requestedFunded = body.validationIds.filter((vid) => fundedIds.has(vid));
       if (requestedFunded.length > 0) {
         throw fundedCourtesyAllocationError(requestedFunded);
+      }
+      // D-G10-6: only the selected validations without agreement block this allocate.
+      const selectedMissing = selectedValidationsMissingAgreement(
+        body.validationIds,
+        discovery.missingAgreements,
+      );
+      if (selectedMissing.length > 0) {
+        const wanted = new Set(selectedMissing);
+        this.throwMissingAgreements(discovery.missingAgreements.filter((m) => wanted.has(m.validationId)));
       }
     }
 
@@ -427,7 +440,7 @@ export class BenefitSettlementsService {
       });
     }
     if (blocker === 'MISSING_AGREEMENTS') {
-      this.assertNoMissingAgreements(discovery.missingAgreements);
+      this.throwMissingAgreements(discovery.missingAgreements);
     }
 
     const updated = await this.prisma.benefitSettlement.update({
@@ -533,6 +546,8 @@ export class BenefitSettlementsService {
       cashCollectionStatus: deriveCashCollectionStatus(cashDueCents, cashReceivedCents),
       transferCount: activeTransferCount,
       fundedCourtesyUsageCount: discovery.fundedCourtesyExcluded.length,
+      missingAgreementUsageCount: discovery.missingAgreements.length,
+      missingAgreementsByBenefit: groupMissingAgreementsByBenefit(discovery.missingAgreements),
       ...(barterAllocations.length > 0
         ? {
             barterCreditPreviewCents: moneyCentsToString(barterCreditPreview),
@@ -645,14 +660,24 @@ export class BenefitSettlementsService {
     return new Set(rows.map((r) => r.validationId));
   }
 
-  private assertNoMissingAgreements(
-    missing: import('@yo-te-invito/shared').BenefitSettlementMissingAgreement[],
+  /**
+   * D-G10-6 — GASTRO: a discount without agreement never blocks generate/refresh/allocate of other
+   * discounts (reported in the summary; close still blocks). ACTIVITY keeps the pre-G10 rule.
+   */
+  private assertMissingAgreementsAllowed(
+    vertical: BenefitVertical,
+    missing: BenefitSettlementMissingAgreement[],
   ) {
-    if (missing.length === 0) return;
+    if (vertical === 'GASTRO') return;
+    if (missing.length > 0) this.throwMissingAgreements(missing);
+  }
+
+  private throwMissingAgreements(missing: BenefitSettlementMissingAgreement[]): never {
     throw new BadRequestException({
       code: ErrorCode.BENEFIT_SETTLEMENT_MISSING_AGREEMENTS,
       message: `${missing.length} eligible validation(s) have no commercial agreement`,
       missingAgreements: missing,
+      missingAgreementsByBenefit: groupMissingAgreementsByBenefit(missing),
     });
   }
 

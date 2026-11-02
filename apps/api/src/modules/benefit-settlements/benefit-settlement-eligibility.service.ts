@@ -13,10 +13,12 @@ import {
   type BenefitVertical,
 } from '@yo-te-invito/shared';
 import { PrismaService } from '../../prisma/prisma.service';
+import { agreementScopeWhere } from '../benefit-agreements/benefit-agreement-scope.util';
 
 /** G8.11 — validation → discount → courtesyCampaign → DEBIT_COURTESY (existing relations only). */
 export const GASTRO_SETTLEMENT_VALIDATION_SELECT = {
   id: true,
+  discountId: true,
   claimId: true,
   validatedAt: true,
   discount: {
@@ -43,6 +45,15 @@ type GastroValidationReader = {
       Array<Prisma.GastroDiscountValidationGetPayload<{ select: typeof GASTRO_SETTLEMENT_VALIDATION_SELECT }>>
     >;
   };
+};
+
+type AgreementLike = {
+  id: string;
+  validFromKey: string;
+  validToKey: string | null;
+  unitPriceCents: bigint;
+  barterMultiplier: string;
+  currency: string;
 };
 
 export type FundedCourtesyExclusion = {
@@ -88,28 +99,37 @@ export class BenefitSettlementEligibilityService {
     excludeValidationIds?: Set<string>,
   ): Promise<EligibleValidationDiscovery> {
     const { start, end } = benefitSettlementPeriodBounds(periodKey);
-    const agreements = await this.loadPartnerAgreements(tenantId, vertical, partner);
-    const agreementLikes = agreements.map((row) => this.toAgreementLike(row));
 
     if (vertical === 'GASTRO') {
-      return this.discoverGastro(tenantId, partner.gastroProfileId!, start, end, agreementLikes, excludeValidationIds);
+      const byDiscount = await this.loadDiscountAgreements(tenantId, partner.gastroProfileId!);
+      return this.discoverGastro(tenantId, partner.gastroProfileId!, start, end, byDiscount, excludeValidationIds);
     }
+    const agreements = await this.prisma.benefitCommercialAgreement.findMany({
+      where: agreementScopeWhere(tenantId, {
+        scope: 'OPERATOR',
+        excursionOperatorId: partner.excursionOperatorId!,
+      }),
+    });
     return this.discoverActivity(
       tenantId,
       partner.excursionOperatorId!,
       start,
       end,
-      agreementLikes,
+      agreements.map((row) => this.toAgreementLike(row)),
       excludeValidationIds,
     );
   }
 
+  /**
+   * G10.A5 — pricing per discount: validation → discountId → that discount's own agreements.
+   * Legacy profile-scoped rows (gastroDiscountId = null) are never used for new pricing.
+   */
   private async discoverGastro(
     tenantId: string,
     gastroProfileId: string,
     start: Date,
     end: Date,
-    agreements: ReturnType<typeof this.toAgreementLike>[],
+    agreementsByDiscount: Map<string, AgreementLike[]>,
     excludeValidationIds?: Set<string>,
   ): Promise<EligibleValidationDiscovery> {
     const rows = await this.prisma.gastroDiscountValidation.findMany({
@@ -146,16 +166,19 @@ export class BenefitSettlementEligibilityService {
         continue;
       }
 
+      // D1: funded courtesies were excluded above, before any agreement lookup.
+      const agreements = agreementsByDiscount.get(row.discountId) ?? [];
       const agreement = resolveSettlementAgreementForValidation(agreements, row.validatedAt);
       if (!agreement) {
         missingAgreements.push({
           validationSource: 'GASTRO_DISCOUNT_VALIDATION',
           validationId: row.id,
           validatedAt: row.validatedAt.toISOString(),
+          benefitId: row.discountId,
         });
         continue;
       }
-      const source = agreements.find((a) => a.id === agreement.id)!;
+      const source = agreement;
       priced.push({
         validationSource: 'GASTRO_DISCOUNT_VALIDATION',
         validationId: row.id,
@@ -195,7 +218,7 @@ export class BenefitSettlementEligibilityService {
     excursionOperatorId: string,
     start: Date,
     end: Date,
-    agreements: ReturnType<typeof this.toAgreementLike>[],
+    agreements: AgreementLike[],
     excludeValidationIds?: Set<string>,
   ): Promise<EligibleValidationDiscovery> {
     const rows = await this.prisma.activityCouponValidation.findMany({
@@ -243,22 +266,24 @@ export class BenefitSettlementEligibilityService {
     return { priced, missingAgreements, fundedCourtesyExcluded: [] };
   }
 
-  private async loadPartnerAgreements(
+  /** Discount-scoped agreements of the partner, grouped by discount (profile must match: fail-closed). */
+  private async loadDiscountAgreements(
     tenantId: string,
-    vertical: BenefitVertical,
-    partner: { gastroProfileId?: string; excursionOperatorId?: string },
-  ): Promise<BenefitCommercialAgreement[]> {
-    const where: Prisma.BenefitCommercialAgreementWhereInput = {
-      tenantId,
-      vertical,
-      ...(vertical === 'GASTRO'
-        ? { gastroProfileId: partner.gastroProfileId }
-        : { excursionOperatorId: partner.excursionOperatorId }),
-    };
-    return this.prisma.benefitCommercialAgreement.findMany({ where });
+    gastroProfileId: string,
+  ): Promise<Map<string, AgreementLike[]>> {
+    const rows = await this.prisma.benefitCommercialAgreement.findMany({
+      where: { tenantId, vertical: 'GASTRO', gastroProfileId, gastroDiscountId: { not: null } },
+    });
+    const byDiscount = new Map<string, AgreementLike[]>();
+    for (const row of rows) {
+      const list = byDiscount.get(row.gastroDiscountId!) ?? [];
+      list.push(this.toAgreementLike(row));
+      byDiscount.set(row.gastroDiscountId!, list);
+    }
+    return byDiscount;
   }
 
-  private toAgreementLike(row: BenefitCommercialAgreement) {
+  private toAgreementLike(row: BenefitCommercialAgreement): AgreementLike {
     return {
       id: row.id,
       validFromKey: benefitAgreementCalendarKeyFromInstant(row.validFrom),

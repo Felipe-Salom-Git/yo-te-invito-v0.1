@@ -6,6 +6,7 @@ import type {
 } from '@yo-te-invito/shared';
 import {
   checkAgreementScopeMismatch,
+  checkAllocationAgreementDiscountMismatch,
   checkBarterExpectedVsMaterialized,
   checkCashOverpayment,
   checkClosedWithPendingUsages,
@@ -36,6 +37,7 @@ type SettlementIntegrityRow = {
     id: string;
     validationSource: string;
     validationId: string;
+    agreementId: string;
     mode: string;
     baseAmountCents: bigint;
     barterMultiplier: { toString(): string };
@@ -238,12 +240,14 @@ export class BenefitSettlementIntegrityService {
       .filter((a) => a.validationSource === 'ACTIVITY_COUPON_VALIDATION')
       .map((a) => a.validationId);
 
-    const [gastroRows, activityRows] = await Promise.all([
+    const agreementIds = [...new Set(row.allocations.map((a) => a.agreementId))];
+    const [gastroRows, activityRows, agreementRows] = await Promise.all([
       gastroIds.length
         ? this.prisma.gastroDiscountValidation.findMany({
             where: { id: { in: gastroIds } },
             select: {
               id: true,
+              discountId: true,
               discount: {
                 select: {
                   gastroProfileId: true,
@@ -264,11 +268,17 @@ export class BenefitSettlementIntegrityService {
             },
           })
         : Promise.resolve([]),
+      this.prisma.benefitCommercialAgreement.findMany({
+        where: { id: { in: agreementIds } },
+        select: { id: true, gastroDiscountId: true },
+      }),
     ]);
 
     const gastroMap = new Map(
       gastroRows.map((v) => [v.id, v.discount.gastroProfileId] as const),
     );
+    const validationDiscount = new Map(gastroRows.map((v) => [v.id, v.discountId] as const));
+    const agreementDiscount = new Map(agreementRows.map((a) => [a.id, a.gastroDiscountId] as const));
     const fundedGastroIds = new Set<string>();
     for (const v of gastroRows) {
       if (isGastroCourtesyFundedByCredit(v.discount)) fundedGastroIds.add(v.id);
@@ -301,6 +311,12 @@ export class BenefitSettlementIntegrityService {
           fundedByCourtesyCredit: fundedGastroIds.has(allocation.validationId),
         });
         if (fundedCourtesy) issues.push(fundedCourtesy);
+        const agreementMismatch = checkAllocationAgreementDiscountMismatch({
+          allocationId: allocation.id,
+          agreementGastroDiscountId: agreementDiscount.get(allocation.agreementId) ?? null,
+          validationDiscountId: validationDiscount.get(allocation.validationId) ?? null,
+        });
+        if (agreementMismatch) issues.push(agreementMismatch);
       } else if (allocation.validationSource === 'ACTIVITY_COUPON_VALIDATION') {
         const partnerId = activityMap.get(allocation.validationId);
         const orphan = checkOrphanAllocation({

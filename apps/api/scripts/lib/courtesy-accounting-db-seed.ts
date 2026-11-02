@@ -82,17 +82,22 @@ export async function seedTenant(prisma: PrismaService): Promise<Seed> {
   };
 }
 
+export type AgreementTerms = { unitPriceCents: bigint; barterMultiplier: string; validFrom: string; validTo?: string };
+
+/** G10: GASTRO agreements are discount-scoped (pricing never reads legacy profile rows). */
 export async function createAgreement(
   prisma: PrismaService,
   seed: Seed,
   gastroProfileId: string,
-  terms: { unitPriceCents: bigint; barterMultiplier: string; validFrom: string; validTo?: string },
+  gastroDiscountId: string,
+  terms: AgreementTerms,
 ) {
   return prisma.benefitCommercialAgreement.create({
     data: {
       tenantId: seed.tenantId,
       vertical: 'GASTRO',
       gastroProfileId,
+      gastroDiscountId,
       unitPriceCents: terms.unitPriceCents,
       barterMultiplier: terms.barterMultiplier,
       validFrom: new Date(terms.validFrom),
@@ -116,6 +121,8 @@ export async function createRedeemedBenefit(
     validatedAt: string;
     /** Courtesy only: funds the campaign with DEBIT_COURTESY in the creation transaction. */
     fundWith?: { ledger: CourtesyCreditLedgerService; imputedValueCents: bigint };
+    /** G10: the discount's own agreements (omit for funded courtesies: never priced, D1). */
+    terms?: AgreementTerms[];
   },
 ) {
   const courtesy = params.kind === 'COURTESY';
@@ -181,21 +188,63 @@ export async function createRedeemedBenefit(
     return { discountId: discount.id, campaignId: campaign?.id ?? null, claimIds, debitEntryId };
   });
 
+  const agreementIds: string[] = [];
+  for (const terms of params.terms ?? []) {
+    const agreement = await createAgreement(prisma, seed, params.profileId, created.discountId, terms);
+    agreementIds.push(agreement.id);
+  }
+
+  const validationIds = await redeemClaims(prisma, created.discountId, created.claimIds, params.validatedAt);
+  return { ...created, agreementIds, validationIds };
+}
+
+/** Extra redemptions on an existing benefit (new claims + validations). */
+export async function redeemMoreUses(
+  prisma: PrismaService,
+  seed: Seed,
+  params: { discountId: string; campaignId: string | null; uses: number; validatedAt: string },
+): Promise<string[]> {
+  const claimIds: string[] = [];
+  for (let i = 0; i < params.uses; i += 1) {
+    const claim = await prisma.gastroDiscountClaim.create({
+      data: {
+        tenantId: seed.tenantId,
+        discountId: params.discountId,
+        courtesyCampaignId: params.campaignId,
+        email: `m${i}-${hex(3)}@g811.test`,
+        qrToken: hex(24),
+        accessToken: hex(32),
+        shortCode: hex(4).toUpperCase(),
+        type: params.campaignId ? 'COURTESY' : 'PUBLIC_REQUEST',
+        status: 'ACTIVE',
+      },
+    });
+    claimIds.push(claim.id);
+  }
+  return redeemClaims(prisma, params.discountId, claimIds, params.validatedAt);
+}
+
+async function redeemClaims(
+  prisma: PrismaService,
+  discountId: string,
+  claimIds: string[],
+  validatedAtIso: string,
+): Promise<string[]> {
   // Redemption (same writes as the scanner): claim → USED + one validation per claim.
   const validationIds: string[] = [];
-  const base = new Date(params.validatedAt).getTime();
-  for (const [i, claimId] of created.claimIds.entries()) {
+  const base = new Date(validatedAtIso).getTime();
+  for (const [i, claimId] of claimIds.entries()) {
     const validatedAt = new Date(base + i * 60_000);
     await prisma.gastroDiscountClaim.update({
       where: { id: claimId },
       data: { status: 'USED', usedAt: validatedAt },
     });
     const v = await prisma.gastroDiscountValidation.create({
-      data: { discountId: created.discountId, claimId, validatedAt },
+      data: { discountId, claimId, validatedAt },
     });
     validationIds.push(v.id);
   }
-  return { ...created, validationIds };
+  return validationIds;
 }
 
 export async function cleanupTenant(prisma: PrismaService, tenantId: string): Promise<void> {
@@ -204,6 +253,7 @@ export async function cleanupTenant(prisma: PrismaService, tenantId: string): Pr
   await prisma.benefitSettlementUsageAllocation.deleteMany({ where: { tenantId } });
   await prisma.benefitSettlementTransfer.deleteMany({ where: { tenantId } });
   await prisma.benefitSettlement.deleteMany({ where: { tenantId } });
+  await prisma.benefitCommercialAgreement.deleteMany({ where: { tenantId, derivedFromAgreementId: { not: null } } });
   await prisma.benefitCommercialAgreement.deleteMany({ where: { tenantId } });
   await prisma.gastroDiscountValidation.deleteMany({ where: { discount: { tenantId } } });
   await prisma.gastroDiscountClaim.deleteMany({ where: { tenantId } });

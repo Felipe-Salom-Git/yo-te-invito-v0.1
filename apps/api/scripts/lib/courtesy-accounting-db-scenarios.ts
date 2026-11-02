@@ -11,6 +11,7 @@ import {
   cleanupTenant,
   createAgreement,
   createRedeemedBenefit,
+  redeemMoreUses,
   seedTenant,
   type Seed,
 } from './courtesy-accounting-db-seed';
@@ -47,16 +48,8 @@ async function runScenarios(prisma: PrismaService, seed: Seed, check: Check) {
   const A = { profileId: profileA, eventId: seed.eventA };
   const B = { profileId: profileB, eventId: seed.eventB };
 
-  const agreementA = await createAgreement(prisma, seed, profileA, {
-    unitPriceCents: 500000n,
-    barterMultiplier: '2',
-    validFrom: '2026-01-01T03:00:00.000Z',
-  });
-  await createAgreement(prisma, seed, profileB, {
-    unitPriceCents: 500000n,
-    barterMultiplier: '2',
-    validFrom: '2026-01-01T03:00:00.000Z',
-  });
+  // G10: every billable discount carries its own agreement (same rate in these scenarios).
+  const RATE = [{ unitPriceCents: 500000n, barterMultiplier: '2', validFrom: '2026-01-01T03:00:00.000Z' }];
 
   const balanceA = async () =>
     BigInt(
@@ -69,7 +62,7 @@ async function runScenarios(prisma: PrismaService, seed: Seed, check: Check) {
     svc.settlements.generate(tenantId, actor, { vertical: 'GASTRO', gastroProfileId, periodKey });
 
   // ── Caso A — normal discount 10 × $5.000 → eligible → CASH ──
-  const n1 = await createRedeemedBenefit(prisma, seed, { ...A, kind: 'DISCOUNT', uses: 10, validatedAt: '2026-06-10T15:00:00.000Z' });
+  const n1 = await createRedeemedBenefit(prisma, seed, { ...A, kind: 'DISCOUNT', uses: 10, validatedAt: '2026-06-10T15:00:00.000Z', terms: RATE });
   const s1 = await generate(profileA, '2026-06');
   check(s1.summary.pendingUsageCount === 10, 'A: normal discount 10 uses pending');
   const a1 = await svc.settlements.allocate(tenantId, actor, s1.id, { mode: 'CASH', count: 10 });
@@ -77,20 +70,21 @@ async function runScenarios(prisma: PrismaService, seed: Seed, check: Check) {
   check(n1.validationIds.every((id) => a1.allocations.some((x) => x.validationId === id)), 'A: all normal uses allocated');
 
   // ── Caso B — non-funded courtesy 10 × $5.000 → CASH base $50.000 + snapshot ──
-  const c1 = await createRedeemedBenefit(prisma, seed, { ...A, kind: 'COURTESY', uses: 10, validatedAt: '2026-07-10T15:00:00.000Z' });
+  const c1 = await createRedeemedBenefit(prisma, seed, { ...A, kind: 'COURTESY', uses: 10, validatedAt: '2026-07-10T15:00:00.000Z', terms: RATE });
   const s2 = await generate(profileA, '2026-07');
   check(s2.summary.pendingUsageCount === 10 && s2.summary.fundedCourtesyUsageCount === 0, 'B: non-funded courtesy is eligible');
   const a2 = await svc.settlements.allocate(tenantId, actor, s2.id, { mode: 'CASH', validationIds: c1.validationIds });
   check(a2.settlement.summary.cashBaseAmountCents === '5000000', 'B: courtesy CASH base $50.000');
   check(a2.settlement.summary.cashDueCents === '5000000', 'B: courtesy CASH due $50.000');
   const snapRows = await prisma.benefitSettlementUsageAllocation.findMany({ where: { settlementId: s2.id } });
+  const c1AgreementId = c1.agreementIds[0]!;
   check(
     snapRows.length === 10 &&
       snapRows.every(
         (r) =>
-          r.agreementId === agreementA.id &&
+          r.agreementId === c1AgreementId &&
           r.unitPriceCents === 500000n &&
-          r.barterMultiplier.toString() === agreementA.barterMultiplier.toString() &&
+          r.barterMultiplier.toString() === '2' &&
           r.baseAmountCents === 500000n &&
           r.currency === 'ARS',
       ),
@@ -98,7 +92,7 @@ async function runScenarios(prisma: PrismaService, seed: Seed, check: Check) {
   );
 
   // ── Caso C — non-funded courtesy BARTER 10 × $5.000 × 2 → credit $100.000 ──
-  const c2 = await createRedeemedBenefit(prisma, seed, { ...A, kind: 'COURTESY', uses: 10, validatedAt: '2026-08-10T15:00:00.000Z' });
+  const c2 = await createRedeemedBenefit(prisma, seed, { ...A, kind: 'COURTESY', uses: 10, validatedAt: '2026-08-10T15:00:00.000Z', terms: RATE });
   const s3 = await generate(profileA, '2026-08');
   const a3 = await svc.settlements.allocate(tenantId, actor, s3.id, { mode: 'BARTER', count: 10 });
   check(a3.settlement.summary.barterBaseAmountCents === '5000000', 'C: BARTER base $50.000');
@@ -131,8 +125,8 @@ async function runScenarios(prisma: PrismaService, seed: Seed, check: Check) {
   check(f.validationIds.length === 10, 'D: funded courtesy claims redeemed → validations exist');
 
   // ── Caso F — MIXED settlement: normal ✅ + non-funded courtesy ✅ + funded courtesy ❌ ──
-  const n2 = await createRedeemedBenefit(prisma, seed, { ...A, kind: 'DISCOUNT', uses: 3, validatedAt: '2026-09-12T15:00:00.000Z' });
-  const c3 = await createRedeemedBenefit(prisma, seed, { ...A, kind: 'COURTESY', uses: 2, validatedAt: '2026-09-15T15:00:00.000Z' });
+  const n2 = await createRedeemedBenefit(prisma, seed, { ...A, kind: 'DISCOUNT', uses: 3, validatedAt: '2026-09-12T15:00:00.000Z', terms: RATE });
+  const c3 = await createRedeemedBenefit(prisma, seed, { ...A, kind: 'COURTESY', uses: 2, validatedAt: '2026-09-15T15:00:00.000Z', terms: RATE });
   const s4 = await generate(profileA, '2026-09');
   check(s4.summary.pendingUsageCount === 5, 'F: 3 normal + 2 non-funded courtesy pending');
   check(s4.summary.eligibleUsageCount === 5, 'F: funded courtesy not counted as eligible usage');
@@ -215,7 +209,7 @@ async function runScenarios(prisma: PrismaService, seed: Seed, check: Check) {
       validationSource: 'GASTRO_DISCOUNT_VALIDATION',
       validationId: f.validationIds[9]!,
       mode: 'BARTER',
-      agreementId: agreementA.id,
+      agreementId: c1AgreementId,
       unitPriceCents: 500000n,
       barterMultiplier: '2',
       baseAmountCents: 500000n,
@@ -240,22 +234,26 @@ async function runScenarios(prisma: PrismaService, seed: Seed, check: Check) {
   const s2Integrity = await svc.integrity.evaluateSettlement(tenantId, s2.id);
   check(!s2Integrity.issues.some((i) => i.code === 'FUNDED_COURTESY_ALLOCATED'), 'integrity: non-funded courtesy allocations not flagged');
 
-  // ── Caso G — agreement replaced: historical allocations unchanged; new usage uses new rate ──
-  await prisma.benefitCommercialAgreement.update({ where: { id: agreementA.id }, data: { validTo: new Date('2026-10-01T02:59:59.000Z') } });
-  await createAgreement(prisma, seed, profileA, { unitPriceCents: 700000n, barterMultiplier: '3', validFrom: '2026-10-01T03:00:00.000Z' });
+  // ── Caso G — the courtesy's own agreement replaced: history unchanged; new usage uses new rate ──
+  await prisma.benefitCommercialAgreement.update({ where: { id: c1AgreementId }, data: { validTo: new Date('2026-10-01T02:59:59.000Z') } });
+  await createAgreement(prisma, seed, profileA, c1.discountId, {
+    unitPriceCents: 700000n,
+    barterMultiplier: '3',
+    validFrom: '2026-10-01T03:00:00.000Z',
+  });
   const historical = await prisma.benefitSettlementUsageAllocation.findMany({ where: { settlementId: s2.id } });
   check(
-    historical.every((r) => r.agreementId === agreementA.id && r.unitPriceCents === 500000n && r.baseAmountCents === 500000n),
+    historical.every((r) => r.agreementId === c1AgreementId && r.unitPriceCents === 500000n && r.baseAmountCents === 500000n),
     'G: old courtesy allocations keep the old snapshot',
   );
   check((await svc.settlements.get(tenantId, s2.id)).summary.cashDueCents === '5000000', 'G: old settlement due unchanged');
-  await createRedeemedBenefit(prisma, seed, { ...A, kind: 'COURTESY', uses: 1, validatedAt: '2026-10-10T15:00:00.000Z' });
+  await redeemMoreUses(prisma, seed, { discountId: c1.discountId, campaignId: c1.campaignId, uses: 1, validatedAt: '2026-10-10T15:00:00.000Z' });
   const s5 = await generate(profileA, '2026-10');
-  check(s5.summary.pendingBaseAmountCents === '700000', 'G: new non-funded courtesy priced with the new agreement');
+  check(s5.summary.pendingBaseAmountCents === '700000', 'G: new non-funded courtesy usage priced with its new agreement');
 
   // ── Caso H — cross profile: funding campaign on A never affects B ──
-  const nb = await createRedeemedBenefit(prisma, seed, { ...B, kind: 'DISCOUNT', uses: 1, validatedAt: '2026-09-20T15:00:00.000Z' });
-  const cb = await createRedeemedBenefit(prisma, seed, { ...B, kind: 'COURTESY', uses: 2, validatedAt: '2026-09-21T15:00:00.000Z' });
+  const nb = await createRedeemedBenefit(prisma, seed, { ...B, kind: 'DISCOUNT', uses: 1, validatedAt: '2026-09-20T15:00:00.000Z', terms: RATE });
+  const cb = await createRedeemedBenefit(prisma, seed, { ...B, kind: 'COURTESY', uses: 2, validatedAt: '2026-09-21T15:00:00.000Z', terms: RATE });
   const sb = await generate(profileB, '2026-09');
   check(sb.summary.pendingUsageCount === 3 && sb.summary.fundedCourtesyUsageCount === 0, 'H: B usage fully eligible');
   const eh = await errorOf(() => svc.settlements.allocate(tenantId, actor, sb.id, { mode: 'CASH', validationIds: [f.validationIds[0]!] }));

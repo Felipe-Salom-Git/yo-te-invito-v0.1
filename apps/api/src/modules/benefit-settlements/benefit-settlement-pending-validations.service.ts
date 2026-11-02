@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import {
   ErrorCode,
+  groupMissingAgreementsByBenefit,
   moneyCentsToString,
   type BenefitSettlementPendingValidationsResponse,
 } from '@yo-te-invito/shared';
@@ -53,6 +54,7 @@ export class BenefitSettlementPendingValidationsService {
     return {
       settlementId: row.id,
       missingAgreementCount: discovery.missingAgreements.length,
+      missingAgreementsByBenefit: groupMissingAgreementsByBenefit(discovery.missingAgreements),
       fundedCourtesyExcludedCount: discovery.fundedCourtesyExcluded.length,
       data: discovery.priced.map((v) => {
         const detail = details.get(v.validationId);
