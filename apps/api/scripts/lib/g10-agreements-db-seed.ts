@@ -237,6 +237,7 @@ export async function cleanupG10Tenant(prisma: PrismaService, tenantId: string):
   await prisma.excursionOperator.deleteMany({ where: { tenantId } });
   await prisma.gastroProfile.deleteMany({ where: { tenantId } });
   await prisma.user.deleteMany({ where: { tenantId } });
+  await prisma.auditLog.deleteMany({ where: { tenantId } });
   await prisma.tenant.delete({ where: { id: tenantId } });
 }
 

@@ -178,6 +178,7 @@ export class BenefitSettlementReportingService {
       warnings,
       errors,
       data,
+      agreementScopeIssues: await this.integrity.evaluateAgreementScopes(tenantId),
     };
   }
 

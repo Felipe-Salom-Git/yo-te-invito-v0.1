@@ -5,6 +5,7 @@ import type {
   BenefitIntegrityStatus,
 } from '@yo-te-invito/shared';
 import {
+  checkAgreementScopeMismatch,
   checkBarterExpectedVsMaterialized,
   checkCashOverpayment,
   checkClosedWithPendingUsages,
@@ -178,6 +179,32 @@ export class BenefitSettlementIntegrityService {
       if (negative) issues.push(negative);
     }
 
+    return issues;
+  }
+
+  /** G10 — tenant-wide coherence of discount-scoped agreements (AGREEMENT_SCOPE_MISMATCH). */
+  async evaluateAgreementScopes(tenantId: string): Promise<BenefitIntegrityIssue[]> {
+    const rows = await this.prisma.benefitCommercialAgreement.findMany({
+      where: { tenantId, vertical: 'GASTRO', gastroDiscountId: { not: null } },
+      select: {
+        id: true,
+        gastroProfileId: true,
+        gastroDiscountId: true,
+        gastroDiscount: { select: { id: true, tenantId: true, gastroProfileId: true } },
+      },
+    });
+    const issues: BenefitIntegrityIssue[] = [];
+    for (const row of rows) {
+      const discount = row.gastroDiscount?.tenantId === tenantId ? row.gastroDiscount : null;
+      const issue = checkAgreementScopeMismatch({
+        agreementId: row.id,
+        agreementGastroProfileId: row.gastroProfileId,
+        gastroDiscountId: row.gastroDiscountId,
+        discountExists: discount != null,
+        discountGastroProfileId: discount?.gastroProfileId ?? null,
+      });
+      if (issue) issues.push(issue);
+    }
     return issues;
   }
 
