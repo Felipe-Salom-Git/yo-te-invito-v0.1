@@ -18,6 +18,7 @@ import {
   shouldEmphasizeCardRating,
 } from '@/lib/home/contentCardPresentation';
 import { formatPublicRatingLabel, publicFaceFromTen, publicRatingAriaLabel } from '@/lib/reviews/ratingDisplay';
+import { RatingFaceIcon } from '@/components/reviews/RatingFaceIcon';
 import { ExpandedContentCardOverlay, type ContentCardMetadata } from './ExpandedContentCardOverlay';
 import {
   CONTENT_CARD_MAX_VISIBLE_TAGS,
@@ -257,10 +258,11 @@ export function ContentCard({ item, onClick, tenantId }: ContentCardProps) {
         {showRatingInCompact && ratingLabel && item.ratingAvg != null && item.ratingAvg > 0 ? (
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <span
-              className={`text-xs font-medium ${emphasizeRating ? 'text-amber-300' : 'text-accent'}`}
+              className={`inline-flex items-center gap-1 text-xs font-medium ${emphasizeRating ? 'text-amber-300' : 'text-accent'}`}
               aria-label={publicRatingAriaLabel(item.ratingAvg)}
             >
-              {ratingFace ? <span aria-hidden>{ratingFace.glyph}</span> : null} {ratingLabel}
+              {ratingFace ? <RatingFaceIcon level={ratingFace.level} className="h-4 w-4" /> : null}
+              {ratingLabel}
             </span>
           </div>
         ) : null}

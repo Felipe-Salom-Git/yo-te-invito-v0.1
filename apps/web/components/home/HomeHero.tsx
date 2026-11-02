@@ -10,6 +10,7 @@ import {
 import type { HeroViewModel } from '@/lib/home/heroModel';
 import { mapFeaturedItemToHeroModel } from '@/lib/home/heroModel';
 import { formatPublicRatingLabel, publicFaceFromTen } from '@/lib/reviews/ratingDisplay';
+import { RatingFaceIcon } from '@/components/reviews/RatingFaceIcon';
 
 type FeaturedItem = {
   id: string;
@@ -72,6 +73,7 @@ function HeroContent({ model }: { model: HeroViewModel }) {
       })
     : null;
   const locationLabel = model.city ?? model.venueName ?? null;
+  const heroFace = publicFaceFromTen(model.ratingAvg);
 
   return (
     <div className="max-w-2xl">
@@ -89,8 +91,9 @@ function HeroContent({ model }: { model: HeroViewModel }) {
       )}
       <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-white/80">
         {model.ratingAvg != null && model.ratingAvg > 0 && (
-          <span className="text-accent">
-            {publicFaceFromTen(model.ratingAvg)?.glyph} {formatPublicRatingLabel(model.ratingAvg)}
+          <span className="inline-flex items-center gap-1.5 text-accent">
+            {heroFace ? <RatingFaceIcon level={heroFace.level} className="h-5 w-5" /> : null}
+            {formatPublicRatingLabel(model.ratingAvg)}
           </span>
         )}
         {model.producerName && <span>{model.producerName}</span>}

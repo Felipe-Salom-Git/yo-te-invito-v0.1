@@ -5,6 +5,7 @@ import {
   publicFaceFromTen,
   publicRatingAriaLabel,
 } from '@/lib/reviews/ratingDisplay';
+import { RatingFaceIcon } from '@/components/reviews/RatingFaceIcon';
 
 /** Optional rating display for content cards. Renders nothing when no rating. */
 export interface RatingBadgeProps {
@@ -30,11 +31,7 @@ export function RatingBadge({ ratingAvg, ratingCount, className = '' }: RatingBa
       className={`inline-flex items-center gap-1 rounded-md bg-black/60 px-2 py-0.5 text-xs font-medium text-white backdrop-blur-sm ${className}`}
       aria-label={publicRatingAriaLabel(ratingAvg)}
     >
-      {face ? (
-        <span className={face.className} aria-hidden>
-          {face.glyph}
-        </span>
-      ) : null}
+      {face ? <RatingFaceIcon level={face.level} className="h-3.5 w-3.5" /> : null}
       {display}
     </span>
   );

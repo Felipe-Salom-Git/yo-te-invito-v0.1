@@ -1,6 +1,7 @@
 'use client';
 
 import { formatPublicRatingLabel, publicFaceFromTen, publicRatingAriaLabel } from '@/lib/reviews/ratingDisplay';
+import { RatingFaceIcon } from '@/components/reviews/RatingFaceIcon';
 
 /** Scannable metadata row for content preview modal — date, location, rating, price */
 
@@ -37,10 +38,10 @@ export function ContentPreviewMeta({
     parts.push(
       <span
         key="rating"
-        className="text-accent font-medium"
+        className="inline-flex items-center gap-1 text-accent font-medium"
         aria-label={publicRatingAriaLabel(ratingAvg)}
       >
-        {ratingFace ? <span aria-hidden>{ratingFace.glyph} </span> : null}
+        {ratingFace ? <RatingFaceIcon level={ratingFace.level} className="h-4 w-4" /> : null}
         {ratingLabel}
         {ratingCount != null && ratingCount > 0 && (
           <span className="text-text-muted font-normal"> ({ratingCount})</span>

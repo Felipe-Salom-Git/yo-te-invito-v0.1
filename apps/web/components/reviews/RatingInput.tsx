@@ -7,6 +7,7 @@ import {
   visualFaceMeta,
   visualStarsToInternalTen,
 } from '@/lib/reviews/ratingDisplay';
+import { RatingFaceIcon } from './RatingFaceIcon';
 
 export interface RatingInputProps {
   /** Internal 1–10 when `scale="internal"` (default); 1–5 when `scale="visual"`. */
@@ -60,9 +61,10 @@ export function RatingInput({
               aria-pressed={selected}
             >
               {isVisual && face ? (
-                <span className={filled ? face.className : 'text-text-muted'} aria-hidden>
-                  {face.glyph}
-                </span>
+                <RatingFaceIcon
+                  level={n}
+                  className={`mx-auto h-7 w-7 transition ${filled ? '' : 'opacity-40 grayscale'}`}
+                />
               ) : (
                 <span className={filled ? 'text-accent' : 'text-text-muted'} aria-hidden>
                   ★

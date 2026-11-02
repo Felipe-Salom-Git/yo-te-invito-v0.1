@@ -7,6 +7,7 @@ import {
   formatPublicRatingLabel,
   PUBLIC_RATING_STARS_MAX,
 } from '@/lib/reviews/ratingDisplay';
+import { RatingFaceIcon } from '@/components/reviews/RatingFaceIcon';
 
 const SUBTITLE: Record<ManagedReviewsScope, string> = {
   producer: 'de tus eventos',
@@ -69,8 +70,8 @@ export function ManagedReviewSummary({ summary, scope }: Props) {
             const width = Math.round((count / max) * 100);
             return (
               <li key={star} className="flex items-center gap-2 text-sm sm:gap-3">
-                <span className="w-8 shrink-0 text-right text-text-muted sm:w-10">
-                  {star} ★
+                <span className="flex w-8 shrink-0 justify-end sm:w-10">
+                  <RatingFaceIcon level={star} className="h-5 w-5" decorative={false} />
                 </span>
                 <div className="h-2 min-w-0 flex-1 overflow-hidden rounded bg-bg">
                   <div

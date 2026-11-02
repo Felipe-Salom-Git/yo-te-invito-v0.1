@@ -8,15 +8,13 @@ export const INTERNAL_RATING_MAX = 10;
 
 export type VisualFaceLevel = 1 | 2 | 3 | 4 | 5;
 
-export const VISUAL_FACE_META: Record<
-  VisualFaceLevel,
-  { glyph: string; label: string; className: string }
-> = {
-  1: { glyph: '😠', label: 'Muy insatisfecho', className: 'text-red-500' },
-  2: { glyph: '🙁', label: 'Insatisfecho', className: 'text-orange-400' },
-  3: { glyph: '😐', label: 'Neutral', className: 'text-yellow-400' },
-  4: { glyph: '🙂', label: 'Conforme', className: 'text-lime-400' },
-  5: { glyph: '😊', label: 'Muy conforme', className: 'text-accent' },
+/** Face icons (G11.1 visual set) — level 1 = worst, 5 = best. Assets in `public/icons/ratings`. */
+export const VISUAL_FACE_META: Record<VisualFaceLevel, { level: VisualFaceLevel; iconSrc: string; label: string }> = {
+  1: { level: 1, iconSrc: '/icons/ratings/rating-face-1.png', label: 'Muy insatisfecho' },
+  2: { level: 2, iconSrc: '/icons/ratings/rating-face-2.png', label: 'Insatisfecho' },
+  3: { level: 3, iconSrc: '/icons/ratings/rating-face-3.png', label: 'Neutral' },
+  4: { level: 4, iconSrc: '/icons/ratings/rating-face-4.png', label: 'Conforme' },
+  5: { level: 5, iconSrc: '/icons/ratings/rating-face-5.png', label: 'Muy conforme' },
 };
 
 export function ratingTenToFive(rating10: number): number {

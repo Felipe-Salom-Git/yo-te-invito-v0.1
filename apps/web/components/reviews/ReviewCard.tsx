@@ -12,8 +12,10 @@ import {
 } from '@/lib/reviews/publicReviewRoutes';
 import {
   formatPublicRatingLabel,
+  publicFaceFromTen,
   publicRatingAriaLabel,
 } from '@/lib/reviews/ratingDisplay';
+import { RatingFaceIcon } from './RatingFaceIcon';
 
 export interface ReviewCardProps {
   review: PublicReviewItemV2;
@@ -35,6 +37,7 @@ export function ReviewCard({
 
   const hasAspects =
     review.aspectRatings && Object.keys(review.aspectRatings).length > 0;
+  const reviewFace = publicFaceFromTen(review.overallRating);
 
   return (
     <article className="min-w-0 rounded-xl border border-border/80 bg-bg-muted/50 p-4 sm:p-5">
@@ -55,6 +58,9 @@ export function ReviewCard({
             className="flex items-center justify-center rounded-lg border border-accent/30 bg-accent/10 px-3 py-2 sm:w-full sm:flex-col sm:px-2"
             aria-label={publicRatingAriaLabel(review.overallRating)}
           >
+            {reviewFace ? (
+              <RatingFaceIcon level={reviewFace.level} className="mr-2 h-7 w-7 sm:mb-1 sm:mr-0" />
+            ) : null}
             <span className="text-2xl font-bold tabular-nums text-accent sm:text-3xl">
               {formatPublicRatingLabel(review.overallRating, { suffix: false })}
             </span>

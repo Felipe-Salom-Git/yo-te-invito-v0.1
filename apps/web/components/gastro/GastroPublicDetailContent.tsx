@@ -22,7 +22,8 @@ import { ReviewForm, type ReviewFormSubmitPayload } from '@/components/reviews/R
 import { GastroFollowButton } from '@/components/me/GastroFollowButton';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import type { EventSummary, PublicGastroLocation } from '@/repositories/interfaces';
-import { formatPublicRatingLabel } from '@/lib/reviews/ratingDisplay';
+import { formatPublicRatingLabel, publicFaceFromTen } from '@/lib/reviews/ratingDisplay';
+import { RatingFaceIcon } from '@/components/reviews/RatingFaceIcon';
 import type { PublicGastroLocationDiscount } from '@/repositories/interfaces';
 import { ContentTagChips } from '@/components/content-tags/ContentTagChips';
 import { GastroLocationShareActions } from '@/components/share/GastroLocationShareActions';
@@ -99,6 +100,7 @@ export function GastroPublicDetailContent({
 
   const ratingDisplay =
     reviewsSummary.averageRating ?? location.ratingAvg ?? null;
+  const ratingFace = publicFaceFromTen(ratingDisplay);
   const reviewCountDisplay =
     reviewsSummary.validReviewCount > 0
       ? reviewsSummary.validReviewCount
@@ -132,10 +134,11 @@ export function GastroPublicDetailContent({
           {reviewEventId && reviewCountDisplay > 0 ? (
             <a
               href="#reviews"
-              className="rounded-full border border-white/25 bg-black/40 px-3 py-1.5 text-sm text-white/90 backdrop-blur-sm hover:border-accent/50"
+              className="inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-black/40 px-3 py-1.5 text-sm text-white/90 backdrop-blur-sm hover:border-accent/50"
             >
+              {ratingFace ? <RatingFaceIcon level={ratingFace.level} className="h-4 w-4" /> : null}
               {ratingDisplay != null
-                ? `${formatPublicRatingLabel(ratingDisplay) ?? ratingDisplay.toFixed(1)} ★`
+                ? formatPublicRatingLabel(ratingDisplay) ?? ratingDisplay.toFixed(1)
                 : 'Valoraciones'}{' '}
               ·{' '}
               {reviewCountDisplay} {reviewCountDisplay === 1 ? 'reseña' : 'reseñas'}

@@ -15,7 +15,8 @@ import { EventReviewsSection } from '@/components/events/EventReviewsSection';
 import { ReviewForm, type ReviewFormSubmitPayload } from '@/components/reviews/ReviewForm';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import type { PublicHotelLocation } from '@/repositories/interfaces';
-import { formatPublicRatingLabel } from '@/lib/reviews/ratingDisplay';
+import { formatPublicRatingLabel, publicFaceFromTen } from '@/lib/reviews/ratingDisplay';
+import { RatingFaceIcon } from '@/components/reviews/RatingFaceIcon';
 
 export type HotelPublicDetailContentProps = {
   hotel: PublicHotelLocation;
@@ -87,6 +88,7 @@ export function HotelPublicDetailContent({
   const telHref = buildHotelTelHref(hotel.contactPhone);
 
   const ratingDisplay = reviewsSummary.averageRating ?? hotel.ratingAvg ?? null;
+  const ratingFace = publicFaceFromTen(ratingDisplay);
   const reviewCountDisplay =
     reviewsSummary.validReviewCount > 0
       ? reviewsSummary.validReviewCount
@@ -105,10 +107,11 @@ export function HotelPublicDetailContent({
         {reviewCountDisplay > 0 ? (
           <a
             href="#reviews"
-            className="inline-flex rounded-full border border-white/25 bg-black/40 px-3 py-1.5 text-sm text-white/90 backdrop-blur-sm hover:border-accent/50"
+            className="inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-black/40 px-3 py-1.5 text-sm text-white/90 backdrop-blur-sm hover:border-accent/50"
           >
+            {ratingFace ? <RatingFaceIcon level={ratingFace.level} className="h-4 w-4" /> : null}
             {ratingDisplay != null
-              ? `${formatPublicRatingLabel(ratingDisplay) ?? ratingDisplay.toFixed(1)} ★`
+              ? formatPublicRatingLabel(ratingDisplay) ?? ratingDisplay.toFixed(1)
               : 'Valoraciones'}{' '}
             ·{' '}
             {reviewCountDisplay} {reviewCountDisplay === 1 ? 'reseña' : 'reseñas'}

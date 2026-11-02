@@ -7,6 +7,7 @@ import {
   publicRatingAriaLabel,
 } from '@/lib/reviews/ratingDisplay';
 import { ReviewAspectBreakdown } from './ReviewAspectBreakdown';
+import { RatingFaceIcon } from './RatingFaceIcon';
 
 export interface ReviewSummaryProps {
   averageRating?: number | null;
@@ -53,11 +54,7 @@ export function ReviewSummary({
             className="flex shrink-0 items-center gap-3 self-start sm:self-auto"
             aria-label={publicRatingAriaLabel(averageRating!)}
           >
-            {face ? (
-              <span className={`text-4xl sm:text-5xl ${face.className}`} title={face.label} aria-hidden>
-                {face.glyph}
-              </span>
-            ) : null}
+            {face ? <RatingFaceIcon level={face.level} className="h-10 w-10 sm:h-12 sm:w-12" /> : null}
             <div className="flex items-baseline gap-1">
               <span className="text-4xl font-bold tabular-nums text-white sm:text-5xl">
                 {formatPublicRatingLabel(averageRating, { suffix: false })}
