@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import {
   ErrorCode,
+  isGastroCourtesyFundedByCredit,
   type BenefitCommercialAgreementDiscountHistoryResponse,
 } from '@yo-te-invito/shared';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -26,7 +27,15 @@ export class BenefitDiscountAgreementHistoryService {
   ): Promise<BenefitCommercialAgreementDiscountHistoryResponse> {
     const discount = await this.prisma.gastroDiscount.findFirst({
       where: { id: gastroDiscountId, tenantId },
-      select: { id: true, gastroProfileId: true, displayTitle: true },
+      select: {
+        id: true,
+        gastroProfileId: true,
+        displayTitle: true,
+        status: true,
+        courtesyCampaign: {
+          select: { id: true, courtesyCreditDebit: { select: { id: true, type: true } } },
+        },
+      },
     });
     if (!discount) {
       throw new NotFoundException({
@@ -52,6 +61,8 @@ export class BenefitDiscountAgreementHistoryService {
       gastroDiscountId: discount.id,
       gastroProfileId: discount.gastroProfileId,
       discountTitle: discount.displayTitle,
+      discountStatus: discount.status,
+      billable: !isGastroCourtesyFundedByCredit(discount),
       current: pickApplicableAgreement(rows, todayKey, new Date()),
       history: rows.map((row) => agreementRowToDto(row, todayKey)),
       legacyUsed: await this.loadLegacyUsage(tenantId, discount.id, todayKey),

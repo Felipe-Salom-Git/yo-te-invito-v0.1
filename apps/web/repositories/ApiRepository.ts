@@ -1683,6 +1683,8 @@ export class ApiRepository implements Repositories {
         '/admin/benefit-agreements/partner-history',
         query as Record<string, string | number | boolean | undefined>,
       ),
+    discountHistory: async (gastroDiscountId) =>
+      this.client.get('/admin/benefit-agreements/discount-history', { gastroDiscountId }),
     create: async (body) => this.client.post('/admin/benefit-agreements', body),
     close: async (id, body) =>
       this.client.post(`/admin/benefit-agreements/${encodeURIComponent(id)}/close`, body),

@@ -142,11 +142,17 @@ export class BenefitCommercialAgreementsService {
   ): Promise<BenefitCommercialAgreementDto> {
     const key = await this.assertCreateScopeEligible(tenantId, body);
     const validFrom = gastroDiscountStartOfDay(...parseAgreementDateKey(body.validFrom));
+    const validTo = body.validTo
+      ? gastroDiscountEndOfDay(...parseAgreementDateKey(body.validTo))
+      : null;
     const row = await this.prisma
       .$transaction(
         async (tx) => {
           await lockAgreementScope(tx, tenantId, key);
-          await this.assertNoOverlap(tx, tenantId, key, { validFromKey: body.validFrom, validToKey: null });
+          await this.assertNoOverlap(tx, tenantId, key, {
+            validFromKey: body.validFrom,
+            validToKey: body.validTo ?? null,
+          });
           return tx.benefitCommercialAgreement.create({
             data: {
               tenantId,
@@ -158,6 +164,7 @@ export class BenefitCommercialAgreementsService {
               barterMultiplier: new Decimal(body.barterMultiplier),
               currency: body.currency,
               validFrom,
+              validTo,
               notes: body.notes ?? null,
               createdByUserId: actor.id,
             },
@@ -436,6 +443,14 @@ export class BenefitCommercialAgreementsService {
     body: CreateBenefitCommercialAgreementBody,
   ): Promise<AgreementScopeKey> {
     if (body.vertical === 'GASTRO') {
+      // D-G10-10 (defense in depth beyond Zod): never a new profile-scoped GASTRO row, and never
+      // `findFirst({ id: undefined })`, which would match any discount of the tenant.
+      if (!body.gastroDiscountId || !body.gastroProfileId) {
+        throw new BadRequestException({
+          code: ErrorCode.BENEFIT_AGREEMENT_PARTNER_INVALID,
+          message: 'GASTRO agreements require gastroProfileId + gastroDiscountId',
+        });
+      }
       const discount = await this.prisma.gastroDiscount.findFirst({
         where: { id: body.gastroDiscountId, tenantId },
         select: { gastroProfileId: true },

@@ -3388,6 +3388,10 @@ export interface AdminBenefitAgreementsRepo {
   partnerHistory(
     query: import('@yo-te-invito/shared').BenefitCommercialAgreementPartnerHistoryQuery,
   ): Promise<import('@yo-te-invito/shared').BenefitCommercialAgreementPartnerHistoryResponse>;
+  /** G10.B — contract history of ONE discount (+ legacy local rows that priced its uses). */
+  discountHistory(
+    gastroDiscountId: string,
+  ): Promise<import('@yo-te-invito/shared').BenefitCommercialAgreementDiscountHistoryResponse>;
   create(
     body: import('@yo-te-invito/shared').CreateBenefitCommercialAgreementBody,
   ): Promise<import('@yo-te-invito/shared').BenefitCommercialAgreementDto>;

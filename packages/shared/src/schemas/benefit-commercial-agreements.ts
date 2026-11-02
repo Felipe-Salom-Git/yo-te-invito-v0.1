@@ -49,9 +49,18 @@ export const createBenefitCommercialAgreementBodySchema = partnerFieldsBaseSchem
     barterMultiplier: barterMultiplierInputSchema,
     currency: z.literal('ARS').default('ARS'),
     validFrom: calendarDateSchema,
+    /** G10.B — optional end date (inclusive); omitted = open agreement (previous behaviour). */
+    validTo: calendarDateSchema.optional(),
     notes: z.string().trim().max(2000).optional(),
   })
   .superRefine((val, ctx) => {
+    if (val.validTo && val.validTo < val.validFrom) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'validTo cannot be before validFrom',
+        path: ['validTo'],
+      });
+    }
     if (!isNewBenefitAgreementScopeValid(val)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -265,6 +274,10 @@ export const benefitCommercialAgreementDiscountHistoryResponseSchema = z.object(
   gastroDiscountId: z.string(),
   gastroProfileId: z.string().nullable(),
   discountTitle: z.string().nullable(),
+  /** G10.B — discount lifecycle status (alerts: ACTIVE/APPROVED without CURRENT). */
+  discountStatus: z.string(),
+  /** G10.B — false = courtesy funded with barter credit (D1): no contract required. */
+  billable: z.boolean(),
   current: benefitCommercialAgreementDtoSchema.nullable(),
   history: z.array(benefitCommercialAgreementDtoSchema),
   legacyUsed: z.array(benefitCommercialAgreementLegacyUsageSchema),

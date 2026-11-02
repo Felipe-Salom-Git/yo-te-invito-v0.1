@@ -386,6 +386,8 @@ export const adminBenefitAgreementsKeys = {
   detail: (id: string) => [...adminBenefitAgreementsKeys.all, 'detail', id] as const,
   partnerHistory: (filtersKey: string) =>
     [...adminBenefitAgreementsKeys.all, 'partner-history', filtersKey] as const,
+  discountHistory: (discountId: string) =>
+    [...adminBenefitAgreementsKeys.all, 'discount-history', discountId] as const,
 };
 
 export const adminBenefitSettlementsKeys = {

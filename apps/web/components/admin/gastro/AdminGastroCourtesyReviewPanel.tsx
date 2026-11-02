@@ -10,7 +10,7 @@ import { buildCourtesyMetricCards, formatCourtesyAudience } from '@/lib/gastro/c
 
 type Props = {
   item: AdminGastroDiscountDetail;
-  /** Whether the local has a CURRENT commercial agreement (approval gate). */
+  /** Whether THIS courtesy has its own CURRENT contract, or needs none (funded). */
   hasCurrentAgreement: boolean;
   agreementLoading: boolean;
 };
@@ -136,7 +136,7 @@ export function AdminGastroCourtesyReviewPanel({
       ) : null}
       {pending && !agreementLoading && !hasCurrentAgreement ? (
         <p className="mt-2 text-xs text-amber-700 dark:text-amber-300">
-          Aprobación bloqueada: este local no posee un acuerdo comercial vigente.
+          Aprobación bloqueada: esta cortesía no tiene un contrato comercial vigente.
         </p>
       ) : null}
     </section>

@@ -125,6 +125,52 @@ async function main() {
     await fundG10Courtesy(prisma, svc.ledger, seed, { profileId: profileA, campaignId: F.campaignId!, imputedValueCents: 100000n });
     const gateF = await svc.gate.assertActivatable(tenantId, F.discountId);
     check(!gateF.billable && gateF.agreement === null, 'funded courtesy → no agreement lookup, gate passes (D1 / D-G10-3)');
+
+    console.log('\n=== B3 discount contract API (create / replace / close / history) ===\n');
+    const U = await createPendingG10Discount(prisma, seed, { profileId: profileA, eventId: seed.eventA });
+    const bounded = await svc.agreements.create(tenantId, actor, {
+      vertical: 'GASTRO', gastroProfileId: profileA, gastroDiscountId: U.discountId,
+      unitPriceCents: '300000', barterMultiplier: '1.5', currency: 'ARS', validFrom: '2026-01-01', validTo: '2026-06-30',
+    });
+    check(bounded.validTo === '2026-06-30' && !bounded.isOpen && bounded.vigency === 'PAST', 'create with optional "hasta" persists validTo');
+    const overlapping = await errorOf(() => svc.agreements.create(tenantId, actor, {
+      vertical: 'GASTRO', gastroProfileId: profileA, gastroDiscountId: U.discountId,
+      unitPriceCents: '300000', barterMultiplier: '2', currency: 'ARS', validFrom: '2026-06-15',
+    }));
+    check(codeOf(overlapping) === ErrorCode.BENEFIT_AGREEMENT_OVERLAP, 'bounded range still blocks overlapping rows');
+    const next = await svc.agreements.create(tenantId, actor, {
+      vertical: 'GASTRO', gastroProfileId: profileA, gastroDiscountId: U.discountId,
+      unitPriceCents: '350000', barterMultiplier: '2', currency: 'ARS', validFrom: '2026-07-01',
+    });
+    const replaced = await svc.agreements.replace(tenantId, actor, next.id, {
+      effectiveFrom: '2026-10-01', unitPriceCents: '400000', barterMultiplier: '2', currency: 'ARS',
+    });
+    check(replaced.closed.validTo === '2026-09-30' && replaced.created.gastroDiscountId === U.discountId, 'replace closes + opens a row of the SAME discount');
+    const hist = await svc.discountHistory.discountHistory(tenantId, U.discountId);
+    check(hist.billable && hist.discountStatus === 'PENDING_REVIEW', 'discount-history exposes billable + discountStatus');
+    check(hist.current?.id === replaced.created.id && hist.history.length === 3, 'history: 3 rows of this discount, current = replacement');
+    const closed = await svc.agreements.close(tenantId, actor, replaced.created.id, { validTo: '2026-12-31' });
+    check(closed.validTo === '2026-12-31' && (await svc.discountHistory.discountHistory(tenantId, U.discountId)).history.length === 3, 'close keeps history (no delete)');
+    const histF = await svc.discountHistory.discountHistory(tenantId, F.discountId);
+    check(!histF.billable && histF.current === null, 'funded courtesy history: billable=false (no contract required)');
+    const legacyRow = await prisma.benefitCommercialAgreement.findFirstOrThrow({ where: { tenantId, gastroProfileId: profileA, gastroDiscountId: null } });
+    const legacyErrs = await Promise.all([
+      errorOf(() => svc.agreements.close(tenantId, actor, legacyRow.id, { validTo: '2026-12-31' })),
+      errorOf(() => svc.agreements.replace(tenantId, actor, legacyRow.id, { effectiveFrom: '2026-12-01', unitPriceCents: '1', barterMultiplier: '2', currency: 'ARS' })),
+      errorOf(() => svc.agreements.updateNotes(tenantId, actor, legacyRow.id, { notes: 'x' })),
+      errorOf(() => svc.agreements.create(tenantId, actor, { vertical: 'GASTRO', gastroProfileId: profileA, unitPriceCents: '1', barterMultiplier: '2', currency: 'ARS', validFrom: '2026-12-01' } as never)),
+    ]);
+    check(
+      legacyErrs.slice(0, 3).every((e) => codeOf(e) === ErrorCode.BENEFIT_AGREEMENT_LEGACY_READ_ONLY),
+      'legacy local row: close / replace / notes → LEGACY_READ_ONLY',
+    );
+    check(
+      codeOf(legacyErrs[3]) === ErrorCode.BENEFIT_AGREEMENT_PARTNER_INVALID &&
+        (await prisma.benefitCommercialAgreement.count({ where: { tenantId, gastroDiscountId: null } })) === 1,
+      'GASTRO create without discount (profile-scoped) → rejected by the service, no new legacy row',
+    );
+    const listed = await svc.agreements.list(tenantId, { scope: 'PROFILE_LEGACY', vigency: 'ALL', page: 1, pageSize: 50 });
+    check(listed.data.some((a) => a.id === legacyRow.id && a.scope === 'PROFILE_LEGACY'), 'legacy row stays visible in the listing');
   });
 
   if (result === 'NOT_RUN') {

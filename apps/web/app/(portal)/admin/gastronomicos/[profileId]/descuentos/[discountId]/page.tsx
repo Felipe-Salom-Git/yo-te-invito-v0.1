@@ -16,9 +16,9 @@ import { AdminGastroPendingEditPanel } from '@/components/admin/gastro/AdminGast
 import { AdminGastroCourtesyReviewPanel } from '@/components/admin/gastro/AdminGastroCourtesyReviewPanel';
 import { GastroDiscountDetailContent } from '@/components/gastro/GastroDiscountDetailContent';
 import { GastroDiscountOperationalMetricsPanel } from '@/components/gastro/GastroDiscountOperationalMetricsPanel';
-import { AdminGastroDiscountCommercialContextPanel } from '@/components/admin/gastro/AdminGastroDiscountCommercialContextPanel';
+import { AdminGastroDiscountAgreementPanel } from '@/components/admin/gastro/AdminGastroDiscountAgreementPanel';
 import { AdminGastroDiscountEconomicMetricsPanel } from '@/components/admin/gastro/AdminGastroDiscountEconomicMetricsPanel';
-import { useAdminBenefitAgreementPartnerHistory } from '@/lib/query/benefit-agreements';
+import { useAdminBenefitAgreementDiscountHistory } from '@/lib/query/benefit-agreements';
 import { buildDiscountSettlementHref } from '@/lib/admin/settlement-generate-context';
 import {
   canArchiveGastroDiscount,
@@ -55,12 +55,12 @@ export default function AdminGastroDiscountDetailPage() {
     enabled: !!profileId && !!discountId,
   });
 
-  const agreementHistoryQuery = useAdminBenefitAgreementPartnerHistory(
-    profileId
-      ? { vertical: 'GASTRO', gastroProfileId: profileId }
-      : null,
+  // G10.B: approval gate = CURRENT contract of THIS discount (funded courtesy: not required).
+  const agreementHistoryQuery = useAdminBenefitAgreementDiscountHistory(discountId || null);
+  const hasCurrentAgreement = Boolean(
+    agreementHistoryQuery.data &&
+      (agreementHistoryQuery.data.current || !agreementHistoryQuery.data.billable),
   );
-  const hasCurrentAgreement = Boolean(agreementHistoryQuery.data?.current);
 
   const statusMutation = useMutation({
     mutationFn: (status: 'ACTIVE' | 'CANCELLED') =>
@@ -283,8 +283,8 @@ export default function AdminGastroDiscountDetailPage() {
             hasCurrentAgreement={hasCurrentAgreement}
             agreementLoading={agreementHistoryQuery.isLoading}
           />
-          {/* G8.10.4: the existing G5 agreement panel, next to the review (same endpoint). */}
-          <AdminGastroDiscountCommercialContextPanel profileId={canonicalProfileId} />
+          {/* G10.B: the courtesy's own contract, next to the review. */}
+          <AdminGastroDiscountAgreementPanel profileId={canonicalProfileId} discountId={discountId} />
         </>
       )}
 
@@ -384,7 +384,9 @@ export default function AdminGastroDiscountDetailPage() {
         />
       ) : null}
 
-      {!isCourtesy && <AdminGastroDiscountCommercialContextPanel profileId={canonicalProfileId} />}
+      {!isCourtesy && (
+        <AdminGastroDiscountAgreementPanel profileId={canonicalProfileId} discountId={discountId} />
+      )}
       <div className="mt-3 flex flex-wrap items-center gap-3">
         <Link
           href={buildDiscountSettlementHref({
@@ -445,8 +447,8 @@ export default function AdminGastroDiscountDetailPage() {
         <>
           <div className="mt-8 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
             {isCourtesy
-              ? 'La cortesía requiere acuerdo comercial vigente del local. Al aprobar se entrega por email a los destinatarios ya definidos.'
-              : 'Coordiná la comisión con el local antes de aprobar. Guardá la publicación con al menos una imagen.'}
+              ? 'La cortesía requiere su propio contrato comercial vigente (salvo financiada con canje). Al aprobar se entrega por email a los destinatarios ya definidos.'
+              : 'Coordiná la comisión con el local y cargá el contrato comercial de este descuento antes de aprobar. Guardá la publicación con al menos una imagen.'}
           </div>
           <Input
             label="Nota interna"
@@ -487,7 +489,7 @@ export default function AdminGastroDiscountDetailPage() {
                   onClick={() => {
                     if (!hasCurrentAgreement) {
                       addToast(
-                        'Creá el acuerdo comercial del local antes de aprobar',
+                        'Cargá el contrato comercial de este descuento antes de aprobar',
                         'error',
                       );
                       return;
@@ -507,7 +509,10 @@ export default function AdminGastroDiscountDetailPage() {
                 </Button>
                 {!agreementHistoryQuery.isLoading && !hasCurrentAgreement ? (
                   <p className="text-xs text-amber-700 dark:text-amber-300">
-                    Aprobación bloqueada: falta acuerdo comercial vigente del local.
+                    Aprobación bloqueada: este descuento no tiene un contrato comercial vigente.{' '}
+                    <a href="#contrato-comercial" className="underline">
+                      Cargar contrato
+                    </a>
                   </p>
                 ) : null}
               </div>

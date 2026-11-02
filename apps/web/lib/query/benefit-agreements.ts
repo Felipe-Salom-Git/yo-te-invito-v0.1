@@ -45,6 +45,16 @@ export function useAdminBenefitAgreementPartnerHistory(
   });
 }
 
+/** G10.B — contract (current + history + legacy used) of ONE discount. */
+export function useAdminBenefitAgreementDiscountHistory(discountId: string | null) {
+  const repos = useRepositories();
+  return useQuery({
+    queryKey: adminBenefitAgreementsKeys.discountHistory(discountId ?? ''),
+    queryFn: () => repos.adminBenefitAgreements.discountHistory(discountId!),
+    enabled: Boolean(discountId),
+  });
+}
+
 export function useCreateAdminBenefitAgreement() {
   const repos = useRepositories();
   const queryClient = useQueryClient();
