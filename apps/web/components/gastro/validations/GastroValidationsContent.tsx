@@ -19,11 +19,7 @@ import type { GastroValidationListParams } from '@/repositories/interfaces';
 import { useGastroActiveLocation } from '@/lib/gastro/GastroActiveLocationContext';
 import { GastroLocationSelector } from '@/components/gastro/GastroLocationSelector';
 import { withCourtesyProfileQuery } from '@/lib/gastro/courtesy-scope';
-
-function formatValueLabel(type: string, value: number): string {
-  if (type === 'PERCENT') return `${value}%`;
-  return `$${value}`;
-}
+import { formatGastroDiscountBenefit } from '@/lib/gastro/discount-status-ui';
 
 const STATUS_LABEL: Record<string, string> = {
   ACTIVE: 'Activo',
@@ -263,14 +259,18 @@ export function GastroValidationsContent() {
         <div className="mt-10 rounded-lg border border-border/60 bg-bg-muted/30 p-4">
           <p className="text-sm font-medium text-text">Tus descuentos</p>
           <ul className="mt-2 space-y-1 text-sm text-text-muted">
-            {discounts.slice(0, 8).map((d) => (
-              <li key={d.id} className="flex justify-between gap-2">
-                <span className="text-text">{d.title ?? d.code}</span>
-                <span>
-                  {formatValueLabel(d.type, d.value)} · {STATUS_LABEL[d.status] ?? d.status}
-                </span>
-              </li>
-            ))}
+            {discounts.slice(0, 8).map((d) => {
+              const benefit = formatGastroDiscountBenefit(d);
+              return (
+                <li key={d.id} className="flex justify-between gap-2">
+                  <span className="text-text">{d.title ?? d.code}</span>
+                  <span>
+                    {benefit ? `${benefit} · ` : ''}
+                    {STATUS_LABEL[d.status] ?? d.status}
+                  </span>
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}

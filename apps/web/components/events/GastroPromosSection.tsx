@@ -1,10 +1,7 @@
 'use client';
 
 import type { PublicGastroDiscountSummary } from '@/repositories/interfaces';
-
-function formatValue(d: PublicGastroDiscountSummary): string {
-  return d.type === 'PERCENT' ? `${d.value}%` : `$${d.value}`;
-}
+import { formatGastroDiscountBenefit } from '@/lib/gastro/discount-status-ui';
 
 function formatRange(d: PublicGastroDiscountSummary): string {
   const from = d.validFrom ? new Date(d.validFrom).toLocaleDateString('es-AR') : null;
@@ -28,6 +25,7 @@ export function GastroPromosSection({ discounts }: { discounts: PublicGastroDisc
         {discounts.map((d) => {
           const imgs = d.displayImageUrls?.filter(Boolean) ?? [];
           const title = d.displayTitle?.trim() || d.code;
+          const benefit = formatGastroDiscountBenefit(d);
           return (
             <li
               key={d.id}
@@ -56,8 +54,8 @@ export function GastroPromosSection({ discounts }: { discounts: PublicGastroDisc
                     <p className="mt-2 text-sm text-text-muted">{d.displayDescription}</p>
                   ) : null}
                   <p className="mt-2 text-sm text-text">
-                    <span className="font-medium text-text">{formatValue(d)}</span>
-                    <span className="text-text-muted"> · {formatRange(d)}</span>
+                    {benefit ? <span className="font-medium text-text">{benefit} · </span> : null}
+                    <span className="text-text-muted">{formatRange(d)}</span>
                   </p>
                 </div>
               </div>

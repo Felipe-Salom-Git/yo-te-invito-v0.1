@@ -19,8 +19,15 @@ export type GastroDiscountValidityInput = {
   discountDate?: string | null;
 };
 
-/** Benefit label: `%` only for PERCENT; FIXED as `$value` (never auto-`%`). */
-export function formatGastroDiscountBenefit(d: GastroDiscountBenefitInput): string {
+/**
+ * Benefit label: `%` only for PERCENT; FIXED as `$value` (never auto-`%`).
+ * Null when there is no numeric benefit: discounts created from the current form and
+ * courtesies store `value = 0` (the benefit lives in title/summary), so callers must
+ * omit the chip instead of rendering "0%" / "$0".
+ * Etiqueta de beneficio; null si no hay valor numérico (nunca mostrar "0%").
+ */
+export function formatGastroDiscountBenefit(d: GastroDiscountBenefitInput): string | null {
+  if (!Number.isFinite(d.value) || d.value <= 0) return null;
   if (d.type === 'PERCENT') return `${d.value}%`;
   return `$${d.value}`;
 }

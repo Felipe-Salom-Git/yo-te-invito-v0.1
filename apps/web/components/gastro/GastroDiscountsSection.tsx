@@ -53,6 +53,7 @@ export function GastroDiscountsSection({
         {discounts.map((d) => {
           const title = d.title?.trim() || 'Descuento';
           const dateLabel = formatGastroDiscountValidityLabel(d);
+          const benefit = formatGastroDiscountBenefit(d);
           return (
             <li
               key={d.id}
@@ -73,12 +74,18 @@ export function GastroDiscountsSection({
                   {d.detail?.trim() && (
                     <p className="mt-2 text-sm text-text-muted">{d.detail.trim()}</p>
                   )}
-                  <p className="mt-2 text-sm">
-                    <span className="font-medium text-accent">{formatGastroDiscountBenefit(d)}</span>
-                    {dateLabel ? (
-                      <span className="text-text-muted"> · Vigencia: {dateLabel}</span>
-                    ) : null}
-                  </p>
+                  {benefit || dateLabel ? (
+                    <p className="mt-2 text-sm">
+                      {benefit ? (
+                        <span className="font-medium text-accent">{benefit}</span>
+                      ) : null}
+                      {dateLabel ? (
+                        <span className="text-text-muted">
+                          {benefit ? ' · ' : ''}Vigencia: {dateLabel}
+                        </span>
+                      ) : null}
+                    </p>
+                  ) : null}
                   <Link
                     href={`/descuentos/${d.id}`}
                     className="mt-3 inline-flex min-h-[44px] items-center justify-center rounded-lg border border-accent/50 bg-accent/10 px-4 py-2 text-sm font-semibold text-accent transition-colors hover:bg-accent/20"

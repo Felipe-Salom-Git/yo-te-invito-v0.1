@@ -70,9 +70,9 @@ export default function PublicGastroDiscountPage() {
           {discount.detail?.trim() && (
             <p className="mt-2 text-sm text-text-muted">{discount.detail.trim()}</p>
           )}
-          <p className="mt-4 text-sm font-medium text-accent">{benefit}</p>
+          {benefit ? <p className="mt-4 text-sm font-medium text-accent">{benefit}</p> : null}
           {validityLabel ? (
-            <p className="mt-1 text-sm text-text-muted">
+            <p className={`${benefit ? 'mt-1' : 'mt-4'} text-sm text-text-muted`}>
               {isWeekly ? 'Recurrencia: ' : 'Vigencia: '}
               {validityLabel}
             </p>
