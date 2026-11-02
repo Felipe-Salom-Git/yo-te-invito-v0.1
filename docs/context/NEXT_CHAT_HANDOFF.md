@@ -1,6 +1,6 @@
 # Yo Te Invito — Next Chat Handoff
 
-**Actualizado:** 2026-10-23 · Rama: `feat/v1-s03-api-foundation` · HEAD: ver `git log -1`
+**Actualizado:** 2026-11-02 · Rama: `feat/v1-s03-api-foundation` · HEAD: ver `git log -1`
 
 Punto de entrada operativo para **V3.3**. Detalle completo: `AI_ENTRYPOINT.md`, `PROJECT_CONTEXT.md`, `CONTEXT_PENDIENTES.md`.
 
@@ -42,6 +42,8 @@ Punto de entrada operativo para **V3.3**. Detalle completo: `AI_ENTRYPOINT.md`, 
 | **G8.11 Cortesías — accounting D1** | ✅ Local, **sin push/deploy, sin migrations** — commits `a2b8786`, `13c2992`, `c591f0a` — [`V3_3_G8_11_COURTESY_ACCOUNTING_CLOSING.md`](../audits/V3_3_G8_11_COURTESY_ACCOUNTING_CLOSING.md). **Funded courtesy = operational usage, NOT billable usage; non-funded courtesy = billable.** Regla única `resolveGastroValidationSettlementEligibility`; exclusión backend; `BENEFIT_SETTLEMENT_VALIDATION_FUNDED_COURTESY`; ledger nunca acredita cortesía financiada; G6 `settlementBillability`; WARNING `FUNDED_COURTESY_ALLOCATED`. Reversa `DEBIT_COURTESY` **DEFERRED**. **DB integration PASS** (Postgres local Docker) |
 | **G8.12 + G8.13 Cortesías — regresión y cierre** | ✅ **G8 COMPLETE** (local, sin push/deploy, sin migrations) — [`V3_3_G8_COURTESIES_CLOSING.md`](../audits/V3_3_G8_COURTESIES_CLOSING.md) · [`V3_3_G8_RELEASE_READINESS.md`](../audits/V3_3_G8_RELEASE_READINESS.md) · [`V3_3_G8_MANUAL_QA_CHECKLIST.md`](../audits/V3_3_G8_MANUAL_QA_CHECKLIST.md). Regresión exit 0. DB integration **PARTIAL** (accounting A–H en Postgres; lifecycle/scanner/portal/emails solo Prisma falso). Builds PASS. Web `tsc` suelto PREEXISTING (`vitest`). QA manual pendiente |
 | **G9 UX** | ✅ **COMPLETE** local, sin push/deploy — [`V3_3_G9_UX_CLOSING.md`](../audits/V3_3_G9_UX_CLOSING.md) · discovery [`V3_3_G9_UX_DISCOVERY.md`](../audits/V3_3_G9_UX_DISCOVERY.md). Compartir ficha (Web Share / WhatsApp / copiar, URL pública sin tenant), ficha pública reordenada, multi-local conserva `profileId`, chips de cards, empty states, scanner, anclas admin. Cero migrations. Web `tsc` suelto PREEXISTING (`vitest`) |
+| **Producción** | Según el operador (2026-11-02): **desplegada con G7.11–G9** |
+| **G10.0 Contratos / liquidaciones / pagos por descuento — discovery** | ✅ Docs only — [`V3_3_G10_DISCOUNT_COMMERCIAL_ACCOUNTING_DISCOVERY.md`](../audits/V3_3_G10_DISCOUNT_COMMERCIAL_ACCOUNTING_DISCOVERY.md). Hoy: agreement **por `GastroProfile`**, approval gate por local, transfer CASH solo por settlement → pago por descuento **NOT EXACT**. Recomendado: Opción A (`gastroDiscountId` en `BenefitCommercialAgreement`, legacy profile rows solo históricas), settlement sigue partner+período, pago CASH exacto con `gastroDiscountId` en `BenefitSettlementTransfer` (P1), CANJE = allocate BARTER por validaciones del descuento (motor existente). **Migration: SÍ (única, aditiva) — no creada.** Backfill = script idempotente post-deploy. Decisiones D-G10-1…10 pendientes del operador |
 
 **Checklist V3.3:** `docs/dev/Yo_Te_Invito_Checklist_V3_3_Funcional_Operativa.md`
 
@@ -422,6 +424,7 @@ pnpm --filter api run test:gastro-courtesy-accounting   # incluye escenarios en 
 
 ## 21. Próximo paso recomendado
 
+0. **G10** (contrato comercial por descuento + pagos exactos): el operador resuelve D-G10-1…10 (§17 del discovery) y corre el pre-flight SQL read-only en producción (§15.1). Después, **G10.A**: detenerse antes de crear la migration para aprobación. Orden de deploy obligatorio: `migrate deploy` → restart con G10 → backfill `--dry-run` → `--confirm` → verificación. No mezclar G10.A con G10.B–D en un mismo deploy.
 1. **Push/deploy acumulado** G7.11 + G7.12 + G8.0–G8.13 cuando el operador lo pida. Cero migrations nuevas. Orden y comandos: `V3_3_G8_COURTESIES_CLOSING.md` §8 (solo el runbook). **No** pushear ni desplegar desde el agente.
 2. **QA manual** post-deploy: `V3_3_G8_MANUAL_QA_CHECKLIST.md` + checklists G7.11/G7.12. Etapas 1–9 siguen acumuladas.
 3. **G9** solo con instrucción explícita. G8 ya está cerrado en código.

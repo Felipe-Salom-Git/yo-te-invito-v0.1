@@ -4,7 +4,7 @@ Lista viva de **pendientes y mejoras**. Marcá con `[x]` lo completado.
 
 **Convención:** `- [ ]` pendiente · `- [x]` hecho
 
-**Rama activa:** `feat/v1-s03-api-foundation` · HEAD: ver `git log -1` (2026-10-22)
+**Rama activa:** `feat/v1-s03-api-foundation` · HEAD: ver `git log -1` (2026-11-02)
 
 **Handoff nuevo chat:** [`NEXT_CHAT_HANDOFF.md`](./NEXT_CHAT_HANDOFF.md)
 
@@ -172,6 +172,25 @@ Cierre: [`V3_3_G8_COURTESIES_CLOSING.md`](../audits/V3_3_G8_COURTESIES_CLOSING.m
 - [x] G9 — **COMPLETE** local (sin push/deploy). Cierre: [`V3_3_G9_UX_CLOSING.md`](../audits/V3_3_G9_UX_CLOSING.md). Discovery [`V3_3_G9_UX_DISCOVERY.md`](../audits/V3_3_G9_UX_DISCOVERY.md)
 - [ ] QA manual global G7.11 + G7.12 + G8 + G9 — después del cierre local, no antes
 - [ ] Push / deploy acumulado — **NO** hasta confirmación explícita
+
+> **2026-11-02 (operador):** producción ya desplegada con G7.11–G9.
+
+### G10 — Contratos, liquidaciones y pagos por descuento
+
+Discovery: [`V3_3_G10_DISCOUNT_COMMERCIAL_ACCOUNTING_DISCOVERY.md`](../audits/V3_3_G10_DISCOUNT_COMMERCIAL_ACCOUNTING_DISCOVERY.md)
+
+**Problema:** `BenefitCommercialAgreement` es por `GastroProfile` → todos los descuentos del local comparten tarifa/historial; el approval usa el CURRENT del local; `BenefitSettlementTransfer` solo conoce el settlement → atribución de pagos por descuento **NOT EXACT** (no existe relación persistida).
+
+**Target recomendado:** agreement discount-scoped (Opción A: `gastroDiscountId` en `BenefitCommercialAgreement`, legacy profile rows solo históricas); settlement sigue partner+período; pago CASH exacto vía `gastroDiscountId` en `BenefitSettlementTransfer` (P1); CANJE = allocate BARTER por validaciones del descuento (motor existente, sin modelo nuevo). D1 sin cambios.
+
+- [x] G10.0 Discovery (docs only, sin código, sin migration)
+- [ ] Decisiones D-G10-1…D-G10-10 del operador (ver §17 del discovery)
+- [ ] Pre-flight SQL read-only en producción (§15.1) antes de G10.A
+- [ ] G10.A Schema + agreements por descuento (**migration única — detenerse antes de crearla**) + backfill script post-deploy
+- [ ] G10.B Approval por descuento + UI de contrato
+- [ ] G10.C Métricas económicas por descuento (ADMIN + GASTRO read-only)
+- [ ] G10.D Pagos exactos CASH / CANJE
+- [ ] G10.E Reporting, regresión, DB integration, readiness, deploy QA
 
 ### G8.9 + G8.10 — Portal Gastro y Admin de cortesías
 
