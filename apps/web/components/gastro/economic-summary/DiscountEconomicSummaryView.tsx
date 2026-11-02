@@ -18,6 +18,8 @@ type Props = {
   settlementHref?: (settlementId: string) => string;
   /** G10.D — ADMIN-only write actions (the GASTRO portal never passes them). */
   settleValidationsSlot?: ReactNode;
+  paymentsAside?: ReactNode;
+  paymentRowAction?: (payment: GastroDiscountEconomicSummary['payments'][number]) => ReactNode;
 };
 
 /**
@@ -30,6 +32,8 @@ export function DiscountEconomicSummaryView({
   missingContractAction,
   settlementHref,
   settleValidationsSlot,
+  paymentsAside,
+  paymentRowAction,
 }: Props) {
   return (
     <section
@@ -47,7 +51,7 @@ export function DiscountEconomicSummaryView({
       <DiscountEconomicCashBlock summary={summary} />
       <DiscountEconomicBarterBlock summary={summary} />
       <DiscountEconomicSettlementsTable summary={summary} settlementHref={settlementHref} />
-      <DiscountEconomicPaymentsTable summary={summary} />
+      <DiscountEconomicPaymentsTable summary={summary} aside={paymentsAside} rowAction={paymentRowAction} />
       <DiscountEconomicHistoryList summary={summary} />
     </section>
   );

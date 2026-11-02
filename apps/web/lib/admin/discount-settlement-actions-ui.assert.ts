@@ -8,9 +8,13 @@ import type { GastroDiscountPendingValidation } from '@yo-te-invito/shared';
 import { adminGastroKeys } from '../query/keys';
 import {
   BLOCKED_REASON_LABEL,
+  DISCOUNT_PAYMENT_COPY,
   SETTLE_VALIDATIONS_COPY,
   buildDiscountAssignmentRequest,
+  buildDiscountPaymentBody,
   groupPendingByPeriod,
+  parseReversalReason,
+  payableSettlementOptions,
   previewSelection,
   selectableIds,
 } from './discount-settlement-actions-ui';
@@ -91,5 +95,46 @@ assert(SETTLE_VALIDATIONS_COPY.barterOption.includes('No es una transferencia'),
 assert(!/window\.(confirm|prompt)/.test(section + table + assignModal), 'D3: no window.confirm / window.prompt');
 const settlementHooks = read('lib/query/benefit-settlements.ts');
 assert(settlementHooks.includes('economicSummaries()'), 'settlement page mutations also refresh discount summaries');
+
+// ── D4 — register / reverse CASH payment ──
+const line = (id: string, due: string, paid: string, outstanding: string) => ({
+  settlementId: id,
+  periodKey: '2026-11',
+  discountCashDueCents: due,
+  discountCashPaidCents: paid,
+  discountCashRemainingCents: (BigInt(due) - BigInt(paid)).toString(),
+  settlementCashOutstandingCents: outstanding,
+});
+const options = payableSettlementOptions([
+  line('paid', '5000000', '5000000', '3000000'),
+  line('open', '5000000', '3000000', '5000000'),
+  line('capped', '3000000', '0', '500000'),
+  line('barterOnly', '0', '0', '0'),
+]);
+assert(options.map((o) => o.settlementId).join(',') === 'open,capped', 'payable: only settlements with discount CASH due > paid');
+assert(options[0]!.maxCents === '2000000' && !options[0]!.cappedBySettlement, 'payable: max = discount remaining (20.000)');
+assert(options[1]!.maxCents === '500000' && options[1]!.cappedBySettlement, 'payable: max capped by settlement outstanding (legacy unattributed)');
+
+const form = { amountCents: '2000000', date: '2026-11-25', reference: ' TRX-1 ', notes: '', proofUrl: 'https://bank.test/r.pdf' };
+const okBody = buildDiscountPaymentBody(form, options[0]!, 'disc-A');
+assert(okBody.ok && okBody.body.gastroDiscountId === 'disc-A' && okBody.body.amountCents === '2000000' && okBody.body.reference === 'TRX-1', 'register: body attributed to the discount');
+assert(okBody.ok && okBody.body.currency === 'ARS' && okBody.body.proofUrl === 'https://bank.test/r.pdf', 'register: CASH ARS + proof URL');
+assert(!buildDiscountPaymentBody({ ...form, amountCents: '2000100' }, options[0]!, 'disc-A').ok, 'register: amount over the discount balance blocked in UI');
+assert(!buildDiscountPaymentBody({ ...form, amountCents: '0' }, options[0]!, 'disc-A').ok, 'register: zero amount blocked');
+assert(!buildDiscountPaymentBody({ ...form, proofUrl: 'javascript:alert(1)' }, options[0]!, 'disc-A').ok, 'register: unsafe proof URL blocked');
+assert(!buildDiscountPaymentBody(form, null, 'disc-A').ok, 'register: settlement required');
+assert(!parseReversalReason('   ').ok && parseReversalReason(' monto erróneo ').ok, 'reversal: reason mandatory (trimmed)');
+
+const registerModal = read('components/admin/gastro/AdminDiscountRegisterPaymentModal.tsx');
+const reverseModal = read('components/admin/liquidaciones/ReverseTransferModal.tsx');
+const paymentActions = read('components/admin/gastro/AdminDiscountPaymentActions.tsx');
+assert(['settlementLabel', 'Monto', 'Fecha del pago', 'Referencia', 'Notas', 'Comprobante URL'].every((t) => registerModal.includes(t)), 'register modal: settlement, monto, fecha, referencia, notas, comprobante');
+assert(registerModal.includes('remainingLabel') && registerModal.includes('buildDiscountPaymentBody'), 'register modal: shows discount CASH balance and validates max');
+assert(!/BARTER|CANJE/.test(registerModal.replace(DISCOUNT_PAYMENT_COPY.mode, '')) && DISCOUNT_PAYMENT_COPY.mode.includes('CANJE no se paga'), 'register modal: CASH only (no «pago CANJE»)');
+assert(reverseModal.includes('<textarea') && reverseModal.includes('parseReversalReason'), 'reversal modal: mandatory reason textarea');
+assert(paymentActions.includes('payment.isActive ?') && paymentActions.includes('ReverseTransferModal'), 'reversal: only active payments, through the modal');
+assert(!/window\.(confirm|prompt)/.test(registerModal + reverseModal + paymentActions), 'D4: no window.confirm / window.prompt');
+const payHooks = read('lib/query/gastro-discount-settlement-actions.ts');
+assert(/useRegisterDiscountPayment[\s\S]*invalidateDiscountEconomics/.test(payHooks) && /useReverseDiscountPayment[\s\S]*invalidateDiscountEconomics/.test(payHooks), 'register / reversal refresh economic-summary + settlement summary');
 
 console.log('\nAll G10.D discount settlement action UI checks passed.');

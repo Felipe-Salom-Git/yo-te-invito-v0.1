@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { GastroDiscountEconomicSummary } from '@yo-te-invito/shared';
 import { Badge } from '@/components';
 import { ECONOMIC_SUMMARY_COPY, periodLabel } from '@/lib/gastro/discount-economic-summary-ui';
@@ -7,15 +8,26 @@ function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('es-AR');
 }
 
+type PaymentRow = GastroDiscountEconomicSummary['payments'][number];
+
 /**
- * Block 6 — CASH payments attributed to THIS discount (read-only in G10.C; registering is G10.D).
+ * Block 6 — CASH payments attributed to THIS discount. ADMIN write actions arrive through
+ * `aside` / `rowAction` slots (G10.D); the GASTRO portal never passes them.
  * The proof column exists only in the ADMIN variant (GASTRO never receives proofUrl).
  */
-export function DiscountEconomicPaymentsTable({ summary }: { summary: GastroDiscountEconomicSummary }) {
+export function DiscountEconomicPaymentsTable({
+  summary,
+  aside,
+  rowAction,
+}: {
+  summary: GastroDiscountEconomicSummary;
+  aside?: ReactNode;
+  rowAction?: (payment: PaymentRow) => ReactNode;
+}) {
   const isAdmin = summary.audience === 'ADMIN';
-  const rows: ReadonlyArray<GastroDiscountEconomicSummary['payments'][number]> = summary.payments;
+  const rows: ReadonlyArray<PaymentRow> = summary.payments;
   return (
-    <EconomicBlock title="Pagos">
+    <EconomicBlock title="Pagos" aside={aside}>
       {rows.length === 0 ? (
         <EmptyLine>{ECONOMIC_SUMMARY_COPY.noPayments}</EmptyLine>
       ) : (
@@ -58,6 +70,7 @@ export function DiscountEconomicPaymentsTable({ summary }: { summary: GastroDisc
                       </div>
                     ) : null}
                     {'notes' in p && p.notes ? <div className="mt-1 text-xs text-text-muted">Notas: {p.notes}</div> : null}
+                    {rowAction ? rowAction(p) : null}
                   </td>
                   {isAdmin ? (
                     <td className="px-3 py-2">

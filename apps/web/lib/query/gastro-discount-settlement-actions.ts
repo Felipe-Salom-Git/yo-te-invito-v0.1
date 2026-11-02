@@ -5,6 +5,10 @@ import {
   adminCourtesyCreditLedgerKeys,
   adminGastroKeys,
 } from '@/lib/query/keys';
+import type {
+  RegisterBenefitSettlementTransferBody,
+  ReverseBenefitSettlementTransferBody,
+} from '@yo-te-invito/shared';
 import type { DiscountAssignmentRequest } from '@/lib/admin/discount-settlement-actions-ui';
 
 /**
@@ -44,6 +48,35 @@ export function useAssignDiscountValidations(gastroProfileId: string) {
         ).id;
       return repos.adminBenefitSettlements.allocate(settlementId, request.body);
     },
+    onSettled: () => invalidateDiscountEconomics(queryClient),
+  });
+}
+
+/** CASH payment attributed to the discount (`gastroDiscountId` in the body). Never creates allocations. */
+export function useRegisterDiscountPayment() {
+  const repos = useRepositories();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ settlementId, body }: { settlementId: string; body: RegisterBenefitSettlementTransferBody }) =>
+      repos.adminBenefitSettlements.registerTransfer(settlementId, body),
+    onSettled: () => invalidateDiscountEconomics(queryClient),
+  });
+}
+
+/** Append-only reversal (reason required); restores discount and settlement capacity by derivation. */
+export function useReverseDiscountPayment() {
+  const repos = useRepositories();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      settlementId,
+      transferId,
+      body,
+    }: {
+      settlementId: string;
+      transferId: string;
+      body: ReverseBenefitSettlementTransferBody;
+    }) => repos.adminBenefitSettlements.reverseTransfer(settlementId, transferId, body),
     onSettled: () => invalidateDiscountEconomics(queryClient),
   });
 }

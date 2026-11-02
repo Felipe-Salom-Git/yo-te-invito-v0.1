@@ -1,11 +1,13 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import type { GastroDiscountEconomicSummaryAdmin } from '@yo-te-invito/shared';
 import { useRepositories } from '@/repositories/context';
 import { adminGastroKeys } from '@/lib/query/keys';
 import { ECONOMIC_SUMMARY_COPY } from '@/lib/gastro/discount-economic-summary-ui';
 import { DiscountEconomicSummaryView } from '@/components/gastro/economic-summary/DiscountEconomicSummaryView';
 import { AdminDiscountSettleValidationsSection } from './AdminDiscountSettleValidationsSection';
+import { useDiscountPaymentActions } from './AdminDiscountPaymentActions';
 
 /**
  * G10.C4 / G10.D — "Métricas económicas" of ONE discount (replaces the G6 panel).
@@ -36,17 +38,33 @@ export function AdminGastroDiscountEconomicSummaryPanel({
     );
   }
 
+  return <AdminDiscountEconomicSummaryWithActions summary={query.data} profileId={profileId} />;
+}
+
+function AdminDiscountEconomicSummaryWithActions({
+  summary,
+  profileId,
+}: {
+  summary: GastroDiscountEconomicSummaryAdmin;
+  profileId: string;
+}) {
+  const payments = useDiscountPaymentActions(summary);
   return (
-    <DiscountEconomicSummaryView
-      summary={query.data}
-      title={ECONOMIC_SUMMARY_COPY.adminTitle}
-      missingContractAction={
-        <a href="#contrato-comercial" className="text-sm font-medium text-accent hover:underline">
-          Cargar contrato del descuento
-        </a>
-      }
-      settlementHref={(settlementId) => `/admin/liquidaciones/${encodeURIComponent(settlementId)}`}
-      settleValidationsSlot={<AdminDiscountSettleValidationsSection profileId={profileId} discountId={discountId} />}
-    />
+    <>
+      <DiscountEconomicSummaryView
+        summary={summary}
+        title={ECONOMIC_SUMMARY_COPY.adminTitle}
+        missingContractAction={
+          <a href="#contrato-comercial" className="text-sm font-medium text-accent hover:underline">
+            Cargar contrato del descuento
+          </a>
+        }
+        settlementHref={(settlementId) => `/admin/liquidaciones/${encodeURIComponent(settlementId)}`}
+        settleValidationsSlot={<AdminDiscountSettleValidationsSection profileId={profileId} discountId={summary.discount.id} />}
+        paymentsAside={payments.aside}
+        paymentRowAction={payments.rowAction}
+      />
+      {payments.modals}
+    </>
   );
 }

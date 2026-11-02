@@ -1,6 +1,13 @@
 import {
+  formatBenefitMoneyCents,
+  isSafeExternalHttpUrl,
+  resolveDiscountTransferMaxCents,
+  reverseBenefitSettlementTransferBodySchema,
   roundBarterCreditCents,
   type AllocateBenefitSettlementUsagesBody,
+  type DiscountEconomicSettlementLine,
+  type RegisterBenefitSettlementTransferBody,
+  type ReverseBenefitSettlementTransferBody,
   type BenefitSettlementAllocationMode,
   type BenefitSettlementStatus,
   type GastroDiscountPendingBlockedReason,
@@ -116,4 +123,107 @@ export function buildDiscountAssignmentRequest(
     settlementId: group.settlementId,
     body: { mode, validationIds, gastroDiscountId },
   };
+}
+
+// ── G10.D4 — register / reverse CASH payments of the discount ──
+
+export const DISCOUNT_PAYMENT_COPY = {
+  register: 'Registrar pago',
+  reverse: 'Revertir pago',
+  registerTitle: 'Registrar pago CASH del descuento',
+  reverseTitle: 'Revertir pago',
+  mode: 'Modo: CASH (transferencia de dinero). El CANJE no se paga: se liquida al asignar.',
+  settlementLabel: 'Período / liquidación',
+  remainingLabel: 'Saldo CASH del descuento en esa liquidación',
+  cappedBySettlement:
+    'La liquidación tiene pagos sin atribuir: el máximo admitido es el pendiente de la liquidación.',
+  noPayable: 'No hay saldo CASH pendiente de este descuento. Primero asigná validaciones a CASH.',
+  proofHint: 'URL del comprobante (banco, Drive). La subida de archivos privados no está habilitada todavía.',
+  reverseHint: 'El pago no se borra: queda registrado como revertido y deja de contar como pagado.',
+  reasonRequired: 'Indicá el motivo de la reversión (máx. 500 caracteres).',
+} as const;
+
+export type PayableSettlementOption = {
+  settlementId: string;
+  periodKey: string;
+  discountRemainingCents: string;
+  settlementOutstandingCents: string;
+  maxCents: string;
+  cappedBySettlement: boolean;
+};
+
+/** Only settlements where the discount still has CASH due > CASH paid. */
+export function payableSettlementOptions(
+  lines: ReadonlyArray<
+    Pick<
+      DiscountEconomicSettlementLine,
+      'settlementId' | 'periodKey' | 'discountCashDueCents' | 'discountCashPaidCents' | 'discountCashRemainingCents' | 'settlementCashOutstandingCents'
+    >
+  >,
+): PayableSettlementOption[] {
+  return lines
+    .filter((l) => BigInt(l.discountCashDueCents) > BigInt(l.discountCashPaidCents))
+    .map((l) => {
+      const max = resolveDiscountTransferMaxCents({
+        discountCashDueCents: BigInt(l.discountCashDueCents),
+        discountCashPaidCents: BigInt(l.discountCashPaidCents),
+        settlementCashOutstandingCents: BigInt(l.settlementCashOutstandingCents),
+      });
+      return {
+        settlementId: l.settlementId,
+        periodKey: l.periodKey,
+        discountRemainingCents: l.discountCashRemainingCents,
+        settlementOutstandingCents: l.settlementCashOutstandingCents,
+        maxCents: max.toString(),
+        cappedBySettlement: max < BigInt(l.discountCashRemainingCents),
+      };
+    });
+}
+
+export type DiscountPaymentForm = {
+  amountCents: string;
+  date: string;
+  reference: string;
+  notes: string;
+  proofUrl: string;
+};
+
+export type DiscountPaymentBodyResult =
+  | { ok: true; body: RegisterBenefitSettlementTransferBody }
+  | { ok: false; error: string };
+
+/** Client-side mirror of the backend guards (the server re-validates everything). */
+export function buildDiscountPaymentBody(
+  form: DiscountPaymentForm,
+  option: Pick<PayableSettlementOption, 'maxCents'> | null,
+  gastroDiscountId: string,
+): DiscountPaymentBodyResult {
+  if (!option) return { ok: false, error: 'Elegí la liquidación a la que corresponde el pago.' };
+  if (BigInt(form.amountCents || '0') <= BigInt(0)) return { ok: false, error: 'Ingresá un monto válido.' };
+  if (BigInt(form.amountCents) > BigInt(option.maxCents)) {
+    return { ok: false, error: `El monto supera el saldo CASH del descuento (${formatBenefitMoneyCents(option.maxCents)}).` };
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(form.date)) return { ok: false, error: 'Indicá la fecha del pago.' };
+  if (form.proofUrl.trim() && !isSafeExternalHttpUrl(form.proofUrl)) {
+    return { ok: false, error: 'El comprobante debe ser un link http:// o https://' };
+  }
+  return {
+    ok: true,
+    body: {
+      amountCents: form.amountCents,
+      currency: 'ARS',
+      transferredAt: new Date(`${form.date}T12:00:00.000Z`).toISOString(),
+      gastroDiscountId,
+      ...(form.reference.trim() ? { reference: form.reference.trim() } : {}),
+      ...(form.notes.trim() ? { notes: form.notes.trim() } : {}),
+      ...(form.proofUrl.trim() ? { proofUrl: form.proofUrl.trim() } : {}),
+    },
+  };
+}
+
+export function parseReversalReason(
+  reason: string,
+): { ok: true; body: ReverseBenefitSettlementTransferBody } | { ok: false; error: string } {
+  const parsed = reverseBenefitSettlementTransferBodySchema.safeParse({ reason });
+  return parsed.success ? { ok: true, body: parsed.data } : { ok: false, error: DISCOUNT_PAYMENT_COPY.reasonRequired };
 }
