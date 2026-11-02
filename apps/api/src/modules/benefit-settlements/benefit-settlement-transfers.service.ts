@@ -13,6 +13,7 @@ import {
   computeCashReceivedCents,
   moneyCentsToString,
   parseMoneyCentsString,
+  resolveBenefitTransferAttribution,
   type BenefitSettlementTransferDto,
   type BenefitSettlementTransfersListResponse,
   type RegisterBenefitSettlementTransferBody,
@@ -21,6 +22,14 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { BenefitSettlementsService } from './benefit-settlements.service';
+import {
+  assertDiscountTransferAllowed,
+  assertTransferDiscountRequirement,
+  isSerializationConflict,
+} from './benefit-settlement-discount-transfer.guard';
+
+/** Serializable conflicts are retried so the loser re-reads committed transfers (→ overpayment, not 500). */
+const SERIALIZABLE_MAX_ATTEMPTS = 4;
 
 @Injectable()
 export class BenefitSettlementTransfersService {
@@ -48,66 +57,75 @@ export class BenefitSettlementTransfersService {
     const amountCents = parseMoneyCentsString(body.amountCents);
     const transferredAt = new Date(body.transferredAt);
 
-    const row = await this.prisma.$transaction(
-      async (tx) => {
-        await tx.$executeRaw(
-          Prisma.sql`SELECT id FROM "BenefitSettlement" WHERE id = ${settlementId} AND "tenantId" = ${tenantId} FOR UPDATE`,
-        );
+    const row = await this.runSerializable(async (tx) => {
+      await tx.$executeRaw(
+        Prisma.sql`SELECT id FROM "BenefitSettlement" WHERE id = ${settlementId} AND "tenantId" = ${tenantId} FOR UPDATE`,
+      );
 
-        const settlement = await tx.benefitSettlement.findFirst({
-          where: { id: settlementId, tenantId },
-          include: { allocations: true, transfers: true },
+      const settlement = await tx.benefitSettlement.findFirst({
+        where: { id: settlementId, tenantId },
+        include: { allocations: true, transfers: true },
+      });
+      if (!settlement) {
+        throw new NotFoundException({
+          code: ErrorCode.BENEFIT_SETTLEMENT_NOT_FOUND,
+          message: 'Benefit settlement not found',
         });
-        if (!settlement) {
-          throw new NotFoundException({
-            code: ErrorCode.BENEFIT_SETTLEMENT_NOT_FOUND,
-            message: 'Benefit settlement not found',
-          });
-        }
+      }
 
-        const cashDueCents = computeCashDueCents(settlement.allocations);
-        if (cashDueCents === 0n) {
-          throw new BadRequestException({
-            code: ErrorCode.BENEFIT_SETTLEMENT_NO_CASH_DUE,
-            message: 'Settlement has no CASH allocations; transfer not allowed',
-          });
-        }
+      assertTransferDiscountRequirement(settlement.vertical, body.gastroDiscountId);
 
-        const settlementCurrency = this.resolveSettlementCurrency(settlement.allocations);
-        if (body.currency !== settlementCurrency) {
-          throw new BadRequestException({
-            code: ErrorCode.BENEFIT_TRANSFER_CURRENCY_MISMATCH,
-            message: `Transfer currency must match settlement currency (${settlementCurrency})`,
-          });
-        }
-
-        const cashReceivedCents = computeCashReceivedCents(settlement.transfers);
-        if (!assertTransferWouldNotOverpay(cashDueCents, cashReceivedCents, amountCents)) {
-          throw new BadRequestException({
-            code: ErrorCode.BENEFIT_TRANSFER_OVERPAYMENT,
-            message: 'Transfer would exceed cash due for this settlement',
-            cashDueCents: moneyCentsToString(cashDueCents),
-            cashReceivedCents: moneyCentsToString(cashReceivedCents),
-            cashOutstandingCents: moneyCentsToString(cashDueCents - cashReceivedCents),
-          });
-        }
-
-        return tx.benefitSettlementTransfer.create({
-          data: {
-            tenantId,
-            settlementId,
-            amountCents,
-            currency: body.currency,
-            transferredAt,
-            reference: body.reference ?? null,
-            notes: body.notes ?? null,
-            proofUrl: body.proofUrl ?? null,
-            registeredByUserId: actor.id,
-          },
+      const cashDueCents = computeCashDueCents(settlement.allocations);
+      if (cashDueCents === 0n) {
+        throw new BadRequestException({
+          code: ErrorCode.BENEFIT_SETTLEMENT_NO_CASH_DUE,
+          message: 'Settlement has no CASH allocations; transfer not allowed',
         });
-      },
-      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
-    );
+      }
+
+      const settlementCurrency = this.resolveSettlementCurrency(settlement.allocations);
+      if (body.currency !== settlementCurrency) {
+        throw new BadRequestException({
+          code: ErrorCode.BENEFIT_TRANSFER_CURRENCY_MISMATCH,
+          message: `Transfer currency must match settlement currency (${settlementCurrency})`,
+        });
+      }
+
+      if (settlement.vertical === 'GASTRO') {
+        await assertDiscountTransferAllowed(tx, {
+          tenantId,
+          settlement,
+          gastroDiscountId: body.gastroDiscountId!,
+          amountCents,
+        });
+      }
+
+      const cashReceivedCents = computeCashReceivedCents(settlement.transfers);
+      if (!assertTransferWouldNotOverpay(cashDueCents, cashReceivedCents, amountCents)) {
+        throw new BadRequestException({
+          code: ErrorCode.BENEFIT_TRANSFER_OVERPAYMENT,
+          message: 'Transfer would exceed cash due for this settlement',
+          cashDueCents: moneyCentsToString(cashDueCents),
+          cashReceivedCents: moneyCentsToString(cashReceivedCents),
+          cashOutstandingCents: moneyCentsToString(cashDueCents - cashReceivedCents),
+        });
+      }
+
+      return tx.benefitSettlementTransfer.create({
+        data: {
+          tenantId,
+          settlementId,
+          gastroDiscountId: settlement.vertical === 'GASTRO' ? body.gastroDiscountId! : null,
+          amountCents,
+          currency: body.currency,
+          transferredAt,
+          reference: body.reference ?? null,
+          notes: body.notes ?? null,
+          proofUrl: body.proofUrl ?? null,
+          registeredByUserId: actor.id,
+        },
+      });
+    });
 
     await this.audit.logAction({
       tenantId,
@@ -118,6 +136,7 @@ export class BenefitSettlementTransfersService {
       entityId: row.id,
       metadata: {
         settlementId,
+        gastroDiscountId: row.gastroDiscountId,
         amountCents: moneyCentsToString(amountCents),
         currency: body.currency,
       },
@@ -133,39 +152,36 @@ export class BenefitSettlementTransfersService {
     transferId: string,
     body: ReverseBenefitSettlementTransferBody,
   ): Promise<BenefitSettlementTransferDto> {
-    const updated = await this.prisma.$transaction(
-      async (tx) => {
-        await tx.$executeRaw(
-          Prisma.sql`SELECT id FROM "BenefitSettlement" WHERE id = ${settlementId} AND "tenantId" = ${tenantId} FOR UPDATE`,
-        );
+    const updated = await this.runSerializable(async (tx) => {
+      await tx.$executeRaw(
+        Prisma.sql`SELECT id FROM "BenefitSettlement" WHERE id = ${settlementId} AND "tenantId" = ${tenantId} FOR UPDATE`,
+      );
 
-        const transfer = await tx.benefitSettlementTransfer.findFirst({
-          where: { id: transferId, tenantId, settlementId },
+      const transfer = await tx.benefitSettlementTransfer.findFirst({
+        where: { id: transferId, tenantId, settlementId },
+      });
+      if (!transfer) {
+        throw new NotFoundException({
+          code: ErrorCode.BENEFIT_TRANSFER_NOT_FOUND,
+          message: 'Benefit settlement transfer not found',
         });
-        if (!transfer) {
-          throw new NotFoundException({
-            code: ErrorCode.BENEFIT_TRANSFER_NOT_FOUND,
-            message: 'Benefit settlement transfer not found',
-          });
-        }
-        if (transfer.reversedAt != null) {
-          throw new ConflictException({
-            code: ErrorCode.BENEFIT_TRANSFER_ALREADY_REVERSED,
-            message: 'Transfer is already reversed',
-          });
-        }
+      }
+      if (transfer.reversedAt != null) {
+        throw new ConflictException({
+          code: ErrorCode.BENEFIT_TRANSFER_ALREADY_REVERSED,
+          message: 'Transfer is already reversed',
+        });
+      }
 
-        return tx.benefitSettlementTransfer.update({
-          where: { id: transfer.id },
-          data: {
-            reversedAt: new Date(),
-            reversedByUserId: actor.id,
-            reversalReason: body.reason,
-          },
-        });
-      },
-      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
-    );
+      return tx.benefitSettlementTransfer.update({
+        where: { id: transfer.id },
+        data: {
+          reversedAt: new Date(),
+          reversedByUserId: actor.id,
+          reversalReason: body.reason,
+        },
+      });
+    });
 
     await this.audit.logAction({
       tenantId,
@@ -176,12 +192,31 @@ export class BenefitSettlementTransfersService {
       entityId: updated.id,
       metadata: {
         settlementId,
+        gastroDiscountId: updated.gastroDiscountId,
         reason: body.reason,
         amountCents: moneyCentsToString(updated.amountCents),
       },
     });
 
     return this.toDto(updated);
+  }
+
+  private async runSerializable<T>(run: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
+    for (let attempt = 1; ; attempt += 1) {
+      try {
+        return await this.prisma.$transaction(run, {
+          isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+        });
+      } catch (err) {
+        if (!isSerializationConflict(err)) throw err;
+        if (attempt >= SERIALIZABLE_MAX_ATTEMPTS) {
+          throw new ConflictException({
+            code: ErrorCode.BENEFIT_TRANSFER_CONCURRENT_CONFLICT,
+            message: 'Concurrent transfer change on this settlement; retry',
+          });
+        }
+      }
+    }
   }
 
   private resolveSettlementCurrency(
@@ -207,6 +242,8 @@ export class BenefitSettlementTransfersService {
       reversedByUserId: row.reversedByUserId,
       reversalReason: row.reversalReason,
       isActive: row.reversedAt == null,
+      gastroDiscountId: row.gastroDiscountId,
+      attribution: resolveBenefitTransferAttribution(row.gastroDiscountId),
     };
   }
 }

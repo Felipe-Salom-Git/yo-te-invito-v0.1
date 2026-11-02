@@ -52,6 +52,14 @@ export const BENEFIT_SETTLEMENT_ERROR_MESSAGES: Partial<Record<string, string>> 
     'El importe supera el saldo pendiente de transferencia.',
   [ErrorCode.BENEFIT_TRANSFER_ALREADY_REVERSED]:
     'Esta transferencia ya fue revertida.',
+  [ErrorCode.BENEFIT_SETTLEMENT_DISCOUNT_CASH_OVERPAYMENT]:
+    'El importe supera el saldo CASH pendiente de este descuento en la liquidación.',
+  [ErrorCode.BENEFIT_TRANSFER_DISCOUNT_REQUIRED]:
+    'En liquidaciones gastronómicas cada pago debe indicar el descuento al que corresponde.',
+  [ErrorCode.BENEFIT_TRANSFER_DISCOUNT_SCOPE_INVALID]:
+    'El descuento indicado no pertenece al local de esta liquidación.',
+  [ErrorCode.BENEFIT_TRANSFER_CONCURRENT_CONFLICT]:
+    'Otro pago se registró al mismo tiempo. Actualizá e intentá de nuevo.',
   [ErrorCode.BENEFIT_CREDIT_INSUFFICIENT_BALANCE]:
     'Saldo de canje insuficiente para esta operación.',
   [ErrorCode.BENEFIT_CREDIT_ALREADY_REVERSED]:

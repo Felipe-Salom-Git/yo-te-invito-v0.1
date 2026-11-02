@@ -10,6 +10,7 @@ import { benefitVerticalSchema } from './benefit-commercial-agreements';
 import { moneyCentsStringSchema } from '../money/benefit-money';
 import { safeExternalUrlSchema } from './external-links';
 import { BENEFIT_CASH_COLLECTION_STATUSES } from '../benefit-settlement';
+import { BENEFIT_TRANSFER_ATTRIBUTIONS } from '../benefit-settlement-discount-payments';
 
 const partnerFieldsBaseSchema = z
   .object({
@@ -222,6 +223,11 @@ export const registerBenefitSettlementTransferBodySchema = z
     notes: z.string().trim().max(2000).optional(),
     /** Link to proof (bank receipt) hosted by ADMIN — no file stored in DB. */
     proofUrl: safeExternalUrlSchema.optional(),
+    /**
+     * G10.D (D-G10-7) — GastroDiscount paid by this transfer. Required for GASTRO settlements,
+     * rejected for ACTIVITY (the vertical lives in the settlement: checked server-side).
+     */
+    gastroDiscountId: z.string().trim().min(1).max(64).optional(),
   })
   .strict();
 
@@ -254,6 +260,9 @@ export const benefitSettlementTransferDtoSchema = z.object({
   reversedByUserId: z.string().nullable(),
   reversalReason: z.string().nullable(),
   isActive: z.boolean(),
+  /** G10.D — null = legacy SETTLEMENT_LEVEL transfer (never attributed after the fact). */
+  gastroDiscountId: z.string().nullable(),
+  attribution: z.enum(BENEFIT_TRANSFER_ATTRIBUTIONS),
 });
 
 export type BenefitSettlementTransferDto = z.infer<typeof benefitSettlementTransferDtoSchema>;

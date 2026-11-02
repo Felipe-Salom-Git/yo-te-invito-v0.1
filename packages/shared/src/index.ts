@@ -113,6 +113,7 @@ export * from './benefit-commercial-agreements';
 export * from './schemas/benefit-commercial-agreements';
 export * from './benefit-settlement';
 export * from './benefit-settlement-admin';
+export * from './benefit-settlement-discount-payments';
 export * from './benefit-settlement-operations';
 export * from './benefit-settlement-history';
 export * from './gastro-courtesy-lifecycle';
