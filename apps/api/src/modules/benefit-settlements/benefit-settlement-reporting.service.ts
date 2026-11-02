@@ -6,6 +6,7 @@ import {
   emptyBenefitReportingKpis,
   mergeBenefitReportingKpis,
   moneyCentsToString,
+  resolveBenefitTransferAttribution,
   roundBarterCreditCents,
   sortBenefitTimelineEvents,
   type BenefitReportingIntegrityQuery,
@@ -273,6 +274,8 @@ export class BenefitSettlementReportingService {
 
     const transfers = row.transfers.map((t) => ({
       transferId: t.id,
+      gastroDiscountId: t.gastroDiscountId,
+      attribution: resolveBenefitTransferAttribution(t.gastroDiscountId),
       amountCents: moneyCentsToString(t.amountCents),
       currency: t.currency,
       transferredAt: t.transferredAt.toISOString(),

@@ -1,102 +1,63 @@
 /**
- * READ-ONLY benefit settlement integrity audit.
- * Run: pnpm --filter api run benefit-settlements:audit-integrity
+ * READ-ONLY benefit settlement integrity audit (same checks as GET /admin/benefit-reporting/integrity).
+ *
+ * Usage:
+ *   pnpm --filter api run benefit-settlements:audit-integrity
+ *   ... -- --tenant <tenantId>   # limit to one tenant
+ *   ... -- --json                # machine-readable report
+ *
+ * Exit code: 0 = OK / WARNING · 2 = at least one ERROR issue · 1 = crash / DB unavailable.
+ * Never writes and never repairs corrupt rows.
  */
+import { PrismaService } from '../src/prisma/prisma.service';
+import { runBenefitIntegrityAudit } from '../src/modules/benefit-settlements/benefit-settlement-integrity-audit.runner';
 
-import { PrismaClient } from '@prisma/client';
-import {
-  checkCashOverpayment,
-  checkNegativeCourtesyBalance,
-  deriveIntegrityStatus,
-  runBarterCreditDriftCheck,
-} from '@yo-te-invito/shared';
+function parseArgs(argv: string[]) {
+  const tenantIdx = argv.indexOf('--tenant');
+  return {
+    json: argv.includes('--json'),
+    tenantId: tenantIdx >= 0 ? argv[tenantIdx + 1] : undefined,
+  };
+}
 
 async function main() {
-  const prisma = new PrismaClient();
+  const args = parseArgs(process.argv.slice(2));
+  const prisma = new PrismaService();
   try {
     await prisma.$connect();
   } catch (err) {
-    console.log('DB integration: NO EJECUTADO — PostgreSQL no disponible');
-    console.log(String(err));
+    console.error('DB integration: NO EJECUTADO — PostgreSQL no disponible');
+    console.error(String(err));
+    process.exitCode = 1;
     return;
   }
-
-  const settlements = await prisma.benefitSettlement.findMany({
-    where: { tenantId },
-    include: { allocations: true, transfers: true },
-    take: 500,
-  });
-
-  let ok = 0;
-  let warnings = 0;
-  let errors = 0;
-
-  for (const row of settlements) {
-    const issues = [];
-
-    const overpay = checkCashOverpayment(row.allocations, row.transfers, row.id);
-    if (overpay) issues.push(overpay);
-
-    const barterIds = row.allocations.filter((a) => a.mode === 'BARTER').map((a) => a.id);
-    if (barterIds.length) {
-      const credits = await prisma.courtesyCreditLedgerEntry.findMany({
-        where: { type: 'CREDIT_FROM_SETTLEMENT', sourceAllocationId: { in: barterIds } },
-        select: { id: true, type: true, amountCents: true, sourceAllocationId: true },
-      });
-      issues.push(
-        ...runBarterCreditDriftCheck({
-          barterAllocations: row.allocations.map((a) => ({
-            id: a.id,
-            mode: a.mode,
-            baseAmountCents: a.baseAmountCents,
-            barterMultiplier: a.barterMultiplier.toString(),
-          })),
-          creditEntries: credits,
-        }),
-      );
+  try {
+    const result = await runBenefitIntegrityAudit(prisma, { tenantId: args.tenantId });
+    if (args.json) {
+      console.log(JSON.stringify(result, null, 2));
+    } else {
+      console.log(`\nBenefit integrity audit (read-only)${args.tenantId ? ` — tenant ${args.tenantId}` : ''}\n`);
+      for (const t of result.tenants) {
+        console.log(
+          `tenant ${t.tenantId}: ${t.status} · settlements checked ${t.checked} (ok ${t.ok}, warnings ${t.warnings}, errors ${t.errors})` +
+            ` · agreementScopeIssues ${t.agreementScopeIssues.length}`,
+        );
+        for (const [code, count] of Object.entries(t.issueCounts)) console.log(`  ${code}: ${count}`);
+        for (const issue of t.agreementScopeIssues) {
+          console.log(`  [${issue.severity}] ${issue.code} ${issue.entityType ?? ''} ${issue.entityId ?? ''} — ${issue.message}`);
+        }
+        for (const row of t.settlementsWithIssues) {
+          for (const issue of row.issues) {
+            console.log(`  [${issue.severity}] ${issue.code} settlement ${row.settlementId} (${row.periodKey}) — ${issue.message}`);
+          }
+        }
+      }
+      console.log(`\nRESULT: ${result.status}`);
     }
-
-    const partnerScope =
-      row.vertical === 'GASTRO' && row.gastroProfileId
-        ? { gastroProfileId: row.gastroProfileId, excursionOperatorId: null }
-        : row.vertical === 'ACTIVITY' && row.excursionOperatorId
-          ? { gastroProfileId: null, excursionOperatorId: row.excursionOperatorId }
-          : null;
-
-    if (partnerScope) {
-      const entries = await prisma.courtesyCreditLedgerEntry.findMany({
-        where: {
-          tenantId: row.tenantId,
-          vertical: row.vertical,
-          gastroProfileId: partnerScope.gastroProfileId,
-          excursionOperatorId: partnerScope.excursionOperatorId,
-        },
-        select: { amountCents: true },
-      });
-      const negative = checkNegativeCourtesyBalance(entries, row.id);
-      if (negative) issues.push(negative);
-    }
-
-    const status = deriveIntegrityStatus(issues);
-    if (status === 'OK') ok += 1;
-    else if (status === 'WARNING') warnings += 1;
-    else errors += 1;
+    if (result.status === 'ERROR') process.exitCode = 2;
+  } finally {
+    await prisma.$disconnect();
   }
-
-  console.log(
-    JSON.stringify(
-      {
-        checked: settlements.length,
-        ok,
-        warnings,
-        errors,
-      },
-      null,
-      2,
-    ),
-  );
-
-  await prisma.$disconnect();
 }
 
 main().catch((err) => {

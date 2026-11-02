@@ -3,6 +3,7 @@ import { benefitSettlementPeriodKeySchema } from '../benefit-settlement';
 import { benefitVerticalSchema } from './benefit-commercial-agreements';
 import { moneyCentsStringSchema } from '../money/benefit-money';
 import { BENEFIT_INTEGRITY_STATUSES } from '../benefit-settlement-reporting';
+import { BENEFIT_TRANSFER_ATTRIBUTIONS } from '../benefit-settlement-discount-payments';
 
 export const benefitReportingPeriodQuerySchema = z.object({
   periodKey: benefitSettlementPeriodKeySchema,
@@ -116,6 +117,9 @@ export const benefitSettlementAuditAllocationSchema = z.object({
 
 export const benefitSettlementAuditTransferSchema = z.object({
   transferId: z.string(),
+  /** G10.D — null = legacy transfer without discount (SETTLEMENT_LEVEL, never inferred). */
+  gastroDiscountId: z.string().nullable(),
+  attribution: z.enum(BENEFIT_TRANSFER_ATTRIBUTIONS),
   amountCents: moneyCentsStringSchema,
   currency: z.string(),
   transferredAt: z.string().datetime(),
