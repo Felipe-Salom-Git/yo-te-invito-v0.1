@@ -2785,6 +2785,19 @@ export interface GastroRepo {
   recordValidation(discountId: string, userId?: string, orderId?: string): Promise<GastroDiscountValidation>;
   getMyLocal(profileId?: string): Promise<GastroLocal | null>;
   listMyLocations(): Promise<import('@yo-te-invito/shared').GastroLocationsListResponse>;
+  /** G12.2 — promotional events of a local (no ticketing). */
+  listPromoEvents(
+    profileId: string,
+  ): Promise<import('@yo-te-invito/shared').GastroPromoEventListResponse>;
+  createPromoEvent(
+    payload: import('@yo-te-invito/shared').GastroPromoEventCreateInput,
+  ): Promise<import('@yo-te-invito/shared').GastroPromoEventResponse>;
+  updatePromoEvent(
+    eventId: string,
+    payload: import('@yo-te-invito/shared').GastroPromoEventUpdateInput,
+  ): Promise<import('@yo-te-invito/shared').GastroPromoEventResponse>;
+  submitPromoEvent(eventId: string): Promise<import('@yo-te-invito/shared').GastroPromoEventResponse>;
+  archivePromoEvent(eventId: string): Promise<{ id: string; archived: true }>;
   createMyLocal(payload: GastroLocalUpsertPayload): Promise<GastroLocal>;
   createAdditionalLocal(payload: GastroLocalUpsertPayload): Promise<GastroLocal>;
   updateMyLocal(

@@ -2259,6 +2259,31 @@ export class ApiRepository implements Repositories {
       this.client.get<import('@yo-te-invito/shared').GastroLocationsListResponse>(
         '/gastro/locations',
       ),
+    listPromoEvents: async (profileId) =>
+      this.client.get<import('@yo-te-invito/shared').GastroPromoEventListResponse>(
+        '/gastro/promo-events',
+        { profileId },
+      ),
+    createPromoEvent: async (payload) =>
+      this.client.post<import('@yo-te-invito/shared').GastroPromoEventResponse>(
+        '/gastro/promo-events',
+        payload,
+      ),
+    updatePromoEvent: async (eventId, payload) =>
+      this.client.patch<import('@yo-te-invito/shared').GastroPromoEventResponse>(
+        `/gastro/promo-events/${encodeURIComponent(eventId)}`,
+        payload,
+      ),
+    submitPromoEvent: async (eventId) =>
+      this.client.post<import('@yo-te-invito/shared').GastroPromoEventResponse>(
+        `/gastro/promo-events/${encodeURIComponent(eventId)}/submit`,
+        {},
+      ),
+    archivePromoEvent: async (eventId) =>
+      this.client.post<{ id: string; archived: true }>(
+        `/gastro/promo-events/${encodeURIComponent(eventId)}/archive`,
+        {},
+      ),
     createMyLocal: async (payload) => this.client.post<GastroLocal>('/gastro/local', payload),
     createAdditionalLocal: async (payload) =>
       this.client.post<GastroLocal>('/gastro/locations', payload),

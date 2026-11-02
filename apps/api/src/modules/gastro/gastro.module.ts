@@ -8,6 +8,8 @@ import { ReviewDisputesModule } from '../review-disputes/review-disputes.module'
 import { ReviewsModule } from '../reviews/reviews.module';
 import { GastroController } from './gastro.controller';
 import { GastroReviewsController } from './gastro-reviews.controller';
+import { GastroPromoEventsController } from './gastro-promo-events.controller';
+import { GastroPromoEventsService } from './gastro-promo-events.service';
 import { GastroService } from './gastro.service';
 import { GastroLocalService } from './gastro-local.service';
 import { GastroPortalDiscountsService } from './gastro-portal-discounts.service';
@@ -40,7 +42,7 @@ import { GastroDiscountEconomicsPortalService } from './gastro-discount-economic
     BenefitAgreementsModule,
     BenefitSettlementsModule,
   ],
-  controllers: [GastroController, GastroReviewsController],
+  controllers: [GastroController, GastroReviewsController, GastroPromoEventsController],
   providers: [
     ProfilesAuthorizationService,
     GastroRolesGuard,
@@ -59,6 +61,7 @@ import { GastroDiscountEconomicsPortalService } from './gastro-discount-economic
     GastroDiscountVisualTemplateService,
     GastroProfileMetricsService,
     GastroDiscountEconomicsPortalService,
+    GastroPromoEventsService,
   ],
   exports: [
     GastroPortalDiscountsService,
