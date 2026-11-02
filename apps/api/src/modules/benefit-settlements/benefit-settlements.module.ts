@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../../auth/auth.module';
 import { AuditModule } from '../audit/audit.module';
+import { BenefitAgreementsModule } from '../benefit-agreements/benefit-agreements.module';
 import { CourtesyCreditLedgerModule } from '../courtesy-credit-ledger/courtesy-credit-ledger.module';
 import { AdminBenefitSettlementsController } from './admin-benefit-settlements.controller';
 import { AdminBenefitReportingController } from './admin-benefit-reporting.controller';
@@ -11,9 +12,10 @@ import { BenefitSettlementReportingService } from './benefit-settlement-reportin
 import { BenefitSettlementTransfersService } from './benefit-settlement-transfers.service';
 import { BenefitSettlementsService } from './benefit-settlements.service';
 import { GastroDiscountEconomicReportingService } from './gastro-discount-economic-reporting.service';
+import { GastroDiscountEconomicSummaryService } from './gastro-discount-economic-summary.service';
 
 @Module({
-  imports: [AuthModule, AuditModule, CourtesyCreditLedgerModule],
+  imports: [AuthModule, AuditModule, CourtesyCreditLedgerModule, BenefitAgreementsModule],
   controllers: [AdminBenefitSettlementsController, AdminBenefitReportingController],
   providers: [
     BenefitSettlementEligibilityService,
@@ -23,6 +25,7 @@ import { GastroDiscountEconomicReportingService } from './gastro-discount-econom
     BenefitSettlementReportingService,
     BenefitSettlementPendingValidationsService,
     GastroDiscountEconomicReportingService,
+    GastroDiscountEconomicSummaryService,
   ],
   exports: [
     BenefitSettlementsService,
@@ -31,6 +34,7 @@ import { GastroDiscountEconomicReportingService } from './gastro-discount-econom
     BenefitSettlementIntegrityService,
     BenefitSettlementReportingService,
     GastroDiscountEconomicReportingService,
+    GastroDiscountEconomicSummaryService,
   ],
 })
 export class BenefitSettlementsModule {}
