@@ -51,6 +51,11 @@ export const allocateBenefitSettlementUsagesBodySchema = z
     mode: z.enum(BENEFIT_SETTLEMENT_ALLOCATION_MODES),
     count: z.number().int().min(1).max(10_000).optional(),
     validationIds: z.array(z.string().min(1)).min(1).max(10_000).optional(),
+    /**
+     * G10.D2 — allocation isolation from a discount detail: every selected validation must belong
+     * to this GastroDiscount (GASTRO only, explicit validationIds only).
+     */
+    gastroDiscountId: z.string().trim().min(1).max(64).optional(),
   })
   .strict()
   .superRefine((val, ctx) => {
@@ -59,6 +64,13 @@ export const allocateBenefitSettlementUsagesBodySchema = z
         code: z.ZodIssueCode.custom,
         message: 'Provide either count or validationIds',
         path: ['count'],
+      });
+    }
+    if (val.gastroDiscountId != null && val.validationIds == null) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'gastroDiscountId requires explicit validationIds',
+        path: ['gastroDiscountId'],
       });
     }
   });

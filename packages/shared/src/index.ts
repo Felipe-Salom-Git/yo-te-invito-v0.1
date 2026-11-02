@@ -126,6 +126,7 @@ export * from './schemas/benefit-settlement-reporting';
 export * from './gastro-discount-economic-summary';
 export * from './gastro-discount-economic-history';
 export * from './schemas/gastro-discount-economic-summary';
+export * from './schemas/gastro-discount-settlement-actions';
 export * from './courtesy-credit-ledger';
 export * from './schemas/courtesy-credit-ledger';
 export * from './campaign-email-delivery';

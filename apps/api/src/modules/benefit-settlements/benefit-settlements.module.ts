@@ -13,6 +13,7 @@ import { BenefitSettlementTransfersService } from './benefit-settlement-transfer
 import { BenefitSettlementsService } from './benefit-settlements.service';
 import { GastroDiscountEconomicReportingService } from './gastro-discount-economic-reporting.service';
 import { GastroDiscountEconomicSummaryService } from './gastro-discount-economic-summary.service';
+import { GastroDiscountPendingValidationsService } from './gastro-discount-pending-validations.service';
 
 @Module({
   imports: [AuthModule, AuditModule, CourtesyCreditLedgerModule, BenefitAgreementsModule],
@@ -26,6 +27,7 @@ import { GastroDiscountEconomicSummaryService } from './gastro-discount-economic
     BenefitSettlementPendingValidationsService,
     GastroDiscountEconomicReportingService,
     GastroDiscountEconomicSummaryService,
+    GastroDiscountPendingValidationsService,
   ],
   exports: [
     BenefitSettlementsService,
@@ -35,6 +37,7 @@ import { GastroDiscountEconomicSummaryService } from './gastro-discount-economic
     BenefitSettlementReportingService,
     GastroDiscountEconomicReportingService,
     GastroDiscountEconomicSummaryService,
+    GastroDiscountPendingValidationsService,
   ],
 })
 export class BenefitSettlementsModule {}

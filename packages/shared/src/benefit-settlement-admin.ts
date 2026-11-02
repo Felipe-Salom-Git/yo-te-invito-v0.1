@@ -70,6 +70,8 @@ export const BENEFIT_SETTLEMENT_ERROR_MESSAGES: Partial<Record<string, string>> 
     'No hay suficientes usos pendientes de asignar.',
   [ErrorCode.BENEFIT_SETTLEMENT_VALIDATION_NOT_PENDING]:
     'Alguno de los usos seleccionados ya no está pendiente en esta liquidación. Actualizá e intentá de nuevo.',
+  [ErrorCode.BENEFIT_SETTLEMENT_VALIDATION_DISCOUNT_MISMATCH]:
+    'Alguno de los usos seleccionados no pertenece a este descuento.',
   [ErrorCode.BENEFIT_SETTLEMENT_VALIDATION_FUNDED_COURTESY]:
     'Alguno de los usos pertenece a una cortesía financiada con crédito: no es facturable (ni CASH ni BARTER).',
 };

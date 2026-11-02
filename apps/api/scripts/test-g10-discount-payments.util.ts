@@ -7,7 +7,9 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   ErrorCode,
+  allocateBenefitSettlementUsagesBodySchema,
   assertDiscountTransferWouldNotOverpay,
+  gastroDiscountPendingValidationSchema,
   benefitSettlementTransferDtoSchema,
   computeDiscountCashDueCents,
   computeDiscountCashPaidCents,
@@ -92,6 +94,23 @@ check(
 check(registerBlock.includes('assertTransferWouldNotOverpay'), 'register: settlement-level guard kept');
 check(!service.includes('.delete(') && !service.includes('deleteMany'), 'transfers are never deleted (reversal is append-only)');
 check(/gastroDiscountId: updated\.gastroDiscountId/.test(service), 'reverse audit includes gastroDiscountId');
+
+// ── D2 — allocation isolation contract + per-discount pending list ──
+const alloc = { mode: 'CASH' as const, validationIds: ['v1'] };
+check(allocateBenefitSettlementUsagesBodySchema.safeParse({ ...alloc, gastroDiscountId: 'd1' }).success, 'allocate accepts gastroDiscountId with explicit validationIds');
+check(!allocateBenefitSettlementUsagesBodySchema.safeParse({ mode: 'CASH', count: 2, gastroDiscountId: 'd1' }).success, 'allocate rejects gastroDiscountId with count (explicit selection only)');
+check(allocateBenefitSettlementUsagesBodySchema.safeParse({ mode: 'BARTER', count: 2 }).success, 'allocate by count still parses (settlement page)');
+check(
+  gastroDiscountPendingValidationSchema.shape.pricingStatus.options.join(',') === 'PRICED,MISSING_AGREEMENT,FUNDED_COURTESY',
+  'pending list pricing statuses',
+);
+const adminController = src('src/modules/admin/admin.controller.ts');
+check(adminController.includes("@Get('gastronomicos/:profileId/descuentos/:discountId/pending-validations')"), 'route: ADMIN GET discount pending-validations');
+const pendingService = src('src/modules/benefit-settlements/gastro-discount-pending-validations.service.ts');
+check(pendingService.includes('discoverEligibleValidations') && !pendingService.includes('resolveSettlementAgreementForValidation'), 'pending list reuses the allocate pricing engine (no re-implementation)');
+const settlementsService = src('src/modules/benefit-settlements/benefit-settlements.service.ts');
+const allocateBlock = settlementsService.slice(settlementsService.indexOf('async allocate('), settlementsService.indexOf('async close('));
+check(allocateBlock.indexOf('assertValidationsBelongToDiscount') < allocateBlock.indexOf('$transaction'), 'allocate: discount isolation checked before any write');
 
 if (failures > 0) {
   console.error(`\n${failures} check(s) failed`);

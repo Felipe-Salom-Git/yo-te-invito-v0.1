@@ -43,6 +43,7 @@ import {
   type PricedEligibleValidation,
 } from './benefit-settlement-eligibility.service';
 import { CourtesyCreditLedgerService } from '../courtesy-credit-ledger/courtesy-credit-ledger.service';
+import { assertValidationsBelongToDiscount } from './benefit-settlement-allocation-guards';
 
 type SettlementRow = BenefitSettlement & {
   gastroProfile?: { displayName: string } | null;
@@ -218,6 +219,15 @@ export class BenefitSettlementsService {
       });
     }
 
+    if (body.gastroDiscountId && body.validationIds?.length) {
+      await assertValidationsBelongToDiscount(this.prisma, {
+        tenantId,
+        settlement: row,
+        gastroDiscountId: body.gastroDiscountId,
+        validationIds: body.validationIds,
+      });
+    }
+
     const allocatedIds = new Set(row.allocations?.map((a) => a.validationId) ?? []);
     const discovery = await this.eligibility.discoverEligibleValidations(
       tenantId,
@@ -367,6 +377,7 @@ export class BenefitSettlementsService {
           mode: body.mode,
           count: selected.length,
           selection: body.validationIds ? 'EXPLICIT' : 'OLDEST_FIRST',
+          ...(body.gastroDiscountId ? { gastroDiscountId: body.gastroDiscountId } : {}),
         },
       });
 

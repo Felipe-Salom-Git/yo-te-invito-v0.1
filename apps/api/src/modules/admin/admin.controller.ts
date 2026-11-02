@@ -102,6 +102,7 @@ import { GastroProfileMetricsService } from '../gastro/gastro-profile-metrics.se
 import { GastroDiscountMetricsService } from '../gastro/gastro-discount-metrics.service';
 import { GastroDiscountEconomicReportingService } from '../benefit-settlements/gastro-discount-economic-reporting.service';
 import { GastroDiscountEconomicSummaryService } from '../benefit-settlements/gastro-discount-economic-summary.service';
+import { GastroDiscountPendingValidationsService } from '../benefit-settlements/gastro-discount-pending-validations.service';
 import { GastroDiscountVisualTemplateService } from '../gastro/gastro-discount-visual-template.service';
 import { AdminProducersService } from './admin-producers.service';
 import { AdminGeneralPublicationsService } from './admin-general-publications.service';
@@ -152,6 +153,7 @@ export class AdminController {
     private readonly gastroDiscountMetrics: GastroDiscountMetricsService,
     private readonly gastroDiscountEconomic: GastroDiscountEconomicReportingService,
     private readonly gastroDiscountEconomicSummary: GastroDiscountEconomicSummaryService,
+    private readonly gastroDiscountPendingValidations: GastroDiscountPendingValidationsService,
     private readonly gastroProfileMetrics: GastroProfileMetricsService,
     private readonly visualTemplates: GastroDiscountVisualTemplateService,
     private readonly adminHotelProfiles: AdminHotelProfilesService,
@@ -1533,6 +1535,23 @@ export class AdminController {
     params: AdminGastroDiscountIdParams,
   ) {
     return this.gastroDiscountEconomicSummary.getForAdmin(
+      user.tenantId,
+      params.profileId,
+      params.discountId,
+    );
+  }
+
+  /** G10.D2 — unallocated validations of the discount with pricing status (CASH / CANJE selection). */
+  @Get('gastronomicos/:profileId/descuentos/:discountId/pending-validations')
+  @Get('gastronomicos/:profileId/discuentos/:discountId/pending-validations')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async getGastroLocationDiscountPendingValidations(
+    @CurrentUser() user: { tenantId: string },
+    @Param(new ZodValidationPipe(adminGastroDiscountIdParamsSchema))
+    params: AdminGastroDiscountIdParams,
+  ) {
+    return this.gastroDiscountPendingValidations.listForAdmin(
       user.tenantId,
       params.profileId,
       params.discountId,

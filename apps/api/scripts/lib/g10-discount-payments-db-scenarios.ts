@@ -8,6 +8,7 @@ import type { AuditService } from '../../src/modules/audit/audit.service';
 import { PrismaService } from '../../src/prisma/prisma.service';
 import { BenefitSettlementTransfersService } from '../../src/modules/benefit-settlements/benefit-settlement-transfers.service';
 import { GastroDiscountEconomicSummaryService } from '../../src/modules/benefit-settlements/gastro-discount-economic-summary.service';
+import { GastroDiscountPendingValidationsService } from '../../src/modules/benefit-settlements/gastro-discount-pending-validations.service';
 import {
   buildG10Services,
   createG10Discount,
@@ -34,6 +35,7 @@ export function buildPaymentServices(prisma: PrismaService) {
     events,
     transfers: new BenefitSettlementTransfersService(prisma, audit, base.settlements),
     summary: new GastroDiscountEconomicSummaryService(prisma, base.ledger, base.discountHistory),
+    discountPending: new GastroDiscountPendingValidationsService(prisma, base.eligibility),
   };
 }
 

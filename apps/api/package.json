@@ -57,6 +57,7 @@
     "test:g10-discount-economic-summary-ui": "tsx ../web/lib/gastro/discount-economic-summary-ui.assert.ts",
     "test:g10-discount-payments": "tsx scripts/test-g10-discount-payments.util.ts",
     "test:g10-discount-payments-db": "tsx scripts/test-g10-discount-payments-db.util.ts",
+    "test:g10-discount-allocation-db": "tsx scripts/test-g10-discount-allocation-db.util.ts",
     "benefit-agreements:backfill-discount-scope": "tsx scripts/benefit-agreements-backfill-discount-scope.ts",
     "test:g5-agreement-allocation-snapshots": "tsx scripts/test-g5-agreement-allocation-snapshots.util.ts",
     "test:g6-discount-economic-traceability": "tsx scripts/test-g6-discount-economic-traceability.util.ts",
