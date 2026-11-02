@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { PageContainer, SectionTitle } from '@/components';
 import { GastroDiscountClaimForm } from '@/components/gastro/GastroDiscountClaimForm';
+import { PublicShareButton } from '@/components/share/PublicShareButton';
 import {
   formatGastroDiscountBenefit,
   formatGastroDiscountValidityLabel,
@@ -49,7 +50,14 @@ export default function PublicGastroDiscountPage() {
       </Link>
 
       <SectionTitle>{title}</SectionTitle>
-      <p className="mt-1 text-text-muted">
+      <PublicShareButton
+        kind="discount"
+        title={title}
+        path={`/descuentos/${encodeURIComponent(discount.id)}`}
+        tone="subtle"
+        className="mt-1"
+      />
+      <p className="mt-3 text-text-muted">
         {discount.locationName}
         {discount.locationCity ? ` · ${discount.locationCity}` : ''}
       </p>

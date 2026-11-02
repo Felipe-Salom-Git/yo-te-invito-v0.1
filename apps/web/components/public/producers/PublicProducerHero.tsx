@@ -1,10 +1,12 @@
 'use client';
 
 import type { ProducerDetail } from '@/repositories/interfaces';
+import { PublicShareButton } from '@/components/share/PublicShareButton';
 
 type Props = {
   producer: Pick<
     ProducerDetail,
+    | 'id'
     | 'displayName'
     | 'shortDescription'
     | 'logoUrl'
@@ -64,6 +66,13 @@ export function PublicProducerHero({ producer, onScrollToEvents }: Props) {
 
         <div className="min-w-0 flex-1">
           <h1 className="text-2xl font-bold text-text sm:text-3xl">{producer.displayName}</h1>
+          <PublicShareButton
+            kind="producer"
+            title={producer.displayName}
+            path={`/producers/${encodeURIComponent(producer.id)}`}
+            tone="subtle"
+            className="mt-3"
+          />
           {producer.shortDescription ? (
             <p className="mt-2 max-w-2xl text-text-muted">{producer.shortDescription}</p>
           ) : null}

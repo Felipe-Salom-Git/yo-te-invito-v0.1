@@ -124,6 +124,14 @@ export function GastroPublicDetailContent({
         }
         city={location.city}
         province={location.province}
+        titleAction={
+          <GastroLocationShareActions
+            displayName={location.displayName}
+            profileId={location.id}
+            tone="overlay"
+            menuPlacement="up"
+          />
+        }
       >
         <div className="flex flex-wrap items-center gap-2">
           <GastroFollowButton
@@ -200,6 +208,7 @@ export function GastroPublicDetailContent({
               <GastroLocationEditorialSection
                 items={publishedContent}
                 locationName={location.displayName}
+                locationId={location.id}
               />
             ) : null}
           </div>
@@ -242,11 +251,6 @@ export function GastroPublicDetailContent({
                 geoLng={location.geoLng}
               />
             ) : null}
-            <GastroLocationShareActions
-              variant="card"
-              displayName={location.displayName}
-              profileId={location.id}
-            />
             {!hasLocation &&
             !whatsAppHref &&
             !location.menuUrl &&

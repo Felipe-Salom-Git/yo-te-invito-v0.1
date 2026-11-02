@@ -17,6 +17,8 @@ import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import type { PublicHotelLocation } from '@/repositories/interfaces';
 import { formatPublicRatingLabel, publicFaceFromTen } from '@/lib/reviews/ratingDisplay';
 import { RatingFaceIcon } from '@/components/reviews/RatingFaceIcon';
+import { PublicShareButton } from '@/components/share/PublicShareButton';
+import { getContentDetailHref } from '@/lib/home/contentRoutes';
 
 export type HotelPublicDetailContentProps = {
   hotel: PublicHotelLocation;
@@ -103,6 +105,14 @@ export function HotelPublicDetailContent({
         description={hotel.description}
         starCategory={hotel.starCategory}
         city={hotel.city}
+        titleAction={
+          <PublicShareButton
+            kind="hotel"
+            title={hotel.displayName}
+            path={getContentDetailHref({ id: reviewEventId, category: 'hotel' })}
+            menuPlacement="up"
+          />
+        }
       >
         {reviewCountDisplay > 0 ? (
           <a

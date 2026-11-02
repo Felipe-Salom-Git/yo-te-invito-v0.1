@@ -13,6 +13,8 @@ type RentalProductHeroProps = {
   description?: string | null;
   subcategoryName?: string | null;
   localName?: string | null;
+  /** Rendered right under the title on every breakpoint (share action). */
+  titleAction?: React.ReactNode;
   children?: React.ReactNode;
 };
 
@@ -23,6 +25,7 @@ export function RentalProductHero({
   description,
   subcategoryName,
   localName,
+  titleAction,
   children,
 }: RentalProductHeroProps) {
   const heroSummary = getRentalHeroSummaryText(summary, description);
@@ -53,6 +56,7 @@ export function RentalProductHero({
         <h1 className="text-2xl font-bold leading-[1.15] text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.85)] sm:text-3xl sm:leading-tight md:text-4xl lg:text-5xl">
           {title}
         </h1>
+        {titleAction ? <div className="mt-2 sm:mt-3">{titleAction}</div> : null}
         {heroSummary && (
           <p className="mt-2 max-w-2xl line-clamp-3 text-sm leading-relaxed text-white/85 drop-shadow sm:line-clamp-none sm:text-base md:text-lg">
             {heroSummary}

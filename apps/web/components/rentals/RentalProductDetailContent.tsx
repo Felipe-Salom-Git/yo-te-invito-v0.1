@@ -8,7 +8,8 @@ import { useEventDetail, eventsKeys } from '@/lib/query/events';
 import { useRecordPublicEventView } from '@/lib/query/public-engagement';
 import { reviewsKeys } from '@/lib/query/keys';
 import { usePublicEntityReviewsState } from '@/lib/query/reviews';
-import { getCategoryLabel, getRelatedSectionTitle } from '@/lib/home/contentRoutes';
+import { getCategoryLabel, getContentDetailHref, getRelatedSectionTitle } from '@/lib/home/contentRoutes';
+import { PublicShareButton } from '@/components/share/PublicShareButton';
 import { EventLocationModal } from '@/components/events/EventLocationModal';
 import { EventReviewsSection } from '@/components/events/EventReviewsSection';
 import { RelatedEventsSection } from '@/components/events/RelatedEventsSection';
@@ -178,6 +179,14 @@ export function RentalProductDetailContent({
         description={event.description}
         subcategoryName={subcategoryName}
         localName={rentalLoc?.name}
+        titleAction={
+          <PublicShareButton
+            kind="rental"
+            title={event.title}
+            path={getContentDetailHref({ id: event.id, category: 'rental' })}
+            menuPlacement="up"
+          />
+        }
       />
 
       <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 sm:py-8 md:px-8">

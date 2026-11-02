@@ -15,6 +15,7 @@ import { entityTypeToReviewCategory } from '@/lib/schemas/review';
 import { getPlaceHeroCtaLabel, getRelatedSectionTitle } from '@/lib/home/contentRoutes';
 import { PublicDescriptionBlock } from '@/components/public/PublicDescriptionBlock';
 import { EventHeroPremium } from '@/components/events/EventHeroPremium';
+import type { PublicShareKind } from '@/lib/share/publicShare';
 import { EventGallerySection } from '@/components/events/EventGallerySection';
 import { EventHighlightsSection } from '@/components/events/EventHighlightsSection';
 import { EventScheduleSection } from '@/components/events/EventScheduleSection';
@@ -182,10 +183,9 @@ export function PlaceDetailView({ id, variant, tenantId = 'tenant-demo' }: Place
     );
   }
 
-  const shareUrl =
-    typeof window !== 'undefined'
-      ? window.location.href
-      : `${variant === 'restaurant' ? '/restaurants' : variant === 'excursion' ? '/excursiones' : '/rentals'}/${id}?tenantId=${tenantId}`;
+  const sharePath = `${variant === 'restaurant' ? '/restaurants' : variant === 'excursion' ? '/excursiones' : '/rentals'}/${encodeURIComponent(id)}`;
+  const shareKind: PublicShareKind =
+    variant === 'restaurant' ? 'place' : variant === 'excursion' ? 'activity' : 'rental';
 
   const locationVenueName = event.venueName;
   const locationAddress = event.venueAddress;
@@ -200,7 +200,8 @@ export function PlaceDetailView({ id, variant, tenantId = 'tenant-demo' }: Place
         onLocationClick={() => setIsLocationModalOpen(true)}
         onReviewsClick={scrollToReviews}
         shareTitle={event.title}
-        shareUrl={shareUrl}
+        sharePath={sharePath}
+        shareKind={shareKind}
         primaryCtaLabel={primaryCtaLabel}
       />
 

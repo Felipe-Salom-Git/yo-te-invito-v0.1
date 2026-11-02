@@ -8,7 +8,8 @@ import { useEventDetail, eventsKeys } from '@/lib/query/events';
 import { useRecordPublicEventView } from '@/lib/query/public-engagement';
 import { reviewsKeys } from '@/lib/query/keys';
 import { usePublicEntityReviewsState } from '@/lib/query/reviews';
-import { getCategoryLabel, getRelatedSectionTitle } from '@/lib/home/contentRoutes';
+import { getCategoryLabel, getContentDetailHref, getRelatedSectionTitle } from '@/lib/home/contentRoutes';
+import { PublicShareButton } from '@/components/share/PublicShareButton';
 import { EventLocationModal } from '@/components/events/EventLocationModal';
 import { EventReviewsSection } from '@/components/events/EventReviewsSection';
 import { RelatedEventsSection } from '@/components/events/RelatedEventsSection';
@@ -194,6 +195,14 @@ export function ExcursionProductDetailContent({
         description={event.description}
         subcategoryName={subcategoryName}
         operatorName={operator?.name ?? event.venueName}
+        titleAction={
+          <PublicShareButton
+            kind="activity"
+            title={event.title}
+            path={getContentDetailHref({ id, category: 'excursion' })}
+            menuPlacement="up"
+          />
+        }
       >
         <EventEngagementRow eventId={id} />
       </ExcursionProductHero>

@@ -20,6 +20,8 @@ import { ContentPreviewActions } from './ContentPreviewActions';
 import { ContentPreviewChips } from './ContentPreviewChips';
 import { ContentTagChips } from '@/components/content-tags/ContentTagChips';
 import { ContentPreviewExpanded } from './ContentPreviewExpanded';
+import { PublicShareButton } from '@/components/share/PublicShareButton';
+import { publicShareKindForCategory } from '@/lib/share/publicShare';
 
 export interface ContentPreviewModalProps {
   isOpen: boolean;
@@ -223,6 +225,13 @@ function ContentPreviewContent({
         >
           {item.title}
         </h2>
+        <PublicShareButton
+          kind={publicShareKindForCategory(item.category)}
+          title={item.title}
+          path={detailHref}
+          tone="subtle"
+          className="mt-3"
+        />
 
         {/* Meta row — scannable */}
         {hasMeta && (

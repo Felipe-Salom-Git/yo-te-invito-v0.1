@@ -17,7 +17,8 @@ import { entityTypeToReviewCategory } from '@/lib/schemas/review';
 import type { PublicReviewCategory } from '@yo-te-invito/shared';
 import type { TicketTypeResponse } from '@/repositories/interfaces';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
-import { getCategoryLabel, getPlaceHeroCtaLabel } from '@/lib/home/contentRoutes';
+import { getCategoryLabel, getContentDetailHref, getPlaceHeroCtaLabel } from '@/lib/home/contentRoutes';
+import { publicShareKindForCategory } from '@/lib/share/publicShare';
 import { EventHeroPremium } from '@/components/events/EventHeroPremium';
 import { EventHighlightsSection } from '@/components/events/EventHighlightsSection';
 import { EventScheduleSection } from '@/components/events/EventScheduleSection';
@@ -246,10 +247,7 @@ export default function EventDetailPage() {
     );
   }
 
-  const shareUrl =
-    typeof window !== 'undefined'
-      ? window.location.href
-      : `/events/${eventId}?tenantId=${tenantId}`;
+  const sharePath = getContentDetailHref({ id: eventId, category: event.category });
 
   const primaryCtaLabel = getPlaceHeroCtaLabel(event.category);
   const fromPrice =
@@ -286,7 +284,8 @@ export default function EventDetailPage() {
         onLocationClick={() => setIsLocationModalOpen(true)}
         onReviewsClick={scrollToReviews}
         shareTitle={event.title}
-        shareUrl={shareUrl}
+        sharePath={sharePath}
+        shareKind={publicShareKindForCategory(event.category)}
         primaryCtaLabel={primaryCtaLabel}
       />
 

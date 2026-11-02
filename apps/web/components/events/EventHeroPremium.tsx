@@ -1,6 +1,8 @@
 'use client';
 
 import type { EventDetail } from '@/repositories/interfaces';
+import { PublicShareButton } from '@/components/share/PublicShareButton';
+import type { PublicShareKind } from '@/lib/share/publicShare';
 import { EventMetaSummary } from './EventMetaSummary';
 import { EventActionBar } from './EventActionBar';
 
@@ -10,7 +12,9 @@ export interface EventHeroPremiumProps {
   onLocationClick: () => void;
   onReviewsClick: () => void;
   shareTitle: string;
-  shareUrl: string;
+  /** Canonical public path (no tenant query). */
+  sharePath: string;
+  shareKind: PublicShareKind;
   /** Primary CTA label (e.g. "Comprar entradas", "Reservar") */
   primaryCtaLabel?: string;
 }
@@ -21,7 +25,8 @@ export function EventHeroPremium({
   onLocationClick,
   onReviewsClick,
   shareTitle,
-  shareUrl,
+  sharePath,
+  shareKind,
   primaryCtaLabel,
 }: EventHeroPremiumProps) {
   return (
@@ -47,6 +52,9 @@ export function EventHeroPremium({
           {event.title}
         </h1>
         <div className="mt-3">
+          <PublicShareButton kind={shareKind} title={shareTitle} path={sharePath} menuPlacement="up" />
+        </div>
+        <div className="mt-3">
           <EventMetaSummary
             ratingAvg={event.ratingAvg}
             ratingCount={event.ratingCount}
@@ -60,9 +68,7 @@ export function EventHeroPremium({
             onBuyClick={onBuyClick}
             onLocationClick={onLocationClick}
             onReviewsClick={onReviewsClick}
-            shareTitle={shareTitle}
             primaryCtaLabel={primaryCtaLabel}
-            shareUrl={shareUrl}
           />
         </div>
       </div>

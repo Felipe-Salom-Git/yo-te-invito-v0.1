@@ -1,9 +1,5 @@
 'use client';
 
-import { useCallback, useState } from 'react';
-import { shareUrl } from '@/lib/share/shareUrl';
-import { useToast } from '@/components';
-
 export interface EventActionBarProps {
   /** Callback for primary CTA (buy / reserve / contact) */
   onBuyClick: () => void;
@@ -11,42 +7,17 @@ export interface EventActionBarProps {
   onLocationClick: () => void;
   /** Callback to scroll to reviews section */
   onReviewsClick: () => void;
-  /** Event title and URL for share */
-  shareTitle: string;
-  shareUrl: string;
   /** Primary CTA label; defaults to "Comprar entradas" */
   primaryCtaLabel?: string;
 }
 
+/** Hero CTAs. Share lives under the title (`PublicShareButton`, G11.2). */
 export function EventActionBar({
   onBuyClick,
   onLocationClick,
   onReviewsClick,
-  shareTitle,
-  shareUrl: urlToShare,
   primaryCtaLabel = 'Comprar entradas',
 }: EventActionBarProps) {
-  const { addToast } = useToast();
-  const [isSharing, setIsSharing] = useState(false);
-
-  const handleShare = useCallback(async () => {
-    setIsSharing(true);
-    try {
-      const result = await shareUrl({
-        title: shareTitle,
-        url: urlToShare,
-        text: shareTitle,
-      });
-      if (result.success) {
-        addToast(result.method === 'copy' ? 'Link copiado' : 'Compartido', 'success');
-      } else if (result.error && result.error !== 'Cancelled') {
-        addToast(result.error, 'error');
-      }
-    } finally {
-      setIsSharing(false);
-    }
-  }, [shareTitle, urlToShare, addToast]);
-
   return (
     <div className="flex flex-wrap items-center gap-2 sm:gap-3">
       <button
@@ -69,14 +40,6 @@ export function EventActionBar({
         className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-white/40 bg-white/5 px-4 py-2.5 font-medium text-white transition-colors hover:bg-white/15 focus:outline-none focus:ring-2 focus:ring-white/40 focus:ring-offset-2 focus:ring-offset-bg"
       >
         Ver valoraciones
-      </button>
-      <button
-        type="button"
-        onClick={handleShare}
-        disabled={isSharing}
-        className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-white/40 bg-white/5 px-4 py-2.5 font-medium text-white transition-colors hover:bg-white/15 focus:outline-none focus:ring-2 focus:ring-white/40 focus:ring-offset-2 focus:ring-offset-bg disabled:opacity-50"
-      >
-        {isSharing ? '...' : 'Compartir'}
       </button>
     </div>
   );

@@ -14,6 +14,8 @@ type GastroLocationHeroProps = {
   subcategoryNames?: string[] | null;
   city?: string | null;
   province?: string | null;
+  /** Rendered right under the title (share action). */
+  titleAction?: React.ReactNode;
   children?: React.ReactNode;
 };
 
@@ -27,6 +29,7 @@ export function GastroLocationHero({
   subcategoryNames,
   city,
   province,
+  titleAction,
   children,
 }: GastroLocationHeroProps) {
   const heroSummary = summary?.trim() || detail?.trim() || null;
@@ -68,6 +71,7 @@ export function GastroLocationHero({
         <h1 className="text-3xl font-bold leading-tight text-white drop-shadow-lg sm:text-4xl md:text-5xl">
           {title}
         </h1>
+        {titleAction ? <div className="mt-3">{titleAction}</div> : null}
         {heroSummary && (
           <p className="mt-2 max-w-2xl text-base leading-relaxed text-white/75 drop-shadow sm:text-lg">
             {heroSummary}

@@ -10,6 +10,8 @@ type ExcursionProductHeroProps = {
   description?: string | null;
   subcategoryName?: string | null;
   operatorName?: string | null;
+  /** Rendered right under the title (share action). */
+  titleAction?: React.ReactNode;
   children?: React.ReactNode;
 };
 
@@ -20,6 +22,7 @@ export function ExcursionProductHero({
   description,
   subcategoryName,
   operatorName,
+  titleAction,
   children,
 }: ExcursionProductHeroProps) {
   const heroSummary = getRentalHeroSummaryText(summary, description);
@@ -49,6 +52,7 @@ export function ExcursionProductHero({
         <h1 className="text-3xl font-bold leading-tight text-white drop-shadow-lg sm:text-4xl md:text-5xl">
           {title}
         </h1>
+        {titleAction ? <div className="mt-3">{titleAction}</div> : null}
         {heroSummary && (
           <p className="mt-3 max-w-2xl text-base leading-relaxed text-white/85 drop-shadow sm:text-lg md:max-w-3xl">
             {heroSummary}

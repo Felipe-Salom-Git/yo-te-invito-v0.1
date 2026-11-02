@@ -9,6 +9,8 @@ type Props = {
   description?: string | null;
   starCategory?: number | null;
   city?: string | null;
+  /** Rendered right under the title (share action). */
+  titleAction?: React.ReactNode;
   children?: React.ReactNode;
 };
 
@@ -19,6 +21,7 @@ export function HotelPublicHero({
   description,
   starCategory,
   city,
+  titleAction,
   children,
 }: Props) {
   const chips: string[] = [getCategoryLabel('hotel')];
@@ -52,6 +55,7 @@ export function HotelPublicHero({
         <h1 className="text-3xl font-bold leading-tight text-white drop-shadow-lg sm:text-4xl md:text-5xl">
           {title}
         </h1>
+        {titleAction ? <div className="mt-3">{titleAction}</div> : null}
         {description?.trim() ? (
           <p className="mt-2 max-w-2xl text-base leading-relaxed text-white/75 drop-shadow sm:text-lg line-clamp-3">
             {description.trim()}

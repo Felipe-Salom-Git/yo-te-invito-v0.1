@@ -6,6 +6,9 @@ import { RentalDescriptionBlock } from '@/components/rentals/RentalDescriptionBl
 import { gastroContentGalleryFromItem } from '@/lib/gastro/gastro-content-gallery';
 import { RentalGalleryThumbnails } from '@/components/rentals/RentalGalleryThumbnails';
 import { ImageGalleryLightbox } from '@/components/ui/ImageGalleryLightbox';
+import { PublicShareButton } from '@/components/share/PublicShareButton';
+import { buildPublicGastroCanonicalPath } from '@/lib/share/gastroLocationShare';
+import { buildPublicationAnchorId } from '@/lib/share/publicShare';
 
 /** Single publication image: full width, opens the shared lightbox on tap. */
 function PublicationSingleImage({ id, url, alt }: { id: string; url: string; alt: string }) {
@@ -36,11 +39,14 @@ function PublicationSingleImage({ id, url, alt }: { id: string; url: string; alt
 type GastroLocationEditorialSectionProps = {
   items: PublicGastroContentItem[];
   locationName: string;
+  /** GastroProfile.id — enables per-publication share (`/gastronomicos/{id}#publicacion-{contentId}`). */
+  locationId?: string;
 };
 
 export function GastroLocationEditorialSection({
   items,
   locationName,
+  locationId,
 }: GastroLocationEditorialSectionProps) {
   if (items.length === 0) return null;
 
@@ -53,10 +59,19 @@ export function GastroLocationEditorialSection({
           const hasText = Boolean(item.title?.trim() || item.body?.trim());
           if (!hasText && gallery.length === 0) return null;
 
+          const anchorId = buildPublicationAnchorId(item.id);
           return (
-            <li key={item.id} className="min-w-0 space-y-3">
+            <li key={item.id} id={anchorId} className="min-w-0 scroll-mt-24 space-y-3">
               {item.title?.trim() ? (
                 <h3 className="text-base font-semibold text-white">{item.title.trim()}</h3>
+              ) : null}
+              {locationId ? (
+                <PublicShareButton
+                  kind="publication"
+                  title={item.title?.trim() || locationName}
+                  path={`${buildPublicGastroCanonicalPath(locationId)}#${anchorId}`}
+                  tone="subtle"
+                />
               ) : null}
               {item.body?.trim() ? (
                 <RentalDescriptionBlock

@@ -8,6 +8,7 @@ import { useRepositories } from '@/repositories/context';
 import { useTenant } from '@/hooks/useTenant';
 import { activityCouponsKeys } from '@/lib/query/keys';
 import { ActivityCouponClaimForm } from '@/components/activities/ActivityCouponClaimForm';
+import { PublicShareButton } from '@/components/share/PublicShareButton';
 import { EXCURSION_PUBLIC_LABEL_SINGULAR } from '@/lib/categories/excursionPublicCopy';
 
 const TENANT_FALLBACK = 'tenant-demo';
@@ -53,7 +54,14 @@ export default function PublicActivityCouponPage() {
         ← {coupon.eventTitle ?? EXCURSION_PUBLIC_LABEL_SINGULAR}
       </Link>
       <SectionTitle>{coupon.title}</SectionTitle>
-      <p className="mt-1 text-text-muted">
+      <PublicShareButton
+        kind="discount"
+        title={coupon.title}
+        path={`/excursiones/cupones/${encodeURIComponent(coupon.id)}`}
+        tone="subtle"
+        className="mt-1"
+      />
+      <p className="mt-3 text-text-muted">
         {coupon.operatorName}
         {coupon.eventTitle ? ` · ${coupon.eventTitle}` : ''}
       </p>
