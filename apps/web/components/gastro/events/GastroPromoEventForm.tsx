@@ -153,7 +153,10 @@ export function GastroPromoEventForm({ initial, local, mode, pending, onSubmit, 
             />
             <EventLocationFields
               value={form.location}
-              onChange={(location) => set('location', location)}
+              onChange={(location) => {
+                set('location', location);
+                setErrors((e) => (e.location ? { ...e, location: undefined } : e));
+              }}
               required
               geoContext="EVENT"
               errors={errors.location}
