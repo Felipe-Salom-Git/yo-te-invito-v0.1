@@ -32,6 +32,9 @@ async function postValidate(
   return res.json();
 }
 
+/** `GastroDiscountClaim.shortCode` is required and globally unique. */
+const newShortCode = () => randomBytes(3).toString('hex').toUpperCase();
+
 function assert(cond: boolean, msg: string) {
   if (!cond) {
     console.error('FAIL:', msg);
@@ -113,6 +116,18 @@ async function main() {
     },
   });
 
+  await prisma.scannerAccount.upsert({
+    where: { scannerUserId: scannerUser.id },
+    update: { parentProfileType: 'GASTRO', parentProfileId: profile.id, isActive: true },
+    create: {
+      tenantId: tenant.id,
+      scannerUserId: scannerUser.id,
+      parentUserId: patronUser.id,
+      parentProfileType: 'GASTRO',
+      parentProfileId: profile.id,
+    },
+  });
+
   const expiresToday = normalizeGastroDiscountExpiryDate(new Date());
 
   const claimToken = randomBytes(24).toString('hex');
@@ -153,6 +168,7 @@ async function main() {
       email: 'guest@gastro-scan.test',
       qrToken: claimToken,
       accessToken: randomBytes(32).toString('hex'),
+      shortCode: newShortCode(),
       expiresAt: expiresToday,
       status: 'ACTIVE',
     },
@@ -184,7 +200,7 @@ async function main() {
       tenantId: tenant.id,
       eventId: event.id,
       gastroProfileId: profile.id,
-      code: 'SCAN-APPROVED-01',
+      code: `SCAN-APPROVED-${randomBytes(3).toString('hex')}`,
       type: 'PERCENT',
       value: 10,
       status: 'APPROVED',
@@ -201,7 +217,7 @@ async function main() {
       email: 'approved@gastro-scan.test',
       qrToken: approvedToken,
       accessToken: randomBytes(32).toString('hex'),
-      shortCode: 'TSTAP1',
+      shortCode: newShortCode(),
       expiresAt: expiresToday,
       status: 'ACTIVE',
     },
@@ -252,6 +268,7 @@ async function main() {
       userId: patronUser.id,
       qrToken: tokenA,
       accessToken: randomBytes(32).toString('hex'),
+      shortCode: newShortCode(),
       expiresAt: expiresToday,
       status: 'ACTIVE',
     },
@@ -271,6 +288,7 @@ async function main() {
       userId: patronUser.id,
       qrToken: tokenB,
       accessToken: randomBytes(32).toString('hex'),
+      shortCode: newShortCode(),
       expiresAt: expiresToday,
       status: 'ACTIVE',
     },
@@ -308,6 +326,7 @@ async function main() {
       email: 'guest2@gastro-scan.test',
       qrToken: claim2Token,
       accessToken: randomBytes(32).toString('hex'),
+      shortCode: newShortCode(),
     },
   });
   const inactivePayload = buildGastroDiscountQrPayload(discount.id, claim2Token);
