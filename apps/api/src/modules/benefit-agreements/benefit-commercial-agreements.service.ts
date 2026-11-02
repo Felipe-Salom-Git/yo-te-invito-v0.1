@@ -17,6 +17,7 @@ import {
   moneyCentsToString,
   parseMoneyCentsString,
   resolveBenefitAgreementAtDate,
+  resolveBenefitAgreementScope,
   type BenefitCommercialAgreementDto,
   type BenefitCommercialAgreementPartnerHistoryQuery,
   type BenefitCommercialAgreementPartnerHistoryResponse,
@@ -33,6 +34,7 @@ import { AuditService } from '../audit/audit.service';
 
 type AgreementRow = BenefitCommercialAgreement & {
   gastroProfile?: { displayName: string } | null;
+  gastroDiscount?: { displayTitle: string | null } | null;
   excursionOperator?: { name: string } | null;
 };
 
@@ -131,6 +133,7 @@ export class BenefitCommercialAgreementsService {
     return {
       vertical: query.vertical,
       gastroProfileId: query.gastroProfileId ?? null,
+      gastroDiscountId: null,
       excursionOperatorId: query.excursionOperatorId ?? null,
       onDate: onDateKey,
       agreement,
@@ -487,8 +490,12 @@ export class BenefitCommercialAgreementsService {
       tenantId: row.tenantId,
       vertical: row.vertical,
       gastroProfileId: row.gastroProfileId,
+      gastroDiscountId: row.gastroDiscountId,
       excursionOperatorId: row.excursionOperatorId,
+      scope: resolveBenefitAgreementScope(row),
+      derivedFromAgreementId: row.derivedFromAgreementId,
       partnerDisplayName: row.gastroProfile?.displayName ?? row.excursionOperator?.name ?? null,
+      discountTitle: row.gastroDiscount?.displayTitle ?? null,
       unitPriceCents: moneyCentsToString(row.unitPriceCents),
       barterMultiplier: row.barterMultiplier.toString(),
       currency: row.currency,

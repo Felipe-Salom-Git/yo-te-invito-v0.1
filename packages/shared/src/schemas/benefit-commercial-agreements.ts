@@ -1,7 +1,9 @@
 import { z } from 'zod';
 import {
+  BENEFIT_AGREEMENT_SCOPES,
   BENEFIT_VERTICALS,
   assertBenefitPartnerXor,
+  isNewBenefitAgreementScopeValid,
 } from '../benefit-commercial-agreements';
 import {
   barterMultiplierInputSchema,
@@ -12,6 +14,7 @@ import {
 const calendarDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'expected YYYY-MM-DD');
 
 export const benefitVerticalSchema = z.enum(BENEFIT_VERTICALS);
+export const benefitAgreementScopeSchema = z.enum(BENEFIT_AGREEMENT_SCOPES);
 
 const partnerFieldsBaseSchema = z
   .object({
@@ -35,15 +38,29 @@ function refinePartnerXor<T extends z.ZodTypeAny>(schema: T) {
   });
 }
 
-export const createBenefitCommercialAgreementBodySchema = refinePartnerXor(
-  partnerFieldsBaseSchema.extend({
+/**
+ * G10 (D-G10-1/10): a new GASTRO agreement is always discount-scoped
+ * (gastroProfileId + gastroDiscountId); legacy profile-scoped rows can no longer be created.
+ */
+export const createBenefitCommercialAgreementBodySchema = partnerFieldsBaseSchema
+  .extend({
+    gastroDiscountId: z.string().min(1).optional(),
     unitPriceCents: benefitUnitPriceCentsInputSchema,
     barterMultiplier: barterMultiplierInputSchema,
     currency: z.literal('ARS').default('ARS'),
     validFrom: calendarDateSchema,
     notes: z.string().trim().max(2000).optional(),
-  }),
-);
+  })
+  .superRefine((val, ctx) => {
+    if (!isNewBenefitAgreementScopeValid(val)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          'GASTRO requires gastroProfileId + gastroDiscountId; ACTIVITY requires excursionOperatorId only',
+        path: ['vertical'],
+      });
+    }
+  });
 
 export type CreateBenefitCommercialAgreementBody = z.infer<
   typeof createBenefitCommercialAgreementBodySchema
@@ -86,7 +103,9 @@ export type UpdateBenefitCommercialAgreementNotesBody = z.infer<
 export const benefitCommercialAgreementsListQuerySchema = z.object({
   vertical: benefitVerticalSchema.optional(),
   gastroProfileId: z.string().min(1).optional(),
+  gastroDiscountId: z.string().min(1).optional(),
   excursionOperatorId: z.string().min(1).optional(),
+  scope: benefitAgreementScopeSchema.optional(),
   vigency: z.enum(['CURRENT', 'PAST', 'FUTURE', 'ALL']).default('ALL'),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(50),
@@ -104,12 +123,42 @@ export type BenefitCommercialAgreementPartnerHistoryQuery = z.infer<
   typeof benefitCommercialAgreementPartnerHistoryQuerySchema
 >;
 
-/** Resolve agreement vigente for partner on a calendar date (default: today AR). */
-export const benefitCommercialAgreementResolveQuerySchema = refinePartnerXor(
-  partnerFieldsBaseSchema.extend({
+/** G10 — history of one discount: discount-scoped agreements + legacy rows used by its allocations. */
+export const benefitCommercialAgreementDiscountHistoryQuerySchema = z
+  .object({
+    gastroDiscountId: z.string().min(1),
+  })
+  .strict();
+
+export type BenefitCommercialAgreementDiscountHistoryQuery = z.infer<
+  typeof benefitCommercialAgreementDiscountHistoryQuerySchema
+>;
+
+/**
+ * Resolve agreement vigente on a calendar date (default: today AR).
+ * GASTRO + gastroDiscountId → DISCOUNT scope (the only scope used for pricing).
+ * GASTRO + gastroProfileId only → PROFILE_LEGACY (transitional approval gate until G10.B; read-only).
+ * ACTIVITY + excursionOperatorId → OPERATOR.
+ */
+export const benefitCommercialAgreementResolveQuerySchema = partnerFieldsBaseSchema
+  .extend({
+    gastroDiscountId: z.string().min(1).optional(),
     onDate: calendarDateSchema.optional(),
-  }),
-);
+  })
+  .superRefine((val, ctx) => {
+    const ok =
+      val.vertical === 'GASTRO'
+        ? Boolean(val.gastroDiscountId || val.gastroProfileId) && !val.excursionOperatorId
+        : Boolean(val.excursionOperatorId) && !val.gastroProfileId && !val.gastroDiscountId;
+    if (!ok) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          'GASTRO requires gastroDiscountId (or legacy gastroProfileId); ACTIVITY requires excursionOperatorId only',
+        path: ['vertical'],
+      });
+    }
+  });
 
 export type BenefitCommercialAgreementResolveQuery = z.infer<
   typeof benefitCommercialAgreementResolveQuerySchema
@@ -120,8 +169,14 @@ export const benefitCommercialAgreementDtoSchema = z.object({
   tenantId: z.string(),
   vertical: benefitVerticalSchema,
   gastroProfileId: z.string().nullable(),
+  gastroDiscountId: z.string().nullable(),
   excursionOperatorId: z.string().nullable(),
+  /** G10 — derived: DISCOUNT | PROFILE_LEGACY (read-only) | OPERATOR. */
+  scope: benefitAgreementScopeSchema,
+  /** Backfill lineage (legacy profile agreement this copy came from). */
+  derivedFromAgreementId: z.string().nullable(),
   partnerDisplayName: z.string().nullable(),
+  discountTitle: z.string().nullable(),
   unitPriceCents: moneyCentsStringSchema,
   barterMultiplier: z.string(),
   currency: z.string(),
@@ -140,6 +195,7 @@ export type BenefitCommercialAgreementDto = z.infer<typeof benefitCommercialAgre
 export const benefitCommercialAgreementResolveResponseSchema = z.object({
   vertical: benefitVerticalSchema,
   gastroProfileId: z.string().nullable(),
+  gastroDiscountId: z.string().nullable(),
   excursionOperatorId: z.string().nullable(),
   onDate: calendarDateSchema,
   agreement: benefitCommercialAgreementDtoSchema.nullable(),
@@ -171,4 +227,23 @@ export const benefitCommercialAgreementPartnerHistoryResponseSchema = z.object({
 
 export type BenefitCommercialAgreementPartnerHistoryResponse = z.infer<
   typeof benefitCommercialAgreementPartnerHistoryResponseSchema
+>;
+
+export const benefitCommercialAgreementLegacyUsageSchema = z.object({
+  agreement: benefitCommercialAgreementDtoSchema,
+  /** Allocations of this discount priced with the legacy profile agreement (EXACT). */
+  usageCount: z.number().int().min(0),
+});
+
+export const benefitCommercialAgreementDiscountHistoryResponseSchema = z.object({
+  gastroDiscountId: z.string(),
+  gastroProfileId: z.string().nullable(),
+  discountTitle: z.string().nullable(),
+  current: benefitCommercialAgreementDtoSchema.nullable(),
+  history: z.array(benefitCommercialAgreementDtoSchema),
+  legacyUsed: z.array(benefitCommercialAgreementLegacyUsageSchema),
+});
+
+export type BenefitCommercialAgreementDiscountHistoryResponse = z.infer<
+  typeof benefitCommercialAgreementDiscountHistoryResponseSchema
 >;

@@ -170,6 +170,32 @@ export function previewAllocationSelection(
   };
 }
 
+/** G10 (D-G10-6) — group missing-agreement usages by discount (stable order: count desc, id asc). */
+export function groupMissingAgreementsByBenefit(
+  missing: ReadonlyArray<{ benefitId?: string | null }>,
+): Array<{ benefitId: string | null; usageCount: number }> {
+  const counts = new Map<string | null, number>();
+  for (const m of missing) {
+    const key = m.benefitId ?? null;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .map(([benefitId, usageCount]) => ({ benefitId, usageCount }))
+    .sort((a, b) => b.usageCount - a.usageCount || String(a.benefitId).localeCompare(String(b.benefitId)));
+}
+
+/**
+ * G10 (D-G10-6) — explicit selection: returns the selected ids that have no applicable agreement.
+ * Only those block the allocate; other discounts' missing agreements never do.
+ */
+export function selectedValidationsMissingAgreement(
+  selectedIds: readonly string[],
+  missing: ReadonlyArray<{ validationId: string }>,
+): string[] {
+  const missingIds = new Set(missing.map((m) => m.validationId));
+  return selectedIds.filter((id) => missingIds.has(id));
+}
+
 export type SettlementCloseBlocker = 'ALREADY_CLOSED' | 'PENDING_USAGES' | 'MISSING_AGREEMENTS';
 
 /**

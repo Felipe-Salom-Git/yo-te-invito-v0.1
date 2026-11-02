@@ -82,10 +82,22 @@ export const benefitSettlementMissingAgreementSchema = z.object({
   validationSource: z.enum(BENEFIT_VALIDATION_SOURCES),
   validationId: z.string(),
   validatedAt: z.string().datetime(),
+  /** G10 — GastroDiscount.id (GASTRO) whose own agreement is missing; null for ACTIVITY. */
+  benefitId: z.string().nullable().optional(),
 });
 
 export type BenefitSettlementMissingAgreement = z.infer<
   typeof benefitSettlementMissingAgreementSchema
+>;
+
+/** G10 (D-G10-6) — billable usages without agreement, grouped by discount. */
+export const benefitSettlementMissingAgreementGroupSchema = z.object({
+  benefitId: z.string().nullable(),
+  usageCount: z.number().int().min(0),
+});
+
+export type BenefitSettlementMissingAgreementGroup = z.infer<
+  typeof benefitSettlementMissingAgreementGroupSchema
 >;
 
 export const benefitSettlementSummarySchema = z.object({
@@ -107,6 +119,9 @@ export const benefitSettlementSummarySchema = z.object({
   barterCreditMaterializedCents: moneyCentsStringSchema.optional(),
   /** G8.11 — credit-funded courtesy validations in the period (operational usage, NOT billable). */
   fundedCourtesyUsageCount: z.number().int().min(0).optional(),
+  /** G10 — billable usages without applicable agreement (block close only). */
+  missingAgreementUsageCount: z.number().int().min(0).optional(),
+  missingAgreementsByBenefit: z.array(benefitSettlementMissingAgreementGroupSchema).optional(),
 });
 
 export type BenefitSettlementSummary = z.infer<typeof benefitSettlementSummarySchema>;
@@ -179,6 +194,8 @@ export const benefitSettlementPendingValidationsResponseSchema = z.object({
   data: z.array(benefitSettlementPendingValidationSchema),
   /** Eligible validations without applicable agreement (not allocatable until fixed). */
   missingAgreementCount: z.number().int().min(0),
+  /** G10 — same validations grouped by discount (each discount needs its own agreement). */
+  missingAgreementsByBenefit: z.array(benefitSettlementMissingAgreementGroupSchema).optional(),
   /** G8.11 — validations of credit-funded courtesies in the period: operational, NOT billable. */
   fundedCourtesyExcludedCount: z.number().int().min(0),
 });

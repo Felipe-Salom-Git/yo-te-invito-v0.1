@@ -226,6 +226,59 @@ export function checkFundedCourtesyAllocation(params: {
   };
 }
 
+/**
+ * G10 — discount-scoped agreement coherence (cannot be a SQL CHECK: cross-table).
+ * `discountExists=false` = corrupted reference; profile mismatch = agreement prices another local.
+ */
+export function checkAgreementScopeMismatch(params: {
+  agreementId: string;
+  agreementGastroProfileId: string | null;
+  gastroDiscountId: string | null;
+  discountExists: boolean;
+  discountGastroProfileId: string | null;
+}): BenefitIntegrityIssue | null {
+  if (!params.gastroDiscountId) return null;
+  if (!params.discountExists) {
+    return {
+      code: 'AGREEMENT_SCOPE_MISMATCH',
+      severity: 'ERROR',
+      message: 'Acuerdo por descuento que referencia un descuento inexistente',
+      entityType: 'BenefitCommercialAgreement',
+      entityId: params.agreementId,
+    };
+  }
+  if (
+    !params.agreementGastroProfileId ||
+    params.agreementGastroProfileId !== params.discountGastroProfileId
+  ) {
+    return {
+      code: 'AGREEMENT_SCOPE_MISMATCH',
+      severity: 'ERROR',
+      message: 'El local del acuerdo no coincide con el local del descuento',
+      entityType: 'BenefitCommercialAgreement',
+      entityId: params.agreementId,
+    };
+  }
+  return null;
+}
+
+/** G10 — an allocation priced with a discount-scoped agreement must belong to that discount. */
+export function checkAllocationAgreementDiscountMismatch(params: {
+  allocationId: string;
+  agreementGastroDiscountId: string | null;
+  validationDiscountId: string | null;
+}): BenefitIntegrityIssue | null {
+  if (!params.agreementGastroDiscountId || !params.validationDiscountId) return null;
+  if (params.agreementGastroDiscountId === params.validationDiscountId) return null;
+  return {
+    code: 'ALLOCATION_AGREEMENT_DISCOUNT_MISMATCH',
+    severity: 'ERROR',
+    message: 'Allocation valuada con el acuerdo de otro descuento',
+    entityType: 'BenefitSettlementUsageAllocation',
+    entityId: params.allocationId,
+  };
+}
+
 export function checkPartnerMismatchAllocation(params: {
   allocationId: string;
   settlementVertical: 'GASTRO' | 'ACTIVITY';

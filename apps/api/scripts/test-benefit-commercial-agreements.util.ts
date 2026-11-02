@@ -84,11 +84,22 @@ assert(
   createBenefitCommercialAgreementBodySchema.safeParse({
     vertical: 'GASTRO',
     gastroProfileId: 'gp1',
+    gastroDiscountId: 'd1',
     unitPriceCents: largeCents,
     barterMultiplier: '2.0000',
     validFrom: '2026-08-01',
   }).success,
   'create schema accepts large cents string',
+);
+assert(
+  !createBenefitCommercialAgreementBodySchema.safeParse({
+    vertical: 'GASTRO',
+    gastroProfileId: 'gp1',
+    unitPriceCents: '500000',
+    barterMultiplier: '2',
+    validFrom: '2026-08-01',
+  }).success,
+  'G10: new GASTRO agreement without discount rejected (legacy read-only)',
 );
 assert(
   !createBenefitCommercialAgreementBodySchema.safeParse({

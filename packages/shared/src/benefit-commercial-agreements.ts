@@ -81,6 +81,66 @@ export function benefitAgreementPreviousCalendarDay(dateKey: string): string {
   return `${yy}-${mm}-${dd}`;
 }
 
+/**
+ * G10 — agreement scope (derived, never persisted).
+ * EN: DISCOUNT = GASTRO agreement of one GastroDiscount; PROFILE_LEGACY = pre-G10 GASTRO agreement of
+ *     a GastroProfile (read-only history, never used for new pricing); OPERATOR = ACTIVITY agreement.
+ * ES: DISCOUNT = contrato de un descuento; PROFILE_LEGACY = contrato del local previo a G10 (solo
+ *     histórico, nunca se usa para pricing nuevo); OPERATOR = contrato de Actividades.
+ */
+export const BENEFIT_AGREEMENT_SCOPES = ['DISCOUNT', 'PROFILE_LEGACY', 'OPERATOR'] as const;
+export type BenefitAgreementScope = (typeof BENEFIT_AGREEMENT_SCOPES)[number];
+
+export type BenefitAgreementScopeFields = {
+  vertical: BenefitVertical;
+  gastroProfileId?: string | null;
+  gastroDiscountId?: string | null;
+  excursionOperatorId?: string | null;
+};
+
+export function resolveBenefitAgreementScope(row: BenefitAgreementScopeFields): BenefitAgreementScope {
+  if (row.vertical === 'ACTIVITY') return 'OPERATOR';
+  return row.gastroDiscountId ? 'DISCOUNT' : 'PROFILE_LEGACY';
+}
+
+export function isDiscountScopedGastroAgreement(row: BenefitAgreementScopeFields): boolean {
+  return resolveBenefitAgreementScope(row) === 'DISCOUNT';
+}
+
+export function isLegacyGastroAgreement(row: BenefitAgreementScopeFields): boolean {
+  return resolveBenefitAgreementScope(row) === 'PROFILE_LEGACY';
+}
+
+/** D-G10-10 — legacy profile-scoped rows cannot be closed, replaced or edited. */
+export function isBenefitAgreementReadOnly(row: BenefitAgreementScopeFields): boolean {
+  return isLegacyGastroAgreement(row);
+}
+
+/** Mirrors the SQL CHECKs + partner xor for any persisted row (legacy rows included). */
+export function isBenefitAgreementScopeShapeValid(row: BenefitAgreementScopeFields): boolean {
+  if (!assertBenefitPartnerXor(row.vertical, row.gastroProfileId, row.excursionOperatorId)) return false;
+  if (row.vertical === 'ACTIVITY') return !row.gastroDiscountId;
+  return true;
+}
+
+/**
+ * Shape required to CREATE an agreement from G10 on: GASTRO needs profile + discount
+ * (never a new legacy row); ACTIVITY keeps operator only.
+ */
+export function isNewBenefitAgreementScopeValid(row: BenefitAgreementScopeFields): boolean {
+  if (!isBenefitAgreementScopeShapeValid(row)) return false;
+  if (row.vertical === 'GASTRO') return Boolean(row.gastroDiscountId);
+  return true;
+}
+
+/** Cross-table coherence (no SQL CHECK possible): agreement profile must equal discount profile. */
+export function benefitAgreementMatchesDiscountProfile(
+  agreementGastroProfileId: string | null | undefined,
+  discountGastroProfileId: string | null | undefined,
+): boolean {
+  return Boolean(agreementGastroProfileId) && agreementGastroProfileId === discountGastroProfileId;
+}
+
 export function classifyBenefitAgreementVigency(
   validFromKey: string,
   validToKey: string | null,

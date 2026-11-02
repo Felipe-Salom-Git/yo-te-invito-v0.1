@@ -191,6 +191,8 @@ export const benefitReportingIntegrityResponseSchema = z.object({
   warnings: z.number().int(),
   errors: z.number().int(),
   data: z.array(benefitReportingIntegrityRowSchema),
+  /** G10 — tenant-wide discount-scoped agreement coherence (AGREEMENT_SCOPE_MISMATCH). */
+  agreementScopeIssues: z.array(benefitIntegrityIssueSchema).optional(),
 });
 
 export type BenefitReportingIntegrityResponse = z.infer<
