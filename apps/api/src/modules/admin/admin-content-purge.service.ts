@@ -187,6 +187,18 @@ export class AdminContentPurgeService {
       if (profile.publicEventId) {
         await this.purgeEventInTx(tx, tenantId, profile.publicEventId);
       }
+      // G12.2 — promotional events of the local (FK RESTRICT): purge, then detach before delete.
+      const promoEvents = await tx.event.findMany({
+        where: { tenantId, gastroProfileId: profileId, deletedAt: null },
+        select: { id: true },
+      });
+      for (const { id } of promoEvents) {
+        await this.purgeEventInTx(tx, tenantId, id);
+      }
+      await tx.event.updateMany({
+        where: { gastroProfileId: profileId },
+        data: { gastroProfileId: null },
+      });
 
       await tx.gastroProfile.delete({ where: { id: profileId } });
     });

@@ -438,6 +438,7 @@ model GastroProfile {
   benefitSettlements          BenefitSettlement[]
   courtesyCreditLedgerEntries CourtesyCreditLedgerEntry[]
   reviewDisputeRequests       ReviewDisputeRequest[]
+  promoEvents                 Event[]                @relation("GastroPromoEvents")
 
   @@index([tenantId])
   @@index([tenantId, status])
@@ -1324,6 +1325,9 @@ model Event {
   tenantId          String
   producerId        String       // LEGACY: kept for compatibility; prefer producerProfileId
   producerProfileId String?      // ownership via ProducerProfile
+  /// G12.2 — promotional event created by a gastro local (no ticketing). DB CHECK: never together
+  /// with producerProfileId. Not the local's own page-event (that is GastroProfile.publicEventId).
+  gastroProfileId   String?
   category          String?      // event | gastro | excursion | rental | hotel
   subcategoryId     String?
   rentalLocationId    String?
@@ -1366,6 +1370,7 @@ model Event {
 
   tenant      Tenant       @relation(fields: [tenantId], references: [id])
   producerProfile ProducerProfile? @relation(fields: [producerProfileId], references: [id], onDelete: SetNull)
+  gastroProfile   GastroProfile?   @relation("GastroPromoEvents", fields: [gastroProfileId], references: [id], onDelete: Restrict)
   subcategory        ContentSubcategory? @relation(fields: [subcategoryId], references: [id], onDelete: SetNull)
   eventSubcategories EventSubcategory[]
   eventTags          EventTag[]
@@ -1404,6 +1409,7 @@ model Event {
   @@index([tenantId, status, deletedAt, startAt])
   @@index([tenantId, city])
   @@index([producerProfileId])
+  @@index([tenantId, gastroProfileId, status])
   @@index([subcategoryId])
   @@index([rentalLocationId])
   @@index([excursionOperatorId])

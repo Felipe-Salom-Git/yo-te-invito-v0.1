@@ -13,7 +13,7 @@ import type {
   EventSummary,
   EventsPaginatedResponse,
 } from '@yo-te-invito/shared';
-import { deriveProducerEventMode } from '@yo-te-invito/shared';
+import { deriveProducerEventMode, isGastroPromoEvent } from '@yo-te-invito/shared';
 import { ErrorCode, parseRentalOpeningHours, trimToPublicSummary } from '@yo-te-invito/shared';
 import { SubcategoriesService } from '../subcategories/subcategories.service';
 import { RentalLocationsService } from '../rental-locations/rental-locations.service';
@@ -64,7 +64,7 @@ export class ProducerEventsCrudService {
   ) {
     const event = await this.prisma.event.findFirst({
       where: { id: eventId, tenantId, deletedAt: null },
-      select: { id: true, producerId: true, producerProfileId: true },
+      select: { id: true, producerId: true, producerProfileId: true, gastroProfileId: true },
     });
     if (!event) {
       throw new NotFoundException({
@@ -73,6 +73,12 @@ export class ProducerEventsCrudService {
       });
     }
     const isAdmin = userRole === 'ADMIN';
+    if (!isAdmin && isGastroPromoEvent(event)) {
+      throw new ForbiddenException({
+        code: ErrorCode.FORBIDDEN,
+        message: 'Gastro promotional events are managed from the gastro portal',
+      });
+    }
     const canManage =
       isAdmin ||
       (await this.profilesAuth.canManageEvent(tenantId, userId, event));
@@ -284,9 +290,11 @@ export class ProducerEventsCrudService {
       producerProfileId?: { in: string[] };
       OR?: Array<{ producerId: string } | { producerProfileId: { in: string[] } }>;
       status?: EventStatus;
+      gastroProfileId: null;
     } = {
       tenantId,
       deletedAt: null,
+      gastroProfileId: null,
     };
     if (userRole !== 'ADMIN') {
       const profileId = await this.profilesAuth.getDefaultProducerProfileId(

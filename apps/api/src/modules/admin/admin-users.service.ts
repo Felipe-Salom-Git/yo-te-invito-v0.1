@@ -330,13 +330,20 @@ export class AdminUsersService {
     }
 
     for (const { profileId } of gastroMemberships) {
-      const [others, discounts, content, publicEvent] = await Promise.all([
+      const [others, discounts, content, publicEvent, promoEvents] = await Promise.all([
         tx.userGastroMembership.count({ where: { profileId, userId: { not: userId } } }),
         tx.gastroDiscount.count({ where: { gastroProfileId: profileId } }),
         tx.gastroContent.count({ where: { gastroProfileId: profileId } }),
         tx.gastroProfile.count({ where: { id: profileId, publicEventId: { not: null } } }),
+        tx.event.count({ where: { gastroProfileId: profileId } }),
       ]);
-      if (others === 0 && discounts === 0 && content === 0 && publicEvent === 0) {
+      if (
+        others === 0 &&
+        discounts === 0 &&
+        content === 0 &&
+        publicEvent === 0 &&
+        promoEvents === 0
+      ) {
         await tx.gastroProfile.delete({ where: { id: profileId } }).catch(() => undefined);
       }
     }

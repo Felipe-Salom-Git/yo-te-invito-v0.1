@@ -85,6 +85,7 @@ export * from './schemas/admin-deep-delete';
 export * from './schemas/admin-payments';
 export * from './schemas/general-publications';
 export * from './schemas/gastro-locations';
+export * from './schemas/gastro-promo-events';
 export * from './schemas/gastro-weekly-opening-hours';
 export * from './schemas/hotel-profile';
 export * from './schemas/public-hotel-locations';

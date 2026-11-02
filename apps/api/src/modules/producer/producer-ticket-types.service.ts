@@ -13,7 +13,7 @@ import type {
   TicketTypeResponse,
   TicketBatchResponse,
 } from '@yo-te-invito/shared';
-import { ErrorCode } from '@yo-te-invito/shared';
+import { ErrorCode, isGastroPromoEvent } from '@yo-te-invito/shared';
 import { Decimal } from '@prisma/client/runtime/library';
 
 function deriveBatchStatus(start: Date, end: Date, now: Date): TicketBatchStatus {
@@ -43,12 +43,19 @@ export class ProducerTicketTypesService {
         isTicketingEnabled: true,
         isGeneralPublication: true,
         tenantId: true,
+        gastroProfileId: true,
       },
     });
     if (!event) {
       throw new NotFoundException({
         code: ErrorCode.NOT_FOUND,
         message: 'Event not found',
+      });
+    }
+    if (isGastroPromoEvent(event)) {
+      throw new ForbiddenException({
+        code: ErrorCode.FORBIDDEN,
+        message: 'Gastro promotional events have no ticketing',
       });
     }
     const isAdmin = userRole === 'ADMIN';

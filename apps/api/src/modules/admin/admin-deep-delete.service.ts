@@ -265,6 +265,14 @@ export class AdminDeepDeleteService {
     if (profile.publicEventId) {
       await this.purgeEventShellInTx(tx, profile.publicEventId);
     }
+    // G12.2 — promotional events of the local (FK RESTRICT): purged with the local.
+    const promoEvents = await tx.event.findMany({
+      where: { tenantId, gastroProfileId: profileId, deletedAt: null },
+      select: { id: true },
+    });
+    for (const { id } of promoEvents) {
+      await this.purgeEventShellInTx(tx, id);
+    }
 
     const usedClaims = await tx.gastroDiscountClaim.count({
       where: { discount: { gastroProfileId: profileId }, status: 'USED' },
@@ -285,6 +293,10 @@ export class AdminDeepDeleteService {
       for (const d of discounts) {
         await tx.gastroDiscount.delete({ where: { id: d.id } }).catch(() => undefined);
       }
+      await tx.event.updateMany({
+        where: { gastroProfileId: profileId },
+        data: { gastroProfileId: null },
+      });
       await tx.gastroProfile.delete({ where: { id: profileId } }).catch(() => undefined);
     } else {
       await tx.gastroProfile.update({
