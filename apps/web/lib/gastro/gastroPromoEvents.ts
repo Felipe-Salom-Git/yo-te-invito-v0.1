@@ -9,6 +9,15 @@ import {
   type GastroPromoEventStatus,
 } from '@yo-te-invito/shared';
 import { isoToDatetimeLocalInput, localInputToIso } from '@/lib/producer/datetime-local';
+import {
+  MODERN_LOCATION_REQUIREMENTS,
+  eventFieldsFromLocationValue,
+  hasLocationFieldErrors,
+  locationValueFromEventFields,
+  validateLocationFields,
+  type LocationFieldErrors,
+} from '@/components/location/location.utils';
+import { EMPTY_LOCATION_VALUE, type LocationValue } from '@/components/location/location.types';
 
 export const GASTRO_CONTENT_TAB = { PUBLICATIONS: 'publicaciones', EVENTS: 'eventos' } as const;
 export type GastroContentTab = (typeof GASTRO_CONTENT_TAB)[keyof typeof GASTRO_CONTENT_TAB];
@@ -94,17 +103,22 @@ export function toGastroLocalEventCards(
     });
 }
 
+
+export const GASTRO_PROMO_EVENT_LOCATION_MODE = { LOCAL: 'local', CUSTOM: 'custom' } as const;
+export type GastroPromoEventLocationMode =
+  (typeof GASTRO_PROMO_EVENT_LOCATION_MODE)[keyof typeof GASTRO_PROMO_EVENT_LOCATION_MODE];
+
 export type GastroPromoEventFormState = {
   title: string;
   description: string;
   galleryUrls: string[];
   startLocal: string;
   endLocal: string;
-  /** false → custom venue fields below; true → the local's own name / address. */
-  atLocal: boolean;
+  /** G12.4 — `local` (default): the local's location; `custom`: modern location picker. */
+  locationMode: GastroPromoEventLocationMode;
+  /** Optional venue name for a custom location (e.g. «Plaza del Centro Cívico»). */
   venueName: string;
-  venueAddress: string;
-  city: string;
+  location: LocationValue;
   subcategoryId: string;
   tagIds: string[];
 };
@@ -115,52 +129,69 @@ export const EMPTY_GASTRO_PROMO_EVENT_FORM: GastroPromoEventFormState = {
   galleryUrls: [],
   startLocal: '',
   endLocal: '',
-  atLocal: true,
+  locationMode: GASTRO_PROMO_EVENT_LOCATION_MODE.LOCAL,
   venueName: '',
-  venueAddress: '',
-  city: '',
+  location: EMPTY_LOCATION_VALUE,
   subcategoryId: '',
   tagIds: [],
 };
 
-export function gastroPromoEventToForm(
-  event: GastroPromoEventResponse,
-  local: { displayName: string; address: string | null },
+/**
+ * Switching modes never mixes values: back to `local` discards the custom picker state; to
+ * `custom` starts from an empty picker (the local's pin is not reused as a custom venue).
+ */
+export function switchGastroPromoEventLocationMode(
+  form: GastroPromoEventFormState,
+  mode: GastroPromoEventLocationMode,
 ): GastroPromoEventFormState {
-  const atLocal =
-    (event.venueName ?? '') === local.displayName && (event.venueAddress ?? '') === (local.address ?? '');
+  if (form.locationMode === mode) return form;
+  return { ...form, locationMode: mode, venueName: '', location: EMPTY_LOCATION_VALUE };
+}
+
+export function gastroPromoEventToForm(event: GastroPromoEventResponse): GastroPromoEventFormState {
+  const custom = !event.usesLocalLocation;
   return {
     title: event.title,
     description: event.description ?? '',
     galleryUrls: event.galleryUrls,
     startLocal: isoToDatetimeLocalInput(event.startAt),
     endLocal: event.endAt ? isoToDatetimeLocalInput(event.endAt) : '',
-    atLocal,
-    venueName: atLocal ? '' : (event.venueName ?? ''),
-    venueAddress: atLocal ? '' : (event.venueAddress ?? ''),
-    city: atLocal ? '' : (event.city ?? ''),
+    locationMode: custom ? GASTRO_PROMO_EVENT_LOCATION_MODE.CUSTOM : GASTRO_PROMO_EVENT_LOCATION_MODE.LOCAL,
+    venueName: custom ? (event.venueName ?? '') : '',
+    location: custom ? locationValueFromEventFields(event) : EMPTY_LOCATION_VALUE,
     subcategoryId: event.subcategoryId ?? '',
     tagIds: event.tags.map((t) => t.id),
   };
 }
 
+export type GastroPromoEventFormErrors = Partial<
+  Record<'title' | 'startLocal' | 'endLocal', string>
+> & { location?: LocationFieldErrors };
+
 export type GastroPromoEventFormResult =
   | { ok: true; data: Omit<GastroPromoEventCreateInput, 'profileId' | 'submitForReview'> }
-  | { ok: false; errors: Partial<Record<keyof GastroPromoEventFormState, string>> };
+  | { ok: false; errors: GastroPromoEventFormErrors };
 
 /** Validates the portal form and maps it to the API body (same rules as the Zod schema). */
 export function buildGastroPromoEventPayload(form: GastroPromoEventFormState): GastroPromoEventFormResult {
-  const errors: Partial<Record<keyof GastroPromoEventFormState, string>> = {};
+  const errors: GastroPromoEventFormErrors = {};
   const title = form.title.trim();
   if (title.length < 3) errors.title = 'El título debe tener al menos 3 caracteres';
   const start = form.startLocal ? new Date(form.startLocal) : null;
   if (!start || Number.isNaN(start.getTime())) errors.startLocal = 'Indicá fecha y hora del evento';
   const end = form.endLocal ? new Date(form.endLocal) : null;
   if (end && start && end < start) errors.endLocal = 'La fecha de fin no puede ser anterior al inicio';
-  if (!form.atLocal && !form.venueName.trim()) errors.venueName = 'Indicá el lugar del evento';
+  const custom = form.locationMode === GASTRO_PROMO_EVENT_LOCATION_MODE.CUSTOM;
+  if (custom) {
+    const locationErrors = validateLocationFields(form.location, MODERN_LOCATION_REQUIREMENTS);
+    if (hasLocationFieldErrors(locationErrors)) errors.location = locationErrors;
+  }
   if (Object.keys(errors).length > 0) return { ok: false, errors };
 
   const gallery = form.galleryUrls.filter(Boolean);
+  const venue = custom
+    ? { useLocalLocation: false, venueName: form.venueName.trim() || null, ...eventFieldsFromLocationValue(form.location) }
+    : { useLocalLocation: true };
   return {
     ok: true,
     data: {
@@ -170,10 +201,7 @@ export function buildGastroPromoEventPayload(form: GastroPromoEventFormState): G
       coverImageUrl: gallery[0] ?? null,
       startAt: localInputToIso(form.startLocal),
       endAt: form.endLocal ? localInputToIso(form.endLocal) : null,
-      // null → API defaults to the local's name / address / city / province.
-      venueName: form.atLocal ? null : form.venueName.trim(),
-      venueAddress: form.atLocal ? null : form.venueAddress.trim() || null,
-      city: form.atLocal ? null : form.city.trim() || null,
+      ...venue,
       subcategoryId: form.subcategoryId || null,
       tagIds: form.tagIds,
     },

@@ -19,6 +19,12 @@ import { OperationalAlertsEmailService } from '../../email/operational-alerts-em
 import { SubcategoriesService } from '../subcategories/subcategories.service';
 import { mapEventTagsPublic, syncEventTags, validateEventTagIds } from '../../common/event-tags.util';
 import { GastroOwnershipService } from './gastro-ownership.service';
+import {
+  customVenue,
+  localVenue,
+  resolveCreateUsesLocal,
+  venueMatchesLocal,
+} from './gastro-promo-event-venue.util';
 
 /** Promo events are discovery `event`s: never the local's page-event category (`gastro`). */
 const PROMO_EVENT_CATEGORY = 'event';
@@ -41,6 +47,9 @@ type PromoEventRow = {
   venueAddress: string | null;
   city: string | null;
   province: string | null;
+  googlePlaceId: string | null;
+  geoLat: number | null;
+  geoLng: number | null;
   subcategoryId: string | null;
   status: string;
   publishedAt: Date | null;
@@ -66,7 +75,7 @@ export class GastroPromoEventsService {
     private readonly operationalAlerts: OperationalAlertsEmailService,
   ) {}
 
-  private toResponse(row: PromoEventRow): GastroPromoEventResponse {
+  private toResponse(row: PromoEventRow, profile: GastroProfile): GastroPromoEventResponse {
     return {
       id: row.id,
       gastroProfileId: row.gastroProfileId!,
@@ -80,6 +89,10 @@ export class GastroPromoEventsService {
       venueAddress: row.venueAddress,
       city: row.city,
       province: row.province,
+      googlePlaceId: row.googlePlaceId,
+      geoLat: row.geoLat,
+      geoLng: row.geoLng,
+      usesLocalLocation: venueMatchesLocal(row, profile),
       subcategoryId: row.subcategoryId,
       subcategoryName: row.subcategory?.name ?? null,
       tags: mapEventTagsPublic(row.eventTags),
@@ -155,18 +168,18 @@ export class GastroPromoEventsService {
   ): Promise<GastroPromoEventListResponse> {
     const resolvedId =
       profileId?.trim() || (await this.ownership.resolveManagedProfileId(tenantId, userId, null));
-    await this.assertProfileAccess(tenantId, userId, userRole, resolvedId);
+    const profile = await this.assertProfileAccess(tenantId, userId, userRole, resolvedId);
     const rows = await this.prisma.event.findMany({
       where: { tenantId, gastroProfileId: resolvedId, deletedAt: null },
       include: PROMO_EVENT_INCLUDE,
       orderBy: { startAt: 'desc' },
     });
-    return { profileId: resolvedId, data: rows.map((r) => this.toResponse(r)) };
+    return { profileId: resolvedId, data: rows.map((r) => this.toResponse(r, profile)) };
   }
 
   async get(tenantId: string, userId: string, userRole: string, eventId: string) {
-    const { event } = await this.loadForManage(tenantId, userId, userRole, eventId);
-    return this.toResponse(event);
+    const { event, profile } = await this.loadForManage(tenantId, userId, userRole, eventId);
+    return this.toResponse(event, profile);
   }
 
   async create(
@@ -181,6 +194,7 @@ export class GastroPromoEventsService {
     const subcategoryId = await this.resolveSubcategoryId(tenantId, input.subcategoryId);
     const tagIds = await validateEventTagIds(this.prisma, tenantId, PROMO_EVENT_CATEGORY, input.tagIds ?? []);
     const gallery = input.galleryUrls ?? [];
+    const venue = resolveCreateUsesLocal(input) ? localVenue(profile) : customVenue(input);
 
     const created = await this.prisma.$transaction(async (tx) => {
       const event = await tx.event.create({
@@ -195,13 +209,7 @@ export class GastroPromoEventsService {
           description: input.description ?? null,
           startAt: new Date(input.startAt),
           endAt: input.endAt ? new Date(input.endAt) : null,
-          venueName: input.venueName?.trim() || profile.displayName,
-          venueAddress: input.venueAddress?.trim() || profile.address,
-          city: input.city?.trim() || profile.city,
-          province: input.province?.trim() || profile.province,
-          googlePlaceId: input.venueAddress?.trim() ? null : profile.googlePlaceId,
-          geoLat: input.venueAddress?.trim() ? null : profile.geoLat,
-          geoLng: input.venueAddress?.trim() ? null : profile.geoLng,
+          ...venue,
           coverImageUrl: input.coverImageUrl ?? gallery[0] ?? null,
           status: input.submitForReview ? 'PENDING' : 'DRAFT',
           isTicketingEnabled: false,
@@ -218,7 +226,7 @@ export class GastroPromoEventsService {
     });
 
     if (created.status === 'PENDING') this.notifyPending(created, profile.displayName);
-    return this.toResponse(created);
+    return this.toResponse(created, profile);
   }
 
   async update(
@@ -228,7 +236,7 @@ export class GastroPromoEventsService {
     eventId: string,
     input: GastroPromoEventUpdateInput,
   ): Promise<GastroPromoEventResponse> {
-    const { event } = await this.loadForManage(tenantId, userId, userRole, eventId);
+    const { event, profile } = await this.loadForManage(tenantId, userId, userRole, eventId);
     if (input.startAt && input.endAt === undefined && event.endAt && event.endAt < new Date(input.startAt)) {
       throw new BadRequestException({
         code: ErrorCode.VALIDATION_FAILED,
@@ -241,6 +249,13 @@ export class GastroPromoEventsService {
       input.tagIds !== undefined
         ? await validateEventTagIds(this.prisma, tenantId, PROMO_EVENT_CATEGORY, input.tagIds)
         : undefined;
+    // Explicit mode replaces the whole venue (never mixes local + custom fields); no flag = partial patch.
+    const venue =
+      input.useLocalLocation === true
+        ? localVenue(profile)
+        : input.useLocalLocation === false
+          ? customVenue(input)
+          : null;
 
     const updated = await this.prisma.$transaction(async (tx) => {
       await tx.event.update({
@@ -251,10 +266,12 @@ export class GastroPromoEventsService {
           ...(input.coverImageUrl !== undefined && { coverImageUrl: input.coverImageUrl ?? null }),
           ...(input.startAt !== undefined && { startAt: new Date(input.startAt) }),
           ...(input.endAt !== undefined && { endAt: input.endAt ? new Date(input.endAt) : null }),
-          ...(input.venueName !== undefined && { venueName: input.venueName ?? null }),
-          ...(input.venueAddress !== undefined && { venueAddress: input.venueAddress ?? null }),
-          ...(input.city !== undefined && { city: input.city ?? null }),
-          ...(input.province !== undefined && { province: input.province ?? null }),
+          ...(venue ?? {
+            ...(input.venueName !== undefined && { venueName: input.venueName ?? null }),
+            ...(input.venueAddress !== undefined && { venueAddress: input.venueAddress ?? null }),
+            ...(input.city !== undefined && { city: input.city ?? null }),
+            ...(input.province !== undefined && { province: input.province ?? null }),
+          }),
           ...(subcategoryId !== undefined && { subcategoryId }),
         },
       });
@@ -269,7 +286,7 @@ export class GastroPromoEventsService {
       if (tagIds !== undefined) await syncEventTags(tx, eventId, tagIds);
       return tx.event.findFirstOrThrow({ where: { id: eventId }, include: PROMO_EVENT_INCLUDE });
     });
-    return this.toResponse(updated);
+    return this.toResponse(updated, profile);
   }
 
   /** DRAFT / rejected (CANCELLED) → PENDING; ADMIN approves with the existing event moderation. */
@@ -288,7 +305,7 @@ export class GastroPromoEventsService {
       include: PROMO_EVENT_INCLUDE,
     });
     this.notifyPending(updated, profile.displayName);
-    return this.toResponse(updated);
+    return this.toResponse(updated, profile);
   }
 
   /** Soft delete (keeps history); removes it from discovery and the local's page. */

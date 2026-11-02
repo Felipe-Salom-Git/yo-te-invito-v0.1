@@ -18,7 +18,14 @@ import {
 import { GastroPromoEventForm } from './GastroPromoEventForm';
 
 type Props = {
-  local: { id: string; displayName: string; address: string | null; status: string };
+  local: {
+    id: string;
+    displayName: string;
+    address: string | null;
+    city?: string | null;
+    province?: string | null;
+    status: string;
+  };
 };
 
 /** G12.2 — «Eventos» tab of /gastro/contenido: promotional events of the active local. */
@@ -39,7 +46,7 @@ export function GastroPromoEventsPanel({ local }: Props) {
           key={ev.id}
           mode="edit"
           local={local}
-          initial={gastroPromoEventToForm(ev, local)}
+          initial={gastroPromoEventToForm(ev)}
           pending={updateMutation.isPending}
           onCancel={() => setEditingId(null)}
           onSubmit={(payload) =>

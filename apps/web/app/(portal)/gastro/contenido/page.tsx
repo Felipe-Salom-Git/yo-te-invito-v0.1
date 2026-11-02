@@ -138,6 +138,8 @@ export default function GastroContenidoPage() {
               id: local.id,
               displayName: local.displayName,
               address: local.address ?? null,
+              city: local.city ?? null,
+              province: local.province ?? null,
               status: local.status,
             }}
           />

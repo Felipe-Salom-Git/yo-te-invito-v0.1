@@ -137,6 +137,37 @@ async function main() {
   assert(b.gastroProfileId === 'gp-b' && b.status === 'PENDING', 'GASTRO A · own local B → create PASS (PENDING)');
   assert(pendingAlerts.includes(b.id), 'ADMIN notified when submitted for review');
 
+  // G12.4 — location modes.
+  assert(a.usesLocalLocation === true && rowA.geoLng === -71.3, 'default → local location (address + pin copied from the local)');
+  const custom = await service.create(T, 'owner-a', 'GASTRO_OWNER', {
+    ...BASE,
+    profileId: 'gp-a',
+    useLocalLocation: false,
+    venueName: 'Centro Cívico',
+    venueAddress: 'Plaza 1',
+    city: 'San Carlos de Bariloche',
+    province: 'Río Negro',
+    googlePlaceId: 'pl-9',
+    geoLat: -41.13,
+    geoLng: -71.31,
+  });
+  const rowCustom = events.find((e) => e.id === custom.id)!;
+  assert(custom.usesLocalLocation === false && rowCustom.venueAddress === 'Plaza 1', 'custom location stored as the event venue');
+  assert(rowCustom.geoLat === -41.13 && rowCustom.geoLng === -71.31 && rowCustom.googlePlaceId === 'pl-9', 'custom pin preserved (not the local pin)');
+  const toLocal = await service.update(T, 'owner-a', 'GASTRO_OWNER', custom.id, { useLocalLocation: true, venueAddress: 'ignored', geoLat: 1, geoLng: 1 });
+  const rowToLocal = events.find((e) => e.id === custom.id)!;
+  assert(
+    toLocal.usesLocalLocation && rowToLocal.venueAddress === 'Calle gp-a' && rowToLocal.geoLat === -41.1 && rowToLocal.googlePlaceId === null,
+    'custom → local resets the whole venue to the local (custom values ignored, no mixed pin)',
+  );
+  const backCustom = await service.update(T, 'owner-a', 'GASTRO_OWNER', custom.id, {
+    useLocalLocation: false, venueAddress: 'Otra 2', city: 'Dina Huapi', province: 'Río Negro', geoLat: null, geoLng: null,
+  });
+  const rowBack = events.find((e) => e.id === custom.id)!;
+  assert(!backCustom.usesLocalLocation && rowBack.geoLat === null && rowBack.venueName === null, 'local → custom without pin keeps no local coordinates');
+  const legacy = await service.create(T, 'owner-a', 'GASTRO_OWNER', { ...BASE, profileId: 'gp-a', venueAddress: 'Legacy 9', city: 'Bariloche', province: 'Río Negro' });
+  assert(!legacy.usesLocalLocation && events.find((e) => e.id === legacy.id)!.geoLat === null, 'legacy G12.2 payload (custom address, no flag) still works');
+
   // Foreign local / other gastro user / cross-tenant.
   await expectStatus(service.create(T, 'owner-a', 'GASTRO_OWNER', { ...BASE, profileId: 'gp-c' }), 403, 'GASTRO A · foreign local C → FAIL');
   await expectStatus(service.update(T, 'owner-c', 'GASTRO_OWNER', a.id, { title: 'Hack' }), 403, 'other GASTRO cannot edit local A event');
@@ -162,7 +193,10 @@ async function main() {
   await expectStatus(service.submit(T, 'owner-a', 'GASTRO_OWNER', a.id), 400, 'cannot re-submit while PENDING');
 
   const listA = await service.list(T, 'owner-a', 'GASTRO_OWNER', 'gp-a');
-  assert(listA.data.length === 1 && listA.data[0]!.id === a.id, 'list local A → only local A events');
+  assert(
+    listA.data.some((e) => e.id === a.id) && listA.data.every((e) => e.gastroProfileId === 'gp-a'),
+    'list local A → only local A events',
+  );
   const listB = await service.list(T, 'owner-a', 'GASTRO_OWNER', 'gp-b');
   assert(listB.data.length === 1 && listB.data[0]!.id === b.id, 'list local B → only local B events (same owner)');
   await expectStatus(service.list(T, 'owner-c', 'GASTRO_OWNER', 'gp-a'), 403, 'other GASTRO cannot list local A');

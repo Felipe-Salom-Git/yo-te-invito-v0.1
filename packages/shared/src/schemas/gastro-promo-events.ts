@@ -61,11 +61,18 @@ const gastroPromoEventFieldsSchema = z.object({
   galleryUrls: z.array(publicImageUrlSchema).max(GASTRO_PROMO_EVENT_GALLERY_MAX).optional(),
   startAt: z.string().datetime(),
   endAt: z.string().datetime().nullish(),
-  /** Defaults to the local's name / address / city / province when omitted. */
+  /**
+   * G12.4 — true (default on create): venue = the local's name / address / city / province / pin.
+   * false: custom venue from the modern location picker (province + city + address required).
+   */
+  useLocalLocation: z.boolean().optional(),
   venueName: optionalText(200),
   venueAddress: optionalText(300),
   city: optionalText(120),
   province: optionalText(120),
+  googlePlaceId: z.string().trim().max(255).nullish(),
+  geoLat: z.number().min(-90).max(90).nullish(),
+  geoLng: z.number().min(-180).max(180).nullish(),
   subcategoryId: z.string().min(1).nullish(),
   tagIds: eventTagIdsSchema.optional(),
 });
@@ -75,6 +82,24 @@ function endAfterStart(data: { startAt?: string; endAt?: string | null }): boole
   return new Date(data.endAt) >= new Date(data.startAt);
 }
 
+/** Custom venue = same minimum as a gastro local (province + city + address). */
+function customVenueComplete(data: {
+  useLocalLocation?: boolean;
+  province?: string | null;
+  city?: string | null;
+  venueAddress?: string | null;
+}): boolean {
+  if (data.useLocalLocation !== false) return true;
+  return Boolean(data.province?.trim() && data.city?.trim() && data.venueAddress?.trim());
+}
+
+/** Pin is all-or-nothing (never a lat without lng). */
+function pinComplete(data: { geoLat?: number | null; geoLng?: number | null }): boolean {
+  return (data.geoLat == null) === (data.geoLng == null);
+}
+
+const CUSTOM_VENUE_MESSAGE = 'Completá provincia, ciudad y dirección de la ubicación del evento';
+
 export const gastroPromoEventCreateSchema = gastroPromoEventFieldsSchema
   .extend({
     /** Target local (multi-local: always explicit). */
@@ -82,12 +107,16 @@ export const gastroPromoEventCreateSchema = gastroPromoEventFieldsSchema
     /** true → created directly as PENDING (ADMIN review). */
     submitForReview: z.boolean().optional(),
   })
-  .refine(endAfterStart, { message: 'La fecha de fin no puede ser anterior al inicio', path: ['endAt'] });
+  .refine(endAfterStart, { message: 'La fecha de fin no puede ser anterior al inicio', path: ['endAt'] })
+  .refine(customVenueComplete, { message: CUSTOM_VENUE_MESSAGE, path: ['venueAddress'] })
+  .refine(pinComplete, { message: 'Coordenadas incompletas', path: ['geoLat'] });
 export type GastroPromoEventCreateInput = z.infer<typeof gastroPromoEventCreateSchema>;
 
 export const gastroPromoEventUpdateSchema = gastroPromoEventFieldsSchema
   .partial()
-  .refine(endAfterStart, { message: 'La fecha de fin no puede ser anterior al inicio', path: ['endAt'] });
+  .refine(endAfterStart, { message: 'La fecha de fin no puede ser anterior al inicio', path: ['endAt'] })
+  .refine(customVenueComplete, { message: CUSTOM_VENUE_MESSAGE, path: ['venueAddress'] })
+  .refine(pinComplete, { message: 'Coordenadas incompletas', path: ['geoLat'] });
 export type GastroPromoEventUpdateInput = z.infer<typeof gastroPromoEventUpdateSchema>;
 
 export const gastroPromoEventListQuerySchema = z.object({
@@ -108,6 +137,11 @@ export const gastroPromoEventResponseSchema = z.object({
   venueAddress: z.string().nullable(),
   city: z.string().nullable(),
   province: z.string().nullable(),
+  googlePlaceId: z.string().nullable(),
+  geoLat: z.number().nullable(),
+  geoLng: z.number().nullable(),
+  /** G12.4 — venue equals the local's current location (derived server-side). */
+  usesLocalLocation: z.boolean(),
   subcategoryId: z.string().nullable(),
   subcategoryName: z.string().nullable(),
   tags: z.array(contentTagPublicSchema),

@@ -6,8 +6,12 @@ import { Button, Input } from '@/components';
 import { SubcategorySelect } from '@/components/forms/SubcategorySelect';
 import { ContentTagSelector } from '@/components/content-tags/ContentTagSelector';
 import { GastroContentGalleryField } from '@/components/gastro/GastroContentGalleryField';
+import { EventLocationFields } from '@/components/location';
 import {
+  GASTRO_PROMO_EVENT_LOCATION_MODE,
   buildGastroPromoEventPayload,
+  switchGastroPromoEventLocationMode,
+  type GastroPromoEventFormErrors,
   type GastroPromoEventFormResult,
   type GastroPromoEventFormState,
 } from '@/lib/gastro/gastroPromoEvents';
@@ -16,7 +20,13 @@ type Payload = Extract<GastroPromoEventFormResult, { ok: true }>['data'];
 
 type Props = {
   initial: GastroPromoEventFormState;
-  local: { id: string; displayName: string; address: string | null };
+  local: {
+    id: string;
+    displayName: string;
+    address: string | null;
+    city?: string | null;
+    province?: string | null;
+  };
   /** Create: «Guardar borrador» + «Enviar a revisión». Edit: «Guardar». */
   mode: 'create' | 'edit';
   pending: boolean;
@@ -29,10 +39,13 @@ const TEXTAREA_CLASS = 'w-full rounded border border-border bg-bg px-3 py-2 text
 /** G12.2 — Promo event form (no ticketing: no ticket types, price or capacity). */
 export function GastroPromoEventForm({ initial, local, mode, pending, onSubmit, onCancel }: Props) {
   const [form, setForm] = useState<GastroPromoEventFormState>(initial);
-  const [errors, setErrors] = useState<Partial<Record<keyof GastroPromoEventFormState, string>>>({});
+  const [errors, setErrors] = useState<GastroPromoEventFormErrors>({});
   const [uploading, setUploading] = useState(false);
   const set = <K extends keyof GastroPromoEventFormState>(key: K, value: GastroPromoEventFormState[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
+  const localLocationLabel =
+    [local.displayName, local.address, local.city, local.province].filter(Boolean).join(' · ') ||
+    local.displayName;
 
   const submit = (submitForReview: boolean) => {
     const result = buildGastroPromoEventPayload(form);
@@ -44,7 +57,7 @@ export function GastroPromoEventForm({ initial, local, mode, pending, onSubmit, 
     onSubmit(result.data, { submitForReview });
   };
 
-  const fieldError = (key: keyof GastroPromoEventFormState) =>
+  const fieldError = (key: 'title' | 'startLocal' | 'endLocal') =>
     errors[key] ? <p className="mt-1 text-xs text-red-400">{errors[key]}</p> : null;
 
   return (
@@ -106,21 +119,45 @@ export function GastroPromoEventForm({ initial, local, mode, pending, onSubmit, 
           {fieldError('endLocal')}
         </div>
       </div>
-      <fieldset className="space-y-3">
+      <fieldset className="min-w-0 space-y-3">
         <legend className="text-sm font-medium text-text">Ubicación</legend>
-        <label className="flex items-center gap-2 text-sm text-text">
-          <input type="checkbox" checked={form.atLocal} onChange={(e) => set('atLocal', e.target.checked)} />
-          En el local ({local.displayName}
-          {local.address ? ` · ${local.address}` : ''})
+        <label className="flex items-start gap-2 text-sm text-text">
+          <input
+            type="radio"
+            name="promo-event-location-mode"
+            className="mt-1"
+            checked={form.locationMode === GASTRO_PROMO_EVENT_LOCATION_MODE.LOCAL}
+            onChange={() => setForm((f) => switchGastroPromoEventLocationMode(f, GASTRO_PROMO_EVENT_LOCATION_MODE.LOCAL))}
+          />
+          <span>
+            Usar ubicación del local
+            <span className="block text-xs text-text-muted">{localLocationLabel}</span>
+          </span>
         </label>
-        {!form.atLocal ? (
-          <div className="grid gap-3 sm:grid-cols-3">
-            <div>
-              <Input label="Lugar" value={form.venueName} onChange={(e) => set('venueName', e.target.value)} />
-              {fieldError('venueName')}
-            </div>
-            <Input label="Dirección" value={form.venueAddress} onChange={(e) => set('venueAddress', e.target.value)} />
-            <Input label="Ciudad" value={form.city} onChange={(e) => set('city', e.target.value)} />
+        <label className="flex items-center gap-2 text-sm text-text">
+          <input
+            type="radio"
+            name="promo-event-location-mode"
+            checked={form.locationMode === GASTRO_PROMO_EVENT_LOCATION_MODE.CUSTOM}
+            onChange={() => setForm((f) => switchGastroPromoEventLocationMode(f, GASTRO_PROMO_EVENT_LOCATION_MODE.CUSTOM))}
+          />
+          Usar otra ubicación
+        </label>
+        {form.locationMode === GASTRO_PROMO_EVENT_LOCATION_MODE.CUSTOM ? (
+          <div className="min-w-0 space-y-4">
+            <Input
+              label="Nombre del lugar (opcional)"
+              value={form.venueName}
+              onChange={(e) => set('venueName', e.target.value)}
+              placeholder="Ej: Plaza del Centro Cívico"
+            />
+            <EventLocationFields
+              value={form.location}
+              onChange={(location) => set('location', location)}
+              required
+              geoContext="EVENT"
+              errors={errors.location}
+            />
           </div>
         ) : null}
       </fieldset>

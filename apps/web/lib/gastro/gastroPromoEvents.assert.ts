@@ -10,7 +10,9 @@ import {
   canSubmitGastroPromoEvent,
   gastroPromoEventPublicHref,
   gastroPromoEventToForm,
+  GASTRO_PROMO_EVENT_LOCATION_MODE,
   resolveGastroContentTab,
+  switchGastroPromoEventLocationMode,
   toGastroLocalEventCards,
 } from './gastroPromoEvents';
 import { readFileSync } from 'node:fs';
@@ -38,13 +40,43 @@ const badEnd = buildGastroPromoEventPayload({
 });
 assert(!badEnd.ok && Boolean(badEnd.errors.endLocal), 'end before start rejected');
 
+// G12.4 — custom location uses the modern picker minimum (province + city + address), per field.
 const otherVenue = buildGastroPromoEventPayload({
   ...EMPTY_GASTRO_PROMO_EVENT_FORM,
   title: 'Jazz',
   startLocal: '2026-12-10T22:00',
-  atLocal: false,
+  locationMode: GASTRO_PROMO_EVENT_LOCATION_MODE.CUSTOM,
 });
-assert(!otherVenue.ok && Boolean(otherVenue.errors.venueName), 'custom venue requires a place name');
+assert(
+  !otherVenue.ok && Boolean(otherVenue.errors.location?.province && otherVenue.errors.location?.city && otherVenue.errors.location?.address),
+  'custom location: province / city / address errors on their own fields',
+);
+const customOk = buildGastroPromoEventPayload({
+  ...EMPTY_GASTRO_PROMO_EVENT_FORM,
+  title: 'Jazz en la plaza',
+  startLocal: '2026-12-10T22:00',
+  locationMode: GASTRO_PROMO_EVENT_LOCATION_MODE.CUSTOM,
+  venueName: 'Centro Cívico',
+  location: { province: 'Río Negro', city: 'San Carlos de Bariloche', address: 'Plaza 1', lat: -41.13, lng: -71.31, placeId: 'pl-9' },
+});
+assert(customOk.ok, 'complete custom location → valid');
+if (customOk.ok) {
+  const d = customOk.data;
+  assert(d.useLocalLocation === false && d.venueAddress === 'Plaza 1' && d.city === 'San Carlos de Bariloche', 'custom → useLocalLocation false + picker fields');
+  assert(d.geoLat === -41.13 && d.geoLng === -71.31 && d.googlePlaceId === 'pl-9', 'custom pin (lat / lng / placeId) preserved');
+  assert(gastroPromoEventCreateSchema.safeParse({ ...d, profileId: 'gp-a' }).success, 'custom payload passes the Zod schema');
+}
+assert(
+  !gastroPromoEventCreateSchema.safeParse({ profileId: 'gp-a', title: 'Jazz', startAt: '2026-12-10T22:00:00.000Z', useLocalLocation: false, venueAddress: 'Plaza 1' }).success,
+  'API rejects a custom venue without province / city',
+);
+
+// Switching modes never mixes values.
+const typed = { ...EMPTY_GASTRO_PROMO_EVENT_FORM, locationMode: GASTRO_PROMO_EVENT_LOCATION_MODE.CUSTOM, venueName: 'X', location: { province: 'Río Negro', city: 'Bariloche', address: 'A 1', lat: -41, lng: -71, placeId: null } };
+const backToLocal = switchGastroPromoEventLocationMode(typed, GASTRO_PROMO_EVENT_LOCATION_MODE.LOCAL);
+assert(backToLocal.locationMode === 'local' && backToLocal.location.lat === null && backToLocal.venueName === '', 'custom → local discards custom values and pin');
+const toCustom = switchGastroPromoEventLocationMode(backToLocal, GASTRO_PROMO_EVENT_LOCATION_MODE.CUSTOM);
+assert(toCustom.location.address === '' && toCustom.location.lat === null, 'local → custom starts from an empty picker');
 
 const ok = buildGastroPromoEventPayload({
   ...EMPTY_GASTRO_PROMO_EVENT_FORM,
@@ -58,7 +90,7 @@ assert(ok.ok, 'valid form');
 if (ok.ok) {
   assert(ok.data.title === 'Noche de jazz', 'title trimmed');
   assert(ok.data.coverImageUrl === 'https://cdn.test/a.jpg', 'first image = cover');
-  assert(ok.data.venueName === null && ok.data.venueAddress === null, 'at the local → API defaults the venue');
+  assert(ok.data.useLocalLocation === true && ok.data.venueAddress === undefined, 'default = use the local location (API copies it)');
   const parsed = gastroPromoEventCreateSchema.safeParse({ ...ok.data, profileId: 'gp-a', submitForReview: true });
   assert(parsed.success, 'payload passes the shared Zod create schema');
   const keys = Object.keys(ok.data);
@@ -69,16 +101,20 @@ assert(canSubmitGastroPromoEvent('DRAFT') && canSubmitGastroPromoEvent('CANCELLE
 assert(!canSubmitGastroPromoEvent('PENDING') && !canSubmitGastroPromoEvent('APPROVED'), 'pending / approved cannot');
 assert(gastroPromoEventPublicHref('evt-1') === '/events/evt-1', 'public href = event detail');
 
-const roundTrip = gastroPromoEventToForm(
-  {
-    id: 'e', gastroProfileId: 'gp', title: 'T', description: null, coverImageUrl: null, galleryUrls: [],
-    startAt: '2026-12-10T22:00:00.000Z', endAt: null, venueName: 'Local A', venueAddress: 'Calle 1', city: 'Bariloche',
-    province: null, subcategoryId: null, subcategoryName: null, tags: [{ id: 't1', name: 'Jazz', slug: 'jazz' }],
-    status: 'DRAFT', publishedAt: null, createdAt: '2026-11-01T00:00:00.000Z', updatedAt: '2026-11-01T00:00:00.000Z',
-  },
-  { displayName: 'Local A', address: 'Calle 1' },
+const baseEvent = {
+  id: 'e', gastroProfileId: 'gp', title: 'T', description: null, coverImageUrl: null, galleryUrls: [],
+  startAt: '2026-12-10T22:00:00.000Z', endAt: null, venueName: 'Local A', venueAddress: 'Calle 1', city: 'Bariloche',
+  province: 'Río Negro', googlePlaceId: null, geoLat: -41.1, geoLng: -71.3, usesLocalLocation: true,
+  subcategoryId: null, subcategoryName: null, tags: [{ id: 't1', name: 'Jazz', slug: 'jazz' }],
+  status: 'DRAFT' as const, publishedAt: null, createdAt: '2026-11-01T00:00:00.000Z', updatedAt: '2026-11-01T00:00:00.000Z',
+};
+const roundTrip = gastroPromoEventToForm(baseEvent);
+assert(roundTrip.locationMode === 'local' && roundTrip.tagIds.join() === 't1', 'edit form: local-owned venue → «Usar ubicación del local», tags kept');
+const customEdit = gastroPromoEventToForm({ ...baseEvent, usesLocalLocation: false, venueName: 'Plaza', venueAddress: 'Plaza 1' });
+assert(
+  customEdit.locationMode === 'custom' && customEdit.location.address === 'Plaza 1' && customEdit.location.lat === -41.1 && customEdit.venueName === 'Plaza',
+  'edit form: custom venue pre-loads address + pin',
 );
-assert(roundTrip.atLocal && roundTrip.tagIds.join() === 't1', 'edit form: venue = local detected, tags kept');
 
 // G12.2-C — event detail hero CTA: no «Comprar entradas» on events without ticketing.
 assert(getPlaceHeroCtaLabel('event', { isGeneralPublication: true }) === 'Más información', 'publicity event CTA = Más información');
