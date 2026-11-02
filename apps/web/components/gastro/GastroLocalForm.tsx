@@ -19,7 +19,10 @@ import type { GcsImageUploadConfig } from '@/lib/upload/gcs-image-upload-config'
 import {
   EventLocationFields,
   gastroLocationPayloadFromLocationValue,
-  validateGastroLocationValue,
+  hasLocationFieldErrors,
+  MODERN_LOCATION_REQUIREMENTS,
+  validateLocationFields,
+  type LocationFieldErrors,
   type LocationValue,
 } from '@/components/location';
 import {
@@ -145,7 +148,9 @@ export function GastroLocalForm({
   const [relatedLinks, setRelatedLinks] = useState<RelatedLinkItem[]>(
     initial?.relatedLinks ?? [],
   );
+  /** General form error (shown by the submit button), never routed to Provincia. */
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [locationErrors, setLocationErrors] = useState<LocationFieldErrors>({});
   const [hoursError, setHoursError] = useState<string | null>(null);
   const [isUploadingImages, setIsUploadingImages] = useState(false);
   const hydratedFromId = useRef<string | null>(null);
@@ -181,10 +186,11 @@ export function GastroLocalForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!displayName.trim() || !contactEmail.trim()) return;
-    const locErr = validateGastroLocationValue(location);
-    if (locErr) {
+    const fieldErrors = validateLocationFields(location, MODERN_LOCATION_REQUIREMENTS);
+    setLocationErrors(fieldErrors);
+    if (hasLocationFieldErrors(fieldErrors)) {
       setHoursError(null);
-      setLocationError(locErr);
+      setLocationError('Revisá la ubicación del local.');
       return;
     }
     if (mustPickSubcategory && subcategoryIds.length === 0) {
@@ -289,9 +295,7 @@ export function GastroLocalForm({
         onChange={setLocation}
         required
         geoContext="GASTRO"
-        provinceError={
-          locationError && !hoursError ? locationError : undefined
-        }
+        errors={locationErrors}
       />
       {isAdmin ? <p className="text-sm font-medium text-text">Horarios y contacto</p> : null}
       <fieldset className="space-y-3">

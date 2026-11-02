@@ -108,15 +108,55 @@ export function validatePresencialEventLocation(
   return null;
 }
 
-/** Gastro portal: province + address required; coords optional (manual fallback). */
+/** Per-field location errors, rendered next to the matching input (never all on Provincia). */
+export type LocationFieldErrors = Partial<Record<'province' | 'city' | 'address' | 'map', string>>;
+
+export type LocationRequirements = {
+  requireProvince?: boolean;
+  requireCity?: boolean;
+  requireAddress?: boolean;
+  requireCoords?: boolean;
+};
+
+/**
+ * Modern location minimum (G12.4) — same as the gastro local API (province + city + address);
+ * coordinates stay optional (geocoding / pin, manual fallback allowed).
+ */
+export const MODERN_LOCATION_REQUIREMENTS: LocationRequirements = {
+  requireProvince: true,
+  requireCity: true,
+  requireAddress: true,
+};
+
+export function validateLocationFields(
+  value: LocationValue,
+  opts: LocationRequirements = MODERN_LOCATION_REQUIREMENTS,
+): LocationFieldErrors {
+  const errors: LocationFieldErrors = {};
+  if (opts.requireProvince && !value.province.trim()) errors.province = 'Seleccioná una provincia.';
+  if (opts.requireCity && !value.city.trim()) errors.city = 'Seleccioná una ciudad.';
+  if (opts.requireAddress && !value.address.trim()) errors.address = 'La dirección es obligatoria.';
+  const hasLat = isValidGeoCoord(value.lat);
+  const hasLng = isValidGeoCoord(value.lng);
+  if (opts.requireCoords && (!hasLat || !hasLng)) {
+    errors.map = 'Seleccioná un punto en el mapa para definir la ubicación.';
+  } else if ((value.lat != null && !hasLat) || (value.lng != null && !hasLng) || hasLat !== hasLng) {
+    errors.map = 'Las coordenadas del mapa son inválidas. Volvé a ubicar el pin.';
+  }
+  return errors;
+}
+
+export function hasLocationFieldErrors(errors: LocationFieldErrors): boolean {
+  return Object.values(errors).some(Boolean);
+}
+
+export function firstLocationFieldError(errors: LocationFieldErrors): string | null {
+  return errors.province ?? errors.city ?? errors.address ?? errors.map ?? null;
+}
+
+/** Gastro portal: province + city + address required (same as the API); coords optional. */
 export function validateGastroLocationValue(value: LocationValue): string | null {
-  return (
-    validateLocationValue(value, {
-      requireProvince: true,
-      requireAddress: true,
-    }) ??
-    null
-  );
+  return firstLocationFieldError(validateLocationFields(value, MODERN_LOCATION_REQUIREMENTS));
 }
 
 /** Hotel portal: city + address required; coords optional (manual fallback). */

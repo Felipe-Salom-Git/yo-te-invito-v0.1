@@ -2,7 +2,7 @@
 
 import { ProvinceCitySelect } from './ProvinceCitySelect';
 import { AddressMapPicker } from './AddressMapPicker';
-import { applyProvinceToLocationValue } from './location.utils';
+import { applyProvinceToLocationValue, type LocationFieldErrors } from './location.utils';
 import type { LocationValue } from './location.types';
 import type { GeoContext } from '@yo-te-invito/shared';
 
@@ -11,6 +11,8 @@ type EventLocationFieldsProps = {
   onChange: (value: LocationValue) => void;
   disabled?: boolean;
   required?: boolean;
+  /** Per-field errors (`validateLocationFields`); each one renders next to its input. */
+  errors?: LocationFieldErrors;
   addressError?: string;
   mapError?: string;
   provinceError?: string;
@@ -19,11 +21,16 @@ type EventLocationFieldsProps = {
   geoContext?: GeoContext;
 };
 
+/**
+ * Modern location block shared by gastro locals, gastro promo events and producer events:
+ * Georef province / city + address, geocoding (`/geo/resolve-address`) and draggable pin.
+ */
 export function EventLocationFields({
   value,
   onChange,
   disabled,
   required,
+  errors,
   addressError,
   mapError,
   provinceError,
@@ -31,7 +38,7 @@ export function EventLocationFields({
   geoContext = 'EVENT',
 }: EventLocationFieldsProps) {
   return (
-    <div className="space-y-4">
+    <div className="min-w-0 space-y-4">
       <ProvinceCitySelect
         province={value.province}
         city={value.city}
@@ -39,8 +46,8 @@ export function EventLocationFields({
         onCityChange={(city) => onChange({ ...value, city })}
         disabled={disabled}
         required={required}
-        provinceError={provinceError}
-        cityError={cityError}
+        provinceError={errors?.province ?? provinceError}
+        cityError={errors?.city ?? cityError}
       />
       <AddressMapPicker
         value={value}
@@ -49,7 +56,7 @@ export function EventLocationFields({
         disabled={disabled}
         label="Dirección y mapa"
         helperText="Completá provincia, ciudad y dirección. Ubicá en el mapa y arrastrá el pin si hace falta ajustar."
-        error={addressError ?? mapError}
+        error={errors?.address ?? errors?.map ?? addressError ?? mapError}
       />
     </div>
   );

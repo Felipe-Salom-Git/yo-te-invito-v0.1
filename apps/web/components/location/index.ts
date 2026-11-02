@@ -23,6 +23,10 @@ export {
   validatePresencialEventLocation,
   hasPresencialLocationText,
   validateGastroLocationValue,
+  validateLocationFields,
+  hasLocationFieldErrors,
+  firstLocationFieldError,
+  MODERN_LOCATION_REQUIREMENTS,
   validateHotelLocationValue,
   validateOptionalEntityLocation,
   locationValueFromEventFields,
@@ -35,3 +39,4 @@ export {
   hotelLocationPayloadFromLocationValue,
   applyProvinceToLocationValue,
 } from './location.utils';
+export type { LocationFieldErrors, LocationRequirements } from './location.utils';

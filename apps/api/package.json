@@ -101,6 +101,7 @@
     "test:gastro-scanners-grouped": "tsx ../web/lib/scanner/groupScannerAccounts.assert.ts",
     "test:qr-preparing-overlay": "tsx ../web/lib/ux/qrPreparing.assert.ts",
     "test:public-modal-top-offset": "tsx ../web/lib/ui/publicModalLayout.assert.ts",
+    "test:event-location": "tsx --tsconfig ../web/tsconfig.json ../web/components/location/eventLocation.assert.ts",
     "test:public-hero-layout": "tsx ../web/lib/ui/publicHeroLayout.assert.ts",
     "test:gastro-review-report": "tsx scripts/test-gastro-review-report.util.ts && tsx ../web/lib/reviews/reviewReport.assert.ts",
     "test:gastro-promo-event-ownership": "tsx scripts/test-gastro-promo-event-ownership.util.ts",
