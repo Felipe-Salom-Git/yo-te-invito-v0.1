@@ -233,5 +233,9 @@ export function resolveCourtesyBenefitLabel(
 export const GASTRO_COURTESY_EXPIRED_AT_APPROVAL_MESSAGE =
   'La cortesía ya venció y no puede aprobarse. Rechazala para cerrar la solicitud.';
 
+/** G10.B — a non-funded courtesy is billable with its OWN contract (never the local's). */
 export const GASTRO_COURTESY_AGREEMENT_REQUIRED_MESSAGE =
-  'El local no tiene acuerdo comercial vigente. Creá o activá la tarifa del partner antes de aprobar o enviar la cortesía.';
+  'Esta cortesía no tiene un contrato comercial vigente. Cargá el contrato comercial de esta cortesía antes de aprobarla o enviarla.';
+
+export const GASTRO_COURTESY_FUNDED_AGREEMENT_FORBIDDEN_MESSAGE =
+  'Una cortesía financiada con canje no es facturable: no lleva contrato comercial.';

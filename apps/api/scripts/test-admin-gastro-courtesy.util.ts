@@ -123,8 +123,8 @@ async function approveReject() {
   check(codeOf(noAgreement) === ErrorCode.BENEFIT_AGREEMENT_NOT_FOUND, 'no CURRENT agreement → domain error');
   check(
     noAgreement?.message === GASTRO_COURTESY_AGREEMENT_REQUIRED_MESSAGE &&
-      /acuerdo comercial vigente/.test(noAgreement.message),
-    'understandable message ("… no tiene acuerdo comercial vigente …")',
+      /contrato comercial vigente/.test(noAgreement.message),
+    'understandable message ("… no tiene un contrato comercial vigente …")',
   );
   check(d0.status === 'PENDING_REVIEW' && svc.emailLog.length === 0, 'blocked approval changes nothing');
 

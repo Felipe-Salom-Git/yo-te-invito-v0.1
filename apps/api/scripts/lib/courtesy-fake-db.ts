@@ -21,6 +21,7 @@ import { GastroPortalDiscountsService } from '../../src/modules/gastro/gastro-po
 import { GastroLifecycleNotificationsService } from '../../src/modules/notifications/gastro-lifecycle-notifications.service';
 import { GastroProfileMetricsService } from '../../src/modules/gastro/gastro-profile-metrics.service';
 import { AdminGastroService } from '../../src/modules/admin/admin-gastro.service';
+import { GastroDiscountAgreementGateService } from '../../src/modules/benefit-agreements/gastro-discount-agreement-gate.service';
 import { MeGastroDiscountsService } from '../../src/modules/me/me-gastro-discounts.service';
 import { PublicGastroDiscountsService } from '../../src/public/public-gastro-discounts.service';
 import { ScannerGastroDiscountService } from '../../src/scanner/scanner-gastro-discount.service';
@@ -82,7 +83,7 @@ export class FakeCourtesyDb {
   /** G8.7: `GastroDiscountTemplate` rows (Studio). */
   visualTemplates: Row[] = [];
   audits: Row[] = [];
-  /** gastroProfileIds that have a CURRENT commercial agreement. */
+  /** Discount ids (or profile ids = every discount of that local) with their own CURRENT contract. */
   agreements = new Set<string>();
   /** G8.8: the CURRENT agreement returned for profiles in `agreements` (overridable). */
   agreementTerms: Row = {
@@ -498,14 +499,34 @@ export class FakeCourtesyDb {
       emailService as never,
       auditService as never,
     );
+    // G10.B: the REAL activation gate over a fake resolver keyed by discount. Fixture shorthand:
+    // a key in `agreements` is a discount id, or a profile id meaning "every discount of that
+    // local has its OWN CURRENT contract" (same-local isolation is proven against PostgreSQL in
+    // test:g10-discount-approval, not here).
     const agreements = {
-      resolveApplicable: async (_t: string, q: { gastroProfileId?: string }) => ({
-        agreement:
-          q.gastroProfileId && this.agreements.has(q.gastroProfileId)
-            ? { id: `agr-${q.gastroProfileId}`, ...this.agreementTerms }
-            : null,
-      }),
+      resolveApplicable: async (_t: string, q: { gastroDiscountId?: string; gastroProfileId?: string }) => {
+        if (!q.gastroDiscountId) {
+          return {
+            agreement:
+              q.gastroProfileId && this.agreements.has(q.gastroProfileId)
+                ? { id: `agr-${q.gastroProfileId}`, scope: 'PROFILE_LEGACY', ...this.agreementTerms }
+                : null,
+          };
+        }
+        const discount = this.discounts.find((d) => d.id === q.gastroDiscountId);
+        const key = !discount
+          ? null
+          : this.agreements.has(discount.id)
+            ? discount.id
+            : this.agreements.has(discount.gastroProfileId)
+              ? discount.gastroProfileId
+              : null;
+        return {
+          agreement: key ? { id: `agr-${discount!.id}`, scope: 'DISCOUNT', ...this.agreementTerms } : null,
+        };
+      },
     };
+    const agreementGate = new GastroDiscountAgreementGateService(prisma, agreements as never);
     const courtesy = new GastroCourtesyDiscountsService(
       prisma,
       { hasGastroAccess: async () => true } as never,
@@ -525,7 +546,7 @@ export class FakeCourtesyDb {
         },
       } as never,
       lifecycle,
-      agreements as never,
+      agreementGate,
       delivery,
     );
     const me = new MeGastroDiscountsService(prisma);

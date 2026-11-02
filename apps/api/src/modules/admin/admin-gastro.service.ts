@@ -6,6 +6,7 @@ import {
 import { ProfileStatus, Prisma } from '@prisma/client';
 import { randomBytes } from 'crypto';
 import {
+  buildDiscountAgreementGateMetadata,
   buildGastroDiscountQrPayload,
   canIssueMasterQr,
   ErrorCode,
@@ -51,7 +52,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../../email/email.service';
 import { GastroFollowDiscountAlertsService } from '../notifications/gastro-follow-discount-alerts.service';
 import { GastroLifecycleNotificationsService } from '../notifications/gastro-lifecycle-notifications.service';
-import { BenefitCommercialAgreementsService } from '../benefit-agreements/benefit-commercial-agreements.service';
+import { GastroDiscountAgreementGateService } from '../benefit-agreements/gastro-discount-agreement-gate.service';
 import { adminDiscountMatchesRouteProfile } from './admin-gastro-discount-scope.util';
 import { cancelCourtesyClaimsForDiscount } from '../gastro/gastro-courtesy-lifecycle.util';
 import { GastroCourtesyDeliveryService } from '../gastro/gastro-courtesy-delivery.service';
@@ -92,7 +93,7 @@ export class AdminGastroService {
     private readonly email: EmailService,
     private readonly gastroFollowAlerts: GastroFollowDiscountAlertsService,
     private readonly lifecycleNotifications: GastroLifecycleNotificationsService,
-    private readonly benefitAgreements: BenefitCommercialAgreementsService,
+    private readonly agreementGate: GastroDiscountAgreementGateService,
     private readonly courtesyDelivery: GastroCourtesyDeliveryService,
   ) {}
 
@@ -818,7 +819,7 @@ export class AdminGastroService {
     entityId: string,
     before: unknown,
     after: unknown,
-    opts: { courtesy?: boolean } = {},
+    opts: { courtesy?: boolean; metadata?: Record<string, unknown> } = {},
   ) {
     // G8.10.7: same action / entity / canonical id; the flag only drives the courtesy label.
     const afterData =
@@ -835,6 +836,7 @@ export class AdminGastroService {
         entityId,
         before: before as object,
         after: afterData as object,
+        ...(opts.metadata ? { metadata: opts.metadata as object } : {}),
       },
     });
   }
@@ -900,18 +902,8 @@ export class AdminGastroService {
         message: 'Guardá la publicación con al menos una imagen antes de aprobar',
       });
     }
-    const resolvedProfileId = row.gastroProfileId ?? profileId;
-    const agreementCtx = await this.benefitAgreements.resolveApplicable(tenantId, {
-      vertical: 'GASTRO',
-      gastroProfileId: resolvedProfileId,
-    });
-    if (!agreementCtx.agreement) {
-      throw new BadRequestException({
-        code: ErrorCode.BENEFIT_AGREEMENT_NOT_FOUND,
-        message:
-          'El local no tiene acuerdo comercial vigente. Creá o activá la tarifa del partner antes de aprobar el descuento.',
-      });
-    }
+    // G10.B1: discount → CURRENT agreement of THIS discount (never the local's legacy row).
+    const gate = await this.agreementGate.assertActivatable(tenantId, discountId);
     const qrToken = randomBytes(24).toString('hex');
     await this.prisma.gastroDiscount.update({
       where: { id: discountId },
@@ -929,6 +921,7 @@ export class AdminGastroService {
       discountId,
       { status: row.status },
       { status: 'ACTIVE' },
+      { metadata: buildDiscountAgreementGateMetadata(discountId, gate) },
     );
     void this.gastroFollowAlerts.notifyFollowersOfNewActiveDiscount(tenantId, discountId);
     this.lifecycleNotifications.notifyDiscountApproved(
@@ -936,7 +929,7 @@ export class AdminGastroService {
       discountId,
       row.displayTitle ?? 'tu descuento',
       'create',
-      { agreement: agreementCtx.agreement },
+      { agreement: gate.agreement },
     );
     return this.getDiscountDetail(tenantId, profileId, discountId);
   }
@@ -944,8 +937,8 @@ export class AdminGastroService {
   /**
    * G8.3 + G8.4 — Approve a PENDING courtesy (created by a GASTRO OWNER).
    *
-   * Gate: CURRENT BenefitCommercialAgreement for tenant + gastroProfileId (commercial gate
-   * only; nothing from the agreement is copied to the campaign/coupon). Then
+   * Gate (G10.B1): CURRENT agreement of THIS courtesy discount (never the local's nor another
+   * discount's); a funded courtesy is not billable and skips the lookup (D1). Then
    * PENDING_REVIEW/COMMISSION_NEGOTIATION → ACTIVE atomically (single winner; a repeated
    * approve fails and cannot re-deliver). The pre-created (retained) claims become usable;
    * they are NOT recreated and the audience is NOT recalculated. Delivery runs after the
@@ -966,17 +959,11 @@ export class AdminGastroService {
     },
   ) {
     const discountId = row.id;
-    const resolvedProfileId = row.gastroProfileId ?? profileId;
-    const agreementCtx = await this.benefitAgreements.resolveApplicable(tenantId, {
-      vertical: 'GASTRO',
-      gastroProfileId: resolvedProfileId,
-    });
-    if (!agreementCtx.agreement) {
-      throw new BadRequestException({
-        code: ErrorCode.BENEFIT_AGREEMENT_NOT_FOUND,
-        message: GASTRO_COURTESY_AGREEMENT_REQUIRED_MESSAGE,
-      });
-    }
+    const gate = await this.agreementGate.assertActivatable(
+      tenantId,
+      discountId,
+      GASTRO_COURTESY_AGREEMENT_REQUIRED_MESSAGE,
+    );
     if (row.validTo && isGastroDiscountExpired(row.validTo)) {
       throw new BadRequestException({
         code: ErrorCode.GASTRO_COURTESY_EXPIRED_AT_APPROVAL,
@@ -1008,7 +995,8 @@ export class AdminGastroService {
       'GASTRO_DISCOUNT_APPROVED',
       discountId,
       { status: row.status },
-      { status: 'ACTIVE', courtesy: true, agreementId: agreementCtx.agreement.id },
+      { status: 'ACTIVE', courtesy: true, agreementId: gate.agreement?.id ?? null },
+      { metadata: buildDiscountAgreementGateMetadata(discountId, gate) },
     );
 
     // Delivery is best-effort and isolated: it never throws and never undoes the approval.
@@ -1024,7 +1012,7 @@ export class AdminGastroService {
       discountId,
       row.displayTitle ?? 'tu cortesía',
       'create',
-      { agreement: agreementCtx.agreement },
+      { agreement: gate.agreement },
     );
 
     const detail = await this.getDiscountDetail(tenantId, profileId, discountId);
@@ -1507,9 +1495,9 @@ export class AdminGastroService {
     void this.gastroFollowAlerts.notifyFollowersOfNewActiveDiscount(tenantId, created.id);
     // G8.8: show the CURRENT agreement (if any) in the owner email. Informational only: this
     // path never gated on an agreement and still does not.
-    const onBehalfAgreement = await this.benefitAgreements
-      .resolveApplicable(tenantId, { vertical: 'GASTRO', gastroProfileId: profile.id })
-      .then((ctx) => ctx.agreement)
+    const onBehalfAgreement = await this.agreementGate
+      .resolve(tenantId, created.id)
+      .then((gate) => gate.agreement)
       .catch(() => null);
     this.lifecycleNotifications.notifyDiscountApproved(
       tenantId,

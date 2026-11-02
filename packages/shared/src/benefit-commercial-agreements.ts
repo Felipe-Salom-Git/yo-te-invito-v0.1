@@ -150,3 +150,38 @@ export function classifyBenefitAgreementVigency(
   if (validToKey != null && todayKey > validToKey) return 'PAST';
   return 'CURRENT';
 }
+
+/**
+ * G10.B — activation gate copy (approve, reactivation, legacy QR email, ADMIN create).
+ * EN: the gate always resolves the CURRENT agreement of THIS discount, never the local's.
+ * ES: el gate siempre resuelve el contrato CURRENT de ESTE descuento, nunca el del local.
+ */
+export const GASTRO_DISCOUNT_AGREEMENT_REQUIRED_MESSAGE =
+  'Este descuento no tiene un contrato comercial vigente.';
+
+export const GASTRO_DISCOUNT_INITIAL_AGREEMENT_REQUIRED_MESSAGE =
+  'Cargá el contrato comercial de este descuento (valor por validación, canje y vigencia) para crearlo activo.';
+
+export const GASTRO_DISCOUNT_INITIAL_AGREEMENT_NOT_CURRENT_MESSAGE =
+  'El contrato comercial debe estar vigente hoy para que el descuento nazca activo.';
+
+/** D-G10-4: an agreement created together with an ACTIVE discount must be CURRENT today. */
+export function isInitialDiscountAgreementCurrent(
+  terms: { validFrom: string; validTo?: string | null },
+  todayKey: string,
+): boolean {
+  return classifyBenefitAgreementVigency(terms.validFrom, terms.validTo ?? null, todayKey) === 'CURRENT';
+}
+
+/** Audit metadata of an activation (no extra link is persisted on GastroDiscount). */
+export function buildDiscountAgreementGateMetadata(
+  discountId: string,
+  gate: { billable: boolean; agreement: { id: string } | null },
+): { discountId: string; agreementId: string | null; agreementScope: 'DISCOUNT' | null; billable: boolean } {
+  return {
+    discountId,
+    agreementId: gate.agreement?.id ?? null,
+    agreementScope: gate.agreement ? 'DISCOUNT' : null,
+    billable: gate.billable,
+  };
+}
