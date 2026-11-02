@@ -24,7 +24,9 @@ import { GastroProfileMetricsService } from './gastro-profile-metrics.service';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { CourtesyCreditLedgerModule } from '../courtesy-credit-ledger/courtesy-credit-ledger.module';
 import { BenefitAgreementsModule } from '../benefit-agreements/benefit-agreements.module';
+import { BenefitSettlementsModule } from '../benefit-settlements/benefit-settlements.module';
 import { GastroCourtesyDeliveryService } from './gastro-courtesy-delivery.service';
+import { GastroDiscountEconomicsPortalService } from './gastro-discount-economics-portal.service';
 
 @Module({
   imports: [
@@ -36,6 +38,7 @@ import { GastroCourtesyDeliveryService } from './gastro-courtesy-delivery.servic
     NotificationsModule,
     CourtesyCreditLedgerModule,
     BenefitAgreementsModule,
+    BenefitSettlementsModule,
   ],
   controllers: [GastroController, GastroReviewsController],
   providers: [
@@ -55,6 +58,7 @@ import { GastroCourtesyDeliveryService } from './gastro-courtesy-delivery.servic
     GastroDiscountExpiryService,
     GastroDiscountVisualTemplateService,
     GastroProfileMetricsService,
+    GastroDiscountEconomicsPortalService,
   ],
   exports: [
     GastroPortalDiscountsService,

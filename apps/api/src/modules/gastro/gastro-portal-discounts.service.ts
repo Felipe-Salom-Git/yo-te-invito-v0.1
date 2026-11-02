@@ -214,7 +214,8 @@ export class GastroPortalDiscountsService {
     return profile;
   }
 
-  private async assertOwnDiscount(
+  /** discountId → gastroProfileId → assertCanOperateProfile (`?profileId=` never authorizes). */
+  async assertOwnDiscount(
     tenantId: string,
     userId: string,
     userRole: string,

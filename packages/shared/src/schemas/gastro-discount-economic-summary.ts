@@ -207,6 +207,12 @@ export type GastroDiscountEconomicSummaryGastro = z.infer<
 >;
 export type GastroDiscountEconomicSummary = z.infer<typeof gastroDiscountEconomicSummarySchema>;
 
+/** GASTRO route params: the discount id is the only input (never a profileId). */
+export const gastroDiscountEconomicSummaryParamsSchema = z.object({ id: z.string().min(1) });
+export type GastroDiscountEconomicSummaryParams = z.infer<
+  typeof gastroDiscountEconomicSummaryParamsSchema
+>;
+
 /** Field names that must never reach GASTRO (asserted by tests). */
 export const GASTRO_DISCOUNT_ECONOMIC_REDACTED_KEYS = [
   'notes',

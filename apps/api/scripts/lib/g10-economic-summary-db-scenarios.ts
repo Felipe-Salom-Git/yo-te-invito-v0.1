@@ -8,6 +8,10 @@ import { PrismaService } from '../../src/prisma/prisma.service';
 import { AuditService } from '../../src/modules/audit/audit.service';
 import { BenefitCommercialAgreementsService } from '../../src/modules/benefit-agreements/benefit-commercial-agreements.service';
 import { GastroDiscountEconomicSummaryService } from '../../src/modules/benefit-settlements/gastro-discount-economic-summary.service';
+import { ProfilesAuthorizationService } from '../../src/common/profiles-authorization.service';
+import { GastroOwnershipService } from '../../src/modules/gastro/gastro-ownership.service';
+import { GastroPortalDiscountsService } from '../../src/modules/gastro/gastro-portal-discounts.service';
+import { GastroDiscountEconomicsPortalService } from '../../src/modules/gastro/gastro-discount-economics-portal.service';
 import {
   buildG10Services,
   createG10Discount,
@@ -98,6 +102,41 @@ export async function seedLegacyAllocation(
       baseAmountCents: 999900n,
     },
   });
+}
+
+/**
+ * C3 — the REAL portal ownership chain (discount → gastroProfileId → membership) against Postgres.
+ * Metrics / notifications are never reached by the read path.
+ */
+export function buildGastroPortalEconomics(prisma: PrismaService, summary: GastroDiscountEconomicSummaryService) {
+  const portal = new GastroPortalDiscountsService(
+    prisma,
+    new ProfilesAuthorizationService(prisma),
+    new GastroOwnershipService(prisma),
+    {} as never,
+    { logAction: async () => undefined } as never,
+    {} as never,
+  );
+  return new GastroDiscountEconomicsPortalService(portal, summary);
+}
+
+export async function createGastroOwner(prisma: PrismaService, seed: G10Seed, profileId: string | null, tag: string) {
+  const user = await prisma.user.create({
+    data: {
+      tenantId: seed.tenantId,
+      email: `${tag}-${Date.now()}@g10c.test`,
+      firstName: 'Owner',
+      lastName: tag,
+      role: 'GASTRO_OWNER',
+      status: 'ACTIVE',
+    },
+  });
+  if (profileId) {
+    await prisma.userGastroMembership.create({
+      data: { tenantId: seed.tenantId, userId: user.id, profileId, status: 'ACTIVE' },
+    });
+  }
+  return user.id;
 }
 
 /** B — controlled attributed transfer (G10.D owns the write path; here only the read is tested). */

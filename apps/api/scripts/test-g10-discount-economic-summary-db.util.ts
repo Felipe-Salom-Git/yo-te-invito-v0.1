@@ -3,11 +3,15 @@
  * Run: pnpm --filter api run test:g10-discount-economic-summary-db
  */
 
+import { GASTRO_DISCOUNT_ECONOMIC_REDACTED_KEYS } from '@yo-te-invito/shared';
 import { codeOf, errorOf } from './lib/courtesy-fake-db';
-import { cleanupG10Tenant, seedG10Tenant, withG10Db } from './lib/g10-agreements-db-seed';
+import { cleanupG10Tenant, createG10Discount, seedG10Tenant, withG10Db } from './lib/g10-agreements-db-seed';
 import {
+  INTERNAL_AGREEMENT_NOTE,
   INTERNAL_TRANSFER_NOTE,
   PROOF_URL,
+  buildGastroPortalEconomics,
+  createGastroOwner,
   insertAttributedTransfer,
   seedEconomicSummaryScenarios,
   seedLegacyAllocation,
@@ -119,6 +123,43 @@ async function main() {
       check(codeOf(await errorOf(() => svc.summary.getForAdmin(other.tenantId, other.profileA, A.discountId))) === 'NOT_FOUND', 'I: other tenant own profile + discount A → 404');
     } finally {
       await cleanupG10Tenant(prisma, other.tenantId);
+    }
+
+    // ── C3 — GASTRO read-only endpoint: ownership + redaction ──
+    const portal = buildGastroPortalEconomics(prisma, svc.summary);
+    const ownerA = await createGastroOwner(prisma, seed, profileA, 'A');
+    const ownerB = await createGastroOwner(prisma, seed, profileB, 'B');
+    const noLocal = await createGastroOwner(prisma, seed, null, 'none');
+    await prisma.user.update({ where: { id: noLocal }, data: { role: 'USER' } });
+    const discountOfB = await createG10Discount(prisma, seed, { profileId: profileB, eventId: seed.eventB });
+    const asOwner = (userId: string, discountId: string, tenant = tenantId) =>
+      portal.getSummary(tenant, userId, 'GASTRO_OWNER', discountId);
+
+    const gastroA = await asOwner(ownerA, A.discountId);
+    check(gastroA.audience === 'GASTRO' && gastroA.discount.id === A.discountId, 'C3: owner A → discount A PASS');
+    check(
+      gastroA.cash.generatedCents === a.cash.generatedCents && gastroA.cash.paidCents === a.cash.paidCents && gastroA.cash.remainingCents === a.cash.remainingCents && gastroA.cash.remainingPrecision === a.cash.remainingPrecision,
+      'C3: GASTRO figures = ADMIN figures (same domain service)',
+    );
+    const gastroJson = JSON.stringify(gastroA);
+    check(GASTRO_DISCOUNT_ECONOMIC_REDACTED_KEYS.every((k) => !gastroJson.includes(`"${k}"`)), 'C3 redaction: no notes / proofUrl / registeredBy / reversedBy / actors / tenantId keys');
+    check(!gastroJson.includes(INTERNAL_AGREEMENT_NOTE) && !gastroJson.includes(INTERNAL_TRANSFER_NOTE) && !gastroJson.includes(PROOF_URL) && !gastroJson.includes('G10 Admin') && !gastroJson.includes(seed.adminId), 'C3 redaction: no internal note, proof URL, admin name or admin id values');
+    check(gastroA.payments.some((p) => p.reference === 'TRX-A-30' && p.amountCents === '3000000' && Boolean(p.transferredAt)), 'C3: payment date / amount / reference visible');
+    check(gastroA.agreement.current?.unitPriceCents === '500000' && gastroA.agreement.legacyUsed[0]?.precision === 'PARTNER_LEVEL_LEGACY', 'C3: contract terms + legacy precision visible');
+    check(gastroA.partnerCredit?.precision === 'PARTNER_LEVEL', 'C3: local credit balance only as PARTNER_LEVEL');
+    check(!gastroJson.includes('creditConsumed'), 'C3: no credit consumed per discount');
+
+    check(codeOf(await errorOf(() => asOwner(ownerA, discountOfB.discountId))) === 'FORBIDDEN', 'C3: owner A → discount of local B FAIL (403)');
+    check(codeOf(await errorOf(() => asOwner(ownerB, A.discountId))) === 'FORBIDDEN', 'C3: other GASTRO owner → discount A FAIL (403)');
+    check(codeOf(await errorOf(() => asOwner(noLocal, A.discountId))) === 'FORBIDDEN', 'C3: user without gastro access FAIL (403)');
+    check(codeOf(await errorOf(() => asOwner(ownerA, 'missing-discount'))) === 'NOT_FOUND', 'C3: unknown discount → 404');
+    const otherTenant = await seedG10Tenant(prisma);
+    try {
+      const crossTenant = codeOf(await errorOf(() => asOwner(ownerA, A.discountId, otherTenant.tenantId)));
+      check(crossTenant === 'FORBIDDEN' || crossTenant === 'NOT_FOUND', `C3: cross-tenant → FAIL (${crossTenant})`);
+      check(codeOf(await errorOf(() => svc.summary.getForGastro(tenantId, profileB, A.discountId))) === 'NOT_FOUND', 'C3: service re-checks the owned profile (defense in depth)');
+    } finally {
+      await cleanupG10Tenant(prisma, otherTenant.tenantId);
     }
   });
 

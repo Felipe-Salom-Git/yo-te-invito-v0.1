@@ -3,6 +3,8 @@
  * Run: pnpm --filter api run test:g10-discount-economic-summary
  */
 
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import {
   GASTRO_DISCOUNT_ECONOMIC_REDACTED_KEYS,
   buildDiscountEconomicHistory,
@@ -171,6 +173,21 @@ check(!json.includes('nota interna') && !json.includes('interna') && !json.inclu
 check(gastro.payments[0]!.reference === 'TRX-1' && gastro.payments[0]!.amountCents === '300000', 'redaction: date / amount / reference kept');
 check(gastro.agreement.current?.unitPriceCents === '500000' && gastro.history.length === history.length, 'redaction: contract terms and timeline kept');
 check(!('creditConsumedByDiscount' in gastro.barter) && !json.includes('creditConsumed'), 'no credit consumed per discount (NOT_ATTRIBUTABLE)');
+
+// ── Routes — read-only surface (C2/C3); write paths belong to G10.D ──
+{
+  const root = join(__dirname, '..', '..', '..');
+  const gastroController = readFileSync(join(root, 'apps/api/src/modules/gastro/gastro.controller.ts'), 'utf8');
+  const adminController = readFileSync(join(root, 'apps/api/src/modules/admin/admin.controller.ts'), 'utf8');
+  const routes = (src: string) =>
+    [...src.matchAll(/@(Get|Put|Post|Patch|Delete)\('([^']*economic[^']*)'\)/g)].map((m) => `${m[1]} ${m[2]}`);
+  const gastroRoutes = routes(gastroController);
+  check(gastroRoutes.length === 1 && gastroRoutes[0] === 'Get discounts/:id/economic-summary', 'routes: GASTRO exposes only GET discounts/:id/economic-summary');
+  const handler = gastroController.slice(gastroController.indexOf("'discounts/:id/economic-summary'"), gastroController.indexOf("@Patch('discounts/:id/status')"));
+  check(!/@Query\(/.test(handler) && !/profileId/.test(handler), 'routes: GASTRO handler takes no profileId (ownership from the discount)');
+  check(routes(adminController).every((r) => r.startsWith('Get ')), 'routes: ADMIN economic routes are read-only in G10.C');
+  check(routes(adminController).includes('Get gastronomicos/:profileId/descuentos/:discountId/economic-summary'), 'routes: ADMIN economic-summary route exists');
+}
 
 if (failures > 0) {
   console.error(`\n${failures} check(s) failed`);

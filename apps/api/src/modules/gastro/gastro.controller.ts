@@ -13,7 +13,9 @@ import {
   gastroDiscountArchiveActionSchema,
   gastroProfileIdQuerySchema,
   upsertGastroDiscountVisualTemplateDtoSchema,
+  gastroDiscountEconomicSummaryParamsSchema,
   Role,
+  type GastroDiscountEconomicSummaryParams,
   type GastroContentCreateInput,
   type GastroContentReorderInput,
   type GastroContentUpdateInput,
@@ -43,6 +45,7 @@ import { GastroDashboardService } from './gastro-dashboard.service';
 import { GastroCourtesyDiscountsService } from './gastro-courtesy-discounts.service';
 import { GastroDiscountVisualTemplateService } from './gastro-discount-visual-template.service';
 import { GastroProfileMetricsService } from './gastro-profile-metrics.service';
+import { GastroDiscountEconomicsPortalService } from './gastro-discount-economics-portal.service';
 
 @Controller('gastro')
 @UseGuards(JwtOrDevAuthGuard, GastroRolesGuard)
@@ -57,6 +60,7 @@ export class GastroController {
     private readonly courtesyDiscounts: GastroCourtesyDiscountsService,
     private readonly visualTemplates: GastroDiscountVisualTemplateService,
     private readonly profileMetrics: GastroProfileMetricsService,
+    private readonly discountEconomics: GastroDiscountEconomicsPortalService,
   ) {}
 
   @Get('dashboard')
@@ -184,6 +188,16 @@ export class GastroController {
       user.role,
       id,
     );
+  }
+
+  /** G10.C3 — read-only contract, CASH / CANJE, settlements and payments of the owner's discount. */
+  @Get('discounts/:id/economic-summary')
+  async getMyDiscountEconomicSummary(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param(new ZodValidationPipe(gastroDiscountEconomicSummaryParamsSchema))
+    params: GastroDiscountEconomicSummaryParams,
+  ) {
+    return this.discountEconomics.getSummary(user.tenantId, user.id, user.role, params.id);
   }
 
   @Patch('discounts/:id/status')
