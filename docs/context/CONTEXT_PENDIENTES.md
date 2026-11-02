@@ -184,10 +184,11 @@ Discovery: [`V3_3_G10_DISCOUNT_COMMERCIAL_ACCOUNTING_DISCOVERY.md`](../audits/V3
 **Target recomendado:** agreement discount-scoped (Opción A: `gastroDiscountId` en `BenefitCommercialAgreement`, legacy profile rows solo históricas); settlement sigue partner+período; pago CASH exacto vía `gastroDiscountId` en `BenefitSettlementTransfer` (P1); CANJE = allocate BARTER por validaciones del descuento (motor existente, sin modelo nuevo). D1 sin cambios.
 
 - [x] G10.0 Discovery (docs only, sin código, sin migration)
-- [ ] Decisiones D-G10-1…D-G10-10 del operador (ver §17 del discovery)
-- [ ] Pre-flight SQL read-only en producción (§15.1) antes de G10.A
-- [ ] G10.A Schema + agreements por descuento (**migration única — detenerse antes de crearla**) + backfill script post-deploy
-- [ ] G10.B Approval por descuento + UI de contrato
+- [x] Decisiones D-G10-1…D-G10-10 **cerradas** por el operador (2026-11-02)
+- [x] G10.A0 Pre-flight read-only en producción — PASS WITH WARNINGS (6 perfiles sin agreement legacy → sin cobertura, fail-closed; 11 validaciones pendientes; 0 settlements GASTRO con allocations; 0 cortesías financiadas)
+- [x] G10.A Schema + agreements por descuento + backfill + pricing — **local**, commits `83d61ab`…`5996b0a`. Cierre: [`V3_3_G10_A_DISCOUNT_AGREEMENTS_CLOSING.md`](../audits/V3_3_G10_A_DISCOUNT_AGREEMENTS_CLOSING.md). Migration `20261102120000_benefit_agreement_discount_scope` aplicada **solo en local**. DB integration PASS. Builds PASS
+- [ ] Producción: `migrate deploy` + backfill (`--dry-run` → `--confirm`) — **NO** ejecutado; solo junto con G10.B
+- [ ] G10.B Approval por descuento + UI de contrato (cierra gaps transitorios de G10.A: UI G5 de contrato del local ahora 400; gates de approval aún sobre legacy del local)
 - [ ] G10.C Métricas económicas por descuento (ADMIN + GASTRO read-only)
 - [ ] G10.D Pagos exactos CASH / CANJE
 - [ ] G10.E Reporting, regresión, DB integration, readiness, deploy QA

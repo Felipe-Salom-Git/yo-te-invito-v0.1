@@ -44,6 +44,7 @@ Punto de entrada operativo para **V3.3**. Detalle completo: `AI_ENTRYPOINT.md`, 
 | **G9 UX** | ✅ **COMPLETE** local, sin push/deploy — [`V3_3_G9_UX_CLOSING.md`](../audits/V3_3_G9_UX_CLOSING.md) · discovery [`V3_3_G9_UX_DISCOVERY.md`](../audits/V3_3_G9_UX_DISCOVERY.md). Compartir ficha (Web Share / WhatsApp / copiar, URL pública sin tenant), ficha pública reordenada, multi-local conserva `profileId`, chips de cards, empty states, scanner, anclas admin. Cero migrations. Web `tsc` suelto PREEXISTING (`vitest`) |
 | **Producción** | Según el operador (2026-11-02): **desplegada con G7.11–G9** |
 | **G10.0 Contratos / liquidaciones / pagos por descuento — discovery** | ✅ Docs only — [`V3_3_G10_DISCOUNT_COMMERCIAL_ACCOUNTING_DISCOVERY.md`](../audits/V3_3_G10_DISCOUNT_COMMERCIAL_ACCOUNTING_DISCOVERY.md). Hoy: agreement **por `GastroProfile`**, approval gate por local, transfer CASH solo por settlement → pago por descuento **NOT EXACT**. Recomendado: Opción A (`gastroDiscountId` en `BenefitCommercialAgreement`, legacy profile rows solo históricas), settlement sigue partner+período, pago CASH exacto con `gastroDiscountId` en `BenefitSettlementTransfer` (P1), CANJE = allocate BARTER por validaciones del descuento (motor existente). **Migration: SÍ (única, aditiva) — no creada.** Backfill = script idempotente post-deploy. Decisiones D-G10-1…10 pendientes del operador |
+| **G10.A Schema + agreements por descuento + backfill + pricing** | ✅ **Local**, sin push/deploy — commits `83d61ab`…`5996b0a` — [`V3_3_G10_A_DISCOUNT_AGREEMENTS_CLOSING.md`](../audits/V3_3_G10_A_DISCOUNT_AGREEMENTS_CLOSING.md). D-G10-1…10 cerradas. A0 preflight prod PASS WITH WARNINGS. Migration `20261102120000_benefit_agreement_discount_scope` (aditiva) aplicada **solo en local** (112 en el repo; producción sigue en 111). Alcance derivado `DISCOUNT`/`PROFILE_LEGACY` (read-only)/`OPERATOR`; pricing por descuento; missing aislado (close bloquea); backfill `benefit-agreements:backfill-discount-scope` idempotente. **Gaps transitorios → G10.B:** UI de contrato del local da 400; gates de approval aún sobre legacy. **No desplegar G10.A sin G10.B** |
 
 **Checklist V3.3:** `docs/dev/Yo_Te_Invito_Checklist_V3_3_Funcional_Operativa.md`
 
@@ -90,7 +91,7 @@ User → Next.js → ApiRepository → NestJS Controller → Service → Prisma 
 | Procesos | systemd: `yti-web` (:3000), `yti-api` (:3001), `yti-scanner` (:3002) |
 | Dominios | `yoteinvito.club`, `api.yoteinvito.club`, `scanner.yoteinvito.club` |
 
-**Migraciones:** solo `npx prisma migrate deploy` en producción. El repo tiene **111**. Producción (deploy G7.10, 2026-10-22) ya reportó 111 encontradas y ninguna pendiente. Local (G8.12, Docker `yo-te-invito-postgres`, `localhost:5433`): `prisma migrate status` → 111 encontradas, schema up to date. **G7.11–G8.13 agregan cero migrations.** Las de Etapa 3–9 y G3/G4 forman parte de esas 111 (ya no están “sin aplicar” en el Postgres local).
+**Migraciones:** solo `npx prisma migrate deploy` en producción. El repo tiene **112** desde G10.A (`20261102120000_benefit_agreement_discount_scope`, aplicada solo en local; producción en 111 hasta el deploy G10.A+B). Producción (deploy G7.10, 2026-10-22) ya reportó 111 encontradas y ninguna pendiente. Local (G8.12, Docker `yo-te-invito-postgres`, `localhost:5433`): `prisma migrate status` → 111 encontradas, schema up to date. **G7.11–G8.13 agregan cero migrations.** Las de Etapa 3–9 y G3/G4 forman parte de esas 111 (ya no están “sin aplicar” en el Postgres local).
 
 Runbook: `docs/deploy/DONWEB_PRODUCTION_RUNBOOK.md`.
 
@@ -424,7 +425,7 @@ pnpm --filter api run test:gastro-courtesy-accounting   # incluye escenarios en 
 
 ## 21. Próximo paso recomendado
 
-0. **G10** (contrato comercial por descuento + pagos exactos): el operador resuelve D-G10-1…10 (§17 del discovery) y corre el pre-flight SQL read-only en producción (§15.1). Después, **G10.A**: detenerse antes de crear la migration para aprobación. Orden de deploy obligatorio: `migrate deploy` → restart con G10 → backfill `--dry-run` → `--confirm` → verificación. No mezclar G10.A con G10.B–D en un mismo deploy.
+0. **G10** (contrato comercial por descuento + pagos exactos): G10.A cerrada en local. Siguiente: **G10.B** (approval por descuento + UI de contrato + D-G10-3/4/5). **G10.A no es operable sola**: desplegar **G10.A + G10.B juntas** con el orden `migrate deploy` → restart → backfill `--dry-run` → `--confirm` → dry-run de verificación (0 copias) + integridad `agreementScopeIssues = []`. Rollback solo antes de la primera allocation/transfer por descuento (`scripts/ops/g10-a1-rollback.sql`).
 1. **Push/deploy acumulado** G7.11 + G7.12 + G8.0–G8.13 cuando el operador lo pida. Cero migrations nuevas. Orden y comandos: `V3_3_G8_COURTESIES_CLOSING.md` §8 (solo el runbook). **No** pushear ni desplegar desde el agente.
 2. **QA manual** post-deploy: `V3_3_G8_MANUAL_QA_CHECKLIST.md` + checklists G7.11/G7.12. Etapas 1–9 siguen acumuladas.
 3. **G9** solo con instrucción explícita. G8 ya está cerrado en código.
