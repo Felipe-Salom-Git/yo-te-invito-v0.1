@@ -1,6 +1,6 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { useRepositories } from '@/repositories/context';
-import { adminBenefitAgreementsKeys } from '@/lib/query/keys';
+import { adminBenefitAgreementsKeys, adminGastroKeys } from '@/lib/query/keys';
 import type {
   BenefitCommercialAgreementPartnerHistoryQuery,
   CloseBenefitCommercialAgreementBody,
@@ -8,6 +8,12 @@ import type {
   ReplaceBenefitCommercialAgreementBody,
   UpdateBenefitCommercialAgreementNotesBody,
 } from '@yo-te-invito/shared';
+
+/** Agreement changes also change the discount's economic summary (G10.C). */
+function invalidateAgreementViews(queryClient: QueryClient) {
+  queryClient.invalidateQueries({ queryKey: adminBenefitAgreementsKeys.all });
+  queryClient.invalidateQueries({ queryKey: adminGastroKeys.economicSummaries() });
+}
 
 export function useAdminBenefitAgreementsList(
   query?: {
@@ -68,7 +74,7 @@ export function useCreateAdminBenefitAgreement() {
     mutationFn: (body: CreateBenefitCommercialAgreementBody) =>
       repos.adminBenefitAgreements.create(body),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: adminBenefitAgreementsKeys.all });
+      invalidateAgreementViews(queryClient);
     },
   });
 }
@@ -80,7 +86,7 @@ export function useCloseAdminBenefitAgreement() {
     mutationFn: ({ id, body }: { id: string; body: CloseBenefitCommercialAgreementBody }) =>
       repos.adminBenefitAgreements.close(id, body),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: adminBenefitAgreementsKeys.all });
+      invalidateAgreementViews(queryClient);
     },
   });
 }
@@ -92,7 +98,7 @@ export function useReplaceAdminBenefitAgreement() {
     mutationFn: ({ id, body }: { id: string; body: ReplaceBenefitCommercialAgreementBody }) =>
       repos.adminBenefitAgreements.replace(id, body),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: adminBenefitAgreementsKeys.all });
+      invalidateAgreementViews(queryClient);
     },
   });
 }
@@ -109,7 +115,7 @@ export function useUpdateAdminBenefitAgreementNotes() {
       body: UpdateBenefitCommercialAgreementNotesBody;
     }) => repos.adminBenefitAgreements.updateNotes(id, body),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: adminBenefitAgreementsKeys.all });
+      invalidateAgreementViews(queryClient);
     },
   });
 }

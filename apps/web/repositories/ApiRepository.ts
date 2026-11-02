@@ -2454,9 +2454,9 @@ export class ApiRepository implements Repositories {
       this.client.get<import('@yo-te-invito/shared').GastroDiscountOperationalMetricsResponse>(
         `/admin/gastronomicos/${encodeURIComponent(profileId)}/descuentos/${encodeURIComponent(discountId)}/operational-metrics`,
       ),
-    getDiscountEconomicMetrics: async (profileId, discountId) =>
-      this.client.get<import('@yo-te-invito/shared').GastroDiscountEconomicMetricsResponse>(
-        `/admin/gastronomicos/${encodeURIComponent(profileId)}/descuentos/${encodeURIComponent(discountId)}/economic-metrics`,
+    getDiscountEconomicSummary: async (profileId, discountId) =>
+      this.client.get<import('@yo-te-invito/shared').GastroDiscountEconomicSummaryAdmin>(
+        `/admin/gastronomicos/${encodeURIComponent(profileId)}/descuentos/${encodeURIComponent(discountId)}/economic-summary`,
       ),
     getDiscountSummary: async (profileId, discountId) =>
 

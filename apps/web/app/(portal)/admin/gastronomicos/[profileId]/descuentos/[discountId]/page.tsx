@@ -17,7 +17,7 @@ import { AdminGastroCourtesyReviewPanel } from '@/components/admin/gastro/AdminG
 import { GastroDiscountDetailContent } from '@/components/gastro/GastroDiscountDetailContent';
 import { GastroDiscountOperationalMetricsPanel } from '@/components/gastro/GastroDiscountOperationalMetricsPanel';
 import { AdminGastroDiscountAgreementPanel } from '@/components/admin/gastro/AdminGastroDiscountAgreementPanel';
-import { AdminGastroDiscountEconomicMetricsPanel } from '@/components/admin/gastro/AdminGastroDiscountEconomicMetricsPanel';
+import { AdminGastroDiscountEconomicSummaryPanel } from '@/components/admin/gastro/AdminGastroDiscountEconomicSummaryPanel';
 import { useAdminBenefitAgreementDiscountHistory } from '@/lib/query/benefit-agreements';
 import { buildDiscountSettlementHref } from '@/lib/admin/settlement-generate-context';
 import {
@@ -402,7 +402,7 @@ export default function AdminGastroDiscountDetailPage() {
         </p>
       </div>
 
-      <AdminGastroDiscountEconomicMetricsPanel
+      <AdminGastroDiscountEconomicSummaryPanel
         profileId={canonicalProfileId}
         discountId={discountId}
       />

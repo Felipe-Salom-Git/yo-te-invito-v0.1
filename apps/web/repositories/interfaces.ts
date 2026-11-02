@@ -2982,10 +2982,10 @@ export interface AdminGastroRepo {
     profileId: string,
     discountId: string,
   ): Promise<import('@yo-te-invito/shared').GastroDiscountOperationalMetricsResponse>;
-  getDiscountEconomicMetrics(
+  getDiscountEconomicSummary(
     profileId: string,
     discountId: string,
-  ): Promise<import('@yo-te-invito/shared').GastroDiscountEconomicMetricsResponse>;
+  ): Promise<import('@yo-te-invito/shared').GastroDiscountEconomicSummaryAdmin>;
   getDiscountSummary(
     profileId: string,
     discountId: string,
