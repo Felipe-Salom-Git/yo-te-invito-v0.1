@@ -18,6 +18,7 @@ import {
   previewSelection,
   selectableIds,
 } from './discount-settlement-actions-ui';
+import { describeTransferAttribution, settlementDiscountPayOptions } from './settlement-transfer-attribution-ui';
 
 function assert(cond: unknown, msg: string): asserts cond {
   if (!cond) throw new Error(`FAIL: ${msg}`);
@@ -136,5 +137,26 @@ assert(paymentActions.includes('payment.isActive ?') && paymentActions.includes(
 assert(!/window\.(confirm|prompt)/.test(registerModal + reverseModal + paymentActions), 'D4: no window.confirm / window.prompt');
 const payHooks = read('lib/query/gastro-discount-settlement-actions.ts');
 assert(/useRegisterDiscountPayment[\s\S]*invalidateDiscountEconomics/.test(payHooks) && /useReverseDiscountPayment[\s\S]*invalidateDiscountEconomics/.test(payHooks), 'register / reversal refresh economic-summary + settlement summary');
+
+// ── D5 — settlement view attribution ──
+const exact = describeTransferAttribution({ attribution: 'EXACT', discountTitle: 'Promo A', discountLocalName: 'Local A' }, 'GASTRO', 'Local A');
+assert(exact.badge === 'EXACT' && exact.discountLabel === 'Promo A' && exact.localLabel === 'Local A', 'settlement: new GASTRO transfer → discount + local + EXACT');
+const legacyView = describeTransferAttribution({ attribution: 'SETTLEMENT_LEVEL', discountTitle: null, discountLocalName: null }, 'GASTRO', 'Local A');
+assert(legacyView.badge === 'SETTLEMENT_LEVEL' && legacyView.discountLabel === 'Pago legacy sin atribución', 'settlement: legacy transfer → «Pago legacy sin atribución» + SETTLEMENT_LEVEL');
+assert(describeTransferAttribution({ attribution: 'SETTLEMENT_LEVEL', discountTitle: null, discountLocalName: null }, 'ACTIVITY', 'Op').badge === null, 'settlement: ACTIVITY transfers carry no attribution badge');
+const payOptions = settlementDiscountPayOptions(
+  [
+    { gastroDiscountId: 'A', discountTitle: 'A', cashDueCents: '5000000', cashPaidCents: '5000000', cashRemainingCents: '0' },
+    { gastroDiscountId: 'B', discountTitle: 'B', cashDueCents: '3000000', cashPaidCents: '1000000', cashRemainingCents: '2000000' },
+  ],
+  '500000',
+);
+assert(payOptions.length === 1 && payOptions[0]!.gastroDiscountId === 'B' && payOptions[0]!.maxCents === '500000' && payOptions[0]!.cappedBySettlement, 'settlement form: only discounts with CASH balance, capped by settlement outstanding');
+const registerForm = read('components/admin/liquidaciones/SettlementRegisterTransferForm.tsx');
+assert(registerForm.includes('gastroDiscountId: option.gastroDiscountId') && registerForm.includes('isGastro ?'), 'settlement form: GASTRO sends gastroDiscountId, ACTIVITY unchanged');
+const transfersSection = read('components/admin/liquidaciones/SettlementCashTransfersSection.tsx');
+const transfersTable = read('components/admin/liquidaciones/SettlementTransfersTable.tsx');
+assert(transfersTable.includes('Descuento') && transfersTable.includes('Local') && transfersTable.includes('Referencia') && transfersTable.includes('Estado'), 'settlement table: Descuento, Local, Monto, Referencia, Estado');
+assert(transfersSection.includes('ReverseTransferModal') && !/window\.(confirm|prompt)/.test(transfersSection + transfersTable + registerForm), 'settlement: reversal through the modal (no window.confirm / prompt)');
 
 console.log('\nAll G10.D discount settlement action UI checks passed.');

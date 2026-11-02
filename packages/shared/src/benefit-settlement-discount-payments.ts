@@ -8,6 +8,7 @@
 
 import type { BenefitVertical } from './benefit-commercial-agreements';
 import { computeCashOutstandingCents } from './benefit-settlement';
+import type { BenefitIntegrityIssue } from './benefit-settlement-reporting';
 
 /** EXACT = transfer with `gastroDiscountId`; SETTLEMENT_LEVEL = legacy transfer without discount. */
 export const BENEFIT_TRANSFER_ATTRIBUTIONS = ['EXACT', 'SETTLEMENT_LEVEL'] as const;
@@ -90,4 +91,46 @@ export function resolveDiscountTransferMaxCents(input: {
   return discountRemaining < input.settlementCashOutstandingCents
     ? discountRemaining
     : input.settlementCashOutstandingCents;
+}
+
+/** G10.D5 integrity — active attributed transfers(S, D) > discountCashDue(S, D). */
+export function checkDiscountCashOverpayment(params: {
+  settlementId: string;
+  gastroDiscountId: string;
+  discountCashDueCents: bigint;
+  discountCashPaidCents: bigint;
+}): BenefitIntegrityIssue | null {
+  if (params.discountCashPaidCents <= params.discountCashDueCents) return null;
+  return {
+    code: 'DISCOUNT_CASH_OVERPAYMENT',
+    severity: 'ERROR',
+    message: `Pagos atribuidos al descuento ${params.gastroDiscountId} superan su CASH due en la liquidación`,
+    entityType: 'BenefitSettlement',
+    entityId: params.settlementId,
+  };
+}
+
+/** G10.D5 integrity — an attributed transfer must name a discount of the settlement's tenant and local. */
+export function checkTransferDiscountScopeMismatch(params: {
+  transferId: string;
+  settlementVertical: BenefitVertical;
+  settlementGastroProfileId: string | null;
+  gastroDiscountId: string | null;
+  discountExists: boolean;
+  discountGastroProfileId: string | null;
+}): BenefitIntegrityIssue | null {
+  if (!params.gastroDiscountId) return null;
+  const coherent =
+    params.settlementVertical === 'GASTRO' &&
+    params.discountExists &&
+    params.settlementGastroProfileId != null &&
+    params.discountGastroProfileId === params.settlementGastroProfileId;
+  if (coherent) return null;
+  return {
+    code: 'TRANSFER_DISCOUNT_SCOPE_MISMATCH',
+    severity: 'ERROR',
+    message: 'Pago atribuido a un descuento que no pertenece al local de la liquidación',
+    entityType: 'BenefitSettlementTransfer',
+    entityId: params.transferId,
+  };
 }

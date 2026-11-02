@@ -140,6 +140,30 @@ async function main() {
     check(legacyAfter?.gastroDiscountId === null && legacyAfter.amountCents === 1500000n && legacyAfter.reversedAt === null, 'S12: legacy row never attributed nor modified');
     check(listed.data.filter((t) => t.attribution === 'EXACT').every((t) => t.gastroDiscountId != null), 'S12: every new GASTRO transfer is EXACT');
 
+    // ── D5 — settlement view: attribution + per-discount CASH ──
+    const exactDto = listed.data.find((t) => t.id === t30.id);
+    check(Boolean(exactDto?.discountTitle) && Boolean(exactDto?.discountLocalName), 'D5: EXACT transfer listed with discount title + local');
+    check(legacyDto?.discountTitle === null, 'D5: legacy transfer listed without discount (no inference)');
+    const lineA = listed.discountCash?.find((l) => l.gastroDiscountId === A.discountId);
+    const lineB = listed.discountCash?.find((l) => l.gastroDiscountId === B.discountId);
+    check(lineA?.cashDueCents === '5000000' && lineA.cashPaidCents === '5000000' && lineA.cashRemainingCents === '0', 'D5: discount CASH line A due 50.000 / paid 50.000');
+    check(lineB?.cashDueCents === '3000000' && lineB.cashPaidCents === '1500000' && lineB.cashRemainingCents === '1500000', 'D5: discount CASH line B due 30.000 / paid 15.000 (legacy never counted)');
+
+    // ── D5 — integrity ──
+    const clean = await svc.integrity.evaluateSettlement(tenantId, s.id);
+    check(!clean.issues.some((i) => i.code === 'DISCOUNT_CASH_OVERPAYMENT' || i.code === 'TRANSFER_DISCOUNT_SCOPE_MISMATCH'), 'integrity: guarded writes leave no discount issues');
+    const forced = await prisma.benefitSettlementTransfer.create({
+      data: { tenantId, settlementId: s.id, gastroDiscountId: A.discountId, amountCents: 100n, transferredAt: new Date('2026-11-26T15:00:00.000Z'), reference: 'FORCED' },
+    });
+    const crossLocal = await prisma.benefitSettlementTransfer.create({
+      data: { tenantId, settlementId: s.id, gastroDiscountId: onB.discountId, amountCents: 100n, transferredAt: new Date('2026-11-26T15:00:00.000Z'), reference: 'CROSS' },
+    });
+    const dirty = await svc.integrity.evaluateSettlement(tenantId, s.id);
+    check(dirty.issues.some((i) => i.code === 'DISCOUNT_CASH_OVERPAYMENT' && i.entityId === s.id && i.message.includes(A.discountId)), 'integrity: DISCOUNT_CASH_OVERPAYMENT when attributed transfers(S,A) > due(S,A)');
+    check(dirty.issues.some((i) => i.code === 'TRANSFER_DISCOUNT_SCOPE_MISMATCH' && i.entityId === crossLocal.id), 'integrity: TRANSFER_DISCOUNT_SCOPE_MISMATCH for a discount of another local');
+    check(dirty.status === 'ERROR', 'integrity: status ERROR');
+    await prisma.benefitSettlementTransfer.deleteMany({ where: { id: { in: [forced.id, crossLocal.id] } } });
+
     // ── Scenario 13 — ACTIVITY keeps its behavior ──
     const sAct = await seedActivityCashSettlement(prisma, svc, seed);
     const tAct = await svc.transfers.register(tenantId, actor, sAct, cashBody('150000'));

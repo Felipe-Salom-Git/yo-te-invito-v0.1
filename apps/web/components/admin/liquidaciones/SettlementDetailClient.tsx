@@ -334,7 +334,12 @@ export function SettlementDetailClient({
         </section>
       ) : null}
 
-      <SettlementCashTransfersSection settlementId={id} summary={summary} />
+      <SettlementCashTransfersSection
+        settlementId={id}
+        vertical={settlement.vertical}
+        partnerDisplayName={settlement.partnerDisplayName}
+        summary={summary}
+      />
 
       <SettlementBarterSection
         settlement={settlement}

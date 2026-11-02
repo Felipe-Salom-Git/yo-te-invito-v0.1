@@ -11,7 +11,11 @@ import {
   checkCashOverpayment,
   checkClosedWithPendingUsages,
   checkCurrencyMismatch,
+  checkDiscountCashOverpayment,
   checkFundedCourtesyAllocation,
+  checkTransferDiscountScopeMismatch,
+  computeDiscountCashDueCents,
+  computeDiscountCashPaidCents,
   checkNegativeCourtesyBalance,
   checkOrphanAllocation,
   checkPartnerMismatchAllocation,
@@ -45,6 +49,8 @@ type SettlementIntegrityRow = {
     settlementId: string;
   }>;
   transfers: Array<{
+    id: string;
+    gastroDiscountId: string | null;
     amountCents: bigint;
     reversedAt: Date | null;
     currency: string;
@@ -132,6 +138,7 @@ export class BenefitSettlementIntegrityService {
     if (barterDrift) issues.push(barterDrift);
 
     issues.push(...(await this.checkAllocationLogicalIntegrity(tenantId, row)));
+    issues.push(...(await this.checkDiscountTransfers(tenantId, row)));
 
     const barterAllocationIds = row.allocations
       .filter((a) => a.mode === 'BARTER')
@@ -224,6 +231,59 @@ export class BenefitSettlementIntegrityService {
       return { gastroProfileId: null, excursionOperatorId: row.excursionOperatorId };
     }
     return null;
+  }
+
+  /**
+   * G10.D5 — attributed transfers: discount of the settlement's local (TRANSFER_DISCOUNT_SCOPE_MISMATCH)
+   * and active attributed transfers(S, D) ≤ discountCashDue(S, D) (DISCOUNT_CASH_OVERPAYMENT).
+   * Legacy transfers without discount are never inspected per discount (SETTLEMENT_LEVEL).
+   */
+  private async checkDiscountTransfers(
+    tenantId: string,
+    row: SettlementIntegrityRow,
+  ): Promise<BenefitIntegrityIssue[]> {
+    const attributed = row.transfers.filter((t) => t.gastroDiscountId != null);
+    if (attributed.length === 0) return [];
+    const discountIds = [...new Set(attributed.map((t) => t.gastroDiscountId!))];
+    const cashValidationIds = row.allocations.filter((a) => a.mode === 'CASH').map((a) => a.validationId);
+    const [discounts, validations] = await Promise.all([
+      this.prisma.gastroDiscount.findMany({
+        where: { id: { in: discountIds } },
+        select: { id: true, tenantId: true, gastroProfileId: true },
+      }),
+      cashValidationIds.length
+        ? this.prisma.gastroDiscountValidation.findMany({
+            where: { id: { in: cashValidationIds }, discountId: { in: discountIds } },
+            select: { id: true, discountId: true },
+          })
+        : Promise.resolve([] as Array<{ id: string; discountId: string }>),
+    ]);
+    const discountById = new Map(discounts.filter((d) => d.tenantId === tenantId).map((d) => [d.id, d] as const));
+
+    const issues: BenefitIntegrityIssue[] = [];
+    for (const transfer of attributed) {
+      const discount = discountById.get(transfer.gastroDiscountId!);
+      const mismatch = checkTransferDiscountScopeMismatch({
+        transferId: transfer.id,
+        settlementVertical: row.vertical,
+        settlementGastroProfileId: row.gastroProfileId,
+        gastroDiscountId: transfer.gastroDiscountId,
+        discountExists: discount != null,
+        discountGastroProfileId: discount?.gastroProfileId ?? null,
+      });
+      if (mismatch) issues.push(mismatch);
+    }
+    for (const discountId of discountIds) {
+      const owned = new Set(validations.filter((v) => v.discountId === discountId).map((v) => v.id));
+      const overpay = checkDiscountCashOverpayment({
+        settlementId: row.id,
+        gastroDiscountId: discountId,
+        discountCashDueCents: computeDiscountCashDueCents(row.allocations, owned),
+        discountCashPaidCents: computeDiscountCashPaidCents(row.transfers, discountId),
+      });
+      if (overpay) issues.push(overpay);
+    }
+    return issues;
   }
 
   private async checkAllocationLogicalIntegrity(

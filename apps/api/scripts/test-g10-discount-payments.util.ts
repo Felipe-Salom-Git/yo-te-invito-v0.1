@@ -11,6 +11,8 @@ import {
   assertDiscountTransferWouldNotOverpay,
   gastroDiscountPendingValidationSchema,
   benefitSettlementTransferDtoSchema,
+  checkDiscountCashOverpayment,
+  checkTransferDiscountScopeMismatch,
   computeDiscountCashDueCents,
   computeDiscountCashPaidCents,
   mapBenefitSettlementErrorMessage,
@@ -111,6 +113,18 @@ check(pendingService.includes('discoverEligibleValidations') && !pendingService.
 const settlementsService = src('src/modules/benefit-settlements/benefit-settlements.service.ts');
 const allocateBlock = settlementsService.slice(settlementsService.indexOf('async allocate('), settlementsService.indexOf('async close('));
 check(allocateBlock.indexOf('assertValidationsBelongToDiscount') < allocateBlock.indexOf('$transaction'), 'allocate: discount isolation checked before any write');
+
+// ── D5 — integrity (pure) ──
+check(checkDiscountCashOverpayment({ settlementId: 's', gastroDiscountId: 'A', discountCashDueCents: 100n, discountCashPaidCents: 100n }) === null, 'integrity: paid = due → OK');
+check(checkDiscountCashOverpayment({ settlementId: 's', gastroDiscountId: 'A', discountCashDueCents: 100n, discountCashPaidCents: 101n })?.code === 'DISCOUNT_CASH_OVERPAYMENT', 'integrity: paid > due → DISCOUNT_CASH_OVERPAYMENT');
+const scope = { transferId: 't', settlementVertical: 'GASTRO' as const, settlementGastroProfileId: 'pA', gastroDiscountId: 'A', discountExists: true, discountGastroProfileId: 'pA' };
+check(checkTransferDiscountScopeMismatch(scope) === null, 'integrity: discount of the settlement local → OK');
+check(checkTransferDiscountScopeMismatch({ ...scope, gastroDiscountId: null }) === null, 'integrity: legacy transfer never flagged by scope check');
+check(checkTransferDiscountScopeMismatch({ ...scope, discountGastroProfileId: 'pB' })?.code === 'TRANSFER_DISCOUNT_SCOPE_MISMATCH', 'integrity: discount of another local → TRANSFER_DISCOUNT_SCOPE_MISMATCH');
+check(checkTransferDiscountScopeMismatch({ ...scope, discountExists: false })?.code === 'TRANSFER_DISCOUNT_SCOPE_MISMATCH', 'integrity: missing discount → TRANSFER_DISCOUNT_SCOPE_MISMATCH');
+check(checkTransferDiscountScopeMismatch({ ...scope, settlementVertical: 'ACTIVITY' })?.code === 'TRANSFER_DISCOUNT_SCOPE_MISMATCH', 'integrity: ACTIVITY transfer with discount → mismatch');
+const integrityService = src('src/modules/benefit-settlements/benefit-settlement-integrity.service.ts');
+check(integrityService.includes('this.checkDiscountTransfers(tenantId, row)'), 'integrity service runs the discount transfer checks');
 
 if (failures > 0) {
   console.error(`\n${failures} check(s) failed`);

@@ -27,6 +27,7 @@ import {
   assertTransferDiscountRequirement,
   isSerializationConflict,
 } from './benefit-settlement-discount-transfer.guard';
+import { loadSettlementDiscountCash } from './benefit-settlement-discount-cash.loader';
 
 /** Serializable conflicts are retried so the loser re-reads committed transfers (→ overpayment, not 500). */
 const SERIALIZABLE_MAX_ATTEMPTS = 4;
@@ -41,11 +42,30 @@ export class BenefitSettlementTransfersService {
 
   async list(tenantId: string, settlementId: string): Promise<BenefitSettlementTransfersListResponse> {
     await this.settlements.assertSettlementExists(tenantId, settlementId);
-    const rows = await this.prisma.benefitSettlementTransfer.findMany({
-      where: { tenantId, settlementId },
-      orderBy: [{ transferredAt: 'desc' }, { createdAt: 'desc' }],
+    const settlement = await this.prisma.benefitSettlement.findFirstOrThrow({
+      where: { id: settlementId, tenantId },
+      select: {
+        vertical: true,
+        allocations: { select: { mode: true, baseAmountCents: true, validationId: true } },
+        transfers: { orderBy: [{ transferredAt: 'desc' }, { createdAt: 'desc' }] },
+      },
     });
-    return { data: rows.map((row) => this.toDto(row)) };
+    if (settlement.vertical !== 'GASTRO') {
+      return { data: settlement.transfers.map((row) => this.toDto(row)) };
+    }
+    // G10.D5: attribution is read from gastroDiscountId only; legacy rows are never inferred.
+    const { lines, discounts } = await loadSettlementDiscountCash(this.prisma, tenantId, settlement);
+    return {
+      data: settlement.transfers.map((row) => {
+        const discount = row.gastroDiscountId ? discounts.get(row.gastroDiscountId) : undefined;
+        return {
+          ...this.toDto(row),
+          discountTitle: discount?.title ?? null,
+          discountLocalName: discount?.localName ?? null,
+        };
+      }),
+      discountCash: lines,
+    };
   }
 
   async register(

@@ -275,12 +275,28 @@ export const benefitSettlementTransferDtoSchema = z.object({
   /** G10.D — null = legacy SETTLEMENT_LEVEL transfer (never attributed after the fact). */
   gastroDiscountId: z.string().nullable(),
   attribution: z.enum(BENEFIT_TRANSFER_ATTRIBUTIONS),
+  /** G10.D5 — display only (list endpoint): title and local of the attributed discount. */
+  discountTitle: z.string().nullable().optional(),
+  discountLocalName: z.string().nullable().optional(),
 });
 
 export type BenefitSettlementTransferDto = z.infer<typeof benefitSettlementTransferDtoSchema>;
 
+/** G10.D5 — CASH per discount inside ONE GASTRO settlement (EXACT; legacy transfers never counted). */
+export const benefitSettlementDiscountCashLineSchema = z.object({
+  gastroDiscountId: z.string(),
+  discountTitle: z.string(),
+  cashDueCents: moneyCentsStringSchema,
+  cashPaidCents: moneyCentsStringSchema,
+  cashRemainingCents: moneyCentsStringSchema,
+});
+
+export type BenefitSettlementDiscountCashLine = z.infer<typeof benefitSettlementDiscountCashLineSchema>;
+
 export const benefitSettlementTransfersListResponseSchema = z.object({
   data: z.array(benefitSettlementTransferDtoSchema),
+  /** GASTRO only: discounts with CASH due or attributed transfers in this settlement. */
+  discountCash: z.array(benefitSettlementDiscountCashLineSchema).optional(),
 });
 
 export type BenefitSettlementTransfersListResponse = z.infer<
