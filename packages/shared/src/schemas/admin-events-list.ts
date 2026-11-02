@@ -26,6 +26,8 @@ export const adminEventsListQuerySchema = z
     dateTo: z.string().datetime().optional(),
     pendingOnly: z.coerce.boolean().optional(),
     view: adminEventsListViewSchema.optional(),
+    /** G12.2 — event owner: producer profile, gastro local (promo events) or platform. */
+    origin: z.enum(['producer', 'gastro', 'platform']).optional(),
   })
   .refine(
     (data) => {
@@ -46,6 +48,12 @@ export const adminEventListItemSchema = z.object({
   city: z.string().nullable(),
   producerProfileId: z.string().nullable(),
   producerName: z.string().nullable(),
+  /** G12.2 — PRODUCER | GASTRO | PLATFORM (see resolveEventOwnerKind). */
+  ownerKind: z.enum(['PRODUCER', 'GASTRO', 'PLATFORM']).optional(),
+  gastroProfileId: z.string().nullable().optional(),
+  gastroProfileName: z.string().nullable().optional(),
+  /** Creating user display name (gastro promo events). */
+  createdByName: z.string().nullable().optional(),
   startAt: z.string().datetime(),
   endAt: z.string().datetime().nullable().optional(),
   createdAt: z.string().datetime(),

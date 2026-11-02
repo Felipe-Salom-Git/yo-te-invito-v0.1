@@ -91,6 +91,8 @@ export class AdminDashboardService {
           createdAt: true,
           producerProfileId: true,
           producerProfile: { select: { id: true, displayName: true } },
+          gastroProfileId: true,
+          gastroProfile: { select: { displayName: true } },
         },
       }),
       this.prisma.event.findMany({
@@ -107,6 +109,8 @@ export class AdminDashboardService {
           createdAt: true,
           producerProfileId: true,
           producerProfile: { select: { id: true, displayName: true } },
+          gastroProfileId: true,
+          gastroProfile: { select: { displayName: true } },
         },
       }),
       this.prisma.gastroDiscount.findMany({
@@ -154,8 +158,9 @@ export class AdminDashboardService {
       category: e.category,
       status: e.status.toLowerCase() as AdminDashboardResponse['pendingEvents'][0]['status'],
       city: e.city,
-      producerName: e.producerProfile?.displayName ?? null,
+      producerName: e.producerProfile?.displayName ?? e.gastroProfile?.displayName ?? null,
       producerProfileId: e.producerProfileId ?? e.producerProfile?.id ?? null,
+      gastroProfileId: e.gastroProfileId,
       startAt: e.startAt.toISOString(),
       createdAt: e.createdAt.toISOString(),
     });

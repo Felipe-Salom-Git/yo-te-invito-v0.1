@@ -4,6 +4,8 @@ import type { AdminEventListItem } from '@/repositories/interfaces';
 import { getCategoryLabel } from '@/lib/home/contentRoutes';
 import { AdminProducerStatusBadge } from '@/components/admin/producers/AdminProducerStatusBadge';
 import { AdminEventReviewLink } from './AdminEventReviewLink';
+import { AdminEventOwnerCell } from './AdminEventOwnerCell';
+import { AdminGastroPromoEventModeration } from './AdminGastroPromoEventModeration';
 import { AdminEventLifecycleActions } from '@/components/admin/AdminEventLifecycleActions';
 
 function formatDt(iso: string): string {
@@ -29,7 +31,7 @@ export function AdminEventsTable({ events }: AdminEventsTableProps) {
           <tr>
             <th className="px-4 py-3 font-medium">Contenido</th>
             <th className="px-4 py-3 font-medium">Categoría</th>
-            <th className="px-4 py-3 font-medium">Productora</th>
+            <th className="px-4 py-3 font-medium">Origen</th>
             <th className="px-4 py-3 font-medium">Ciudad</th>
             <th className="px-4 py-3 font-medium">Estado</th>
             <th className="px-4 py-3 font-medium">Inicio</th>
@@ -65,7 +67,7 @@ export function AdminEventsTable({ events }: AdminEventsTableProps) {
                 ) : null}
               </td>
               <td className="px-4 py-3 text-text-muted">
-                {ev.producerName ?? '—'}
+                <AdminEventOwnerCell event={ev} />
               </td>
               <td className="px-4 py-3 text-text-muted">{ev.city ?? '—'}</td>
               <td className="px-4 py-3">
@@ -84,6 +86,9 @@ export function AdminEventsTable({ events }: AdminEventsTableProps) {
               </td>
               <td className="px-4 py-3">
                 <div className="flex flex-col gap-2">
+                  {ev.ownerKind === 'GASTRO' ? (
+                    <AdminGastroPromoEventModeration eventId={ev.id} status={ev.status} />
+                  ) : null}
                   <AdminEventReviewLink event={ev} />
                   <AdminEventLifecycleActions eventId={ev.id} status={ev.status} compact />
                 </div>

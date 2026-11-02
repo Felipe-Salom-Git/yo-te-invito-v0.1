@@ -1501,6 +1501,9 @@ export type AdminEventsListResponse = import('@yo-te-invito/shared').AdminEvents
 
 export interface AdminEventsRepo {
   list(query: AdminEventsListQuery): Promise<AdminEventsListResponse>;
+  /** Generic moderation (events without producer profile, e.g. G12.2 gastro promo events). */
+  approve(eventId: string): Promise<{ id: string; status: string }>;
+  reject(eventId: string, reason: string): Promise<{ id: string; status: string }>;
 }
 
 export interface AdminContentLifecycleRepo {

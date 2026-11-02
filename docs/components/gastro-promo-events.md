@@ -43,4 +43,28 @@ rule as producers).
 (`GastroPromoEventsPanel` + `GastroPromoEventForm`), `?tab=eventos`. Images upload with the gastro
 GCS scope (`entityId` = local). Logic: `apps/web/lib/gastro/gastroPromoEvents.ts`.
 
-Tests: `test:gastro-promo-event-ownership`, `test:gastro-promo-events`.
+## Public
+
+- Discovery: same queries as any `event` (`/public/events`, search, calendar, trending). Visible only
+  while `APPROVED`, not past (event visibility rule) and the local is `ACTIVE`
+  (`publicParentEntitiesActiveWhere`). Ticketing rails (`hasTicketing=true`: Destacados / Próximos)
+  exclude them, exactly like producer publicity events; «Recientes», subcategory rails, date /
+  calendar, `/explore` and search include them. While `event` is «comingSoon» (V3.2) only preview
+  roles see the Events catalogue.
+- Card: same `EventCard` / `ContentCard`; `producerName` = local name, `gastroOrganizer` = `{ id, displayName, logoUrl }`.
+- Detail `/events/:id`: `EventPublicityInfoCard` («Organiza {local}» + «Ver ficha del local»), hero CTA
+  «Más información» (any publicity event), no ticket types / checkout, `EventGallerySection`
+  (EventMedia, swipe lightbox), `PublicShareButton` (G11) with `/events/:id`.
+- Local page `/gastronomicos/:id`: `GastroLocalEventsSection` (Descuentos → **Eventos** → Publicaciones),
+  `GET /public/events?category=event&gastroProfileId=`; cards via `toGastroLocalEventCards`.
+
+## Admin
+
+`/admin/eventos`: column **Origen** (`AdminEventOwnerCell`: «Local gastronómico» · local · owner),
+filter **Origen** (`origin=producer|gastro|platform`), inline **Aprobar / Rechazar**
+(`AdminGastroPromoEventModeration`, generic `POST /admin/events/:id/approve|reject`), «Ver local».
+Dashboard «Revisar» → `/admin/eventos?view=pending&origin=gastro`. Approve / reject notifications go to
+the local's members with `/gastro/contenido?profileId=…&tab=eventos`.
+
+Tests: `test:gastro-promo-event-ownership`, `test:gastro-promo-events`, `test:gastro-promo-event-admin`,
+`test:g12-gastro-promo-events-db` (PostgreSQL, rolled back).

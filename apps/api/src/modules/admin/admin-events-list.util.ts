@@ -54,6 +54,14 @@ export function buildAdminEventsWhere(
   if (query.producerProfileId) {
     where.producerProfileId = query.producerProfileId;
   }
+  if (query.origin === 'gastro') {
+    where.gastroProfileId = { not: null };
+  } else if (query.origin === 'producer') {
+    where.producerProfileId = query.producerProfileId ?? { not: null };
+  } else if (query.origin === 'platform') {
+    where.producerProfileId = null;
+    where.gastroProfileId = null;
+  }
   if (query.dateFrom || query.dateTo) {
     where.startAt = {};
     if (query.dateFrom) {
@@ -72,6 +80,11 @@ export function buildAdminEventsWhere(
       { venueName: { contains: q, mode: 'insensitive' } },
       {
         producerProfile: {
+          displayName: { contains: q, mode: 'insensitive' },
+        },
+      },
+      {
+        gastroProfile: {
           displayName: { contains: q, mode: 'insensitive' },
         },
       },

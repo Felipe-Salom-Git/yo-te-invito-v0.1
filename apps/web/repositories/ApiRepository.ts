@@ -1551,6 +1551,16 @@ export class ApiRepository implements Repositories {
         query as Record<string, string | number | boolean | undefined>,
       );
     },
+    approve: async (eventId) =>
+      this.client.post<{ id: string; status: string }>(
+        `/admin/events/${encodeURIComponent(eventId)}/approve`,
+        {},
+      ),
+    reject: async (eventId, reason) =>
+      this.client.post<{ id: string; status: string }>(
+        `/admin/events/${encodeURIComponent(eventId)}/reject`,
+        { reason },
+      ),
   };
 
   adminContentLifecycle: import('./interfaces').AdminContentLifecycleRepo = {

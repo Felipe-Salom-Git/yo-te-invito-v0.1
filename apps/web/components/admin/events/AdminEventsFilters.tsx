@@ -110,6 +110,19 @@ export function AdminEventsFilters({
           placeholder="Ej. Bariloche"
         />
         <div>
+          <label className="mb-1.5 block text-sm font-medium text-text">Origen</label>
+          <select
+            value={filters.origin}
+            onChange={(e) => onChange({ origin: e.target.value as AdminEventsFiltersState['origin'] })}
+            className="w-full rounded border border-border bg-bg px-3 py-2 text-text"
+          >
+            <option value="">Todos</option>
+            <option value="producer">Productoras</option>
+            <option value="gastro">Locales gastronómicos</option>
+            <option value="platform">Plataforma</option>
+          </select>
+        </div>
+        <div>
           <label className="mb-1.5 block text-sm font-medium text-text">Productora</label>
           <select
             value={filters.producerProfileId}

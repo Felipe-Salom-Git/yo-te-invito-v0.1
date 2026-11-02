@@ -7,6 +7,8 @@ export type AdminEventsFiltersState = {
   subcategoryId: string;
   city: string;
   producerProfileId: string;
+  /** G12.2 — '' | producer | gastro | platform */
+  origin: '' | NonNullable<AdminEventsListQuery['origin']>;
   from: string;
   to: string;
   view: AdminEventsListView;
@@ -21,6 +23,7 @@ export const ADMIN_EVENTS_DEFAULT_FILTERS: AdminEventsFiltersState = {
   subcategoryId: '',
   city: '',
   producerProfileId: '',
+  origin: '',
   from: '',
   to: '',
   view: 'all',
@@ -44,6 +47,12 @@ function parseView(raw: string | null): AdminEventsListView {
   return 'all';
 }
 
+const ORIGINS = ['producer', 'gastro', 'platform'] as const;
+
+function parseOrigin(raw: string | null): AdminEventsFiltersState['origin'] {
+  return ORIGINS.includes(raw as (typeof ORIGINS)[number]) ? (raw as (typeof ORIGINS)[number]) : '';
+}
+
 export function parseAdminEventsSearchParams(
   params: URLSearchParams,
 ): AdminEventsFiltersState {
@@ -56,6 +65,7 @@ export function parseAdminEventsSearchParams(
     subcategoryId: params.get('subcategoryId') ?? '',
     city: params.get('city') ?? '',
     producerProfileId: params.get('producerProfileId') ?? '',
+    origin: parseOrigin(params.get('origin')),
     from: params.get('from') ?? '',
     to: params.get('to') ?? '',
     view,
@@ -74,6 +84,7 @@ export function buildAdminEventsSearchParams(
   if (state.subcategoryId) qs.set('subcategoryId', state.subcategoryId);
   if (state.city.trim()) qs.set('city', state.city.trim());
   if (state.producerProfileId) qs.set('producerProfileId', state.producerProfileId);
+  if (state.origin) qs.set('origin', state.origin);
   if (state.from) qs.set('from', state.from);
   if (state.to) qs.set('to', state.to);
   if (state.view && state.view !== 'all') qs.set('view', state.view);
@@ -100,6 +111,7 @@ export function filtersToAdminEventsQuery(
   if (state.subcategoryId) query.subcategoryId = state.subcategoryId;
   if (state.city.trim()) query.city = state.city.trim();
   if (state.producerProfileId) query.producerProfileId = state.producerProfileId;
+  if (state.origin) query.origin = state.origin;
   if (state.from) query.dateFrom = state.from;
   if (state.to) query.dateTo = state.to;
   if (state.pendingOnly) query.pendingOnly = true;

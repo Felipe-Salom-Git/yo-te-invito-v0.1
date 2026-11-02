@@ -4,6 +4,8 @@ import type { AdminEventListItem } from '@/repositories/interfaces';
 import { getCategoryLabel } from '@/lib/home/contentRoutes';
 import { AdminProducerStatusBadge } from '@/components/admin/producers/AdminProducerStatusBadge';
 import { AdminEventReviewLink } from './AdminEventReviewLink';
+import { AdminEventOwnerCell } from './AdminEventOwnerCell';
+import { AdminGastroPromoEventModeration } from './AdminGastroPromoEventModeration';
 import { AdminEventLifecycleActions } from '@/components/admin/AdminEventLifecycleActions';
 
 function formatDt(iso: string): string {
@@ -51,10 +53,12 @@ export function AdminEventsMobileCard({ event }: AdminEventsMobileCardProps) {
             <dd className="inline">{event.subcategoryName}</dd>
           </div>
         ) : null}
-        {event.producerName ? (
+        {event.ownerKind === 'GASTRO' || event.producerName ? (
           <div>
-            <dt className="inline font-medium">Productora: </dt>
-            <dd className="inline">{event.producerName}</dd>
+            <dt className="inline font-medium">Origen: </dt>
+            <dd className="mt-1">
+              <AdminEventOwnerCell event={event} />
+            </dd>
           </div>
         ) : null}
         {event.city ? (
@@ -79,6 +83,9 @@ export function AdminEventsMobileCard({ event }: AdminEventsMobileCardProps) {
         ) : null}
       </dl>
       <div className="mt-4 flex flex-wrap items-center gap-3">
+        {event.ownerKind === 'GASTRO' ? (
+          <AdminGastroPromoEventModeration eventId={event.id} status={event.status} />
+        ) : null}
         <AdminEventReviewLink event={event} />
         <AdminEventLifecycleActions eventId={event.id} status={event.status} compact />
       </div>

@@ -13,8 +13,19 @@ type EventRecipientContext = {
   id: string;
   title: string;
   producerProfileId: string | null;
+  /** G12.2 — gastro promo event: recipients = the local's team, links = gastro portal. */
+  gastroProfileId?: string | null;
   producerId: string;
 };
+
+function eventPortalLinks(event: EventRecipientContext) {
+  if (event.gastroProfileId) {
+    const href = `/gastro/contenido?profileId=${encodeURIComponent(event.gastroProfileId)}&tab=eventos`;
+    return { href, editHref: href, dashboardHref: '/gastro' };
+  }
+  const href = `/producer/events/${event.id}`;
+  return { href, editHref: `${href}/edit`, dashboardHref: '/producer' };
+}
 
 @Injectable()
 export class ProducerEventStatusNotificationsService {
@@ -57,7 +68,7 @@ export class ProducerEventStatusNotificationsService {
     }
 
     const appUrl = getAppUrl();
-    const href = `/producer/events/${event.id}`;
+    const { href, editHref, dashboardHref } = eventPortalLinks(event);
     const referenceKey = `producer-event-status:${event.id}:${status}`;
 
     const eventDetails =
@@ -129,7 +140,7 @@ export class ProducerEventStatusNotificationsService {
                 producerName,
                 eventTitle: event.title,
                 eventUrl: `${appUrl}${href}`,
-                dashboardUrl: `${appUrl}/producer`,
+                dashboardUrl: `${appUrl}${dashboardHref}`,
                 supportEmail: getDefaultSupportEmail(),
                 ...(eventDate ? { eventDate } : {}),
                 ...(eventTime ? { eventTime } : {}),
@@ -144,8 +155,8 @@ export class ProducerEventStatusNotificationsService {
                 producerName,
                 eventTitle: event.title,
                 rejectionReason: reason ?? '',
-                eventEditUrl: `${appUrl}${href}/edit`,
-                dashboardUrl: `${appUrl}/producer`,
+                eventEditUrl: `${appUrl}${editHref}`,
+                dashboardUrl: `${appUrl}${dashboardHref}`,
                 supportEmail: getDefaultSupportEmail(),
               },
             }
@@ -160,7 +171,13 @@ export class ProducerEventStatusNotificationsService {
   ): Promise<string[]> {
     const ids = new Set<string>();
 
-    if (event.producerProfileId) {
+    if (event.gastroProfileId) {
+      const memberships = await this.prisma.userGastroMembership.findMany({
+        where: { tenantId, profileId: event.gastroProfileId, status: 'ACTIVE' },
+        select: { userId: true },
+      });
+      for (const m of memberships) ids.add(m.userId);
+    } else if (event.producerProfileId) {
       const [memberships, profile] = await Promise.all([
         this.prisma.userProducerMembership.findMany({
           where: {

@@ -103,6 +103,7 @@
     "test:public-modal-top-offset": "tsx ../web/lib/ui/publicModalLayout.assert.ts",
     "test:gastro-review-report": "tsx scripts/test-gastro-review-report.util.ts && tsx ../web/lib/reviews/reviewReport.assert.ts",
     "test:gastro-promo-event-ownership": "tsx scripts/test-gastro-promo-event-ownership.util.ts",
+    "test:gastro-promo-event-admin": "tsx scripts/test-gastro-promo-event-admin.util.ts",
     "test:g12-gastro-promo-events-db": "tsx scripts/test-g12-gastro-promo-events-db.util.ts",
     "test:gastro-promo-events": "tsx scripts/test-gastro-promo-events.util.ts && tsx --tsconfig ../web/tsconfig.json ../web/lib/gastro/gastroPromoEvents.assert.ts",
     "test:gastro-local-view-count": "tsx scripts/test-gastro-local-view-count.util.ts && tsx ../web/lib/gastro/gastroLocationViews.assert.ts",

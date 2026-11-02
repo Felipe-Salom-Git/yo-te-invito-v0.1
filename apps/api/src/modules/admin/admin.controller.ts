@@ -334,6 +334,18 @@ export class AdminController {
     );
   }
 
+  /** G12.2 — generic reject (events without a producer profile, e.g. gastro promo events). */
+  @Post('events/:eventId/reject')
+  @UseGuards(JwtOrDevAuthGuard, RolesGuard)
+  @RequireRole(Role.ADMIN)
+  async rejectEvent(
+    @CurrentUser() user: { id: string; tenantId: string; role: string },
+    @Param(new ZodValidationPipe(adminEventIdParamsSchema)) params: AdminEventIdParams,
+    @Body(new ZodValidationPipe(eventModerationReasonSchema)) body: EventModerationReason,
+  ) {
+    return this.events.rejectEvent(user.tenantId, user.id, user.role, params.eventId, body.reason);
+  }
+
   @Post('events/:eventId/pause')
   @UseGuards(JwtOrDevAuthGuard, RolesGuard)
   @RequireRole(Role.ADMIN)

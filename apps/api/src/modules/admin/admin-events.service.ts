@@ -8,7 +8,7 @@ import { EventStatus, Prisma, AuditAction } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EventPublicationAlertsService } from '../notifications/event-publication-alerts.service';
 import { ProducerEventStatusNotificationsService } from '../notifications/producer-event-status-notifications.service';
-import { ErrorCode } from '@yo-te-invito/shared';
+import { ErrorCode, resolveEventOwnerKind } from '@yo-te-invito/shared';
 import type {
   AdminEventStatus,
   AdminEventsListQuery,
@@ -99,7 +99,9 @@ export class AdminEventsService {
           subcategoryId: true,
           status: true,
           city: true,
+          producerId: true,
           producerProfileId: true,
+          gastroProfileId: true,
           startAt: true,
           endAt: true,
           createdAt: true,
@@ -107,10 +109,23 @@ export class AdminEventsService {
           publishedAt: true,
           subcategory: { select: { name: true } },
           producerProfile: { select: { id: true, displayName: true } },
+          gastroProfile: { select: { id: true, displayName: true } },
         },
       }),
       this.prisma.event.count({ where }),
     ]);
+
+    const creatorIds = [...new Set(rows.filter((e) => e.gastroProfileId).map((e) => e.producerId))];
+    const creators =
+      creatorIds.length > 0
+        ? await this.prisma.user.findMany({
+            where: { tenantId, id: { in: creatorIds } },
+            select: { id: true, firstName: true, lastName: true },
+          })
+        : [];
+    const creatorName = new Map(
+      creators.map((u) => [u.id, `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() || null]),
+    );
 
     const eventIds = rows.map((e) => e.id);
     const occurrenceCounts =
@@ -133,6 +148,10 @@ export class AdminEventsService {
       city: e.city,
       producerProfileId: e.producerProfileId ?? e.producerProfile?.id ?? null,
       producerName: e.producerProfile?.displayName ?? null,
+      ownerKind: resolveEventOwnerKind(e),
+      gastroProfileId: e.gastroProfileId,
+      gastroProfileName: e.gastroProfile?.displayName ?? null,
+      createdByName: e.gastroProfileId ? (creatorName.get(e.producerId) ?? null) : null,
       startAt: e.startAt.toISOString(),
       endAt: e.endAt?.toISOString() ?? null,
       createdAt: e.createdAt.toISOString(),
@@ -208,6 +227,7 @@ export class AdminEventsService {
       id: event.id,
       title: event.title,
       producerProfileId: event.producerProfileId,
+      gastroProfileId: event.gastroProfileId,
       producerId: event.producerId,
     });
 
@@ -336,6 +356,7 @@ export class AdminEventsService {
           id: event.id,
           title: event.title,
           producerProfileId: event.producerProfileId,
+          gastroProfileId: event.gastroProfileId,
           producerId: event.producerId,
         },
         reason,

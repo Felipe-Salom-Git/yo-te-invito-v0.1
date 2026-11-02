@@ -25,6 +25,8 @@ export const adminDashboardPendingEventSchema = z.object({
   city: z.string().nullable(),
   producerName: z.string().nullable(),
   producerProfileId: z.string().nullable(),
+  /** G12.2 — set for gastro promotional events (producerName = local name). */
+  gastroProfileId: z.string().nullable().optional(),
   startAt: z.string().datetime(),
   createdAt: z.string().datetime(),
 });

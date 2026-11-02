@@ -218,6 +218,19 @@ Cierre: [`V3_3_G12_1_UX_REVIEWS_METRICS_CLOSING.md`](../audits/V3_3_G12_1_UX_REV
 - [ ] QA manual G12.1 post-deploy (lista en el cierre)
 - [ ] `smoke:reviews` HTTP con credenciales — NO EJECUTADO
 
+### G12.2 — Eventos publicitarios de locales gastro
+
+Cierre: [`V3_3_G12_2_GASTRO_PROMOTIONAL_EVENTS_CLOSING.md`](../audits/V3_3_G12_2_GASTRO_PROMOTIONAL_EVENTS_CLOSING.md) · local, **sin push / sin deploy**
+
+- [x] 12.2-A `272646a` — `Event.gastroProfileId` (FK RESTRICT, CHECK productora XOR local); migration aditiva `20261102170000_event_gastro_promo_owner` aplicada **solo en local**
+- [x] 12.2-B `bbc642a` — `/gastro/promo-events*` + pestañas Publicaciones / Eventos en `/gastro/contenido`
+- [x] 12.2-C `8ac7571` — discovery / búsqueda / detalle público (organizador = local, sin compra)
+- [x] 12.2-D `b1ba75e` — bloque Eventos en `/gastronomicos/:id` + galería del evento
+- [x] 12.2-E — admin (origen, filtro, aprobar / rechazar, notificaciones), 36 suites + DB + HTTP 21/21, builds PASS
+- [ ] Push + deploy G12.1 + G12.2 (2 migrations aditivas) cuando el operador lo indique
+- [ ] QA manual G12.2 post-deploy (lista en el cierre)
+- [ ] Decisión operador: habilitar Eventos al público (`event` sigue «comingSoon»; hasta entonces solo roles preview ven el catálogo)
+
 ### G8.9 + G8.10 — Portal Gastro y Admin de cortesías
 
 Cierre: [`V3_3_G8_9_G8_10_COURTESY_PORTAL_ADMIN_CLOSING.md`](../audits/V3_3_G8_9_G8_10_COURTESY_PORTAL_ADMIN_CLOSING.md)
